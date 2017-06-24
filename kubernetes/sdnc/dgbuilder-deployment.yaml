@@ -1,0 +1,62 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sdnc-dgbuilder
+spec:
+  selector:
+    matchLabels:
+      app: sdnc-dgbuilder
+  template:
+    metadata:
+      labels:
+        app: sdnc-dgbuilder
+      name: sdnc-dgbuilder
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "sdnc-db-container",
+                  "--container-name",
+                  "sdnc-controller-container"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "sdnc-dgbuilder-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - cd /opt/openecomp/sdnc/dgbuilder/ && ./start sdnc1.0 && wait
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: openECOMP1.0
+        - name: SDNC_CONFIG_DIR
+          value: /opt/openecomp/sdnc/data/properties
+        image: nexus3.onap.org:10001/openecomp/dgbuilder-sdnc-image:1.0-STAGING-latest
+        name: sdnc-dgbuilder-container
+        ports:
+        - containerPort: 3100
+        readinessProbe:
+          tcpSocket:
+            port: 3100
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always

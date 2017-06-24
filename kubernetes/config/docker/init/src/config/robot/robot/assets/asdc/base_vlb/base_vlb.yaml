@@ -1,0 +1,339 @@
+heat_template_version: 2013-05-23
+
+description: Heat template to deploy vLoadBalancer/vDNS demo app for OpenECOMP
+
+parameters:
+  vlb_image_name:
+    type: string
+    label: Image name or ID
+    description: Image to be used for compute instance
+  vlb_flavor_name:
+    type: string
+    label: Flavor
+    description: Type of instance (flavor) to be used
+  public_net_id:
+    type: string
+    label: Public network name or ID
+    description: Public network that enables remote connection to VNF
+  vlb_private_net_id:
+    type: string
+    label: vLoadBalancer private network name or ID
+    description: Private network that connects vLoadBalancer with vDNSs
+  ecomp_private_net_id:
+    type: string
+    label: ECOMP management network name or ID
+    description: Private network that connects ECOMP component and the VNF
+  ecomp_private_subnet_id:
+    type: string
+    label: ECOMP management sub-network name or ID
+    description: Private sub-network that connects ECOMP component and the VNF
+  vlb_private_net_cidr:
+    type: string
+    label: vLoadBalancer private network CIDR
+    description: The CIDR of the vLoadBalancer private network
+  ecomp_private_net_cidr:
+    type: string
+    label: ECOMP private network CIDR
+    description: The CIDR of the protected private network
+  vlb_private_ip_0:
+    type: string
+    label: vLoadBalancer private IP address towards the private network
+    description: Private IP address that is assigned to the vLoadBalancer to communicate with the vDNSs
+  vlb_private_ip_1:
+    type: string
+    label: vLoadBalancer private IP address towards the ECOMP management network
+    description: Private IP address that is assigned to the vLoadBalancer to communicate with ECOMP components
+  vdns_private_ip_0:
+    type: string
+    label: vDNS private IP address towards the private network
+    description: Private IP address that is assigned to the vDNS to communicate with the vLoadBalancer
+  vdns_private_ip_1:
+    type: string
+    label: vDNS private IP address towards the ECOMP management network
+    description: Private IP address that is assigned to the vDNS to communicate with ECOMP components
+  vlb_name_0:
+    type: string
+    label: vLoadBalancer name
+    description: Name of the vLoadBalancer
+  vdns_name_0:
+    type: string
+    label: vDNS name
+    description: Name of the vDNS
+  vnf_id:
+    type: string
+    label: VNF ID
+    description: The VNF ID is provided by ECOMP
+  vf_module_id:
+    type: string
+    label: vFirewall module ID
+    description: The vLoadBalancer Module ID is provided by ECOMP
+  dcae_collector_ip:
+    type: string
+    label: DCAE collector IP address
+    description: IP address of the DCAE collector
+  dcae_collector_port:
+    type: string
+    label: DCAE collector port
+    description: Port of the DCAE collector
+  key_name:
+    type: string
+    label: Key pair name
+    description: Public/Private key pair name
+  pub_key:
+    type: string
+    label: Public key
+    description: Public key to be installed on the compute instance
+  repo_url_blob:
+    type: string
+    label: Repository URL
+    description: URL of the repository that hosts the demo packages
+  repo_url_artifacts:
+    type: string
+    label: Repository URL
+    description: URL of the repository that hosts the demo packages
+  demo_artifacts_version:
+    type: string
+    label: Artifacts version used in demo vnfs
+    description: Artifacts (jar, tar.gz) version used in demo vnfs
+
+resources:
+
+  random-str:
+    type: OS::Heat::RandomString
+    properties:
+      length: 4
+  
+  my_keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name: 
+        str_replace:
+          template: base_rand
+          params:
+            base: { get_param: key_name }
+            rand: { get_resource: random-str }  
+      public_key: { get_param: pub_key }
+      save_private_key: false
+
+  vlb_private_network:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: vlb_private_net_id }
+
+  vlb_private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: { get_param: vlb_private_net_id }
+      network_id: { get_resource: vlb_private_network }
+      cidr: { get_param: vlb_private_net_cidr }
+
+  vlb_0:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: vlb_image_name }
+      flavor: { get_param: vlb_flavor_name }
+      name: { get_param: vlb_name_0 }
+      key_name: { get_resource: my_keypair }
+      networks:
+        - network: { get_param: public_net_id }
+        - port: { get_resource: vlb_private_0_port }
+        - port: { get_resource: vlb_private_1_port }
+      metadata: {vnf_id: { get_param: vnf_id }, vf_module_id: { get_param: vf_module_id }}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __dcae_collector_ip__: { get_param: dcae_collector_ip }
+            __dcae_collector_port__: { get_param: dcae_collector_port }
+            __local_private_ipaddr__: { get_param: vlb_private_ip_0 }
+            __repo_url_blob__ : { get_param: repo_url_blob }
+            __repo_url_artifacts__ : { get_param: repo_url_artifacts }
+            __demo_artifacts_version__ : { get_param: demo_artifacts_version }
+          template: |
+            #!/bin/bash
+
+            DCAE_COLLECTOR_IP=__dcae_collector_ip__
+            DCAE_COLLECTOR_PORT=__dcae_collector_port__
+            LOCAL_PRIVATE_IPADDR=__local_private_ipaddr__
+            REPO_URL_BLOB=__repo_url_blob__
+            REPO_URL_ARTIFACTS=__repo_url_artifacts__
+            DEMO_ARTIFACTS_VERSION=__demo_artifacts_version__
+
+            # Download required dependencies
+            add-apt-repository -y ppa:openjdk-r/ppa
+            apt-get update
+            apt-get install -y make gcc wget openjdk-8-jdk bridge-utils libcurl4-openssl-dev apt-transport-https ca-certificates
+            apt-get install -y maven
+            sleep 1
+
+            # Download vLB demo code for load balancer
+            mkdir /opt/config
+            mkdir /opt/FDserver
+            cd /opt
+
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/v_lb_init.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/vlb.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/dnsmembership.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/add_dns.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/remove_dns.sh
+
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.vlb:dns-manager:$DEMO_ARTIFACTS_VERSION:jar -Dtransitive=false -Ddest=.
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.ves:ves:$DEMO_ARTIFACTS_VERSION:tar.gz:demo -Dtransitive=false -Ddest=.
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.ves:ves_vlb_reporting:$DEMO_ARTIFACTS_VERSION:tar.gz:demo -Dtransitive=false -Ddest=.
+
+            tar -zxvf ves-$DEMO_ARTIFACTS_VERSION-demo.tar.gz
+            mv ves-$DEMO_ARTIFACTS_VERSION VES
+            tar -zxvf ves_vlb_reporting-$DEMO_ARTIFACTS_VERSION-demo.tar.gz
+            mv ves_vlb_reporting-$DEMO_ARTIFACTS_VERSION VESreporting_vLB
+
+            mv VESreporting_vLB /opt/VES/code/evel_training/VESreporting
+            mv dns-manager-$DEMO_ARTIFACTS_VERSION.jar /opt/FDserver/dns-manager-$DEMO_ARTIFACTS_VERSION.jar
+            mv dnsmembership.sh /opt/FDserver/dnsmembership.sh
+            mv add_dns.sh /opt/FDserver/add_dns.sh
+            mv remove_dns.sh /opt/FDserver/remove_dns.sh
+            rm *.tar.gz
+
+            chmod +x v_lb_init.sh
+            chmod +x vlb.sh
+            chmod +x /opt/VES/code/evel_training/VESreporting/go-client.sh
+            chmod +x /opt/FDserver/dnsmembership.sh
+            chmod +x /opt/FDserver/add_dns.sh
+            chmod +x /opt/FDserver/remove_dns.sh
+
+            echo $DCAE_COLLECTOR_IP > config/dcae_collector_ip.txt
+            echo $DCAE_COLLECTOR_PORT > config/dcae_collector_port.txt
+            echo $LOCAL_PRIVATE_IPADDR > config/local_private_ipaddr.txt
+            LOCAL_PUBLIC_IPADDR=$(ifconfig eth0 | grep "inet addr" | tr -s ' ' | cut -d' ' -f3 | cut -d':' -f2)
+            echo $LOCAL_PUBLIC_IPADDR > config/local_public_ipaddr.txt
+            echo $DEMO_ARTIFACTS_VERSION > config/artifacts_version.txt
+
+            # Install VPP
+            export UBUNTU="trusty"
+            export RELEASE=".stable.1609"
+            rm /etc/apt/sources.list.d/99fd.io.list
+            echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
+            apt-get update
+            apt-get install -y vpp vpp-dpdk-dkms vpp-lib vpp-dbg vpp-plugins vpp-dev
+            sleep 1
+
+            # Install VES
+            cd /opt/VES/bldjobs/
+            make clean
+            make
+            sleep 1
+
+            # Run instantiation script
+            cd /opt            
+            mv vlb.sh /etc/init.d
+            update-rc.d vlb.sh defaults
+            ./v_lb_init.sh
+
+  vlb_private_0_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: vlb_private_network }
+      fixed_ips: [{"subnet": { get_resource: vlb_private_subnet }, "ip_address": { get_param: vlb_private_ip_0 }}]
+
+  vlb_private_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: ecomp_private_net_id }
+      fixed_ips: [{"subnet": { get_param: ecomp_private_subnet_id }, "ip_address": { get_param: vlb_private_ip_1 }}]
+
+  vdns_0:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: vlb_image_name }
+      flavor: { get_param: vlb_flavor_name }
+      name: { get_param: vdns_name_0 }
+      key_name: { get_resource: my_keypair }
+      networks:
+        - network: { get_param: public_net_id }
+        - port: { get_resource: vdns_private_0_port }
+        - port: { get_resource: vdns_private_1_port }
+      metadata: {vnf_id: { get_param: vnf_id }, vf_module_id: { get_param: vf_module_id }}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __lb_oam_int__ : { get_param: vlb_private_ip_1 }
+            __lb_private_ipaddr__: { get_param: vlb_private_ip_0 }
+            __local_private_ipaddr__: { get_param: vdns_private_ip_0 }
+            __repo_url_blob__ : { get_param: repo_url_blob }
+            __repo_url_artifacts__ : { get_param: repo_url_artifacts }
+            __demo_artifacts_version__ : { get_param: demo_artifacts_version }
+          template: |
+            #!/bin/bash
+
+            LB_OAM_INT=__lb_oam_int__
+            LB_PRIVATE_IPADDR=__lb_private_ipaddr__
+            LOCAL_PRIVATE_IPADDR=__local_private_ipaddr__
+            REPO_URL_BLOB=__repo_url_blob__
+            REPO_URL_ARTIFACTS=__repo_url_artifacts__
+            DEMO_ARTIFACTS_VERSION=__demo_artifacts_version__
+
+            # Download required dependencies
+            add-apt-repository -y ppa:openjdk-r/ppa
+            apt-get update
+            apt-get install -y wget openjdk-8-jdk bind9 bind9utils bind9-doc apt-transport-https ca-certificates
+            apt-get install -y maven
+            sleep 1
+
+            # Download vDNS demo code for DNS Server
+            mkdir /opt/config
+            mkdir /opt/FDclient
+            cd /opt
+            
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/v_dns_init.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/vdns.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/dnsclient.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/set_gre_tunnel.sh
+            
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.vlb:dns-client:$DEMO_ARTIFACTS_VERSION:jar -Dtransitive=false -Ddest=.
+
+            mv dns-client-$DEMO_ARTIFACTS_VERSION.jar /opt/FDclient/
+            mv dnsclient.sh /opt/FDclient/
+            mv set_gre_tunnel.sh /opt/FDclient/
+
+            chmod +x v_dns_init.sh
+            chmod +x vdns.sh
+            chmod +x /opt/FDclient/dnsclient.sh
+            chmod +x /opt/FDclient/set_gre_tunnel.sh
+
+            echo $LB_OAM_INT > config/lb_oam_int.txt
+            echo $LB_PRIVATE_IPADDR > config/lb_private_ipaddr.txt
+            echo $LOCAL_PRIVATE_IPADDR > config/local_private_ipaddr.txt
+            echo $DEMO_ARTIFACTS_VERSION > config/artifacts_version.txt
+
+            # Download Bind config files
+            cd /opt/config
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/db_dnsdemo_openecomp_org
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/named.conf.options
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vlb/$DEMO_ARTIFACTS_VERSION/named.conf.local
+
+            # Configure Bind
+            modprobe ip_gre
+            mkdir /etc/bind/zones
+            sed -i "s/OPTIONS=.*/OPTIONS=\"-4 -u bind\"/g" /etc/default/bind9
+            mv db_dnsdemo_openecomp_org /etc/bind/zones/db.dnsdemo.openecomp.org
+            mv named.conf.options /etc/bind/
+            mv named.conf.local /etc/bind/
+            sleep 1
+
+            # Run instantiation script
+            cd /opt
+            mv vdns.sh /etc/init.d
+            update-rc.d vdns.sh defaults
+            ./v_dns_init.sh
+
+  vdns_private_0_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: vlb_private_network }
+      fixed_ips: [{"subnet": { get_resource: vlb_private_subnet }, "ip_address": { get_param: vdns_private_ip_0 }}]
+
+  vdns_private_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: ecomp_private_net_id }
+      fixed_ips: [{"subnet": { get_param: ecomp_private_subnet_id }, "ip_address": { get_param: vdns_private_ip_1 }}]

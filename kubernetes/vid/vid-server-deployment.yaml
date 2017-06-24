@@ -1,0 +1,93 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: vid-server
+  name: vid-server
+spec:
+  selector:
+    matchLabels:
+      app: vid-server
+  template:
+    metadata:
+      labels:
+        app: vid-server
+      name: vid-server
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "vid-mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vid-server-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - env:
+        - name: ASDC_CLIENT_REST_HOST
+          value: sdc-be.onap-sdc
+        - name: ASDC_CLIENT_REST_AUTH
+          value: Basic dmlkOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU=
+        - name: ASDC_CLIENT_REST_PORT
+          value: "8080"
+        - name: VID_AAI_HOST
+          value: aai-service.onap-aai
+        - name: VID_AAI_PORT
+          value: "8443"
+        - name: VID_ECOMP_SHARED_CONTEXT_REST_URL
+          value: http://portalapps.onap-portal:8989/ECOMPPORTAL/context
+        - name: VID_MSO_SERVER_URL
+          value: http://mso.onap-mso:8080
+        - name: VID_MSO_PASS
+          value: 51515201a8d4c5c08d533db9bd1e1a9b
+        - name: MSO_DME2_SERVER_URL
+          value: http://localhost:8081
+        - name: MSO_DME2_ENABLED
+          value: "false"
+        - name: VID_ECOMP_REDIRECT_URL
+          value: http://portalapps.onap-portal:8989/ECOMPPORTAL/login.htm
+        - name: VID_ECOMP_REST_URL
+          value: http://portalapps.onap-portal:8989/ECOMPPORTAL/auxapi
+        - name: VID_CONTACT_US_LINK
+          value: https://todo_contact_us_link.com
+        - name: VID_UEB_URL_LIST
+          value: dmaap.onap-message-router
+        - name: VID_MYSQL_HOST
+          value: vid-mariadb
+        - name: VID_MYSQL_PORT
+          value: "3306"
+        - name: VID_MYSQL_DBNAME
+          value: vid_openecomp
+        - name: VID_MYSQL_USER
+          value: vidadmin
+        - name: VID_MYSQL_PASS
+          value: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+        - name: VID_MYSQL_MAXCONNECTIONS
+          value: "5"
+        image: nexus3.onap.org:10001/openecomp/vid:1.0-STAGING-latest
+        name: vid-server
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10

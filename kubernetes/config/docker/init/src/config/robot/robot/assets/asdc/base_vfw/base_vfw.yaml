@@ -1,0 +1,423 @@
+heat_template_version: 2013-05-23
+
+description: Heat template to deploy vFirewall demo app for OpenECOMP
+
+parameters:
+  vfw_image_name:
+    type: string
+    label: Image name or ID
+    description: Image to be used for compute instance
+  vfw_flavor_name:
+    type: string
+    label: Flavor
+    description: Type of instance (flavor) to be used
+  public_net_id:
+    type: string
+    label: Public network name or ID
+    description: Public network that enables remote connection to VNF
+  unprotected_private_net_id:
+    type: string
+    label: Unprotected private network name or ID
+    description: Private network that connects vPacketGenerator with vFirewall
+  protected_private_net_id:
+    type: string
+    label: Protected private network name or ID
+    description: Private network that connects vFirewall with vSink
+  ecomp_private_net_id:
+    type: string
+    label: ECOMP management network name or ID
+    description: Private network that connects ECOMP component and the VNF
+  ecomp_private_subnet_id:
+    type: string
+    label: ECOMP management sub-network name or ID
+    description: Private sub-network that connects ECOMP component and the VNF
+  unprotected_private_net_cidr:
+    type: string
+    label: Unprotected private network CIDR
+    description: The CIDR of the unprotected private network
+  protected_private_net_cidr:
+    type: string
+    label: Protected private network CIDR
+    description: The CIDR of the protected private network
+  ecomp_private_net_cidr:
+    type: string
+    label: ECOMP private network CIDR
+    description: The CIDR of the protected private network
+  vfw_private_ip_0:
+    type: string
+    label: vFirewall private IP address towards the unprotected network
+    description: Private IP address that is assigned to the vFirewall to communicate with the vPacketGenerator
+  vfw_private_ip_1:
+    type: string
+    label: vFirewall private IP address towards the protected network
+    description: Private IP address that is assigned to the vFirewall to communicate with the vSink
+  vfw_private_ip_2:
+    type: string
+    label: vFirewall private IP address towards the ECOMP management network
+    description: Private IP address that is assigned to the vFirewall to communicate with ECOMP components
+  vpg_private_ip_0:
+    type: string
+    label: vPacketGenerator private IP address towards the unprotected network
+    description: Private IP address that is assigned to the vPacketGenerator to communicate with the vFirewall
+  vpg_private_ip_1:
+    type: string
+    label: vPacketGenerator private IP address towards the ECOMP management network
+    description: Private IP address that is assigned to the vPacketGenerator to communicate with ECOMP components
+  vsn_private_ip_0:
+    type: string
+    label: vSink private IP address towards the protected network
+    description: Private IP address that is assigned to the vSink to communicate with the vFirewall
+  vsn_private_ip_1:
+    type: string
+    label: vSink private IP address towards the ECOMP management network
+    description: Private IP address that is assigned to the vSink to communicate with ECOMP components
+  vfw_name_0:
+    type: string
+    label: vFirewall name
+    description: Name of the vFirewall
+  vpg_name_0:
+    type: string
+    label: vPacketGenerator name
+    description: Name of the vPacketGenerator
+  vsn_name_0:
+    type: string
+    label: vSink name
+    description: Name of the vSink
+  vnf_id:
+    type: string
+    label: VNF ID
+    description: The VNF ID is provided by ECOMP
+  vf_module_id:
+    type: string
+    label: vFirewall module ID
+    description: The vFirewall Module ID is provided by ECOMP
+  dcae_collector_ip:
+    type: string
+    label: DCAE collector IP address
+    description: IP address of the DCAE collector
+  dcae_collector_port:
+    type: string
+    label: DCAE collector port
+    description: Port of the DCAE collector
+  key_name:
+    type: string
+    label: Key pair name
+    description: Public/Private key pair name
+  pub_key:
+    type: string
+    label: Public key
+    description: Public key to be installed on the compute instance
+  repo_url_blob:
+    type: string
+    label: Repository URL
+    description: URL of the repository that hosts the demo packages
+  repo_url_artifacts:
+    type: string
+    label: Repository URL
+    description: URL of the repository that hosts the demo packages
+  demo_artifacts_version:
+    type: string
+    label: Artifacts version used in demo vnfs
+    description: Artifacts (jar, tar.gz) version used in demo vnfs
+
+resources:
+  
+  random-str:
+    type: OS::Heat::RandomString
+    properties:
+      length: 4
+
+  my_keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name: 
+        str_replace:
+          template: base_rand
+          params:
+            base: { get_param: key_name }
+            rand: { get_resource: random-str }  
+      public_key: { get_param: pub_key }
+      save_private_key: false
+
+  unprotected_private_network:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: unprotected_private_net_id }
+
+  protected_private_network:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: protected_private_net_id }
+
+  unprotected_private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: unprotected_private_network }
+      cidr: { get_param: unprotected_private_net_cidr }
+
+  protected_private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: protected_private_network }
+      cidr: { get_param: protected_private_net_cidr }
+
+  vfw_0:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: vfw_image_name }
+      flavor: { get_param: vfw_flavor_name }
+      name: { get_param: vfw_name_0 }
+      key_name: { get_resource: my_keypair }
+      networks:
+        - network: { get_param: public_net_id }
+        - port: { get_resource: vfw_private_0_port }
+        - port: { get_resource: vfw_private_1_port }
+        - port: { get_resource: vfw_private_2_port }
+      metadata: {vnf_id: { get_param: vnf_id }, vf_module_id: { get_param: vf_module_id }}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __dcae_collector_ip__ : { get_param: dcae_collector_ip }
+            __dcae_collector_port__ : { get_param: dcae_collector_port }
+            __repo_url_blob__ : { get_param: repo_url_blob }
+            __repo_url_artifacts__ : { get_param: repo_url_artifacts }
+            __demo_artifacts_version__ : { get_param: demo_artifacts_version }
+          template: |
+            #!/bin/bash
+
+            DCAE_COLLECTOR_IP=__dcae_collector_ip__
+            DCAE_COLLECTOR_PORT=__dcae_collector_port__
+            REPO_URL_BLOB=__repo_url_blob__
+            REPO_URL_ARTIFACTS=__repo_url_artifacts__
+            DEMO_ARTIFACTS_VERSION=__demo_artifacts_version__
+
+            # Download required dependencies
+            add-apt-repository -y ppa:openjdk-r/ppa
+            apt-get update
+            apt-get install -y make wget openjdk-8-jdk gcc libcurl4-openssl-dev python-pip bridge-utils apt-transport-https ca-certificates
+            apt-get install -y maven
+            pip install jsonschema
+
+            # Download vFirewall code for virtual firewall
+            mkdir /opt/config
+            mkdir /opt/honeycomb
+            cd /opt
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/v_firewall_init.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/vfirewall.sh
+
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf:sample-distribution:$DEMO_ARTIFACTS_VERSION:tar.gz:hc -Dtransitive=false -Ddest=.
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.ves:ves:$DEMO_ARTIFACTS_VERSION:tar.gz:demo -Dtransitive=false -Ddest=.
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.ves:ves_vfw_reporting:$DEMO_ARTIFACTS_VERSION:tar.gz:demo -Dtransitive=false -Ddest=.
+
+            
+            tar -zxvf ves-$DEMO_ARTIFACTS_VERSION-demo.tar.gz
+            mv ves-$DEMO_ARTIFACTS_VERSION VES
+            tar -zxvf ves_vfw_reporting-$DEMO_ARTIFACTS_VERSION-demo.tar.gz
+            mv ves_vfw_reporting-$DEMO_ARTIFACTS_VERSION VESreporting_vFW
+            tar -zxvf sample-distribution-$DEMO_ARTIFACTS_VERSION-hc.tar.gz
+            mv sample-distribution-$DEMO_ARTIFACTS_VERSION honeycomb
+            sed -i 's/"restconf-binding-address": "127.0.0.1",/"restconf-binding-address": "0.0.0.0",/g' honeycomb/sample-distribution-$DEMO_ARTIFACTS_VERSION/config/honeycomb.json
+            mv VESreporting_vFW /opt/VES/code/evel_training/VESreporting
+            rm *.tar.gz
+            chmod +x v_firewall_init.sh
+            chmod +x vfirewall.sh
+            echo $DCAE_COLLECTOR_IP > config/dcae_collector_ip.txt
+            echo $DCAE_COLLECTOR_PORT > config/dcae_collector_port.txt
+            echo $DEMO_ARTIFACTS_VERSION > config/artifacts_version.txt
+
+            # Install VPP
+            export UBUNTU="trusty"
+            export RELEASE=".stable.1609"
+            rm /etc/apt/sources.list.d/99fd.io.list
+            echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
+            apt-get update
+            apt-get install -y vpp vpp-dpdk-dkms vpp-lib vpp-dbg vpp-plugins vpp-dev
+            sleep 1
+
+            # Install VES
+            cd /opt/VES/bldjobs/
+            make clean
+            make
+            sleep 1
+
+            # Run instantiation script
+            cd /opt
+            mv vfirewall.sh /etc/init.d
+            update-rc.d vfirewall.sh defaults
+            ./v_firewall_init.sh
+
+  vfw_private_0_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: unprotected_private_network }
+      fixed_ips: [{"subnet": { get_resource: unprotected_private_subnet }, "ip_address": { get_param: vfw_private_ip_0 }}]
+
+  vfw_private_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: protected_private_network }
+      fixed_ips: [{"subnet": { get_resource: protected_private_subnet }, "ip_address": { get_param: vfw_private_ip_1 }}]
+
+  vfw_private_2_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: ecomp_private_net_id }
+      fixed_ips: [{"subnet": { get_param: ecomp_private_subnet_id }, "ip_address": { get_param: vfw_private_ip_2 }}]
+
+  vpg_0:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: vfw_image_name }
+      flavor: { get_param: vfw_flavor_name }
+      name: { get_param: vpg_name_0 }
+      key_name: { get_resource: my_keypair }
+      networks:
+        - network: { get_param: public_net_id }
+        - port: { get_resource: vpg_private_0_port }
+        - port: { get_resource: vpg_private_1_port }
+      metadata: {vnf_id: { get_param: vnf_id }, vf_module_id: { get_param: vf_module_id }}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __fw_ipaddr__: { get_param: vfw_private_ip_0 }
+            __protected_net_cidr__: { get_param: protected_private_net_cidr }
+            __sink_ipaddr__: { get_param: vsn_private_ip_0 }
+            __repo_url_blob__ : { get_param: repo_url_blob }
+            __repo_url_artifacts__ : { get_param: repo_url_artifacts }
+            __demo_artifacts_version__ : { get_param: demo_artifacts_version }
+          template: |
+            #!/bin/bash
+
+            FW_IPADDR=__fw_ipaddr__
+            PROTECTED_NET_CIDR=__protected_net_cidr__
+            SINK_IPADDR=__sink_ipaddr__
+            REPO_URL_BLOB=__repo_url_blob__
+            REPO_URL_ARTIFACTS=__repo_url_artifacts__
+            DEMO_ARTIFACTS_VERSION=__demo_artifacts_version__
+
+            # Download required dependencies
+            add-apt-repository -y ppa:openjdk-r/ppa
+            apt-get update
+            apt-get install -y make wget openjdk-8-jdk gcc libcurl4-openssl-dev python-pip bridge-utils apt-transport-https ca-certificates
+            apt-get install -y maven
+            pip install jsonschema
+
+            # Download vFirewall demo code for packet generator
+            mkdir /opt/config
+            mkdir /opt/honeycomb
+            cd /opt
+
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/v_packetgen_init.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/vpacketgen.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/run_traffic_fw_demo.sh
+
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf:sample-distribution:$DEMO_ARTIFACTS_VERSION:tar.gz:hc -Dtransitive=false -Ddest=.
+            mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -DremoteRepositories=$REPO_URL_ARTIFACTS -Dartifact=org.openecomp.demo.vnf.vfw:vfw_pg_streams:$DEMO_ARTIFACTS_VERSION:tar.gz:demo -Dtransitive=false -Ddest=.
+
+
+            tar -zxvf sample-distribution-$DEMO_ARTIFACTS_VERSION-hc.tar.gz
+            tar -zxvf vfw_pg_streams-$DEMO_ARTIFACTS_VERSION-demo.tar.gz 
+            mv vfw_pg_streams-$DEMO_ARTIFACTS_VERSION pg_streams
+            mv sample-distribution-$DEMO_ARTIFACTS_VERSION honeycomb
+            sed -i 's/"restconf-binding-address": "127.0.0.1",/"restconf-binding-address": "0.0.0.0",/g' honeycomb/sample-distribution-$DEMO_ARTIFACTS_VERSION/config/honeycomb.json
+            rm *.tar.gz
+            chmod +x v_packetgen_init.sh
+            chmod +x vpacketgen.sh
+            echo $FW_IPADDR > config/fw_ipaddr.txt
+            echo $PROTECTED_NET_CIDR > config/protected_net_cidr.txt
+            echo $SINK_IPADDR > config/sink_ipaddr.txt
+            echo $DEMO_ARTIFACTS_VERSION > config/artifacts_version.txt
+
+            # Install VPP
+            export UBUNTU="trusty"
+            export RELEASE=".stable.1609"
+            rm /etc/apt/sources.list.d/99fd.io.list
+            echo "deb [trusted=yes] https://nexus.fd.io/content/repositories/fd.io$RELEASE.ubuntu.$UBUNTU.main/ ./" | sudo tee -a /etc/apt/sources.list.d/99fd.io.list
+            apt-get update
+            apt-get install -y vpp vpp-dpdk-dkms vpp-lib vpp-dbg vpp-plugins vpp-dev
+            sleep 1
+
+            # Run instantiation script
+            cd /opt
+            mv vpacketgen.sh /etc/init.d
+            update-rc.d vpacketgen.sh defaults
+            ./v_packetgen_init.sh
+
+  vpg_private_0_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: unprotected_private_network }
+      fixed_ips: [{"subnet": { get_resource: unprotected_private_subnet }, "ip_address": { get_param: vpg_private_ip_0 }}]
+
+  vpg_private_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: ecomp_private_net_id }
+      fixed_ips: [{"subnet": { get_param: ecomp_private_subnet_id }, "ip_address": { get_param: vpg_private_ip_1 }}]
+
+  vsn_0:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: vfw_image_name }
+      flavor: { get_param: vfw_flavor_name }
+      name: { get_param: vsn_name_0 }
+      key_name: { get_resource: my_keypair }
+      networks:
+        - network: { get_param: public_net_id }
+        - port: { get_resource: vsn_private_0_port }
+        - port: { get_resource: vsn_private_1_port }
+      metadata: {vnf_id: { get_param: vnf_id }, vf_module_id: { get_param: vf_module_id }}
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __protected_net_gw__: { get_param: vfw_private_ip_1 }
+            __unprotected_net__: { get_param: unprotected_private_net_cidr }
+            __repo_url_blob__ : { get_param: repo_url_blob }
+            __repo_url_artifacts__ : { get_param: repo_url_artifacts }
+            __demo_artifacts_version__ : { get_param: demo_artifacts_version }
+          template: |
+            #!/bin/bash
+
+            PROTECTED_NET_GW=__protected_net_gw__
+            UNPROTECTED_NET=__unprotected_net__
+            UNPROTECTED_NET=$(echo $UNPROTECTED_NET | cut -d'/' -f1)
+            REPO_URL_BLOB=__repo_url_blob__
+            REPO_URL_ARTIFACTS=__repo_url_artifacts__
+            DEMO_ARTIFACTS_VERSION=__demo_artifacts_version__
+
+            # Download required dependencies
+            add-apt-repository -y ppa:openjdk-r/ppa
+            apt-get update
+            apt-get install -y make wget openjdk-8-jdk apt-transport-https ca-certificates darkstat
+
+            # Configure and run darkstat
+            sed -i "s/START_DARKSTAT=.*/START_DARKSTAT=yes/g" /etc/darkstat/init.cfg
+            sed -i "s/INTERFACE=.*/INTERFACE=\"-i eth1\"/g" /etc/darkstat/init.cfg
+            /etc/init.d/darkstat start
+
+            mkdir /opt/config
+            cd /opt
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/v_sink_init.sh
+            wget $REPO_URL_BLOB/org.openecomp.demo/vnfs/vfw/$DEMO_ARTIFACTS_VERSION/vsink.sh
+            chmod +x v_sink_init.sh
+            chmod +x vsink.sh
+            echo $PROTECTED_NET_GW > config/protected_net_gw.txt
+            echo $UNPROTECTED_NET > config/unprotected_net.txt
+            mv vsink.sh /etc/init.d
+            update-rc.d vsink.sh defaults
+            ./v_sink_init.sh
+
+  vsn_private_0_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: protected_private_network }
+      fixed_ips: [{"subnet": { get_resource: protected_private_subnet }, "ip_address": { get_param: vsn_private_ip_0 }}]
+
+  vsn_private_1_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_param: ecomp_private_net_id }
+      fixed_ips: [{"subnet": { get_param: ecomp_private_subnet_id }, "ip_address": { get_param: vsn_private_ip_1 }}]

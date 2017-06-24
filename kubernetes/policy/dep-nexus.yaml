@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nexus
+spec:
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+      name: nexus
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "nexus-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - bash -c "/opt/nexus/nexus-2.14.2-01/bin/nexus start && sleep 1000d"
+        image: nexus3.onap.org:10001/openecomp/policy/policy-nexus:1.0-STAGING-latest
+        name: nexus

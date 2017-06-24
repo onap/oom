@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: robot
+spec:
+  selector:
+    matchLabels:
+      app: robot
+  template:
+    metadata:
+       labels:
+        app: robot
+       name: robot
+    spec:
+      containers:
+      - image: nexus3.onap.org:10001/openecomp/testsuite:1.0-STAGING-latest
+        name: robot
+        volumeMounts:
+        - name: robot-eteshare
+          mountPath: /share
+        - name: robot-assets
+          mountPath: /var/opt/OpenECOMP_ETE/robot/assets
+        - name: robot-resources
+          mountPath: /var/opt/OpenECOMP_ETE/robot/resources
+        - name: robot-testsuites
+          mountPath: /var/opt/OpenECOMP_ETE/robot/testsuites
+        - name: lighttpd-authorization
+          mountPath: /etc/lighttpd/authorization
+        ports:
+        - containerPort: 88
+        readinessProbe:
+          tcpSocket:
+            port: 88
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: robot-eteshare
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/robot/eteshare
+        - name: robot-assets
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/robot/robot/assets
+        - name: robot-resources
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/robot/robot/resources
+        - name: robot-testsuites
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/robot/robot/testsuites
+        - name: lighttpd-authorization
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/robot/authorization

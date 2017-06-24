@@ -1,0 +1,76 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: sdc-kb
+  name: sdc-kb
+spec:
+  selector:
+    matchLabels:
+      app: sdc-kb
+  template:
+    metadata:
+      labels:
+        app: sdc-kb
+      name: sdc-kb
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "sdc-es",
+                  "--container-name",
+                  "sdc-cs"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "sdc-kb-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - env:
+        - name: ENVNAME
+          value: AUTO
+        - name: ELASTICSEARCH_URL
+          value: http://sdc-es:9200
+        image: nexus3.onap.org:10001/openecomp/sdc-kibana:1.0-STAGING-latest
+        name: sdc-kb
+        volumeMounts:
+        - mountPath: /root/chef-solo/environments/
+          name: sdc-environments
+        - mountPath: /etc/localtime
+          name: sdc-localtime
+        - mountPath: /var/lib/jetty/logs
+          name: sdc-logs
+        ports:
+        - containerPort: 5601
+        readinessProbe:
+          tcpSocket:
+            port: 5601
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: sdc-environments
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/sdc/environments
+        - name: sdc-localtime
+          hostPath:
+            path:  /etc/localtime
+        - name:  sdc-logs
+          hostPath:
+            path:  /dockerdata-nfs/onapdemo/sdc/logs
