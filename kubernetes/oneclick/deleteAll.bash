@@ -1,6 +1,19 @@
 #!/bin/bash
+
+. $(dirname "$0")/setenv.bash
+
 delete_namespace() {
-  kubectl delete namespace $1-$2
+  _NS=$1-$2
+  kubectl delete namespace $_NS
+  printf "Waiting for namespace $_NS termination...\n"
+  while kubectl get namespaces onap-sdc > /dev/null 2>&1; do
+    sleep 2
+  done
+  printf "Namespace $_NS deleted.\n\n"
+}
+
+delete_registry_key() {
+  kubectl --namespace $1-$2 delete secret onap-docker-registry-key
 }
 
 delete_service() {
@@ -58,22 +71,20 @@ fi
 
 if [[ ! -z "$APP" ]]; then
   ONAP_APPS=($APP)
-else
-  ONAP_APPS=('sdc' 'aai' 'mso' 'message-router' 'robot' 'vid' 'sdnc' 'portal' 'policy' 'appc')
 fi
 
 printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${ONAP_APPS[@]}; do
 
+  # delete the deployments
+  /bin/bash $i.sh $NS $i 'delete'
+
   if [[ "$INCL_SVC" == true ]]; then
     printf "\nDeleting services **********\n"
     delete_service $NS $i
     delete_namespace $NS $i
   fi
-
-  # delete the deployments
-  /bin/bash $i.sh $NS $i 'delete'
 
 done
 
