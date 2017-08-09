@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: appc-dgbuilder
+spec:
+  selector:
+    matchLabels:
+      app: appc-dgbuilder
+  template:
+    metadata:
+      labels:
+        app: appc-dgbuilder
+      name: appc-dgbuilder
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "appc-db-container",
+                  "--container-name",
+                  "appc-controller-container"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "appc-dgbuilder-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - cd /opt/openecomp/sdnc/dgbuilder/ && ./start sdnc1.0 && wait
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: openECOMP1.0
+        - name: SDNC_CONFIG_DIR
+          value: /opt/openecomp/sdnc/data/properties
+        - name: APPC_CONFIG_DIR
+          value: /opt/openecomp/appc/data/properties
+        image: nexus3.onap.org:10001/openecomp/dgbuilder-sdnc-image:1.1-STAGING-latest
+        name: appc-dgbuilder-container
+        ports:
+        - containerPort: 3100
+        readinessProbe:
+          tcpSocket:
+            port: 3100
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always

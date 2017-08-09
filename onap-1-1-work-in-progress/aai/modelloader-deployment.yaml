@@ -1,0 +1,61 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: model-loader-service
+spec:
+  selector:
+    matchLabels:
+      app: model-loader-service
+  template:
+    metadata:
+      labels:
+        app: model-loader-service
+      name: model-loader-service
+    spec:
+      containers:
+      - env:
+        - name: DISTR_CLIENT_ASDC_ADDRESS
+          value: sdc-be.onap-sdc:8443
+        - name: DISTR_CLIENT_ENVIRONMENT_NAME
+          value: AUTO
+        - name: DISTR_CLIENT_USER
+          value: aai
+        - name: DISTR_CLIENT_PASSWORD
+          value: OBF:1ks51l8d1o3i1pcc1r2r1e211r391kls1pyj1z7u1njf1lx51go21hnj1y0k1mli1sop1k8o1j651vu91mxw1vun1mze1vv11j8x1k5i1sp11mjc1y161hlr1gm41m111nkj1z781pw31kku1r4p1e391r571pbm1o741l4x1ksp
+        - name: APP_SERVER_BASE_URL
+          value: https://aai-service.onap-aai:8443
+        - name: APP_SERVER_KEYSTORE_PASSWORD
+          value: OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
+        - name: APP_SERVER_AUTH_USER
+          value: ModelLoader
+        - name: APP_SERVER_AUTH_PASSWORD
+          value: OBF:1qvu1v2h1sov1sar1wfw1j7j1wg21saj1sov1v1x1qxw
+        - name: CONFIG_HOME
+          value: /opt/app/model-loader/config/
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: usr/lib/jvm/java-8-openjdk-amd64
+        image: nexus3.onap.org:10001/openecomp/model-loader:1.1-STAGING-latest
+        name: model-loader
+        volumeMounts:
+        - mountPath: /opt/app/model-loader/config/
+          name: aai-model-loader-config
+        - mountPath: /logs/
+          name: aai-model-loader-config
+      volumes:
+        - name: aai-model-loader-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/model-loader/config/
+        - name: aai-model-loader-logs
+          hostPath:
+            path: /dockerdata/onapdemo/aai/model-loader/logs/
+        ports:
+        - containerPort: 8080
+        - containerPort: 8443
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always

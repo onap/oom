@@ -1,0 +1,72 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mso
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mso
+  template:
+    metadata:
+      labels:
+        app: mso
+      name: mso
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "mso-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /docker-files/scripts/start-jboss-server.sh
+        image: nexus3.onap.org:10001/openecomp/mso:1.1-STAGING-latest
+        name: mso
+        volumeMounts:
+        - mountPath: /shared
+          name: mso
+        - mountPath: /docker-files
+          name: mso-docker-files
+        env:
+        - name: JBOSS_DEBUG
+          value: "false"
+        ports:
+        - containerPort: 3904
+        - containerPort: 3905
+        - containerPort: 8080
+        - containerPort: 9990
+        - containerPort: 8787
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: mso
+          hostPath:
+            path: /dockerdata/onapdemo/mso/mso
+        - name: mso-docker-files
+          hostPath:
+            path: /dockerdata/onapdemo/mso/docker-files

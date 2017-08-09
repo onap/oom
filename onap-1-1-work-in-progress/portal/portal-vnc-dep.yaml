@@ -1,0 +1,129 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: vnc-portal
+  name: vnc-portal
+spec:
+  selector:
+    matchLabels:
+      app: vnc-portal
+  template:
+    metadata:
+      labels:
+        app: vnc-portal
+      name: vnc-portal
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "portalapps"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vnc-portal-readiness"
+          },
+          {
+              "args": [
+                  "--container-name",
+                  "pap"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "value": "onap-policy"
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vnc-pap-readiness"
+          },
+          {
+              "args": [
+                  "--container-name",
+                  "sdc-fe"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "value": "onap-sdc"
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vnc-sdc-readiness"
+          },
+          {
+              "args": [
+                  "--container-name",
+                  "vid-server"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "value": "onap-vid"
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vnc-vid-readiness"
+          },
+          {
+              "command": ["/bin/sh","-c"],
+              "args": ["echo `host sdc-be.onap-sdc | awk ''{print$4}''` sdc.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host portalapps.onap-portal | awk ''{print$4}''` portal.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host pap.onap-policy | awk ''{print$4}''` policy.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host sdc-fe.onap-sdc | awk ''{print$4}''` sdc.ui.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host vid-server.onap-vid | awk ''{print$4}''` vid.api.simpledemo.openecomp.org >> /ubuntu-init/hosts"],
+              "image": "oomk8s/ubuntu-init:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "vnc-init-hosts",
+              "volumeMounts": [
+                {
+                  "name": "ubuntu-init",
+                  "mountPath": "/ubuntu-init/"
+                }
+              ]
+          }
+          ]'
+    spec:
+      containers:
+      - image: dorowu/ubuntu-desktop-lxde-vnc
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "cat /ubuntu-init/hosts >> /etc/hosts"]
+        env:
+        - name: VNC_PASSWORD
+          value: password
+        imagePullPolicy: IfNotPresent
+        name: vnc-portal
+        volumeMounts:
+        - mountPath: /ubuntu-init/
+          name: ubuntu-init
+        securityContext:
+          privileged: true
+      securityContext: {}
+      volumes:
+        - name: ubuntu-init
+          emptyDir: {}

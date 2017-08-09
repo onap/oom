@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: vid-mariadb
+  name: vid-mariadb
+spec:
+  selector:
+    matchLabels:
+      app: vid-mariadb
+  template:
+    metadata:
+      labels:
+        app: vid-mariadb
+      name: vid-mariadb
+    spec:
+      containers:
+      - image: mariadb:10
+        name: vid-mariadb
+        env:
+        - name: MYSQL_DATABASE
+          value: vid_openecomp
+        - name: MYSQL_USER
+          value: vidadmin
+        - name: MYSQL_PASSWORD
+          value: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+        - name: MYSQL_ROOT_PASSWORD
+          value: LF+tp_1WqgSY
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: vid-mariadb-data
+        - mountPath: /docker-entrypoint-initdb.d/vid-pre-init.sql
+          name: vid-pre-init
+        - mountPath: /etc/mysql/my.cnf
+          name: my-cnf
+        ports:
+        - containerPort: 3306
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: vid-mariadb-data
+          hostPath:
+            path: /dockerdata/onapdemo/vid/mariadb/data
+        - name: vid-pre-init
+          hostPath:
+            path: /dockerdata/onapdemo/vid/vid/lf_config/vid-pre-init.sql
+        - name: my-cnf
+          hostPath:
+            path: /dockerdata/onapdemo/vid/vid/lf_config/vid-my.cnf
