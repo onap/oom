@@ -1,0 +1,132 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: portalapps
+spec:
+  selector:
+    matchLabels:
+      app: portalapps
+  template:
+    metadata:
+       labels:
+         app: portalapps
+       name: portalapps
+       annotations:
+         pod.beta.kubernetes.io/init-containers: '[
+           {
+               "args": [
+                   "--container-name",
+                   "portaldb"
+               ],
+               "command": [
+                   "/root/ready.py"
+               ],
+               "env": [
+                   {
+                       "name": "NAMESPACE",
+                       "valueFrom": {
+                           "fieldRef": {
+                               "apiVersion": "v1",
+                               "fieldPath": "metadata.namespace"
+                           }
+                       }
+                   }
+               ],
+               "image": "oomk8s/readiness-check:1.0.0",
+               "imagePullPolicy": "Always",
+               "name": "portalapps-readiness"
+           },
+           {
+               "command": ["/bin/bash", "-c", "if [ ! -e /portal_root/boot.txt ]; then mysql -u root -ppassword -h portaldb < /portal-mysql/Apps_Users_OnBoarding_Script.sql; fi"],
+               "volumeMounts": [
+                 {
+                   "mountPath": "/portal-mysql/Apps_Users_OnBoarding_Script.sql",
+                   "name": "portal-mariadb-onboarding-sql"
+                 },
+                 {
+                   "mountPath": "/portal_root/",
+                   "name": "portal-root"
+                 }
+               ],
+               "image": "oomk8s/mariadb-client-init:1.0.0",
+               "imagePullPolicy": "Always",
+               "name": "provision-portaldb-users"
+           }
+           ]'
+    spec:
+      containers:
+      - image: nexus3.onap.org:10001/openecomp/portalapps:1.0-STAGING-latest
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "echo yes > /portal_root/boot.txt"]
+        name: portalapps
+        volumeMounts:
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPPORTALAPP/WEB-INF/fusion/conf/fusion.properties
+          name: portal-fusion-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPPORTALAPP/WEB-INF/classes/openid-connect.properties
+          name: portal-openid-connect-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPPORTALAPP/WEB-INF/conf/system.properties
+          name: portal-system-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPPORTALAPP/WEB-INF/classes/portal.properties
+          name: portal-portal-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPDBCAPP/WEB-INF/fusion/fusion.properties
+          name: dbcapp-fusion-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPDBCAPP/WEB-INF/conf/system.properties
+          name: dbcapp-system-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPDBCAPP/WEB-INF/classes/portal.properties
+          name: dbcapp-portal-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPDBCAPP/WEB-INF/dbcapp/dbcapp.properties
+          name: dbcapp-dbcapp-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPSDKAPP/WEB-INF/conf/system.properties
+          name: sdkapp-system-properties
+        - mountPath: /PROJECT/APPS/ECOMPPORTAL/ECOMPSDKAPP/WEB-INF/classes/portal.properties
+          name: sdkapp-portal-properties
+        - mountPath: /portal_root/
+          name: portal-root
+        ports:
+        - containerPort: 8005
+        - containerPort: 8009
+        - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: portal-fusion-properties
+          hostPath:
+            path:  /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/fusion.properties
+        - name: portal-openid-connect-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/openid-connect.properties
+        - name: portal-system-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/system.properties
+        - name: portal-portal-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/portal.properties
+        - name: dbcapp-fusion-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/fusion.properties
+        - name: dbcapp-system-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/system.properties
+        - name: dbcapp-portal-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/portal.properties
+        - name: dbcapp-dbcapp-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/dbcapp.properties
+        - name: sdkapp-system-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPSDKAPP/system.properties
+        - name: sdkapp-portal-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPSDKAPP/portal.properties
+        - name: portal-mariadb-onboarding-sql
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/mariadb/Apps_Users_OnBoarding_Script.sql
+        - name: portal-root
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal

@@ -1,0 +1,49 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sparky-be
+spec:
+  selector:
+    matchLabels:
+      app: sparky-be
+  template:
+    metadata:
+      labels:
+        app: sparky-be
+      name: sparky-be
+    spec:
+      containers:
+      - env:
+        - name: CONFIG_HOME
+          value: /opt/app/sparky/config/
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: usr/lib/jvm/java-8-openjdk-amd64
+        - name: KEY_MANAGER_PASSWORD
+          value: OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
+        - name: KEY_STORE_PASSWORD
+          value: OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
+        image: nexus3.onap.org:10001/openecomp/sparky-be:1.1-STAGING-latest
+        name: sparky-be
+        volumeMounts:
+        - mountPath: /opt/app/sparky/config/
+          name: aai-sparky-be-config
+        - mountPath: /logs/
+          name: aai-sparky-be-logs
+      volumes:
+        - name: aai-sparky-be-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/sparky-be/config/
+        - name: aai-sparky-be-logs
+          hostPath:
+            path: /dockerdata/onapdemo/aai/sparky-be/logs/
+        ports:
+        - containerPort: 8000
+        - containerPort: 9517
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always
