@@ -1,0 +1,84 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: cdap1
+  name: cdap1
+  namespace: onap-dcae
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdap1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cdap1
+      name: cdap1
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "name": "create-fs",
+              "image": "nexus3.onap.org:10001/openecomp/dcae/cdap-fs:1.0.0",
+              "imagePullPolicy": "IfNotPresent",
+              "command": ["/bin/bash", "-c", "mkdir -p /cdap/{cdap1-opt-tools,cdap1-opt-data}; grep `hostname` /etc/hosts > /cdap/pod-ip/`hostname`_ip.txt; while [`ls /cdap/pod-ip | wc -l` < 3];  do sleep 1; done"],
+              "volumeMounts": [
+                {
+                  "mountPath": "/cdap",
+                  "name": "cdap-root"
+                }
+              ]
+          }
+        ]'
+    spec:
+      hostname: zldcprivatecloudtruecdap01
+      containers:
+      - image:  nexus3.onap.org:10001/openecomp/dcae/cdap:1.0.7
+        command: ["/bin/bash"]
+        args: ["-c", "cat /cdap/pod-ip/* >> /etc/hosts; /usr/local/bin/01-entrypoint.sh; sleep infinity;"]
+        imagePullPolicy: IfNotPresent
+        name: cdap1
+        ports:
+        - containerPort: 8020
+          protocol: TCP
+        - containerPort: 8025
+          protocol: TCP
+        - containerPort: 50070
+          protocol: TCP
+        - containerPort: 50075
+          protocol: TCP
+        - containerPort: 50010
+          protocol: TCP
+        - containerPort: 50020
+          protocol: TCP
+        - containerPort: 3888
+          protocol: TCP
+        - containerPort: 2888
+          protocol: TCP
+        - containerPort: 2181
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /cdap
+          name: cdap-root
+        - mountPath: /opt/tools
+          name: dcae-cdap1-opt-tools
+        - mountPath: /opt/data
+          name: dcae-cdap1-opt-data
+      volumes:
+      - name: cdap-root
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/cdap
+      - name: dcae-cdap1-opt-tools
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/cdap/cdap1-opt-tools
+      - name: dcae-cdap1-opt-data
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/cdap/cdap1-opt-data
