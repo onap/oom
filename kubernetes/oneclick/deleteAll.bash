@@ -16,7 +16,7 @@ Usage: $0 [PARAMs]
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot,
-                      vid, sdnc, portal, policy, appc
+                      vid, sdnc, portal, policy, appc, dcae
 EOF
 }
 
@@ -59,7 +59,7 @@ fi
 if [[ ! -z "$APP" ]]; then
   ONAP_APPS=($APP)
 else
-  ONAP_APPS=('sdc' 'aai' 'mso' 'message-router' 'robot' 'vid' 'sdnc' 'portal' 'policy' 'appc')
+  ONAP_APPS=('sdc' 'aai' 'mso' 'message-router' 'robot' 'vid' 'sdnc' 'portal' 'policy' 'appc' 'dcae')
 fi
 
 printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"

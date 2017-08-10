@@ -1,0 +1,73 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kafka
+  labels:
+    component: message-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+      name: kafka
+    spec:
+      containers:
+      - image:  wurstmeister/kafka:latest
+        imagePullPolicy: IfNotPresent
+        name: kafka
+        ports:
+          - containerPort: 9092
+        env:
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zookeeper.onap-dcae.svc.cluster.local:2181"
+        - name: KAFKA_ADVERTISED_HOST_NAME
+          value: "kafka"
+        - name: KAFKA_ADVERTISED_PORT
+          value: "9092"
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_PORT
+          value: "9092"
+        - name: KAFKA_VERSION
+          value: "0.8.1.1"
+        - name: SCALA_VERSION
+          value: "2.9.2"
+        - name: KAFKA_HOME
+          value: "/opt/kafka_2.9.2-0.8.1.1"
+        - name: PATH
+          value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/jdk/bin"
+        - name: JAVA_VERSION_MAJOR
+          value: "8"
+        - name: JAVA_VERSION_MINOR
+          value: "121"
+        - name: JAVA_VERSION_BUILD
+          value: "13"
+        - name: JAVA_VERSION_MINOR
+          value: "121"
+        - name: JAVA_PACKAGE
+          value: "server-jre"
+        - name: JAVA_JCE
+          value: "standard"
+        - name: JAVA_HOME
+          value: "/opt/jdk"
+        - name: GLIBC_VERSION
+          value: "2.23-r3"
+        - name: LANG
+          value: "C.UTF-8"
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-socket
+        - mountPath: /kafka
+          name: kafka-data
+      restartPolicy: Always
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: kafka-data
+        hostPath:
+          path: /dockerdata-nfs/onapdemo/dcae/message-router/kafka/data-kafka

@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dmaap
+  labels:
+    component: message-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dmaap
+  template:
+    metadata:
+      labels:
+        app: dmaap
+      name: dmaap
+    spec:
+      containers:
+      - image:  attos/dmaap:latest
+        imagePullPolicy: IfNotPresent
+        name: dmaap
+        ports:
+          - containerPort: 3904
+          - containerPort: 3905
+        env:
+        - name: PATH
+          value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        - name: LANG
+          value: "C.UTF-8"
+        - name: JAVA_HOME
+          value: "/usr/lib/jvm/java-8-openjdk-amd64"
+        - name: JAVA_VERSION
+          value: "8u111"
+        - name: JAVA_DEBIAN_VERSION
+          value: "8u111-b14-2~bpo8+1"
+        - name: CA_CERTIFICATES_JAVA_VERSION
+          value: "20140324"
+        volumeMounts:
+        - mountPath: /appl/dmaapMR1/bundleconfig/etc/appprops/MsgRtrApi.properties
+          name: appprops
+        - mountPath: /appl/dmaapMR1/etc/cadi.properties
+          name: cadi
+        - mountPath: /appl/dmaapMR1/etc/keyfile
+          name: mykey
+      restartPolicy: Always
+      volumes:
+      - name: appprops
+        hostPath:
+          path: /dockerdata-nfs/onapdemo/dcae/message-router/dmaap/MsgRtrApi.properties
+      - name: cadi
+        hostPath:
+          path: /dockerdata-nfs/onapdemo/dcae/message-router/dmaap/cadi.properties
+      - name: mykey
+        hostPath:
+          path: /dockerdata-nfs/onapdemo/dcae/message-router/dmaap/mykey
