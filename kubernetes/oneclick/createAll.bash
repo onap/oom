@@ -31,6 +31,28 @@ create_service() {
   mv ../$2/all-services.yaml-- ../$2/all-services.yaml
 }
 
+configure_app() {
+  # if previous configuration exists put back original template file
+  for file in ../$2/*.yaml; do
+    if [ -e "$file-template" ]; then
+      mv "$file-template" "${file%}"
+    fi
+  done
+
+  # replace the default 'onap' namespace qualification of K8s hostnames within
+  # the config files
+  # note: this will create a '-template' file within the component's directory
+  #       this is not ideal and should be addressed (along with the replacement
+  #       of sed commands for configuration) by the future configuration
+  #       user stories (ie. OOM-51 to OOM-53)
+  find ../$2 -type f -exec sed -i -template "s/onap-/$1-/g" {} \;
+
+  # replace the default '/dockerdata-nfs/onapdemo' volume mount paths
+  find ../$2 -iname "*.yaml" -type f -exec sed -i -e 's/dockerdata-nfs\/[a-zA-Z0-9\\-]*\//dockerdata-nfs\/'"$1"'\//g' {} \;
+  rm -f ../$2/*.yaml-e
+}
+
+
 #MAINs
 NS=
 INCL_SVC=true
@@ -98,23 +120,26 @@ if [[ "$INCL_SVC" == true ]]; then
 
 fi
 
-printf "\n********** Creating up ONAP: ${ONAP_APPS[*]}\n"
+printf "\n********** Creating ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${ONAP_APPS[@]}; do
-  printf "\nCreating namespaces **********\n"
+  printf "\nCreating namespace **********\n"
   create_namespace $NS $i
 
+  printf "\nCreating registry secret **********\n"
+  create_registry_key $NS $i $ONAP_DOCKER_REGISTRY_KEY $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
+
   if [[ "$INCL_SVC" == true ]]; then
-    printf "\nCreating services **********\n"
+    printf "\nCreating service **********\n"
     create_service $NS $i $start $end
   fi
 
   printf "\n"
 done
 
-printf "\n\n********** Creating deployments for  ${ONAP_APPS[*]} ********** \n"
+printf "\n\n********** Creating deployments for ${ONAP_APPS[*]} ********** \n"
 for i in ${ONAP_APPS[@]}; do
-  create_registry_key $NS $i $ONAP_DOCKER_REGISTRY_KEY $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
+  configure_app $NS $i
   /bin/bash $i.sh $NS $i 'create'
 done
 
