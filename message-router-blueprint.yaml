@@ -1,0 +1,532 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This example deploys the OOM Message Router application. Each service/deployment pair is associated with a single Kubernetes node.
+  Node template naming convention: PROVISIONINGAPI_RESOURCETYPE_APPLICATIONCOMPONENT
+  The following resources are created:
+  - Security Group
+  - openstack_port_zookeeper - NIC that connects to the Openstack Server
+  - openstack_port_kafka - NIC that connects to the Openstack Server
+  - openstack_port_dmaap - NIC that connects to the Openstack Server
+  - openstack_server_zookeeper - a VM that a Kubernetes Node is installed on.
+  - openstack_server_kafka - a VM that a Kubernetes Node is installed on.
+  - openstack_server_dmaap - a VM that a Kubernetes Node is installed on.
+  - kubernetes_node_zookeeper - a Kubernetes node that will join the Kubernetes cluster.
+  - kubernetes_node_kafka - a Kubernetes node that will join the Kubernetes cluster.
+  - kubernetes_node_dmaap - a Kubernetes node that will join the Kubernetes cluster.
+  - kubernetes_deployment_zookeeper - a Kubernetes deployment.
+  - kubernetes_deployment_kafka - a Kubernetes deployment.
+  - kubernetes_deployment_dmaap - a Kubernetes deployment.
+  - kubernetes_service_zookeeper - a Kubernetes service.
+  - kubernetes_service_kafka - a Kubernetes service.
+  - kubernetes_service_dmaap - a Kubernetes service.
+  The following pre-setup steps are assumed, but not required:
+  - Create Cloudify Example Environment: https://github.com/cloudify-examples/cloudify-environment-setup.
+  - Create Kubernetes Cluster: https://github.com/cloudify-examples/simple-kubernetes-blueprint.
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
+  # Plugin required: https://github.com/cloudify-cosmo/cloudify-openstack-plugin/releases/download/2.2.0/cloudify_openstack_plugin-2.2.0-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.2.0/plugin.yaml
+  # Plugin required: https://github.com/cloudify-incubator/cloudify-utilities-plugin/releases/download/1.2.5/cloudify_utilities_plugin-1.2.5-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.2.5/plugin.yaml
+  # Plugin required: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/releases/download/1.2.0/cloudify_kubernetes_plugin-1.2.0-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0/plugin.yaml
+  # Plugin required: http://repository.cloudifysource.org/cloudify/wagons/cloudify-diamond-plugin/1.3.5/cloudify_diamond_plugin-1.3.5-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-diamond-plugin/1.3.5/plugin.yaml
+  # Plugin required: http://repository.cloudifysource.org/cloudify/wagons/cloudify-fabric-plugin/1.5/cloudify_fabric_plugin-1.5-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-fabric-plugin/1.5/plugin.yaml
+  - cloudify/types/kubernetes.yaml
+
+inputs:
+
+  configuration_file_content:
+    type: string
+
+  NS:
+    default: oom
+
+  image:
+    description: Image to be used when launching agent VMs
+    default: { get_secret: centos_core_image }
+
+  flavor:
+    description: Flavor of the agent VMs
+    default: { get_secret: large_image_flavor }
+
+  agent_user:
+    description: >
+      User for connecting to agent VMs
+    default: centos
+
+  app_name:
+    default: message-router
+
+  security_group:
+    default: { concat: [ 'secgrp_', { get_input: app_name } ] }
+
+dsl_definitions:
+
+  openstack_config: &openstack_config
+    username: { get_secret: keystone_username }
+    password: { get_secret: keystone_password }
+    tenant_name: { get_secret: keystone_tenant_name }
+    auth_url: { get_secret: keystone_url }
+    region: { get_secret: region }
+
+groups:
+
+  openstack_server_port_group_zookeeper:
+    members:
+      - openstack_server_zookeeper
+      - openstack_port_zookeeper
+
+  openstack_server_port_group_kafka:
+    members:
+      - openstack_server_kafka
+      - openstack_port_kafka
+
+  openstack_server_port_group_dmaap:
+    members:
+      - openstack_server_dmaap
+      - openstack_port_dmaap
+
+policies:
+
+  openstack_server_port_policies_scaling:
+    type: cloudify.policies.scaling
+    properties:
+      default_instances:  1
+    targets:
+    - openstack_server_port_group_zookeeper
+    - openstack_server_port_group_kafka
+    - openstack_server_port_group_dmaap
+
+node_templates:
+
+  kubernetes_service_zookeeper:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: zookeeper
+          labels:
+            app: zookeeper
+        spec:
+          ports:
+          - name: zookeeper1
+            port: 2181
+          selector:
+            app: zookeeper
+          clusterIP: None
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_deployment_zookeeper
+
+  kubernetes_deployment_zookeeper:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        file:
+          resource_path: kubernetes/message-router/message-router-zookeeper.yaml
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_node_zookeeper
+
+  kubernetes_node_zookeeper:
+    type: cloudify.nodes.Kubernetes.Node
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: openstack_server_zookeeper
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            task_properties:
+              hostname: { get_attribute: [ SELF, hostname ] }
+              labels:
+                app: zookeeper
+
+  openstack_server_zookeeper:
+    type: cloudify.openstack.nodes.Server
+    properties: &openstack_server_properties
+      openstack_config: *openstack_config
+      agent_config:
+          user: { get_input: agent_user }
+          install_method: remote
+          port: 22
+          key: { get_secret: agent_key_private }
+      server:
+        key_name: ''
+        image: ''
+        flavor: ''
+      management_network_name: { get_property: [ private_network, resource_id ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - target: openstack_port_zookeeper
+        type: cloudify.openstack.server_connected_to_port
+      - type: cloudify.relationships.depends_on
+        target: cloud_init_openstack_server
+    interfaces: &openstack_server_interfaces
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              image: { get_input: image }
+              flavor: { get_input: flavor }
+              userdata: { get_attribute: [ cloud_init_openstack_server, cloud_config ] }
+      cloudify.interfaces.monitoring_agent:
+          install:
+            implementation: diamond.diamond_agent.tasks.install
+            inputs:
+              diamond_config:
+                interval: 1
+          start: diamond.diamond_agent.tasks.start
+          stop: diamond.diamond_agent.tasks.stop
+          uninstall: diamond.diamond_agent.tasks.uninstall
+      cloudify.interfaces.monitoring:
+          start:
+            implementation: diamond.diamond_agent.tasks.add_collectors
+            inputs:
+              collectors_config:
+                CPUCollector: {}
+                MemoryCollector: {}
+                LoadAverageCollector: {}
+                DiskUsageCollector:
+                  config:
+                    devices: x?vd[a-z]+[0-9]*$
+                NetworkCollector: {}
+                ProcessResourcesCollector:
+                  config:
+                    enabled: true
+                    unit: B
+                    measure_collector_time: true
+                    cpu_interval: 0.5
+                    process:
+                      hyperkube:
+                        name: hyperkube
+
+  openstack_port_zookeeper:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships: &openstack_port_relationships
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - type: cloudify.relationships.connected_to
+        target: private_network
+      - type: cloudify.relationships.depends_on
+        target: private_subnet
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: security_group
+
+  kubernetes_service_kafka:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: global-kafka
+          labels:
+            app: global-kafka
+        spec:
+          ports:
+          - name: kafka1
+            port: 9092
+          selector:
+            app: global-kafka
+          clusterIP: None
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_deployment_kafka
+
+  kubernetes_deployment_kafka:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        file:
+          resource_path: kubernetes/message-router/message-router-kafka.yaml
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_node_kafka
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_deployment_zookeeper
+
+  kubernetes_node_kafka:
+    type: cloudify.nodes.Kubernetes.Node
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: openstack_server_kafka
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            task_properties:
+              hostname: { get_attribute: [ SELF, hostname ] }
+              labels:
+                app: global-kafka
+
+  openstack_server_kafka:
+    type: cloudify.openstack.nodes.Server
+    properties: *openstack_server_properties
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - target: openstack_port_kafka
+        type: cloudify.openstack.server_connected_to_port
+      - type: cloudify.relationships.depends_on
+        target: cloud_init_openstack_server
+    interfaces: *openstack_server_interfaces
+
+  openstack_port_kafka:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships: *openstack_port_relationships
+
+  kubernetes_service_dmaap:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: dmaap
+          labels:
+            app: dmaap
+            version: 1.0.0
+        spec:
+          ports:
+          - name: mr1
+            port: 3904
+            nodePort: 30227
+          - name: mr2
+            port: 3905
+            nodePort: 30226
+          selector:
+            app: dmaap
+          type: NodePort
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_deployment_dmaap
+
+  kubernetes_deployment_dmaap:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        file:
+          resource_path: kubernetes/message-router/message-router-dmaap.yaml
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: k8s
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_node_dmaap
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_deployment_zookeeper
+
+  kubernetes_node_dmaap:
+    type: cloudify.nodes.Kubernetes.Node
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: openstack_server_dmaap
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            task_properties:
+              hostname: { get_attribute: [ SELF, hostname ] }
+              labels:
+                app: global-dmaap
+
+  openstack_server_dmaap:
+    type: cloudify.openstack.nodes.Server
+    properties: *openstack_server_properties
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: k8s_node_scaling_tier
+      - target: openstack_port_dmaap
+        type: cloudify.openstack.server_connected_to_port
+      - type: cloudify.relationships.depends_on
+        target: cloud_init_openstack_server
+    interfaces: *openstack_server_interfaces
+
+  openstack_port_dmaap:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships: *openstack_port_relationships
+
+  security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      openstack_config: *openstack_config
+      security_group:
+        name: { get_input: security_group }
+        description: kubernetes master security group
+      rules:
+      rules:
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 22
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 53
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 53
+        protocol: udp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 80
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 443
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 2379
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 4001
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 4789
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 6443
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 6783
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 6783
+        protocol: udp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 6784
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 6784
+        protocol: udp
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 8000
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 8080
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 9090
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 10250
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 2181
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 9092
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 3904
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 30227
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 3905
+      - remote_ip_prefix: 0.0.0.0/0
+        port: 30226
+
+  private_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      openstack_config: *openstack_config
+      use_external_resource: true
+      resource_id: { get_secret: private_subnet_name }
+    relationships:
+      - target: private_network
+        type: cloudify.relationships.contained_in
+
+  private_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *openstack_config
+      use_external_resource: true
+      resource_id: { get_secret: private_network_name }
+
+  external_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *openstack_config
+      use_external_resource: true
+      resource_id: { get_secret: external_network_name }
+
+  cloud_init_openstack_server:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    properties:
+      resource_config:
+        groups:
+        - docker
+        users:
+        - name: { get_input: agent_user }
+          primary-group: wheel
+          groups: docker
+          shell: /bin/bash
+          sudo: ['ALL=(ALL) NOPASSWD:ALL']
+          ssh-authorized-keys:
+            - { get_secret: agent_key_public }
+        write_files:
+        - path: /etc/yum.repos.d/kubernetes.repo
+          owner: root:root
+          permissions: '0444'
+          content: |
+            # installed by cloud-init
+            [kubernetes]
+            name=Kubernetes
+            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+            enabled=1
+            gpgcheck=1
+            repo_gpgcheck=1
+            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                   https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        packages:
+        - [epel-release]
+        - [gcc]
+        - [python-dev]
+        - [python-wheel]
+        - [python-setuptools]
+        - [libffi-devel]
+        - [python-devel]
+        - [openssl-devel]
+        - [docker, 1.12.6-28.git1398f24.el7.centos]
+        - [kubelet, 1.6.4-0]
+        - [kubeadm, 1.6.4-0]
+        - [kubectl, 1.6.4-0]
+        - [kubernetes-cni, 0.5.1-0]
+        - [git]
+        - [wget]
+        runcmd:
+        - systemctl enable docker
+        - systemctl start docker
+        - systemctl enable kubelet
+        - systemctl start kubelet
+        - yum install -y python-pip
+        - pip install --upgrade pip
+        - pip install docker-compose
+        - pip install backports.ssl_match_hostname --upgrade
+        - mkdir -p /tmp/oom/
+        - git clone https://gerrit.onap.org/r/oom.git /tmp/oom
+        - sleep 15
+        - chmod 755 /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/deploy.sh
+        - sed -i -e "s/\.\/docker_files/\/tmp\/oom\/kubernetes\/config\/docker\/init\/src\/config\/message-router\/dcae-startup-vm-message-router\/docker_files/g" /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/deploy.sh
+        - sed -i -e "s/\/opt\/docker\/docker-compose/\/bin\/docker-compose/g" /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/deploy.sh
+        - mv /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/docker_files/__docker-compose.yml /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/docker_files/docker-compose.yml
+        - mv /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/docker_files/__MsgRtrApi.properties /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/docker_files/MsgRtrApi.properties
+        - sh -c /tmp/oom/kubernetes/config/docker/init/src/config/message-router/dcae-startup-vm-message-router/deploy.sh
+
+  k8s_node_scaling_tier:
+    type: cloudify.nodes.Root
+
+  k8s:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: configuration_file_content }
+
