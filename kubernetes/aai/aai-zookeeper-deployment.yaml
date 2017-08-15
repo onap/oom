@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aai-zookeeper
+spec:
+  selector:
+    matchLabels:
+      app: aai-zookeeper
+  template:
+    metadata:
+      labels:
+        app: aai-zookeeper
+      name: aai-zookeeper
+    spec:
+      containers:
+      - env:
+        - name: ZOOKEEPER_VERSION
+          value: 3.4.9
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: usr/lib/jvm/java-8-openjdk-amd64
+        - name: ZK_HOME
+          value: /opt/zookeeper-3.4.9
+        image: nexus3.onap.org:10001/openecomp/zookeeper:latest
+        name: aai-zookeeper
+        volumeMounts:
+        - mountPath: /opt/zookeeper-3.4.9/conf/
+          name: aai-zookeeper-config
+        - mountPath: /opt/zookeeper-3.4.9/data/
+          name: aai-zookeeper-data
+      volumes:
+        - name: aai-zookeeper-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/zookeeper/config/
+        - name: aai-zookeeper-data
+          hostPath:
+            path: /dockerdata/onapdemo/aai/zookeeper/data/
+        ports:
+        - containerPort: 2181
+        - containerPort: 2888
+        - containerPort: 3888
+        - containerPort: 22
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: onap-docker-registry-key
