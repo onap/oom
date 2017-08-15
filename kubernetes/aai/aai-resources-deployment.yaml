@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aai-resources
+spec:
+  selector:
+    matchLabels:
+      app: aai-resources
+  template:
+    metadata:
+      labels:
+        app: aai-resources
+      name: aai-resources
+    spec:
+      containers:
+      - env:
+        - name: CHEF_BRANCH
+          value: master
+        - name: AAI_CHEF_ENV
+          value: simpledemo
+        - name: AAI_CORE_VERSION
+          value: 1.1.0-SNAPSHOT
+        - name: AAI_CHEF_LOC
+          value: /var/chef/aai-data/environments
+        - name: CHEF_GIT_URL
+          value: http://gerrit.onap.org/r/aai
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: /usr/lib/jvm/java-8-openjdk-amd64
+        - name: DEBIAN_FRONTEND
+          value: noninteractive
+        image: nexus3.onap.org:10001/openecomp/aai-resources:1.1-STAGING-latest
+        name: aai-resources
+        volumeMounts:
+        - mountPath: /opt/aai/logroot/AAI-RES/
+          name: aai-resources
+      volumes:
+        - name: aai-resources
+          hostPath:
+            path: /dockerdata/onapdemo/aai/aai-resources
+        ports:
+        - containerPort: 8447
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: onap-docker-registry-key
