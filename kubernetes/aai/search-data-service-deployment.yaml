@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: search-data-service
+spec:
+  selector:
+    matchLabels:
+      app: search-data-service
+  template:
+    metadata:
+      labels:
+        app: search-data-service
+      name: search-data-service
+    spec:
+      containers:
+      - env:
+        - name: CONFIG_HOME
+          value: /opt/app/search-data-service/config/
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: usr/lib/jvm/java-8-openjdk-amd64
+        image: nexus3.onap.org:10001/openecomp/search-data-service:1.1-STAGING-latest
+        name: search-data-service
+        volumeMounts:
+        - mountPath: /opt/app/search-data-service/config/
+          name: aai-search-data-service-config
+        - mountPath: /logs/
+          name: aai-search-data-service-logs
+      volumes:
+        - name: aai-search-data-service-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/search-data-service/config/
+        - name: aai-search-data-servic-logs
+          hostPath:
+            path: /dockerdata/onapdemo/aai/search-data-service/logs/
+        ports:
+        - containerPort: 9509
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always

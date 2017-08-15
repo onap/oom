@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: data-router
+spec:
+  selector:
+    matchLabels:
+      app: data-router
+  template:
+    metadata:
+      labels:
+        app: data-router
+      name: data-router
+    spec:
+      containers:
+      - env:
+        - name: SERVICE_BEANS
+          value: /opt/app/data-router/dynamic/conf
+        - name: CONFIG_HOME
+          value: /opt/app/data-router/config/
+        - name: KEY_STORE_PASSWORD
+          value: OBF:1y0q1uvc1uum1uvg1pil1pjl1uuq1uvk1uuu1y10
+        - name: DYNAMIC_ROUTES
+          value: /opt/app/data-router/dynamic/routes
+        - name: KEY_MANAGER_PASSWORD
+          value: OBF:1y0q1uvc1uum1uvg1pil1pjl1uuq1uvk1uuu1y10
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: usr/lib/jvm/java-8-openjdk-amd64
+        image: nexus3.onap.org:10001/openecomp/data-router:1.1-STAGING-latest
+        name: data-router
+        volumeMounts:
+        - mountPath: /opt/app/data-router/config/
+          name: data-router-config
+        - mountPath: /opt/app/data-router/dynamic/
+          name: data-router-dynamic
+        - mountPath: /logs/
+          name: data-router-logs
+      volumes:
+        - name: data-router-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/data-router/config/
+        - name: data-router-dynamic
+          hostPath:
+            path: /dockerdata/onapdemo/aai/data-router/dynamic/
+        - name: data-router-logs
+          hostPath:
+            path: /dockerdata/onapdemo/aai/data-router/logs/
+        ports:
+        - containerPort: 9502
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always

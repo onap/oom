@@ -1,0 +1,56 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aai-dmaap
+spec:
+  selector:
+    matchLabels:
+      app: aai-dmaap
+  template:
+    metadata:
+      labels:
+        app: aai-dmaap
+      name: aai-dmaap
+    spec:
+      containers:
+      - env:
+        - name: LANG
+          value: C.UTF-8
+        - name: JAVA_VERSION
+          value: 8u111
+        - name: JAVA_DEBIAN_VERSION
+          value: 8u111-b14-2~bpo8+1
+        - name: CA_CERTIFICATES_JAVA_VERSION
+          value: 20140324
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: JAVA_HOME
+          value: /usr/lib/jvm/java-8-openjdk-amd64
+        image: nexus3.onap.org:10001/openecomp/dmaap:latest
+        name: aai-dmaap
+        volumeMounts:
+        - mountPath: /appl/dmaapMR1/bundleconfig/etc/appprops/MsgRtrApi.properties
+          name: aai-dmaap-config
+        - mountPath: /opt/message-router/docker_files/mykey
+          name: aai-dmaap-key
+        - mountPath: /opt/message-router/docker_files/cadi.properties
+          name: aai-dmaap-cadi
+      volumes:
+        - name: aai-dmaap-config
+          hostPath:
+            path: /dockerdata/onapdemo/aai/aai-dmaap-config
+        - name: aai-dmaap-key
+          hostPath:
+            path: /dockerdata/onapdemo/aai/aai-dmaap-key
+        - name: aai-dmaap-cadi
+          hostPath:
+            path: /dockerdata/onapdemo/aai/aai-dmaap-cadi
+        ports:
+        - containerPort: 3904
+        - containerPort: 3905
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      restartPolicy: Always
