@@ -47,8 +47,8 @@ configure_app() {
   #       user stories (ie. OOM-51 to OOM-53)
   find ../$2 -type f -exec sed -i -template "s/onap-/$1-/g" {} \;
 
-  # replace the default '/dockerdata-nfs/onapdemo' volume mount paths
-  find ../$2 -iname "*.yaml" -type f -exec sed -i -e 's/dockerdata-nfs\/[a-zA-Z0-9\\-]*\//dockerdata-nfs\/'"$1"'\//g' {} \;
+  # replace the default '/dockerdata/onapdemo' volume mount paths
+  find ../$2 -iname "*.yaml" -type f -exec sed -i -e 's/dockerdata\/[a-zA-Z0-9\\-]*\//dockerdata\/'"$1"'\//g' {} \;
   rm -f ../$2/*.yaml-e
 }
 
