@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sdnc-dbhost
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: sdnc-dbhost
+  template:
+    metadata:
+      labels:
+        app: sdnc-dbhost
+      name: sdnc-dbhost
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: openECOMP1.0
+        - name: MYSQL_ROOT_HOST
+          value: '%'
+        image: {{ .Values.image.mysqlServer }}
+        imagePullPolicy: IfNotPresent
+        name: sdnc-db-container
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: sdnc-data
+        ports:
+        - containerPort: 3306
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: sdnc-data
+        hostPath:
+          path: /dockerdata-nfs/onap/sdnc/data
+      imagePullSecrets:
+      - name: onap-docker-registry-key

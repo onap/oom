@@ -1,0 +1,72 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pypdp
+  namespace: {{ .Values.NS }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pypdp
+  template:
+    metadata:
+      labels:
+        app: pypdp
+      name: pypdp
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb",
+                  "--container-name",
+                  "nexus",
+                  "--container-name",
+                  "pap",
+                  "--container-name",
+                  "pdp"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "pypdp-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - ./do-start.sh
+        - pypdp
+        image: {{ .Values.image.policyPe }}
+        imagePullPolicy: IfNotPresent
+        name: pypdp
+        ports:
+        - containerPort: 8480
+        readinessProbe:
+          tcpSocket:
+            port: 8480
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /tmp/policy-install/config
+          name: pe
+      volumes:
+        - name: pe
+          hostPath:
+            path: /dockerdata-nfs/onap/policy/opt/policy/config/pe/
+      imagePullSecrets:
+      - name: onap-docker-registry-key
