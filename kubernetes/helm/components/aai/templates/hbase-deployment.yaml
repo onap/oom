@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: hbase
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: hbase
+  template:
+    metadata:
+      labels:
+        app: hbase
+      name: hbase
+    spec:
+      hostname: hbase
+      containers:
+      - name: hbase
+        image: {{ .Values.image.aaiHbase }}
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /opt/data/
+          name: hbase-opt-data
+        ports:
+        - containerPort: 8020
+        readinessProbe:
+          tcpSocket:
+            port: 8020
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: hbase-opt-data
+          hostPath:
+            path: /dockerdata-nfs/onap/aai/hbase/opt/data
+      imagePullSecrets:
+      - name: onap-docker-registry-key

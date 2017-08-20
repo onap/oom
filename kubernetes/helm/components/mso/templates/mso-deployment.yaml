@@ -1,0 +1,76 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mso
+  namespace: {{ .Values.NS }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mso
+  template:
+    metadata:
+      labels:
+        app: mso
+      name: mso
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "mso-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /docker-files/scripts/start-jboss-server.sh
+        image: {{ .Values.image.mso }}
+        imagePullPolicy: IfNotPresent
+        name: mso
+        volumeMounts:
+        - mountPath: /shared
+          name: mso
+        - mountPath: /docker-files
+          name: mso-docker-files
+        env:
+        - name: JBOSS_DEBUG
+          value: "false"
+        ports:
+        - containerPort: 3904
+        - containerPort: 3905
+        - containerPort: 8080
+        - containerPort: 9990
+        - containerPort: 8787
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: mso
+          hostPath:
+            path: /dockerdata-nfs/onap/mso/mso
+        - name: mso-docker-files
+          hostPath:
+            path: /dockerdata-nfs/onap/mso/docker-files
+      imagePullSecrets:
+      - name: onap-docker-registry-key

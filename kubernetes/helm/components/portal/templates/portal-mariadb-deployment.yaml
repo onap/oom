@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: portaldb
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: portaldb
+  template:
+    metadata:
+      labels:
+        app: portaldb
+      name: portaldb
+    spec:
+      containers:
+      - image: {{ .Values.image.portaldb}}
+        imagePullPolicy: IfNotPresent
+        name: "portaldb"
+        env:
+        - name: MYSQL_HOST
+          value: portaldb.onap-portal
+        - name: MYSQL_ROOT_PASSWORD
+          value: password
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: portal-mariadb-data
+        ports:
+        - containerPort: 3306
+          name: portaldb
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: portal-mariadb-data
+        hostPath:
+          path: /dockerdata-nfs/onap/portal/mariadb/data
+      imagePullSecrets:
+      - name: onap-docker-registry-key

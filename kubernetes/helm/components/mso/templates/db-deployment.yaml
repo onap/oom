@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: {{ .Values.NS }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+      name: mariadb
+    spec:
+      hostname: mariadb
+      containers:
+      - args:
+        image: {{ .Values.image.mariadb }}
+        imagePullPolicy: IfNotPresent
+        name: "mariadb"
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: password
+          - name: MARIADB_MAJOR
+            value: "10.1"
+          - name: MARIADB_VERSION
+            value: "10.1.11+maria-1~jessie"
+        volumeMounts:
+        - mountPath: /etc/mysql/conf.d
+          name: mso-mariadb-conf
+        - mountPath: /docker-entrypoint-initdb.d
+          name: mso-mariadb-docker-entrypoint-initdb
+        ports:
+        - containerPort: 3306
+          name: mariadb
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: mso-mariadb-conf
+          hostPath:
+            path: /dockerdata-nfs/onap/mso/mariadb/conf.d
+        - name: mso-mariadb-docker-entrypoint-initdb
+          hostPath:
+            path: /dockerdata-nfs/onap/mso/mariadb/docker-entrypoint-initdb.d
+      imagePullSecrets:
+      - name: onap-docker-registry-key

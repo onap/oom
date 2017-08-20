@@ -1,0 +1,75 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dmaap
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: dmaap
+  template:
+    metadata:
+      labels:
+        app: dmaap
+      name: dmaap
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "global-kafka",
+                  "--container-name",
+                  "zookeeper"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "dmaap-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - image: {{ .Values.image.dmaap }}
+        imagePullPolicy: IfNotPresent
+        name: dmaap
+        ports:
+        - containerPort: 3904
+        - containerPort: 3905
+        readinessProbe:
+          tcpSocket:
+            port: 3904
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /appl/dmaapMR1/bundleconfig/etc/appprops/MsgRtrApi.properties
+          name: appprops
+        - mountPath: /appl/dmaapMR1/etc/cadi.properties
+          name: cadi
+        - mountPath: /appl/dmaapMR1/etc/keyfile
+          name: mykey
+      restartPolicy: Always
+      volumes:
+      - name: appprops
+        hostPath:
+          path: /dockerdata-nfs/onap/message-router/dmaap/MsgRtrApi.properties
+      - name: cadi
+        hostPath:
+          path: /dockerdata-nfs/onap/message-router/dmaap/cadi.properties
+      - name: mykey
+        hostPath:
+          path: /dockerdata-nfs/onap/message-router/dmaap/mykey
+      imagePullSecrets:
+      - name: onap-docker-registry-key
