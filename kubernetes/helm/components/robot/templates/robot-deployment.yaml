@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: robot
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: robot
+  template:
+    metadata:
+       labels:
+        app: robot
+       name: robot
+    spec:
+      containers:
+      - image: {{ .Values.image.testsuite }}
+        imagePullPolicy: IfNotPresent
+        name: robot
+        volumeMounts:
+        - name: robot-eteshare
+          mountPath: /share
+        - name: robot-assets
+          mountPath: /var/opt/OpenECOMP_ETE/robot/assets
+        - name: robot-resources
+          mountPath: /var/opt/OpenECOMP_ETE/robot/resources
+        - name: robot-testsuites
+          mountPath: /var/opt/OpenECOMP_ETE/robot/testsuites
+        - name: lighttpd-authorization
+          mountPath: /etc/lighttpd/authorization
+        ports:
+        - containerPort: 88
+        readinessProbe:
+          tcpSocket:
+            port: 88
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: robot-eteshare
+          hostPath:
+            path: /dockerdata-nfs/onap/robot/eteshare
+        - name: robot-assets
+          hostPath:
+            path: /dockerdata-nfs/onap/robot/robot/assets
+        - name: robot-resources
+          hostPath:
+            path: /dockerdata-nfs/onap/robot/robot/resources
+        - name: robot-testsuites
+          hostPath:
+            path: /dockerdata-nfs/onap/robot/robot/testsuites
+        - name: lighttpd-authorization
+          hostPath:
+            path: /dockerdata-nfs/onap/robot/authorization
+      imagePullSecrets:
+      - name: onap-docker-registry-key

@@ -1,0 +1,88 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: sdc-cs
+  name: sdc-cs
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: sdc-cs
+  template:
+    metadata:
+      labels:
+        app: sdc-cs
+      name: sdc-cs
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "sdc-es"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "sdc-cs-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - env:
+        - name: ENVNAME
+          value: AUTO
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: ES_HEAP_SIZE
+          value: "1024M"
+        image: {{ .Values.image.sdcCassandra }}
+        imagePullPolicy: IfNotPresent
+        name: sdc-cs
+        volumeMounts:
+        - mountPath: /var/lib/cassandra/
+          name: sdc-sdc-cs-cs
+        - mountPath: /root/chef-solo/environments/
+          name: sdc-environments
+        - mountPath: /etc/localtime
+          name: sdc-localtime
+        - mountPath: /var/lib/jetty/logs
+          name: sdc-logs
+        ports:
+        - containerPort: 9042
+        - containerPort: 9160
+        readinessProbe:
+          tcpSocket:
+            port: 9160
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: sdc-sdc-cs-cs
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/sdc-cs/CS
+        - name: sdc-environments
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/environments
+        - name: sdc-localtime
+          hostPath:
+            path:  /etc/localtime
+        - name:  sdc-logs
+          hostPath:
+            path:  /dockerdata-nfs/onap/sdc/logs
+      imagePullSecrets:
+      - name: onap-docker-registry-key
