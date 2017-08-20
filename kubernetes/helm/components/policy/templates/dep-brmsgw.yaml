@@ -1,0 +1,67 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: brmsgw
+  namespace: {{ .Values.NS }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brmsgw
+  template:
+    metadata:
+      labels:
+        app: brmsgw
+      name: brmsgw
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb",
+                  "--container-name",
+                  "nexus",
+                  "--container-name",
+                  "pap",
+                  "--container-name",
+                  "pdp",
+                  "--container-name",
+                  "pypdp"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "brmsgw-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - ./do-start.sh
+        - brmsgw
+        image: {{ .Values.image.policyPe }}
+        imagePullPolicy: IfNotPresent
+        name: brmsgw
+        volumeMounts:
+        - mountPath: /tmp/policy-install/config
+          name: pe
+      volumes:
+        - name: pe
+          hostPath:
+            path: /dockerdata-nfs/onap/policy/opt/policy/config/pe/
+      imagePullSecrets:
+      - name: onap-docker-registry-key

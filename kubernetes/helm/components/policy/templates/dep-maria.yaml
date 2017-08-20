@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: {{ .Values.NS }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      hostname: mariadb
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - exec bash /tmp/do-start.sh
+        image: {{ .Values.image.policyDb }}
+        imagePullPolicy: IfNotPresent
+        name: mariadb
+        ports:
+        - containerPort: 3306
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: onap-docker-registry-key

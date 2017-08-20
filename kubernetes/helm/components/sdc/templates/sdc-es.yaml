@@ -1,0 +1,62 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: sdc-es
+  name: sdc-es
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: sdc-es
+  template:
+    metadata:
+      labels:
+        app: sdc-es
+      name: sdc-es
+    spec:
+      containers:
+      - image: {{ .Values.image.sdcElasticsearch }}
+        imagePullPolicy: IfNotPresent
+        name: sdc-es
+        env:
+        - name: ENVNAME
+          value: "AUTO"
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: ES_HEAP_SIZE
+          value: "1024M"
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data/
+          name: sdc-sdc-es-es
+        - mountPath: /root/chef-solo/environments/
+          name: sdc-environments
+        - mountPath: /etc/localtime
+          name: sdc-localtime
+        - mountPath: /var/lib/jetty/logs
+          name: sdc-logs
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        readinessProbe:
+          tcpSocket:
+            port: 9200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: sdc-sdc-es-es
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/sdc-es/ES
+        - name: sdc-environments
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/environments
+        - name: sdc-localtime
+          hostPath:
+            path:  /etc/localtime
+        - name:  sdc-logs
+          hostPath:
+            path:  /dockerdata-nfs/onap/sdc/logs
+      imagePullSecrets:
+      - name: onap-docker-registry-key

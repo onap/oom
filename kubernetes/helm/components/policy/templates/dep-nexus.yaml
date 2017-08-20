@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nexus
+  namespace: {{ .Values.NS }}
+spec:
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+      name: nexus
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "IfNotPresent",
+              "name": "nexus-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - bash -c "/opt/nexus/nexus-2.14.2-01/bin/nexus start && sleep 1000d"
+        image: {{ .Values.image.policyNexus }}
+        imagePullPolicy: IfNotPresent
+        name: nexus
+      imagePullSecrets:
+      - name: onap-docker-registry-key
