@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+      name: elasticsearch
+    spec:
+      hostname: elasticsearch
+      containers:
+      - name: elasticsearch
+        image: elasticsearch:2.4.1
+        ports:
+        - containerPort: 9200
+        readinessProbe:
+          tcpSocket:
+            port: 9200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: elasticsearch-config
+      volumes:
+      - name: elasticsearch-config
+        hostPath:
+          path: /dockerdata/onapdemo/aai/elasticsearch/config/elasticsearch.yml
+      imagePullSecrets:
+      - name: onap-docker-registry-key
