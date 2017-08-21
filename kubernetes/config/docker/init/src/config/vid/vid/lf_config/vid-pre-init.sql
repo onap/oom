@@ -17,7 +17,7 @@
  * limitations under the License.
  * ============LICENSE_END=========================================================
  */
-CREATE TABLE IF NOT EXISTS `vid_openecomp`.`schema_info` (
+CREATE TABLE IF NOT EXISTS `vid_openecomp_epsdk`.`schema_info` (
    `SCHEMA_ID` VARCHAR(25) NOT NULL,
    `SCHEMA_DESC` VARCHAR(75) NOT NULL,
    `DATASOURCE_TYPE` VARCHAR(100) NULL DEFAULT NULL,
