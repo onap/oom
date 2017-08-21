@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: portalwidgets
+spec:
+  selector:
+    matchLabels:
+      app: portalwidgets
+  template:
+    metadata:
+       labels:
+         app: portalwidgets
+       name: portalwidgets
+       annotations:
+         pod.beta.kubernetes.io/init-containers: '[
+           {
+               "args": [
+                   "--container-name",
+                   "portaldb"
+               ],
+               "command": [
+                   "/root/ready.py"
+               ],
+               "env": [
+                   {
+                       "name": "NAMESPACE",
+                       "valueFrom": {
+                           "fieldRef": {
+                               "apiVersion": "v1",
+                               "fieldPath": "metadata.namespace"
+                           }
+                       }
+                   }
+               ],
+               "image": "oomk8s/readiness-check:1.0.0",
+               "imagePullPolicy": "Always",
+               "name": "portalapps-readiness"
+           }
+           ]'
+    spec:
+      containers:
+      - image: nexus3.onap.org:10001/openecomp/portalwms:1.1-STAGING-latest
+        name: portalwidgets
+        volumeMounts:
+        - mountPath: /application.properties
+          name: portalwidgets-application-properties
+        ports:
+        - containerPort: 8082
+        readinessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: portalwidgets-application-properties
+          hostPath:
+            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPWIDGETMS/application.properties
