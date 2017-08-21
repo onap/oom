@@ -11,61 +11,63 @@ spec:
       labels:
         app: model-loader-service
       name: model-loader-service
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "aai-service"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "model-loader-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "sdc-es",
-                  "--container-name",
-                  "sdc-cs",
-                  "--container-name",
-                  "sdc-kb",
-                  "--container-name",
-                  "sdc-be",
-                  "--container-name",
-                  "sdc-fe"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "onap-sdc"
-                  }
-              ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "model-loader-sdc-readiness"
-          }
-          ]'
+#      annotations:
+#        pod.beta.kubernetes.io/init-containers: '[
+#          {
+#              "args": [
+#                  "--container-name",
+#                  "aai-service"
+#              ],
+#              "command": [
+#                  "/root/ready.py"
+#              ],
+#              "env": [
+#                  {
+#                      "name": "NAMESPACE",
+#                      "valueFrom": {
+#                          "fieldRef": {
+#                              "apiVersion": "v1",
+#                              "fieldPath": "metadata.namespace"
+#                          }
+#                      }
+#                  }
+#              ],
+#              "image": "oomk8s/readiness-check:1.0.0",
+#              "imagePullPolicy": "Always",
+#              "name": "model-loader-readiness"
+#          },
+#          {
+#              "args": [
+#                  "--container-name",
+#                  "sdc-es",
+#                  "--container-name",
+#                  "sdc-cs",
+#                  "--container-name",
+#                  "sdc-kb",
+#                  "--container-name",
+#                  "sdc-be",
+#                  "--container-name",
+#                  "sdc-fe"
+#              ],
+#              "command": [
+#                  "/root/ready.py"
+#              ],
+#              "env": [
+#                  {
+#                      "name": "NAMESPACE",
+#                      "value": "onap-sdc"
+#                  }
+#              ],
+#              "image": "oomk8s/readiness-check:1.0.0",
+#              "imagePullPolicy": "Always",
+#              "name": "model-loader-sdc-readiness"
+#          }
+#          ]'
     spec:
       containers:
-      - env:
+      - name: model-loader-service
+        image: nexus3.onap.org:10001/openecomp/model-loader:1.1-STAGING-latest
+        env:
         - name: DISTR_CLIENT_ASDC_ADDRESS
           value: sdc-be.onap-sdc:8443
         - name: DISTR_CLIENT_ENVIRONMENT_NAME
@@ -88,20 +90,11 @@ spec:
           value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         - name: JAVA_HOME
           value: usr/lib/jvm/java-8-openjdk-amd64
-        image: nexus3.onap.org:10001/openecomp/model-loader:1.1-STAGING-latest
-        name: model-loader-service
         volumeMounts:
         - mountPath: /opt/app/model-loader/config/
           name: aai-model-loader-config
         - mountPath: /logs/
           name: aai-model-loader-config
-      volumes:
-        - name: aai-model-loader-config
-          hostPath:
-            path: /dockerdata/onapdemo/aai/model-loader/config/
-        - name: aai-model-loader-logs
-          hostPath:
-            path: /dockerdata/onapdemo/aai/model-loader/logs/
         ports:
         - containerPort: 8080
         - containerPort: 8443
@@ -110,6 +103,13 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+      volumes:
+      - name: aai-model-loader-config
+        hostPath:
+          path: /dockerdata/onapdemo/aai/model-loader/appconfig/
+      - name: aai-model-loader-logs
+        hostPath:
+          path: /dockerdata/onapdemo/aai/model-loader/logs/
       restartPolicy: Always
       imagePullSecrets:
       - name: onap-docker-registry-key
