@@ -1,5 +1,6 @@
+jetty_base="/var/lib/jetty"
 template "catalog-fe-config" do
-   path "/var/lib/jetty/config/catalog-fe/configuration.yaml"
+   path "#{jetty_base}/config/catalog-fe/configuration.yaml"
    source "FE-configuration.yaml.erb"
    owner "jetty"
    group "jetty"
@@ -10,4 +11,17 @@ template "catalog-fe-config" do
       :catalog_port => node['BE'][:http_port],
       :ssl_port     => node['BE'][:https_port]
    })
+end
+
+template "onboarding-fe-config" do
+ path "#{jetty_base}/config/onboarding-fe/onboarding_configuration.yaml"
+ source "FE-onboarding-configuration.yaml.erb"
+ owner "jetty"
+ group "jetty"
+ mode "0755"
+ variables({
+    :catalog_ip   => node['HOST_IP'],
+    :catalog_port => node['BE'][:http_port],
+    :ssl_port     => node['BE'][:https_port]
+})
 end
