@@ -20,6 +20,10 @@ delete_service() {
   kubectl --namespace $1-$2 delete -f ../$2/all-services.yaml
 }
 
+delete_app_helm() {
+  helm delete $1 --purge
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [PARAMs]
@@ -85,6 +89,13 @@ for i in ${ONAP_APPS[@]}; do
     delete_service $NS $i
     delete_namespace $NS $i
   fi
+
+done
+
+for i in ${HELM_APPS[@]}; do
+
+  delete_app_helm $i
+  delete_namespace $NS $i
 
 done
 
