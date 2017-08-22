@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: mso
+  namespace: {{ .Values.NS }}
 spec:
   replicas: 1
   selector:
@@ -33,8 +34,8 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "mso-readiness"
           }
           ]'
@@ -42,7 +43,8 @@ spec:
       containers:
       - command:
         - /docker-files/scripts/start-jboss-server.sh
-        image: nexus3.onap.org:10001/openecomp/mso:1.0-STAGING-latest
+        image: {{ .Values.image.mso }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         name: mso
         volumeMounts:
         - mountPath: /shared
@@ -66,9 +68,9 @@ spec:
       volumes:
         - name: mso
           hostPath:
-            path: /dockerdata-nfs/onapdemo/mso/mso
+            path: /dockerdata-nfs/onap/mso/mso
         - name: mso-docker-files
           hostPath:
-            path: /dockerdata-nfs/onapdemo/mso/docker-files
+            path: /dockerdata-nfs/onap/mso/docker-files
       imagePullSecrets:
       - name: onap-docker-registry-key
