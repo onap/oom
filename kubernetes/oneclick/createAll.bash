@@ -26,8 +26,8 @@ create_registry_key() {
 }
 
 create_service() {
-  sed -i -- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$3"'/g' ../$2/all-services.yaml
-  sed -i -- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$4"'/g' ../$2/all-services.yaml
+  sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$3"'/g' ../$2/all-services.yaml
+  sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$4"'/g' ../$2/all-services.yaml
   kubectl --namespace $1-$2 create -f ../$2/all-services.yaml
   mv ../$2/all-services.yaml-- ../$2/all-services.yaml
 }
@@ -46,8 +46,8 @@ configure_app() {
   done
   
   if [ -e "$2/Chart.yaml" ]; then
-    sed -i -- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
-    sed -i -- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
+    sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
+    sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
     sed -i "s/onap-/$1-/g" ../$2/values.yaml
   fi
 
