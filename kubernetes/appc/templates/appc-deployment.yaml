@@ -1,24 +1,23 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: appc-dgbuilder
+  name: appc
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
-      app: appc-dgbuilder
+      app: appc
   template:
     metadata:
       labels:
-        app: appc-dgbuilder
-      name: appc-dgbuilder
+        app: appc
+      name: appc
       annotations:
         pod.beta.kubernetes.io/init-containers: '[
           {
               "args": [
                   "--container-name",
-                  "appc-db-container",
-                  "--container-name",
-                  "appc-controller-container"
+                  "appc-db-container"
               ],
               "command": [
                   "/root/ready.py"
@@ -34,17 +33,15 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "appc-dgbuilder-readiness"
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "appc-readiness"
           }
           ]'
     spec:
       containers:
       - command:
-        - /bin/bash
-        - -c
-        - cd /opt/openecomp/sdnc/dgbuilder/ && ./start sdnc1.0 && wait
+        - /opt/openecomp/appc/bin/startODL.sh
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: openECOMP1.0
@@ -52,15 +49,30 @@ spec:
           value: /opt/openecomp/sdnc/data/properties
         - name: APPC_CONFIG_DIR
           value: /opt/openecomp/appc/data/properties
-        image: nexus3.onap.org:10001/openecomp/dgbuilder-sdnc-image:1.0-STAGING-latest
-        name: appc-dgbuilder-container
+        - name: DMAAP_TOPIC_ENV
+          value: SUCCESS
+        image: {{ .Values.image.appc }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: appc-controller-container
+        volumeMounts:
+        - mountPath: /opt/openecomp/appc/data/properties
+          name: appc-conf
+        - mountPath: /opt/openecomp/sdnc/data/properties
+          name: sdnc-conf
         ports:
-        - containerPort: 3100
+        - containerPort: 8181
+        - containerPort: 1830
         readinessProbe:
           tcpSocket:
-            port: 3100
+            port: 8181
           initialDelaySeconds: 5
           periodSeconds: 10
-      restartPolicy: Always
+      volumes:
+        - name: appc-conf
+          hostPath:
+            path: /dockerdata-nfs/onap/appc/conf
+        - name: sdnc-conf
+          hostPath:
+            path: /dockerdata-nfs/onap/sdnc/conf
       imagePullSecrets:
       - name: onap-docker-registry-key
