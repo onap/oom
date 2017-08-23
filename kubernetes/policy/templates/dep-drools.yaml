@@ -1,17 +1,18 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: pdp
+  name: drools
+  namespace: {{ .Values.NS }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pdp
+      app: drools
   template:
     metadata:
       labels:
-        app: pdp
-      name: pdp
+        app: drools
+      name: drools
       annotations:
         pod.beta.kubernetes.io/init-containers: '[
           {
@@ -21,7 +22,13 @@ spec:
                   "--container-name",
                   "nexus",
                   "--container-name",
-                  "pap"
+                  "pap",
+                  "--container-name",
+                  "pdp",
+                  "--container-name",
+                  "pypdp",
+                  "--container-name",
+                  "brmsgw"
               ],
               "command": [
                   "/root/ready.py"
@@ -37,32 +44,38 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "pdp-readiness"
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "drools-readiness"
           }
           ]'
     spec:
       containers:
       - command:
         - /bin/bash
+        - -c
         - ./do-start.sh
-        - pdp
-        image: nexus3.onap.org:10001/openecomp/policy/policy-pe:1.0-STAGING-latest
-        name: pdp
+        image: {{ .Values.image.policyDrools }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: drools
         ports:
-        - containerPort: 8081
+        - containerPort: 6969
         readinessProbe:
           tcpSocket:
-            port: 8081
+            port: 6969
           initialDelaySeconds: 5
           periodSeconds: 10
         volumeMounts:
         - mountPath: /tmp/policy-install/config
-          name: pe
+          name: drools
+        - mountPath: /usr/share/maven/conf/settings.xml
+          name: drools-settingsxml
       volumes:
-        - name: pe
+        - name: drools-settingsxml
           hostPath:
-            path: /dockerdata-nfs/onapdemo/policy/opt/policy/config/pe/
+            path:  /dockerdata-nfs/onap/policy/drools/settings.xml
+        - name: drools
+          hostPath:
+            path:  /dockerdata-nfs/onap/policy/opt/policy/config/drools/
       imagePullSecrets:
       - name: onap-docker-registry-key
