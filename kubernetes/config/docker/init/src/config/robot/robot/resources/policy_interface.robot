@@ -9,14 +9,16 @@ Resource          global_properties.robot
 
 *** Variables ***
 ${POLICY_HEALTH_CHECK_PATH}        /healthcheck
+${POLICY_ENDPOINT}     ${GLOBAL_POLICY_SERVER_PROTOCOL}://${GLOBAL_INJECTED_POLICY_IP_ADDR}:${GLOBAL_POLICY_SERVER_PORT}
+${POLICY_HEALTHCHECK_ENDPOINT}     ${GLOBAL_POLICY_SERVER_PROTOCOL}://${GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR}:${GLOBAL_POLICY_HEALTHCHECK_PORT}
 
 *** Keywords ***
 
 Run Policy Health Check
      [Documentation]    Runs Policy Health check
      ${auth}=    Create List    ${GLOBAL_POLICY_USERNAME}    ${GLOBAL_POLICY_PASSWORD}    
-     Log    Creating session ${GLOBAL_POLICY_SERVER_URL}
-     ${session}=    Create Session 	policy 	${GLOBAL_POLICY_HEALTHCHECK_URL}   auth=${auth}
+     Log    Creating session ${POLICY_ENDPOINT}
+     ${session}=    Create Session 	policy 	${POLICY_HEALTHCHECK_ENDPOINT}   auth=${auth}
      ${headers}=  Create Dictionary     Accept=application/json    Content-Type=application/json
      ${resp}= 	Get Request 	policy 	${POLICY_HEALTH_CHECK_PATH}     headers=${headers}
      Log    Received response from policy ${resp.text}
@@ -30,8 +32,8 @@ Run Policy Health Check
 Run Policy Put Request
      [Documentation]    Runs Policy Put request
      [Arguments]    ${data_path}  ${data}
-     Log    Creating session ${GLOBAL_POLICY_SERVER_URL}
-     ${session}=    Create Session 	policy 	${GLOBAL_POLICY_SERVER_URL}
+     Log    Creating session ${POLICY_ENDPOINT}
+     ${session}=    Create Session 	policy 	${POLICY_ENDPOINT}
      ${headers}=  Create Dictionary     Accept=application/json    Content-Type=application/json    Authorization=Basic ${GLOBAL_POLICY_AUTH}   ClientAuth=${GLOBAL_POLICY_CLIENTAUTH}    Environment=TEST
      ${resp}= 	Put Request 	policy 	${data_path}     data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
@@ -40,8 +42,8 @@ Run Policy Put Request
 Run Policy Delete Request
      [Documentation]    Runs Policy Delete request
      [Arguments]    ${data_path}  ${data}
-     Log    Creating session ${GLOBAL_POLICY_SERVER_URL}
-     ${session}=    Create Session 	policy 	${GLOBAL_POLICY_SERVER_URL}
+     Log    Creating session ${POLICY_ENDPOINT}
+     ${session}=    Create Session 	policy 	${POLICY_ENDPOINT}
      ${headers}=    Create Dictionary     Accept=application/json    Content-Type=application/json    Authorization=Basic ${GLOBAL_POLICY_AUTH}   ClientAuth=${GLOBAL_POLICY_CLIENTAUTH}    Environment=TEST
      ${resp}= 	Delete Request 	policy 	${data_path}    data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
@@ -50,8 +52,8 @@ Run Policy Delete Request
 Run Policy Get Configs Request
     [Documentation]    Runs Policy Get Configs request
     [Arguments]    ${data_path}  ${data}
-    Log    Creating session ${GLOBAL_POLICY_SERVER_URL}
-    ${session}=    Create Session 	policy 	${GLOBAL_POLICY_SERVER_URL}
+    Log    Creating session ${POLICY_ENDPOINT}
+    ${session}=    Create Session 	policy 	${POLICY_ENDPOINT}
     ${headers}=    Create Dictionary     Accept=application/json    Content-Type=application/json    Authorization=Basic ${GLOBAL_POLICY_AUTH}   ClientAuth=${GLOBAL_POLICY_CLIENTAUTH}    
     ${resp}= 	Post Request 	policy 	${data_path}    data=${data}    headers=${headers}
     Log    Received response from policy ${resp.text}
