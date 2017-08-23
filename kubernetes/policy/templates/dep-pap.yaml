@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: pap
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
@@ -34,8 +35,8 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "pap-readiness"
           },
           {
@@ -57,8 +58,8 @@ spec:
                   "name": "pe"
                 }
               ],
-              "image": "ubuntu:16.04",
-              "imagePullPolicy": "Always",
+              "image": "{{ .Values.image.ubuntu }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "generate-ip-addr-txt"
           }
           ]'
@@ -68,7 +69,8 @@ spec:
         - /bin/bash
         - ./do-start.sh
         - pap
-        image: nexus3.onap.org:10001/openecomp/policy/policy-pe:1.0-STAGING-latest
+        image: {{ .Values.image.policyPe }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         name: pap
         ports:
         - containerPort: 8443
@@ -84,6 +86,6 @@ spec:
       volumes:
         - name: pe
           hostPath:
-            path: /dockerdata-nfs/onapdemo/policy/opt/policy/config/pe/
+            path: /dockerdata-nfs/onap/policy/opt/policy/config/pe/
       imagePullSecrets:
       - name: onap-docker-registry-key
