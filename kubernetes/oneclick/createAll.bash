@@ -24,8 +24,16 @@ create_registry_key() {
   kubectl --namespace $1-$2 create secret docker-registry $3 --docker-server=$4 --docker-username=$5 --docker-password=$6 --docker-email=$7
 }
 
+<<<<<<< HEAD
 create_onap_helm() {
   helm install ../$2/ --name $2
+=======
+create_service() {
+  sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$3"'/g' ../$2/all-services.yaml
+  sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$4"'/g' ../$2/all-services.yaml
+  kubectl --namespace $1-$2 create -f ../$2/all-services.yaml
+  mv ../$2/all-services.yaml-- ../$2/all-services.yaml
+>>>>>>> 84a9977... apply bug fix to release-1.0.0 its env. agnostic
 }
 
 configure_app() {
