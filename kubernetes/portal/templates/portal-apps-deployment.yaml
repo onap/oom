@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: portalapps
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
@@ -32,8 +33,8 @@ spec:
                        }
                    }
                ],
-               "image": "oomk8s/readiness-check:1.0.0",
-               "imagePullPolicy": "Always",
+               "image": "{{ .Values.image.readiness }}",
+               "imagePullPolicy": "{{ .Values.pullPolicy }}",
                "name": "portalapps-readiness"
            },
            {
@@ -48,14 +49,15 @@ spec:
                    "name": "portal-root"
                  }
                ],
-               "image": "oomk8s/mariadb-client-init:1.0.0",
-               "imagePullPolicy": "Always",
+               "image": "{{ .Values.image.mariadbClient }}",
+               "imagePullPolicy": "{{ .Values.pullPolicy }}",
                "name": "provision-portaldb-users"
            }
            ]'
     spec:
       containers:
-      - image: nexus3.onap.org:10001/openecomp/portalapps:1.1-STAGING-latest
+      - image: {{ .Values.image.portalapps }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         lifecycle:
           postStart:
             exec:
@@ -100,45 +102,45 @@ spec:
       volumes:
         - name: portal-fusion-properties
           hostPath:
-            path:  /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/fusion.properties
+            path:  /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/fusion.properties
         - name: portal-openid-connect-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/openid-connect.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/openid-connect.properties
         - name: portal-system-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/system.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/system.properties
         - name: portal-portal-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/portal.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPPORTALAPP/portal.properties
         - name: dbcapp-fusion-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/fusion.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPDBCAPP/fusion.properties
         - name: dbcapp-system-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/system.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPDBCAPP/system.properties
         - name: dbcapp-portal-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/portal.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPDBCAPP/portal.properties
         - name: dbcapp-dbcapp-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPDBCAPP/dbcapp.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPDBCAPP/dbcapp.properties
         - name: sdkapp-system-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPSDKAPP/system.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPSDKAPP/system.properties
         - name: sdkapp-portal-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPSDKAPP/portal.properties
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPSDKAPP/portal.properties
         - name: sdkapp-fusion-properties
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/portal-fe/webapps/etc/ECOMPSDKAPP/fusion.properties            
+            path: /dockerdata-nfs/onap/portal/portal-fe/webapps/etc/ECOMPSDKAPP/fusion.properties            
         - name: portal-mariadb-onboarding-sql
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/mariadb/oom_updates.sql
+            path: /dockerdata-nfs/onap/portal/mariadb/oom_updates.sql
         - name: portal-root
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal
+            path: /dockerdata-nfs/onap/portal
         - name: portal-logs
           hostPath:
-            path: /dockerdata-nfs/onapdemo/portal/logs
+            path: /dockerdata-nfs/onap/portal/logs
       imagePullSecrets:
       - name: onap-docker-registry-key
