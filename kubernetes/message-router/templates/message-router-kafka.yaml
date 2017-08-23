@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: global-kafka
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
@@ -32,15 +33,15 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "kafka-readiness"
           }
           ]'
     spec:
       containers:
-      - image: wurstmeister/kafka:latest
-        imagePullPolicy: Always
+      - image: {{ .Values.image.kafka }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         name: global-kafka
         ports:
         - containerPort: 9092
@@ -74,9 +75,9 @@ spec:
           path: /var/run/docker.sock
       - name: kafka-data
         hostPath:
-          path: /dockerdata-nfs/onapdemo/message-router/dcae-startup-vm-message-router/docker_files/data-kafka/
+          path: /dockerdata-nfs/onap/message-router/dcae-startup-vm-message-router/docker_files/data-kafka/
       - name: start-kafka
         hostPath:
-          path: /dockerdata-nfs/onapdemo/message-router/dcae-startup-vm-message-router/docker_files/start-kafka.sh
+          path: /dockerdata-nfs/onap/message-router/dcae-startup-vm-message-router/docker_files/start-kafka.sh
       imagePullSecrets:
       - name: onap-docker-registry-key
