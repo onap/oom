@@ -1,17 +1,28 @@
 # File generated from /opt/config
 #
-GLOBAL_VM_PROPERTIES = {
- "artifacts_version" : "1.0.0",
- "cloud_env" : "openstack",
- "dns_ip_addr" : "10.43.0.10",
- "docker_version" : "1.0-STAGING-latest",
- "gerrit_branch" : "release-1.0.0",
- "network" : "onap_oam",
- "nexus_docker_repo" : "nexus3.onap.org:10001",
- "nexus_password" : "docker",
- "nexus_repo" : "https://nexus.onap.org/content/sites/raw",
- "nexus_username" : "docker",
- "openstack_password" : "dev",
- "openstack_username" : "dev",
- "region" : "RegionOne"
- }
+GLOBAL_INJECTED_AAI1_IP_ADDR = "aai-service.onap-aai"
+#GLOBAL_INJECTED_AAI2_IP_ADDR = "10.0.1.2"
+GLOBAL_INJECTED_APPC_IP_ADDR = "10.0.2.1"
+GLOBAL_INJECTED_ARTIFACTS_VERSION = "1.1.0-SNAPSHOT"
+GLOBAL_INJECTED_CLOUD_ENV = "openstack"
+GLOBAL_INJECTED_DCAE_IP_ADDR = "onap-dcae"
+GLOBAL_INJECTED_DNS_IP_ADDR = "10.0.100.1"
+GLOBAL_INJECTED_DOCKER_VERSION = "1.1-STAGING-latest"
+GLOBAL_INJECTED_GERRIT_BRANCH = "master"
+GLOBAL_INJECTED_KEYSTONE = "http://10.100.100.10:5000"
+GLOBAL_INJECTED_MR_IP_ADDR = "dmaap.onap-message-router"
+GLOBAL_INJECTED_MSO_IP_ADDR = "mso.onap-mso"
+GLOBAL_INJECTED_NETWORK = "oam_ecomp_1b5B"
+GLOBAL_INJECTED_NEXUS_DOCKER_REPO = "nexus3.onap.org:10001"
+GLOBAL_INJECTED_NEXUS_PASSWORD = "docker"
+GLOBAL_INJECTED_NEXUS_REPO = "https://nexus.onap.org/content/sites/raw"
+GLOBAL_INJECTED_NEXUS_USERNAME = "docker"
+GLOBAL_INJECTED_OPENSTACK_PASSWORD = "dev"
+GLOBAL_INJECTED_OPENSTACK_USERNAME = "dev"
+GLOBAL_INJECTED_POLICY_IP_ADDR = "onap-policy"
+GLOBAL_INJECTED_PORTAL_IP_ADDR = "portalapps.onap-portal"
+GLOBAL_INJECTED_REGION = "RegionOne"
+GLOBAL_INJECTED_SDC_IP_ADDR = "onap-sdc"
+GLOBAL_INJECTED_SDNC_IP_ADDR = "onap-sdnc"
+GLOBAL_INJECTED_VID_IP_ADDR = "vid-server.onap-vid"
+
