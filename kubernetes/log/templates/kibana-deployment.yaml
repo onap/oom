@@ -1,0 +1,71 @@
+apiVersion: extensions/v1beta1 
+kind: Deployment
+metadata:
+  labels:
+    app: kibana
+  name: kibana
+  namespace: {{ .Values.nsPrefix }}-log
+spec:
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+      name: kibana
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "elasticsearch"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "kibana-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - name: kibana
+        image: {{ .Values.image.kibana }}
+        ports:
+        - containerPort: 5601
+          name: http
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 5601
+        volumeMounts:
+         - name: kibana-conf
+           mountPath: /usr/share/kibana/config/      
+      volumes:
+        - name: kibana-conf
+          configMap:
+            name: kibana-configmap
+            items:
+            - key: kibana.yml
+              path: kibana.yml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-configmap
+  namespace: {{ .Values.nsPrefix }}-log
+data:
+{{ (.Files.Glob "resources/kibana/conf/kibana.yml").AsConfig | indent 2 }}
