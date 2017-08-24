@@ -19,11 +19,13 @@ mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-KB/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-BE/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-FE/
 mkdir -p /config-init/$NAMESPACE/aai/opt/aai/logroot/
+mkdir -p /config-init/$NAMESPACE/aai/model-loader/logs/
 
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/aai-config/
 chmod -R 777 /config-init/$NAMESPACE/aai/aai-data/
 chmod -R 777 /config-init/$NAMESPACE/aai/opt/aai/logroot/
+chmod -R 777 /config-init/$NAMESPACE/aai/model-loader/logs/
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/onap-/$NAMESPACE-/g" {} \;
