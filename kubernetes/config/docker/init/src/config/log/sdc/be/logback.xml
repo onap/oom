@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration scan="true" scanPeriod="3 seconds">
+    <property name="logDir" value="/var/log/onap" />
+    <property name="componentName" scope="system" value="sdc"></property>
+    <property name="subComponentName" scope="system" value="sdc-be"></property>
+    <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
+    <property file="${config.home}/catalog-be/configuration.yaml" />
+    <property name="enable-all-log" scope="context" value="false" />
+    <!--  log file names -->
+    <property name="errorLogName" value="error" />
+    <property name="metricsLogName" value="metrics" />
+    <property name="auditLogName" value="audit" />
+    <property name="debugLogName" value="debug" />
+    <property name="transactionLogName" value="transaction" />
+    <property name="allLogName" value="all" />
+    <property name="queueSize" value="256" />
+    <property name="maxFileSize" value="50MB" />
+    <property name="maxHistory" value="30" />
+    <property name="totalSizeCap" value="10GB" />
+    <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+    <!-- All log -->
+    <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
+        <then>
+            <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ALL_ROLLING">
+                <file>${logDirectory}/${allLogName}.log</file>
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <fileNamePattern>${logDirectory}/${allLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                        <maxFileSize>${maxFileSize}</maxFileSize>
+                    </timeBasedFileNamingAndTriggeringPolicy>
+                    <maxHistory>${maxHistory}</maxHistory>
+                    <totalSizeCap>${totalSizeCap}</totalSizeCap>
+                </rollingPolicy>
+                <encoder>
+                    <pattern>${pattern}</pattern>
+                </encoder>
+            </appender>
+            <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_ALL">
+                <appender-ref ref="ALL_ROLLING" />
+            </appender>
+        </then>
+    </if>
+    <!-- Error log -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ERROR_ROLLING">
+        <file>${logDirectory}/${errorLogName}.log</file>
+        <!-- Audit messages filter - deny audit messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>AUDIT_MARKER</marker>
+            </evaluator>
+            <onMismatch>NEUTRAL</onMismatch>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <!-- Transaction messages filter - deny Transaction messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>TRANSACTION_MARKER</marker>
+            </evaluator>
+            <onMismatch>NEUTRAL</onMismatch>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <!-- deny all events with a level below INFO, that is TRACE and DEBUG -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- Debug log -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="DEBUG_ROLLING">
+        <file>${logDirectory}/${debugLogName}.log</file>
+        <!-- No need to deny audit messages - they are INFO only, will be denied 
+                        anyway -->
+        <!-- Transaction messages filter - deny Transaction messages, there are 
+                        some DEBUG level messages among them -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>TRANSACTION_MARKER</marker>
+            </evaluator>
+            <onMismatch>NEUTRAL</onMismatch>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <!-- accept DEBUG and TRACE level -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.GEventEvaluator">
+                <expression>e.level.toInt() &lt;= DEBUG.toInt()</expression>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- Audit log -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="AUDIT_ROLLING">
+        <file>${logDirectory}/${auditLogName}.log</file>
+        <!-- Audit messages filter - accept audit messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>AUDIT_MARKER</marker>
+            </evaluator>
+            <onMismatch>DENY</onMismatch>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDirectory}/${auditLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- SdncTransaction log -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="TRANSACTION_ROLLING">
+        <file>${logDirectory}/${transactionLogName}.log</file>
+        <!-- Transaction messages filter - accept audit messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>TRANSACTION_MARKER</marker>
+            </evaluator>
+            <onMismatch>DENY</onMismatch>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDirectory}/${transactionLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- Asynchronicity Configurations -->
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_DEBUG">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="DEBUG_ROLLING" />
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_TRANSACTION">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="TRANSACTION_ROLLING" />
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_ERROR">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="ERROR_ROLLING" />
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_AUDIT">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="AUDIT_ROLLING" />
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="ASYNC_ERROR" />
+        <appender-ref ref="ASYNC_DEBUG" />
+        <appender-ref ref="ASYNC_AUDIT" />
+        <appender-ref ref="ASYNC_TRANSACTION" />
+        <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
+            <then>
+                <appender-ref ref="ALL_ROLLING" />
+            </then>
+        </if>
+    </root>
+    <logger level="INFO" name="org.openecomp.sdc" />
+</configuration>
