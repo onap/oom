@@ -43,6 +43,8 @@ chmod -R 777 /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 chmod -R 777 /config-init/$NAMESPACE/aai/search-data-service/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/data-router/logs/
 
+chmod -R 777 /config-init/$NAMESPACE/log/elasticsearch
+
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/\.onap-/\.$NAMESPACE-/g" {} \;
