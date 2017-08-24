@@ -45,7 +45,7 @@ configure_app() {
   #       this is not ideal and should be addressed (along with the replacement
   #       of sed commands for configuration) by the future configuration
   #       user stories (ie. OOM-51 to OOM-53)
-  find ../$2 -type f -exec sed -i -template "s/onap-/$1-/g" {} \;
+  find ../$2 -type f -exec sed -i-template "s/onap-/$1-/g" {} \;
 
   # replace the default '/dockerdata-nfs/onapdemo' volume mount paths
   find ../$2 -iname "*.yaml" -type f -exec sed -i -e 's/dockerdata-nfs\/[a-zA-Z0-9\\-]*\//dockerdata-nfs\/'"$1"'\//g' {} \;
