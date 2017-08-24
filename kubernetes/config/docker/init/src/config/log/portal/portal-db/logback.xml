@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration debug="true" scan="true" scanPeriod="3 seconds">
+    <!--
+  Logback files for the ECOMP SDK Application "ecomp_app"
+  are created in directory ${catalina.base}/logs/ecomp_app;
+  e.g., apache-tomcat-8.0.35/logs/ecomp_app/application.log
+  -->
+    <!--<jmxConfigurator /> -->
+    <!--  specify the component name -->
+    <property name="componentName" value="portal"></property>
+    <property name="subComponentName" value="portalDB"></property>
+    <!--  specify the base path of the log directory -->
+    <property name="logDirPrefix" value="/var/log/onap"></property>
+    <!-- The directories where logs are written -->
+    <property name="logDirectory" value="${logDirPrefix}/${componentName}/${subComponentName}" />
+    <!-- Can easily relocate debug logs by modifying this path. -->
+    <property name="debugLogDirectory" value="${logDirPrefix}/${componentName}/${subComponentName}" />
+    <!--  log file names -->
+    <property name="generalLogName" value="application" />
+    <property name="errorLogName" value="error" />
+    <property name="metricsLogName" value="metrics" />
+    <property name="auditLogName" value="audit" />
+    <property name="debugLogName" value="debug" />
+    <!--
+  These loggers are not used in code (yet).
+  <property name="securityLogName" value="security" />
+  <property name="policyLogName" value="policy" />
+  <property name="performanceLogName" value="performance" />
+  <property name="serverLogName" value="server" />
+   -->
+    <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+    <property name="maxHistory" value="30" />
+    <property name="queueSize" value="256" />
+    <property name="maxFileSize" value="50MB" />
+    <property name="totalSizeCap" value="10GB" />
+    <!-- Example evaluator filter applied against console appender -->
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- ============================================================================ -->
+    <!-- EELF Appenders -->
+    <!-- ============================================================================ -->
+    <!-- The EELFAppender is used to record events to the general application
+    log -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="EELF">
+        <file>${logDirectory}/${generalLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logDirectory}/${generalLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 30 days' worth of history capped at ${totalSizeCap} total size -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+        <filter class="org.openecomp.fusionapp.util.CustomLoggingFilter" />
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncEELF">
+        <queueSize>${queueSize}</queueSize>
+        <!-- Class name is part of caller data -->
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="EELF" />
+    </appender>
+    <!-- EELF Security Appender. This appender is used to record security events
+    to the security log file. Security events are separate from other loggers
+    in EELF so that security log records can be captured and managed in a secure
+    way separate from the other logs. This appender is set to never discard any
+    events. -->
+    <!--
+  <appender name="EELFSecurity"
+    class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${securityLogName}.log</file>
+    <rollingPolicy
+      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/${securityLogName}.%i.log.zip
+      </fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy
+      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>${defaultPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="asyncEELFSecurity" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <discardingThreshold>0</discardingThreshold>
+    <appender-ref ref="EELFSecurity" />
+  </appender>
+   -->
+    <!-- EELF Performance Appender. This appender is used to record performance
+    records. -->
+    <!--
+  <appender name="EELFPerformance"
+    class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${performanceLogName}.log</file>
+    <rollingPolicy
+      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/${performanceLogName}.%i.log.zip
+      </fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy
+      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <outputPatternAsHeader>true</outputPatternAsHeader>
+      <pattern>${defaultPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncEELFPerformance" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFPerformance" />
+  </appender>
+  -->
+    <!-- EELF Server Appender. This appender is used to record Server related
+    logging events. The Server logger and appender are specializations of the
+    EELF application root logger and appender. This can be used to segregate Server
+    events from other components, or it can be eliminated to record these events
+    as part of the application root log. -->
+    <!--
+  <appender name="EELFServer"
+    class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${serverLogName}.log</file>
+    <rollingPolicy
+      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/${serverLogName}.%i.log.zip
+      </fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy
+      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+        <pattern>${defaultPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncEELFServer" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFServer" />
+  </appender>
+   -->
+    <!-- EELF Policy Appender. This appender is used to record Policy engine
+    related logging events. The Policy logger and appender are specializations
+    of the EELF application root logger and appender. This can be used to segregate
+    Policy engine events from other components, or it can be eliminated to record
+    these events as part of the application root log. -->
+    <!--
+  <appender name="EELFPolicy"
+    class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${policyLogName}.log</file>
+    <rollingPolicy
+      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/${policyLogName}.%i.log.zip
+      </fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy
+      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+        <pattern>${defaultPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncEELFPolicy" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFPolicy" />
+  </appender>
+  -->
+    <!-- EELF Audit Appender. This appender is used to record audit engine
+    related logging events. The audit logger and appender are specializations
+    of the EELF application root logger and appender. This can be used to segregate
+    Policy engine events from other components, or it can be eliminated to record
+    these events as part of the application root log. -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="EELFAudit">
+        <file>${logDirectory}/${auditLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logDirectory}/${auditLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 30 days' worth of history capped at ${totalSizeCap} total size -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncEELFAudit">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="EELFAudit" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="EELFMetrics">
+        <file>${logDirectory}/${metricsLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 30 days' worth of history capped at ${totalSizeCap} total size -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncEELFMetrics">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="EELFMetrics" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="EELFError">
+        <file>${logDirectory}/${errorLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 30 days' worth of history capped at ${totalSizeCap} total size -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncEELFError">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="EELFError" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="EELFDebug">
+        <file>${debugLogDirectory}/${debugLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- keep 30 days' worth of history capped at ${totalSizeCap} total size -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncEELFDebug">
+        <queueSize>${queueSize}</queueSize>
+        <appender-ref ref="EELFDebug" />
+    </appender>
+    <!-- ============================================================================ -->
+    <!--  EELF loggers -->
+    <!-- ============================================================================ -->
+    <logger additivity="false" level="debug" name="com.att.eelf">
+        <appender-ref ref="asyncEELF" />
+    </logger>
+    <!--
+  <logger name="com.att.eelf.security" level="info" additivity="false">
+    <appender-ref ref="asyncEELFSecurity" />
+  </logger>
+  <logger name="com.att.eelf.perf" level="info" additivity="false">
+    <appender-ref ref="asyncEELFPerformance" />
+  </logger>
+  <logger name="com.att.eelf.server" level="info" additivity="false">
+   <appender-ref ref="asyncEELFServer" />
+  </logger>
+  <logger name="com.att.eelf.policy" level="info" additivity="false">
+    <appender-ref ref="asyncEELFPolicy" />
+  </logger>
+  -->
+    <logger additivity="false" level="info" name="com.att.eelf.audit">
+        <appender-ref ref="asyncEELFAudit" />
+    </logger>
+    <logger additivity="false" level="info" name="com.att.eelf.metrics">
+        <appender-ref ref="asyncEELFMetrics" />
+    </logger>
+    <logger additivity="false" level="info" name="com.att.eelf.error">
+        <appender-ref ref="asyncEELFError" />
+    </logger>
+    <logger additivity="false" level="debug" name="com.att.eelf.debug">
+        <appender-ref ref="asyncEELFDebug" />
+    </logger>
+    <root level="DEBUG">
+        <appender-ref ref="asyncEELF" />
+    </root>
+</configuration>
