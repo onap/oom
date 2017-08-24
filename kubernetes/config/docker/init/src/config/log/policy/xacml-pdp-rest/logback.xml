@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============LICENSE_START=======================================================
+  ECOMP-PDP-REST
+  ================================================================================
+  Copyright (C) 2017 AT&amp;T Intellectual Property. All rights reserved.
+  ================================================================================
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ============LICENSE_END=========================================================
+  -->
+<configuration scan="true" scanPeriod="3 seconds" debug="true">
+   <!--<jmxConfigurator /> -->
+   <!--  specify the base path of the log directory --> 
+   <property name="logDir" value="/var/log/onap" />
+   <!--  specify the component name -->
+   <property name="componentName" value="policy" />
+   <!-- specify the sub component name -->
+   <property name="subComponentName" value="xacml-pdp-rest" />
+   <!-- The directories where logs are written --> 
+   <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
+   <property name="pattern" value="%d{&amp;quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&amp;quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+   <!--  log file names -->
+   <property name="errorLogName" value="error" />
+   <property name="metricsLogName" value="metrics" />
+   <property name="auditLogName" value="audit" />
+   <property name="debugLogName" value="debug" />
+   <property name="queueSize" value="256" />
+   <property name="maxFileSize" value="50MB" />
+   <property name="maxHistory" value="30" />
+   <property name="totalSizeCap" value="10GB" />
+   <!-- Example evaluator filter applied against console appender -->
+   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+         <pattern>${pattern}</pattern>
+      </encoder>
+   </appender>
+   <!-- ============================================================================ -->
+   <!-- EELF Appenders -->
+   <!-- ============================================================================ -->
+   <!-- The EELFAppender is used to record events to the general application 
+    log -->
+   <!-- EELF Audit Appender. This appender is used to record audit engine 
+    related logging events. The audit logger and appender are specializations 
+    of the EELF application root logger and appender. This can be used to segregate 
+    Policy engine events from other components, or it can be eliminated to record 
+    these events as part of the application root log. -->
+   <appender name="EELFAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${auditLogName}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+         <fileNamePattern>${logDirectory}/${auditLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+         <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>${maxFileSize}</maxFileSize>
+         </timeBasedFileNamingAndTriggeringPolicy>
+         <maxHistory>${maxHistory}</maxHistory>
+         <totalSizeCap>${totalSizeCap}</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+         <pattern>${pattern}</pattern>
+      </encoder>
+   </appender>
+   <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>${queueSize}</queueSize>
+      <appender-ref ref="EELFAudit" />
+   </appender>
+   <appender name="EELFMetrics" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${metricsLogName}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+         <fileNamePattern>${logDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+         <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>${maxFileSize}</maxFileSize>
+         </timeBasedFileNamingAndTriggeringPolicy>
+         <maxHistory>${maxHistory}</maxHistory>
+         <totalSizeCap>${totalSizeCap}</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+         <!-- <pattern>"%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} - 
+        %msg%n"</pattern> -->
+         <pattern>${pattern}</pattern>
+      </encoder>
+   </appender>
+   <appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>${queueSize}</queueSize>
+      <appender-ref ref="EELFMetrics" />
+   </appender>
+   <appender name="EELFError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${errorLogName}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+         <fileNamePattern>${logDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+         <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>${maxFileSize}</maxFileSize>
+         </timeBasedFileNamingAndTriggeringPolicy>
+         <maxHistory>${maxHistory}</maxHistory>
+         <totalSizeCap>${totalSizeCap}</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+         <pattern>${pattern}</pattern>
+      </encoder>
+      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+         <level>INFO</level>
+      </filter>
+   </appender>
+   <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>${queueSize}</queueSize>
+      <appender-ref ref="EELFError" />
+   </appender>
+   <appender name="EELFDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${debugLogName}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+         <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+         <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>${maxFileSize}</maxFileSize>
+         </timeBasedFileNamingAndTriggeringPolicy>
+         <maxHistory>${maxHistory}</maxHistory>
+         <totalSizeCap>${totalSizeCap}</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+         <pattern>${pattern}</pattern>
+      </encoder>
+   </appender>
+   <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>${queueSize}</queueSize>
+      <appender-ref ref="EELFDebug" />
+      <includeCallerData>true</includeCallerData>
+   </appender>
+   <!-- ============================================================================ -->
+   <!--  EELF loggers -->
+   <!-- ============================================================================ -->
+   <logger name="com.att.eelf.audit" level="info" additivity="false">
+      <appender-ref ref="asyncEELFAudit" />
+   </logger>
+   <logger name="com.att.eelf.metrics" level="info" additivity="false">
+      <appender-ref ref="asyncEELFMetrics" />
+   </logger>
+   <logger name="com.att.eelf.error" level="info" additivity="false">
+      <appender-ref ref="asyncEELFError" />
+   </logger>
+   <logger name="com.att.eelf.debug" level="debug" additivity="false">
+      <appender-ref ref="asyncEELFDebug" />
+   </logger>
+   <root level="INFO">
+      <appender-ref ref="asyncEELFDebug" />
+   </root>
+</configuration>
