@@ -48,6 +48,7 @@ mkdir -p /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 mkdir -p /config-init/$NAMESPACE/aai/search-data-service/logs/
 mkdir -p /config-init/$NAMESPACE/aai/data-router/logs/
 mkdir -p /config-init/$NAMESPACE/mso/mariadb/data
+mkdir -p /config-init/$NAMESPACE/log/elasticsearch/data
 
 echo "Setting permissions to container writeable directories"
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
@@ -64,6 +65,7 @@ chmod -R 777 /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 chmod -R 777 /config-init/$NAMESPACE/aai/search-data-service/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/data-router/logs/
 chmod -R 777 /config-init/$NAMESPACE/policy/mariadb/
+chmod -R 777 /config-init/$NAMESPACE/log/elasticsearch
 
 echo "Substituting configuration parameters"
 
