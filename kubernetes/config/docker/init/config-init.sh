@@ -48,6 +48,7 @@ mkdir -p /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 mkdir -p /config-init/$NAMESPACE/aai/search-data-service/logs/
 mkdir -p /config-init/$NAMESPACE/aai/data-router/logs/
 mkdir -p /config-init/$NAMESPACE/mso/mariadb/data
+mkdir -p /config-init/$NAMESPACE/log/elasticsearch/data
 
 echo "Setting permissions to container writeable directories"
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
@@ -66,6 +67,7 @@ chmod -R 777 /config-init/$NAMESPACE/aai/data-router/logs/
 chmod -R 777 /config-init/$NAMESPACE/policy/mariadb/
 
 echo "Substituting configuration parameters"
+chmod -R 777 /config-init/$NAMESPACE/log/elasticsearch
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/\.onap-/\.$NAMESPACE-/g" {} \;
