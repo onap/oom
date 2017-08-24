@@ -1,0 +1,79 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: logstash
+  name: logstash
+  namespace: {{ .Values.nsPrefix }}-log 
+spec:
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+      name: logstash
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "elasticsearch"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "logstash-readiness"
+          }
+          ]'
+
+    spec:
+      containers:
+      - name: logstash
+        image: {{ .Values.image.logstash }}
+        ports:
+        - containerPort: 5044 
+          name: transport
+          protocol: TCP
+        volumeMounts:
+         - mountPath: /usr/share/logstash/config/
+           name: logstash-conf
+         - mountPath: /usr/share/logstash/pipeline/
+           name: logstash-pipeline
+      volumes:
+        - name: logstash-conf
+          configMap:
+            name: logstash-configmap
+            items:
+            - key: logstash.yml
+              path: logstash.yml
+        - name: logstash-pipeline
+          configMap:
+            name: logstash-configmap
+            items:
+            - key: onap-pipeline.conf
+              path: onap-pipeline.conf
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-configmap
+  namespace: {{ .Values.nsPrefix }}-log
+data:
+{{ (.Files.Glob "resources/logstash/conf/logstash.yml").AsConfig | indent 2 }}
+{{ (.Files.Glob "resources/logstash/pipeline/onap-pipeline.conf").AsConfig | indent 2 }}
