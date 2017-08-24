@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: sdnc-dgbuilder
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
@@ -34,8 +35,8 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "sdnc-dgbuilder-readiness"
           }
           ]'
@@ -44,13 +45,14 @@ spec:
       - command:
         - /bin/bash
         - -c
-        - cd /opt/openecomp/sdnc/dgbuilder/ && ./start sdnc1.0 && wait
+        - cd /opt/openecomp/sdnc/dgbuilder/ && ./start.sh sdnc1.0 && wait
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: openECOMP1.0
         - name: SDNC_CONFIG_DIR
           value: /opt/openecomp/sdnc/data/properties
-        image: nexus3.onap.org:10001/openecomp/dgbuilder-sdnc-image:1.0-STAGING-latest
+        image: {{ .Values.image.dgbuilderSdnc }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         name: sdnc-dgbuilder-container
         ports:
         - containerPort: 3100
