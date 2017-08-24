@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: logstash
+  name: logstash
+  namespace: {{ .Values.NS }} 
+spec:
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+      name: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: {{ .Values.image.logstash }}
+        ports:
+        - containerPort: 5044 
+          name: transport
+          protocol: TCP
+        volumeMounts:
+         - mountPath: /usr/share/logstash/config/logstash.yml
+           name: logstash-conf
+         - mountPath: /usr/share/logstash/pipeline/
+           name: logstash-pipeline
+      volumes:
+        - name: logstash-conf
+          hostPath:
+            path: /dockerdata-nfs/onap/log/logstash/conf/logstash.yml
+        - name: logstash-pipeline
+          hostPath:
+            path: /dockerdata-nfs/onap/log/logstash/pipeline/
