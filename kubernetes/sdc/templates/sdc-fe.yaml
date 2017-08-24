@@ -2,17 +2,18 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    app: sdc-kb
-  name: sdc-kb
+    app: sdc-fe
+  name: sdc-fe
+  namespace: {{ .Values.NS }}
 spec:
   selector:
     matchLabels:
-      app: sdc-kb
+      app: sdc-fe
   template:
     metadata:
       labels:
-        app: sdc-kb
-      name: sdc-kb
+        app: sdc-fe
+      name: sdc-fe
       annotations:
         pod.beta.kubernetes.io/init-containers: '[
           {
@@ -20,7 +21,11 @@ spec:
                   "--container-name",
                   "sdc-es",
                   "--container-name",
-                  "sdc-cs"
+                  "sdc-cs",
+                  "--container-name",
+                  "sdc-kb",
+                  "--container-name",
+                  "sdc-be"
               ],
               "command": [
                   "/root/ready.py"
@@ -36,43 +41,62 @@ spec:
                       }
                   }
               ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "sdc-kb-readiness"
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "sdc-fe-readiness"
           }
           ]'
     spec:
       containers:
-      - env:
+      - name: sdc-fe
+        env:
         - name: ENVNAME
           value: AUTO
-        - name: ELASTICSEARCH_URL
-          value: http://sdc-es:9200
-        image: nexus3.onap.org:10001/openecomp/sdc-kibana:1.1-STAGING-latest
-        name: sdc-kb
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: {{ .Values.image.sdcFrontend }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
         volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data/
+          name: sdc-sdc-es-es
         - mountPath: /root/chef-solo/environments/
           name: sdc-environments
+        - mountPath: /var/lib/jetty/etc/keystore
+          name: sdc-jetty-keystore
         - mountPath: /etc/localtime
           name: sdc-localtime
         - mountPath: /var/lib/jetty/logs
           name: sdc-logs
+        - mountPath: /root/chef-solo/cookbooks/sdc-catalog-fe/recipes/FE_2_setup_configuration.rb
+          name: sdc-fe-config
         ports:
-        - containerPort: 5601
+        - containerPort: 9443
+        - containerPort: 8181
         readinessProbe:
           tcpSocket:
-            port: 5601
+            port: 8181
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
+        - name: sdc-sdc-es-es
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/sdc-es/ES
         - name: sdc-environments
           hostPath:
-            path: /dockerdata-nfs/onapdemo/sdc/environments
+            path: /dockerdata-nfs/onap/sdc/environments
+        - name: sdc-jetty-keystore
+          hostPath:
+            path: /dockerdata-nfs/onap/sdc/jetty/keystore
         - name: sdc-localtime
           hostPath:
             path:  /etc/localtime
         - name:  sdc-logs
           hostPath:
-            path:  /dockerdata-nfs/onapdemo/sdc/logs
+            path:  /dockerdata-nfs/onap/sdc/logs
+        - name:  sdc-fe-config
+          hostPath:
+            path:  /dockerdata-nfs/onap/sdc/sdc-fe/FE_2_setup_configuration.rb
       imagePullSecrets:
       - name: onap-docker-registry-key
