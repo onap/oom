@@ -4,7 +4,7 @@ metadata:
   labels:
     app: vnc-portal
   name: vnc-portal
-  namespace: {{ .Values.NS }}
+  namespace: "{{ .Values.nsPrefix }}-portal"
 spec:
   selector:
     matchLabels:
@@ -50,7 +50,7 @@ spec:
               "env": [
                   {
                       "name": "NAMESPACE",
-                      "value": "onap-policy"
+                      "value": "{{ .Values.nsPrefix }}-policy"
                   }
               ],
               "image": "{{ .Values.image.readiness }}",
@@ -68,7 +68,7 @@ spec:
               "env": [
                   {
                       "name": "NAMESPACE",
-                      "value": "onap-sdc"
+                      "value": "{{ .Values.nsPrefix }}-sdc"
                   }
               ],
               "image": "{{ .Values.image.readiness }}",
@@ -86,7 +86,7 @@ spec:
               "env": [
                   {
                       "name": "NAMESPACE",
-                      "value": "onap-vid"
+                      "value": "{{ .Values.nsPrefix }}-vid"
                   }
               ],
               "image": "{{ .Values.image.readiness }}",
@@ -95,7 +95,7 @@ spec:
           },
           {
               "command": ["/bin/sh","-c"],
-              "args": ["echo `host sdc-be.onap-sdc | awk ''{print$4}''` sdc.api.be.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host portalapps.onap-portal | awk ''{print$4}''` portal.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host pap.onap-policy | awk ''{print$4}''` policy.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host sdc-fe.onap-sdc | awk ''{print$4}''` sdc.ui.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host vid-server.onap-vid | awk ''{print$4}''` vid.api.simpledemo.openecomp.org >> /ubuntu-init/hosts; echo `host sparky-fe.onap-aai | awk ''{print$4}''` aai.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts"],
+              "args": ["echo `host sdc-be.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.be.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host portalapps.{{ .Values.nsPrefix }}-portal | awk ''{print$4}''` portal.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host pap.{{ .Values.nsPrefix }}-policy | awk ''{print$4}''` policy.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host sdc-fe.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.ui.simpledemo.openecomp.org  >> /ubuntu-init/hosts; echo `host vid-server.{{ .Values.nsPrefix }}-vid | awk ''{print$4}''` vid.api.simpledemo.openecomp.org >> /ubuntu-init/hosts; echo `host sparky-fe.{{ .Values.nsPrefix }}-aai | awk ''{print$4}''` aai.api.simpledemo.openecomp.org  >> /ubuntu-init/hosts"],
               "image": "{{ .Values.image.ubuntuInit }}",
               "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "vnc-init-hosts",
@@ -118,7 +118,6 @@ spec:
         env:
         - name: VNC_PASSWORD
           value: password
-        imagePullPolicy: IfNotPresent
         name: vnc-portal
         volumeMounts:
         - mountPath: /ubuntu-init/
@@ -130,4 +129,4 @@ spec:
         - name: ubuntu-init
           emptyDir: {}
       imagePullSecrets:
-      - name: onap-docker-registry-key
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"

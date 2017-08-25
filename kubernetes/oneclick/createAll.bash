@@ -25,7 +25,7 @@ create_registry_key() {
 }
 
 create_onap_helm() {
-  helm install ../$2/ --name $2
+  helm install ../$2/ --name $2 --namespace $1 --set nsPrefix=$1
 }
 
 configure_app() {
@@ -39,21 +39,7 @@ configure_app() {
   if [ -e "$2/Chart.yaml" ]; then
     sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
     sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
-    sed -i "s/onap-/$1-/g" ../$2/values.yaml
   fi
-
-
-  # replace the default 'onap' namespace qualification of K8s hostnames within
-  # the config files
-  # note: this will create a '-template' file within the component's directory
-  #       this is not ideal and should be addressed (along with the replacement
-  #       of sed commands for configuration) by the future configuration
-  #       user stories (ie. OOM-51 to OOM-53)
-  find $3 -type f -exec sed -i -- "s/onap-/$1-/g" {} \;
-
-  # replace the default '/dockerdata-nfs/onapdemo' volume mount paths
-  find $3 -iname "*.yaml" -type f -exec sed -i -e 's/dockerdata-nfs\/[a-zA-Z0-9\\-]*\//dockerdata-nfs\/'"$1"'\//g' {} \;
-  rm -f $3/*.yaml-e
 }
 
 
@@ -130,7 +116,7 @@ for i in ${HELM_APPS[@]}; do
   create_namespace $NS $i 
 
   printf "\nCreating registry secret **********\n"
-  create_registry_key $NS $i $ONAP_DOCKER_REGISTRY_KEY $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
+  create_registry_key $NS $i ${NS}-docker-registry-key $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
 
   printf "\nCreating deployments and services **********\n"
   _FILES_PATH=$(echo ../$i/templates)
@@ -141,4 +127,3 @@ for i in ${HELM_APPS[@]}; do
 done
 
 printf "\n**** Done ****\n"
-

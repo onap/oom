@@ -5,15 +5,15 @@
 delete_namespace() {
   _NS=$1-$2
   kubectl delete namespace $_NS
-  printf "Waiting for namespace $_NS termination...\n"
-  while kubectl get namespaces $_NS > /dev/null 2>&1; do
-    sleep 2
-  done
+   printf "Waiting for namespace $_NS termination...\n"
+   while kubectl get namespaces $_NS > /dev/null 2>&1; do
+     sleep 2
+   done
   printf "Namespace $_NS deleted.\n\n"
 }
 
 delete_registry_key() {
-  kubectl --namespace $1-$2 delete secret onap-docker-registry-key
+  kubectl --namespace $1-$2 delete secret ${1}-docker-registry-key
 }
 
 delete_app_helm() {
