@@ -39,6 +39,7 @@ configure_app() {
   if [ -e "$2/Chart.yaml" ]; then
     sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
     sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
+    mv ../$2/all-services.yaml-- ../$2/all-services.yaml
   fi
 }
 
