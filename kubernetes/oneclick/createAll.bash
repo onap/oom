@@ -25,7 +25,7 @@ create_registry_key() {
 }
 
 create_onap_helm() {
-  helm install ../$2/ --name $2 --namespace $1 --set nsPrefix=$1
+  helm install ../$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1
 }
 
 configure_app() {
@@ -36,10 +36,10 @@ configure_app() {
     fi
   done
   
-  if [ -e "$2/Chart.yaml" ]; then
-    sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
-    sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
-  fi
+  sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
+  sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
+  mv $3/all-services.yaml-- $3/all-services.yaml
+
 }
 
 
