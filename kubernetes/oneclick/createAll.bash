@@ -25,7 +25,8 @@ create_registry_key() {
 }
 
 create_onap_helm() {
-  helm install ../$2/ --name $2 --namespace $1 --set nsPrefix=$1
+  helm install ../$2/ --name $1-$2-$3 --namespace $1 --set nsPrefix=$1
+  mv $4/all-services.yaml-- $4/all-services.yaml
 }
 
 configure_app() {
@@ -36,10 +37,9 @@ configure_app() {
     fi
   done
   
-  if [ -e "$2/Chart.yaml" ]; then
-    sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
-    sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
-  fi
+  sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
+  sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
+  rm $3/all-services.yaml
 }
 
 
@@ -121,7 +121,7 @@ for i in ${HELM_APPS[@]}; do
   printf "\nCreating deployments and services **********\n"
   _FILES_PATH=$(echo ../$i/templates)
   configure_app $NS $i $_FILES_PATH $start $end
-  create_onap_helm $NS $i
+  create_onap_helm $NS $i $INSTANCE $_FILES_PATH
 
   printf "\n"
 done
