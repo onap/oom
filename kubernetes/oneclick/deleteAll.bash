@@ -1,3 +1,9 @@
+
+
+
+
+
+
 #!/bin/bash
 
 . $(dirname "$0")/setenv.bash
@@ -17,7 +23,7 @@ delete_registry_key() {
 }
 
 delete_app_helm() {
-  helm delete $1 --purge
+  helm delete $1-$2-$3 --purge
 }
 
 usage() {
@@ -25,6 +31,7 @@ usage() {
 Usage: $0 [PARAMs]
 -u                  : Display usage
 -n [NAMESPACE]      : Kubernetes namespace (required)
+-i [INSTANCE]       : ONAP deployment instance # (default: 1)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot,
@@ -36,6 +43,7 @@ EOF
 NS=
 INCL_SVC=false
 APP=
+INSTANCE=1
 
 while getopts ":n:u:s:a:" PARAM; do
   case $PARAM in
@@ -45,6 +53,9 @@ while getopts ":n:u:s:a:" PARAM; do
       ;;
     n)
       NS=${OPTARG}
+      ;;
+    i)
+      INSTANCE=${OPTARG}
       ;;
     a)
       APP=${OPTARG}
@@ -74,7 +85,7 @@ printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${HELM_APPS[@]}; do
 
-  delete_app_helm $i
+  delete_app_helm $NS $i $INSTANCE
   delete_namespace $NS $i
 
 done
