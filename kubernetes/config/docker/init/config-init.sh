@@ -20,12 +20,24 @@ mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-BE/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-FE/
 mkdir -p /config-init/$NAMESPACE/aai/opt/aai/logroot/
 mkdir -p /config-init/$NAMESPACE/aai/model-loader/logs/
+mkdir -p /config-init/$NAMESPACE/aai/haproxy/log/
+mkdir -p /config-init/$NAMESPACE/aai/aai-traversal/logs/ajsc-jetty/gc/
+mkdir -p /config-init/$NAMESPACE/aai/aai-traversal/logs/dmaapAAIEventConsumer/
+mkdir -p /config-init/$NAMESPACE/aai/aai-traversal/logs/perf-audit/
+mkdir -p /config-init/$NAMESPACE/aai/aai-traversal/logs/rest/
+mkdir -p /config-init/$NAMESPACE/aai/aai-resources/logs/ajsc-jetty/gc/
+mkdir -p /config-init/$NAMESPACE/aai/aai-resources/logs/dmaapAAIEventConsumer/
+mkdir -p /config-init/$NAMESPACE/aai/aai-resources/logs/perf-audit/
+mkdir -p /config-init/$NAMESPACE/aai/aai-resources/logs/rest/
 
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/aai-config/
 chmod -R 777 /config-init/$NAMESPACE/aai/aai-data/
 chmod -R 777 /config-init/$NAMESPACE/aai/opt/aai/logroot/
 chmod -R 777 /config-init/$NAMESPACE/aai/model-loader/logs/
+chmod -R 777 /config-init/$NAMESPACE/aai/haproxy/log/
+chmod -R 777 /config-init/$NAMESPACE/aai/aai-traversal/logs/
+chmod -R 777 /config-init/$NAMESPACE/aai/aai-resources/logs/
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/onap-/$NAMESPACE-/g" {} \;

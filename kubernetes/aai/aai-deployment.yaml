@@ -11,58 +11,15 @@ spec:
       labels:
         app: aai-service
       name: aai-service
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "hbase"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "oomk8s/readiness-check:1.0.0",
-              "imagePullPolicy": "Always",
-              "name": "aai-service-readiness"
-          }
-          ]'
     spec:
       containers:
-      - env:
-        - name: AAI_REPO_PATH
-          value: r/aai
-        - name: AAI_CHEF_ENV
-          value: simpledemo
-        - name: AAI_CHEF_LOC
-          value: /var/chef/aai-data/environments
-        - name: docker_gitbranch
-          value: release-1.0.0
-        - name: DEBIAN_FRONTEND
-          value: noninteractive
-        - name: JAVA_HOME
-          value: /usr/lib/jvm/java-8-openjdk-amd64
-        image: nexus3.onap.org:10001/openecomp/ajsc-aai:1.1-STAGING-latest
-        name: aai-service
+      - name: aai-service
+        image: aaionap/haproxy
         volumeMounts:
-        - mountPath: /etc/ssl/certs/
-          name: aai-service-certs
-        - mountPath: /opt/aai/logroot/
-          name: aai-service-logroot
-        - mountPath: /var/chef/aai-config/
-          name: aai-config
-        - mountPath: /var/chef/aai-data/
-          name: aai-data
+        - mountPath: /dev/log
+          name: aai-service-log
+        - mountPath: /usr/local/etc/haproxy/haproxy.cfg
+          name: haproxy-cfg
         ports:
         - containerPort: 8080
         - containerPort: 8443
@@ -72,18 +29,12 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-        - name: aai-service-certs
+        - name: aai-service-log
           hostPath:
-            path: /dockerdata/onapdemo/aai/etc/ssl/certs/
-        - name: aai-service-logroot
+            path: /dockerdata/onapdemo/aai/haproxy/log/
+        - name: haproxy-cfg
           hostPath:
-            path: /dockerdata/onapdemo/aai/opt/aai/logroot/
-        - name: aai-config
-          hostPath:
-            path: /dockerdata/onapdemo/aai/aai-config/
-        - name: aai-data
-          hostPath:
-            path: /dockerdata/onapdemo/aai/aai-data/
+            path: /dockerdata/onapdemo/aai/haproxy/haproxy.cfg
       restartPolicy: Always
       imagePullSecrets:
       - name: onap-docker-registry-key
