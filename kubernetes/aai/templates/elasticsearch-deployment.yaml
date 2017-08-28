@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: "{{ .Values.nsPrefix }}-aai"
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+      name: elasticsearch
+    spec:
+      hostname: elasticsearch
+      containers:
+      - name: elasticsearch
+        image: "{{ .Values.image.elasticsearchImage }}:{{ .Values.image.elasticsearchVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        ports:
+        - containerPort: 9200
+        readinessProbe:
+          tcpSocket:
+            port: 9200
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          name: elasticsearch-config
+      volumes:
+      - name: elasticsearch-config
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/elasticsearch/config/elasticsearch.yml"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
