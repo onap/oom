@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gremlin
+  namespace: "{{ .Values.nsPrefix }}-aai"
+spec:
+  selector:
+    matchLabels:
+      app: gremlin
+  template:
+    metadata:
+      labels:
+        app: gremlin
+      name: gremlin
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "hbase"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "gremlin-readiness"
+          }
+          ]'
+    spec:
+      hostname: gremlin
+      containers:
+      - name: gremlin
+        image: aaionap/gremlin-server
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        env:
+        - name: SERVER_HOST
+          value: hbase
+        - name: SERVER_TABLE
+          value: aaigraph.dev
+        - name: GREMLIN_HOST
+          value: gremlin
+        ports:
+        - containerPort: 8182
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
