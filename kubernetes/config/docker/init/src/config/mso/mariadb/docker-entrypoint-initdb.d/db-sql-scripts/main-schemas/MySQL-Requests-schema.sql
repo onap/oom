@@ -43,6 +43,7 @@
         NETWORK_ID varchar(45),
         NETWORK_NAME varchar(80),
         NETWORK_TYPE varchar(80),
+        REQUESTOR_ID varchar(80),
         primary key (REQUEST_ID)
     );
 
