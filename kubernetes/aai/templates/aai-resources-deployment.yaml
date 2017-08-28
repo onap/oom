@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aai-resources
+  namespace: "{{ .Values.nsPrefix }}-aai"
+spec:
+  selector:
+    matchLabels:
+      app: aai-resources
+  template:
+    metadata:
+      labels:
+        app: aai-resources
+      name: aai-resources
+    spec:
+      containers:
+      - name: aai-resources
+        image: "{{ .Values.image.aaiResourcesImage }}:{{ .Values.image.aaiResourcesVersion}}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        env:
+        - name: CHEF_BRANCH
+          value: master
+        - name: AAI_CHEF_ENV
+          value: simpledemo
+        - name: AAI_CORE_VERSION
+          value: 1.1.0-SNAPSHOT
+        - name: AAI_CHEF_LOC
+          value: /var/chef/aai-data/environments
+        - name: CHEF_GIT_URL
+          value: http://gerrit.onap.org/r/aai
+        volumeMounts:
+        - mountPath: /opt/aai/logroot/AAI-RES/
+          name: aai-resources-logs
+        ports:
+        - containerPort: 8447
+        readinessProbe:
+          tcpSocket:
+            port: 8447
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: aai-resources-logs
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-resources"
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
