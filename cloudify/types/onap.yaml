@@ -1,0 +1,34 @@
+node_types:
+  cloudify.onap.kubernetes.App:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        type: string
+        description: >
+          Name of ONAP app
+      resources:
+        description: >
+          List of paths (relative, blueprint prespective)
+          to all kubernetes resources YAML files definition
+        default: []
+      services:
+        type: string
+        description: >
+          Path (relative, blueprint prespective)
+          to kubernetes app services YAML file definition
+        default: []
+      inputs:
+        description: >
+          Parameters required to create kubernetes resources for each app
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: cloudify/scripts/onap/read_definitions.py
+          executor: central_deployment_agent
+        configure:
+          implementation: cloudify/scripts/onap/patch_definitions.py
+          executor: central_deployment_agent
+        start:
+          implementation: cloudify/scripts/onap/provision_definitions.py
+          executor: central_deployment_agent
