@@ -25,21 +25,7 @@ create_registry_key() {
 }
 
 create_onap_helm() {
-  helm install ../$2/ --name $2 --namespace $1 --set nsPrefix=$1
-}
-
-configure_app() {
-  # if previous configuration exists put back original template file
-  for file in $3/*.yaml; do
-    if [ -e "$file-template" ]; then
-      mv "$file-template" "${file%}"
-    fi
-  done
-  
-  if [ -e "$2/Chart.yaml" ]; then
-    sed -i-- 's/nodePort: [0-9]\{2\}[02468]\{1\}/nodePort: '"$4"'/g' $3/all-services.yaml
-    sed -i-- 's/nodePort: [0-9]\{2\}[13579]\{1\}/nodePort: '"$5"'/g' $3/all-services.yaml
-  fi
+  helm install ../$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1 --set nodePortPrefix=$3
 }
 
 
@@ -51,6 +37,7 @@ INSTANCE=1
 MAX_INSTANCE=5
 DU=$ONAP_DOCKER_USER
 DP=$ONAP_DOCKER_PASS
+_FILES_PATH=$(echo ../$i/templates)
 
 while getopts ":n:u:s:i:a:du:dp:" PARAM; do
   case $PARAM in
@@ -119,9 +106,7 @@ for i in ${HELM_APPS[@]}; do
   create_registry_key $NS $i ${NS}-docker-registry-key $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
 
   printf "\nCreating deployments and services **********\n"
-  _FILES_PATH=$(echo ../$i/templates)
-  configure_app $NS $i $_FILES_PATH $start $end
-  create_onap_helm $NS $i
+  create_onap_helm $NS $i $start
 
   printf "\n"
 done
