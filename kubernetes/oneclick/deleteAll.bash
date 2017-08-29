@@ -17,7 +17,7 @@ delete_registry_key() {
 }
 
 delete_app_helm() {
-  helm delete $1 --purge
+  helm delete $1-$2-$3 --purge
 }
 
 usage() {
@@ -25,6 +25,7 @@ usage() {
 Usage: $0 [PARAMs]
 -u                  : Display usage
 -n [NAMESPACE]      : Kubernetes namespace (required)
+-i [INSTANCE]       : ONAP deployment instance # (default: 1)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot,
@@ -36,8 +37,10 @@ EOF
 NS=
 INCL_SVC=false
 APP=
+INSTANCE=1
+MAX_INSTANCE=5
 
-while getopts ":n:u:s:a:" PARAM; do
+while getopts ":n:u:i:s:a:" PARAM; do
   case $PARAM in
     u)
       usage
@@ -45,6 +48,9 @@ while getopts ":n:u:s:a:" PARAM; do
       ;;
     n)
       NS=${OPTARG}
+      ;;
+    i)
+      INSTANCE=${OPTARG}
       ;;
     a)
       APP=${OPTARG}
@@ -69,12 +75,17 @@ if [[ ! -z "$APP" ]]; then
   HELM_APPS=($APP)
 fi
 
+if [ "$INSTANCE" -gt "$MAX_INSTANCE" ];then
+  printf "\n********** You choose to delete ${INSTANCE}th instance of ONAP that doesn't exsist\n"
+  exit 1
+fi
+
 printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 
 for i in ${HELM_APPS[@]}; do
 
-  delete_app_helm $i
+  delete_app_helm $NS $i $INSTANCE
   delete_namespace $NS $i
 
 done
