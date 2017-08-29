@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: msb-eag
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: msb-eag
+  template:
+    metadata:
+      labels:
+        app: msb-eag
+      name: msb-eag
+    spec:
+      hostname: msb-eag
+      containers:
+      - args:
+        image:  nexus3.onap.org:10001/onap/msb/msb_apigateway
+        name: "msb-eag"
+        env:
+        - name: CONSUL_IP
+          value: "{{ .Values.consulClusterIP}}"
+        - name: SDCLIENT_IP
+          value: "{{ .Values.discoveryClusterIP}}"
+        - name: ROUTE_LABELS
+          value: "visualRange:0"
+        ports:
+        - containerPort: {{ .Values.eagPort }}
+          name: msb-eag
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.eagPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy}}"
+
+
