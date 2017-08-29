@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zldciad4vipstg00
+  labels:
+    app: dcae-pgaas
+spec:
+  selector:
+    app: dcae-pgaas
+  ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+      nodePort: 30245
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: dcae-pgaas
+  name: dcae-pgaas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dcae-pgaas
+  template:
+    metadata:
+      labels:
+        app: dcae-pgaas
+    spec:
+      hostname: zldciad4vipstg00
+      containers:
+      - image: oomk8s/pgaas:1
+        command: ["/bin/bash"]
+        args: ["-c", "/usr/local/bin/entrypoint.sh; sleep infinity;"]
+        name: dcae-pgaas
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /dbroot/pgdata
+          name: dcae-pgaas-pgdata
+        - mountPath: /dbroot/pglogs
+          name: dcae-pgaas-pglogs
+        - mountPath: /opt/tools
+          name: dcae-pgaas-tools
+      volumes:
+      - name: dcae-pgaas-pgdata
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/pgaas/pgdata
+      - name: dcae-pgaas-pglogs
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/pgaas/pglogs
+      - name: dcae-pgaas-tools
+        hostPath:
+          path: /dockerdata/onapdemo/dcae/pgaas/tools
+
