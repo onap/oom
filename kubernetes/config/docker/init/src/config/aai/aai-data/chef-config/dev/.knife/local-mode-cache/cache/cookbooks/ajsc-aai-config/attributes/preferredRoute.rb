@@ -1,1 +1,0 @@
-node.default["aai-app-config"]["AAI_WORKLOAD_PREFERRED_ROUTE_KEY"] = 'MR1'
