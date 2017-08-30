@@ -13,58 +13,37 @@ spec:
         app: aai-service
       name: aai-service
       annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "hbase"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "aai-service-readiness"
-          }
-          ]'
+        pod.beta.kubernetes.io/init-containers: '[{
+            "args": [
+                "--container-name", "aai-resources",
+                "--container-name", "aai-traversal"
+            ],
+            "command": [
+                "/root/ready.py"
+            ],
+            "env": [{
+                "name": "NAMESPACE",
+                "valueFrom": {
+                    "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                    }
+                }
+            }],
+            "image": "{{ .Values.image.readiness }}",
+            "imagePullPolicy": "{{ .Values.pullPolicy }}",
+            "name": "aai-service-readiness"
+          }]'
     spec:
       containers:
-      - env:
-        - name: AAI_REPO_PATH
-          value: r/aai
-        - name: AAI_CHEF_ENV
-          value: simpledemo
-        - name: AAI_CHEF_LOC
-          value: /var/chef/aai-data/environments
-        - name: docker_gitbranch
-          value: release-1.0.0
-        - name: DEBIAN_FRONTEND
-          value: noninteractive
-        - name: JAVA_HOME
-          value: /usr/lib/jvm/java-8-openjdk-amd64
-        image: {{ .Values.image.ajscAai }}
+      - name: aai-service
+        image: "{{ .Values.image.aaiProxy }}:{{ .Values.image.aaiProxyVersion}}"
         imagePullPolicy: {{ .Values.pullPolicy }}
-        name: aai-service
         volumeMounts:
-        - mountPath: /etc/ssl/certs/
-          name: aai-service-certs
-        - mountPath: /opt/aai/logroot/
-          name: aai-service-logroot
-        - mountPath: /var/chef/aai-config/
-          name: aai-config
-        - mountPath: /var/chef/aai-data/
-          name: aai-data
+        - mountPath: /dev/log
+          name: aai-service-log
+        - mountPath: /usr/local/etc/haproxy/haproxy.cfg
+          name: haproxy-cfg
         ports:
         - containerPort: 8080
         - containerPort: 8443
@@ -74,18 +53,12 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-        - name: aai-service-certs
+        - name: aai-service-log
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/aai/etc/ssl/certs/
-        - name: aai-service-logroot
+            path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/haproxy/log/"
+        - name: haproxy-cfg
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/aai/opt/aai/logroot/
-        - name: aai-config
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-config/
-        - name: aai-data
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/
+            path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/haproxy/haproxy.cfg"
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
