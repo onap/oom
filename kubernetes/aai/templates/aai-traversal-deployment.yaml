@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aai-traversal
+  namespace: "{{ .Values.nsPrefix }}-aai"
+spec:
+  selector:
+    matchLabels:
+      app: aai-traversal
+  template:
+    metadata:
+      labels:
+        app: aai-traversal
+      name: aai-traversal
+    spec:
+      containers:
+      - name: aai-traversal
+        image: "{{ .Values.image.aaiTraversalImage }}:{{ .Values.image.aaiTraversalVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        env:
+        - name: CHEF_BRANCH
+          value: master
+        - name: AAI_CHEF_ENV
+          value: simpledemo
+        - name: AAI_CORE_VERSION
+          value: 1.1.0-SNAPSHOT
+        - name: AAI_CHEF_LOC
+          value: /var/chef/aai-data/environments
+        - name: CHEF_GIT_URL
+          value: http://gerrit.onap.org/r/aai
+        volumeMounts:
+        - mountPath: /opt/aai/logroot/AAI-GQ/
+          name: aai-traversal-logs
+        - mountPath: /var/chef/aai-config/
+          name: aai-config
+        - mountPath: /var/chef/aai-data/
+          name: aai-data
+        ports:
+        - containerPort: 8446
+        readinessProbe:
+          tcpSocket:
+            port: 8446
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: aai-traversal-logs
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-traversal/logs/"
+      - name: aai-config
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-config/"
+      - name: aai-data
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/"
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
