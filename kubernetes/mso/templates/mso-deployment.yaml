@@ -54,6 +54,26 @@ spec:
           name: mso
         - mountPath: /docker-files
           name: mso-docker-files
+        - mountPath: /var/log/onap
+          name: mso-logs
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-api-handler-infra-config/logback.apihandler-infra.xml
+          name: logback-apihandler-infra
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.network.xml
+          name: logback-network
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.tenant.xml
+          name: logback-tenant
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.vnf.xml
+          name: logback-vnf
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-appc-adapter-config/logback.appc.xml
+          name: logback-appc
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-requests-db-adapter-config/logback.msorequestsdbadapter.xml
+          name: logback-msorequestsdbadapter
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-asdc-controller-config/logback.asdc.xml
+          name: logback-asdc
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-sdnc-adapter-config/logback.sdnc.xml
+          name: logback-sdnc
+        - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-bpmn-config/logback.bpmn.xml
+          name: logback-bpmn
         env:
         - name: JBOSS_DEBUG
           value: "false"
@@ -68,13 +88,57 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: mso-logs
+        - mountPath: /usr/share/filebeat/data
+          name: mso-data-filebeat 
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: logback-apihandler-infra
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.apihandler-infra.xml
+        - name: logback-network
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.network.xml 
+        - name: logback-tenant
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.tenant.xml
+        - name: logback-vnf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.vnf.xml
+        - name: logback-appc
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.appc.xml
+        - name: logback-msorequestsdbadapter
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.msorequestsdbadapter.xml
+        - name: logback-asdc
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.asdc.xml
+        - name: logback-sdnc
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.sdnc.xml
+        - name: logback-bpmn
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.bpmn.xml
         - name: mso
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mso
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: mso-logs
+          emptyDir: {}
+        - name: mso-data-filebeat
+          emptyDir: {}
         - name: mso-docker-files
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/docker-files
