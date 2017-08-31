@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: cli
+  name: cli
+  namespace: "{{ .Values.nsPrefix }}-cli"
+spec:
+  selector:
+    matchLabels:
+      app: cli
+  template:
+    metadata:
+      labels:
+        app: cli
+      name: cli
+    spec:
+      containers:
+      - image:  {{ .Values.image.cliImage}}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: "cli"
+        env:
+        - name: CLI_MODE
+          value: daemon
+        ports:
+        - containerPort: 80
+          name: cli
+        readinessProbe:
+          tcpSocket:
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
