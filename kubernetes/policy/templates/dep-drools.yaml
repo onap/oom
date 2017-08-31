@@ -70,7 +70,35 @@ spec:
           name: drools
         - mountPath: /usr/share/maven/conf/settings.xml
           name: drools-settingsxml
+        - mountPath: /var/log/onap
+          name: policy-logs
+        - mountPath: /tmp/logback.xml
+          name: policy-logback
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 60; cp -f /tmp/logback.xml /opt/app/policy/config/logback.xml"]
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: policy-logs
+        - mountPath: /usr/share/filebeat/data
+          name: policy-data-filebeat
       volumes:
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: policy-logs
+          emptyDir: {}
+        - name: policy-data-filebeat
+          emptyDir: {}
+        - name: policy-logback
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/drools/logback.xml
         - name: drools-settingsxml
           hostPath:
             path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/drools/settings.xml
