@@ -83,6 +83,10 @@ spec:
           name: sdc-localtime
         - mountPath: /var/lib/jetty/logs
           name: sdc-logs
+        - mountPath: /var/log/onap
+          name: sdc-logs-2
+        - mountPath: /var/lib/jetty/config/catalog-be/logback.xml
+          name: sdc-logback
         ports:
         - containerPort: 8443
         - containerPort: 8080
@@ -91,7 +95,27 @@ spec:
             port: 8443
           initialDelaySeconds: 5
           periodSeconds: 10
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: sdc-logs-2
+        - mountPath: /usr/share/filebeat/data
+          name: sdc-data-filebeat
       volumes:
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: sdc-logs-2
+          emptyDir: {}
+        - name: sdc-data-filebeat
+          emptyDir: {}
+        - name: sdc-logback
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/be/logback.xml
         - name: sdc-sdc-es-es
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
