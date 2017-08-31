@@ -86,6 +86,11 @@ spec:
         image: {{ .Values.image.modelLoader }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: model-loader-service
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: aai-logs
+        - mountPath: /tmp/logback.xml
+          name: aai-logback
         ports:
         - containerPort: 8080
         - containerPort: 8443
@@ -94,6 +99,27 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-data-filebeat
+      volumes:
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: aai-logs
+          emptyDir: {}
+        - name: aai-data-filebeat
+          emptyDir: {}
+        - name: aai-logback
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/aai/model-loader/logback.xml
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
