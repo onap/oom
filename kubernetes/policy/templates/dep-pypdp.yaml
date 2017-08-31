@@ -64,7 +64,35 @@ spec:
         volumeMounts:
         - mountPath: /tmp/policy-install/config
           name: pe
+        - mountPath: /var/log/onap
+          name: policy-logs
+        - mountPath:  /tmp/logback.xml
+          name: policy-logback
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 60; cp -f /tmp/logback.xml /opt/app/policy/servers/pypdp/webapps/PyPDPServer/WEB-INF/classes/logback.xml"]
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: policy-logs
+        - mountPath: /usr/share/filebeat/data
+          name: policy-data-filebeat
       volumes:
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: policy-logs
+          emptyDir: {}
+        - name: policy-data-filebeat
+          emptyDir: {}
+        - name: policy-logback
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/pypdpserver/logback.xml
         - name: pe
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/opt/policy/config/pe/
