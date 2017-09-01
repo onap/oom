@@ -12,6 +12,34 @@ spec:
       labels:
         app: aai-traversal
       name: aai-traversal
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "hbase",
+                  "--container-name",
+                  "aai-resources"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "aai-traversal-readiness"
+          }
+        ]'      
     spec:
       containers:
       - name: aai-traversal
@@ -29,12 +57,12 @@ spec:
         - name: CHEF_GIT_URL
           value: http://gerrit.onap.org/r/aai
         volumeMounts:
-        - mountPath: /opt/aai/logroot/AAI-GQ/
+        - mountPath: /opt/aai/logroot/
           name: aai-traversal-logs
-        - mountPath: /var/chef/aai-config/
-          name: aai-config
         - mountPath: /var/chef/aai-data/
           name: aai-data
+        - mountPath: /docker-entrypoint.sh
+          name: entrypoint-override
         ports:
         - containerPort: 8446
         readinessProbe:
@@ -46,12 +74,12 @@ spec:
       - name: aai-traversal-logs
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-traversal/logs/"
-      - name: aai-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-config/"
       - name: aai-data
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/"
+      - name: entrypoint-override
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-traversal/docker-entrypoint.sh"
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
