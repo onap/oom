@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-vnfmgr
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.vnfmgr.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-vnfmgr
+  template:
+    metadata:
+      labels:
+        app: vfc-vnfmgr
+      name: vfc-vnfmgr
+    spec:
+      hostname: vfc-vnfmgr
+      containers:
+      - args:
+        image:  {{.Values.vnfmgr.image}}
+        name: "vfc-vnfmgr"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.vnfmgr.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.vnfmgr.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
