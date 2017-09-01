@@ -12,6 +12,32 @@ spec:
       labels:
         app: aai-resources
       name: aai-resources
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "hbase"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "oomk8s/readiness-check:1.0.0",
+              "imagePullPolicy": "Always",
+              "name": "aai-resources-readiness"
+          }
+        ]'      
     spec:
       containers:
       - name: aai-resources
@@ -29,12 +55,12 @@ spec:
         - name: CHEF_GIT_URL
           value: http://gerrit.onap.org/r/aai
         volumeMounts:
-        - mountPath: /opt/aai/logroot/AAI-RES/
+        - mountPath: /opt/aai/logroot/
           name: aai-resources-logs
-        - mountPath: /var/chef/aai-config/
-          name: aai-config
         - mountPath: /var/chef/aai-data/
           name: aai-data
+        - mountPath: /docker-entrypoint.sh
+          name: entrypoint-override
         ports:
         - containerPort: 8447
         readinessProbe:
@@ -46,12 +72,12 @@ spec:
       - name: aai-resources-logs
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-resources/logs/"
-      - name: aai-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-config/"
       - name: aai-data
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/"
+      - name: entrypoint-override
+        hostPath:
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-resources/docker-entrypoint.sh"
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
