@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-nslcm
+spec:
+  replicas: {{ .Values.nslcm.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-nslcm
+  template:
+    metadata:
+      labels:
+        app: vfc-nslcm
+      name: vfc-nslcm
+    spec:
+      hostname: vfc-nslcm
+      containers:
+      - args:
+        image:  {{.Values.nslcm.image}}
+        name: "vfc-nslcm"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.nslcm.port }}
+          name: vfc-nslcm
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.nslcm.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-gvnfmdriver
+spec:
+  replicas: {{ .Values.gvnfmdriver.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-gvnfmdriver
+  template:
+    metadata:
+      labels:
+        app: vfc-gvnfmdriver
+      name: vfc-gvnfmdriver
+    spec:
+      hostname: vfc-gvnfmdriver
+      containers:
+      - args:
+        image:  {{.Values.gvnfmdriver.image}}
+        name: "vfc-gvnfmdriver"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.gvnfmdriver.port }}
+          name: vfc-gvnfmdriver
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gvnfmdriver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
