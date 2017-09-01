@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-ztevmanagerdriver
+spec:
+  replicas: {{ .Values.ztevmanagerdriver.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-ztevmanagerdriver
+  template:
+    metadata:
+      labels:
+        app: vfc-ztevmanagerdriver
+      name: vfc-ztevmanagerdriver
+    spec:
+      hostname: vfc-ztevmanagerdriver
+      containers:
+      - args:
+        image:  {{.Values.ztevmanagerdriver.image}}
+        name: "vfc-ztevmanagerdriver"
+        env:
+        - name: VFC_ZTEVMANAGERDRIVER_PORT
+          value: {{ .Values.ztevmanagerdriver.port }}
+        - name: MSB_SERVICE_IP
+          value: {{ .Values.msbipaddress }}
+        - name: MSB_SERVICE_PORT
+          value: {{ .Values.msbport }}
+        ports:
+        - containerPort: {{ .Values.ztevmanagerdriver.port }}
+          name: vfc-ztevmanagerdriver
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.ztevmanagerdriver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

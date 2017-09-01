@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-catalog
+spec:
+  replicas: {{ .Values.catalog.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-catalog
+  template:
+    metadata:
+      labels:
+        app: vfc-catalog
+      name: vfc-catalog
+    spec:
+      hostname: vfc-catalog
+      containers:
+      - args:
+        image:  {{.Values.catalog.image}}
+        name: "vfc-catalog"
+        env:
+        - name: VFC_CATALOG_PORT
+          value: {{ .Values.catalog.port }}
+        - name: MSB_SERVICE_IP
+          value: {{ .Values.msbipaddress }}
+        - name: MSB_SERVICE_PORT
+          value: {{ .Values.msbport }}
+        ports:
+        - containerPort: {{ .Values.catalog.port }}
+          name: vfc-catalog
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.catalog.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

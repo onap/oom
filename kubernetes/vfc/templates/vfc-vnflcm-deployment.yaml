@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-vnflcm
+spec:
+  replicas: {{ .Values.vnflcm.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-vnflcm
+  template:
+    metadata:
+      labels:
+        app: vfc-vnflcm
+      name: vfc-vnflcm
+    spec:
+      hostname: vfc-vnflcm
+      containers:
+      - args:
+        image:  {{.Values.vnflcm.image}}
+        name: "vfc-vnflcm"
+        env:
+        - name: VFC_VNFLCM_PORT
+          value: {{ .Values.vnflcm.port }}
+        - name: MSB_SERVICE_IP
+          value: {{ .Values.msbipaddress }}
+        - name: MSB_SERVICE_PORT
+          value: {{ .Values.msbport }}
+        ports:
+        - containerPort: {{ .Values.vnflcm.port }}
+          name: vfc-vnflcm
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.vnflcm.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

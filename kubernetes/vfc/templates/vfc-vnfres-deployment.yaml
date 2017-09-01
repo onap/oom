@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-vnfres
+spec:
+  replicas: {{ .Values.vnfres.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-vnfres
+  template:
+    metadata:
+      labels:
+        app: vfc-vnfres
+      name: vfc-vnfres
+    spec:
+      hostname: vfc-vnfres
+      containers:
+      - args:
+        image:  {{.Values.vnfres.image}}
+        name: "vfc-vnfres"
+        env:
+        - name: VFC_VNFRES_PORT
+          value: {{ .Values.vnfres.port }}
+        - name: MSB_SERVICE_IP
+          value: {{ .Values.msbipaddress }}
+        - name: MSB_SERVICE_PORT
+          value: {{ .Values.msbport }}
+        ports:
+        - containerPort: {{ .Values.vnfres.port }}
+          name: vfc-vnfres
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.vnfres.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
