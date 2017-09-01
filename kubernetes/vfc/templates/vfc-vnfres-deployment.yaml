@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-vnfres
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.vnfres.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-vnfres
+  template:
+    metadata:
+      labels:
+        app: vfc-vnfres
+      name: vfc-vnfres
+    spec:
+      hostname: vfc-vnfres
+      containers:
+      - args:
+        image:  {{.Values.vnfres.image}}
+        name: "vfc-vnfres"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.vnfres.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.vnfres.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"        
