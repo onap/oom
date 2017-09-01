@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-jujudriver
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.jujudriver.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-jujudriver
+  template:
+    metadata:
+      labels:
+        app: vfc-jujudriver
+      name: vfc-jujudriver
+    spec:
+      hostname: vfc-jujudriver
+      containers:
+      - args:
+        image:  {{.Values.jujudriver.image}}
+        name: "vfc-jujudriver"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.jujudriver.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.jujudriver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

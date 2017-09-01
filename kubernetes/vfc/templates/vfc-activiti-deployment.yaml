@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-activiti
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.activiti.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-activiti
+  template:
+    metadata:
+      labels:
+        app: vfc-activiti
+      name: vfc-activiti
+    spec:
+      hostname: vfc-activiti
+      containers:
+      - args:
+        image:  {{.Values.activiti.image}}
+        name: "vfc-activiti"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.activiti.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.activiti.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"

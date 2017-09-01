@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-emsdriver
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.emsdriver.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-emsdriver
+  template:
+    metadata:
+      labels:
+        app: vfc-emsdriver
+      name: vfc-emsdriver
+    spec:
+      hostname: vfc-emsdriver
+      containers:
+      - args:
+        image:  {{.Values.emsdriver.image}}
+        name: "vfc-emsdriver"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.emsdriver.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.emsdriver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
