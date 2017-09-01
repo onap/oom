@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-resmgr
+spec:
+  replicas: {{ .Values.resmgr.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-resmgr
+  template:
+    metadata:
+      labels:
+        app: vfc-resmgr
+      name: vfc-resmgr
+    spec:
+      hostname: vfc-resmgr
+      containers:
+      - args:
+        image:  {{.Values.resmgr.image}}
+        name: "vfc-resmgr"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.resmgr.port }}
+          name: vfc-resmgr
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.resmgr.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
