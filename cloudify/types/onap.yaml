@@ -1,4 +1,33 @@
 node_types:
+  cloudify.onap.kubernetes.Environment:
+    derived_from: cloudify.nodes.Root
+    properties:
+      namespace:
+        type: string
+      init_pod:
+        type: string
+        description: >
+          Path to init pod YAML file
+      options:
+        description: >
+          For compatibility with kubernetes plugin.
+          To be removed in the future.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: cloudify/scripts/onap/create_namespace.py
+          executor: central_deployment_agent
+        start:
+          implementation: cloudify/scripts/onap/create_init_pod.py
+          executor: central_deployment_agent
+        stop:
+          implementation: cloudify/scripts/onap/delete_init_pod.py
+          executor: central_deployment_agent
+        delete:
+          implementation: cloudify/scripts/onap/delete_namespace.py
+          executor: central_deployment_agent
+
   cloudify.onap.kubernetes.App:
     derived_from: cloudify.nodes.Root
     properties:
@@ -6,6 +35,11 @@ node_types:
         type: string
         description: >
           Name of ONAP app
+      values:
+        type: string
+        description: >
+          Paths (relative, blueprint prespective) to values.yaml file
+        required: false
       resources:
         description: >
           List of paths (relative, blueprint prespective)
@@ -21,14 +55,35 @@ node_types:
         description: >
           Parameters required to create kubernetes resources for each app
         default: {}
+      options:
+        description: >
+          For compatibility with kubernetes plugin.
+          To be removed in the future.
+        default: {}
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: cloudify/scripts/onap/read_definitions.py
+          implementation: cloudify/scripts/onap/create_namespace.py
           executor: central_deployment_agent
         configure:
-          implementation: cloudify/scripts/onap/patch_definitions.py
+          implementation: fabric.fabric_plugin.tasks.run_task
           executor: central_deployment_agent
+          inputs:
+            tasks_file:
+              default: cloudify/scripts/onap/configure_docker_secret_workaround.py
+            task_name:
+              default: configure_secret
+            fabric_env:
+              default:
+                host_string: { get_secret: kubernetes_master_ip }
+                user: { get_secret: agent_user }
+                key: { get_secret: agent_key_private }
         start:
-          implementation: cloudify/scripts/onap/provision_definitions.py
+          implementation: cloudify/scripts/onap/create_resources_services.py
+          executor: central_deployment_agent
+        stop:
+          implementation: cloudify/scripts/onap/delete_resources_services.py
+          executor: central_deployment_agent
+        delete:
+          implementation: cloudify/scripts/onap/delete_namespace.py
           executor: central_deployment_agent

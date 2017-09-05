@@ -8,8 +8,10 @@ description: >
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  # Plugin required: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/releases/download/1.2.0/cloudify_kubernetes_plugin-1.2.0-py27-none-linux_x86_64-centos-Core.wgn
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0/plugin.yaml
+  # Plugin required: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/releases/download/1.2.1rc1/cloudify_kubernetes_plugin-1.2.1rc1-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.1rc1/plugin.yaml
+  # Plugin required: http://repository.cloudifysource.org/cloudify/wagons/cloudify-fabric-plugin/1.4.2/cloudify_fabric_plugin-1.4.2-py27-none-linux_x86_64-centos-Core.wgn
+  - http://www.getcloudify.org/spec/fabric-plugin/1.4.2/plugin.yaml
   - cloudify/types/onap.yaml
 
 inputs:
@@ -17,46 +19,16 @@ inputs:
     description: >
       File content of kubernetes master YAML configuration
 
-  apps:
-    description: >
-      List of ONAP apps names to be deployed.
-      Default empty array (deploy all available apps).
-    default: []
-
   namespace_prefix:
     type: string
     description: >
       Kubernetes namespace name prefix which will be uese for all ONAP apps
     default: onap
 
-  docker_registry:
-    type: string
-    default: regsecret
-
-  docker_server:
-    type: string
-    default: nexus3.onap.org:10001
-
-  docker_username:
-    type: string
-    default: docker
-
-  docker_password:
-    type: string
-    default: docker
-
-  docker_email:
-    type: string
-    default: email@email.com
-
 dsl_definitions:
-  inputs: &app_inputs
-    namespace_prefix: { get_input: namespace_prefix }
-    docker_registry: { get_input: docker_registry }
-    docker_server: { get_input: docker_server }
-    docker_username: { get_input: docker_username }
-    docker_password: { get_input: docker_password }
-    docker_email: { get_input: docker_email }
+  options: &app_options
+    namespace:
+      concat: [{ get_input: namespace_prefix }, '-', { get_property: [SELF, name] }]
 
 node_templates:
   kubernetes_master:
@@ -65,12 +37,13 @@ node_templates:
       configuration:
         file_content: { get_input: kubernetes_configuration_file_content }
 
-  init_pod:
-    type: cloudify.kubernetes.resources.Pod
+  onap_environment:
+    type: cloudify.onap.kubernetes.Environment
     properties:
-      definition:
-        file:
-          resource_path: kubernetes/config/pod-config-init.yaml
+      namespace: { get_input: namespace_prefix }
+      init_pod: kubernetes/config/pod-config-init.yaml
+      options:
+        namespace: { get_input: namespace_prefix }
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
@@ -79,162 +52,173 @@ node_templates:
     type: cloudify.onap.kubernetes.App
     properties:
       name: mso
+      values: kubernetes/mso/values.yaml
       resources:
-          - kubernetes/mso/templates/mso-deployment.yaml
-          - kubernetes/mso/templates/db-deployment.yaml
+        - kubernetes/mso/templates/mso-deployment.yaml
+        - kubernetes/mso/templates/db-deployment.yaml
       services: kubernetes/mso/templates/all-services.yaml
-      inputs: *app_inputs
+      services: _temp/services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   message_router_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: message-router
+      values: kubernetes/message-router/values.yaml
       resources:
           - kubernetes/message-router/templates/message-router-zookeeper.yaml
           - kubernetes/message-router/templates/message-router-dmaap.yaml
           - kubernetes/message-router/templates/message-router-kafka.yaml
       services: kubernetes/message-router/templates/all-services.yaml
-      inputs: *app_inputs
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   sdc_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: sdc
+      values: kubernetes/sdc/values.yaml
       resources:
-        - kubernetes/sdc/sdc-es.yaml
-        - kubernetes/sdc/sdc-fe.yaml
-        - kubernetes/sdc/sdc-kb.yaml
-        - kubernetes/sdc/sdc-cs.yaml
-        - kubernetes/sdc/sdc-be.yaml
-      services: kubernetes/sdc/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/sdc/templates/sdc-es.yaml
+        - kubernetes/sdc/templates/sdc-fe.yaml
+        - kubernetes/sdc/templates/sdc-kb.yaml
+        - kubernetes/sdc/templates/sdc-cs.yaml
+        - kubernetes/sdc/templates/sdc-be.yaml
+      services: kubernetes/sdc/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   aai_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: aai
+      values: kubernetes/aai/values.yaml
       resources:
-        - kubernetes/aai/aai-deployment.yaml
-        - kubernetes/aai/modelloader-deployment.yaml
-        - kubernetes/aai/hbase-deployment.yaml
-      services: kubernetes/aai/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/aai/templates/aai-deployment.yaml
+        - kubernetes/aai/templates/modelloader-deployment.yaml
+        - kubernetes/aai/templates/hbase-deployment.yaml
+      services: kubernetes/aai/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   robot_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: robot
+      values: kubernetes/robot/values.yaml
       resources:
-        - kubernetes/robot/robot-deployment.yaml
-      services: kubernetes/robot/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/robot/templates/robot-deployment.yaml
+      services: kubernetes/robot/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   vid_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: vid
+      values: kubernetes/vid/values.yaml
       resources:
-        - kubernetes/vid/vid-mariadb-deployment.yaml
-        - kubernetes/vid/vid-server-deployment.yaml
-      services: kubernetes/vid/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/templates/vid-mariadb-deployment.yaml
+        - kubernetes/templates/vid-server-deployment.yaml
+      services: kubernetes/vid/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   sdnc_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: sdnc
+      values: kubernetes/sdnc/values.yaml
       resources:
-        - kubernetes/sdnc/web-deployment.yaml
-        - kubernetes/sdnc/sdnc-deployment.yaml
-        - kubernetes/sdnc/dgbuilder-deployment.yaml
-        - kubernetes/sdnc/db-deployment.yaml
-      services: kubernetes/sdnc/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/sdnc/templates/web-deployment.yaml
+        - kubernetes/sdnc/templates/sdnc-deployment.yaml
+        - kubernetes/sdnc/templates/dgbuilder-deployment.yaml
+        - kubernetes/sdnc/templates/db-deployment.yaml
+      services: kubernetes/sdnc/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   portal_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: portal
+      values: kubernetes/portal/values.yaml
       resources:
-        - kubernetes/portal/portal-widgets-deployment.yaml
-        - kubernetes/portal/portal-apps-deployment.yaml
-        - kubernetes/portal/portal-mariadb-deployment.yaml
-        - kubernetes/portal/portal-vnc-dep.yaml
-      services: kubernetes/portal/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/portal/templates/portal-widgets-deployment.yaml
+        - kubernetes/portal/templates/portal-apps-deployment.yaml
+        - kubernetes/portal/templates/portal-mariadb-deployment.yaml
+        - kubernetes/portal/templates/portal-vnc-dep.yaml
+      services: kubernetes/portal/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   policy_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: policy
+      values: kubernetes/policy/values.yaml
       resources:
-        - kubernetes/policy/dep-drools.yaml
-        - kubernetes/policy/dep-nexus.yaml
-        - kubernetes/policy/dep-brmsgw.yaml
-        - kubernetes/policy/dep-pdp.yaml
-        - kubernetes/policy/dep-pap.yaml
-        - kubernetes/policy/dep-maria.yaml
-        - kubernetes/policy/dep-pypdp.yaml
-      services: kubernetes/policy/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/policy/templates/dep-drools.yaml
+        - kubernetes/policy/templates/dep-nexus.yaml
+        - kubernetes/policy/templates/dep-brmsgw.yaml
+        - kubernetes/policy/templates/dep-pdp.yaml
+        - kubernetes/policy/templates/dep-pap.yaml
+        - kubernetes/policy/templates/dep-maria.yaml
+        - kubernetes/policy/templates/dep-pypdp.yaml
+      services: kubernetes/policy/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
 
   appc_app:
     type: cloudify.onap.kubernetes.App
     properties:
       name: appc
+      values: kubernetes/appc/values.yaml
       resources:
-        - kubernetes/appc/appc-deployment.yaml
-        - kubernetes/appc/dgbuilder-deployment.yaml
-        - kubernetes/appc/db-deployment.yaml
-      services: kubernetes/appc/all-services.yaml
-      inputs: *app_inputs
+        - kubernetes/appc/templates/appc-deployment.yaml
+        - kubernetes/appc/templates/dgbuilder-deployment.yaml
+        - kubernetes/appc/templates/db-deployment.yaml
+      services: kubernetes/appc/templates/all-services.yaml
+      options: *app_options
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
       - type: cloudify.relationships.depends_on
-        target: init_pod
+        target: onap_environment
