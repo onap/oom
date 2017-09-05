@@ -17,7 +17,7 @@ delete_registry_key() {
 }
 
 delete_app_helm() {
-  helm delete $1 --purge
+  helm delete $1-$2 --purge
 }
 
 usage() {
@@ -74,7 +74,7 @@ printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${HELM_APPS[@]}; do
 
-  delete_app_helm $i
+  delete_app_helm $NS $i
   delete_namespace $NS $i
 
 done
