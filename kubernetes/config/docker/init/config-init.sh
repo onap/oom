@@ -28,6 +28,7 @@ mkdir -p /config-init/$NAMESPACE/aai/sparky-be/logs/
 mkdir -p /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 mkdir -p /config-init/$NAMESPACE/aai/search-data-service/logs/
 mkdir -p /config-init/$NAMESPACE/aai/data-router/logs/
+mkdir -p /config-init/$NAMESPACE/mso/mariadb/data
 
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
 chmod -R 777 /config-init/$NAMESPACE/portal/logs/
@@ -42,6 +43,7 @@ chmod -R 777 /config-init/$NAMESPACE/aai/sparky-be/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 chmod -R 777 /config-init/$NAMESPACE/aai/search-data-service/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/data-router/logs/
+chmod -R 777 /config-init/$NAMESPACE/policy/mariadb/
 
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
