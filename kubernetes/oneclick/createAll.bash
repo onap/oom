@@ -25,7 +25,7 @@ create_registry_key() {
 }
 
 create_onap_helm() {
-  helm install ../$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1 --set nodePortPrefix=$3
+  helm install ../$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3
 }
 
 
