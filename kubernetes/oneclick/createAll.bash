@@ -18,12 +18,25 @@ Usage: $0 [PARAMs]
 EOF
 }
 
+check_return_code(){
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    printf "The command $1 returned with error code $ret \n" 1>&2
+    exit $ret
+  fi
+}
+
+
 create_namespace() {
-  kubectl create namespace $1-$2
+  cmd=`echo kubectl create namespace $1-$2`
+  eval ${cmd}
+  check_return_code $cmd
 }
 
 create_registry_key() {
-  kubectl --namespace $1-$2 create secret docker-registry $3 --docker-server=$4 --docker-username=$5 --docker-password=$6 --docker-email=$7
+  cmd=`echo kubectl --namespace $1-$2 create secret docker-registry $3 --docker-server=$4 --docker-username=$5 --docker-password=$6 --docker-email=$7`
+  eval ${cmd}
+  check_return_code $cmd
 }
 
 create_onap_helm() {
@@ -31,9 +44,10 @@ create_onap_helm() {
   if [[ ! -z $HELM_VALUES_FILEPATH ]]; then
     HELM_VALUES_ADDITION="--values=$HELM_VALUES_FILEPATH"
   fi
-  helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3 ${HELM_VALUES_ADDITION}
+  cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3 ${HELM_VALUES_ADDITION}`
+  eval ${cmd}
+  check_return_code $cmd
 }
-
 
 #MAINs
 NS=
