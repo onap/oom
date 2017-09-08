@@ -1,0 +1,84 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: cdap2
+  name: cdap2
+  namespace: "{{ .Values.nsPrefix }}-dcae"
+spec:
+  selector:
+    matchLabels:
+      app: cdap2
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: cdap2
+      name: cdap2
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "name": "create-fs",
+              "image": "{{ .Values.image.cdapfs }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "command": ["/bin/bash", "-c", "mkdir -p /cdap/{cdap2-opt-tools,cdap2-opt-data}; grep `hostname` /etc/hosts > /cdap/pod-ip/`hostname`_ip.txt; while [`ls /cdap/pod-ip | wc -l` < 3];  do sleep 1; done"],
+              "volumeMounts": [
+                {
+                  "mountPath": "/cdap",
+                  "name": "cdap-root"
+                }
+              ]
+          }
+        ]'
+    spec:
+      hostname: zldcprivatecloudtruecdap02
+      containers:
+      - image: {{ .Values.image.cdap }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", "cat /cdap/pod-ip/* >> /etc/hosts; /usr/local/bin/01-entrypoint.sh; sleep infinity;"]
+        name: cdap2
+        ports:
+        - containerPort: 8020
+          protocol: TCP
+        - containerPort: 8025
+          protocol: TCP
+        - containerPort: 50070
+          protocol: TCP
+        - containerPort: 50075
+          protocol: TCP
+        - containerPort: 50010
+          protocol: TCP
+        - containerPort: 50020
+          protocol: TCP
+        - containerPort: 3888
+          protocol: TCP
+        - containerPort: 2888
+          protocol: TCP
+        - containerPort: 2181
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /cdap
+          name: cdap-root
+        - mountPath: /opt/tools
+          name: dcae-cdap2-opt-tools
+        - mountPath: /opt/data
+          name: dcae-cdap2-opt-data
+      volumes:
+      - name: cdap-root
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/cdap
+      - name: dcae-cdap2-opt-tools
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/cdap/cdap2-opt-tools
+      - name: dcae-cdap2-opt-data
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/cdap/cdap2-opt-data
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
