@@ -14,7 +14,7 @@ create_namespace() {
 
 create_configuration() {
   create_namespace $1
-  kubectl --namespace $1 create -f pod-config-init.yaml
+  helm install . --name "$1-config" --namespace $1 --set nsPrefix=$1
 }
 
 #MAINs
