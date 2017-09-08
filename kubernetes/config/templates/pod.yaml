@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-onap-configmap
+  namespace: "{{ .Values.nsPrefix }}"
+data:
+  {{ (.Files.Glob "{{ .Values.parameterFile }}").AsConfig | indent 2 }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: "{{ .Values.nsPrefix }}"
+spec:
+  containers:
+    - name: {{ .Chart.Name }}
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      envFrom:
+        - configMapRef:
+            name: global-onap-configmap
+      env:
+      - name: NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      - name: NAMESPACE_PREFIX
+        value: {{ .Values.nsPrefix }}            
+      - name: DOCKER_SHARE_PATH
+        value: {{ .Values.dockerSharePath }}
+      volumeMounts:
+      - name: config-init-root
+        mountPath: /config-init/
+  volumes:
+    - name: config-init-root
+      hostPath:
+        path: {{ .Values.dockerSharePath }}
+  restartPolicy: Never
