@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: dcae-pgaas
+  name: dcae-pgaas
+  namespace: "{{ .Values.nsPrefix }}-dcae"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dcae-pgaas
+  template:
+    metadata:
+      labels:
+        app: dcae-pgaas
+    spec:
+      hostname: zldciad4vipstg00
+      containers:
+      - image: {{ .Values.image.pgaas }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", "/usr/local/bin/entrypoint.sh; sleep infinity;"]
+        name: dcae-pgaas
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /dbroot/pgdata
+          name: dcae-pgaas-pgdata
+        - mountPath: /dbroot/pglogs
+          name: dcae-pgaas-pglogs
+        - mountPath: /opt/tools
+          name: dcae-pgaas-tools
+      volumes:
+      - name: dcae-pgaas-pgdata
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/pgaas/pgdata
+      - name: dcae-pgaas-pglogs
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/pgaas/pglogs
+      - name: dcae-pgaas-tools
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/pgaas/tools
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"

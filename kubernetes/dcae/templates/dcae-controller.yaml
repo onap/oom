@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dcae-controller
+    version: latest
+  name: dcae-controller
+  namespace: "{{ .Values.nsPrefix }}-dcae"
+spec:
+  ports:
+  - name: dcae-con1
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+    nodePort: {{ .Values.nodePortPrefix }}34
+  - name: dcae-con2
+    port: 9998
+    protocol: TCP
+    targetPort: 9998
+    nodePort: {{ .Values.nodePortPrefix }}35
+  selector:
+    app: dcae-controller
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dcae-controller
+  namespace: "{{ .Values.nsPrefix }}-dcae"
+spec:
+  selector:
+    matchLabels:
+      app: dcae-controller
+  template:
+    metadata:
+      labels:
+        app: dcae-controller
+      name: dcae-controller
+    spec:
+      containers:
+      - image: {{ .Values.image.controller }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: dcae-controller
+        ports:
+          - containerPort: 8000
+          - containerPort: 9998
+        env:
+#        - name: KAFKA_ZOOKEEPER_CONNECT
+#          value: "zookeeper:2181"
+#        command:
+#        - start-kafka.sh
+        volumeMounts:
+        - mountPath: /opt/app/config
+          name: dcae-controller-config
+      restartPolicy: Always
+      volumes:
+      - name: dcae-controller-config
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcae/dcae-controller/config
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
