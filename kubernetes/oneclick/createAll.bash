@@ -26,6 +26,14 @@ create_registry_key() {
   kubectl --namespace $1-$2 create secret docker-registry $3 --docker-server=$4 --docker-username=$5 --docker-password=$6 --docker-email=$7
 }
 
+create_certs_secret() {
+  if [ -d $LOCATION/config/certs/$i/ ]; then
+    printf "\nCreating certs and keys secret **********\n"
+    _CERTS_FILES=$(find $LOCATION/config/certs/$2/ -type f | awk '$0="--from-file="$0' ORS=' ')
+    kubectl create secret generic secret-$1-$2 $_CERTS_FILES -n $1-$2
+  fi
+}
+
 create_onap_helm() {
   HELM_VALUES_ADDITION=""
   if [[ ! -z $HELM_VALUES_FILEPATH ]]; then
@@ -117,6 +125,8 @@ for i in ${HELM_APPS[@]}; do
 
   printf "\nCreating registry secret **********\n"
   create_registry_key $NS $i ${NS}-docker-registry-key $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
+
+  create_certs_secret $NS $i
 
   printf "\nCreating deployments and services **********\n"
   create_onap_helm $NS $i $start
