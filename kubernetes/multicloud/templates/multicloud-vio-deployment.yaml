@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: multicloud-vio
+  namespace: "{{ .Values.nsPrefix }}-multicloud"
+spec:
+  selector:
+    matchLabels:
+      app: multicloud-vio
+  template:
+    metadata:
+      labels:
+        app: multicloud-vio
+      name: multicloud-vio
+    spec:
+     hostname: multicloud-vio
+     containers:
+     - env:
+       - name: AAI_ADDR
+         value: aai-service.{{ .Values.nsPrefix }}-aai
+       - name: AAI_PORT
+         value: "8443"
+       - name: AAI_SCHEMA_VERSION
+         value: "v11"
+       - name: AAI_USERNAME
+         value: "AAI"
+       - name: AAI_PASSWORD
+         value: "AAI"
+       name: multicloud-vio
+       volumeMounts:
+       - mountPath: /service/vio/logs
+         name: vio-log
+       image: {{ .Values.image.vio }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       ports:
+       - containerPort: 9004
+       livenessProbe:
+         httpGet:
+           path: /api/multicloud-vio/v0/swagger.json
+           port: 9004
+           scheme: HTTP
+         initialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 10
+         successThreshold: 1
+         failureThreshold: 5
+     restartPolicy: Always
+     volumes:
+     - name: vio-log
+       hostPath:
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/vio/logs
+     imagePullSecrets:
+     - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+
+
