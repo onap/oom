@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HELM_APPS=('mso' 'message-router' 'sdnc' 'vid' 'robot' 'portal' 'policy' 'appc' 'aai' 'sdc' 'dcae')
+HELM_APPS=('mso' 'message-router' 'sdnc' 'vid' 'robot' 'portal' 'policy' 'appc' 'aai' 'sdc' 'dcae' 'multicloud')
 ONAP_DOCKER_REGISTRY=${ONAP_DOCKER_REGISTRY:-nexus3.onap.org:10001}
 ONAP_DOCKER_USER=${ONAP_DOCKER_USER:-docker}
 ONAP_DOCKER_PASS=${ONAP_DOCKER_PASS:-docker}
