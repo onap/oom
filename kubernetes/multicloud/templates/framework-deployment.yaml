@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: framework
+  namespace: "{{ .Values.nsPrefix }}-multicloud"
+spec:
+  selector:
+    matchLabels:
+      app: framework
+  template:
+    metadata:
+      labels:
+        app: framework
+      name: framework
+    spec:
+     hostname: framework
+     containers:
+     - env:
+       - name: AAI_ADDR
+         value: aai-service.{{ .Values.nsPrefix }}-aai
+       - name: AAI_PORT
+         value: "8443"
+       - name: AAI_SCHEMA_VERSION
+         value: "v11"
+       - name: AAI_USERNAME
+         value: "AAI"
+       - name: AAI_PASSWORD
+         value: "AAI"
+       name: framework
+       volumeMounts:
+       - mountPath: /service/multivimbroker/logs
+         name: framework-log
+       image: {{ .Vaules.image.framework }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       ports:
+       - containerPort: 9001
+       livenessProbe:
+         httpGet:
+           path: /openoapi/multivim/v1/swagger.json
+           port: 9001
+           scheme: HTTP
+         initialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 10
+         successThreshold: 1
+         failureThreshold: 5
+     restartPolicy: Always
+     volumes:
+     - name: framework-log
+       hostPath:
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/framework/logs
+     imagePullSecrets:
+     - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+
+

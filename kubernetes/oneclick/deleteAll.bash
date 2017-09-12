@@ -28,7 +28,7 @@ Usage: $0 [PARAMs]
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot,
-                      vid, sdnc, portal, policy, appc
+                      vid, sdnc, portal, policy, appc, multicloud
 EOF
 }
 
