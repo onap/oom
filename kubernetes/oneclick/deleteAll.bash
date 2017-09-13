@@ -16,6 +16,13 @@ delete_registry_key() {
   kubectl --namespace $1-$2 delete secret ${1}-docker-registry-key
 }
 
+delete_certs_secret() {
+  if [ -d $LOCATION/config/certs/$i/ ]; then
+    kubectl delete secret secret-$1-$2 -n $1-$2
+  fi
+}
+
+
 delete_app_helm() {
   helm delete $1-$2 --purge
 }
@@ -36,8 +43,9 @@ EOF
 NS=
 INCL_SVC=false
 APP=
+LOCATION="../"
 
-while getopts ":n:u:s:a:" PARAM; do
+while getopts ":n:u:s:a:l:" PARAM; do
   case $PARAM in
     u)
       usage
@@ -52,6 +60,9 @@ while getopts ":n:u:s:a:" PARAM; do
         usage
         exit 1
       fi
+      ;;
+    l)
+      LOCATION=${OPTARG}
       ;;
     ?)
       usage
@@ -74,6 +85,7 @@ printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${HELM_APPS[@]}; do
 
+  delete_certs_secret $NS $i
   delete_app_helm $NS $i
   delete_namespace $NS $i
 
