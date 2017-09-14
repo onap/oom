@@ -1,30 +1,23 @@
 #! /bin/bash
 
-# changes for health check
-options enable policy-healthcheck
-sedArgs=("-i")
-while read var value ; do
-	if [[ "${var}" == "" ]] ; then
-		continue
-	fi
-	sedArgs+=("-e" "s@\${{${var}}}@${value}@g")
-done <<-EOF
-	PAP_HOST		pap
-	PAP_USERNAME	testpap
-	PAP_PASSWORD	alpha123
-	PDP_HOST		pdp
-	PDP_USERNAME	testpdp
-	PDP_PASSWORD	alpha123
-EOF
+###
+# ============LICENSE_START=======================================================
+# ONAP
+# ================================================================================
+# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+###
 
-# convert file
-sed "${sedArgs[@]}" ${POLICY_HOME}/config/*health*
-
-cat >>${POLICY_HOME}/config/*health* <<-'EOF'
-	http.server.services.HEALTHCHECK.userName=healthcheck
-	http.server.services.HEALTHCHECK.password=zb!XztG34
-EOF
-
-sed -i -e 's/DCAE-CL-EVENT/unauthenticated.TCA_EVENT_OUTPUT/' \
-       -e '/TCA_EVENT_OUTPUT\.servers/s/servers=.*$/servers=10.0.4.102/' \
-    $POLICY_HOME/config/v*-controller.properties
+${POLICY_HOME}/bin/features enable healthcheck
