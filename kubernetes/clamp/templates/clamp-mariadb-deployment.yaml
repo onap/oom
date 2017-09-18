@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: clamp-mariadb
+  namespace: "{{ .Values.nsPrefix }}-clamp"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clamp-mariadb
+  template:
+    metadata:
+      labels:
+        app: clamp-mariadb
+      name: clamp-mariadb
+    spec:
+      hostname: clamp-mariadb
+      containers:
+      - args:
+        image: {{ .Values.image.mariadbImage }}:{{ .Values.image.mariadbVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: "clamp-mariadb"
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: {{ .Values.mysqlPassword }}
+        volumeMounts:
+        - mountPath: /docker-entrypoint-initdb.d
+          name: docker-entrypoint-initdb
+        - mountPath: /etc/mysql/conf.d
+          name:  clamp-mariadb-conf
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+        - name: docker-entrypoint-initdb
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/clamp/mariadb/docker-entrypoint-initdb.d
+        - name: clamp-mariadb-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/clamp/mariadb/conf.d
+      imagePullSecrets:
+      - name: {{ .Values.nsPrefix }}-docker-registry-key
