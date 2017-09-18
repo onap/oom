@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: clamp
+  name: clamp
+  namespace: "{{ .Values.nsPrefix }}-clamp"
+spec:
+  selector:
+    matchLabels:
+      app: clamp
+  template:
+    metadata:
+      labels:
+        app: clamp
+      name: clamp
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "clamp-mariadb"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "clamp-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - env:
+        - name: SPRING_APPLICATION_JSON
+          value: '{"spring.datasource.camunda.url":"jdbc:mysql://clamp-mariadb.{{ .Values.nsPrefix }}-clamp:3306/camundabpm?verifyServerCertificate=false&useSSL=false&requireSSL=false&autoReconnect=true&maxReconnects=100","spring.datasource.camunda.username":
+            "root","spring.datasource.camunda.password": "{{ .Values.mysqlPassword }}", "spring.datasource.cldsdb.url":"jdbc:mysql://clamp-mariadb.{{ .Values.nsPrefix }}-clamp:3306/cldsdb4?verifyServerCertificate=false&useSSL=false&requireSSL=false&autoReconnect=true&maxReconnects=100","spring.datasource.cldsdb.username":
+            "root", "spring.datasource.cldsdb.password": "{{ .Values.mysqlPassword }}"}'
+        image: {{ .Values.image.clamp }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: clamp
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: {{ .Values.nsPrefix }}-docker-registry-key
