@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: consul-agent
+  name: consul-agent
+  namespace: "{{ .Values.nsPrefix }}-consul"
+spec:
+  selector:
+    matchLabels:
+      app: consul-agent
+  template:
+    metadata:
+      labels:
+        app: consul-agent
+      name: consul-agent
+    spec:
+      containers:
+      - image: "{{ .Values.consulimageRegistry }}:{{ .Values.consuldockerTag }}"
+        command: ["/usr/local/bin/docker-entrypoint.sh"]
+        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ .Values.nsPrefix }}-consul"]
+        name: consul-server
+        volumeMounts:
+        - mountPath: /consul/config
+          name: consul-agent-config
+      volumes:
+      - hostPath:
+          path: {{ .Values.rootHostPath }}/{{ .Values.nsPrefix }}/consul/consul-agent-config
+        name: consul-agent-config
