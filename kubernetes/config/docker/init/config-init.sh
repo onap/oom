@@ -7,6 +7,7 @@ echo "Validating onap-parameters.yaml has been populated"
 [[ -z "$OPENSTACK_OAM_SUBNET_ID" ]] && { echo "Error: OPENSTACK_OAM_SUBNET_ID must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_OAM_NETWORK_CIDR" ]] && { echo "Error: OPENSTACK_OAM_NETWORK_CIDR must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_USERNAME" ]] && { echo "Error: OPENSTACK_USERNAME must be set in onap-parameters.yaml"; exit 1; }
+[[ -z "$OPENSTACK_TENANT_ID" ]] && { echo "Error: OPENSTACK_TENANT_ID must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_API_KEY" ]] && { echo "Error: OPENSTACK_API_KEY must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_REGION" ]] && { echo "Error: OPENSTACK_REGION must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_KEYSTONE_URL" ]] && { echo "Error: OPENSTACK_KEYSTONE_URL must be set in onap-parameters.yaml"; exit 1; }
@@ -83,6 +84,8 @@ find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_SUBNET_ID_WIT
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,NETWORK_CIDR_WITH_ONAP_ROUTE_HERE,$OPENSTACK_OAM_NETWORK_CIDR,g" {} \;
 
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_USERNAME_HERE/$OPENSTACK_USERNAME/g" {} \;
+
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_ID_HERE/$OPENSTACK_TENANT_ID/g" {} \;
 
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PASSWORD_HERE/$OPENSTACK_API_KEY/g" {} \;
 
