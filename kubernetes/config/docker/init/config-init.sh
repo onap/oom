@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 echo "Validating onap-parameters.yaml has been populated"
 [[ -z "$OPENSTACK_UBUNTU_14_IMAGE" ]] && { echo "Error: OPENSTACK_UBUNTU_14_IMAGE must be set in onap-parameters.yaml"; exit 1; }
