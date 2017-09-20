@@ -49,6 +49,7 @@ mkdir -p /config-init/$NAMESPACE/aai/elasticsearch/es-data/
 mkdir -p /config-init/$NAMESPACE/aai/search-data-service/logs/
 mkdir -p /config-init/$NAMESPACE/aai/data-router/logs/
 mkdir -p /config-init/$NAMESPACE/mso/mariadb/data
+mkdir -p /config-init/$NAMESPACE/clamp/mariadb/data
 mkdir -p /config-init/$NAMESPACE/log/elasticsearch/data
 
 echo "Setting permissions to container writeable directories"
