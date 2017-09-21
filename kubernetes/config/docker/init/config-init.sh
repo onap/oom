@@ -51,6 +51,9 @@ mkdir -p /config-init/$NAMESPACE/aai/data-router/logs/
 mkdir -p /config-init/$NAMESPACE/mso/mariadb/data
 mkdir -p /config-init/$NAMESPACE/clamp/mariadb/data
 mkdir -p /config-init/$NAMESPACE/log/elasticsearch/data
+mkdir -p /config-init/$NAMESPACE/consul/consul-agent-config/bin
+mkdir -p /config-init/$NAMESPACE/consul/consul-agent-config/scripts
+mkdir -p /config-init/$NAMESPACE/consul/consul-server-config
 
 echo "Setting permissions to container writeable directories"
 chmod -R 777 /config-init/$NAMESPACE/sdc/logs/
@@ -73,6 +76,7 @@ echo "Substituting configuration parameters"
 
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/\.onap-/\.$NAMESPACE-/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/kubectl -n onap/kubectl -n $NAMESPACE/g" {} \;
 # set the ubuntu 14 image
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/UBUNTU_14_IMAGE_NAME_HERE/$OPENSTACK_UBUNTU_14_IMAGE/g" {} \;
 # set the openstack public network uuid
