@@ -39,11 +39,46 @@ create_registry_key() {
   check_return_code $cmd
 }
 
+configure_dcaegen2() {
+  if [ ! -s "$OPENSTACK_PRIVATE_KEY_PATH" ]
+  then
+    echo "ERROR: $OPENSTACK_PRIVATE_KEY_PATH does not exist or is empty.  Cannot launch dcae gen2."
+    return 1
+  fi
+
+  cmd=`echo kubectl --namespace $1-$2 create secret generic $2-openstack-ssh-private-key --from-file=key=${OPENSTACK_PRIVATE_KEY_PATH}`
+  eval ${cmd}
+  check_return_code $cmd
+
+  if [ ! -s "$DCAEGEN2_CONFIG_INPUT_FILE_PATH" ]
+  then
+    echo "ERROR: $DCAEGEN2_CONFIG_INPUT_FILE_PATH does not exist or is empty.  Cannot launch dcae gen2."
+    return 1
+  fi
+
+  cmd=`echo kubectl --namespace $1-$2 create configmap $2-config-inputs --from-file=inputs.yaml=${DCAEGEN2_CONFIG_INPUT_FILE_PATH}`
+  eval ${cmd}
+  check_return_code $cmd
+}
+
 create_onap_helm() {
   HELM_VALUES_ADDITION=""
   if [[ ! -z $HELM_VALUES_FILEPATH ]]; then
     HELM_VALUES_ADDITION="--values=$HELM_VALUES_FILEPATH"
   fi
+  # Have to put a check for dcaegen2 because it requires external files to helm
+  # which should not be part of the Chart.
+  if [ "$2" = "dcaegen2" ];
+  then
+    configure_dcaegen2 $1 $2
+    local result=$?
+    if [ $result -ne 0 ]
+    then
+      echo "ERROR: dcaegen2 failed to configure: Pre-requisites not met.  Skipping deploying it and continue"
+      return
+    fi
+  fi
+
   cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3 ${HELM_VALUES_ADDITION}`
   eval ${cmd}
   check_return_code $cmd
