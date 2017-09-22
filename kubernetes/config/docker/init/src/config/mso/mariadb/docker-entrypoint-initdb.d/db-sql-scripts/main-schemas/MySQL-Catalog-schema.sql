@@ -1,19 +1,37 @@
 
-    alter table HEAT_TEMPLATE 
-        drop 
-        foreign key FK_ek5sot1q07taorbdmkvnveu98;
-
     alter table HEAT_TEMPLATE_PARAMS 
         drop 
-        foreign key FK_8sxvm215cw3tjfh3wni2y3myx;
+        foreign key FK_p3ol1xcvp831glqohrlu6o07o;
 
     alter table MODEL_RECIPE 
         drop 
         foreign key FK_c23r0puyqug6n44jg39dutm1c;
 
+    alter table SERVICE 
+        drop 
+        foreign key FK_l3qy594u2xr1tfpmma3uigsna;
+
     alter table SERVICE_RECIPE 
         drop 
-        foreign key FK_kv13yx013qtqkn94d5gkwbu3s;
+        foreign key FK_i3r1b8j6e7dg9hkp49evnnm5y;
+
+    alter table SERVICE_TO_RESOURCE_CUSTOMIZATIONS 
+        drop 
+        foreign key FK_kiddaay6cfe0aob1f1jaio1bb;
+
+    alter table VF_MODULE 
+        drop 
+        foreign key FK_12jptc9it7gs3pru08skobxxc;
+
+    alter table VNF_RESOURCE_CUSTOMIZATION 
+        drop 
+        foreign key FK_iff1ayhb1hrp5jhea3vvikuni;
+
+    alter table VNF_RES_CUSTOM_TO_VF_MODULE_CUSTOM 
+        drop 
+        foreign key FK_6tdyg2ib5eguh4k2qgofh4fj7;
+
+    drop table if exists ALLOTTED_RESOURCE;
 
     drop table if exists ALLOTTED_RESOURCE_CUSTOMIZATION;
 
@@ -45,7 +63,15 @@
 
     drop table if exists SERVICE_TO_NETWORKS;
 
+    drop table if exists SERVICE_TO_RESOURCE_CUSTOMIZATIONS;
+
+    drop table if exists TEMP_NETWORK_HEAT_TEMPLATE_LOOKUP;
+
+    drop table if exists TOSCA_CSAR;
+
     drop table if exists VF_MODULE;
+
+    drop table if exists VF_MODULE_CUSTOMIZATION;
 
     drop table if exists VF_MODULE_TO_HEAT_FILES;
 
@@ -57,79 +83,86 @@
 
     drop table if exists VNF_RESOURCE;
 
+    drop table if exists VNF_RESOURCE_CUSTOMIZATION;
+
+    drop table if exists VNF_RES_CUSTOM_TO_VF_MODULE_CUSTOM;
+
+    create table ALLOTTED_RESOURCE (
+        MODEL_UUID varchar(255) not null,
+        MODEL_INVARIANT_UUID varchar(255),
+        MODEL_VERSION varchar(255),
+        MODEL_NAME varchar(255),
+        TOSCA_NODE_TYPE varchar(255),
+        SUBCATEGORY varchar(255),
+        DESCRIPTION varchar(255),
+        CREATION_TIMESTAMP datetime not null,
+        primary key (MODEL_UUID)
+    );
+
     create table ALLOTTED_RESOURCE_CUSTOMIZATION (
         MODEL_CUSTOMIZATION_UUID varchar(200) not null,
-        MODEL_VERSION varchar(20) not null,
-        MODEL_UUID varchar(200) not null,
-        MODEL_NAME varchar(200) not null,
-        MODEL_INSTANCE_NAME varchar(200) not null,
+        MODEL_INSTANCE_NAME varchar(255),
+        AR_MODEL_UUID varchar(255),
+        PROVIDING_SERVICE_MODEL_INVARIANT_UUID varchar(255),
+        TARGET_NETWORK_ROLE varchar(255),
+        NF_FUNCTION varchar(255),
+        NF_TYPE varchar(255),
+        NF_ROLE varchar(255),
+        NF_NAMING_CODE varchar(255),
+        MIN_INSTANCES integer,
+        MAX_INSTANCES integer,
         CREATION_TIMESTAMP datetime not null,
-        DESCRIPTION varchar(200) default null,
-        MODEL_INVARIANT_UUID varchar(200) not null,
         primary key (MODEL_CUSTOMIZATION_UUID)
     );
 
     create table HEAT_ENVIRONMENT (
-        id integer not null auto_increment,
+        ARTIFACT_UUID varchar(200) not null,
         NAME varchar(100) not null,
         VERSION varchar(20) not null,
-        ASDC_RESOURCE_NAME varchar(100) default 'MANUAL RECORD' not null,
-        ASDC_UUID varchar(200) default 'MANUAL RECORD' not null,
         DESCRIPTION varchar(1200),
-        ENVIRONMENT longtext not null,
+        BODY longtext not null,
         CREATION_TIMESTAMP datetime not null,
-        ASDC_LABEL varchar(200),
-        ARTIFACT_CHECKSUM varchar(200) default 'MANUAL RECORD' not null,
-        primary key (id)
+        ARTIFACT_CHECKSUM varchar(200) default 'MANUAL RECORD',
+        primary key (ARTIFACT_UUID)
     );
 
     create table HEAT_FILES (
-        id integer not null auto_increment,
-        DESCRIPTION varchar(1200) default null,
-        FILE_NAME varchar(200) not null,
-        ASDC_RESOURCE_NAME varchar(100) not null,
-        VERSION varchar(20) not null,
-        ASDC_UUID varchar(200) default 'MANUAL RECORD',
-        FILE_BODY longtext not null,
-        VNF_RESOURCE_ID integer default null,
+        ARTIFACT_UUID varchar(255) not null,
+        DESCRIPTION varchar(255),
+        NAME varchar(255),
+        VERSION varchar(255),
+        BODY varchar(255),
         CREATION_TIMESTAMP datetime not null,
-        ASDC_LABEL varchar(200),
-        ARTIFACT_CHECKSUM varchar(200) default 'MANUAL RECORD' not null,
-        primary key (id)
+        ARTIFACT_CHECKSUM varchar(255),
+        primary key (ARTIFACT_UUID)
     );
 
     create table HEAT_NESTED_TEMPLATE (
-        PARENT_TEMPLATE_ID integer not null,
-        CHILD_TEMPLATE_ID integer not null,
+        PARENT_HEAT_TEMPLATE_UUID varchar(200) not null,
+        CHILD_HEAT_TEMPLATE_UUID varchar(200) not null,
         PROVIDER_RESOURCE_FILE varchar(100),
-        primary key (PARENT_TEMPLATE_ID, CHILD_TEMPLATE_ID)
+        primary key (PARENT_HEAT_TEMPLATE_UUID, CHILD_HEAT_TEMPLATE_UUID)
     );
 
     create table HEAT_TEMPLATE (
-        id integer not null auto_increment,
-        TEMPLATE_NAME varchar(200) not null,
+        ARTIFACT_UUID varchar(200) not null,
+        NAME varchar(200) not null,
         VERSION varchar(20) not null,
-        ASDC_RESOURCE_NAME varchar(100) default 'MANUAL RECORD' not null,
-        ASDC_UUID varchar(200) default 'MANUAL RECORD' not null,
-        TEMPLATE_PATH varchar(100),
-        TEMPLATE_BODY longtext not null,
+        BODY longtext not null,
         TIMEOUT_MINUTES integer,
         DESCRIPTION varchar(1200),
-        ASDC_LABEL varchar(200),
-        ARTIFACT_CHECKSUM varchar(200) default 'MANUAL RECORD' not null,
         CREATION_TIMESTAMP datetime not null,
-        CHILD_TEMPLATE_ID integer,
-        primary key (id)
+        ARTIFACT_CHECKSUM varchar(200) default 'MANUAL RECORD' not null,
+        primary key (ARTIFACT_UUID)
     );
 
     create table HEAT_TEMPLATE_PARAMS (
-        id integer not null auto_increment,
-        HEAT_TEMPLATE_ID integer not null,
-        PARAM_NAME varchar(100) not null,
+        HEAT_TEMPLATE_ARTIFACT_UUID varchar(255) not null,
+        PARAM_NAME varchar(255) not null,
         IS_REQUIRED bit not null,
         PARAM_TYPE varchar(20),
         PARAM_ALIAS varchar(45),
-        primary key (id)
+        primary key (HEAT_TEMPLATE_ARTIFACT_UUID, PARAM_NAME)
     );
 
     create table MODEL (
@@ -160,68 +193,70 @@
 
     create table NETWORK_RECIPE (
         id integer not null auto_increment,
-        NETWORK_TYPE varchar(20) not null,
+        MODEL_NAME varchar(20) not null,
         ACTION varchar(20) not null,
         VERSION_STR varchar(20) not null,
+        SERVICE_TYPE varchar(45),
         DESCRIPTION varchar(1200),
         ORCHESTRATION_URI varchar(256) not null,
         NETWORK_PARAM_XSD varchar(2048),
         RECIPE_TIMEOUT integer,
-        SERVICE_TYPE varchar(45) default null,
         CREATION_TIMESTAMP datetime not null,
         primary key (id)
     );
 
     create table NETWORK_RESOURCE (
-        id integer not null,
-        NETWORK_TYPE varchar(45) not null,
-        VERSION_STR varchar(20) not null,
-        ORCHESTRATION_MODE varchar(20),
+        MODEL_UUID varchar(200) not null,
+        MODEL_NAME varchar(200) not null,
+        MODEL_INVARIANT_UUID varchar(20),
+        MODEL_VERSION varchar(20),
+        TOSCA_NODE_TYPE varchar(200),
+        NEUTRON_NETWORK_TYPE varchar(20),
         DESCRIPTION varchar(1200),
-        TEMPLATE_ID integer,
-        NEUTRON_NETWORK_TYPE varchar(20) default null,
+        ORCHESTRATION_MODE varchar(20),
+        HEAT_TEMPLATE_ARTIFACT_UUID varchar(200) not null,
+        AIC_VERSION_MIN varchar(20) default 2.5 not null,
+        AIC_VERSION_MAX varchar(20) default 2.5,
         CREATION_TIMESTAMP datetime not null,
-        AIC_VERSION_MIN varchar(20) not null,
-        AIC_VERSION_MAX varchar(20) default null,
-        primary key (id)
+        primary key (MODEL_UUID)
     );
 
     create table NETWORK_RESOURCE_CUSTOMIZATION (
         MODEL_CUSTOMIZATION_UUID varchar(200) not null,
-        NETWORK_RESOURCE_ID integer default null,
-        MODEL_UUID varchar(200) not null,
-        MODEL_NAME varchar(200) not null,
-        MODEL_INSTANCE_NAME varchar(200) not null,
-        MODEL_VERSION varchar(20) not null,
-        MODEL_INVARIANT_UUID varchar(200) not null,
+        NETWORK_RESOURCE_MODEL_UUID varchar(200) not null,
+        MODEL_INSTANCE_NAME varchar(255),
+        NETWORK_TECHNOLOGY varchar(255),
+        NETWORK_TYPE varchar(255),
+        NETWORK_SCOPE varchar(255),
+        NETWORK_ROLE varchar(255),
         CREATION_TIMESTAMP datetime not null,
-        primary key (MODEL_CUSTOMIZATION_UUID, NETWORK_RESOURCE_ID)
+        primary key (MODEL_CUSTOMIZATION_UUID)
     );
 
     create table SERVICE (
-        id integer not null auto_increment,
-        SERVICE_NAME_VERSION_ID varchar(50) default 'MANUAL_RECORD' not null,
-        SERVICE_NAME varchar(40),
-        VERSION_STR varchar(20) not null,
+        MODEL_UUID varchar(200) not null,
+        MODEL_NAME varchar(200) not null,
+        MODEL_VERSION varchar(20) not null,
         DESCRIPTION varchar(1200),
-        SERVICE_VERSION varchar(10),
-        HTTP_METHOD varchar(50),
+        TOSCA_CSAR_ARTIFACT_UUID varchar(200),
         CREATION_TIMESTAMP datetime not null,
         MODEL_INVARIANT_UUID varchar(200) default 'MANUAL_RECORD' not null,
-        primary key (id)
+        SERVICE_TYPE varchar(20),
+        SERVICE_ROLE varchar(20),
+        primary key (MODEL_UUID)
     );
 
     create table SERVICE_RECIPE (
         id integer not null auto_increment,
-        SERVICE_ID integer not null,
+        SERVICE_MODEL_UUID varchar(200) not null,
         ACTION varchar(40) not null,
-        VERSION_STR varchar(20) default null,
-        DESCRIPTION varchar(1200),
         ORCHESTRATION_URI varchar(256) not null,
+        CREATION_TIMESTAMP datetime not null,
+        VERSION_STR varchar(20),
+        DESCRIPTION varchar(1200),
         SERVICE_PARAM_XSD varchar(2048),
         RECIPE_TIMEOUT integer,
         SERVICE_TIMEOUT_INTERIM integer,
-        CREATION_TIMESTAMP datetime not null,
         primary key (id)
     );
 
@@ -239,34 +274,65 @@
         primary key (SERVICE_MODEL_UUID, NETWORK_MODEL_CUSTOMIZATION_UUID)
     );
 
-    create table VF_MODULE (
-        id integer not null auto_increment,
-        ASDC_UUID varchar(200) default null,
-        VOL_ENVIRONMENT_ID integer default null,
-        TYPE varchar(200) not null,
-        ASDC_SERVICE_MODEL_VERSION varchar(20) not null,
-        MODEL_CUSTOMIZATION_UUID varchar(200),
-        MODEL_NAME varchar(200) not null,
-        MODEL_VERSION varchar(20) not null,
+    create table SERVICE_TO_RESOURCE_CUSTOMIZATIONS (
+        MODEL_TYPE varchar(20) not null,
+        RESOURCE_MODEL_CUSTOMIZATION_UUID varchar(200) not null,
         CREATION_TIMESTAMP datetime not null,
-        DESCRIPTION varchar(255) default null,
-        VOL_TEMPLATE_ID integer default null,
-        TEMPLATE_ID integer default null,
-        VNF_RESOURCE_ID integer not null,
+        SERVICE_MODEL_UUID varchar(200) not null,
+        primary key (MODEL_TYPE, RESOURCE_MODEL_CUSTOMIZATION_UUID)
+    );
+
+    create table TEMP_NETWORK_HEAT_TEMPLATE_LOOKUP (
+        NETWORK_RESOURCE_MODEL_NAME varchar(200) not null,
+        HEAT_TEMPLATE_ARTIFACT_UUID varchar(200) not null,
+        AIC_VERSION_MIN varchar(20) not null,
+        AIC_VERSION_MAX varchar(20),
+        primary key (NETWORK_RESOURCE_MODEL_NAME)
+    );
+
+    create table TOSCA_CSAR (
+        ARTIFACT_UUID varchar(200) not null,
+        NAME varchar(200) not null,
+        VERSION varchar(20) not null,
+        ARTIFACT_CHECKSUM varchar(200) not null,
+        URL varchar(200) not null,
+        DESCRIPTION varchar(1200),
+        CREATION_TIMESTAMP datetime not null,
+        primary key (ARTIFACT_UUID)
+    );
+
+    create table VF_MODULE (
+        MODEL_UUID varchar(200) not null,
+        VNF_RESOURCE_MODEL_UUID varchar(200),
+        MODEL_INVARIANT_UUID varchar(200),
+        MODEL_VERSION varchar(20) not null,
+        MODEL_NAME varchar(200) not null,
+        DESCRIPTION varchar(1200),
         IS_BASE integer not null,
-        ENVIRONMENT_ID integer,
-        MODEL_INVARIANT_UUID varchar(200) default null,
-        MIN_INSTANCES integer default 0,
-        MAX_INSTANCES integer default null,
-        INITIAL_COUNT integer default 0,
-        LABEL varchar(200) default null,
-        primary key (id)
+        HEAT_TEMPLATE_ARTIFACT_UUID varchar(200) not null,
+        VOL_HEAT_TEMPLATE_ARTIFACT_UUID varchar(200),
+        CREATION_TIMESTAMP datetime not null,
+        primary key (MODEL_UUID)
+    );
+
+    create table VF_MODULE_CUSTOMIZATION (
+        MODEL_CUSTOMIZATION_UUID varchar(200) not null,
+        VF_MODULE_MODEL_UUID varchar(200) not null,
+        VOL_ENVIRONMENT_ARTIFACT_UUID varchar(200),
+        CREATION_TIMESTAMP datetime not null,
+        HEAT_ENVIRONMENT_ARTIFACT_UUID varchar(200),
+        MIN_INSTANCES integer,
+        MAX_INSTANCES integer,
+        INITIAL_COUNT integer,
+        AVAILABILITY_ZONE_COUNT integer,
+        LABEL varchar(200),
+        primary key (MODEL_CUSTOMIZATION_UUID)
     );
 
     create table VF_MODULE_TO_HEAT_FILES (
-        VF_MODULE_ID integer not null,
-        HEAT_FILES_ID integer not null,
-        primary key (VF_MODULE_ID, HEAT_FILES_ID)
+        VF_MODULE_MODEL_UUID varchar(200) not null,
+        HEAT_FILES_ARTIFACT_UUID varchar(200) not null,
+        primary key (VF_MODULE_MODEL_UUID, HEAT_FILES_ARTIFACT_UUID)
     );
 
     create table VNF_COMPONENTS (
@@ -281,10 +347,10 @@
     create table VNF_COMPONENTS_RECIPE (
         id integer not null auto_increment,
         VNF_TYPE varchar(200),
+        VF_MODULE_MODEL_UUID varchar(100),
         VNF_COMPONENT_TYPE varchar(45) not null,
-        VF_MODULE_ID varchar(100),
         ACTION varchar(20) not null,
-        SERVICE_TYPE varchar(45) default null,
+        SERVICE_TYPE varchar(45),
         VERSION varchar(20),
         DESCRIPTION varchar(1200),
         ORCHESTRATION_URI varchar(256) not null,
@@ -310,37 +376,42 @@
     );
 
     create table VNF_RESOURCE (
-        id integer not null auto_increment,
-        VNF_TYPE varchar(200) not null,
-        ASDC_SERVICE_MODEL_VERSION varchar(20) not null,
-        SERVICE_MODEL_INVARIANT_UUID varchar(200),
-        MODEL_CUSTOMIZATION_NAME varchar(200),
-        ORCHESTRATION_MODE varchar(20) not null,
-        DESCRIPTION varchar(1200),
-        TEMPLATE_ID integer,
-        ENVIRONMENT_ID integer,
-        CREATION_TIMESTAMP datetime not null,
-        ASDC_UUID varchar(200),
-        AIC_VERSION_MIN varchar(20),
-        AIC_VERSION_MAX varchar(20),
+        MODEL_UUID varchar(200) not null,
         MODEL_INVARIANT_UUID varchar(200),
         MODEL_VERSION varchar(20) not null,
         MODEL_NAME varchar(200),
-        MODEL_CUSTOMIZATION_UUID varchar(255),
-        primary key (id)
+        TOSCA_NODE_TYPE varchar(200),
+        DESCRIPTION varchar(1200),
+        ORCHESTRATION_MODE varchar(20) not null,
+        AIC_VERSION_MIN varchar(20),
+        AIC_VERSION_MAX varchar(20),
+        HEAT_TEMPLATE_ARTIFACT_UUID varchar(200),
+        CREATION_TIMESTAMP datetime not null,
+        primary key (MODEL_UUID)
     );
 
-    alter table HEAT_ENVIRONMENT 
-        add constraint UK_5wd9texshmrbg5ou83a5p70uk  unique (NAME, VERSION, ASDC_RESOURCE_NAME, ASDC_UUID);
+    create table VNF_RESOURCE_CUSTOMIZATION (
+        MODEL_CUSTOMIZATION_UUID varchar(200) not null,
+        MODEL_INSTANCE_NAME varchar(200) not null,
+        MIN_INSTANCES integer,
+        MAX_INSTANCES integer,
+        AVAILABILITY_ZONE_MAX_COUNT integer,
+        NF_FUNCTION varchar(200),
+        NF_TYPE varchar(200),
+        NF_ROLE varchar(200),
+        NF_NAMING_CODE varchar(200),
+        VNF_RESOURCE_MODEL_UUID varchar(200) not null,
+        CREATION_TIMESTAMP datetime not null,
+        primary key (MODEL_CUSTOMIZATION_UUID)
+    );
 
-    alter table HEAT_FILES 
-        add constraint UK_d3ctpcskoryvei0o24ib3dhj2  unique (FILE_NAME, ASDC_RESOURCE_NAME, VERSION, ASDC_UUID);
-
-    alter table HEAT_TEMPLATE 
-        add constraint UK_rpbyrb4spcnldds0evbyvucvi  unique (TEMPLATE_NAME, VERSION, ASDC_RESOURCE_NAME, ASDC_UUID);
-
-    alter table HEAT_TEMPLATE_PARAMS 
-        add constraint UK_pj3cwbmewecf0joqv2mvmbvw3  unique (HEAT_TEMPLATE_ID, PARAM_NAME);
+    create table VNF_RES_CUSTOM_TO_VF_MODULE_CUSTOM (
+        VNF_RESOURCE_CUST_MODEL_CUSTOMIZATION_UUID varchar(200) not null,
+        VF_MODULE_CUST_MODEL_CUSTOMIZATION_UUID varchar(200) not null,
+        CREATION_TIMESTAMP datetime not null,
+        VNF_RESOURCE_MODEL_UUID varchar(200) not null,
+        primary key (VNF_RESOURCE_CUST_MODEL_CUSTOMIZATION_UUID, VF_MODULE_CUST_MODEL_CUSTOMIZATION_UUID)
+    );
 
     alter table MODEL 
         add constraint UK_rra00f1rk6eyy7g00k9raxh2v  unique (MODEL_TYPE, MODEL_VERSION_ID);
@@ -349,45 +420,53 @@
         add constraint UK_b4g8j9wtqrkxfycyi3ursk7gb  unique (MODEL_ID, ACTION);
 
     alter table NETWORK_RECIPE 
-        add constraint UK_rl4f296i0p8lyokxveaiwkayi  unique (NETWORK_TYPE, ACTION, VERSION_STR);
-
-    alter table NETWORK_RESOURCE 
-        add constraint UK_i4hpdnu3rmdsit3m6fw1ynguq  unique (NETWORK_TYPE, VERSION_STR);
-
-    alter table SERVICE 
-        add constraint UK_iopodavyy29kj79umla8oarak  unique (SERVICE_NAME_VERSION_ID, SERVICE_NAME);
+        add constraint UK_pbsa8i44m8p10f9529jdgfuk9  unique (MODEL_NAME, ACTION, VERSION_STR);
 
     alter table SERVICE_RECIPE 
-        add constraint UK_7fav5dkux2v8g9d2i5ymudlgc  unique (SERVICE_ID, ACTION);
-
-    alter table VF_MODULE 
-        add constraint UK_o3bvdqspginaxlp4gxqohd44l  unique (TYPE, ASDC_SERVICE_MODEL_VERSION);
+        add constraint UK_2lr377dpqnvl5aqlp5dtj2fcp  unique (SERVICE_MODEL_UUID, ACTION);
 
     alter table VNF_COMPONENTS_RECIPE 
-        add constraint UK_4dpdwddaaclhc11wxsb7h59ma  unique (VNF_TYPE, VNF_COMPONENT_TYPE, VF_MODULE_ID, ACTION, SERVICE_TYPE, VERSION);
+        add constraint UK_g3je95aaxxiuest25f0qoy2u8  unique (VNF_TYPE, VF_MODULE_MODEL_UUID, VNF_COMPONENT_TYPE, ACTION, SERVICE_TYPE, VERSION);
 
     alter table VNF_RECIPE 
         add constraint UK_f3tvqau498vrifq3cr8qnigkr  unique (VF_MODULE_ID, ACTION, VERSION_STR);
 
-    alter table VNF_RESOURCE 
-        add constraint UK_peslcm0k3yojkrj6cvdv1rttb  unique (VNF_TYPE, ASDC_SERVICE_MODEL_VERSION, SERVICE_MODEL_INVARIANT_UUID);
-
-    alter table HEAT_TEMPLATE 
-        add constraint FK_ek5sot1q07taorbdmkvnveu98 
-        foreign key (CHILD_TEMPLATE_ID) 
-        references HEAT_TEMPLATE (id);
-
     alter table HEAT_TEMPLATE_PARAMS 
-        add constraint FK_8sxvm215cw3tjfh3wni2y3myx 
-        foreign key (HEAT_TEMPLATE_ID) 
-        references HEAT_TEMPLATE (id);
+        add constraint FK_p3ol1xcvp831glqohrlu6o07o 
+        foreign key (HEAT_TEMPLATE_ARTIFACT_UUID) 
+        references HEAT_TEMPLATE (ARTIFACT_UUID);
 
     alter table MODEL_RECIPE 
         add constraint FK_c23r0puyqug6n44jg39dutm1c 
         foreign key (MODEL_ID) 
         references MODEL (id);
 
+    alter table SERVICE 
+        add constraint FK_l3qy594u2xr1tfpmma3uigsna 
+        foreign key (TOSCA_CSAR_ARTIFACT_UUID) 
+        references TOSCA_CSAR (ARTIFACT_UUID);
+
     alter table SERVICE_RECIPE 
-        add constraint FK_kv13yx013qtqkn94d5gkwbu3s 
-        foreign key (SERVICE_ID) 
-        references SERVICE (id);
+        add constraint FK_i3r1b8j6e7dg9hkp49evnnm5y 
+        foreign key (SERVICE_MODEL_UUID) 
+        references SERVICE (MODEL_UUID);
+
+    alter table SERVICE_TO_RESOURCE_CUSTOMIZATIONS 
+        add constraint FK_kiddaay6cfe0aob1f1jaio1bb 
+        foreign key (SERVICE_MODEL_UUID) 
+        references SERVICE (MODEL_UUID);
+
+    alter table VF_MODULE 
+        add constraint FK_12jptc9it7gs3pru08skobxxc 
+        foreign key (VNF_RESOURCE_MODEL_UUID) 
+        references VNF_RESOURCE (MODEL_UUID);
+
+    alter table VNF_RESOURCE_CUSTOMIZATION 
+        add constraint FK_iff1ayhb1hrp5jhea3vvikuni 
+        foreign key (VNF_RESOURCE_MODEL_UUID) 
+        references VNF_RESOURCE (MODEL_UUID);
+
+    alter table VNF_RES_CUSTOM_TO_VF_MODULE_CUSTOM 
+        add constraint FK_6tdyg2ib5eguh4k2qgofh4fj7 
+        foreign key (VNF_RESOURCE_MODEL_UUID) 
+        references VNF_RESOURCE_CUSTOMIZATION (MODEL_CUSTOMIZATION_UUID);
