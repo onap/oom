@@ -1,1 +1,0 @@
-node.default["aai-traversal-config"]["AAI_WORKLOAD_PREFERRED_ROUTE_KEY"] = 'MR1'
