@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: multicloud-windriver
+  namespace: "{{ .Values.nsPrefix }}-multicloud"
+spec:
+  selector:
+    matchLabels:
+      app: multicloud-windriver
+  template:
+    metadata:
+      labels:
+        app: multicloud-windriver
+      name: multicloud-windriver
+    spec:
+     hostname: multicloud-windriver
+     containers:
+     - env:
+       - name: MSB_ADDR
+         value: "{{ .Values.msbgateway }}"
+       - name: MSB_PORT
+         value: "{{ .Values.msbPort }}"
+       - name: AAI_ADDR
+         value: aai-service.{{ .Values.nsPrefix }}-aai
+       - name: AAI_PORT
+         value: "8443"
+       - name: AAI_SCHEMA_VERSION
+         value: "v11"
+       - name: AAI_USERNAME
+         value: "AAI"
+       - name: AAI_PASSWORD
+         value: "AAI"
+       name: multicloud-windriver
+       volumeMounts:
+       - mountPath: /opt/windriver/logs
+         name: windriver-log
+       image: {{ .Values.image.windriver }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       ports:
+       - containerPort: 9005
+       livenessProbe:
+         httpGet:
+           path: /api/multicloud-titanium_cloud/v0/swagger.json
+           port: 9005
+           scheme: HTTP
+         initialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 10
+         successThreshold: 1
+         failureThreshold: 5
+     restartPolicy: Always
+     volumes:
+     - name: windriver-log
+       hostPath:
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/windriver/logs
+     imagePullSecrets:
+     - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+
+
