@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: refrepo
+  name: refrepo
+  namespace: "{{ .Values.nsPrefix }}-vnfsdk"
+spec:
+  selector:
+    matchLabels:
+      app: refrepo
+  template:
+    metadata:
+      labels:
+        app: refrepo
+      name: refrepo
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "postgres"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "vnfsdk-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - image: {{ .Values.image.refrepoImage }}:{{ .Values.image.refrepoVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: refrepo
+        readinessProbe:
+          tcpSocket:
+            port: 8702
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: {{ .Values.nsPrefix }}-docker-registry-key
