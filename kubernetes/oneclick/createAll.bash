@@ -13,8 +13,8 @@ Usage: $0 [PARAMs]
 -i [INSTANCE]       : ONAP deployment instance # (default: 1)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
-                      sdc, aai ,mso, message-router, robot,
-                      vid, sdnc, portal, policy, appc, multicloud, clamp, consul
+                      sdc, aai ,mso, message-router, robot, vid,
+                      vnfsdk, sdnc, portal, policy, appc, multicloud, clamp, consul, vnfsdk
 EOF
 }
 
