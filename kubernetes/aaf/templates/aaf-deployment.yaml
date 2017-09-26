@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: aaf
+  name: aaf
+  namespace: "{{ .Values.nsPrefix }}-aaf"
+spec:
+  selector:
+    matchLabels:
+      app: aaf
+  template:
+    metadata:
+      labels:
+        app: aaf
+      name: aaf
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "aaf-cs"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "aaf-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - env:
+        - name: CASSANDRA_CLUSTER
+          value: cassandra_container
+        image: {{ .Values.image.aafImage }}:{{ .Values.image.aafVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: aaf
+        readinessProbe:
+          tcpSocket:
+            port: 8101
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: {{ .Values.nsPrefix }}-docker-registry-key

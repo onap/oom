@@ -27,8 +27,8 @@ Usage: $0 [PARAMs]
 -n [NAMESPACE]      : Kubernetes namespace (required)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
-                      sdc, aai ,mso, message-router, robot,
-                      vid, sdnc, portal, policy, appc, multicloud, clamp, consul, vnfsdk
+                      sdc, aai ,mso, message-router, robot, vid, aaf
+                      sdnc, portal, policy, appc, multicloud, clamp, consul, vnfsdk
 EOF
 }
 
