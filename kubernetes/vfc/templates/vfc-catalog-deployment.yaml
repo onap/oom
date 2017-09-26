@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-catalog
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.catalog.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-catalog
+  template:
+    metadata:
+      labels:
+        app: vfc-catalog
+      name: vfc-catalog
+    spec:
+      hostname: vfc-catalog
+      containers:
+      - args:
+        image:  {{.Values.catalog.image}}
+        name: "vfc-catalog"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.catalog.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.catalog.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"

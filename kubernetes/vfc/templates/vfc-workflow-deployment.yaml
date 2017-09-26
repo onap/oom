@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-workflow
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.workflow.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-workflow
+  template:
+    metadata:
+      labels:
+        app: vfc-workflow
+      name: vfc-workflow
+    spec:
+      hostname: vfc-workflow
+      containers:
+      - args:
+        image:  {{.Values.workflow.image}}
+        name: "vfc-workflow"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.workflow.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.workflow.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
