@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: multicloud-ocata
+  namespace: "{{ .Values.nsPrefix }}-multicloud"
+spec:
+  selector:
+    matchLabels:
+      app: multicloud-ocata
+  template:
+    metadata:
+      labels:
+        app: multicloud-ocata
+      name: multicloud-ocata
+    spec:
+     hostname: multicloud-ocata
+     containers:
+     - env:
+       - name: MSB_ADDR
+         value: "{{ .Values.msbgateway }}"
+       - name: MSB_PORT
+         value: "{{ .Values.msbPort }}"
+       - name: AAI_ADDR
+         value: aai-service.{{ .Values.nsPrefix }}-aai
+       - name: AAI_PORT
+         value: "8443"
+       - name: AAI_SCHEMA_VERSION
+         value: "v11"
+       - name: AAI_USERNAME
+         value: "AAI"
+       - name: AAI_PASSWORD
+         value: "AAI"
+       name: multicloud-ocata
+       volumeMounts:
+       - mountPath: /opt/ocata/logs
+         name: ocata-log
+       image: {{ .Values.image.ocata }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       ports:
+       - containerPort: 9006
+       livenessProbe:
+         httpGet:
+           path: /api/multicloud-ocata/v0/swagger.json
+           port: 9006
+           scheme: HTTP
+         initialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 10
+         successThreshold: 1
+         failureThreshold: 5
+     restartPolicy: Always
+     volumes:
+     - name: ocata-log
+       hostPath:
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/ocata/logs
+     imagePullSecrets:
+     - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+
+
