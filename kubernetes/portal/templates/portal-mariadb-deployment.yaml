@@ -28,10 +28,6 @@ spec:
           readOnly: true
         - mountPath: /var/lib/mysql
           name: portal-mariadb-data
-        - mountPath: /var/log/onap
-          name: portal-logs
-        - mountPath: /tmp/logback.xml
-          name: portal-logback
         ports:
         - containerPort: 3306
           name: portaldb
@@ -40,16 +36,6 @@ spec:
             port: 3306
           initialDelaySeconds: 5
           periodSeconds: 10
-      - image: {{ .Values.image.filebeat }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: filebeat-onap
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          name: filebeat-conf
-        - mountPath: /var/log/onap
-          name: portal-logs
-        - mountPath: /usr/share/filebeat/data
-          name: portal-data-filebeat
       volumes:
       - name: localtime
         hostPath:
@@ -57,15 +43,5 @@ spec:
       - name: portal-mariadb-data
         persistentVolumeClaim:
           claimName: portal-db
-      - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
-      - name: portal-logs
-        emptyDir: {}
-      - name: portal-data-filebeat
-        emptyDir: {}
-      - name: portal-logback
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/portal/portal-db/logback.xml
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
