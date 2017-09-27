@@ -86,20 +86,48 @@ spec:
         image: {{ .Values.image.vid }} 
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: vid-server
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/usr/local/tomcat/webapps/vid/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         ports:
         - containerPort: 8080
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
+        - mountPath: /var/log/onap
+          name: vid-logs
+        - mountPath: /tmp/logback.xml
+          name: vid-logback
         readinessProbe:
           tcpSocket:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+      - image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: vid-logs
+        - mountPath: /usr/share/filebeat/data
+          name: vid-data-filebeat
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: filebeat-conf
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        - name: vid-logs
+          emptyDir: {}
+        - name: vid-data-filebeat
+          emptyDir: {}
+        - name: vid-logback
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/vid/logback.xml
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
