@@ -71,6 +71,7 @@ chmod -R 777 /config-init/$NAMESPACE/aai/search-data-service/logs/
 chmod -R 777 /config-init/$NAMESPACE/aai/data-router/logs/
 chmod -R 777 /config-init/$NAMESPACE/policy/mariadb/
 chmod -R 777 /config-init/$NAMESPACE/log/elasticsearch
+chown -R root:root /config-init/$NAMESPACE/log
 
 echo "Substituting configuration parameters"
 
