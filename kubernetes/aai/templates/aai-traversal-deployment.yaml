@@ -64,10 +64,13 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/aai/logroot/AAI-GQ
-          name: aai-traversal-logs
         - mountPath: /var/chef/aai-data/
           name: aai-data
+        - mountPath: /var/log/onap
+          name: aai-traversal-logs
+        - mountPath: /opt/app/aai-traversal/bundleconfig/etc/logback.xml
+          name: aai-traversal-log-conf
+          subPath: logback.xml
         ports:
         - containerPort: 8446
         readinessProbe:
@@ -75,16 +78,42 @@ spec:
             port: 8446
           initialDelaySeconds: 5
           periodSeconds: 10
+      - name: filebeat-onap-aai-traversal
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-traversal-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-traversal-filebeat
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aai-traversal-logs
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-traversal/logs/"
       - name: aai-data
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/"
+      - name: filebeat-conf
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
+      - name: aai-traversal-logs
+        emptyDir: {}
+      - name: aai-traversal-filebeat
+        emptyDir: {}
+      - name: aai-traversal-log-conf
+        configMap:
+         name: aai-traversal-configmap
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aai-traversal-configmap
+  namespace: {{ .Values.nsPrefix }}-aai
+data:
+{{ (.Files.Glob "resources/traversal/conf/logback.xml").AsConfig | indent 2 }}
+

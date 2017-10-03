@@ -30,8 +30,11 @@ spec:
           readOnly: true
         - mountPath: /opt/app/sparky/config/
           name: aai-sparky-be-config
-        - mountPath: /logs/
+        - mountPath: /var/log/onap
           name: aai-sparky-be-logs
+        - mountPath: /opt/app/sparky/bundleconfig/etc/logback.xml
+          name: aai-sparky-be-log-conf
+          subPath: logback.xml
         ports:
         - containerPort: 9517
         readinessProbe:
@@ -39,6 +42,16 @@ spec:
             port: 9517
           initialDelaySeconds: 5
           periodSeconds: 10
+      - name: filebeat-onap-aai-sparky
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-sparky-be-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-sparky-filebeat
       volumes:
       - name: localtime
         hostPath:
@@ -46,9 +59,25 @@ spec:
       - name: aai-sparky-be-config
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/sparky-be/appconfig/"
-      - name: aai-sparky-be-logs
+      - name: filebeat-conf
         hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/sparky-be/logs/"
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
+      - name: aai-sparky-be-logs
+        emptyDir: {}
+      - name: aai-sparky-filebeat
+        emptyDir: {}
+      - name: aai-sparky-be-log-conf
+        configMap:
+         name: aai-sparky-be-configmap
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aai-sparky-be-configmap
+  namespace: {{ .Values.nsPrefix }}-aai
+data:
+{{ (.Files.Glob "resources/sparky-be/conf/logback.xml").AsConfig | indent 2 }}
+

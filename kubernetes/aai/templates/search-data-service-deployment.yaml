@@ -30,8 +30,11 @@ spec:
           readOnly: true
         - mountPath: /opt/app/search-data-service/config/
           name: aai-search-data-service-config
-        - mountPath: /logs/
+        - mountPath: /var/log/onap
           name: aai-search-data-service-logs
+        - mountPath: /opt/app/search-data-service/bundleconfig/etc/logback.xml
+          name: aai-search-data-service-log-conf
+          subPath: logback.xml
         ports:
         - containerPort: 9509
         readinessProbe:
@@ -39,6 +42,16 @@ spec:
             port: 9509
           initialDelaySeconds: 5
           periodSeconds: 10
+      - name: filebeat-onap-aai-search
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-search-data-service-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-search-data-service-filebeat
       volumes:
       - name: localtime
         hostPath:
@@ -46,9 +59,25 @@ spec:
       - name: aai-search-data-service-config
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/search-data-service/appconfig/"
-      - name: aai-search-data-service-logs
+      - name: filebeat-conf
         hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/search-data-service/logs/"
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
+      - name: aai-search-data-service-logs
+        emptyDir: {}
+      - name: aai-search-data-service-filebeat
+        emptyDir: {}
+      - name: aai-search-data-service-log-conf
+        configMap:
+         name: aai-search-data-service-configmap
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aai-search-data-service-configmap
+  namespace: {{ .Values.nsPrefix }}-aai
+data:
+{{ (.Files.Glob "resources/search-data-service/conf/logback.xml").AsConfig | indent 2 }}
+
