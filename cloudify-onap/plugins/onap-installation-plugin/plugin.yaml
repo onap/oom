@@ -1,0 +1,87 @@
+plugins:
+  onap:
+    executor: central_deployment_agent
+    package_name: onap-installation-plugin
+    package_version: '1.0.0'
+    source: onap-installation-plugin
+  #  install_arguments: '--process-dependency-links'
+
+node_types:
+  cloudify.onap.kubernetes.Environment:
+    derived_from: cloudify.nodes.Root
+    properties:
+      namespace:
+        type: string
+      init_pod:
+        type: string
+        description: >
+          Path to init pod chart
+      openstack_envs:
+        description: >
+          ONAP parameters defined at the onap-parameters.yaml file
+        default: {}
+      options:
+        description: >
+          For compatibility with kubernetes plugin.
+          To be removed in the future.
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: onap.k8s_installer.environment.create_namespace
+          executor: central_deployment_agent
+        configure:
+          implementation: onap.k8s_installer.environment.setup_helm_templates
+          executor: central_deployment_agent
+        start:
+          implementation: onap.k8s_installer.environment.create_init_pod
+          executor: central_deployment_agent
+        stop:
+          implementation: onap.k8s_installer.environment.delete_init_pod
+          executor: central_deployment_agent
+        delete:
+          implementation: onap.k8s_installer.environment.delete_namespace
+          executor: central_deployment_agent
+
+  cloudify.onap.kubernetes.App:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        type: string
+        description: >
+          Name of ONAP app
+      path:
+        type: string
+        description: >
+          Paths (relative, blueprint prespective) to app chart directory
+        required: false
+      options:
+        description: >
+          For compatibility with kubernetes plugin.
+          To be removed in the future.
+        default: {}
+      ssh_credentials:
+        description: >
+          Workaround for docker secret settings
+          via fabric plugin
+        default:
+          host_string: { get_secret: kubernetes_master_ip }
+          user: { get_secret: agent_user }
+          key: { get_secret: agent_key_private }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: onap.k8s_installer.app.create_namespace
+          executor: central_deployment_agent
+        configure:
+          implementation: onap.k8s_installer.app.configure_docker_secret
+          executor: central_deployment_agent
+        start:
+          implementation: onap.k8s_installer.app.create_resources_services
+          executor: central_deployment_agent
+        stop:
+          implementation: onap.k8s_installer.app.delete_resources_services
+          executor: central_deployment_agent
+        delete:
+          implementation: onap.k8s_installer.app.delete_namespace
+          executor: central_deployment_agent
