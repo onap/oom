@@ -1,0 +1,188 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Blueprint deploys all ONAP kubernetes resources defined in YAML files on existing kubernetes cluster
+  The following pre-setup steps are assumed, but not required:
+  - Create Cloudify Example Environment: https://github.com/cloudify-examples/cloudify-environment-setup.
+  - Create Kubernetes Cluster: https://github.com/cloudify-examples/simple-kubernetes-blueprint.
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
+  # Plugin required: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/releases/download/1.2.1rc1/cloudify_kubernetes_plugin-1.2.1rc1-py27-none-linux_x86_64-centos-Core.wgn
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.1/plugin.yaml
+#  - https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.1.zip
+  - plugins/onap-installation-plugin/plugin.yaml
+
+inputs:
+  kubernetes_configuration_file_content:
+    description: >
+      File content of kubernetes master YAML configuration
+    default:
+      apiVersion: v1
+      clusters:
+      - cluster:
+          certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRFM01UQXdNakV6TVRNeU4xb1hEVEkzTURrek1ERXpNVE15TjFvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTDN4CnRqRllVd25GVmxnNFZhd3BNaFB1N2hDOXVNSEJmUU9JclIrU1B4TElaMUVjTERXdTBod1pWWloxSUF4K0NrQlcKU1BmVDdXSE5zNld4RHAyRUpoVlp2TEFBVW9nem5aSlJnU0Z2RW1NZWg4cXhTaSsrQmtNNmxvTytTTVE0eFJlVApFbTZpd3JrdFZNUXVocDhkVG01MGpIUjMyelBTQklZRGpQejYwWEpzNXp2MEJzL0VlSHRDS0RxV2ZoZWpYZjBECmhQNi9DSU45UjBwNk9UZTdSYUV6dUtlblRtTml0dzNJTkg4b3BhYlY2TW8ycEFvbVRRUG5pZTVZZ2EzNGNndXEKTXpYSmVQUE1CQSs4UDNmS3BFcDJQU3UzWUF3SGg4VWo0MlRDTjMxQ1BBM3F4dUxGejBwOGw5ckJ5WVh6amRybQpwNFZIV1FGOTh3eXBFUW0xNFdVQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFBS3Q2a2E2R04rWksveEx5Nk1tcWpSQTZpa2QKMjYwS3g0ak9FWUtrNWtTemlPOE5Iazhza3JNNzZSVksxdUwxZkFzU0N5SnYyOUJNb3NGQkhISDltOGNBbnFFcgowRGVvdDhHY0d6OWh6ZTlOcGhGNkFNNEhCZTFDbDhkME9vdm91K3dsYk1VTDN4M1hNUHZmMDRKajZsMUJMdEx2Cjh2Nk5Eb0lWdkppS1FLM0tuK3BHUVBZd2x1UEFoSEZQZUdlZ1gvTnBlNXJjMVZGRUtLUkRQRVFRS0xrcE5TZ2IKNzgwZ2ZMTkxJUTJsQnczZHRjazcyelkyK0dlWlp3MEM2ckk5QUhBekg3ZXpZY0pvT2VmVjArZE9zV2lJNVB4UgowZnNYSlNEOVR4SDVVMlRSQ25KZ214M1ZLTGl5OTZyOGsrOTdkWlAvN3h2Q3dGSU9wc2I2UGcxdjNxZz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+          server: https://192.168.120.5:6443
+        name: kubernetes
+      contexts:
+      - context:
+          cluster: kubernetes
+          user: kubernetes-admin
+        name: kubernetes-admin@kubernetes
+      current-context: kubernetes-admin@kubernetes
+      kind: Config
+      preferences: {}
+      users:
+      - name: kubernetes-admin
+        user:
+          client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM4akNDQWRxZ0F3SUJBZ0lJRUFMaVFKV0d2ZmN3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB4TnpFd01ESXhNekV6TWpkYUZ3MHhPREV3TURJeE16RXpNamxhTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXVOWFFJSlNzSmdtWndXMTEKcEtRZTV5TkQ1THBUdDY5dENKeEpoWXZPbElUOTRwVmdtVnBLNjhlMUNhQ2YxYkt0N2hCMUFOSVJHam8xMTYxNgpGUVRkaE5ZN0tnZFFUNGsrMC9mV0hBZzdCYnhKSDFCdEVvOGorTFk0dDRMNUVCS1l2dTN4Z21NS2E3SGMxZiszCkRQdWtndDZUZm1JazZEM0JkTHQyays2ZDhMclAzYmtkVmQwS1o2OWtnRnBuSWxtNkdrQWhrZWRleE5PQ21vRE8KU0hHMEJvaWphSjRuNUUrWGtNUEpHM3c3aUhNeE5RQ1Fob1lVOC84MGZHWUd5Y2M5TklLSlRFWmVjVGxOeCtPVApyd1F4aWRWa0FNK3I2K085ZlVMSmV1VDlhbXhzOEJNbVNwQko2TU0xelZaTDA5RGp3QytKSFRmY25IMTRBTTJ5CnN3c1hSUUlEQVFBQm95Y3dKVEFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFCNkRNanRFQkMvSTlkK1VqYWNXM0R5K0pZd21hYWdOUHJycApyaWV0OExlMHFuOS9GUkRpcnpTZldUNXFSNzg3dEpqRWdIaHlvZzFQWE1ZY3l6ajhRS0hyTXJXZUJMck5EQ08wCkVFTGMzSnNyUkdiK0MxWk1MQ3k1VmRVd2Q4ZnYzNm5vRlZOelVneitBTG9WSmVUUEdBYUxTbjA5OWo0RXhxUXoKK3FYTDltZEpQc1FwVVR4OTN3Z1ppcjJRMzcxdXovU21UYkxsOEhjMUtkbC9MODFXM0xYY3JrbFAvbFBkUG9yVgpjUmFBYm94NjBTMmxFTE16dUZHRThaR0lPYlFseDJUdzAxcENvckQ0NHVqOHU1ZmRiWkxhRHZuSHZDODlvSjhNCml5VnU5dkxSajhzbmZvb0ZLMjVqOGI1SzNGMGlLcWRzaktiSWVPS3dKWWkwdGNPWC9GYz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+          client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBdU5YUUlKU3NKZ21ad1cxMXBLUWU1eU5ENUxwVHQ2OXRDSnhKaFl2T2xJVDk0cFZnCm1WcEs2OGUxQ2FDZjFiS3Q3aEIxQU5JUkdqbzExNjE2RlFUZGhOWTdLZ2RRVDRrKzAvZldIQWc3QmJ4SkgxQnQKRW84aitMWTR0NEw1RUJLWXZ1M3hnbU1LYTdIYzFmKzNEUHVrZ3Q2VGZtSWs2RDNCZEx0MmsrNmQ4THJQM2JrZApWZDBLWjY5a2dGcG5JbG02R2tBaGtlZGV4Tk9DbW9ET1NIRzBCb2lqYUo0bjVFK1hrTVBKRzN3N2lITXhOUUNRCmhvWVU4LzgwZkdZR3ljYzlOSUtKVEVaZWNUbE54K09UcndReGlkVmtBTStyNitPOWZVTEpldVQ5YW14czhCTW0KU3BCSjZNTTF6VlpMMDlEandDK0pIVGZjbkgxNEFNMnlzd3NYUlFJREFRQUJBb0lCQVFDTjVnL2ZRMlFaMjVyLwp4Vkhnc09MTW5lVThqdE5BbkZ1L2xZUllFeW5vR1dWejh5dnk3eisvWFZVZDdBTnBJc0NtbUZuSzVIcWV3UHVlCjlaNVl6cUJsbjdaU0lNVkdHbDV5aXIwRVRrbEpzUEFPSzBkaFRTVFhoc1ZxRlJHeWhpUmZ4L3AyR0NUaTR1eGcKR2UzaytMZW1oTXVFNWtIaFRhL2NOeUxrbFBjSjNJTHl5bnNOSmtwSlI4M0FBb1NxVkVObHhmQVFLT3VUVnNqOApRTXF4ekNMblU1RVFYc0pCamVNa0YrVllFdVRUZENUUm8vWXluR3g0K2ptR3IxTGNRRExjbllpTGtuS2YvTjNRCmpBV2QwUGVZS2p6V0M3aGs3a0JKdEl5MjcyVEtudS9nN3FIQktSVVNSUnBnWHFsTGJMZDVpZTdzTXJEdnMyd3AKMjhxK01XbE5Bb0dCQU5CSzVDc2JGNSsxZkx3VldPaWUxRlpTSVAzMnQvRWJvODJkS1VIZWxGVldEQXV3cXRUTQpsT2psUnRZVkxRODV1WWtxMExBRkl2TjNlNDlmcWQ3aUk3cEE4WE5uZnovWVozRGFEREZ0cVRuZU84VmlOTHkvCjd0SUh4bWVwWHJpay9GUXFNZjNmNnNiYzBTcDgvSXdXWlZ4Y2hmOVVFV3pOYmZpNDZoV3BjTjlUQW9HQkFPTXIKZzhrMHFlU01teTc5Z3pwMTVvT0VMWW9VdkhLZTJibk8wbnA1aldhbVprdGR1blRNMGg2dmdLQTF5UnNnejFjNApncmtZUkp5V1JhRElYb0YzOVdvMWJrbHZvaWN5NURqWUtBK0hKWUVUT0pmOC9odzJ1WngzTk54bm5UZXpJSVA5CnVDZHlJSDhRNFU1VkloeWVXTDV5WlR6WGs3YlhyRVllZjB3cW81UUhBb0dBZlhiZkFXZ01UdE5QRXl2NHBnWWwKK09qM25vSmlRZ1ZZSVo0dEg5UW1uVkI3YVA4OXAzaWpxYldSZVpxL3paQUR4aS9ZREc3TG9zT3gxYWJWOTc5WApyZlU0ZXo4NFV3alRKaEx4alVSMHpycWlYajdOYlhSZk1ud2tjb1IrM2RIamUvNytwZUdlMWJKays2YlZxTHhFCnllR2hoUzdxWUJOTnpxZnp1S0Nic0trQ2dZRUF6N2g4ZXNEekVJOFpYekJrakZJK2c4ZWJOSVdkZzFtSlVRT3oKSmxaN1czK1FUaDNZWHZEaXVUaFZieWwvU0pVSndvRmoxd2cveE1jTHgrY3ZzMGNUV3hpY1RmNEwwYmdSUTRFegpzRzh0ZGdjeldwYjFiS3NGc2ZLMm5Vc0pVV016dWoySDVGblJLUjh3UmNaR3VOQjU2VHNGSTBza1FLNlpVa3lVCnJmclhOSVVDZ1lFQW83NGp6NnBJbDgwOU51dERZeHVON3J4RzYrTVMwRkVRa2tTSGdtZTlvN0Y0QjNWRHJ6WE4Ka1g3dC95cm1ieHBjK0R2VmUzWm1hWHE1QXJzdjRVbW5Za1ArNCs0L2REcWdmbjd3ZmVKUkpzU1Uzd2V0YWJnRwpDQW5xMFpLR3RJWWhud1h5cWF6elBsUUFteFIxWUdDczIxL05kUVJvWDdsOFdyaUJmbkpVM3hZPQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+
+  namespace_prefix:
+    type: string
+    description: >
+      Kubernetes namespace name prefix which will be uese for all ONAP apps
+    default: onap
+
+dsl_definitions:
+  options: &app_options
+    namespace:
+      concat: [{ get_input: namespace_prefix }, '-', { get_property: [SELF, name] }]
+
+node_templates:
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_configuration_file_content }
+
+  onap_environment:
+    type: cloudify.onap.kubernetes.Environment
+    properties:
+      namespace: { get_input: namespace_prefix }
+      init_pod: kubernetes/config
+      options:
+        namespace: { get_input: namespace_prefix }
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+#  mso_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: mso
+#      path: kubernetes/mso
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+  message_router_app:
+    type: cloudify.onap.kubernetes.App
+    properties:
+      name: message-router
+      path: kubernetes/message-router
+      options: *app_options
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: onap_environment
+#
+#  sdc_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: sdc
+#      path: kubernetes/sdc
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  aai_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: aai
+#      path: kubernetes/aai
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  robot_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: robot
+#      path: kubernetes/robot
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  vid_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: vid
+#      path: kubernetes/vid
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  sdnc_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: sdnc
+#      path: kubernetes/sdnc
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  portal_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: portal
+#      path: kubernetes/portal
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  policy_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: policy
+#      path: kubernetes/policy
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
+#
+#  appc_app:
+#    type: cloudify.onap.kubernetes.App
+#    properties:
+#      name: appc
+#      path: kubernetes/appc
+#      options: *app_options
+#    relationships:
+#      - type: cloudify.kubernetes.relationships.managed_by_master
+#        target: kubernetes_master
+#      - type: cloudify.relationships.depends_on
+#        target: onap_environment
