@@ -14,7 +14,10 @@ spec:
       name: model-loader-service
     spec:
       containers:
-      - env:
+      - name: model-loader-service
+        image: "{{ .Values.image.modelLoaderImage }}:{{ .Values.image.modelLoaderVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        env:
         - name: CONFIG_HOME
           value: /opt/app/model-loader/config/
         volumeMounts:
@@ -23,14 +26,24 @@ spec:
           readOnly: true
         - mountPath: /opt/app/model-loader/config/
           name: aai-model-loader-config
-        - mountPath: /logs/
+        - mountPath: /var/log/onap
           name: aai-model-loader-logs
-        image: "{{ .Values.image.modelLoaderImage }}:{{ .Values.image.modelLoaderVersion }}"
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: model-loader-service
+        - mountPath: /opt/app/model-loader/bundleconfig/etc/logback.xml
+          name: aai-model-loader-log-conf
+          subPath: logback.xml
         ports:
         - containerPort: 8080
         - containerPort: 8443
+      - name: filebeat-onap-aai-model-loader
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-model-loader-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-model-loader-filebeat
       volumes:
       - name: localtime
         hostPath:
@@ -38,9 +51,25 @@ spec:
       - name: aai-model-loader-config
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/model-loader/appconfig/"
-      - name: aai-model-loader-logs
+      - name: filebeat-conf
         hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/model-loader/logs/"
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
+      - name: aai-model-loader-logs
+        emptyDir: {}
+      - name: aai-model-loader-filebeat
+        emptyDir: {}
+      - name: aai-model-loader-log-conf
+        configMap:
+         name: aai-model-loader-configmap
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aai-model-loader-configmap
+  namespace: {{ .Values.nsPrefix }}-aai
+data:
+{{ (.Files.Glob "resources/model-loader/conf/logback.xml").AsConfig | indent 2 }}
+
