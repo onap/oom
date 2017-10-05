@@ -45,12 +45,12 @@ spec:
       - command:
         - /bin/bash
         - -c
-        - cd /opt/openecomp/sdnc/admportal/shell && ./start_portal.sh
+        - cd /opt/onap/sdnc/admportal/shell && ./start_portal.sh
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: openECOMP1.0
         - name: SDNC_CONFIG_DIR
-          value: /opt/openecomp/sdnc/data/properties
+          value: /opt/onap/sdnc/data/properties
         image: {{ .Values.image.admportalSdnc }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: sdnc-portal-container
@@ -60,6 +60,10 @@ spec:
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
+        - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
+          name: sdnc-aaiclient-properties
+        - mountPath: /opt/onap/sdnc/data/properties/admportal.json
+          name: sdnc-admportal-json
         readinessProbe:
           tcpSocket:
             port: 8843
@@ -70,5 +74,11 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: sdnc-aaiclient-properties
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/conf/aaiclient.properties
+      - name: sdnc-admportal-json
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/conf/admportal.json
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
