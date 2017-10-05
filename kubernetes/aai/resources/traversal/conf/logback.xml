@@ -1,0 +1,345 @@
+<configuration debug="false" scan="true" scanPeriod="3 seconds">
+    <contextName>${module.ajsc.namespace.name}</contextName>
+    <jmxConfigurator />
+    <property name="logDir" value="/var/log/onap" />
+    <property name="componentName" value="aai"></property>
+    <property name="restLogDirectory" value="${logDir}/${componentName}/rest" />
+    <property name="dmaapLogDirectory" value="${logDir}/${componentName}/dmaapAAIEventConsumer" />
+    <property name="perfLogsDirectory" value="${logDir}/${componentName}/perf-audit" />
+        <!--  default eelf log file names -->
+    <property name="errorLogName" value="error" />
+    <property name="metricsLogName" value="metrics" />
+    <property name="auditLogName" value="audit" />
+    <property name="debugLogName" value="debug" />
+    <property name="queueSize" value="256" />
+    <property name="maxFileSize" value="50MB" />
+    <property name="maxHistory" value="30" />
+    <property name="totalSizeCap" value="10GB" />
+    <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="SANE">
+        <file>${restLogDirectory}/sane.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/sane.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncSANE">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="SANE" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="METRIC">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>${restLogDirectory}/${metricsLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncMETRIC">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="METRIC" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="DEBUG">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>${restLogDirectory}/${debugLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncDEBUG">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="DEBUG" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ERROR">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <file>${restLogDirectory}/${errorLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncERROR">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="ERROR" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="AUDIT">
+        <file>${restLogDirectory}/${auditLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/${auditLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asyncAUDIT">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="AUDIT" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="translog">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>${restLogDirectory}/translog.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${restLogDirectory}/translog.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="asynctranslog">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="translog" />
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="dmaapAAIEventConsumer">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <File>${dmaapLogDirectory}/${errorLogName}.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${dmaapLogDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="dmaapAAIEventConsumerDebug">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <File>${dmaapLogDirectory}/${debugLogName}.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${dmaapLogDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="dmaapAAIEventConsumerMetric">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <File>${dmaapLogDirectory}/${metricsLogName}.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${dmaapLogDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="org.openecomp.aai.logging.EcompEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <!-- Spring related loggers -->
+    <logger level="WARN" name="org.springframework" />
+    <logger level="WARN" name="org.springframework.beans" />
+    <logger level="WARN" name="org.springframework.web" />
+    <logger level="WARN" name="com.blog.spring.jms" />
+    <!-- AJSC Services (bootstrap services) -->
+    <logger level="WARN" name="ajsc" />
+    <logger level="WARN" name="ajsc.RouteMgmtService" />
+    <logger level="WARN" name="ajsc.ComputeService" />
+    <logger level="WARN" name="ajsc.VandelayService" />
+    <logger level="WARN" name="ajsc.FilePersistenceService" />
+    <logger level="WARN" name="ajsc.UserDefinedJarService" />
+    <logger level="WARN" name="ajsc.UserDefinedBeansDefService" />
+    <logger level="WARN" name="ajsc.LoggingConfigurationService" />
+    <!-- AJSC related loggers (DME2 Registration, csi logging, restlet, servlet 
+                logging) -->
+    <logger level="WARN" name="ajsc.utils" />
+    <logger level="WARN" name="ajsc.utils.DME2Helper" />
+    <logger level="WARN" name="ajsc.filters" />
+    <logger level="WARN" name="ajsc.beans.interceptors" />
+    <logger level="WARN" name="ajsc.restlet" />
+    <logger level="WARN" name="ajsc.servlet" />
+    <logger level="WARN" name="com.att.ajsc" />
+    <logger level="WARN" name="com.att.ajsc.csi.logging" />
+    <logger level="WARN" name="com.att.ajsc.filemonitor" />
+    <!-- Other Loggers that may help troubleshoot -->
+    <logger level="WARN" name="net.sf" />
+    <logger level="WARN" name="org.apache.commons.httpclient" />
+    <logger level="WARN" name="org.apache.commons" />
+    <logger level="WARN" name="org.apache.coyote" />
+    <logger level="WARN" name="org.apache.jasper" />
+    <!-- Camel Related Loggers (including restlet/servlet/jaxrs/cxf logging. 
+                May aid in troubleshooting) -->
+    <logger level="WARN" name="org.apache.camel" />
+    <logger level="WARN" name="org.apache.cxf" />
+    <logger level="WARN" name="org.apache.camel.processor.interceptor" />
+    <logger level="WARN" name="org.apache.cxf.jaxrs.interceptor" />
+    <logger level="WARN" name="org.apache.cxf.service" />
+    <logger level="WARN" name="org.restlet" />
+    <logger level="WARN" name="org.apache.camel.component.restlet" />
+    <!-- logback internals logging -->
+    <logger level="WARN" name="ch.qos.logback.classic" />
+    <logger level="WARN" name="ch.qos.logback.core" />
+    <!-- logback jms appenders & loggers definition starts here -->
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="auditLogs">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter" />
+        <file>${perfLogsDirectory}/Audit-${lrmRVer}-${lrmRO}-${Pid}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${perfLogsDirectory}/Audit-${lrmRVer}-${lrmRO}-${Pid}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="perfLogs">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter" />
+        <file>${perfLogsDirectory}/Perform-${lrmRVer}-${lrmRO}-${Pid}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${perfLogsDirectory}/Perform-${lrmRVer}-${lrmRO}-${Pid}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC-audit">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="Audit-Record-Queue" />
+    </appender>
+    <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC-perf">
+        <queueSize>${queueSize}</queueSize>
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="Performance-Tracker-Queue" />
+    </appender>
+    <logger additivity="false" level="INFO" name="AuditRecord">
+        <appender-ref ref="ASYNC-audit" />
+        <appender-ref ref="auditLogs" />
+    </logger>
+    <logger additivity="false" level="INFO" name="AuditRecord_DirectCall">
+        <appender-ref ref="ASYNC-audit" />
+        <appender-ref ref="auditLogs" />
+    </logger>
+    <logger additivity="false" level="INFO" name="PerfTrackerRecord">
+        <appender-ref ref="ASYNC-perf" />
+        <appender-ref ref="perfLogs" />
+    </logger>
+    <!-- logback jms appenders & loggers definition ends here -->
+    <logger additivity="false" level="DEBUG" name="org.openecomp.aai.interceptors">
+        <appender-ref ref="asynctranslog" />
+    </logger>
+    <logger level="DEBUG" name="org.openecomp.aai.interceptors.PreAaiAjscInterceptor">
+        <appender-ref ref="asyncAUDIT" />
+    </logger>
+    <logger level="DEBUG" name="org.openecomp.aai.interceptors.PostAaiAjscInterceptor">
+        <appender-ref ref="asyncAUDIT" />
+    </logger>
+    <logger additivity="false" level="DEBUG" name="org.openecomp.aai.dmaap">
+        <appender-ref ref="dmaapAAIEventConsumer" />
+        <appender-ref ref="dmaapAAIEventConsumerDebug" />
+        <appender-ref ref="dmaapAAIEventConsumerMetric" />
+    </logger>
+    <logger level="WARN" name="org.apache" />
+    <logger level="WARN" name="org.zookeeper" />
+    <logger level="WARN" name="com.thinkaurelius" />
+    <!-- ============================================================================ -->
+    <!-- General EELF logger -->
+    <!-- ============================================================================ -->
+    <logger additivity="false" level="WARN" name="com.att.eelf">
+        <appender-ref ref="asyncDEBUG" />
+        <appender-ref ref="asyncERROR" />
+        <appender-ref ref="asyncMETRIC" />
+        <appender-ref ref="asyncAUDIT" />
+    </logger>
+    <root level="INFO">
+        <appender-ref ref="asyncDEBUG" />
+        <appender-ref ref="asyncERROR" />
+    </root>
+</configuration>
