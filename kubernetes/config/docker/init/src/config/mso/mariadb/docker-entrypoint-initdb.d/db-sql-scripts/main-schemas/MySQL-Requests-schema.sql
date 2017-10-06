@@ -50,7 +50,7 @@
     create table SITE_STATUS (
         SITE_NAME varchar(255) not null,
         STATUS bit,
-        CREATION_TIMESTAMP datetime,
+        CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         primary key (SITE_NAME)
     );
 
