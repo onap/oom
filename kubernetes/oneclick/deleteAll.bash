@@ -12,6 +12,11 @@ delete_namespace() {
   printf "Namespace $_NS deleted.\n\n"
 }
 
+delete_service_account() {
+    kubectl delete clusterrolebinding $1-$2-admin-binding
+    printf "Service account $1-$2-admin-binding deleted.\n\n"
+}
+
 delete_registry_key() {
   kubectl --namespace $1-$2 delete secret ${1}-docker-registry-key
 }
@@ -76,6 +81,7 @@ for i in ${HELM_APPS[@]}; do
 
   delete_app_helm $NS $i
   delete_namespace $NS $i
+  delete_service_account $NS $i
 
 done
 

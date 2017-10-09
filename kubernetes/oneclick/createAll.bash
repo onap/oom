@@ -26,6 +26,11 @@ check_return_code(){
   fi
 }
 
+create_service_account() {
+  cmd=`echo kubectl create clusterrolebinding $1-$2-admin-binding --clusterrole=cluster-admin --serviceaccount=$1-$2:default`
+  eval ${cmd}
+  check_return_code $cmd
+}
 
 create_namespace() {
   cmd=`echo kubectl create namespace $1-$2`
@@ -163,6 +168,9 @@ printf "\n\n********** Creating deployments for ${HELM_APPS[*]} ********** \n"
 for i in ${HELM_APPS[@]}; do
   printf "\nCreating namespace **********\n"
   create_namespace $NS $i
+
+  printf "\nCreating service account **********\n"
+  create_service_account $NS $i
 
   printf "\nCreating registry secret **********\n"
   create_registry_key $NS $i ${NS}-docker-registry-key $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
