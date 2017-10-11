@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: uui
+  name: uui
+  namespace: "{{ .Values.nsPrefix }}-uui"
+spec:
+  selector:
+    matchLabels:
+      app: uui
+  template:
+    metadata:
+      labels:
+        app: uui
+      name: uui
+    spec:
+      containers:
+      - image: {{ .Values.image.uuiImage }}:{{ .Values.image.uuiVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command:
+          - /bin/bash
+          - -c
+          - /home/uui/tomcat/bin/catalina.sh run
+        name: uui
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
