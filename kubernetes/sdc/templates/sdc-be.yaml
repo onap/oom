@@ -86,8 +86,12 @@ spec:
           name: sdc-logs
         - mountPath: /var/log/onap
           name: sdc-logs-2
-        - mountPath: /var/lib/jetty/config/catalog-be/logback.xml
+        - mountPath: /tmp/logback.xml
           name: sdc-logback
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]          
         ports:
         - containerPort: 8443
         - containerPort: 8080
