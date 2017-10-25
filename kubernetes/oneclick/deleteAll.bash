@@ -5,11 +5,6 @@
 delete_namespace() {
   _NS=$1-$2
   kubectl delete namespace $_NS
-   printf "Waiting for namespace $_NS termination...\n"
-   while kubectl get namespaces $_NS > /dev/null 2>&1; do
-     sleep 2
-   done
-  printf "Namespace $_NS deleted.\n\n"
 }
 
 delete_service_account() {
@@ -25,6 +20,24 @@ delete_app_helm() {
   helm delete $1-$2 --purge
 }
 
+wait_terminate() {
+  printf "Waiting for namespaces termination...\n"
+  while true; do
+    declare -i _STATUS=0
+    for i in ${HELM_APPS[@]}; do
+      kubectl get namespaces $1-$i > /dev/null 2>&1
+      if [ "$?" -eq "0" ]; then
+        _STATUS=1
+        break
+      fi
+    done
+    if [ "$_STATUS" -eq "0" ]; then
+      break
+    fi
+    sleep 2
+  done
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [PARAMs]
@@ -34,6 +47,7 @@ Usage: $0 [PARAMs]
                       from the following choices:
                       sdc, aai ,mso, message-router, robot, vid, aaf, uui
                       sdnc, portal, policy, appc, multicloud, clamp, consul, vnfsdk
+-N                  : Do not wait for deletion of namespace and its objects
 EOF
 }
 
@@ -41,8 +55,9 @@ EOF
 NS=
 INCL_SVC=false
 APP=
+WAIT_TERMINATE=true
 
-while getopts ":n:u:s:a:" PARAM; do
+while getopts ":n:u:s:a:N" PARAM; do
   case $PARAM in
     u)
       usage
@@ -57,6 +72,9 @@ while getopts ":n:u:s:a:" PARAM; do
         usage
         exit 1
       fi
+      ;;
+    N)
+      WAIT_TERMINATE=false
       ;;
     ?)
       usage
@@ -85,5 +103,8 @@ for i in ${HELM_APPS[@]}; do
 
 done
 
+if $WAIT_TERMINATE; then
+  wait_terminate $NS
+fi
 
 printf "\n********** Gone **********\n"
