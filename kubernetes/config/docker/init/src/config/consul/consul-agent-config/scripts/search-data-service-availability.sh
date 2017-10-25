@@ -9,8 +9,8 @@ INDEX_URL="https://$SEARCH_SERVICE_NAME:$SEARCH_SERVICE_PORT/services/search-dat
 INDEX_SCHEMA="{\"fields\":[{\"name\": \"field1\", \"data-type\": \"string\"}]}"
 
 
-SEARCH_CERT_FILE="/consul/config/client-cert-onap.crt.pem"
-SEARCH_KEY_FILE="/consul/config/client-cert-onap.key.pem"
+SEARCH_CERT_FILE="/consul/config/certs/client-cert-onap.crt.pem"
+SEARCH_KEY_FILE="/consul/config/certs/client-cert-onap.key.pem"
 
 
 ## Try to create an index via the Search Data Service API.
