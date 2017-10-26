@@ -19,11 +19,17 @@ GLOBAL_ASDC_FE_PORT = "8181"
 GLOBAL_ASDC_BE_PORT = "8080"
 GLOBAL_ASDC_BE_USERNAME = "beep"
 GLOBAL_ASDC_BE_PASSWORD = "boop"
+# clamp info - everything is from the private oam network (also called ecomp private network)
+GLOBAL_CLAMP_SERVER_PROTOCOL = "http"
+GLOBAL_CLAMP_SERVER_PORT = "8080"
 # dcae info - everything is from the private oam network (also called ecomp private network)
 GLOBAL_DCAE_SERVER_PROTOCOL = "http"
-GLOBAL_DCAE_SERVER_PORT = "9998"
+GLOBAL_DCAE_SERVER_PORT = "8080"
 GLOBAL_DCAE_USERNAME = "console"
 GLOBAL_DCAE_PASSWORD = "ZjJkYjllMjljMTI2M2Iz"
+# microservice bus info - everything is from the private oam network (also called ecomp private network)
+GLOBAL_MSB_SERVER_PROTOCOL = "http"
+GLOBAL_MSB_SERVER_PORT = "80"
 # message router info - everything is from the private oam network (also called ecomp private network)
 GLOBAL_MR_SERVER_PROTOCOL = "http"
 GLOBAL_MR_SERVER_PORT = "3904"
@@ -33,7 +39,6 @@ GLOBAL_MSO_SERVER_PORT = "8080"
 GLOBAL_MSO_USERNAME = "InfraPortalClient"
 GLOBAL_MSO_PASSWORD = "password1$"
 # openstack info - info to select right info in environment
-GLOBAL_OPENSTACK_TENANT_NAME = "OPENSTACK_TENANT_NAME_HERE"
 # packet generate vnf info - everything is from the private oam network (also called ecomp private network)
 GLOBAL_PACKET_GENERATOR_PORT = "8183"
 GLOBAL_PACKET_GENERATOR_USERNAME = "admin"
@@ -73,3 +78,4 @@ GLOBAL_VVGSERVER_IMAGE = "UBUNTU_14_IMAGE_NAME_HERE"
 GLOBAL_VVGSERVER_FLAVOR = "OPENSTACK_FLAVOUR_MEDIUM_HERE"
 # dns info
 GLOBAL_DNS_TRAFFIC_DURATION = "600"
+GLOBAL_HEAT_TEMPLATES_FOLDER = "/share/heat"
