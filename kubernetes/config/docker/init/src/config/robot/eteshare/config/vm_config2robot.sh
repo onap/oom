@@ -11,9 +11,8 @@ do
     VALUE=`cat $f`
     NAME=${f%.*}
     NAME=${NAME##*/}
-    GLOBAL_VM_PROPERTIES=$"$GLOBAL_VM_PROPERTIES \"$NAME\" : \"$VALUE\",\n"
+    NAME=${NAME^^}
+    GLOBAL_VM_PROPERTIES=$"${GLOBAL_VM_PROPERTIES}GLOBAL_INJECTED_$NAME = \"$VALUE\"\n"
 done
-GLOBAL_VM_PROPERTIES=${GLOBAL_VM_PROPERTIES/%,\\n/\}}
+GLOBAL_VM_PROPERTIES=${GLOBAL_VM_PROPERTIES}
 echo -e $GLOBAL_VM_PROPERTIES > $PROPERTIES
-REGION=`cat $CONFIG/region.txt`
-echo -e "\nGLOBAL_OPENSTACK_SERVICE_REGION = \"$REGION\"" >> /opt/eteshare/config/integration_robot_properties.py
