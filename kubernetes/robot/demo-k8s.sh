@@ -13,7 +13,7 @@ function usage
 	echo "       demo.sh init_customer"
 	echo "               - Create demo customer (Demonstration) and services, etc."
 	echo " "
-	echo "       demo.sh distribute"
+	echo "       demo.sh distribute  [<prefix>]"
 	echo "               - Distribute demo models (demoVFW and demoVLB)"
 	echo " "
 	echo "       demo.sh preload <vnf_name> <module_name>"
@@ -67,6 +67,10 @@ do
     	distribute)
 			TAG="InitDistribution"
 			shift
+			if [ $# -eq 1 ];then
+				VARIABLES="$VARIABLES -v DEMO_PREFIX:$1"
+			fi
+			shift
 			;;
     	preload)
 			TAG="PreloadDemo"
@@ -119,5 +123,5 @@ done
 
 ETEHOME=/var/opt/OpenECOMP_ETE
 VARIABLEFILES="-V /share/config/vm_properties.py -V /share/config/integration_robot_properties.py -V /share/config/integration_preload_parameters.py"
-CONTAINER_ID=`docker ps |grep robot |grep onap-robot|grep -v gcr|awk '{print $1}'`
-docker exec ${CONTAINER_ID} ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d ${ETEHOME}/html/logs/demo/${TAG} -i ${TAG} --display 89 2> ${TAG}.out
+POD=$(kubectl --namespace onap-robot get pods | sed 's/ .*//'| grep robot)
+kubectl --namespace onap-robot exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d ${ETEHOME}/html/logs/demo/${TAG} -i ${TAG} --display 89 2> ${TAG}.out
