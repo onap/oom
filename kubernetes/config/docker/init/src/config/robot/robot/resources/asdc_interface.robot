@@ -289,13 +289,15 @@ Certify ASDC Catalog Resource
     ${resp}=    Run ASDC Post Request    ${ASDC_CATALOG_RESOURCES_PATH}/${catalog_resource_id}${ASDC_CATALOG_LIFECYCLE_PATH}/certify    ${data}    ${ASDC_TESTER_USER_ID}
     Should Be Equal As Strings 	${resp.status_code} 	200
     [Return]    ${resp.json()['uniqueId']}
+
 Upload ASDC Heat Package
     [Documentation]    Creates an asdc Software Product and returns its id
     [Arguments]    ${software_product_id}    ${file_path}   ${version_id}=0.1
-    ${file}=    Get Binary File     ${file_path}
-    ${files}=     Create Dictionary     upload=${file}
+     ${files}=     Create Dictionary
+     Create Multi Part     ${files}  upload  ${file_path}    contentType=application/zip
     ${resp}=    Run ASDC Post Files Request    ${ASDC_VENDOR_SOFTWARE_PRODUCT_PATH}/${software_product_id}/versions/${version_id}${ASDC_VENDOR_SOFTWARE_UPLOAD_PATH}     ${files}    ${ASDC_DESIGNER_USER_ID}
 	Should Be Equal As Strings 	${resp.status_code} 	200
+
 Add ASDC Catalog Service
     [Documentation]    Creates an asdc Catalog Service and returns its id
     [Arguments]   ${catalog_service_name}
@@ -431,6 +433,7 @@ Run ASDC Put Request
     ${resp}= 	Put Request 	asdc 	${data_path}     data=${data}    headers=${headers}
     Log    Received response from asdc ${resp.text}
     [Return]    ${resp}
+
 Run ASDC Post Files Request
     [Documentation]    Runs an ASDC post request
     [Arguments]    ${data_path}    ${files}    ${user}=${ASDC_DESIGNER_USER_ID}
@@ -442,6 +445,7 @@ Run ASDC Post Files Request
     ${resp}= 	Post Request 	asdc 	${data_path}     files=${files}    headers=${headers}
     Log    Received response from asdc ${resp.text}
     [Return]    ${resp}
+
 Run ASDC Post Request
     [Documentation]    Runs an ASDC post request
     [Arguments]    ${data_path}    ${data}    ${user}=${ASDC_DESIGNER_USER_ID}
@@ -471,9 +475,17 @@ Open ASDC GUI
     ##Setup Browser
     Go To    ${ASDC_FE_ENDPOINT}${PATH}
     Maximize Browser Window
-    Set Selenium Speed    ${GLOBAL_SELENIUM_DELAY}
+
     Set Browser Implicit Wait    ${GLOBAL_SELENIUM_BROWSER_IMPLICIT_WAIT}
     Log    Logging in to ${ASDC_FE_ENDPOINT}${PATH}
     Title Should Be    ASDC
     Wait Until Page Contains Element    xpath=//div/a[text()='SDC']    ${GLOBAL_SELENIUM_BROWSER_WAIT_TIMEOUT}
     Log    Logged in to ${ASDC_FE_ENDPOINT}${PATH}
+
+
+Create Multi Part
+   [Arguments]  ${addTo}  ${partName}  ${filePath}  ${contentType}=${None}
+   ${fileData}=   Get Binary File  ${filePath}
+   ${fileDir}  ${fileName}=  Split Path  ${filePath}
+   ${partData}=  Create List  ${fileName}  ${fileData}  ${contentType}
+   Set To Dictionary  ${addTo}  ${partName}=${partData}
