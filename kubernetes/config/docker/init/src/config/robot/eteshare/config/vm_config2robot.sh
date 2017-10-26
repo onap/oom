@@ -6,14 +6,19 @@
 CONFIG=/opt/config
 PROPERTIES=/opt/eteshare/config/vm_properties.py
 GLOBAL_VM_PROPERTIES="# File generated from /opt/config\n#\n"
+HASH="GLOBAL_INJECTED_PROPERTIES={"
+COMMA=""
 for f in `ls $CONFIG/*.txt`;
 do
     VALUE=`cat $f`
     NAME=${f%.*}
     NAME=${NAME##*/}
-    GLOBAL_VM_PROPERTIES=$"$GLOBAL_VM_PROPERTIES \"$NAME\" : \"$VALUE\",\n"
+    NAME=${NAME^^}
+    GLOBAL_VM_PROPERTIES=$"${GLOBAL_VM_PROPERTIES}GLOBAL_INJECTED_$NAME = \"$VALUE\"\n"
+	HASH=$"${HASH}${COMMA}\n\"GLOBAL_INJECTED_$NAME\" : \"$VALUE\""
+	COMMA=","
 done
-GLOBAL_VM_PROPERTIES=${GLOBAL_VM_PROPERTIES/%,\\n/\}}
+HASH="${HASH}}\n"
+GLOBAL_VM_PROPERTIES="${GLOBAL_VM_PROPERTIES}\n${HASH}"
+GLOBAL_VM_PROPERTIES=${GLOBAL_VM_PROPERTIES}
 echo -e $GLOBAL_VM_PROPERTIES > $PROPERTIES
-REGION=`cat $CONFIG/region.txt`
-echo -e "\nGLOBAL_OPENSTACK_SERVICE_REGION = \"$REGION\"" >> /opt/eteshare/config/integration_robot_properties.py

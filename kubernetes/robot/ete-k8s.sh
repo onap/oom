@@ -6,7 +6,7 @@
 # Note: Do not run multiple concurrent ete.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ];then
-   echo "Usage: ete.sh [ health | ete | closedloop | instantiate ]"
+   echo "Usage: ete.sh [ health | ete | closedloop | instantiate | distribute ]"
    exit
 fi
 

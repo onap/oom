@@ -111,13 +111,12 @@ Get From Mapping
     ${vf_module_name}=    Get From DIctionary    ${vf_module}    name
     :for    ${template}   in   @{templates} 
     \    Return From Keyword If    '${template['name_pattern']}' in '${vf_module_name}'     ${template}    
-    [Return]    None
-    
-            
+    [Return]    None  
+           
 Preload One Vnf Topology
     [Arguments]    ${service_type_uuid}    ${generic_vnf_name}    ${generic_vnf_type}       ${vf_module_name}    ${vf_module_type}    ${service}    ${filename}   ${uuid}
     Return From Keyword If    '${filename}' == ''
-    ${data_template}=    OperatingSystem.Get File    ${PRELOAD_VNF_TOPOLOGY_OPERATION_BODY}/${filename}
+    ${data_template}=    OperatingSystem.Get File    ${PRELOAD_VNF_TOPOLOGY_OPERATION_BODY}/preload.template
     ${parameters}=    Get Template Parameters    ${filename}   ${uuid}
     Set To Dictionary   ${parameters}   generic_vnf_name=${generic_vnf_name}     generic_vnf_type=${generic_vnf_type}  service_type=${service_type_uuid}    vf_module_name=${vf_module_name}    vf_module_type=${vf_module_type}    uuid=${uuid}
     ${data}=	Fill JSON Template    ${data_template}    ${parameters}        
@@ -136,6 +135,11 @@ Get Template Parameters
     ${valuemap}=   Create Dictionary
     Set To Dictionary   ${valuemap}   artifacts_version=${GLOBAL_INJECTED_ARTIFACTS_VERSION}
     Set To Dictionary   ${valuemap}   network=${GLOBAL_INJECTED_NETWORK} 
+    Set To Dictionary   ${valuemap}   public_net_id=${GLOBAL_INJECTED_PUBLIC_NET_ID}
+    Set To Dictionary   ${valuemap}   cloud_env=${GLOBAL_INJECTED_CLOUD_ENV}
+    Set To Dictionary   ${valuemap}   install_script_version=${GLOBAL_INJECTED_INSTALL_SCRIPT_VERSION}
+    Set To Dictionary   ${valuemap}   vm_image_name=${GLOBAL_INJECTED_VM_IMAGE_NAME}
+    Set To Dictionary   ${valuemap}   vm_flavor_name=${GLOBAL_INJECTED_VM_FLAVOR_NAME}
     # update the value map with unique values.
     Set To Dictionary   ${valuemap}   uuid=${uuid}   hostid=${hostid}    ecompnet=${ecompnet}
     ${parameters}=    Create Dictionary
@@ -143,7 +147,9 @@ Get Template Parameters
     Resolve Values Into Dictionary   ${valuemap}   ${defaults}    ${parameters}
     ${suite_templates}=    Get From Dictionary    ${GLOBAL_PRELOAD_PARAMETERS}    ${suite}
     ${template}=    Get From Dictionary    ${suite_templates}    ${template}
-    Resolve Values Into Dictionary   ${valuemap}   ${template}    ${parameters}
+    ${vnf_parameters}=   Resolve VNF Parameters Into Array   ${valuemap}   ${template}    ${parameters}
+    ${vnf_parameters_json}=   Evaluate    json.dumps(${vnf_parameters})    json
+    Set To Dictionary   ${parameters}   vnf_parameters=${vnf_parameters_json}
     [Return]    ${parameters}
    
 Resolve Values Into Dictionary    
@@ -153,6 +159,17 @@ Resolve Values Into Dictionary
     \    ${value}=    Get From Dictionary    ${from}   ${key}
     \    ${value}=    Template String    ${value}    ${valuemap}
     \    Set To Dictionary    ${to}    ${key}    ${value}
+
+Resolve VNF Parameters Into Array
+    [Arguments]   ${valuemap}    ${from}    ${to}
+    ${vnf_parameters}=   Create List
+    ${keys}=    Get Dictionary Keys    ${from}
+    :for   ${key}   in  @{keys}
+    \    ${value}=    Get From Dictionary    ${from}   ${key}
+    \    ${value}=    Template String    ${value}    ${valuemap}
+    \    ${parameter}=   Create Dictionary   vnf-parameter-name=${key}    vnf-parameter-value=${value}
+    \    Append To List    ${vnf_parameters}   ${parameter}
+    [Return]   ${vnf_parameters}
      
 Preload Vnf Profile
     [Arguments]    ${vnf_name}
