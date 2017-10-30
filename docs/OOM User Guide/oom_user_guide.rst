@@ -882,11 +882,11 @@ Integration with MSB
 ====================
 
 The \ `Microservices Bus
-Project <file:///C:\display\DW\Microservices+Bus+Project>`__ provides
+Project <https://wiki.onap.org/pages/viewpage.action?pageId=3246982>`__ provides
 facilities to integrate micro-services into ONAP and therefore needs to
 integrate into OOM - primarily through Consul which is the backend of
 MSB service discovery. The following is a brief description of how this
-integration will be done (thanks Huabing):
+integration will be done:
 
 A registrator to push the service endpoint info to MSB service
 discovery. 
@@ -910,10 +910,10 @@ discovery. 
 
 Details of the registration service API can be found at \ `Microservice
 Bus API
-Documentation <file:///C:\display\DW\Microservice+Bus+API+Documentation>`__.
+Documentation <https://wiki.onap.org/display/DW/Microservice+Bus+API+Documentation>`__.
 
 How to define the service endpoints using annotation \ `ONAP Services
-List#OOMIntegration <file:///C:\display\DW\ONAP+Services+List#ONAPServicesList-OOMIntegration>`__
+List#OOMIntegration <https://wiki.onap.org/display/DW/ONAP+Services+List#ONAPServicesList-OOMIntegration>`__
 
 A preliminary view of the OOM-MSB integration is as follows:
 
@@ -925,32 +925,21 @@ A message sequence chart of the registration process:
 
 MSB Usage Instructions
 ----------------------
+MSB provides kubernetes charts in OOM, so it can be spun up by oom oneclick command. 
 
-**Pull and run MSB docker containers** (Login the ONAP docker registry first:)::
+Please note that kubernetes authentication token must be set at *kubernetes/kube2msb/values.yaml* so the kube2msb registrator can get the access to watch the kubernetes events and get service annotation by kubernetes APIs. The token can be found in the kubectl configuration file *~/.kube/config*
 
-  docker login -u docker -p docker nexus3.onap.org:10001
+MSB and kube2msb can be spun up with all the ONAP components together, or separately using the following commands.
 
-  sudo docker run -d --net=host --name msb\_consul consul agent -dev
+**Start MSB services**::
 
-  sudo docker run -d --net=host --name msb\_discovery nexus3.onap.org:10001/onap/msb/msb\_discovery
+  createAll.bash -n onap -a msb
 
-  sudo docker run -d --net=host -e "ROUTE\_LABELS=visualRange:1" --name msb\_internal\_apigateway nexus3.onap.org:10001/onap/msb/msb\_apigateway
+**Start kube2msb registrator**::
 
-**Register a REST service to MSB via curl**::
+  createAll.bash -n onap -a kube2msb
 
-  curl -X POST \\
-
-  -H "Content-Type: application/json" \\
-
-  -d '{"serviceName": "aai", "version": "v8", "url":
-  "/aai/v8/","protocol": "REST", "path": "/aai/v8", "nodes": [ {"ip":
-  "10.74.215.65","port": "8443"}]}' \\
-
-  "http://127.0.0.1:10081/api/microservices/v1/services”
-
-**Test the REST Service via the internal API gateway**::
-
-  curl http://127.0.0.1/aai/v8/cloud-infrastructure/cloud-regions
+More details can be found here `MSB installation <http://onap.readthedocs.io/en/latest/submodules/msb/apigateway.git/docs/platform/installation.html>`__.
 
 FAQ (Frequently Asked Questions)
 ================================
