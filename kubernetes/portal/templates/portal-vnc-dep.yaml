@@ -1,4 +1,11 @@
 #{{ if not .Values.disablePortalVncPortal }}
+kind: ConfigMap
+metadata:
+  name: vnc-scripts
+  namespace: "{{ .Values.nsPrefix }}-portal"
+data:
+{{ tpl (.Files.Glob "resources/scripts/*").AsConfig . | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -39,73 +46,6 @@ spec:
               "image": "{{ .Values.image.readiness }}",
               "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "vnc-portal-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "pap"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-policy"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-pap-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "sdc-fe"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-sdc"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-sdc-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "vid-server"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-vid"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-vid-readiness"
-          },
-          {
-              "command": ["/bin/sh","-c"],
-              "args": ["echo `host sdc-be.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.be.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host portalapps.{{ .Values.nsPrefix }}-portal | awk ''{print$4}''` portal.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host pap.{{ .Values.nsPrefix }}-policy | awk ''{print$4}''` policy.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host sdc-fe.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host vid-server.{{ .Values.nsPrefix }}-vid | awk ''{print$4}''` vid.api.simpledemo.onap.org >> /ubuntu-init/hosts; echo `host sparky-be.{{ .Values.nsPrefix }}-aai | awk ''{print$4}''` aai.api.simpledemo.onap.org  >> /ubuntu-init/hosts"],
-              "image": "{{ .Values.image.ubuntuInit }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-init-hosts",
-              "volumeMounts": [
-                {
-                  "name": "ubuntu-init",
-                  "mountPath": "/ubuntu-init/"
-                }
-              ]
           }
           ]'
     spec:
@@ -115,7 +55,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "cat /ubuntu-init/hosts >> /etc/hosts"]
+              command: ["/bin/sh", "-c", "/usr/bin/python3 -u /root/scripts/update_hosts.py -f /root/scripts/hosts.json > update_hosts.log 2>&1 &"]
         env:
         - name: VNC_PASSWORD
           value: password
@@ -124,8 +64,8 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /ubuntu-init/
-          name: ubuntu-init
+        - mountPath: /root/scripts/
+          name: vnc-scripts
         securityContext:
           privileged: true
       securityContext: {}
@@ -133,8 +73,9 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: ubuntu-init
-          emptyDir: {}
+        - name: vnc-scripts
+          configMap:
+            name: vnc-scripts
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
