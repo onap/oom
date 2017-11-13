@@ -14,33 +14,22 @@ spec:
       labels:
         app: mso
       name: mso
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "mariadb"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "mso-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - args:
+        - --container-name
+        - mariadb
+        command:
+        - /root/ready.py
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: mso-readiness
       containers:
       - command:
         - /tmp/start-jboss-server.sh
