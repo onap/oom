@@ -13,35 +13,24 @@ spec:
       labels:
         app: aai-traversal
       name: aai-traversal
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "hbase",
-                  "--container-name",
-                  "aai-resources"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "aai-traversal-readiness"
-          }
-        ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - hbase
+        - --container-name
+        - aai-resources
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: aai-traversal-readiness
       containers:
       - name: aai-traversal
         image: "{{ .Values.image.aaiTraversalImage }}:{{ .Values.image.aaiTraversalVersion }}"

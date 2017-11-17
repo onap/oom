@@ -13,33 +13,22 @@ spec:
       labels:
         app: nexus
       name: nexus
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "mariadb"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "nexus-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - mariadb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: nexus-readiness
       containers:
       - image: "{{ .Values.image.policyNexus }}:{{ .Values.image.policyNexusVersion }}"
         imagePullPolicy: {{ .Values.pullPolicy }}

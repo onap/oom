@@ -15,39 +15,28 @@ spec:
       labels:
         app: sdc-fe
       name: sdc-fe
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "sdc-es",
-                  "--container-name",
-                  "sdc-cs",
-                  "--container-name",
-                  "sdc-kb",
-                  "--container-name",
-                  "sdc-be"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "sdc-fe-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - sdc-es
+        - --container-name
+        - sdc-cs
+        - --container-name
+        - sdc-kb
+        - --container-name
+        - sdc-be
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: sdc-fe-readiness
       containers:
       - name: sdc-fe
         env:
