@@ -1,0 +1,242 @@
+###########################################################
+# This Blueprint installs ONAP Message Router on Openstack
+###########################################################
+ 
+tosca_definitions_version: cloudify_dsl_1_3
+ 
+description: >
+  This blueprint creates a ONAP Message Router 
+ 
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.1/types.yaml
+  - http://cloudify.co/spec/openstack-plugin/2.2.0/plugin.yaml
+  - http://cloudify.co/spec/fabric-plugin/1.5/plugin.yaml
+  - http://www.getcloudify.org/spec/diamond-plugin/1.3.3/plugin.yaml
+ 
+inputs:
+  nexus_repo:
+    type: string
+    default: https://nexus.onap.org/content/sites/raw
+    
+  docker_repo:
+    type: string
+    default: nexus3.onap.org:10001
+
+  nexus_username:
+    type: string
+    default: docker
+
+  nexus_password:
+    type: string
+    default: docker
+  
+  artifacts_version:  
+    type: string
+    default: 1.1.0-SNAPSHOT 
+
+  dns_ip:
+    type: string
+
+  cloud_env:
+    type: string
+    default: openstack
+ 
+  gerrit_branch:
+    type: string
+    default: master
+   
+  external_dns:
+    type: string
+    
+  mr_repo:
+    type: string
+    default: http://gerrit.onap.org/r/dcae/demo/startup/message-router.git     
+    
+  vm_instancename:
+    type: string
+    
+  image:
+    description: |
+      A Ubuntu 14.04 image, along with the usual
+    type:  string
+    default: Ubuntu 14.04 LTS Generic
+ 
+  flavor:
+    description: >
+      A machine type with more than 2 CPUs, 4096 GB RAM, and 8 GB of disk space.
+      You might want to use 4 CPUs, 8192 MB RAM for the master.
+    type:  string
+    default: m1.xlarge
+ 
+  ssh_user:
+    description: |
+      User for connecting to agent VM
+    type:  string
+    default: ubuntu
+ 
+  security_group:
+    description: |
+     default
+    type:  string
+    default: open 
+ 
+  keypair_name:
+    description: | 
+      OpenStack keypair name 
+    type: string 
+
+  key_filename:
+    type:  string 
+
+  external_network:
+    type:  string 
+ 
+  app_subnet:
+    type:  string 
+
+  openstack_username:
+    type: string
+    description: username to authenticate to OpenStack
+ 
+  openstack_password:
+    type: string
+    description: OpenStack tenant password for openstack_username user
+ 
+  openstack_tenant_name:
+    type: string
+    description: OpenStack tenant for VM deploy
+ 
+  openstack_auth_url:
+    type: string
+    description: Authentication URL for OpenStack
+ 
+  openstack_region:
+    type: string
+    description: OpenStack region
+  
+dsl_definitions:
+  openstack_credentials:  &openstack_credentials
+    username:  { get_input: openstack_username }
+    password:  { get_input: openstack_password }
+    tenant_name:  { get_input: openstack_tenant_name }
+    auth_url:  { get_input: openstack_auth_url }
+    region:  { get_input: openstack_region }
+ 
+node_templates:
+
+  key_pair:
+    type: cloudify.openstack.nodes.KeyPair
+    properties:
+      private_key_path: { get_input: key_filename }
+      use_external_resource: true
+      resource_id: { get_input:  keypair_name }
+      openstack_config:  *openstack_credentials
+
+  private_net:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      use_external_resource:  true
+      resource_id: { get_input:  app_subnet }
+      openstack_config: *openstack_credentials
+      
+  external_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *openstack_credentials
+      use_external_resource: true
+      resource_id: { get_input: external_network}     
+
+  app_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      openstack_config: *openstack_credentials
+      use_external_resource:  true
+      resource_id: { get_input: security_group }
+
+  VM_001_fixed_ip:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_credentials
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: private_net
+      - type: cloudify.openstack.port_connected_to_security_group
+        target: app_security_group
+
+  VM_001_floating_ip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      openstack_config: *openstack_credentials
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              floating_network_name: { get_input:  external_network }
+ 
+  VM_001:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_credentials
+      install_agent:  false
+      image: { get_input: image }
+      flavor: { get_input: flavor }
+      resource_id: { get_input: vm_instancename }
+      management_network_name:  { get_input: app_subnet }
+      ip:  { get_attribute: [VM_001_floating_ip, floating_ip_address]  }
+    relationships:
+      - type: cloudify.openstack.server_connected_to_floating_ip
+        target: VM_001_floating_ip
+      - type: cloudify.openstack.server_connected_to_keypair
+        target: key_pair
+      - type: cloudify.openstack.server_connected_to_port
+        target:  VM_001_fixed_ip
+
+ 
+  app_001:
+    type: cloudify.nodes.SoftwareComponent
+    properties:
+    interfaces:
+      cloudify.interfaces.lifecycle:
+         start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: scripts/messagerouter.sh
+            use_sudo: true
+            process:
+              args: 
+                [{ get_attribute: [VM_001_floating_ip, floating_ip_address]},
+                 { get_attribute: [VM_001_fixed_ip, fixed_ip_address]},
+                 { get_input: nexus_repo },
+                 { get_input: docker_repo},
+                 { get_input: nexus_username },
+                 { get_input: nexus_password },
+                 { get_input: artifacts_version },
+                 { get_input: dns_ip},
+                 { get_input: gerrit_branch },
+                 openstack,
+                 { get_input: external_dns},
+                 { get_input: mr_repo}]
+            fabric_env:
+              host_string: { get_attribute: [VM_001_floating_ip, floating_ip_address]}
+              user: { get_input: ssh_user }
+              key_filename: { get_input: key_filename }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: VM_001
+      - type: cloudify.relationships.depends_on
+        target: VM_001_floating_ip
+
+outputs:
+  ONAP_Message_Router:
+    description: informations about Messgae Router 
+    value:
+      ip: { get_attribute: [VM_001_floating_ip, floating_ip_address] }
+
+
+
+ 
+
+ 
+
+
