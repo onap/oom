@@ -15,33 +15,22 @@ spec:
       labels:
         app: clamp
       name: clamp
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "clamp-mariadb"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "clamp-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - clamp-mariadb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: clamp-readiness
       containers:
       - env:
         - name: SPRING_APPLICATION_JSON
