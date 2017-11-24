@@ -53,6 +53,32 @@
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         primary key (SITE_NAME)
     );
-
+	create table OPERATION_STATUS (
+        SERVICE_ID varchar(255) not null,
+        OPERATION_ID varchar(255) not null,
+		SERVICE_NAME varchar(255),
+		OPERATION_TYPE varchar(255),
+		USER_ID varchar(255),
+		RESULT varchar(255),
+		OPERATION_CONTENT varchar(255),
+		PROGRESS varchar(255),
+		REASON varchar(255),
+        OPERATE_AT datetime,
+		FINISHED_AT datetime,
+        primary key (SERVICE_ID,OPERATION_ID)
+    );
+	create table RESOURCE_OPERATION_STATUS (
+        SERVICE_ID varchar(255) not null,
+        OPERATION_ID varchar(255) not null,
+        RESOURCE_TEMPLATE_UUID varchar(255) not null,
+		OPER_TYPE varchar(255),
+		RESOURCE_INSTANCE_ID varchar(255),
+		JOB_ID varchar(255),
+		STATUS varchar(255),
+		PROGRESS varchar(255),
+		ERROR_CODE varchar(255) ,
+		STATUS_DESCRIPOTION varchar(255) ,
+        primary key (SERVICE_ID,OPERATION_ID,RESOURCE_TEMPLATE_UUID)
+    );
     alter table INFRA_ACTIVE_REQUESTS 
         add constraint UK_bhu6w8p7wvur4pin0gjw2d5ak  unique (CLIENT_REQUEST_ID);
