@@ -113,7 +113,7 @@ find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_OAM_NETWORK_C
 
 # MSO post install steps to encrypt openstack password
 MSO_ENCRYPTION_KEY=$(cat /config-init/$NAMESPACE/mso/mso/encryption.key)
-OPENSTACK_API_ENCRYPTED_KEY=`echo -n "$OPENSTACK_API_KEY" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 25 -p`
+OPENSTACK_API_ENCRYPTED_KEY=`echo -n "$OPENSTACK_API_KEY" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p`
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_ENCRYPTED_PASSWORD_HERE/$OPENSTACK_API_ENCRYPTED_KEY/g" {} \;
 
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_NAME_HERE/$OPENSTACK_TENANT_NAME/g" {} \;
