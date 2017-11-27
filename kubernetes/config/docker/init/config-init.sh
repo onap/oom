@@ -1,5 +1,17 @@
 #!/bin/bash -x
 
+concat_array() {
+  local arr=("$@")
+  local str=''
+  for i in ${!arr[@]}; do
+    if (( $i > 0 )); then
+      str="${str};"
+    fi
+    str="${str}${arr[$i]}"
+  done
+  echo "$str"
+}
+
 echo "Validating onap-parameters.yaml has been populated"
 [[ -z "$OPENSTACK_UBUNTU_14_IMAGE" ]] && { echo "Error: OPENSTACK_UBUNTU_14_IMAGE must be set in onap-parameters.yaml"; exit 1; }
 [[ -z "$OPENSTACK_PUBLIC_NET_ID" ]] && { echo "Error: OPENSTACK_PUBLIC_NET_ID must be set in onap-parameters.yaml"; exit 1; }
@@ -73,49 +85,46 @@ chmod -R 777 /config-init/$NAMESPACE/policy/mariadb/
 chmod -R 777 /config-init/$NAMESPACE/log/elasticsearch
 chown -R root:root /config-init/$NAMESPACE/log
 
-echo "Substituting configuration parameters"
-
-# replace the default 'onap' namespace qualification of K8s hostnames within the config files
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/\.onap-/\.$NAMESPACE-/g" {} \;
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/kubectl -n onap/kubectl -n $NAMESPACE/g" {} \;
-# set the ubuntu 14 image
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/UBUNTU_14_IMAGE_NAME_HERE/$OPENSTACK_UBUNTU_14_IMAGE/g" {} \;
-# set the openstack public network uuid
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PUBLIC_NET_ID_HERE/$OPENSTACK_PUBLIC_NET_ID/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_NETWORK_ID_WITH_ONAP_ROUTE_HERE/$OPENSTACK_OAM_NETWORK_ID/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_SUBNET_ID_WITH_ONAP_ROUTE_HERE/$OPENSTACK_OAM_SUBNET_ID/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,NETWORK_CIDR_WITH_ONAP_ROUTE_HERE,$OPENSTACK_OAM_NETWORK_CIDR,g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_USERNAME_HERE/$OPENSTACK_USERNAME/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_ID_HERE/$OPENSTACK_TENANT_ID/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PASSWORD_HERE/$OPENSTACK_API_KEY/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_REGION_HERE/$OPENSTACK_REGION/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,OPENSTACK_KEYSTONE_IP_HERE,$OPENSTACK_KEYSTONE_URL,g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_FLAVOUR_MEDIUM_HERE/$OPENSTACK_FLAVOUR_MEDIUM/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DMAAP_TOPIC_HERE/$DMAAP_TOPIC/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_SERVICE_TENANT_NAME_HERE/$OPENSTACK_SERVICE_TENANT_NAME/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DEMO_ARTIFACTS_VERSION_HERE/$DEMO_ARTIFACTS_VERSION/g" {} \;
-
 # SDNC/Robot preload files manipulation
 OPENSTACK_OAM_NETWORK_CIDR_PREFIX=`cut -d. -f1-3 <<<"$OPENSTACK_OAM_NETWORK_CIDR"`
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_OAM_NETWORK_CIDR_PREFIX_HERE/$OPENSTACK_OAM_NETWORK_CIDR_PREFIX/g" {} \;
-
 # MSO post install steps to encrypt openstack password
 MSO_ENCRYPTION_KEY=$(cat /config-init/$NAMESPACE/mso/mso/encryption.key)
 OPENSTACK_API_ENCRYPTED_KEY=`echo -n "$OPENSTACK_API_KEY" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p`
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_ENCRYPTED_PASSWORD_HERE/$OPENSTACK_API_ENCRYPTED_KEY/g" {} \;
 
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_NAME_HERE/$OPENSTACK_TENANT_NAME/g" {} \;
+echo "Substituting configuration parameters"
+
+# replace the default 'onap' namespace qualification of K8s hostnames within the config files
+SED_NS_PATHS="/config-init/$NAMESPACE/"
+SED_NS_STRINGS=(
+  "s/\.onap-/\.${NAMESPACE}-/g"
+  "s/kubectl -n onap/kubectl -n ${NAMESPACE}/g"
+)
+SED_NS_STRING=$(concat_array "${SED_NS_STRINGS[@]}")
+find $SED_NS_PATHS -type f -exec sed -i -e "${SED_NS_STRING}" {} \;
+
+# set variable parameters
+# ATTENTION: the list of the paths must be verified if more parameters are added!
+SED_CONFIG_PATHS="/config-init/$NAMESPACE/robot/ /config-init/$NAMESPACE/mso/"
+SED_CONFIG_STRINGS=( \
+  "s/UBUNTU_14_IMAGE_NAME_HERE/${OPENSTACK_UBUNTU_14_IMAGE}/g" \
+  "s/OPENSTACK_PUBLIC_NET_ID_HERE/${OPENSTACK_PUBLIC_NET_ID}/g" \
+  "s/OPENSTACK_NETWORK_ID_WITH_ONAP_ROUTE_HERE/${OPENSTACK_OAM_NETWORK_ID}/g" \
+  "s/OPENSTACK_SUBNET_ID_WITH_ONAP_ROUTE_HERE/${OPENSTACK_OAM_SUBNET_ID}/g" \
+  "s,NETWORK_CIDR_WITH_ONAP_ROUTE_HERE,${OPENSTACK_OAM_NETWORK_CIDR},g" \
+  "s/OPENSTACK_USERNAME_HERE/${OPENSTACK_USERNAME}/g" \
+  "s/OPENSTACK_TENANT_ID_HERE/${OPENSTACK_TENANT_ID}/g" \
+  "s/OPENSTACK_PASSWORD_HERE/${OPENSTACK_API_KEY}/g" \
+  "s/OPENSTACK_REGION_HERE/${OPENSTACK_REGION}/g" \
+  "s,OPENSTACK_KEYSTONE_IP_HERE,${OPENSTACK_KEYSTONE_URL},g" \
+  "s/OPENSTACK_FLAVOUR_MEDIUM_HERE/${OPENSTACK_FLAVOUR_MEDIUM}/g" \
+  "s/DMAAP_TOPIC_HERE/${DMAAP_TOPIC}/g" \
+  "s/OPENSTACK_SERVICE_TENANT_NAME_HERE/${OPENSTACK_SERVICE_TENANT_NAME}/g" \
+  "s/DEMO_ARTIFACTS_VERSION_HERE/${DEMO_ARTIFACTS_VERSION}/g" \
+  "s/OPENSTACK_OAM_NETWORK_CIDR_PREFIX_HERE/${OPENSTACK_OAM_NETWORK_CIDR_PREFIX}/g" \
+  "s/OPENSTACK_ENCRYPTED_PASSWORD_HERE/${OPENSTACK_API_ENCRYPTED_KEY}/g" \
+  "s/OPENSTACK_TENANT_NAME_HERE/${OPENSTACK_TENANT_NAME}/g" \
+)
+SED_CONFIG_STRING=$(concat_array "${SED_CONFIG_STRINGS[@]}")
+find $SED_CONFIG_PATHS -type f -exec sed -i -e "${SED_CONFIG_STRING}" {} \;
 
 echo "Done!"
