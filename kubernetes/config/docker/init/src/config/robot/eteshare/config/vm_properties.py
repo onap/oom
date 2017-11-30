@@ -1,7 +1,7 @@
 # File generated from /opt/config
 #
 GLOBAL_INJECTED_AAI1_IP_ADDR = "aai-service.onap-aai"
-#GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
+GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
 GLOBAL_INJECTED_APPC_IP_ADDR = "sdnhost.onap-appc"
 GLOBAL_INJECTED_ARTIFACTS_VERSION = "1.1.0-SNAPSHOT"
 GLOBAL_INJECTED_CLAMP_IP_ADDR = "clamp.onap-clamp"
@@ -28,6 +28,7 @@ GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = "drools.onap-policy"
 GLOBAL_INJECTED_PORTAL_IP_ADDR = "portalapps.onap-portal"
 GLOBAL_INJECTED_REGION = "OPENSTACK_REGION_HERE"
 GLOBAL_INJECTED_REMOTE_REPO = "http://gerrit.onap.org/r/testsuite/properties.git"
+GLOBAL_INJECTED_SDC_IP_ADDR = "sdc-be.onap-sdc"
 GLOBAL_INJECTED_SDC_FE_IP_ADDR = "sdc-fe.onap-sdc"
 GLOBAL_INJECTED_SDC_BE_IP_ADDR = "sdc-be.onap-sdc"
 GLOBAL_INJECTED_SDNC_IP_ADDR = "sdnhost.onap-sdnc"
