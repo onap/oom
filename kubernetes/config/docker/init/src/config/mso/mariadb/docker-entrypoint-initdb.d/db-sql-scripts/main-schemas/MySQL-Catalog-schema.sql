@@ -127,7 +127,7 @@
         DESCRIPTION varchar(255),
         NAME varchar(255),
         VERSION varchar(255),
-        BODY varchar(255),
+        BODY longtext,
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         ARTIFACT_CHECKSUM varchar(255),
         primary key (ARTIFACT_UUID)
@@ -204,7 +204,7 @@
     create table NETWORK_RESOURCE (
         MODEL_UUID varchar(200) not null,
         MODEL_NAME varchar(200) not null,
-        MODEL_INVARIANT_UUID varchar(20),
+        MODEL_INVARIANT_UUID varchar(200),
         MODEL_VERSION varchar(20),
         TOSCA_NODE_TYPE varchar(200),
         NEUTRON_NETWORK_TYPE varchar(20),
