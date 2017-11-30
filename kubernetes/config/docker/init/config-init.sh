@@ -41,7 +41,6 @@ mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-BE/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-FE/
 mkdir -p /config-init/$NAMESPACE/aai/opt/aai/logroot/
 mkdir -p /config-init/$NAMESPACE/aai/model-loader/logs/
-mkdir -p /config-init/$NAMESPACE/aai/haproxy/log/
 mkdir -p /config-init/$NAMESPACE/aai/aai-traversal/logs/
 mkdir -p /config-init/$NAMESPACE/aai/aai-resources/logs/
 mkdir -p /config-init/$NAMESPACE/aai/sparky-be/logs/
