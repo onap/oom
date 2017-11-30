@@ -20,4 +20,4 @@ VARIABLES="-v GLOBAL_BUILD_NUMBER:$$"
 #docker exec openecompete_container ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --display 88
 
 POD=$(kubectl --namespace onap-robot get pods | sed 's/ .*//'| grep robot)
-kubectl --namespace onap-robot exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d ${ETEHOME}/html/logs/ete/${OUTPUT_FOLDER} ${TAGS} --display 88
+kubectl --namespace onap-robot exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --display 88
