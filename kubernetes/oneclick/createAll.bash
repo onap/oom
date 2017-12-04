@@ -2,6 +2,15 @@
 
 . $(dirname "$0")/setenv.bash
 
+createLogFolderForMso() {
+
+echo "Creating /dockerdata-nfs/onap/"
+mkdir -p /dockerdata-nfs/onap/
+
+echo "Copy log folder from config to dockerdata-nfs"
+cp -r ../config/docker/init/src/config/log /dockerdata-nfs/onap/
+
+}
 
 usage() {
   cat <<EOF
@@ -164,6 +173,8 @@ printf "\n********** Creating ONAP: ${ONAP_APPS[*]}\n"
 
 
 printf "\n\n********** Creating deployments for ${HELM_APPS[*]} ********** \n"
+
+createLogFolderForMso 
 
 for i in ${HELM_APPS[@]}; do
   printf "\nCreating namespace **********\n"
