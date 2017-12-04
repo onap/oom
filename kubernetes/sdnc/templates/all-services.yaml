@@ -13,6 +13,22 @@ spec:
     app: sdnc-dbhost
   clusterIP: None
 ---
+# Client service for connecting to any MySQL instance for reads.
+# For writes, you must instead connect to the master: sdnc-dbhost-0.dbhost.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhost-read
+  namespace: "{{ .Values.nsPrefix }}-sdnc"
+  labels:
+    app: sdnc-dbhost
+spec:
+  ports:
+  - name: sdnc-dbhost
+    port: 3306
+  selector:
+    app: sdnc-dbhost
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -26,7 +42,6 @@ spec:
   selector:
     app: sdnc-dbhost
   clusterIP: None
-#{{ end }}
 ---
 apiVersion: v1
 kind: Service
@@ -41,7 +56,8 @@ spec:
   selector:
     app: sdnc-dbhost
   clusterIP: None
-#{{ if not .Values.disableSdncSdncDgbuilder }}
+#{{ end }}
+#{{ if not .Values.disableSdncSdnc }}
 ---
 apiVersion: v1
 kind: Service
@@ -91,6 +107,10 @@ spec:
     port: 8201
     targetPort: 8101
     nodePort: {{ .Values.nodePortPrefix }}08
+  - name: "sdnc-jolokia-port-8080"
+    port: 9090
+    targetPort: 8080
+    nodePort: {{ .Values.nodePortPrefix }}00
   type: NodePort
   selector:
     app: sdnc
@@ -124,3 +144,23 @@ spec:
   selector:
     app: sdnc-portal
 #{{ end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: sdnhost-cluster
+ namespace: "{{ .Values.nsPrefix }}-sdnc"
+ labels:
+   app: sdnc
+ annotations:
+   service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+ ports:
+ - name: "sdnc-cluster-port"
+   port: 2550
+ clusterIP: None
+ selector:
+   app: sdnc
+ sessionAffinity: None
+ type: ClusterIP
+---
