@@ -13,35 +13,23 @@ spec:
       labels:
         app: sdnc-portal
       name: sdnc-portal
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "sdnc-db-container",
-                  "--container-name",
-                  "sdnc-controller-container"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "sdnc-portal-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+                  - /root/ready.py
+                  - "--container-name"
+                  - "sdnc-db-container"
+                  - "--container-name"
+                  - "sdnc-controller-container"
+                env:
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+        image: "{{ .Values.image.readiness }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: sdnc-portal-readiness
       containers:
       - command:
         - /bin/bash
