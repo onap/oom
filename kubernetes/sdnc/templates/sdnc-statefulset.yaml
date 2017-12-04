@@ -1,10 +1,17 @@
 #{{ if not .Values.disableSdncSdnc }}
-apiVersion: extensions/v1beta1
-kind: Deployment
+# For apiVersion,
+#   - use "kubectl version" to check Kubernetes version, 
+#   - use "apps/v1beta1" for the Kubernetes version before 1.8.0;
+#   - otherwise, use "apps/v1beta2"
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: sdnc
   namespace: "{{ .Values.nsPrefix }}-sdnc"
 spec:
+  serviceName: "sdnhost-cluster"
+  replicas: {{ .Values.numberOfODLReplicas }}
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: sdnc
@@ -13,41 +20,38 @@ spec:
       labels:
         app: sdnc
       name: sdnc
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "sdnc-db-container"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "sdnc-readiness"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        - "--container-name"
+        - "sdnc-db-container"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.image.readiness }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: sdnc-readiness
       containers:
       - command:
-        - /opt/onap/sdnc/bin/startODL.sh
+        - bash 
+        - "-c"
+        - |
+          sed -i 's/dbhost/sdnc-dbhost-0.dbhost.onap-sdnc.svc.cluster.local/g' /opt/onap/sdnc/data/properties/svclogic.properties
+          sed -i 's/^\(org.onap.ccsdk.sli.jdbc.hosts=\).*/\1sdnc-dbhost-0.dbhost.onap-sdnc.svc.cluster.local/' /opt/onap/sdnc/data/properties/dblib.properties
+          /opt/onap/sdnc/bin/startODL.sh
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: openECOMP1.0
         - name: SDNC_CONFIG_DIR
           value: /opt/onap/sdnc/data/properties
+        - name: ENABLE_ODL_CLUSTER
+          value: "{{ .Values.enableODLCluster }}"
+        - name: SDNC_REPLICAS
+          value: "{{ .Values.numberOfODLReplicas }}"
         image: {{ .Values.image.sdnc }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: sdnc-controller-container
@@ -66,6 +70,8 @@ spec:
         ports:
         - containerPort: 8181
         - containerPort: 8101
+        - containerPort: 2550
+        - containerPort: 8080
         readinessProbe:
           tcpSocket:
             port: 8181
