@@ -1,10 +1,13 @@
 #{{ if not .Values.disableSdncSdnc }}
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: app/v1beta1
+kind: StatefulSet
 metadata:
   name: sdnc
   namespace: "{{ .Values.nsPrefix }}-sdnc"
 spec:
+  serviceName: "sdnhost-cluster"
+  replicas: 3
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: sdnc
@@ -48,6 +51,10 @@ spec:
           value: openECOMP1.0
         - name: SDNC_CONFIG_DIR
           value: /opt/onap/sdnc/data/properties
+        - name: ENABLE_ODL_CLUSTER
+          value: "true"
+        - name: SDNC_REPLICAS
+          value: "3"
         image: {{ .Values.image.sdnc }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: sdnc-controller-container
@@ -66,6 +73,8 @@ spec:
         ports:
         - containerPort: 8181
         - containerPort: 8101
+        - containerPort: 2550
+        - containerPort: 8080
         readinessProbe:
           tcpSocket:
             port: 8181
