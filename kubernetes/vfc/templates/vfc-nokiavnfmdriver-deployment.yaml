@@ -1,0 +1,36 @@
+#{{ if not .Values.disableVfcNokiaVnfmDriver }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vfc-nokiavnfmdriver
+  namespace: "{{ .Values.nsPrefix }}-{{ .Chart.Name }}"
+spec:
+  replicas: {{ .Values.nokiavnfmdriver.replicas }}
+  selector:
+    matchLabels:
+      app: vfc-nokiavnfmdriver
+  template:
+    metadata:
+      labels:
+        app: vfc-nokiavnfmdriver
+      name: vfc-nokiavnfmdriver
+    spec:
+      hostname: vfc-nokiavnfmdriver
+      containers:
+      - args:
+        image:  {{.Values.nokiavnfmdriver.image}}
+        name: "vfc-nokiavnfmdriver"
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.nokiavnfmdriver.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.nokiavnfmdriver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
