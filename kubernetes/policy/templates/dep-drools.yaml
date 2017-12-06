@@ -43,7 +43,7 @@ spec:
                       }
                   }
               ],
-              "image": "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
+              "image": "{{ .Values.repository.oom }}/{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
               "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "drools-readiness"
           }
@@ -54,7 +54,7 @@ spec:
         - /bin/bash
         - -c
         - ./do-start.sh
-        image: "{{ .Values.image.policyDrools }}:{{ .Values.image.policyDroolsVersion }}"
+        image: "{{ .Values.repository.onap }}/{{ .Values.image.policyDrools }}:{{ .Values.image.policyDroolsVersion }}"
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: drools
         ports:
@@ -80,7 +80,7 @@ spec:
           postStart:
             exec:
               command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/opt/app/policy/config/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
-      - image: {{ .Values.image.filebeat }}
+      - image: {{ .Values.repository.elastic }}/{{ .Values.image.filebeat }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: filebeat-onap
         volumeMounts:
@@ -96,20 +96,20 @@ spec:
             path: /etc/localtime
         - name: filebeat-conf
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
         - name: policy-logs
           emptyDir: {}
         - name: policy-data-filebeat
           emptyDir: {}
         - name: policy-logback
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/drools/logback.xml
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/log/policy/drools/logback.xml
         - name: drools-settingsxml
           hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/drools/settings.xml
+            path:  {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/policy/drools/settings.xml
         - name: drools
           hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/opt/policy/config/drools/
+            path:  {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/policy/opt/policy/config/drools/
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

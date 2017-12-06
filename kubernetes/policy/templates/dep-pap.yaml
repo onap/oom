@@ -36,7 +36,7 @@ spec:
                       }
                   }
               ],
-              "image": "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
+              "image": "{{ .Values.repository.oom }}/{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
               "imagePullPolicy": "{{ .Values.pullPolicy }}",
               "name": "pap-readiness"
           },
@@ -70,7 +70,7 @@ spec:
         - /bin/bash
         - ./do-start.sh
         - pap
-        image: "{{ .Values.image.policyPe }}:{{ .Values.image.policyPeVersion }}"
+        image: "{{ .Values.repository.onap }}/{{ .Values.image.policyPe }}:{{ .Values.image.policyPeVersion }}"
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: pap
         ports:
@@ -97,7 +97,7 @@ spec:
           postStart:
             exec:
               command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/opt/app/policy/servers/pap/webapps/pap/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; export SRC=/tmp/policy-install/logback.xml; export DST=/opt/app/policy/servers/console/webapps/onap/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
-      - image: {{ .Values.image.filebeat }}
+      - image: {{ .Values.repository.elastic }}/{{ .Values.image.filebeat }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: filebeat-onap
         volumeMounts:
@@ -113,20 +113,20 @@ spec:
             path: /etc/localtime
         - name: filebeat-conf
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
         - name: policy-logs
           emptyDir: {}
         - name: policy-data-filebeat
           emptyDir: {}
         - name: policy-logback
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/xacml-pap-rest/logback.xml
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/log/policy/xacml-pap-rest/logback.xml
         - name: policy-sdk-logback
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/ep_sdk_app/logback.xml
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/log/policy/ep_sdk_app/logback.xml
         - name: pe
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/opt/policy/config/pe/
+            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/policy/opt/policy/config/pe/
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
