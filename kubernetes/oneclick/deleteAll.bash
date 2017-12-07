@@ -94,7 +94,6 @@ fi
 
 printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
-
 for i in ${HELM_APPS[@]}; do
 
   delete_app_helm $NS $i
@@ -102,6 +101,9 @@ for i in ${HELM_APPS[@]}; do
   delete_service_account $NS $i
 
 done
+
+delete_app_helm $NS "config"
+kubectl delete namespace $NS
 
 if $WAIT_TERMINATE; then
   wait_terminate $NS
