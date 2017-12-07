@@ -30,6 +30,9 @@ function usage
 	echo " "
 	echo "       demo.sh deleteVNF <module_name from instantiateVFW>"
     echo "               - Delete the module created by instantiateVFW"
+	echo " "
+	echo "       demo.sh heatbridge <stack_name> <service_instance_id> <service>"
+    echo "               - Run heatbridge against the stack for the given service instance and service"
 }
 
 # Set the defaults
@@ -113,6 +116,20 @@ do
 				echo "Cache file ${VARFILE} is not found"
 				exit
 			fi
+      shift
+			;;
+    	heatbridge)
+			TAG="heatbridge"
+			shift
+			if [ $# -ne 3 ];then
+				echo "Usage: demo.sh heatbridge <stack_name> <service_instance_id> <service>"
+				exit
+			fi
+			VARIABLES="$VARIABLES -v HB_STACK:$1"
+			shift
+			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$1"
+			shift
+			VARIABLES="$VARIABLES -v HB_SERVICE:$1"
 			shift
 			;;
     	*)
