@@ -29,8 +29,24 @@ spec:
           readOnly: true
         - mountPath: /etc/mysql/conf.d
           name: mso-mariadb-conf
-        - mountPath: /docker-entrypoint-initdb.d
+        - mountPath: /docker-entrypoint-initdb.d/02-load-additional-changes.sh
           name: mso-mariadb-docker-entrypoint-initdb
+          subPath: 02-load-additional-changes.sh
+        - mountPath: /docker-entrypoint-initdb.d/01-load-default-sql-files.sh
+          name: mso-mariadb-docker-entrypoint-initdb
+          subPath: 01-load-default-sql-files.sh
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/automated-tests
+          name: mso-mariadb-docker-entrypoint-automated-tests
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/default
+          name: mso-mariadb-docker-entrypoint-bulkload-default
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-dns
+          name: mso-mariadb-docker-entrypoint-demo-dns
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-vfw
+          name: mso-mariadb-docker-entrypoint-demo-vfw
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/camunda
+          name: mso-mariadb-docker-entrypoint-camunda
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/main-schemas
+          name: mso-mariadb-docker-entrypoint-main-schemas
         - mountPath: /var/lib/mysql
           name: mso-mariadb-data
         ports:
@@ -42,15 +58,63 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
+        - name: mso-mariadb-conf
+          configMap:
+            name: dbconfd-configmap
+            items:
+            - key: mariadb1.cnf
+              path: mariadb1.cnf
+        - name: mso-mariadb-docker-entrypoint-initdb
+          configMap:
+            name: dbconfd-configmap 
+            items:
+            - key: 02-load-additional-changes.sh 
+              path: 02-load-additional-changes.sh
+            - key: 01-load-default-sql-files.sh 
+              path: 01-load-default-sql-files.sh
+        - name: mso-mariadb-docker-entrypoint-automated-tests
+          configMap:
+            name: dbconfd-configmap 
+            items:
+            - key: create_mso_db-tests.sql
+              path: create_mso_db-tests.sql
+        - name: mso-mariadb-docker-entrypoint-bulkload-default
+          configMap:
+            name: dbconfd-configmap 
+            items:
+            - key: create_mso_db-default.sql
+              path: create_mso_db-default.sql
+        - name: mso-mariadb-docker-entrypoint-demo-dns
+          configMap:
+            name: dbconfd-configmap
+            items:
+            - key: create_mso_db-demo-dns.sql
+              path: create_mso_db-demo-dns.sql
+        - name: mso-mariadb-docker-entrypoint-demo-vfw
+          configMap:
+            name: dbconfd-configmap
+            items:
+            - key: create_mso_db-demo-vfw.sql
+              path: create_mso_db-demo-vfw.sql
+        - name: mso-mariadb-docker-entrypoint-camunda
+          configMap:
+            name: dbconfd-configmap
+            items:
+            - key: mariadb_engine_7.7.3-ee.sql
+              path: mariadb_engine_7.7.3-ee.sql
+            - key: mysql_create_camunda_admin.sql
+              path: mysql_create_camunda_admin.sql
+        - name: mso-mariadb-docker-entrypoint-main-schemas
+          configMap:
+            name: dbconfd-configmap
+            items:
+            - key: MySQL-Catalog-schema.sql
+              path: MySQL-Catalog-schema.sql
+            - key: MySQL-Requests-schema.sql
+              path: MySQL-Requests-schema.sql
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: mso-mariadb-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mariadb/conf.d
-        - name: mso-mariadb-docker-entrypoint-initdb
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mariadb/docker-entrypoint-initdb.d
         - name: mso-mariadb-data
           persistentVolumeClaim:
             claimName: mso-db
