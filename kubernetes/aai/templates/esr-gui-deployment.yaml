@@ -1,0 +1,39 @@
+#{{ if not .Values.disableesrgui }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: esr-gui
+  name: esr-gui
+  namespace: "{{ .Values.nsPrefix }}-esr"
+spec:
+  selector:
+    matchLabels:
+      app: esr-gui
+  template:
+    metadata:
+      labels:
+        app: esr-gui
+      name: esr-gui
+    spec:
+      containers:
+      - image: {{ .Values.image.esrGuiImage }}:{{ .Values.image.esrGuiVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command:
+          - /bin/bash
+          - -c
+          - /home/esrgui/tomcat/bin/catalina.sh run
+        name: esr-esrgui
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: 9519
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
