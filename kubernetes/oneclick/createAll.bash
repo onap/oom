@@ -2,7 +2,6 @@
 
 . $(dirname "$0")/setenv.bash
 
-
 usage() {
   cat <<EOF
 Usage: $0 [PARAMs]
@@ -164,6 +163,7 @@ printf "\n********** Creating ONAP: ${ONAP_APPS[*]}\n"
 
 
 printf "\n\n********** Creating deployments for ${HELM_APPS[*]} ********** \n"
+
 
 for i in ${HELM_APPS[@]}; do
   printf "\nCreating namespace **********\n"

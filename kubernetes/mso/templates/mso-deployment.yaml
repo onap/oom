@@ -53,28 +53,39 @@ spec:
           readOnly: true
         - mountPath: /shared
           name: mso
+        volumeMounts:
         - mountPath: /tmp/start-jboss-server.sh
+          subPath: start-jboss-server.sh
           name: mso-docker-files
         - mountPath: /var/log/onap
           name: mso-logs
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-api-handler-infra-config/logback.apihandler-infra.xml
-          name: logback-apihandler-infra
+          name: mso-logback
+          subPath: logback.apihandler-infra.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.network.xml
-          name: logback-network
+          name: mso-logback
+          subPath: logback.network.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.tenant.xml
-          name: logback-tenant
+          name: mso-logback
+          subPath: logback.tenant.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.vnf.xml
-          name: logback-vnf
+          name: mso-logback
+          subPath: logback.vnf.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-appc-adapter-config/logback.appc.xml
-          name: logback-appc
+          name: mso-logback
+          subPath: logback.appc.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-requests-db-adapter-config/logback.msorequestsdbadapter.xml
-          name: logback-msorequestsdbadapter
+          name: mso-logback
+          subPath: logback.msorequestsdbadapter.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-asdc-controller-config/logback.asdc.xml
-          name: logback-asdc
+          name: mso-logback
+          subPath: logback.asdc.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-sdnc-adapter-config/logback.sdnc.xml
-          name: logback-sdnc
+          name: mso-logback
+          subPath: logback.sdnc.xml
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-bpmn-config/logback.bpmn.xml
-          name: logback-bpmn
+          name: mso-logback
+          subPath: logback.bpmn.xml
         env:
         - name: JBOSS_DEBUG
           value: "false"
@@ -95,6 +106,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: mso-logs
         - mountPath: /usr/share/filebeat/data
@@ -103,46 +115,48 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: logback-apihandler-infra
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.apihandler-infra.xml
-        - name: logback-network
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.network.xml
-        - name: logback-tenant
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.tenant.xml
-        - name: logback-vnf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.vnf.xml
-        - name: logback-appc
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.appc.xml
-        - name: logback-msorequestsdbadapter
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.msorequestsdbadapter.xml
-        - name: logback-asdc
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.asdc.xml
-        - name: logback-sdnc
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.sdnc.xml
-        - name: logback-bpmn
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/mso/logback.bpmn.xml
+        - name: mso-logback
+          configMap:
+            name: mso-log-configmap 
+            items:
+            - key: logback.apihandler-infra.xml 
+              path: logback.apihandler-infra.xml
+            - key: logback.appc.xml
+              path: logback.appc.xml
+            - key: logback.vnf.xml
+              path: logback.vnf.xml
+            - key: logback.tenant.xml
+              path: logback.tenant.xml
+            - key: logback.sdnc.xml
+              path: logback.sdnc.xml
+            - key: logback.network.xml
+              path: logback.network.xml
+            - key: logback.msorequestsdbadapter.xml
+              path: logback.msorequestsdbadapter.xml
+            - key: logback.bpmn.xml
+              path: logback.bpmn.xml
+            - key: logback.asdc.xml
+              path: logback.asdc.xml
+        - name: filebeat-conf
+          configMap:
+            name: mso-logback-configmap
+            items:
+            - key: filebeat.yml
+              path: filebeat.yml
         - name: mso
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mso
-        - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
         - name: mso-logs
           emptyDir: {}
         - name: mso-data-filebeat
           emptyDir: {}
         - name: mso-docker-files
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/docker-files/scripts/start-jboss-server.sh
+          configMap:
+            name: docker-files-configmap
+            defaultMode: 0755
+            items:
+            - key: start-jboss-server.sh
+              path: start-jboss-server.sh
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
