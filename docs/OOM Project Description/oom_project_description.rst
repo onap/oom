@@ -20,7 +20,7 @@ its life cycle while using hardware resources efficiently. 
 Quick Start Guide
 =================
 
-Once a kubernetes environment is available (check out `ONAP on Kubernetes <file:///C:\display\DW\ONAP+on+Kubernetes>`__ if you're
+Once a kubernetes environment is available (check out `ONAP on Kubernetes <https://wiki.onap.org/display/DW/ONAP+on+Kubernetes>`__ if you're
 getting started) and the deployment artifacts have been customized for your location, ONAP is ready to be installed. 
 
 The first step is to setup
@@ -69,7 +69,7 @@ short video demonstration by Mike Elliott: 
 
 .. raw:: html
 
-   <video controls src="/OOM_Demo.mp4"></video>
+   <video controls src="_static/OOM_Demo.mp4"></video>
 
 
 OOM Architecture and Technical Details
@@ -80,7 +80,7 @@ management system to orchestrate the life cycle of the ONAP
 infrastructure components.  If you'd like to learn more about how this
 works or develop the deployment specifications for a project not already
 managed by OOM look here: \ `OOM User
-Guide <file:///C:\display\DW\OOM+User+Guide>`__.
+Guide <http://onap.readthedocs.io/en/latest/submodules/oom.git/docs/OOM%20User%20Guide/oom_user_guide.html>`__.
 
 
 Links to Further Information
@@ -88,4 +88,4 @@ Links to Further Information
 
 -  Configuration data for all of the ONAP sub-projects is distributed by
    OOM.  For more information on how this is done see: \ `OOM
-   Configuration Management <file:///C:\display\DW\OOM+Configuration+Management>`__.
+   Configuration Management <https://wiki.onap.org/display/DW/OOM+Configuration+Management>`__.
