@@ -1,0 +1,55 @@
+#{{ if not .Values.disableDcaeNginx }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: "{{ .Values.nsPrefix }}-dcaegen2"
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+      name: nginx
+    spec:
+      hostname: nginx
+      containers:
+      - image: "{{ .Values.nginx.repository }}:{{ .Values.nginx.tag }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: "nginx"
+        ports:
+        - containerPort: 8443
+          name: aai-service
+        - containerPort: 3904
+          name: dmaap
+        - containerPort: 8443
+          name: sdc-be
+        - containerPort: 8081
+          name: pdp
+        - containerPort: 9005
+          name: mc-windriver
+        - containerPort: 80
+          name: mc-windriver-2
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /etc/nginx/conf.d/
+          name: nginx-config
+        - mountPath: /etc/certs/
+          name: nginx-certs
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: nginx-config
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcaegen2/nginx/config
+        - name: nginx-certs
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcaegen2/nginx/certs
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
