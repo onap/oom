@@ -77,44 +77,86 @@ echo "Substituting configuration parameters"
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/\.onap-/\.$NAMESPACE-/g" {} \;
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/kubectl -n onap/kubectl -n $NAMESPACE/g" {} \;
-# set the ubuntu 14 image
+
+##########
+# Images #
+##########
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/UBUNTU_14_IMAGE_NAME_HERE/$OPENSTACK_UBUNTU_14_IMAGE/g" {} \;
-# set the openstack public network uuid
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/UBUNTU_16_IMAGE_NAME_HERE/$OPENSTACK_UBUNTU_16_IMAGE/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_CENTOS_7_IMAGE_HERE/$OPENSTACK_CENTOS_7_IMAGE/g" {} \;
+
+##############
+# Networking #
+##############
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PUBLIC_NET_ID_HERE/$OPENSTACK_PUBLIC_NET_ID/g" {} \;
-
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PUBLIC_NET_NAME_HERE/$OPENSTACK_PUBLIC_NET_NAME/g" {} \;
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_NETWORK_ID_WITH_ONAP_ROUTE_HERE/$OPENSTACK_OAM_NETWORK_ID/g" {} \;
-
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_SUBNET_ID_WITH_ONAP_ROUTE_HERE/$OPENSTACK_OAM_SUBNET_ID/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,NETWORK_CIDR_WITH_ONAP_ROUTE_HERE,$OPENSTACK_OAM_NETWORK_CIDR/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DCAE_IP_ADDR_HERE/$DCAE_IP_ADDR/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNS_IP_ADDR_HERE/$DNS_IP_ADDR/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/K8S_IP_ADDR_HERE/$K8S_IP_ADDR/g" {} \;
 
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,NETWORK_CIDR_WITH_ONAP_ROUTE_HERE,$OPENSTACK_OAM_NETWORK_CIDR,g" {} \;
-
+##################
+# Authentication #
+##################
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_USERNAME_HERE/$OPENSTACK_USERNAME/g" {} \;
-
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_ID_HERE/$OPENSTACK_TENANT_ID/g" {} \;
-
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_NAME_HERE/$OPENSTACK_TENANT_NAME/g" {} \;
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PASSWORD_HERE/$OPENSTACK_API_KEY/g" {} \;
-
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_REGION_HERE/$OPENSTACK_REGION/g" {} \;
-
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,OPENSTACK_KEYSTONE_IP_HERE,$OPENSTACK_KEYSTONE_URL,g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_FLAVOUR_MEDIUM_HERE/$OPENSTACK_FLAVOUR_MEDIUM/g" {} \;
-
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DMAAP_TOPIC_HERE/$DMAAP_TOPIC/g" {} \;
-
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_SERVICE_TENANT_NAME_HERE/$OPENSTACK_SERVICE_TENANT_NAME/g" {} \;
 
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DEMO_ARTIFACTS_VERSION_HERE/$DEMO_ARTIFACTS_VERSION/g" {} \;
+###########
+# Flavors #
+###########
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_FLAVOUR_SMALL_HERE/$OPENSTACK_FLAVOUR_SMALL/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_FLAVOUR_MEDIUM_HERE/$OPENSTACK_FLAVOUR_MEDIUM/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_FLAVOUR_XLARGE_HERE/$OPENSTACK_FLAVOUR_XLARGE/g" {} \;
 
+########
+# ONAP #
+########
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DMAAP_TOPIC_HERE/$DMAAP_TOPIC/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DEMO_ARTIFACTS_VERSION_HERE/$DEMO_ARTIFACTS_VERSION/g" {} \;
 # SDNC/Robot preload files manipulation
 OPENSTACK_OAM_NETWORK_CIDR_PREFIX=`cut -d. -f1-3 <<<"$OPENSTACK_OAM_NETWORK_CIDR"`
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_OAM_NETWORK_CIDR_PREFIX_HERE/$OPENSTACK_OAM_NETWORK_CIDR_PREFIX/g" {} \;
-
 # MSO post install steps to encrypt openstack password
 MSO_ENCRYPTION_KEY=$(cat /config-init/$NAMESPACE/mso/mso/encryption.key)
 OPENSTACK_API_ENCRYPTED_KEY=`echo -n "$OPENSTACK_API_KEY" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p`
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_ENCRYPTED_PASSWORD_HERE/$OPENSTACK_API_ENCRYPTED_KEY/g" {} \;
 
-find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_TENANT_NAME_HERE/$OPENSTACK_TENANT_NAME/g" {} \;
+########
+# DCAE #
+########
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DCAE_VM_BASE_NAME_HERE/$DCAE_VM_BASE_NAME/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DCAE_KEYSTONE_URL_HERE/$DCAE_KEYSTONE_URL/g" {} \;
+
+###########
+# KeyPair #
+###########
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_KEY_NAME_HERE/$OPENSTACK_KEY_NAME/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PUB_KEY_HERE/$OPENSTACK_PUB_KEY/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_PRIVATE_KEY_HERE/$OPENSTACK_PRIVATE_KEY/g" {} \;
+
+#######
+# DNS #
+#######
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNS_LIST_HERE/$DNS_LIST/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/EXTERNAL_DNS_HERE/$EXTERNAL_DNS/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNS_FORWARDER_HERE/$DNS_FORWARDER/g" {} \;
+
+#################
+# DNS Designate #
+#################
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_PROXY_ENABLE_HERE/$DNSAAS_PROXY_ENABLE/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_REGION_HERE/$DNSAAS_REGION/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_KEYSTONE_URL_HERE/$DNSAAS_KEYSTONE_URL/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_TENANT_NAME_HERE/$DNSAAS_TENANT_NAME/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_USERNAME_HERE/$DNSAAS_USERNAME/g" {} \;
+find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_PASSWORD_HERE/$DNSAAS_PASSWORD/g" {} \;
+
 
 echo "Done!"
