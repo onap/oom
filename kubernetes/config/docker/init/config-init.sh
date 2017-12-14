@@ -33,7 +33,6 @@ mkdir -p /config-init/$NAMESPACE/portal/logs/
 mkdir -p /config-init/$NAMESPACE/sdnc/data/
 mkdir -p /config-init/$NAMESPACE/vid/mariadb/data/
 mkdir -p /config-init/$NAMESPACE/sdc/sdc-cs/CS/
-mkdir -p /config-init/$NAMESPACE/sdc/sdc-es/ES/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-ES/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-CS/
 mkdir -p /config-init/$NAMESPACE/sdc/logs/ASDC/ASDC-KB/
