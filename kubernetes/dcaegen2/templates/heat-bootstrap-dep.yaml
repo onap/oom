@@ -1,0 +1,46 @@
+#{{ if not .Values.disableDcae }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: heat-bootstrap
+  namespace: "{{ .Values.nsPrefix }}-dcaegen2"
+spec:
+  selector:
+    matchLabels:
+      app: heat-bootstrap
+  template:
+    metadata:
+      labels:
+        app: heat-bootstrap
+      name: heat-bootstrap
+    spec:
+      hostname: heat-bootstrap
+      containers:
+      - command:
+        - /bin/bash
+        - ./opt/heat/entrypoint.sh
+        args: ["{{ .Values.nsPrefix }}"]
+        image: "{{ .Values.heat_bootstrap.repository }}:{{ .Values.heat_bootstrap.tag }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: "heat-bootstrap"
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/heat
+          name: heat-bootstrap-config
+        - mountPath: /opt/robot
+          name: robot-config
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: heat-bootstrap-config
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/dcaegen2/heat/
+        - name: robot-config
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/eteshare/config/
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
