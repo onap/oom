@@ -1,0 +1,568 @@
+##########################################################################
+#
+#==================LICENSE_START==========================================
+# 
+#
+# Copyright (c) 2017 AT&T Intellectual Property. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#==================LICENSE_END============================================
+#
+# ECOMP is a trademark and service mark of AT&T Intellectual Property.
+#
+##########################################################################
+
+heat_template_version: 2015-10-15
+
+description: Heat template to install ONAP components
+
+##############
+#            #
+# PARAMETERS #
+#            #
+##############
+
+parameters:
+
+  ##############################################
+  #                                            #
+  # Parameters used across all ONAP components #
+  #                                            #
+  ##############################################
+  
+  public_net_id:
+    type: string
+    description: The ID of the Public network for floating IP address allocation
+
+  public_net_name:
+    type: string
+    description: The name of the Public network referred by public_net_id
+
+  ubuntu_1404_image:
+    type: string
+    description: Name of the Ubuntu 14.04 image
+
+  ubuntu_1604_image:
+    type: string
+    description: Name of the Ubuntu 16.04 image
+
+  flavor_small:
+    type: string
+    description: Name of the Small Flavor supported by the cloud provider
+
+  flavor_xlarge:
+    type: string
+    description: Name of the Extra Large Flavor supported by the cloud provider
+
+  vm_base_name:
+    type: string
+    description: Base name of ONAP VMs
+
+  key_name:
+    type: string
+    description: Public/Private key pair name
+
+  pub_key:
+    type: string
+    description: Public key to be installed on the compute instance
+
+  nexus_repo:
+    type: string
+    description: Complete URL for the Nexus repository.
+
+  nexus_docker_repo:
+    type: string
+    description: Complete URL for the Nexus repository for docker images.
+
+  nexus_username:
+    type: string
+    description: Nexus Repository username
+
+  nexus_password:
+    type: string
+    description: Nexus Repository Password
+
+  artifacts_version:
+    type: string
+    description: Artifacts version of ONAP components
+
+  openstack_tenant_id:
+    type: string
+    description: OpenStack tenant ID
+
+  openstack_tenant_name:
+    type: string
+    description: OpenStack tenant name (matching with the openstack_tenant_id) 
+
+  openstack_username:
+    type: string
+    description: OpenStack username
+
+  openstack_api_key:
+    type: string
+    description: OpenStack password or API Key
+
+  keystone_url:
+    type: string
+    description: URL of OpenStack Keystone
+
+  cloud_env:
+    type: string
+    description: Cloud Provider Name in lower case
+
+  openstack_region:
+    type: string
+    description: Region where the DCAE controller will spin the VMs
+
+  ######################
+  #                    #
+  # Network parameters #
+  #                    #
+  ######################
+
+  dns_list:
+    type: comma_delimited_list
+    description: List of External DNS for OAM ONAP network
+
+  external_dns:
+    type: string
+    description: Public IP of the external DNS for ONAP network
+
+  dns_forwarder:
+    type: string
+    description: the forwarder address for setting up ONAP's private DNS server
+
+  oam_network_cidr:
+    type: string
+    description: CIDR of the OAM ONAP network
+
+  ### Private IP addresses ###
+  dns_ip_addr:
+    type: string
+  dcae_ip_addr:
+    type: string
+  k8s_ip_addr:
+    type: string
+  aai1_k8s_ip_addr:
+    type: string
+  aai2_k8s_ip_addr:
+    type: string
+  mr_k8s_ip_addr:
+    type: string
+  policy_k8s_ip_addr:
+    type: string
+  sdc_k8s_ip_addr:
+    type: string
+  openo_k8s_ip_addr:
+    type: string
+
+  ###########################
+  #                         #
+  # Parameters used by DCAE #
+  #                         #
+  ###########################
+
+  dnsaas_config_enabled:
+    type: string
+    description: whether the DNSaaS configuration section is enabled
+
+  dnsaas_region:
+    type: string
+    description: the region of the cloud instance providing the Designate DNS as a Service
+
+  dnsaas_keystone_url:
+    type: string
+    description: the keystone URL of the cloud instance providing the Designate DNS as a Service
+
+  dnsaas_username:
+    type: string
+    description: the username of the cloud instance providing the Designate DNS as a Service
+
+  dnsaas_password:
+    type: string
+    description: the password of the cloud instance providing the Designate DNS as a Service
+
+  dnsaas_tenant_name:
+    type: string
+    description: the name of the tenant in the cloud instance providing the Designate DNS as a Service
+
+  dcae_keystone_url:
+    type: string
+    description: the keystone URL for DCAE to use (via MultiCloud)
+
+  dcae_private_key:
+    type: string
+    description: the private key of the key-apir used between the DCAE bootstrap container and DCAE VMs
+
+  dcae_public_key:
+    type: string
+    description: the prublic key of the key-apir used between the DCAE bootstrap container and DCAE VMs
+
+  dcae_centos_7_image:
+    type: string
+    description: the id/name of the CentOS 7 VM imange
+
+  dcae_domain:
+    type: string
+    description: the top level domain to register DCAE VMs (the zone will be random-str.dcae_domain)
+
+  dcae_docker:
+    type: string
+
+
+#############
+#           #
+# RESOURCES #
+#           #
+#############
+
+resources:
+  random-str:
+    type: OS::Heat::RandomString
+    properties:
+      length: 4
+
+  # Public key used to access ONAP components
+  vm_key:
+    type: OS::Nova::KeyPair
+    properties:
+      name:
+        str_replace:
+          template: base_rand
+          params:
+            base: { get_param: key_name }
+            rand: { get_resource: random-str }
+      public_key: { get_param: pub_key }
+      save_private_key: false
+
+
+  # ONAP security group
+  onap_sg:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name:
+        str_replace:
+          template: base_rand
+          params:
+            base: onap_sg
+            rand: { get_resource: random-str }
+      description: security group used by ONAP
+      rules:
+        # All egress traffic
+        - direction: egress
+          ethertype: IPv4
+        - direction: egress
+          ethertype: IPv6
+        # ingress traffic
+        # ICMP
+        - protocol: icmp
+        - protocol: udp
+          port_range_min: 1
+          port_range_max: 65535
+        - protocol: tcp
+          port_range_min: 1
+          port_range_max: 65535
+
+ 
+
+  # ONAP management private network
+  oam_onap:
+    type: OS::Neutron::Net
+    properties:
+      name:
+        str_replace:
+          template: oam_onap_rand
+          params:
+            rand: { get_resource: random-str }
+
+  oam_onap_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name:
+        str_replace:
+          template: oam_onap_rand
+          params:
+            rand: { get_resource: random-str }
+      network_id: { get_resource: oam_onap }
+      cidr: { get_param: oam_network_cidr }
+      dns_nameservers: { get_param: dns_list }
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: { get_param: public_net_id }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: oam_onap_subnet }
+
+
+  # DNS Server instantiation
+  dns_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }, "ip_address": { get_param: dns_ip_addr }}]
+
+  dns_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: dns_private_port }
+
+  dns_vm:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1404_image }
+      flavor: { get_param: flavor_small }
+      name:
+        str_replace:
+          template: base-dns-server
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: dns_private_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __artifacts_version__: { get_param: artifacts_version }
+            __oam_network_cidr__: { get_attr: [oam_onap_subnet, cidr] }
+            __dns_ip_addr__: { get_param: dns_ip_addr }
+            __aai1_ip_addr__: { get_param: k8s_ip_addr }
+            __aai2_ip_addr__: { get_param: k8s_ip_addr }
+            __appc_ip_addr__: { get_param: k8s_ip_addr }
+            __dcae_ip_addr__: { get_param: k8s_ip_addr }
+            __so_ip_addr__: { get_param: k8s_ip_addr }
+            __mr_ip_addr__: { get_param: k8s_ip_addr }
+            __policy_ip_addr__: { get_param: k8s_ip_addr }
+            __portal_ip_addr__: { get_param: k8s_ip_addr }
+            __robot_ip_addr__: { get_param: k8s_ip_addr }
+            __sdc_ip_addr__: { get_param: k8s_ip_addr }
+            __sdnc_ip_addr__: { get_param: k8s_ip_addr }
+            __vid_ip_addr__: { get_param: k8s_ip_addr }
+            __clamp_ip_addr__: { get_param: k8s_ip_addr }
+            __openo_ip_addr__: { get_param: k8s_ip_addr }
+            __cloud_env__: { get_param: cloud_env }
+            __external_dns__: { get_param: external_dns }
+            __dns_forwarder__: { get_param: dns_forwarder }
+          template: |
+            #!/bin/bash
+
+            # Create configuration files
+            mkdir -p /opt/config
+            echo "__nexus_repo__" > /opt/config/nexus_repo.txt
+            echo "__cloud_env__" > /opt/config/cloud_env.txt
+            echo "__artifacts_version__" > /opt/config/artifacts_version.txt
+            echo "__oam_network_cidr__" > /opt/config/oam_network_cidr.txt
+            echo "__dns_ip_addr__" > /opt/config/dns_ip_addr.txt
+            echo "__aai1_ip_addr__" > /opt/config/aai1_ip_addr.txt
+            echo "__aai2_ip_addr__" > /opt/config/aai2_ip_addr.txt
+            echo "__appc_ip_addr__" > /opt/config/appc_ip_addr.txt
+            echo "__dcae_ip_addr__" > /opt/config/dcae_ip_addr.txt
+            echo "__so_ip_addr__" > /opt/config/so_ip_addr.txt
+            echo "__mr_ip_addr__" > /opt/config/mr_ip_addr.txt
+            echo "__policy_ip_addr__" > /opt/config/policy_ip_addr.txt
+            echo "__portal_ip_addr__" > /opt/config/portal_ip_addr.txt
+            echo "__robot_ip_addr__" > /opt/config/robot_ip_addr.txt
+            echo "__sdc_ip_addr__" > /opt/config/sdc_ip_addr.txt
+            echo "__sdnc_ip_addr__" > /opt/config/sdnc_ip_addr.txt
+            echo "__vid_ip_addr__" > /opt/config/vid_ip_addr.txt
+            echo "__clamp_ip_addr__" > /opt/config/clamp_ip_addr.txt
+            echo "__openo_ip_addr__" > /opt/config/openo_ip_addr.txt
+            echo "__external_dns__" > /opt/config/external_dns.txt
+            echo "__dns_forwarder__" > /opt/config/dns_forwarder.txt
+
+            # Download and run install script
+            curl -k __nexus_repo__/org.onap.demo/boot/__artifacts_version__/dns_install.sh -o /opt/dns_install.sh
+            cd /opt
+            chmod +x dns_install.sh
+            ./dns_install.sh
+
+  # DCAE GEN 2 Controller instantiation
+  dcae_c_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }, "ip_address": { get_param: dcae_ip_addr }}]
+
+  dcae_c_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: dcae_c_private_port }
+
+  dcae_c_vm:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      flavor: { get_param: flavor_small }
+      name:
+        str_replace:
+          template: base-dcae-bootstrap
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: dcae_c_private_port }
+      #security_groups:
+      #  - { get_resource: onap_sg }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __rand_str__: { get_resource: random-str }
+            # repo related
+            __artifacts_version__: { get_param: artifacts_version }
+            __docker_version__: { get_param: dcae_docker }
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            # conf for the ONAP environment where the DCAE bootstrap vm/conatiner runs
+            __mac_addr__: { get_attr: [dcae_c_private_port, mac_address] }
+            __dcae_ip_addr__: { get_param: dcae_ip_addr }
+            __dcae_float_ip__: { get_attr: [dcae_c_floating_ip, floating_ip_address] }
+            __dns_ip_addr__: { get_param: dns_ip_addr }
+            __external_dns__: { get_param: external_dns }
+            __dns_forwarder__: { get_param: dns_forwarder }
+            __dcae_domain__: { get_param: dcae_domain }
+            # conf for VMs DCAE is to bringup
+            __openstack_keystone_url__: { get_param: keystone_url }
+            __dcae_keystone_url__: { get_param: dcae_keystone_url }
+            __dcaeos_cloud_env__: { get_param: cloud_env }
+            __dcaeos_keystone_url__: { get_param: dcae_keystone_url }
+            __dcaeos_region__: { get_param: openstack_region }
+            __dcaeos_tenant_id__: { get_param: openstack_tenant_id }
+            __dcaeos_tenant_name__: { get_param: openstack_tenant_name }
+            __dcaeos_security_group__: 
+              str_replace: 
+                template: 'onap_sg_rand'
+                params: 
+                  rand: { get_resource: random-str }
+            #__dcaeos_security_group__: { get_attr: [onap_sg, name] }
+            __dcaeos_username__: { get_param: openstack_username }
+            __dcaeos_password__: { get_param: openstack_api_key }
+            __dcaeos_key_name__: { get_resource: vm_key }
+            __dcaeos_public_key__: { get_param: dcae_public_key }
+            __dcaeos_private_key__: { get_param: dcae_private_key }
+            __dcaeos_private_network_name__: { get_attr: [oam_onap, name] }
+            __dcaeos_public_network_name__: { get_param: public_net_name }
+            __dcaeos_ubuntu_1604_image__: { get_param: ubuntu_1604_image }
+            __dcaeos_centos_7_image__: { get_param: dcae_centos_7_image }
+            __dcaeos_flavor_id__: { get_param: flavor_xlarge }
+            __dcaeos_flavor_id_cdap__: { get_param: flavor_xlarge }
+            __dcaeos_dnsaas_config_enabled__: { get_param: dnsaas_config_enabled }
+            __dcaeos_dnsaas_region__: { get_param: dnsaas_region }
+            __dcaeos_dnsaas_keystone_url__: { get_param: dnsaas_keystone_url }
+            __dnsaas_tenant_name__: { get_param: dnsaas_tenant_name }
+            __dcaeos_dnsaas_username__: { get_param: dnsaas_username }
+            __dcaeos_dnsaas_password__: { get_param: dnsaas_password }
+            # fixed private IPs
+            __mr_ip_addr__: { get_param: mr_k8s_ip_addr }
+            __policy_ip_addr__: { get_param: policy_k8s_ip_addr }
+            __sdc_ip_addr__: { get_param: sdc_k8s_ip_addr }
+            __openo_ip_addr__: { get_param: openo_k8s_ip_addr }
+            __aai1_ip_addr__: { get_param: aai1_k8s_ip_addr }
+            __aai2_ip_addr__: { get_param: aai2_k8s_ip_addr }
+            # floating IPs
+            __dns_floating_ip_addr__: { get_attr: [dns_floating_ip, floating_ip_address] }
+            __aai1_floating_ip_addr__: { get_param: aai1_k8s_ip_addr }
+            __aai2_floating_ip_addr__: { get_param: aai1_k8s_ip_addr }
+            __mrouter_floating_ip_addr__: { get_param: mr_k8s_ip_addr }
+            __sdc_floating_ip_addr__: { get_param: sdc_k8s_ip_addr }
+            __policy_floating_ip_addr__: { get_param: policy_k8s_ip_addr }
+            __openo_floating_ip_addr__: { get_param: openo_k8s_ip_addr }
+            __dcae_c_floating_ip_addr__: { get_attr: [dcae_c_floating_ip, floating_ip_address] }
+
+          template: |
+            #!/bin/bash
+
+            # Create configuration files
+            mkdir -p /opt/config
+            echo "__rand_str__" > /opt/config/dcae_zone.txt
+            echo "__rand_str__" > /opt/config/rand_str.txt
+            # repo related
+            echo "__docker_version__" > /opt/config/docker_version.txt
+            echo "__artifacts_version__" > /opt/config/artifacts_version.txt
+            echo "__nexus_repo__" > /opt/config/nexus_repo.txt
+            echo "__nexus_docker_repo__" > /opt/config/nexus_docker_repo.txt
+            echo "__nexus_username__" > /opt/config/nexus_username.txt
+            echo "__nexus_password__" > /opt/config/nexus_password.txt
+            echo "__gerrit_branch__" > /opt/config/gerrit_branch.txt
+            # conf for the ONAP environment where the DCAE bootstrap vm/conatiner runs
+            echo "__mac_addr__" > /opt/config/mac_addr.txt
+            echo "__dcae_ip_addr__" > /opt/config/dcae_ip_addr.txt
+            echo "__dcae_float_ip__" > /opt/config/dcae_float_ip.txt
+            echo "__dns_ip_addr__" > /opt/config/dns_ip_addr.txt
+            echo "__external_dns__" > /opt/config/external_dns.txt
+            echo "__dns_forwarder__" > /opt/config/dns_forwarder.txt  
+            echo "__dcae_domain__" > /opt/config/dcae_domain.txt
+            # conf for the OpenStack env where DCAE is deployed
+            echo "__openstack_keystone_url__" > /opt/config/openstack_keystone_url.txt
+            echo "__dcaeos_cloud_env__" > /opt/config/cloud_env.txt
+            echo "__dcaeos_keystone_url__" > /opt/config/keystone_url.txt
+            echo "__dcaeos_region__" > /opt/config/openstack_region.txt
+            echo "__dcaeos_tenant_id__" > /opt/config/tenant_id.txt
+            echo "__dcaeos_tenant_name__" > /opt/config/tenant_name.txt
+            echo "__dcaeos_username__" > /opt/config/openstack_user.txt
+            echo "__dcaeos_password__" > /opt/config/openstack_password.txt
+            echo "__dcaeos_key_name__" > /opt/config/key_name.txt
+            echo "__dcaeos_public_key__" > /opt/config/pub_key.txt
+            echo "__dcaeos_private_key__" > /opt/config/priv_key
+            echo "__dcaeos_private_network_name__" > /opt/config/openstack_private_network_name.txt
+            echo "__dcaeos_public_network_name__" > /opt/config/public_net_name.txt
+            echo "__dcaeos_public_network_name__" > /opt/config/public_net_id.txt
+            echo "__dcaeos_ubuntu_1604_image__" > /opt/config/ubuntu_1604_image.txt
+            echo "__dcaeos_centos_7_image__" > /opt/config/centos_7_image.txt
+            echo "__dcaeos_security_group__" > /opt/config/security_group.txt
+            echo "__dcaeos_flavor_id__" > /opt/config/flavor_id.txt
+            echo "__dcaeos_flavor_id_cdap__" > /opt/config/flavor_id_cdap.txt
+            echo "__dcaeos_dnsaas_config_enabled__" > /opt/config/dnsaas_config_enabled.txt
+            echo "__dcaeos_dnsaas_region__" > /opt/config/dnsaas_region.txt
+            echo "__dcaeos_dnsaas_keystone_url__" > /opt/config/dnsaas_keystone_url.txt
+            echo "__dnsaas_tenant_name__" > /opt/config/dnsaas_tenant_name.txt
+            echo "__dcaeos_dnsaas_username__" > /opt/config/dnsaas_username.txt
+            echo "__dcaeos_dnsaas_password__" > /opt/config/dnsaas_password.txt
+            # fixed private IP addresses of other ONAP components
+            echo "__mr_ip_addr__" > /opt/config/mr_ip_addr.txt
+            echo "__policy_ip_addr__" > /opt/config/policy_ip_addr.txt
+            echo "__sdc_ip_addr__" > /opt/config/sdc_ip_addr.txt
+            echo "__openo_ip_addr__" > /opt/config/openo_ip_addr.txt
+            echo "__aai1_ip_addr__" > /opt/config/aai1_ip_addr.txt
+            echo "__aai2_ip_addr__" > /opt/config/aai2_ip_addr.txt
+            # floating IPs
+            echo "__dns_floating_ip_addr__" > /opt/config/dns_floating_ip_addr.txt
+            echo "__aai1_floating_ip_addr__" > /opt/config/aai1_floating_ip_addr.txt
+            echo "__aai2_floating_ip_addr__" > /opt/config/aai2_floating_ip_addr.txt
+            echo "__mrouter_floating_ip_addr__" > /opt/config/mrouter_floating_ip_addr.txt
+            echo "__sdc_floating_ip_addr__" > /opt/config/sdc_floating_ip_addr.txt
+            echo "__policy_floating_ip_addr__" > /opt/config/policy_floating_ip_addr.txt
+            echo "__openo_floating_ip_addr__" > /opt/config/openo_floating_ip_addr.txt
+            echo "__dcae_c_floating_ip_addr__" > /opt/config/dcae_c_floating_ip_addr.txt
+
+            # Download and run install script
+            curl -k __nexus_repo__/org.onap.demo/boot/__artifacts_version__/dcae2_install.sh -o /opt/dcae2_install.sh
+            cd /opt
+            chmod +x dcae2_install.sh
+            ./dcae2_install.sh > /tmp/dcae2_install.log 2>&1
+
+outputs:
+  dcae_floating_ip:
+    description: DCAE Boostrap container external IP Address
+    value: { get_attr: [ dcae_c_floating_ip, floating_ip_address ] }
