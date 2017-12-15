@@ -13,33 +13,22 @@ spec:
       labels:
         app: aai-resources
       name: aai-resources
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "hbase"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "aai-resources-readiness"
-          }
-        ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - hbase
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: aai-resources-readiness
       containers:
       - name: aai-resources
         image: "{{ .Values.image.aaiResourcesImage }}:{{ .Values.image.aaiResourcesVersion}}"
