@@ -13,58 +13,37 @@ spec:
       labels:
         app: pap
       name: pap
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "nexus",
-                  "--container-name",
-                  "mariadb"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "pap-readiness"
-          },
-          {
-              "env": [
-                  {
-                      "name": "POD_IP",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "status.podIP"
-                          }
-                      }
-                  }
-              ],
-              "command": ["/bin/bash", "-c", "echo $POD_IP > /config/ip_addr.txt"],
-              "volumeMounts": [
-                {
-                  "mountPath": "/config/",
-                  "name": "pe"
-                }
-              ],
-              "image": "{{ .Values.image.ubuntu }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "generate-ip-addr-txt"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - nexus
+        - --container-name
+        - mariadb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: pap-readiness
+      - command: ["/bin/bash", "-c", "echo $POD_IP > /config/ip_addr.txt"]
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        volumeMounts:
+        - mountPath: /config/
+          name: pe
+        image: {{ .Values.image.ubuntu }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: generate-ip-addr-txt
       containers:
       - command:
         - /bin/bash
