@@ -15,100 +15,63 @@ spec:
       labels:
         app: vnc-portal
       name: vnc-portal
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "args": [
-                  "--container-name",
-                  "portalapps"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-portal-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "pap"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-policy"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-pap-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "sdc-fe"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-sdc"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-sdc-readiness"
-          },
-          {
-              "args": [
-                  "--container-name",
-                  "vid-server"
-              ],
-              "command": [
-                  "/root/ready.py"
-              ],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "value": "{{ .Values.nsPrefix }}-vid"
-                  }
-              ],
-              "image": "{{ .Values.image.readiness }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-vid-readiness"
-          },
-          {
-              "command": ["/bin/sh","-c"],
-              "args": ["echo `host sdc-be.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.be.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host portalapps.{{ .Values.nsPrefix }}-portal | awk ''{print$4}''` portal.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host pap.{{ .Values.nsPrefix }}-policy | awk ''{print$4}''` policy.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host sdc-fe.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host vid-server.{{ .Values.nsPrefix }}-vid | awk ''{print$4}''` vid.api.simpledemo.onap.org >> /ubuntu-init/hosts; echo `host sparky-be.{{ .Values.nsPrefix }}-aai | awk ''{print$4}''` aai.api.simpledemo.onap.org  >> /ubuntu-init/hosts"],
-              "image": "{{ .Values.image.ubuntuInit }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "vnc-init-hosts",
-              "volumeMounts": [
-                {
-                  "name": "ubuntu-init",
-                  "mountPath": "/ubuntu-init/"
-                }
-              ]
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - portalapps
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: vnc-portal-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - pap
+        env:
+        - name: NAMESPACE
+          value: {{ .Values.nsPrefix }}-policy
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: vnc-pap-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - sdc-fe
+        env:
+        - name: NAMESPACE
+          value: {{ .Values.nsPrefix }}-sdc
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: vnc-sdc-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - vid-server
+        env:
+        - name: NAMESPACE
+          value: {{ .Values.nsPrefix }}-vid
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: vnc-vid-readiness
+      - command: ["/bin/sh","-c"]
+        args: ["echo `host sdc-be.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.be.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host portalapps.{{ .Values.nsPrefix }}-portal | awk ''{print$4}''` portal.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host pap.{{ .Values.nsPrefix }}-policy | awk ''{print$4}''` policy.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host sdc-fe.{{ .Values.nsPrefix }}-sdc | awk ''{print$4}''` sdc.api.simpledemo.onap.org  >> /ubuntu-init/hosts; echo `host vid-server.{{ .Values.nsPrefix }}-vid | awk ''{print$4}''` vid.api.simpledemo.onap.org >> /ubuntu-init/hosts; echo `host sparky-be.{{ .Values.nsPrefix }}-aai | awk ''{print$4}''` aai.api.simpledemo.onap.org  >> /ubuntu-init/hosts"]
+        image: {{ .Values.image.ubuntuInit }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: vnc-init-hosts
+        volumeMounts:
+        - name: ubuntu-init
+          mountPath: /ubuntu-init/
       containers:
       - image: {{ .Values.image.ubuntuDesktop }}
         imagePullPolicy: {{ .Values.pullPolicy }}

@@ -13,49 +13,31 @@ spec:
        labels:
          app: portalapps
        name: portalapps
-       annotations:
-         pod.beta.kubernetes.io/init-containers: '[
-           {
-               "args": [
-                   "--container-name",
-                   "portaldb"
-               ],
-               "command": [
-                   "/root/ready.py"
-               ],
-               "env": [
-                   {
-                       "name": "NAMESPACE",
-                       "valueFrom": {
-                           "fieldRef": {
-                               "apiVersion": "v1",
-                               "fieldPath": "metadata.namespace"
-                           }
-                       }
-                   }
-               ],
-               "image": "{{ .Values.image.readiness }}",
-               "imagePullPolicy": "{{ .Values.pullPolicy }}",
-               "name": "portalapps-readiness"
-           },
-           {
-               "command": ["/bin/bash", "-c", "if [ ! -e /portal_root/boot.txt ]; then mysql -u root -pAa123456 -h portaldb < /portal-mysql/oom_updates.sql; fi"],
-               "volumeMounts": [
-                 {
-                   "mountPath": "/portal-mysql/oom_updates.sql",
-                   "name": "portal-mariadb-onboarding-sql"
-                 },
-                 {
-                   "mountPath": "/portal_root/",
-                   "name": "portal-root"
-                 }
-               ],
-               "image": "{{ .Values.image.mariadbClient }}",
-               "imagePullPolicy": "{{ .Values.pullPolicy }}",
-               "name": "provision-portaldb-users"
-           }
-           ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - portaldb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: portalapps-readiness
+      - command: ["/bin/bash", "-c", "if [ ! -e /portal_root/boot.txt ]; then mysql -u root -pAa123456 -h portaldb < /portal-mysql/oom_updates.sql; fi"]
+        volumeMounts:
+        - mountPath: /portal-mysql/oom_updates.sql
+          name: portal-mariadb-onboarding-sql
+        - mountPath: /portal_root/
+          name: portal-root
+        image: {{ .Values.image.mariadbClient }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: provision-portaldb-users
       containers:
       - image: {{ .Values.image.portalapps }}
         imagePullPolicy: {{ .Values.pullPolicy }}

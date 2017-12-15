@@ -13,33 +13,22 @@ spec:
        labels:
          app: portalwidgets
        name: portalwidgets
-       annotations:
-         pod.beta.kubernetes.io/init-containers: '[
-           {
-               "args": [
-                   "--container-name",
-                   "portaldb"
-               ],
-               "command": [
-                   "/root/ready.py"
-               ],
-               "env": [
-                   {
-                       "name": "NAMESPACE",
-                       "valueFrom": {
-                           "fieldRef": {
-                               "apiVersion": "v1",
-                               "fieldPath": "metadata.namespace"
-                           }
-                       }
-                   }
-               ],
-               "image": "{{ .Values.image.readiness }}",
-               "imagePullPolicy": "{{ .Values.pullPolicy }}",
-               "name": "portalapps-readiness"
-           }
-           ]'
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - portaldb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.image.readiness }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: portalapps-readiness
       containers:
       - image: {{ .Values.image.portalwms }}
         imagePullPolicy: {{ .Values.pullPolicy }} 
