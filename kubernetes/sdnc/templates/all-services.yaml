@@ -13,6 +13,22 @@ spec:
     app: sdnc-dbhost
   clusterIP: None
 ---
+# Client service for connecting to any MySQL instance for reads.
+# Only master: sdnc-dbhost-0 accepts the write request.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhost-read
+  namespace: "{{ .Values.nsPrefix }}-sdnc"
+  labels:
+    app: sdnc-dbhost
+spec:
+  ports:
+  - name: sdnc-dbhost
+    port: 3306
+  selector:
+    app: sdnc-dbhost
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -26,7 +42,6 @@ spec:
   selector:
     app: sdnc-dbhost
   clusterIP: None
-#{{ end }}
 ---
 apiVersion: v1
 kind: Service
@@ -41,7 +56,8 @@ spec:
   selector:
     app: sdnc-dbhost
   clusterIP: None
-#{{ if not .Values.disableSdncSdncDgbuilder }}
+#{{ end }}
+#{{ if not .Values.disableSdncSdnc }}
 ---
 apiVersion: v1
 kind: Service
@@ -59,8 +75,6 @@ spec:
   type: NodePort
   selector:
     app: sdnc-dgbuilder
-#{{ end }}
-#{{ if not .Values.disableSdncSdnc }}
 ---
 apiVersion: v1
 kind: Service
@@ -91,9 +105,34 @@ spec:
     port: 8201
     targetPort: 8101
     nodePort: {{ .Values.nodePortPrefix }}08
+  - name: "sdnc-jolokia-port-8080"
+    port: 8280
+    targetPort: 8080
+    nodePort: {{ .Values.nodePortPrefix }}46
   type: NodePort
   selector:
     app: sdnc
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: nfs-provisioner
+  namespace: "{{ .Values.nsPrefix }}-sdnc"
+  labels:
+    app: nfs-provisioner
+spec:
+  ports:
+    - name: nfs
+      port: 2049
+    - name: mountd
+      port: 20048
+    - name: rpcbind
+      port: 111
+    - name: rpcbind-udp
+      port: 111
+      protocol: UDP
+  selector:
+    app: nfs-provisioner
 #{{ end }}
 #{{ if not .Values.disableSdncSdncPortal }}
 ---
@@ -123,4 +162,25 @@ spec:
   type: NodePort
   selector:
     app: sdnc-portal
+#{{ end }}
+#{{ if .Values.enableODLCluster }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: sdnhost-cluster
+ namespace: "{{ .Values.nsPrefix }}-sdnc"
+ labels:
+   app: sdnc
+ annotations:
+   service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+ ports:
+ - name: "sdnc-cluster-port"
+   port: 2550
+ clusterIP: None
+ selector:
+   app: sdnc
+ sessionAffinity: None
+ type: ClusterIP
 #{{ end }}
