@@ -22,22 +22,15 @@ spec:
       labels:
         app: cdap0
       name: cdap0
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "name": "create-fs",
-              "image": "{{ .Values.image.cdapfs }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "command": ["/bin/bash", "-c", "mkdir -p /cdap/{cdap0-opt-tools,cdap0-opt-data,pod-ip}; grep `hostname` /etc/hosts > /cdap/pod-ip/`hostname`_ip.txt; while [`ls /cdap/pod-ip | wc -l` < 3];  do sleep 1; done"],
-              "volumeMounts": [
-                {
-                  "mountPath": "/cdap",
-                  "name": "cdap-root"
-                }
-              ]
-          }
-        ]'
     spec:
+      initContainers:
+      - command: ["/bin/bash", "-c", "mkdir -p /cdap/{cdap0-opt-tools,cdap0-opt-data,pod-ip}; grep `hostname` /etc/hosts > /cdap/pod-ip/`hostname`_ip.txt; while [`ls /cdap/pod-ip | wc -l` < 3];  do sleep 1; done"]
+        name: create-fs
+        image: {{ .Values.image.cdapfs }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /cdap
+          name: cdap-root
       hostname: zldcprivatecloudtruecdap00
       containers:
       - image: {{ .Values.image.cdap }}
