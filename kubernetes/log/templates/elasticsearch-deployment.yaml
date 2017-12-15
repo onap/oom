@@ -15,30 +15,23 @@ spec:
       labels:
         app: elasticsearch
       name: elasticsearch
-      annotations:
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-              "command": ["sysctl", "-w", "vm.max_map_count=262144"],
-              "env": [
-                  {
-                      "name": "NAMESPACE",
-                      "valueFrom": {
-                          "fieldRef": {
-                              "apiVersion": "v1",
-                              "fieldPath": "metadata.namespace"
-                          }
-                      }
-                  }
-              ],
-              "securityContext": {
-                "privileged": true
-              },
-              "image": "{{ .Values.image.es_bb }}",
-              "imagePullPolicy": "{{ .Values.pullPolicy }}",
-              "name": "init-sysctl"
-          }
-          ]'
     spec:
+      initContainers:
+      - command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        securityContext:
+          privileged: true
+        image: {{ .Values.image.es_bb }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: init-sysctl
       containers:
       - name: elasticsearch
         image: {{ .Values.image.elasticsearch}}
