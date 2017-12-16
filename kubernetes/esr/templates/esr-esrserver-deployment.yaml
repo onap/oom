@@ -1,0 +1,35 @@
+#{{ if not .Values.disableUuiUui }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: esr-esrserver
+  name: esr-esrserver
+  namespace: "{{ .Values.nsPrefix }}-esr"
+spec:
+  selector:
+    matchLabels:
+      app: esr-esrserver
+  template:
+    metadata:
+      labels:
+        app: esr-esrserver
+      name: esr-esrserver
+    spec:
+      containers:
+      - image: {{ .Values.esrserver.image }}:{{ .Values.esrserver.version }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: esr-esrserver
+        env:
+        - name: MSB_ADDR
+          value: {{ .Values.msbaddr }}
+        ports:
+        - containerPort: {{ .Values.esrserver.port }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.esrserver.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
