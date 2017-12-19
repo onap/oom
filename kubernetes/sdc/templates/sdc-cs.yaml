@@ -1,4 +1,20 @@
 #{{ if not .Values.disableSdcSdcCs }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sdc-cs-startup
+  namespace: "{{ .Values.nsPrefix }}-sdc"
+data:
+{{ (.Files.Glob "resources/sdc-cs/startup.sh").AsConfig | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sdc-cs-recipes
+  namespace: "{{ .Values.nsPrefix }}-sdc"
+data:
+{{ (.Files.Glob "resources/sdc-cs/chef-repo/cookbooks/cassandra-actions/recipes/*").AsConfig | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -65,27 +81,61 @@ spec:
           readOnly: true
         - mountPath: /var/lib/jetty/logs
           name: sdc-logs
+        - mountPath: /root/startup.sh
+          name: sdc-cs-startup
+          subPath: startup.sh
+        - mountPath: /root/recipes/04-schemaCreation.rb
+          name: sdc-cs-recipes-schemacreation
+          subPath: 04-schemaCreation.rb
+        - mountPath: /root/recipes/05-titanSchemaCreation.rb
+          name: sdc-cs-recipes-titanschemacreation
+          subPath: 05-titanSchemaCreation.rb
         ports:
         - containerPort: 9042
         - containerPort: 9160
         readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/ready
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          failureThreshold: 50
+        livenessProbe:
           tcpSocket:
             port: 9160
-          initialDelaySeconds: 5
+          initialDelaySeconds: 20
           periodSeconds: 10
+          failureThreshold: 10
       volumes:
-        - name: sdc-sdc-cs-cs
-          persistentVolumeClaim:
-            claimName: sdc-cs-db
-        - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
-        - name: sdc-localtime
-          hostPath:
-            path:  /etc/localtime
-        - name:  sdc-logs
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: sdc-sdc-cs-cs
+        persistentVolumeClaim:
+          claimName: sdc-cs-db
+      - name: sdc-environments
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
+      - name: sdc-localtime
+        hostPath:
+          path:  /etc/localtime
+      - name:  sdc-logs
+        hostPath:
+          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: sdc-cs-startup
+        configMap:
+          name: sdc-cs-startup
+          defaultMode: 0755
+      - name: sdc-cs-recipes-schemacreation
+        configMap:
+          name: sdc-cs-recipes
+          items:
+          - key: 04-schemaCreation.rb
+            path: 04-schemaCreation.rb
+      - name: sdc-cs-recipes-titanschemacreation
+        configMap:
+          name: sdc-cs-recipes
+          items:
+          - key: 05-titanSchemaCreation.rb
+            path: 05-titanSchemaCreation.rb
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

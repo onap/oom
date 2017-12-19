@@ -1,4 +1,12 @@
 #{{ if not .Values.disableSdcSdcBe }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sdc-be-startup
+  namespace: "{{ .Values.nsPrefix }}-sdc"
+data:
+{{ (.Files.Glob "resources/sdc-be/startup.sh").AsConfig | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -22,9 +30,7 @@ spec:
                   "--container-name",
                   "sdc-es",
                   "--container-name",
-                  "sdc-cs",
-                  "--container-name",
-                  "sdc-kb"
+                  "sdc-cs"
               ],
               "command": [
                   "/root/ready.py"
@@ -89,6 +95,9 @@ spec:
           name: sdc-logs-2
         - mountPath: /tmp/logback.xml
           name: sdc-logback
+        - mountPath: /root/startup.sh
+          name: sdc-be-startup
+          subPath: startup.sh
         lifecycle:
           postStart:
             exec:
@@ -97,10 +106,19 @@ spec:
         - containerPort: 8443
         - containerPort: 8080
         readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/ready
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          failureThreshold: 50
+        livenessProbe:
           tcpSocket:
             port: 8443
-          initialDelaySeconds: 5
+          initialDelaySeconds: 20
           periodSeconds: 10
+          failureThreshold: 10
       - image: {{ .Values.image.filebeat }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: filebeat-onap
@@ -112,28 +130,32 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: sdc-data-filebeat
       volumes:
-        - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
-        - name: sdc-logs-2
-          emptyDir: {}
-        - name: sdc-data-filebeat
-          emptyDir: {}
-        - name: sdc-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/be/logback.xml
-        - name: sdc-sdc-es-es
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
-        - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
-        - name: sdc-localtime
-          hostPath:
-            path:  /etc/localtime
-        - name:  sdc-logs
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: filebeat-conf
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+      - name: sdc-logs-2
+        emptyDir: {}
+      - name: sdc-data-filebeat
+        emptyDir: {}
+      - name: sdc-logback
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/be/logback.xml
+      - name: sdc-sdc-es-es
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
+      - name: sdc-environments
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
+      - name: sdc-localtime
+        hostPath:
+          path:  /etc/localtime
+      - name:  sdc-logs
+        hostPath:
+          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: sdc-be-startup
+        configMap:
+          name: sdc-be-startup
+          defaultMode: 0755
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
