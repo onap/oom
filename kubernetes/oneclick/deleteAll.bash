@@ -43,6 +43,7 @@ usage() {
 Usage: $0 [PARAMs]
 -u                  : Display usage
 -n [NAMESPACE]      : Kubernetes namespace (required)
+-c                  : Confirm current kubectl context (default: true)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot, vid, aaf, uui
@@ -56,8 +57,9 @@ NS=
 INCL_SVC=false
 APP=
 WAIT_TERMINATE=true
+CONFIRM_CONTEXT=true
 
-while getopts ":n:u:s:a:N" PARAM; do
+while getopts ":c:n:u:s:a:N" PARAM; do
   case $PARAM in
     u)
       usage
@@ -76,6 +78,9 @@ while getopts ":n:u:s:a:N" PARAM; do
     N)
       WAIT_TERMINATE=false
       ;;
+    c)
+      CONFIRM_CONTEXT=${OPTARG}
+      ;;
     ?)
       usage
       exit
@@ -86,6 +91,18 @@ done
 if [[ -z $NS ]]; then
   usage
   exit 1
+fi
+
+if [[ "$CONFIRM_CONTEXT" != false ]]; then
+  kubectl_context=$(kubectl config get-contexts |grep "*" |awk '{print $2}')
+  printf "You are about to delete deployment from:\x1b[31m $kubectl_context\x1b[0m\n"
+  read -p "To continue enter context name: " response
+
+  if test "$response" != "$kubectl_context"
+  then
+      printf "Your response does not match current context! Skipping delete ...\n"
+      exit 1
+  fi
 fi
 
 if [[ ! -z "$APP" ]]; then
