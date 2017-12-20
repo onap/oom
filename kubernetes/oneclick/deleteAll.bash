@@ -43,6 +43,8 @@ usage() {
 Usage: $0 [PARAMs]
 -u                  : Display usage
 -n [NAMESPACE]      : Kubernetes namespace (required)
+-c                  : kubectl context (default: current context)
+-y                  : Skip interactive confirmation (default: no)
 -a [APP]            : Specify a specific ONAP component (default: all)
                       from the following choices:
                       sdc, aai ,mso, message-router, robot, vid, aaf, uui
@@ -56,8 +58,10 @@ NS=
 INCL_SVC=false
 APP=
 WAIT_TERMINATE=true
+SKIP_INTERACTIVE_CONFIRMATION=no
+KUBECTL_CONTEXT=
 
-while getopts ":n:u:s:a:N" PARAM; do
+while getopts ":c:n:u:s:a:yN" PARAM; do
   case $PARAM in
     u)
       usage
@@ -76,6 +80,12 @@ while getopts ":n:u:s:a:N" PARAM; do
     N)
       WAIT_TERMINATE=false
       ;;
+    y)
+      SKIP_INTERACTIVE_CONFIRMATION=yes
+      ;;
+    c)
+      KUBECTL_CONTEXT=${OPTARG}
+      ;;
     ?)
       usage
       exit
@@ -86,6 +96,29 @@ done
 if [[ -z $NS ]]; then
   usage
   exit 1
+fi
+
+if [[ "$SKIP_INTERACTIVE_CONFIRMATION" != yes ]]; then
+  current_kubectl_context=$(kubectl config get-contexts |grep "*" |awk '{print $2}')
+  if test "$KUBECTL_CONTEXT" != "$current_kubectl_context"; then
+    printf "Current kubectl context does not match context specified:\x1b[31m $current_kubectl_context\x1b[0m\n"
+    if [ ! -z "$KUBECTL_CONTEXT" -a "$KUBECTL_CONTEXT" != " " ]; then
+      read -p "Do you wish to switch context to $KUBECTL_CONTEXT and continue?" yn
+      case $yn in
+        [Yy]* ) kubectl config use-context $KUBECTL_CONTEXT;;
+        * ) printf "Skipping delete...\n"; exit;;
+      esac
+    else
+      printf "You are about to delete deployment from:\x1b[31m $current_kubectl_context\x1b[0m\n"
+      read -p "To continue enter context name: " response
+
+      if test "$response" != "$current_kubectl_context"
+      then
+        printf "Your response does not match current context! Skipping delete ...\n"
+        exit 1
+      fi
+    fi
+  fi
 fi
 
 if [[ ! -z "$APP" ]]; then
