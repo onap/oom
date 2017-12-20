@@ -88,6 +88,16 @@ if [[ -z $NS ]]; then
   exit 1
 fi
 
+kubectl_context=$(kubectl config get-contexts |grep "*" |awk '{print $2}')
+printf "You are about to delete deployment from:\x1b[31m $kubectl_context\x1b[0m\n"
+read -p "To continue enter context name: " response
+
+if test "$response" != "$kubectl_context"
+then
+    printf "Your response does not match current context! Skipping delete ...\n"
+    exit 1
+fi
+
 if [[ ! -z "$APP" ]]; then
   HELM_APPS=($APP)
 fi
