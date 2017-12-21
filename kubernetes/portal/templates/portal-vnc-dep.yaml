@@ -1,4 +1,11 @@
 #{{ if not .Values.disablePortalVncPortal }}
+kind: ConfigMap
+metadata:
+  name: vnc-profiles-ini
+  namespace: "{{ .Values.nsPrefix }}-portal"
+data:
+{{ (.Files.Glob "resources/vnc/init_profile/profiles.ini").AsConfig | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -78,7 +85,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "cat /ubuntu-init/hosts >> /etc/hosts"]
+              command: ["/bin/sh", "-c", "mkdir -p /root/.mozilla/firefox/onap.default; cp /root/.init_profile/profiles.ini /root/.mozilla/firefox/; echo 'user_pref(\"browser.tabs.remote.autostart.2\", false);' > /root/.mozilla/firefox/onap.default/prefs.js; cat /ubuntu-init/hosts >> /etc/hosts"]
         env:
         - name: VNC_PASSWORD
           value: password
@@ -89,6 +96,9 @@ spec:
           readOnly: true
         - mountPath: /ubuntu-init/
           name: ubuntu-init
+        - mountPath: /root/.init_profile/profiles.ini
+          name: vnc-profiles-ini
+          subPath: profiles.ini
         securityContext:
           privileged: true
       securityContext: {}
@@ -98,6 +108,9 @@ spec:
             path: /etc/localtime
         - name: ubuntu-init
           emptyDir: {}
+        - name: vnc-profiles-ini
+          configMap:
+            name: vnc-profiles-ini
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
