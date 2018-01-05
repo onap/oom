@@ -68,7 +68,6 @@ cp -vnpr /opt/config/src/* /config-init/$NAMESPACE/
 #ensure db directories exist.
 mkdir -p /config-init/$NAMESPACE/appc/data/
 mkdir -p /config-init/$NAMESPACE/dcae/pgaas/pgdata/
-mkdir -p /config-init/$NAMESPACE/portal/mariadb/data/
 mkdir -p /config-init/$NAMESPACE/portal/logs/
 mkdir -p /config-init/$NAMESPACE/sdnc/data/
 mkdir -p /config-init/$NAMESPACE/vid/mariadb/data/
