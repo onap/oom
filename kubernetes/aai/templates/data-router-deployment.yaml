@@ -37,10 +37,27 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/data-router/config/
-          name: data-router-config
-        - mountPath: /opt/app/data-router/dynamic/
-          name: data-router-dynamic
+        - mountPath: /opt/app/data-router/config/data-router.properties
+          name: data-router-appconfig-config
+          subPath: data-router.properties
+        - mountPath: /opt/app/data-router/config/auth/
+          name: data-router-auth-secret
+        - mountPath: /opt/app/data-router/config/model/aai_oxm_v8.xml
+          name: data-router-model-v8-config
+          subPath: aai_oxm_v8.xml
+        - mountPath: /opt/app/data-router/config/model/aai_oxm_v9.xml
+          name: data-router-model-v9-config
+          subPath: aai_oxm_v9.xml
+        - mountPath: /opt/app/data-router/config/model/aai_oxm_v10.xml
+          name: data-router-model-v10-config
+          subPath: aai_oxm_v10.xml
+        - mountPath: /opt/app/data-router/config/model/aai_oxm_v11.xml
+          name: data-router-model-v11-config
+          subPath: aai_oxm_v10.xml
+        - mountPath: /opt/app/data-router/dynamic/routes/
+          name: data-router-dynamic-routes
+        - mountPath: /opt/app/data-router/dynamic/conf/
+          name: data-router-dynamic-conf
         - mountPath: /logs/
           name: data-router-logs
         ports:
@@ -54,12 +71,51 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: data-router-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/data-router/appconfig/"
-      - name: data-router-dynamic
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/data-router/dynamic/"
+      - name: data-router-appconfig-config
+        configMap:
+         name: data-router-appconfig-configmap
+         items:
+         - key: data-router.properties
+           path: data-router.properties
+      - name: data-router-auth-secret 
+        secret:
+          secretName: data-router-secret
+      - name: data-router-model-v8-config
+        configMap:
+         name: data-router-model-v8-configmap
+         items:
+         - key: aai_oxm_v8.xml
+           path: aai_oxm_v8.xml
+      - name: data-router-model-v9-config
+        configMap:
+         name: data-router-model-v9-configmap
+         items:
+         - key: aai_oxm_v9.xml
+           path: aai_oxm_v9.xml
+      - name: data-router-model-v10-config
+        configMap:
+         name: data-router-model-v10-configmap
+         items:
+         - key: aai_oxm_v10.xml
+           path: aai_oxm_v10.xml
+      - name: data-router-model-v11-config
+        configMap:
+         name: data-router-model-v11-configmap
+         items:
+         - key: aai_oxm_v11.xml
+           path: aai_oxm_v11.xml
+      - name: data-router-dynamic-routes
+        configMap:
+         name: data-router-dynamic-configmap
+         items:
+         - key: entity-event.route
+           path: entity-event.route
+      - name: data-router-dynamic-conf
+        configMap:
+         name: data-router-dynamic-configmap
+         items:
+         - key: entity-event-policy.xml
+           path: entity-event-policy.xml
       - name: data-router-logs
         hostPath:
           path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/data-router/logs/"

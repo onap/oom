@@ -29,8 +29,17 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/search-data-service/config/
+        - mountPath: /opt/app/search-data-service/config/analysis-config.json
           name: aai-search-data-service-config
+          subPath: analysis-config.json
+        - mountPath: /opt/app/search-data-service/config/elastic-search.properties
+          name: aai-search-data-service-config
+          subPath: elastic-search.properties
+        - mountPath: /opt/app/search-data-service/config/filter-config.json
+          name: aai-search-data-service-config
+          subPath: filter-config.json
+        - mountPath: /opt/app/search-data-service/config/auth/
+          name: aai-search-data-service-auth-secret
         - mountPath: /var/log/onap
           name: aai-search-data-service-logs
         - mountPath: /opt/app/search-data-service/bundleconfig/etc/logback.xml
@@ -49,6 +58,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: aai-search-data-service-logs
         - mountPath: /usr/share/filebeat/data
@@ -58,11 +68,24 @@ spec:
         hostPath:
           path: /etc/localtime
       - name: aai-search-data-service-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/search-data-service/appconfig/"
+        configMap:
+         name: search-data-service-configmap
+         items:
+         - key: analysis-config.json
+           path: analysis-config.json
+         - key: elastic-search.properties
+           path: elastic-search.properties
+         - key: filter-config.json
+           path: filter-config.json
+      - name: aai-search-data-service-auth-secret
+        secret:
+          secretName: search-data-service-secret
       - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        configMap:
+         name: aai-filebeat-logback-configmap
+         items:
+         - key: filebeat.yml
+           path: filebeat.yml
       - name: aai-search-data-service-logs
         emptyDir: {}
       - name: aai-search-data-service-filebeat
