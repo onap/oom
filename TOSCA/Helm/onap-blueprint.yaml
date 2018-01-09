@@ -1,0 +1,272 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4.2/types.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.5/plugin.yaml
+
+inputs:
+  install_method:
+    default: none # For fabric use false.
+  ip:
+    default: 135.205.228.242
+  user:
+    default: centos
+
+node_types:
+  cloudify.nodes.Helm:
+    derived_from: cloudify.nodes.SoftwareComponent
+    properties:
+      cwd:
+        default: /home/centos/helm/oom/kubernetes/oneclick
+      args:
+        default:
+        - onap
+        - mso
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: helminstall.sh # Relative to the blueprint file.
+            process:
+              default: &process_vars 
+                cwd: { get_property: [ SELF, cwd ] }
+                args: { get_property: [ SELF, args ] }
+            fabric_env:
+              default: &fabric_env
+                user: { get_property: [ k8s_master, agent_config, user ] }
+                host_string: { get_property: [ k8s_master, ip ] }
+                key: { get_property: [ k8s_master, agent_config, key ] }
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: helmdelete.sh
+            process: 
+              default: *process_vars
+            fabric_env:
+              default: *fabric_env
+
+node_templates:
+
+  k8s_master:
+     type: cloudify.nodes.Compute
+     properties:
+       ip: { get_input: ip }
+       agent_config:
+         install_method: { get_input: install_method } # False for Fabric.
+         key: { get_secret: agent_key_private }
+         user: { get_input: user }
+
+  consul:
+     type: cloudify.nodes.Helm
+     properties:
+       args:
+       - onap 
+       - consul 
+     relationships:
+       - type: cloudify.relationships.connected_to
+         target: k8s_master
+         
+  msb:
+     type: cloudify.nodes.Helm
+     properties:
+       args:
+       - onap 
+       - msb 
+     relationships:
+       - type: cloudify.relationships.connected_to
+         target: k8s_master 
+       - type: cloudify.relationships.connected_to
+         target: consul
+         
+  mso:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - mso
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+        
+  appc:
+     type: cloudify.nodes.Helm
+     properties:
+       args:
+       - onap 
+       - appc 
+     relationships:
+       - type: cloudify.relationships.connected_to
+         target: k8s_master
+
+  message-router:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - message-router
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+
+  sdnc:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - sdnc
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+
+  vid:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - vid
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+   
+  robot:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - robot
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+ 
+  policy:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - policy
+    relationships:
+      - type: cloudify.relationships.connected_to 
+        target: k8s_master
+
+  portal:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - portal
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+        
+  aai:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - aai
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+
+  sdc:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - sdc
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
+  log:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - log
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
+  cli:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - cli
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master     
+
+  multicloud:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - multicloud
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master     
+
+  clamp:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - clamp
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master            
+        
+  vnfsdk:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - vnfsdk
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master  
+        
+  uui:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - uui
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
+  aaf:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - aaf
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
+  vfc:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - vfc
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master 
+
+  kube2msb:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - onap
+      - kube2msb
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master        
