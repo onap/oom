@@ -1,0 +1,71 @@
+#{{ if not .Values.disableSdncDmaap }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dmaap-listener
+  namespace: "{{ .Values.nsPrefix }}-sdnc"
+spec:
+  selector:
+    matchLabels:
+      app: dmaap-listener
+  template:
+    metadata:
+      labels:
+        app: dmaap-listener
+      name: dmaap-listener
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+              "args": [
+                  "--container-name",
+                  "sdnc-db-container",
+                  "--container-name",
+                  "sdnc-controller-container"
+              ],
+              "command": [
+                  "/root/ready.py"
+              ],
+              "env": [
+                  {
+                      "name": "NAMESPACE",
+                      "valueFrom": {
+                          "fieldRef": {
+                              "apiVersion": "v1",
+                              "fieldPath": "metadata.namespace"
+                          }
+                      }
+                  }
+              ],
+              "image": "{{ .Values.image.readiness }}",
+              "imagePullPolicy": "{{ .Values.pullPolicy }}",
+              "name": "dmaap-listener-readiness"
+          }
+          ]'
+    spec:
+      containers:
+      - command:
+        - /opt/onap/sdnc/dmaap-listener/bin/start-dmaap-listener.sh
+        env:
+        - name: PROPERTY_DIR
+          value: /opt/onap/sdnc/data/properties
+        - name: SDNC_CONFIG_DIR
+          value: /opt/onap/sdnc/data/properties
+        image: {{ .Values.image.dmaaplistener }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: dmaapp-listener-container
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/onap/sdnc/data/properties/dhcpalert.properties
+          name: dmaap-dhcapalert-config
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: dmaap-dhcapalert-config
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/dmaap/dhcpalert.properties
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#{{ end }}
