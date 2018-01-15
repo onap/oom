@@ -29,8 +29,24 @@ spec:
           readOnly: true
         - mountPath: /etc/mysql/conf.d
           name: mso-mariadb-conf
-        - mountPath: /docker-entrypoint-initdb.d
+        - mountPath: /docker-entrypoint-initdb.d/02-load-additional-changes.sh
           name: mso-mariadb-docker-entrypoint-initdb
+          subPath: 02-load-additional-changes.sh
+        - mountPath: /docker-entrypoint-initdb.d/01-load-default-sql-files.sh
+          name: mso-mariadb-docker-entrypoint-initdb
+          subPath: 01-load-default-sql-files.sh
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/automated-tests
+          name: mso-mariadb-docker-entrypoint-automated-tests
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/default
+          name: mso-mariadb-docker-entrypoint-bulkload-default
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-dns
+          name: mso-mariadb-docker-entrypoint-demo-dns
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-vfw
+          name: mso-mariadb-docker-entrypoint-demo-vfw
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/camunda
+          name: mso-mariadb-docker-entrypoint-camunda
+        - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/main-schemas
+          name: mso-mariadb-docker-entrypoint-main-schemas
         - mountPath: /var/lib/mysql
           name: mso-mariadb-data
         ports:
@@ -42,15 +58,33 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
+        - name: mso-mariadb-conf
+          configMap:
+            name: mso-confd-configmap
+        - name: mso-mariadb-docker-entrypoint-initdb
+          configMap:
+            name: mso-docker-entry-initd-configmap
+        - name: mso-mariadb-docker-entrypoint-automated-tests
+          configMap:
+            name: mso-automated-tests-configmap
+        - name: mso-mariadb-docker-entrypoint-bulkload-default
+          configMap:
+            name: mso-bulkload-default-configmap
+        - name: mso-mariadb-docker-entrypoint-demo-dns
+          configMap:
+            name: mso-demo-dns-configmap
+        - name: mso-mariadb-docker-entrypoint-demo-vfw
+          configMap:
+            name: mso-demo-vfw-configmap
+        - name: mso-mariadb-docker-entrypoint-camunda
+          configMap:
+            name: mso-scripts-camunda-configmap
+        - name: mso-mariadb-docker-entrypoint-main-schemas
+          configMap:
+            name: mso-main-schemas-configmap
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: mso-mariadb-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mariadb/conf.d
-        - name: mso-mariadb-docker-entrypoint-initdb
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/mso/mariadb/docker-entrypoint-initdb.d
         - name: mso-mariadb-data
           persistentVolumeClaim:
             claimName: mso-db
