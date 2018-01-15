@@ -1,0 +1,138 @@
+<configuration scan="false" debug="true">
+  <!--<jmxConfigurator /> -->
+  <!-- directory path for all other type logs -->
+  <property name="logDir" value="/var/log/onap" />
+
+  <!-- directory path for debugging type logs -->
+  <property name="debugDir" value="/var/log/onap" />
+
+  <!--  specify the component name
+    <ECOMP-component-name>::= "MSO" | "DCAE" | "ASDC " | "AAI" |"Policy" | "SDNC" | "AC"  -->
+  <property name="componentName" value="MSO"></property>
+  <property name="subComponentName" value="WorkflowMessageAdapter"></property>
+  <!--  log file names -->
+  <property name="errorLogName" value="error" />
+  <property name="metricsLogName" value="metrics" />
+  <property name="auditLogName" value="audit" />
+  <property name="debugLogName" value="debug" />
+
+  <property name="errorPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n" />
+  <property name="debugPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%msg%n" />
+
+  <property name="auditPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||||||%msg%n" />
+  <property name="metricPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|||||%msg%n" />
+  <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
+  <property name="debugLogDirectory" value="${debugDir}/${componentName}/${subComponentName}" />
+
+  <!-- ============================================================================ -->
+  <!-- EELF Appenders -->
+  <!-- ============================================================================ -->
+
+  <!-- The EELFAppender is used to record events to the general application
+    log -->
+
+  <!-- EELF Audit Appender. This appender is used to record audit engine
+    related logging events. The audit logger and appender are specializations
+    of the EELF application root logger and appender. This can be used to segregate
+    Policy engine events from other components, or it can be eliminated to record
+    these events as part of the application root log. -->
+
+  <appender name="EELFAudit"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${auditLogName}${jboss.server.name}.log</file>
+    <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/${auditLogName}${jboss.server.name}.log.%d</fileNamePattern>
+      <!--<maxHistory>30</maxHistory>-->
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFAudit" />
+  </appender>
+
+  <appender name="EELFMetrics"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${metricsLogName}${jboss.server.name}.log</file>
+    <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/${metricsLogName}${jboss.server.name}.log.%d</fileNamePattern>
+      <!--<maxHistory>30</maxHistory>-->
+    </rollingPolicy>
+    <encoder>
+      <!-- <pattern>"%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} -
+        %msg%n"</pattern> -->
+      <pattern>${metricPattern}</pattern>
+    </encoder>
+  </appender>
+
+
+  <appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFMetrics"/>
+  </appender>
+
+  <appender name="EELFError"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/${errorLogName}${jboss.server.name}.log</file>
+    <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/${errorLogName}${jboss.server.name}.log.%d</fileNamePattern>
+      <!--<maxHistory>30</maxHistory>-->
+    </rollingPolicy>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFError"/>
+  </appender>
+
+  <appender name="EELFDebug"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${debugLogDirectory}/${debugLogName}${jboss.server.name}.log</file>
+    <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${debugLogDirectory}/${debugLogName}${jboss.server.name}.log.%d</fileNamePattern>
+      <!--<maxHistory>30</maxHistory>-->
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>256</queueSize>
+    <appender-ref ref="EELFDebug" />
+    <includeCallerData>true</includeCallerData>
+  </appender>
+
+
+  <!-- ============================================================================ -->
+  <!--  EELF loggers -->
+  <!-- ============================================================================ -->
+
+  <logger name="com.att.eelf.audit" level="info" additivity="false">
+    <appender-ref ref="asyncEELFAudit" />
+  </logger>
+
+  <logger name="com.att.eelf.metrics" level="info" additivity="false">
+    <appender-ref ref="asyncEELFMetrics" />
+  </logger>
+
+  <logger name="com.att.eelf.error" level="debug" additivity="false">
+    <appender-ref ref="asyncEELFError" />
+  </logger>
+  <root level="INFO">
+    <appender-ref ref="asyncEELFDebug" />
+  </root>
+
+</configuration>
