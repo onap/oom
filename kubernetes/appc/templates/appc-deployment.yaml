@@ -49,15 +49,19 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: /opt/openecomp/appc/data/properties/appc.properties
-          name: appc-properties
+          name: appc-conf
+          subPath: appc.properties
         - mountPath: /opt/openecomp/appc/data/properties/aaiclient.properties
-          name: appc-aaiclient-properties
+          name: appc-conf
+          subPath: aaiclient.properties
         - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
           name: sdnc-aaiclient-properties
+          subPath: aaiclient.properties
         - mountPath: /var/log/onap
           name: appc-logs
         - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
           name: appc-log-config
+          subPath: org.ops4j.pax.logging.cfg
         ports:
         - containerPort: 8181
         - containerPort: 1830
@@ -72,6 +76,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: appc-logs
         - mountPath: /usr/share/filebeat/data
@@ -81,24 +86,24 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
+          configMap:
+            name: appc-filebeat-configmap
         - name: appc-log-config
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/appc/org.ops4j.pax.logging.cfg
+          configMap:
+            name: appc-logging-cfg-configmap
         - name: appc-logs
           emptyDir: {}
         - name: appc-data-filebeat
           emptyDir: {}
-        - name: appc-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/appc/conf/appc.properties
-        - name: appc-aaiclient-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/appc/conf/aaiclient.properties
+        - name: appc-conf
+          configMap:
+            name: appc-conf-configmap
         - name: sdnc-aaiclient-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/conf/aaiclient.properties
+          configMap:
+            name: appc-conf-configmap
+            items:
+            - key: aaiclient.properties
+              path: aaiclient.properties
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
