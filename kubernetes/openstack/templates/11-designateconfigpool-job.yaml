@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: designateconfigpool
+  namespace: "{{ .Values.nsPrefix }}-openstack"
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "11"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: designateconfigpool
+      name: designateconfigpool
+    spec:
+      hostname: designateconfigpool
+      restartPolicy: Never
+      containers:
+      - image: {{ .Values.image.xenial }}
+        name: designateconfigpool
+        command:
+        - bash
+        - "-c"
+        - |
+          apt -y update
+          # Instal kubectl commands
+          apt -y install curl
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+          # Get the bind9 clusterIp
+          BIND9_CLUSTER_IP=`kubectl get services --all-namespaces | grep designate-backend-bind9 | awk ' { print $4 } '`
+          sed -i -e "s/DESIGNATE_BACKEND_BIND9_CLUSTER_IP/$BIND9_CLUSTER_IP/g" /var/lib/kolla/config_files/pools.yaml
+          # Get the mdns clusterIp
+          MDNS_CLUSTER_IP=`kubectl get services --all-namespaces | grep designate-mdns | awk ' { print $4 } '`
+          sed -i -e "s/DESIGNATE_MDNS_CLUSTER_IP/$MDNS_CLUSTER_IP/g" /var/lib/kolla/config_files/pools.yaml
+        volumeMounts:
+        - mountPath: /var/lib/kolla/config_files/
+          name: config-files
+      volumes:
+        - name: config-files
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/openstack/designate-worker

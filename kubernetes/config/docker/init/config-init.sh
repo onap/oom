@@ -66,24 +66,9 @@ then
     [[ -z "$DCAE_OS_PUB_KEY" ]] && { echo "Error: DCAE_OS_PUB_KEY must be set in onap-parameters.yaml"; exit 1; }
     [[ -z "$DCAE_OS_PRIVATE_KEY" ]] && { echo "Error: DCAE_OS_PRIVATE_KEY must be set in onap-parameters.yaml"; exit 1; }
 
-    [[ -z "$DNS_IP" ]] && { echo "Error: DNS_LIST must be set in onap-parameters.yaml"; exit 1; }
     [[ -z "$DNS_FORWARDER" ]] && { echo "Error: DNS_FORWARDER must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$EXTERNAL_DNS" ]] && { echo "Error: EXTERNAL_DNS must be set in onap-parameters.yaml"; exit 1; }
 
     [[ -z "$DCAE_DOMAIN" ]] && { echo "Error: DCAE_DOMAIN must be set in onap-parameters.yaml"; exit 1; }
-
-    [[ -z "$DNSAAS_PROXY_ENABLE" ]] && { echo "Error: DNSAAS_PROXY_ENABLE must be set in onap-parameters.yaml"; exit 1; }
-    if [ "$$DNSAAS_PROXY_ENABLE" = "true" ]
-    then
-        [[ -z "$DCAE_PROXIED_KEYSTONE_URL" ]] && { echo "Error: DCAE_PROXIED_KEYSTONE_URL must be set in onap-parameters.yaml"; exit 1; }
-    fi
-    [[ -z "$DNSAAS_API_VERSION" ]] && { echo "Error: DNSAAS_API_VERSION must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_REGION" ]] && { echo "Error: DNSAAS_REGION must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_KEYSTONE_URL" ]] && { echo "Error: DNSAAS_KEYSTONE_URL must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_TENANT_ID" ]] && { echo "Error: DNSAAS_TENANT_ID must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_TENANT_NAME" ]] && { echo "Error: DNSAAS_TENANT_NAME must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_USERNAME" ]] && { echo "Error: DNSAAS_USERNAME must be set in onap-parameters.yaml"; exit 1; }
-    [[ -z "$DNSAAS_PASSWORD" ]] && { echo "Error: DNSAAS_PASSWORD must be set in onap-parameters.yaml"; exit 1; }
 fi
 
 #make NAMESPACE directory
@@ -206,16 +191,9 @@ then
       "s,OPENSTACK_KEY_NAME_HERE,$DCAE_OS_KEY_NAME,g" \
       "s,OPENSTACK_PUB_KEY_HERE,$DCAE_OS_PUB_KEY,g" \
       "s,OPENSTACK_PRIVATE_KEY_HERE,$DCAE_OS_PRIVATE_KEY,g" \
-      "s,DNS_LIST_HERE,$DNS_IP,g" \
-      "s,EXTERNAL_DNS_HERE,$EXTERNAL_DNS,g" \
       "s,DNS_FORWARDER_HERE,$DNS_FORWARDER,g" \
-      "s,DNSAAS_API_VERSION_HERE,$DNSAAS_API_VERSION,g" \
-      "s,DNSAAS_REGION_HERE,$DNSAAS_REGION,g" \
-      "s,DNSAAS_KEYSTONE_URL_HERE,$DNSAAS_KEYSTONE_URL,g" \
-      "s,DNSAAS_TENANT_NAME_HERE,$DNSAAS_TENANT_NAME,g" \
-      "s,DNSAAS_TENANT_ID_HERE,$DNSAAS_TENANT_ID,g" \
-      "s,DNSAAS_USERNAME_HERE,$DNSAAS_USERNAME,g" \
-      "s,DNSAAS_PASSWORD_HERE,$DNSAAS_PASSWORD,g" \
+      "s,OPENSTACK_DESIGNATE_PASSWORD_HERE,$DNSAAS_PASSWORD,g" \
+      "s,OPENSTACK_DESIGNATE_MARIADB_PASSWORD_HERE,$DNSAAS_MARIADB_PASSWORD,g" \
     )
     SED_CONFIG_STRING=$(concat_array "${SED_CONFIG_STRINGS[@]}")
     find $SED_CONFIG_PATHS -type f -exec sed -i -e "${SED_CONFIG_STRING}" {} \;
@@ -237,17 +215,6 @@ then
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s/DCAE_OS_REGION_HERE/$OPENSTACK_REGION/g" {} \;
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s/DCAE_OS_API_VERSION_HERE/$OPENSTACK_API_VERSION/g" {} \;
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_OS_KEYSTONE_URL_HERE,$OPENSTACK_KEYSTONE_URL,g" {} \;
-    fi
-
-    #################
-    # DNS Designate #
-    #################
-    find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s/DNSAAS_PROXY_ENABLE_HERE/$DNSAAS_PROXY_ENABLE/g" {} \;
-    if [ "$DNSAAS_PROXY_ENABLE" = "true" ]
-    then
-        find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$DCAE_PROXIED_KEYSTONE_URL,g" {} \;
-    else
-        find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$DCAE_OS_KEYSTONE_URL/$DCAE_OS_API_VERSION,g" {} \;
     fi
 fi
 
