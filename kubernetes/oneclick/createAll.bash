@@ -68,6 +68,9 @@ configure_dcaegen2() {
 
 create_onap_helm() {
   HELM_VALUES_ADDITION=""
+  local httpProxy=$(printf '%q' ${http_proxy})
+  local httpsProxy=$(printf '%q' ${https_proxy})
+  local noProxy=$(printf '%q' ${no_proxy})
   if [[ ! -z $HELM_VALUES_FILEPATH ]]; then
     HELM_VALUES_ADDITION="--values=$HELM_VALUES_FILEPATH"
   fi
@@ -83,14 +86,12 @@ create_onap_helm() {
       return
     fi
   fi
-
   # assign default auth token
   if [[ -z $ONAP_DEFAULT_AUTH_TOKEN ]]; then
     DEFAULT_SECRET=`kubectl get secrets -n kube-system | grep default-token |  awk '{ print $1}'`
     ONAP_DEFAULT_AUTH_TOKEN=`kubectl get secrets $DEFAULT_SECRET -n kube-system -o yaml | grep  'token:'  | awk '{ print $2}' | base64 -d`
   fi
-
-  cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3,kubeMasterAuthToken=$ONAP_DEFAULT_AUTH_TOKEN ${HELM_VALUES_ADDITION}`
+  cmd=$(echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3,kubeMasterAuthToken=$ONAP_DEFAULT_AUTH_TOKEN,noProxy=\"${noProxy}\",httpProxy=\"${httpProxy}\",httpsProxy=\"${httpsProxy}\" ${HELM_VALUES_ADDITION})
   eval ${cmd}
   check_return_code $cmd
 }
