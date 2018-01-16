@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: designate-backend-bind9
+  name: designate-backend-bind9
+  namespace: "{{ .Values.nsPrefix }}-openstack"
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ports:
+  - name: designate-backend-bind9-tcp
+    port: 53
+    protocol: TCP
+    targetPort: 53
+  - name: designate-backend-bind9-udp
+    port: 53
+    protocol: UDP
+    targetPort: 53
+  - name: designate-backend-bind9-rndc
+    port: 953
+    protocol: TCP
+    targetPort: 953
+  externalIPs:
+  {{ if .Values.externalIp1 }}
+  - {{ .Values.externalIp1 }}
+  {{ end }}
+  {{ if .Values.externalIp2 }}
+  - {{ .Values.externalIp2 }}
+  {{ end }}
+  {{ if .Values.externalIp3 }}
+  - {{ .Values.externalIp3 }}
+  {{ end }}
+  selector:
+    app: designate-backend-bind9
+  type: ClusterIP

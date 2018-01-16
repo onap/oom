@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: designate-centralbootstrap
+  namespace: "{{ .Values.nsPrefix }}-openstack"
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "9"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: designate-centralbootstrap
+      name: designate-centralbootstrap
+    spec:
+      hostname: designate-centralbootstrap
+      restartPolicy: Never
+      containers:
+      - image: {{ .Values.image.designateCentral }}:{{ .Values.kollaTag}}
+        name: designate-centralbootstrap
+        volumeMounts:
+        - mountPath: /var/lib/kolla/config_files/
+          name: config-files
+        env:
+        - name: KOLLA_SERVICE_NAME
+          value: designate-central
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: PIP_INDEX_URL
+          value: http://mirror.kna1.citycloud.openstack.org:8080/pypi/simple
+        - name: PIP_TRUSTED_HOST
+          value: mirror.kna1.citycloud.openstack.org
+        - name: KOLLA_BASE_DISTRO
+          value: ubuntu
+        - name: KOLLA_INSTALL_TYPE
+          value: binary
+        - name: KOLLA_INSTALL_METATYPE
+          value: rdo
+        - name: DEBIAN_FRONTEND
+          value: noninteractive
+        - name: KOLLA_BOOTSTRAP
+          value: "true"
+        - name: DB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: credentials
+              key: dbPassword
+
+      volumes:
+        - name: config-files
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/openstack/designate-central
