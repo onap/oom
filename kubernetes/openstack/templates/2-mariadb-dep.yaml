@@ -1,0 +1,65 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: "{{ .Values.nsPrefix }}-openstack"
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+      name: mariadb
+    spec:
+      hostname: mariadb
+      containers:
+      - image: {{ .Values.image.mariadb }}:{{ .Values.kollaTag}}
+        name: mariadb
+        ports:
+        - containerPort: 3306
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "temp=0; while [[ $temp -eq 0 ]]; do sleep 1; temp=`ss -an | grep 3306 | grep LISTEN | wc -l`; done"]
+        volumeMounts:
+        - mountPath: /var/lib/kolla/config_files/
+          name: config-files
+        - mountPath: /var/lib/mysql
+          name: var-lib-mysql
+        env:
+        - name: KOLLA_SERVICE_NAME
+          value: mariadb
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: PIP_INDEX_URL
+          value: http://mirror.kna1.citycloud.openstack.org:8080/pypi/simple
+        - name: PIP_TRUSTED_HOST
+          value: mirror.kna1.citycloud.openstack.org
+        - name: KOLLA_BASE_DISTRO
+          value: ubuntu
+        - name: KOLLA_INSTALL_TYPE
+          value: binary
+        - name: KOLLA_INSTALL_METATYPE
+          value: rdo
+        - name: DEBIAN_FRONTEND
+          value: noninteractive
+        - name: DB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: credentials
+              key: dbPassword
+      volumes:
+        - name: var-lib-mysql
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/openstack/var-lib-mysql
+        - name: config-files
+          hostPath:
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/openstack/mariadb

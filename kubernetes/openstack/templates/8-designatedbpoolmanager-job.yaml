@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: designatepoolmanagerdb-job
+  namespace: "{{ .Values.nsPrefix }}-openstack"
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "8"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: designatepoolmanagerdb
+      name: designatepoolmanagerdb
+    spec:
+      hostname: designatepoolmanagerdb
+      restartPolicy: Never
+      containers:
+      - image: {{ .Values.image.mariadb }}:{{ .Values.kollaTag}}
+        name: designatepoolmanagerdb
+        command:
+        - bash
+        args:
+        - -c
+        - echo "create database $DESIGNATE_DB;grant all on $DESIGNATE_DB.* to $DESIGNATE_USER@'%' identified by '$DESIGNATE_PASSWORD';" | mysql -u$LOGIN_USER -p$LOGIN_PASSWORD -h$LOGIN_HOST -P$LOGIN_PORT
+        env:
+        - name: KOLLA_SERVICE_NAME
+          value: mariadb
+        - name: KOLLA_CONFIG_STRATEGY
+          value: COPY_ALWAYS
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - name: PIP_INDEX_URL
+          value: http://mirror.kna1.citycloud.openstack.org:8080/pypi/simple
+        - name: PIP_TRUSTED_HOST
+          value: mirror.kna1.citycloud.openstack.org
+        - name: KOLLA_BASE_DISTRO
+          value: ubuntu
+        - name: KOLLA_INSTALL_TYPE
+          value: binary
+        - name: KOLLA_INSTALL_METATYPE
+          value: rdo
+        - name: DEBIAN_FRONTEND
+          value: noninteractive
+        - name: LOGIN_HOST
+          value: mariadb
+        - name: LOGIN_PORT
+          value: "3306"
+        - name: LOGIN_USER
+          value: roo
+        - name: LOGIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: credentials
+              key: osPassword
+        - name: DESIGNATE_DB
+          value: designate_pool_manager
+        - name: DESIGNATE_USER
+          value: designate_pool_manager
+        - name: DESIGNATE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: credentials
+              key: osPassword
