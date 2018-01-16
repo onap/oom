@@ -56,14 +56,17 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
-          name: sdnc-aaiclient-properties
         - mountPath: /opt/onap/sdnc/data/properties/admportal.json
-          name: sdnc-admportal-json
+          name: sdnc-conf
+          subPath: admportal.json
+        - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
+          name: sdnc-conf
+          subPath: aaiclient.properties
         - mountPath: /var/log/onap
           name: sdnc-logs
         - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
-          name: sdnc-log-config
+          name: sdnc-logging-cfg-config
+          subPath: org.ops4j.pax.logging.cfg
         ports:
         - containerPort: 8181
         - containerPort: 8101
@@ -80,6 +83,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: sdnc-logs
         - mountPath: /usr/share/filebeat/data
@@ -89,21 +93,25 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/log4j/filebeat.yml
-        - name: sdnc-log-config
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdnc/org.ops4j.pax.logging.cfg
+          configMap:
+            name: sdnc-log-configmap
+        - name: sdnc-logging-cfg-config
+          configMap:
+            name: sdnc-logging-cfg-configmap
         - name: sdnc-logs
           emptyDir: {}
         - name: sdnc-data-filebeat
           emptyDir: {}
-        - name: sdnc-aaiclient-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/conf/aaiclient.properties
-        - name: sdnc-admportal-json
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/conf/admportal.json
+        - name: sdnc-conf
+          configMap:
+            name: sdnc-conf-configmap
+            items:
+            - key: admportal.json
+              path: admportal.json
+              mode: 0755
+            - key: aaiclient.properties
+              path: aaiclient.properties
+              mode: 0755
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
