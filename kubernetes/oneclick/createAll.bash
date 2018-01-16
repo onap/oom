@@ -50,6 +50,12 @@ create_onap_helm() {
     HELM_VALUES_ADDITION="--values=$HELM_VALUES_FILEPATH"
   fi
 
+  # Have to put a check for dcaegen2 because it requires a secret to be created
+  if [ "$2" = "openstack" ];
+  then
+      kubectl --namespace $1-$2 create secret generic credentials --from-literal=dbPassword=$OPENSTACK_MARIADB_PASSWORD --from-literal=osPassword=$OPENSTACK_KEYSTONE_PASSWORD
+  fi
+
   cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3 ${HELM_VALUES_ADDITION}`
   eval ${cmd}
   check_return_code $cmd

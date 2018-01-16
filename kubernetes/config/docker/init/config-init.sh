@@ -172,6 +172,31 @@ MSO_ENCRYPTION_KEY=$(cat /config-init/$NAMESPACE/mso/mso/encryption.key)
 OPENSTACK_API_ENCRYPTED_KEY=`echo -n "$OPENSTACK_API_KEY" | openssl aes-128-ecb -e -K $MSO_ENCRYPTION_KEY -nosalt | xxd -c 256 -p`
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_ENCRYPTED_PASSWORD_HERE/$OPENSTACK_API_ENCRYPTED_KEY/g" {} \;
 
+# Instal kubectl commands
+apt -y install curl
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+mv ./kubectl /usr/local/bin/kubectl
+
+# Inject node ip for UEB config
+# There is actually two places where we need to inject this list, and one required to list to be comma seperated and quote separated,
+# and one requires to be only quote seperated.
+UEB_ADDR_IP=$(kubectl get nodes -o jsonpath='{ $.items[*].status.addresses[?(@.type=="ExternalIP")].address }')
+
+# As SDC is expecting a cluster of UEB, there is a need to have at least two entries. If we have only one, we duplicate it.
+# Also, this list has to be comma seperated.
+if [ `echo $UEB_ADDR_IP | wc -w` -gt "1" ]
+then
+    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /","/'`
+    UEB_ADDR_IP_COMMA_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /,/'`
+else
+    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED="$UEB_ADDR_IP\",\"$UEB_ADDR_IP"
+    UEB_ADDR_IP_COMMA_SEPERATED="$UEB_ADDR_IP,$UEB_ADDR_IP"
+fi
+
+sed -i -e "s/UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED_HERE/$UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED/g" /config-init/$NAMESPACE/sdc/environments/AUTO.json
+sed -i -e "s/UEB_ADDR_IP_COMMA_SEPERATE_HERE/$UEB_ADDR_IP_COMMA_SEPERATED/g" /config-init/$NAMESPACE/sdc/environments/AUTO.json
+
 
 find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DEPLOY_DCAE_HERE/$DEPLOY_DCAE/g" {} \;
 if [ "$DEPLOY_DCAE" = "true" ]
@@ -203,39 +228,8 @@ then
     #################
     # DNS Designate #
     #################
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_PROXY_ENABLE_HERE/$DNSAAS_PROXY_ENABLE/g" {} \;
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_REGION_HERE/$DNSAAS_REGION/g" {} \;
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s,DNSAAS_KEYSTONE_URL_HERE,$DNSAAS_KEYSTONE_URL,g" {} \;
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_TENANT_NAME_HERE/$DNSAAS_TENANT_NAME/g" {} \;
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_USERNAME_HERE/$DNSAAS_USERNAME/g" {} \;
-    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/DNSAAS_PASSWORD_HERE/$DNSAAS_PASSWORD/g" {} \;
+    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_DESIGNATE_PASSWORD_HERE/$OPENSTACK_DESIGNATE_PASSWORD/g" {} \;
+    find /config-init/$NAMESPACE/ -type f -exec sed -i -e "s/OPENSTACK_DESIGNATE_MARIADB_PASSWORD_HERE/$OPENSTACK_DESIGNATE_MARIADB_PASSWORD/g" {} \;
 fi
-
-
-# Instal kubectl commands
-apt -y install curl
-curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-mv ./kubectl /usr/local/bin/kubectl
-
-
-# Inject node ip for UEB config
-# There is actually two places where we need to inject this list, and one required to list to be comma seperated and quote separated,
-# and one requires to be only quote seperated.
-UEB_ADDR_IP=$(kubectl get nodes -o jsonpath='{ $.items[*].status.addresses[?(@.type=="ExternalIP")].address }')
-
-# As SDC is expecting a cluster of UEB, there is a need to have at least two entries. If we have only one, we duplicate it.
-# Also, this list has to be comma seperated.
-if [ `echo $UEB_ADDR_IP | wc -w` -gt "1" ]
-then
-    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /","/'`
-    UEB_ADDR_IP_COMMA_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /,/'`
-else
-    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED="$UEB_ADDR_IP\",\"$UEB_ADDR_IP"
-    UEB_ADDR_IP_COMMA_SEPERATED="$UEB_ADDR_IP,$UEB_ADDR_IP"
-fi
-
-sed -i -e "s/UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED_HERE/$UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED/g" /config-init/$NAMESPACE/sdc/environments/AUTO.json
-sed -i -e "s/UEB_ADDR_IP_COMMA_SEPERATE_HERE/$UEB_ADDR_IP_COMMA_SEPERATED/g" /config-init/$NAMESPACE/sdc/environments/AUTO.json
 
 echo "Done!"
