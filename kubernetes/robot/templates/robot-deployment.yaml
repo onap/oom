@@ -23,15 +23,19 @@ spec:
           mountPath: /etc/localtime
           readOnly: true
         - name: robot-eteshare
-          mountPath: /share
-        - name: robot-resources-asdc-interface
+          mountPath: /share/config
+        - name: robot-config-resources
           mountPath: /var/opt/OpenECOMP_ETE/robot/resources/asdc_interface.robot
-        - name: robot-resources-policy-interface
+          subPath: asdc_interface.robot
+        - name: robot-config-resources
           mountPath: /var/opt/OpenECOMP_ETE/robot/resources/policy_interface.robot
-        - name: robot-resources-sdngc-interface
+          subPath: policy_interface.robot
+        - name: robot-config-resources
           mountPath: /var/opt/OpenECOMP_ETE/robot/resources/sdngc_interface.robot
+          subPath: sdngc_interface.robot
         - name: lighttpd-authorization
           mountPath: /etc/lighttpd/authorization
+          subPath: authorization
         ports:
         - containerPort: 88
         readinessProbe:
@@ -44,20 +48,15 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: robot-eteshare
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/eteshare
-        - name: robot-resources-asdc-interface
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/asdc_interface.robot
-        - name: robot-resources-policy-interface
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/policy_interface.robot
-        - name: robot-resources-sdngc-interface
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/sdngc_interface.robot
+          configMap:
+            name: robot-eteshare-configmap
+            defaultMode: 0755
+        - name: robot-config-resources
+          configMap:
+            name: robot-resources-configmap
         - name: lighttpd-authorization
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/authorization
+          configMap:
+            name: lighttpd-authorization-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
