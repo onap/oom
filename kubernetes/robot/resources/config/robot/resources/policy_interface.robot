@@ -4,7 +4,7 @@ Library	          RequestsClientCert
 Library 	      RequestsLibrary
 Library           String
 Library           JSONUtils
-Library           Collections      
+Library           Collections
 Resource          global_properties.robot
 
 *** Variables ***
@@ -16,7 +16,7 @@ ${POLICY_HEALTHCHECK_ENDPOINT}     ${GLOBAL_POLICY_SERVER_PROTOCOL}://${GLOBAL_I
 
 Run Policy Health Check
      [Documentation]    Runs Policy Health check
-     ${auth}=    Create List    ${GLOBAL_POLICY_USERNAME}    ${GLOBAL_POLICY_PASSWORD}    
+     ${auth}=    Create List    ${GLOBAL_POLICY_USERNAME}    ${GLOBAL_POLICY_PASSWORD}
      Log    Creating session ${POLICY_ENDPOINT}
      ${session}=    Create Session 	policy 	${POLICY_HEALTHCHECK_ENDPOINT}   auth=${auth}
      ${headers}=  Create Dictionary     Accept=application/json    Content-Type=application/json
@@ -28,7 +28,6 @@ Run Policy Health Check
      :FOR    ${ELEMENT}    IN    @{ITEMS}
      \    Should Be Equal As Strings 	${ELEMENT['code']} 	200
      \    Should Be True    ${ELEMENT['healthy']}
-    
 Run Policy Put Request
      [Documentation]    Runs Policy Put request
      [Arguments]    ${data_path}  ${data}
@@ -38,7 +37,6 @@ Run Policy Put Request
      ${resp}= 	Put Request 	policy 	${data_path}     data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
      [Return]    ${resp}
-     
 Run Policy Delete Request
      [Documentation]    Runs Policy Delete request
      [Arguments]    ${data_path}  ${data}
@@ -48,7 +46,6 @@ Run Policy Delete Request
      ${resp}= 	Delete Request 	policy 	${data_path}    data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
      [Return]    ${resp}
-     
 Run Policy Get Configs Request
     [Documentation]    Runs Policy Get Configs request
     [Arguments]    ${data_path}  ${data}
