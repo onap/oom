@@ -59,6 +59,7 @@ spec:
           name: policy-logs
         - mountPath:  /tmp/logback.xml
           name: policy-logback
+          subPath: logback.xml
         lifecycle:
           postStart:
             exec:
@@ -69,6 +70,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: policy-logs
         - mountPath: /usr/share/filebeat/data
@@ -78,18 +80,25 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+          configMap:
+            name: policy-filebeat-configmap
+            items:
+            - key: filebeat.yml
+              path: filebeat.yml
         - name: policy-logs
           emptyDir: {}
         - name: policy-data-filebeat
           emptyDir: {}
         - name: policy-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/xacml-pdp-rest/logback.xml
+          configMap:
+            name: policy-pdp-log-configmap
+            items:
+            - key: logback.xml
+              path: logback.xml
         - name: pe
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/opt/policy/config/pe/
+          configMap:
+            name: policy-dep-pe-configmap
+            defaultMode: 0755
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
