@@ -1,0 +1,199 @@
+inputs:
+
+  labels:
+    default: {}
+
+node_types:
+
+  cloudify.nodes.Kubernetes:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/create.py
+
+  cloudify.nodes.Kubernetes.Master:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/create.py
+        configure:
+          implementation: scripts/kubernetes_master/configure.py
+        start:
+          implementation: scripts/kubernetes_master/start.py
+
+  cloudify.nodes.Kubernetes.Node:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/create.py
+        configure:
+          implementation: scripts/kubernetes_node/configure.py
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/tasks.py
+            task_name:
+              default: label_node
+            task_properties:
+              default:
+                hostname: { get_attribute: [ SELF, hostname ] }
+                labels: { get_input: labels }
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ kubernetes_master_host, ip ] }
+                user: { get_input: agent_user }
+                key: { get_secret: agent_key_private }
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/tasks.py
+            task_name:
+              default: stop_node
+            task_properties:
+              default:
+                hostname: { get_attribute: [ SELF, hostname ] }
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ kubernetes_master_host, ip ] }
+                user: { get_input: agent_user }
+                key: { get_secret: agent_key_private }
+        delete:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/tasks.py
+            task_name:
+              default: delete_node
+            task_properties:
+              default:
+                hostname: { get_attribute: [ SELF, hostname ] }
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ kubernetes_master_host, ip ] }
+                user: { get_input: agent_user }
+                key: { get_secret: agent_key_private }
+
+node_templates:
+
+  kubernetes_master:
+    type: cloudify.nodes.Kubernetes.Master
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: kubernetes_master_host
+
+  kubernetes_node:
+    type: cloudify.nodes.Kubernetes.Node
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: kubernetes_node_host
+      - type: cloudify.relationships.depends_on
+        target: kubernetes_master
+
+outputs:
+
+  kubernetes_cluster_bootstrap_token:
+    value: { get_attribute: [ kubernetes_master, bootstrap_token ] }
+
+  kubernetes_cluster_master_ip:
+    value: { get_attribute: [ kubernetes_master, master_ip ] }
+
+  kubernetes-admin_client_certificate_data:
+    value: { get_attribute: [ kubernetes_master, kubernetes-admin_client_certificate_data ] }
+
+  kubernetes-admin_client_key_data:
+    value: { get_attribute: [ kubernetes_master, kubernetes-admin_client_key_data ] }
+
+  kubernetes_certificate_authority_data:
+    value: { get_attribute: [ kubernetes_master, kubernetes_certificate_authority_data ] }
+
+policy_types:
+  scale_policy_type:
+    source: policies/scale.clj
+    properties:
+      policy_operates_on_group:
+        default: true
+      service_selector:
+        description: regular expression that selects the metric to be measured
+        default: ".*"
+      moving_window_size:
+        description: the moving window for individual sources in secs
+        default: 10
+      scale_threshold:
+        description: the value to trigger scaling over aggregrated moving values
+      scale_limit:
+        description: scaling limit
+        default: 10
+      scale_direction:
+        description: scale up ('<') or scale down ('>')
+        default: '<'
+      cooldown_time:
+        description: the time to wait before evaluating again after a scale
+        default: 60
+
+groups: {}
+
+#  scale_up_group:
+#    members: [kubernetes_node_host]
+#    policies:
+#      auto_scale_up:
+#        type: scale_policy_type
+#        properties:
+#          policy_operates_on_group: true
+#          scale_limit: 6
+#          scale_direction: '<'
+#          scale_threshold: 30
+#          service_selector: .*kubernetes_node_host.*cpu.total.user
+#          cooldown_time: 60
+#        triggers:
+#          execute_scale_workflow:
+#            type: cloudify.policies.triggers.execute_workflow
+#            parameters:
+#              workflow: scale
+#              workflow_parameters:
+#                delta: 1
+#                scalable_entity_name: kubernetes_node_host
+
+#  scale_down_group:
+#    members: [kubernetes_node_host]
+#    policies:
+#      auto_scale_down:
+#        type: scale_policy_type
+#        properties:
+#          policy_operates_on_group: true
+#          scale_limit: 6
+#          scale_direction: '<'
+#          scale_threshold: 30
+#          service_selector: .*kubernetes_node_host.*cpu.total.user
+#          cooldown_time: 60
+#        triggers:
+#          execute_scale_workflow:
+#            type: cloudify.policies.triggers.execute_workflow
+#            parameters:
+#              workflow: scale
+#              workflow_parameters:
+#                delta: 1
+#                scalable_entity_name: kubernetes_node_host
+
+#  heal_group:
+#    members: [kubernetes_node_host]
+#    policies:
+#      simple_autoheal_policy:
+#        type: cloudify.policies.types.host_failure
+#        properties:
+#          service:
+#            - .*kubernetes_node_host.*.cpu.total.system
+#            - .*kubernetes_node_host.*.process.hyperkube.cpu.percent
+#          interval_between_workflows: 60
+#        triggers:
+#          auto_heal_trigger:
+#            type: cloudify.policies.triggers.execute_workflow
+#            parameters:
+#              workflow: heal
+#              workflow_parameters:
+#                node_instance_id: { 'get_property': [ SELF, node_id ] }
+#                diagnose_value: { 'get_property': [ SELF, diagnose ] }

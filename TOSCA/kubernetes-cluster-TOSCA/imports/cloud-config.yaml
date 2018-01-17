@@ -1,0 +1,50 @@
+node_templates:
+
+  cloudify_host_cloud_config:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    properties:
+      resource_config:
+        groups:
+          - docker
+        users:
+          - name: { get_input: agent_user }
+            primary-group: wheel
+            groups: docker
+            shell: /bin/bash
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            ssh-authorized-keys:
+              - { get_secret: agent_key_public }
+        write_files:
+          - path: /etc/yum.repos.d/kubernetes.repo
+            owner: root:root
+            permissions: '0444'
+            content: |
+              # installed by cloud-init
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+              enabled=1
+              gpgcheck=1
+              repo_gpgcheck=1
+              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                     https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        packages:
+          - [docker, 1.12.6]
+          - [kubelet, 1.7.4-0]
+          - [kubeadm, 1.7.4-0]
+          - [kubectl, 1.7.4-0]
+          # - [kubelet, 1.7.5-0]
+          # - [kubeadm, 1.7.5-0]
+          # - [kubectl, 1.7.5-0]
+          - [kubernetes-cni, 0.5.1-0]
+          - [nfs-utils]
+        runcmd:
+          - [ setenforce, 0 ]
+          - [ systemctl, enable, docker ]
+          - [ systemctl, start, docker ]
+          - [ systemctl, enable, kubelet ]
+          - [ systemctl, start, kubelet ]
+          - [ mkdir, '-p', /tmp/data ]
+          - [ chcon, '-Rt', svirt_sandbox_file_t, /tmp/data ]
+          - [ mkdir, '-p', /dockerdata-nfs ]
+          - [ chmod, 777, /dockerdata-nfs ]
