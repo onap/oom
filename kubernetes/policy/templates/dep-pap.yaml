@@ -19,8 +19,6 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - nexus
-        - --container-name
         - mariadb
         env:
         - name: NAMESPACE
@@ -52,6 +50,9 @@ spec:
         image: "{{ .Values.image.policyPe }}:{{ .Values.image.policyPeVersion }}"
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: pap
+        env:
+        - name: PRELOAD_POLICIES
+          value: "true"
         ports:
         - containerPort: 8443
         - containerPort: 9091
@@ -70,8 +71,10 @@ spec:
           name: policy-logs
         - mountPath: /tmp/policy-install/logback.xml
           name: policy-sdk-logback
+          subPath: logback.xml
         - mountPath: /tmp/logback.xml
           name: policy-logback
+          subPath: logback.xml
         lifecycle:
           postStart:
             exec:
@@ -82,6 +85,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: policy-logs
         - mountPath: /usr/share/filebeat/data
@@ -91,21 +95,22 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+          configMap:
+            name: policy-filebeat-configmap
         - name: policy-logs
           emptyDir: {}
         - name: policy-data-filebeat
           emptyDir: {}
         - name: policy-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/xacml-pap-rest/logback.xml
+          configMap:
+            name: policy-pap-log-configmap
         - name: policy-sdk-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/policy/ep_sdk_app/logback.xml
+          configMap:
+            name: policy-sdk-log-configmap
         - name: pe
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/policy/opt/policy/config/pe/
+          configMap:
+            name: policy-dep-pe-configmap
+            defaultMode: 0755
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
