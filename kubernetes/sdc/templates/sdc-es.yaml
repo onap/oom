@@ -16,6 +16,20 @@ spec:
         app: sdc-es
       name: sdc-es
     spec:
+      initContainers:
+      - name: sdc-logs-init
+        image: {{ .Values.image.ubuntuInit }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - "-c"
+        - |
+          mkdir -p /ubuntu-init/ASDC/ASDC-ES/
+          mkdir -p /ubuntu-init/ASDC/ASDC-CS/
+          mkdir -p /ubuntu-init/ASDC/ASDC-KB/
+          mkdir -p /ubuntu-init/ASDC/ASDC-BE/
+          mkdir -p /ubuntu-init/ASDC/ASDC-FE/
+          chmod -R 777 /ubuntu-init/
       containers:
       - image: {{ .Values.image.sdcElasticsearch }}
         imagePullPolicy: {{ .Values.pullPolicy }}
@@ -30,6 +44,8 @@ spec:
         - name: ES_HEAP_SIZE
           value: "1024M"
         volumeMounts:
+        - name: sdc-logs
+          mountPath: /ubuntu-init/
         - mountPath: /root/chef-solo/environments/
           name: sdc-environments
         - mountPath: /etc/localtime
@@ -47,8 +63,9 @@ spec:
           periodSeconds: 10
       volumes:
         - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
+          configMap :
+            name : sdc-environments-configmap
+            defaultMode: 0755
         - name: sdc-localtime
           hostPath:
             path:  /etc/localtime
