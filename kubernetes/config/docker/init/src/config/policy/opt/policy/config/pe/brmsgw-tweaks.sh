@@ -33,6 +33,6 @@ for DEP in ${DEPS_JSON_RUNTIME} ${DEPS_JSON_INSTALL}; do
 	if [ ! -f "${DEP}" ]; then
 		echo "warning: configuration does not exist: ${DEP}"
 	else
-		sed -i -e "s/\"version\":.*/\"version\": \"${version}\"/g" "${DEP}"
+		sed -i -e "s/\"version\":.*-SNAPSHOT\"/\"version\": \"${version}\"/g" "${DEP}"
 	fi
 done
