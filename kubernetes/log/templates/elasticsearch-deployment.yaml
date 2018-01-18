@@ -32,6 +32,16 @@ spec:
         image: {{ .Values.image.es_bb }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: init-sysctl
+      - name: elasticsearch-logs-init
+        image: {{ .Values.image.ubuntuInit }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - "-c"
+        - "mkdir -p /ubuntu-init/elasticsearch/logs && mkdir -p /ubuntu-init/elasticsearch/data && chmod -R 777 /ubuntu-init/"
+        volumeMounts:
+        - name: elasticsearch-logs
+          mountPath: /ubuntu-init/
       containers:
       - name: elasticsearch
         image: {{ .Values.image.elasticsearch}}
@@ -59,7 +69,7 @@ spec:
             claimName: elasticsearch-db
         - name: elasticsearch-logs
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/elasticsearch/logs
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/
         - name: elasticsearch-conf
           configMap:
             name: elasticsearch-configmap
