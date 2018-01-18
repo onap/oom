@@ -811,35 +811,115 @@ actually use OpenStack resources.  Here is the contents of this file:
 
 **onap-parameters-sample.yaml**
 
-  .. literalinclude:: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob_plain;f=kubernetes/config/onap-parameters-sample.yaml;hb=refs/heads/master
+  .. literalinclude:: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob_plain;f=kubernetes/config/onap-parameters-sample.yaml;hb=refs/heads/amsterdam
 
-OPENSTACK\_UBUNTU\_14\_IMAGE: "Ubuntu\_14.04.5\_LTS"
+.. code-block::
 
-OPENSTACK\_PUBLIC\_NET\_ID: "e8f51956-00dd-4425-af36-045716781ffc"
+    #################
+    # COMMON CONFIG #
+    #################
 
-OPENSTACK\_OAM\_NETWORK\_ID: "d4769dfb-c9e4-4f72-b3d6-1d18f4ac4ee6"
+    # NEXUS
+    NEXUS_HTTP_REPO: https://nexus.onap.org/content/sites/raw
+    NEXUS_DOCKER_REPO: nexus3.onap.org:10001
+    NEXUS_USERNAME: docker
+    NEXUS_PASSWORD: docker
 
-OPENSTACK\_OAM\_SUBNET\_ID: "191f7580-acf6-4c2b-8ec0-ba7d99b3bc4e"
+    # Networking
+    OPENSTACK_PUBLIC_NET_ID: "af6880a2-3173-430a-aaa2-6229df57ee15"
+    OPENSTACK_PUBLIC_NET_NAME: "vlan200_net_ext"
+    # Could be reduced, it needs 15 IPs for DCAE VMs
+    OPENSTACK_OAM_NETWORK_CIDR: "10.0.0.0/16"
 
-OPENSTACK\_OAM\_NETWORK\_CIDR: "192.168.30.0/24"
+    # Authentication
+    OPENSTACK_USERNAME: "nso"
+    OPENSTACK_API_KEY: "Password123"
+    OPENSTACK_TENANT_NAME: "nso-rancher"
+    OPENSTACK_TENANT_ID: "5c59f02201d54aa89af1f2207f7be2c1"
+    OPENSTACK_REGION: "RegionOne"
+    # Either v2.0 or v3
+    OPENSTACK_API_VERSION: "v2.0"
+    OPENSTACK_KEYSTONE_URL: "http://10.195.194.216:5000"
+    OPENSTACK_SERVICE_TENANT_NAME: "service"
 
-OPENSTACK\_USERNAME: "vnf\_user"
+    # Flavors's name
+    OPENSTACK_FLAVOUR_SMALL: "m1.small"
+    OPENSTACK_FLAVOUR_MEDIUM: "m1.medium"
+    OPENSTACK_FLAVOUR_LARGE: "m1.large"
 
-OPENSTACK\_API\_KEY: "vnf\_password"
+    # Images' name
+    OPENSTACK_UBUNTU_14_IMAGE: "trusty"
+    OPENSTACK_UBUNTU_16_IMAGE: "xenial"
+    OPENSTACK_CENTOS_7_IMAGE: "centos-7"
 
-OPENSTACK\_TENANT\_NAME: "vnfs"
+    # ONAP config
+    # Do not change unless you know what you're doing
+    DMAAP_TOPIC: "AUTO"
+    DEMO_ARTIFACTS_VERSION: "1.1.1"
 
-OPENSTACK\_REGION: "RegionOne"
 
-OPENSTACK\_KEYSTONE\_URL: "http://1.2.3.4:5000"
+    ########
+    # DCAE #
+    ########
 
-OPENSTACK\_FLAVOUR\_MEDIUM: "m1.medium"
+    # Whether or not to deploy DCAE
+    # If set to false, all the parameters bellow can be left empty or removed
+    # If set to false, update ../dcaegen2/values.yaml disableDcae value to true,
+    # this is to avoid deploying the DCAE deployments and services.
+    DEPLOY_DCAE: "true"
 
-OPENSTACK\_SERVICE\_TENANT\_NAME: "services"
+    DCAE_IP_ADDR: "10.0.4.1"
 
-DMAAP\_TOPIC: "AUTO"
+    # Config
+    # Do not change unless you know what you're doing
+    DCAE_DOCKER_VERSION: v1.1.1
+    DCAE_VM_BASE_NAME: "dcae"
 
-DEMO\_ARTIFACTS\_VERSION: "1.1.0-SNAPSHOT"
+    # Can be the same as OPENSTACK_KEYSTONE_URL/OPENSTACK_API_VERSION
+    DCAE_KEYSTONE_URL: "http://10.195.194.216:5000/v2.0"
+
+    # The private key needs to be in a specific format so it's formatted properly
+    # when ending up in the DCAE HEAT stack. The best way is to do the following:
+    # - copy paste your key
+    # - surround it with quote
+    # - add \n at the end of each line
+    # - escape the result using https://www.freeformatter.com/java-dotnet-escape.html#ad-output
+    OPENSTACK_KEY_NAME: "onap_key"
+    OPENSTACK_PUB_KEY: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7G5MqLJvkchuD/YGS/lUlTXXkPqdBLz8AhF/Dosln4YpVg9oD2X2fH2Nxs6Gz0wjB6w1pIqQm7ypz3kk2920PiRV2W1L0/mTF/9Wmi9ReVJzkC6VoBxL20MhRi0dx/Wxg4vmbAT4NGk+8ufqA45oFB6l0bQIdtmjzZH/WZFVB+rc1CtX6Ia0hrMyeLbzLM7IzLdVeb411hxumsQ1N0L4dQWY0E1SeynS2azQNU61Kbxjmm4b89Kw/y9iNW9GdFUodOFWbhK8XU/duSLS+NpoQ/kPJXuBzgPFCy6B7DCJhqZ20j0oXGPqZzXcKApZUJdgeLGML3q4DyiNkXAP4okaN Generated-by-Nova"
+    OPENSTACK_PRIVATE_KEY: \"-----BEGIN RSA PRIVATE KEY-----\\n\r\nMIIEpQIBAAKCAQEAuxuTKiyb5HIbg/2Bkv5VJU115D6nQS8/AIRfw6LJZ+GKVYPa\\n\r\nA9l9nx9jcbOhs9MIwesNaSKkJu8qc95JNvdtD4kVdltS9P5kxf/VpovUXlSc5Aul\\n\r\naAcS9tDIUYtHcf1sYOL5mwE+DRpPvLn6gOOaBQepdG0CHbZo82R/1mRVQfq3NQrV\\n\r\n+iGtIazMni28yzOyMy3VXm+NdYcbprENTdC+HUFmNBNUnsp0tms0DVOtSm8Y5puG\\n\r\n/PSsP8vYjVvRnRVKHThVm4SvF1P3bki0vjaaEP5DyV7gc4DxQsugewwiYamdtI9K\\n\r\nFxj6mc13CgKWVCXYHixjC96uA8ojZFwD+KJGjQIDAQABAoIBAG5sLqTEINhoMy7p\\n\r\nLFAowu050qp6A1En5eGTPcUCTCR/aZlgMAj3kPiYmKKgpXyvvcpbwtVaOVA083Pg\\n\r\nKotC6F0zxLPN355wh96GRnt8qD9nZhP7f4luK1X4D1B4hxiRvCVNros453rqHUa+\\n\r\n50SrjdkMFYh9ULNiVHvXws4u9lXx81K+M+FzIcf5GT8Cm9PSG0JiwGG2rmwv++fp\\n\r\nJDH3Z2k+B940ox6RLvoh68CXNYolSnWQ/GI0+o1nv2uncRE9wuAhnVN4JmvWw/zR\\n\r\nqA7k305LgfbeJrma6dE4GOZo5cVbUcVKTD+rilCE13DCYx0yCEhxmDBMizNb83nH\\n\r\nge5AXI0CgYEA3oRVKnTBUSLrLK0ft5LJRz91aaxMUemzCqoQBpM7kaaGSf+gg2Z7\\n\r\nBTRp4fyLrYKyXACZGAXjhw2SVsTjntVACA+pIJQNim4vUNo03hcDVraxUMggvsJx\\n\r\nSKnwDe4zpGbIo7VEJVBgUhWccHKbBo0dB26VOic8xtUI/pDWeR9ryEMCgYEA10M6\\n\r\nrgFhvb4fleS0bzMe+Yv7YsbvEWeHDEgO060n050eIpcvrDtpnc4ag1BFKy9MSqnY\\n\r\n4VUIjIWI9i5Gq7rwxahduJfH/MgjagLtSmvIXA2uYni7unOKarqq75Nko9NG93b7\\n\r\np0nRKxFMm2hCVL7/gy6KzEuLkUhtok8+HOc3cO8CgYEAt/Fs9cvOguP6xNPYhEgz\\n\r\nW1J6HQDxlkU6XHZ5CPZtJ9og6MsIRZdR2tuZK9c5IBYKm0NjSxiTHfF6J4BbKdHf\\n\r\nPMq1ZNj+2JB9TLkVOwKLIAOmUMEfUJIsU4UnjFx9FEpjUfFmg/INrc1vpQUYYjIE\\n\r\n7T/c3FXTSAqThNz2buoqj0ECgYEAx9TiWXxw5vrjSXw5wG0dmR3I7aatcmPAK7eN\\n\r\nBBZfvYPC4Oum1uWEo3kchcBzpaZP1ZQdAPm2aPTh8198PZnaQDOPZXiJr/F/Zr92\\n\r\n1zp9km8k7scTxv/RhEjrvGIA8FCHNd1fuqm9IpT5n99GjHOOsZH4SbTryKALHr0f\\n\r\ndSd0AUMCgYEAi36u1D0Ht40WgGHp+T8AVaYHnXvx+IlH2EXqMDwwv0aINOcHfsUG\\n\r\nG7OrxyJAVaEgwtxgskS7LLp9ANvccyI+F9KLZbBoe2aYcCHjWdtvnc9bJUUs+ERk\\n\r\nJpJwR9NyQ5iObsnAEebILOLP+4yLGAxBz18ZvTRrSz1To456+EO+E+k=\\n\r\n-----END RSA PRIVATE KEY-----\\n\"
+
+
+    # This settings allows one to configure the /etc/resolv.conf nameserver resolution for all the DCAE VMs.
+    # -
+    # In the HEAT setup, it's meant to be a list, as the HEAT setup deploys a DNS Server VM in addition to DNS Designate
+    # and this DNS Server is setup to forward request to the DNS Designate backend when it cannot resolve, hence the
+    # DNS_FORWARDER config here. The DCAE Boostrap requires both inputs, even though they are now similar, we have to pass
+    # them.
+    # -
+    # ATTENTION: Assumption is made the DNS Designate backend is configure to forward request to a public DNS (e.g. 8.8.8.8)
+    # -
+    # Put the IP of the DNS Designate backend (e.g. the OpenStack IP supporting DNS Designate)
+    DNS_LIST : "10.195.194.16"
+    DNS_FORWARDER: "10.195.194.16"
+
+    # Do not change - Public DNS - not used but required by the DCAE boostrap container
+    EXTERNAL_DNS: "8.8.8.8"
+
+    # Proxy DNS Designate is only supportted for windriver-multicloud adapter (limitation from DCAE)
+    # Set to true if you wish to use it (e.g. Integration lab)
+    DNSAAS_PROXY_ENABLE: "false"
+
+    # Possibility to have DNS Designate installed in another OpenStack, if not, provide the same values
+    # as the OPENSTACK_* ones above.
+    DNSAAS_REGION: "RegionOne"
+    DNSAAS_KEYSTONE_URL: "http://10.195.194.216:5000/v2.0"
+    DNSAAS_TENANT_NAME: "nso-rancher"
+    DNSAAS_USERNAME: "nso"
+    DNSAAS_PASSWORD: "Password123"
+
+    # DNS domain for the DCAE VMs
+    DCAE_DOMAIN: "dcaeg2.onap.org"
+
 
 Note that these values are required or the following steps will fail.
 
