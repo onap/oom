@@ -33,11 +33,19 @@ spec:
         volumeMounts:
         - mountPath: /portal-mysql/oom_updates.sql
           name: portal-mariadb-onboarding-sql
+          subPath: oom_updates.sql
         - mountPath: /portal_root/
           name: portal-root
         image: {{ .Values.image.mariadbClient }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: provision-portaldb-users
+      - command: ["/bin/bash", "-c", "mkdir -p /ubuntu-init/portal/logs && chmod -R 777 /ubuntu-init/portal/logs"]
+        volumeMounts:
+        - name: portal-logs
+          mountPath: /ubuntu-init/
+        image: {{ .Values.image.ubuntuInit }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: portal-app-logs-init
       containers:
       - image: {{ .Values.image.portalapps }}
         imagePullPolicy: {{ .Values.pullPolicy }}
@@ -51,23 +59,32 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTAL/WEB-INF/fusion/conf/fusion.properties"
-          name: portal-fusion-properties
+          name: onap-portal-properties
+          subPath: fusion.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTAL/WEB-INF/classes/openid-connect.properties"
-          name: portal-openid-connect-properties
+          name: onap-portal-properties
+          subPath: openid-connect.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTAL/WEB-INF/conf/system.properties"
-          name: portal-system-properties
+          name: onap-portal-properties
+          subPath: system.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTAL/WEB-INF/classes/portal.properties"
-          name: portal-portal-properties
+          name: onap-portal-properties
+          subPath: portal.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTAL/WEB-INF/classes/logback.xml"
           name: portal-logback
+          subPath: logback.xml
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTALSDK/WEB-INF/conf/system.properties"
-          name: sdkapp-system-properties
+          name: portal-sdkapp-properties
+          subPath: system.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTALSDK/WEB-INF/classes/portal.properties"
-          name: sdkapp-portal-properties
+          name: portal-sdkapp-properties
+          subPath: portal.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTALSDK/WEB-INF/fusion/conf/fusion.properties"
-          name: sdkapp-fusion-properties
+          name: portal-sdkapp-properties
+          subPath: fusion.properties
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/ONAPPORTALSDK/WEB-INF/classes/logback.xml"
           name: sdkapp-logback
+          subPath: logback.xml
         - mountPath: /portal_root/
           name: portal-root
         - mountPath: "{{ .Values.onapPortal.webappsDir }}/logs"
@@ -89,6 +106,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: portal-logs2
         - mountPath: /usr/share/filebeat/data
@@ -98,48 +116,37 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+          configMap:
+            name: portal-filebeat-configmap
         - name: portal-logs2
           emptyDir: {}
         - name: portal-data-filebeat
           emptyDir: {}
-        - name: portal-fusion-properties
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTAL/fusion.properties
-        - name: portal-openid-connect-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTAL/openid-connect.properties
-        - name: portal-system-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTAL/system.properties
-        - name: portal-portal-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTAL/portal.properties
+        - name: onap-portal-properties
+          configMap:
+            defaultMode: 0755
+            name: portal-onap-portal-configmap
+        - name: portal-sdkapp-properties
+          configMap:
+            defaultMode: 0755
+            name: portal-onap-portal-sdk-configmap
         - name: portal-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/portal/onapportal/logback.xml
-        - name: sdkapp-system-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTALSDK/system.properties
-        - name: sdkapp-portal-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTALSDK/portal.properties
-        - name: sdkapp-fusion-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPPORTALSDK/fusion.properties
+          configMap:
+            name: portal-onapportal-log-configmap
         - name: sdkapp-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/portal/onapportalsdk/logback.xml
+          configMap:
+            name: portal-onapportalsdk-log-configmap
         - name: portal-mariadb-onboarding-sql
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/mariadb/oom_updates.sql
+          configMap:
+            name: portal-mariadb-configmap
         - name: portal-root
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal
+            type: DirectoryOrCreate
         - name: portal-logs
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/logs
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/
+            type: DirectoryOrCreate
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
