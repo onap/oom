@@ -31,7 +31,7 @@ spec:
         name: portalapps-readiness
       containers:
       - image: {{ .Values.image.portalwms }}
-        imagePullPolicy: {{ .Values.pullPolicy }} 
+        imagePullPolicy: {{ .Values.pullPolicy }}
         name: portalwidgets
         volumeMounts:
         - mountPath: /etc/localtime
@@ -39,6 +39,7 @@ spec:
           readOnly: true
         - mountPath: /application.properties
           name: portalwidgets-application-properties
+          subPath: application.properties
         ports:
         - containerPort: 8082
         readinessProbe:
@@ -51,8 +52,16 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: portalwidgets-application-properties
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/portal/portal-fe/webapps/etc/ONAPWIDGETMS/application.properties
+          configMap:
+            name: portal-onapwidgetms-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: portal-onapwidgetms-configmap
+  namespace: {{ .Values.nsPrefix }}-portal
+data:
+{{ tpl (.Files.Glob "resources/config/portal-fe/webapps/etc/ONAPWIDGETMS/application.properties").AsConfig . | indent 2 }}
 #{{ end }}
