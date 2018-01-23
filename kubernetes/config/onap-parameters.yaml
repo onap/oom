@@ -10,73 +10,117 @@ NEXUS_DOCKER_REPO: nexus3.onap.org:10001
 NEXUS_USERNAME: docker
 NEXUS_PASSWORD: docker
 
-# Networking
-OPENSTACK_PUBLIC_NET_ID: ""
-OPENSTACK_PUBLIC_NET_NAME: ""
-# Could be reduced, it needs 15 IPs for DCAE VMs
-OPENSTACK_OAM_NETWORK_CIDR: ""
+# ONAP config
+# Do not change unless you know what you're doing
+DMAAP_TOPIC: "AUTO"
+DEMO_ARTIFACTS_VERSION: "1.1.1"
 
-# Authentication
+# ------------------------------------------------#
+# OpenStack Config on which VNFs will be deployed #
+# ------------------------------------------------#
+
+# The four below parameters are only used by Robot.
+# As Robot is able to perform some automated actions,
+# e.g. onboard/distribute/instantiate, it has to be
+# configured with four below parameters (in addition
+# to the OPENSTACK ones).
+# If you don't intend to use Robot for those actions,
+# you can put dummy values, but you will have to provide
+# those values when deploying VNF anyway.
+# --------------------------------------------------
+# This is the OAM Network ID used for internal network by VNFs.
+# You could create 10.10.10.0/24 (256 IPs should be enough) in your cloud instance.
+OPENSTACK_OAM_NETWORK_ID: ""
+# This is the public Network ID. Public = external network in OpenStack.
+# Floating IPs will be created and assigned to VNFs from this network,
+# to provide external reachability.
+OPENSTACK_PUBLIC_NETWORK_ID: ""
+# VM Flavor to be used by VNF.
+OPENSTACK_FLAVOR: ""
+# VM image to be used by VNF. Here ubuntu 14.04 is provided.
+OPENSTACK_IMAGE: ""
+
 OPENSTACK_USERNAME: ""
-OPENSTACK_API_KEY: ""
+OPENSTACK_PASSWORD: ""
 OPENSTACK_TENANT_NAME: ""
 OPENSTACK_TENANT_ID: ""
 OPENSTACK_REGION: ""
 # Either v2.0 or v3
 OPENSTACK_API_VERSION: ""
 OPENSTACK_KEYSTONE_URL: ""
+# Don't change this if you don't know what it is
 OPENSTACK_SERVICE_TENANT_NAME: "service"
-
-# Flavors's name
-OPENSTACK_FLAVOUR_SMALL: "m1.small"
-OPENSTACK_FLAVOUR_MEDIUM: "m1.medium"
-OPENSTACK_FLAVOUR_LARGE: "m1.large"
-
-# Images' name
-OPENSTACK_UBUNTU_14_IMAGE: "trusty"
-OPENSTACK_UBUNTU_16_IMAGE: "xenial"
-OPENSTACK_CENTOS_7_IMAGE: "centos-7"
-
-# ONAP config
-# Do not change unless you know what you're doing
-DMAAP_TOPIC: "AUTO"
-DEMO_ARTIFACTS_VERSION: "1.1.1"
-
 
 ########
 # DCAE #
 ########
 
 # Whether or not to deploy DCAE
-# If set to false, all the parameters bellow can be left empty or removed
+# If set to false, all the parameters below can be left empty or removed
 # If set to false, update ../dcaegen2/values.yaml disableDcae value to true,
 # this is to avoid deploying the DCAE deployments and services.
 DEPLOY_DCAE: "true"
 
-
-# Config
-# Do not change unless you know what you're doing
+# DCAE Config
 DCAE_DOCKER_VERSION: v1.1.1
 DCAE_VM_BASE_NAME: "dcae"
-DCAE_IP_ADDR: "10.0.4.1"
 
-# Can be the same as OPENSTACK_KEYSTONE_URL/OPENSTACK_API_VERSION
-DCAE_KEYSTONE_URL: ""
+# ------------------------------------------------#
+# OpenStack Config on which DCAE will be deployed #
+# ------------------------------------------------#
 
-# The private key needs to be in a specific format so it's formatted properly
+# Whether to have DCAE deployed on the same OpenStack instance on which VNF will be deployed.
+# (e.g. re-use the same config as defined above)
+# If set to true, discard the next config block, else provide the values.
+IS_SAME_OPENSTACK_AS_VNF: "false"
+
+# Fill in the values in below block only if IS_SAME_OPENSTACK_AS_VNF set to "false"
+# ---
+# Either v2.0 or v3
+DCAE_OS_API_VERSION: ""
+DCAE_OS_KEYSTONE_URL: ""
+DCAE_OS_USERNAME: ""
+DCAE_OS_PASSWORD: ""
+DCAE_OS_TENANT_NAME: ""
+DCAE_OS_TENANT_ID: ""
+DCAE_OS_REGION: ""
+# ---
+
+# We need to provide the config of the public network here, because the DCAE VMs will be
+# assigned a floating IP on this network so one can access them, to debug for instance.
+# The ID of the public network.
+DCAE_OS_PUBLIC_NET_ID: ""
+# The name of the public network.
+DCAE_OS_PUBLIC_NET_NAME: ""
+# This is the private network that will be used by DCAE VMs. The network will be created during the DCAE boostrap process,
+# and will the subnet created will use this CIDR. (/28 provides 16 IPs, DCAE requires 15.)
+DCAE_OS_OAM_NETWORK_CIDR: "10.99.0.0/28"
+# This will be the private ip of the DCAE boostrap VM. This VM is responsible for spinning up the whole DCAE stack (14 VMs total)
+DCAE_IP_ADDR: "10.99.0.2"
+
+# The flavors' name to be used by DCAE VMs
+DCAE_OS_FLAVOR_SMALL: ""
+DCAE_OS_FLAVOR_MEDIUM: ""
+DCAE_OS_FLAVOR_LARGE: ""
+# The images' name to be used by DCAE VMs
+DCAE_OS_UBUNTU_14_IMAGE: ""
+DCAE_OS_UBUNTU_16_IMAGE: ""
+DCAE_OS_CENTOS_7_IMAGE: ""
+
+# This is the keypair that will be created in OpenStack, and that one can use to access DCAE VMs using ssh.
+# The private key needs to be in a specific format so at the end of the process, it's formatted properly
 # when ending up in the DCAE HEAT stack. The best way is to do the following:
 # - copy paste your key
 # - surround it with quote
 # - add \n at the end of each line
 # - escape the result using https://www.freeformatter.com/java-dotnet-escape.html#ad-output
-OPENSTACK_KEY_NAME: "onap_key"
-OPENSTACK_PUB_KEY: ""
-OPENSTACK_PRIVATE_KEY: ""
+DCAE_OS_KEY_NAME: "onap_key"
+DCAE_OS_PUB_KEY: ""
+DCAE_OS_PRIVATE_KEY: ""
 
-
-# This settings allows one to configure the /etc/resolv.conf nameserver resolution for all the DCAE VMs.
+# This below settings allows one to configure the /etc/resolv.conf nameserver resolution for all the DCAE VMs.
 # -
-# In the HEAT setup, it's meant to be a list, as the HEAT setup deploys a DNS Server VM in addition to DNS Designate
+# In the HEAT setup, it's meant to be a DNS list, as the HEAT setup deploys a DNS Server VM in addition to DNS Designate
 # and this DNS Server is setup to forward request to the DNS Designate backend when it cannot resolve, hence the
 # DNS_FORWARDER config here. The DCAE Boostrap requires both inputs, even though they are now similar, we have to pass
 # them.
@@ -84,23 +128,32 @@ OPENSTACK_PRIVATE_KEY: ""
 # ATTENTION: Assumption is made the DNS Designate backend is configure to forward request to a public DNS (e.g. 8.8.8.8)
 # -
 # Put the IP of the DNS Designate backend (e.g. the OpenStack IP supporting DNS Designate)
-DNS_LIST : ""
+DNS_IP : ""
 DNS_FORWARDER: ""
 
-# Do not change - Public DNS - not used but required by the DCAE boostrap container
+# Public DNS - not used but required by the DCAE boostrap container
 EXTERNAL_DNS: "8.8.8.8"
-
-# Proxy DNS Designate is only supportted for windriver-multicloud adapter (limitation from DCAE)
-# Set to true if you wish to use it (e.g. Integration lab)
-DNSAAS_PROXY_ENABLE: "false"
-
-# Possibility to have DNS Designate installed in another OpenStack, if not, provide the same values
-# as the OPENSTACK_* ones above.
-DNSAAS_REGION: ""
-DNSAAS_KEYSTONE_URL: ""
-DNSAAS_TENANT_NAME: "n"
-DNSAAS_USERNAME: ""
-DNSAAS_PASSWORD: ""
 
 # DNS domain for the DCAE VMs
 DCAE_DOMAIN: "dcaeg2.onap.org"
+
+# Proxy DNS Designate. This means DCAE will run in an instance not support Designate, and Designate will be provided by another instance.
+# Set to true if you wish to use it
+DNSAAS_PROXY_ENABLE: "false"
+# Provide this only if DNSAAS_PROXY_ENABLE set to true. The IP has to be the IP of one of the K8S hosts.
+# e.g. http://10.195.197.164/api/multicloud-titanium_cloud/v0/pod25_RegionOne/identity/v2.0
+DCAE_PROXIED_KEYSTONE_URL: ""
+
+# -----------------------------------------------------#
+# OpenStack Config on which DNS Designate is supported #
+# -----------------------------------------------------#
+
+# If this is the same OpenStack used for the VNF or DCAE, please re-enter the values here.
+
+DNSAAS_API_VERSION: ""
+DNSAAS_REGION: ""
+DNSAAS_KEYSTONE_URL: ""
+DNSAAS_TENANT_ID: ""
+DNSAAS_TENANT_NAME: ""
+DNSAAS_USERNAME: ""
+DNSAAS_PASSWORD: ""
