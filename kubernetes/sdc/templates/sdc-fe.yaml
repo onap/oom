@@ -15,6 +15,8 @@ spec:
       labels:
         app: sdc-fe
       name: sdc-fe
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/sdc-config-maps.yaml") . | sha256sum }}
     spec:
       initContainers:
       - command:
@@ -62,6 +64,7 @@ spec:
           name: sdc-logs-2
         - mountPath: /root/chef-solo/cookbooks/sdc-catalog-fe/recipes/FE_2_setup_configuration.rb
           name: sdc-fe-config
+          subPath: FE_2_setup_configuration.rb
         - mountPath: /tmp/logback.xml
           name: sdc-logback
         lifecycle:
@@ -87,31 +90,36 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: sdc-data-filebeat
       volumes:
-        - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
-        - name: sdc-logs-2
-          emptyDir: {}
-        - name: sdc-data-filebeat
-          emptyDir: {}
-        - name: sdc-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/fe/logback.xml
-        - name: sdc-sdc-es-es
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
-        - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
-        - name: sdc-localtime
-          hostPath:
-            path:  /etc/localtime
-        - name:  sdc-logs
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
-        - name:  sdc-fe-config
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-fe/FE_2_setup_configuration.rb
+      - name: filebeat-conf
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+      - name: sdc-logs-2
+        emptyDir: {}
+      - name: sdc-data-filebeat
+        emptyDir: {}
+      - name: sdc-logback
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/fe/logback.xml
+      - name: sdc-sdc-es-es
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
+      - name: sdc-environments
+        configMap:
+          name: sdc-environments
+      - name: sdc-localtime
+        hostPath:
+          path:  /etc/localtime
+      - name:  sdc-logs
+        hostPath:
+          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name:  sdc-fe-config
+        configMap:
+          name: sdc-fe-config
+          items:
+          - key: FE_2_setup_configuration.rb
+            path: FE_2_setup_configuration.rb
+#        hostPath:
+#          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-fe/FE_2_setup_configuration.rb
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
