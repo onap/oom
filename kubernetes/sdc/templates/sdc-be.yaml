@@ -15,6 +15,8 @@ spec:
       labels:
         app: sdc-be
       name: sdc-be
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/sdc-config-maps.yaml") . | sha256sum }}
     spec:
       initContainers:
       - command:
@@ -94,28 +96,28 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: sdc-data-filebeat
       volumes:
-        - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
-        - name: sdc-logs-2
-          emptyDir: {}
-        - name: sdc-data-filebeat
-          emptyDir: {}
-        - name: sdc-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/be/logback.xml
-        - name: sdc-sdc-es-es
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
-        - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
-        - name: sdc-localtime
-          hostPath:
-            path:  /etc/localtime
-        - name:  sdc-logs
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: filebeat-conf
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+      - name: sdc-logs-2
+        emptyDir: {}
+      - name: sdc-data-filebeat
+        emptyDir: {}
+      - name: sdc-logback
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/sdc/be/logback.xml
+      - name: sdc-sdc-es-es
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
+      - name: sdc-environments
+        configMap:
+          name: sdc-environments
+      - name: sdc-localtime
+        hostPath:
+          path:  /etc/localtime
+      - name:  sdc-logs
+        hostPath:
+          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

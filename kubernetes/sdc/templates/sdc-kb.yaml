@@ -15,6 +15,8 @@ spec:
       labels:
         app: sdc-kb
       name: sdc-kb
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/sdc-config-maps.yaml") . | sha256sum }}
     spec:
       initContainers:
       - command:
@@ -58,15 +60,15 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-        - name: sdc-environments
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/environments
-        - name: sdc-localtime
-          hostPath:
-            path:  /etc/localtime
-        - name:  sdc-logs
-          hostPath:
-            path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
+      - name: sdc-environments
+        configMap:
+          name: sdc-environments
+      - name: sdc-localtime
+        hostPath:
+          path:  /etc/localtime
+      - name:  sdc-logs
+        hostPath:
+          path:  /dockerdata-nfs/{{ .Values.nsPrefix }}/sdc/logs
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
