@@ -130,12 +130,12 @@ mv ./kubectl /usr/local/bin/kubectl
 # Get the Kubernetes Node IP hosting the DCAE NGINX pod
 NODE_IP=`kubectl get services dcaegen2 -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
 
-# # Source OpenStack parameters
-if [ "OPENSTACK_API_VERSION_HERE" = "v2.0" ]
+# Source OpenStack parameters to deploy DCAE
+if [ "DCAE_OS_API_VERSION_HERE" = "v2.0" ]
 then
-    source /opt/heat/OOM-openrc-v2.sh
+    source /opt/heat/DCAE-openrc-v2.sh
 else
-    source /opt/heat/OOM-openrc-v3.sh
+    source /opt/heat/DCAE-openrc-v3.sh
 fi
 
 # Create stasck if doens't exist
@@ -151,6 +151,14 @@ then
     # get the DCAE Boostrap VM ip, to configure Robot with it, for Healthcheck
     DCAE_CONTROLLER_IP=`openstack stack output show dcae dcae_floating_ip -c output_value -f yaml | awk '{ print $2}'`
     sed -i -e "s/DCAE_CONTROLLER_IP_HERE/$DCAE_CONTROLLER_IP/g" /opt/robot/vm_properties.py;
+fi
+
+# Source OpenStack parameters for DNS Designate
+if [ "DNSAAS_API_VERSION_HERE" = "v2.0" ]
+then
+    source /opt/heat/DNS-openrc-v2.sh
+else
+    source /opt/heat/DNS-openrc-v3.sh
 fi
 
 configure_dns_designate
