@@ -255,11 +255,11 @@ then
     else
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$DCAE_OS_KEYSTONE_URL/$DCAE_OS_API_VERSION,g" {} \;
     fi
-
-    # Install kube-dns ip in the nginx conf
-    KUBE_DNS_IP=`kubectl get service -n kube-system kube-dns -o jsonpath='{.spec.clusterIP}'`
-    find /config-init/$NAMESPACE/dcaegen2/nginx/ -type f -exec sed -i -e "s/KUBE_DNS_IP_HERE/$KUBE_DNS_IP/g" {} \;
 fi
+
+# Install kube-dns ip in the nginx conf
+KUBE_DNS_IP=`kubectl get service -n kube-system kube-dns -o jsonpath='{.spec.clusterIP}'`
+find /config-init/$NAMESPACE/dcaegen2/nginx/ -type f -exec sed -i -e "s/KUBE_DNS_IP_HERE/$KUBE_DNS_IP/g" {} \;
 
 # Inject node ip for UEB config
 # There is actually two places where we need to inject this list, and one required to list to be comma seperated and quote separated,
