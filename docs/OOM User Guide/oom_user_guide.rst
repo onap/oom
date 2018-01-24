@@ -925,7 +925,7 @@ A message sequence chart of the registration process:
 
 MSB Usage Instructions
 ----------------------
-MSB provides kubernetes charts in OOM, so it can be spun up by oom oneclick command. 
+MSB provides kubernetes charts in OOM, so it can be spun up by oom oneclick command.
 
 Please note that kubernetes authentication token must be set at *kubernetes/kube2msb/values.yaml* so the kube2msb registrator can get the access to watch the kubernetes events and get service annotation by kubernetes APIs. The token can be found in the kubectl configuration file *~/.kube/config*
 

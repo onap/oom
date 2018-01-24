@@ -24,16 +24,16 @@ The main goal of the Amsterdam release was to:
 
 **Bug Fixes**
 
-	- The full list of implemented user stories and epics is available on `JIRA <https://jira.onap.org/secure/RapidBoard.jspa?rapidView=41&view=planning.nodetail&epics=visible>`_
-	  This is the first release of OOM, the defects fixed in this release were raised during the course of the release.
-	  Anything not closed is captured below under Known Issues. If you want to review the defects fixed in the Amsterdam release, refer to Jira link above.
+    The full list of implemented user stories and epics is available on `JIRA <https://jira.onap.org/secure/RapidBoard.jspa?rapidView=41&view=planning.nodetail&epics=visible>`_
+    This is the first release of OOM, the defects fixed in this release were raised during the course of the release.
+    Anything not closed is captured below under Known Issues. If you want to review the defects fixed in the Amsterdam release, refer to Jira link above.
 
 **Known Issues**
-	- `OOM-6 <https://jira.onap.org/browse/OOM-6>`_ Automated platform deployment on Docker/Kubernetes - VFC, AAF, MSB minor issues.
+    `OOM-6 <https://jira.onap.org/browse/OOM-6>`_ Automated platform deployment on Docker/Kubernetes - VFC, AAF, MSB minor issues.
 
         Workaround:
 
-        Manual configuration changes - however the reference vFirewall use case does not currently require these components
+    Manual configuration changes - however the reference vFirewall use case does not currently require these components
 .
     - `OOM-10 <https://jira.onap.org/browse/OOM-10>`_ Platform configuration management.
 
@@ -45,7 +45,7 @@ The main goal of the Amsterdam release was to:
 
 
 **Security Issues**
-	N/A
+    N/A
 
 
 **Upgrade Notes**
