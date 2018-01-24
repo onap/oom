@@ -246,8 +246,11 @@ then
     if [ "$DNSAAS_PROXY_ENABLE" = "true" ]
     then
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$DCAE_PROXIED_KEYSTONE_URL,g" {} \;
-    else
+    elif [ "$IS_SAME_OPENSTACK_AS_VNF" = "false" ]
+    then
         find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$DCAE_OS_KEYSTONE_URL/$DCAE_OS_API_VERSION,g" {} \;
+    else
+        find /config-init/$NAMESPACE/dcaegen2/heat/ -type f -exec sed -i -e "s,DCAE_FINAL_KEYSTONE_URL_HERE,$OPENSTACK_KEYSTONE_URL/$OPENSTACK_API_VERSION,g" {} \;
     fi
 fi
 
