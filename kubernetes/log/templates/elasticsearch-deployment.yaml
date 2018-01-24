@@ -18,9 +18,14 @@ spec:
     spec:
       initContainers:
       - command:
-        - sysctl
-        - -w
-        - vm.max_map_count=262144
+        - /bin/sh
+        - -c
+        - |
+          sysctl -w vm.max_map_count=262144
+          mkdir -p /logroot/elasticsearch/logs
+          mkdir -p /logroot/elasticsearch/data
+          chmod -R 777 /logroot/elasticsearch
+          chown -R root:root /logroot
         env:
         - name: NAMESPACE
           valueFrom:
@@ -32,6 +37,9 @@ spec:
         image: {{ .Values.image.es_bb }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: init-sysctl
+        volumeMounts:
+        - name: elasticsearch-logs
+          mountPath: /logroot/
       containers:
       - name: elasticsearch
         image: {{ .Values.image.elasticsearch}}
@@ -59,7 +67,7 @@ spec:
             claimName: elasticsearch-db
         - name: elasticsearch-logs
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/elasticsearch/logs
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/
         - name: elasticsearch-conf
           configMap:
             name: elasticsearch-configmap
