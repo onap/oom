@@ -22,40 +22,40 @@ function configure_dns_designate() {
 
         echo "Create CNAMEs for $SIMPLEDEMO_ONAP_ORG_ZONE_NAME"
         # AAI
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.aai.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.aai.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.aai.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.ui.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.searchservice.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.aai.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.aai.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.aai.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.ui.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.aai.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID aai.searchservice.$RANDOM_STRING.simpledemo.onap.org.
 
         # SDC
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.sdc.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.sdc.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.sdc.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c4.vm1.sdc.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.sdc.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.sdc.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.sdc.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.sdc.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c4.vm1.sdc.$RANDOM_STRING.simpledemo.onap.org.
 
         # Policy
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c4.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c5.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c6.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c7.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c8.vm1.policy.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID policy.api.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c1.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c2.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c3.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c4.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c5.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c6.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c7.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID c8.vm1.policy.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.policy.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID policy.api.$RANDOM_STRING.simpledemo.onap.org.
 
         # MR
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.mr.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID ueb.api.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.mr.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID ueb.api.$RANDOM_STRING.simpledemo.onap.org.
 
         # Open-O
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID msb.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID mvim.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID vnfsdk.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID vfc.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID uui.api.simpledemo.onap.org.
-        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID esr.api.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID msb.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID mvim.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID vnfsdk.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID vfc.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID uui.api.$RANDOM_STRING.simpledemo.onap.org.
+        openstack recordset create --type=CNAME --ttl=86400 --records=vm1.openo.$RANDOM_STRING.simpledemo.onap.org. $SIMPLEDEMO_ONAP_ORG_ZONE_ID esr.api.$RANDOM_STRING.simpledemo.onap.org.
     fi
 }
 
@@ -113,6 +113,7 @@ STACK_NAME="dcae"
 # DNS variables
 SIMPLEDEMO_ONAP_ORG_ZONE_NAME="simpledemo.onap.org."
 SIMPLEDEMO_ONAP_ORG_ZONE_ID=""
+RANDOM_STRING=""
 
 # Install required packages to interfact with OpenStack CLIs
 apt update -y
@@ -151,6 +152,10 @@ then
     # get the DCAE Boostrap VM ip, to configure Robot with it, for Healthcheck
     DCAE_CONTROLLER_IP=`openstack stack output show dcae dcae_floating_ip -c output_value -f yaml | awk '{ print $2}'`
     sed -i -e "s/DCAE_CONTROLLER_IP_HERE/$DCAE_CONTROLLER_IP/g" /opt/robot/vm_properties.py;
+
+    # Retrieve current deployment random string
+    RANDOM_STRING=`openstack stack output show dcae random_string -c output_value -f yaml | awk '{ print $2}'`
+    SIMPLEDEMO_ONAP_ORG_ZONE_NAME="$RANDOM_STRING.$SIMPLEDEMO_ONAP_ORG_ZONE_NAME"
 fi
 
 # Source OpenStack parameters for DNS Designate
