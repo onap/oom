@@ -185,12 +185,6 @@ SED_CONFIG_STRINGS=( \
 SED_CONFIG_STRING=$(concat_array "${SED_CONFIG_STRINGS[@]}")
 find $SED_CONFIG_PATHS -type f -exec sed -i -e "${SED_CONFIG_STRING}" {} \;
 
-# Instal kubectl commands
-apt -y install curl
-curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-mv ./kubectl /usr/local/bin/kubectl
-
 if [ "$DEPLOY_DCAE" = "true" ]
 then
     SED_CONFIG_PATHS="/config-init/$NAMESPACE/dcaegen2/heat/"
