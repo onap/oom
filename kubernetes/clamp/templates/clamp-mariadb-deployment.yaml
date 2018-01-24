@@ -25,9 +25,14 @@ spec:
           - name: MYSQL_ROOT_PASSWORD
             value: {{ .Values.mysqlPassword }}
         volumeMounts:
-        - mountPath: /docker-entrypoint-initdb.d
+        - mountPath: /docker-entrypoint-initdb.d/load-sql-files-tests-automation.sh
           name: docker-entrypoint-initdb
-        - mountPath: /etc/mysql/conf.d
+          subPath: load-sql-files-tests-automation.sh
+        - mountPath: /docker-entrypoint-initdb.d/drop/
+          name: docker-entrypoint-clds-drop
+        - mountPath: /docker-entrypoint-initdb.d/bulkload/
+          name: docker-entrypoint-bulkload
+        - mountPath: /etc/mysql/conf.d/conf1/
           name:  clamp-mariadb-conf
         - mountPath: /var/lib/mysql
           name: clamp-mariadb-data
@@ -38,11 +43,17 @@ spec:
           periodSeconds: 10
       volumes:
         - name: docker-entrypoint-initdb
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/clamp/mariadb/docker-entrypoint-initdb.d
+          configMap:
+            name: clamp-entrypoint-initdb-configmap
+        - name: docker-entrypoint-clds-drop
+          configMap:
+            name: clamp-entrypoint-drop-configmap
+        - name: docker-entrypoint-bulkload
+          configMap:
+            name: clamp-entrypoint-bulkload-configmap
         - name: clamp-mariadb-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/clamp/mariadb/conf.d
+          configMap:
+            name: clamp-mariadb-conf-configmap
         - name: clamp-mariadb-data
           persistentVolumeClaim:
             claimName: clamp-db
