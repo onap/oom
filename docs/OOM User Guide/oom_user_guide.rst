@@ -10,10 +10,10 @@ Introduction
 ============
 
 The ONAP Operations Manager (OOM) is responsible for life-cycle
-management of the ONAP platform itself; components such as MSO, SDNC,
+management of the ONAP platform itself; components such as SO, SDNC,
 etc. It is not responsible for the management of services, VNFs or
 infrastructure instantiated by ONAP or used by ONAP to host such
-services or VNFs. OOM uses the open-source Kubernetes container
+services or VNFs. OOM uses the open source Kubernetes container
 management system as a means to manage the Docker containers that
 compose ONAP where the containers are hosted either directly on
 bare-metal servers or on VMs hosted by a 3rd party management system.
@@ -21,10 +21,10 @@ OOM ensures that ONAP is easily deployable and maintainable throughout
 its life cycle while using hardware resources efficiently. There are two
 deployment options for OOM:
 
--  A minimal deployment where single instances of the ONAP components
+-  *A minimal deployment* where single instances of the ONAP components
    are instantiated with no resource reservations, and
 
--  | A production deployment where ONAP components are deployed with
+-  | *A production deployment* where ONAP components are deployed with
      redundancy and anti-affinity rules such that single faults do not
      interrupt ONAP operation.
    | When deployed as containers directly on bare-metal, the minimal
@@ -34,14 +34,14 @@ deployment options for OOM:
      resources as determined by anti-affinity and geo-redundancy
      requirements.
 
-OOM deployments of ONAP provide many benefits:
+**OOM deployments of ONAP provide many benefits:**
 
--  Life-cycle Management Kubernetes is a comprehensive system for
+-  *Life-cycle management*. Kubernetes is a comprehensive system for
    managing the life-cycle of containerized applications. Its use as a
    platform manager will ease the deployment of ONAP, provide fault
    tolerance and horizontal scalability, and enable seamless upgrades.
 
--  Hardware Efficiency ONAP can be deployed on a single host using less
+-  *Hardware Efficiency*. ONAP can be deployed on a single host using less
    than 32GB of memory. As opposed to VMs that require a guest operating
    system be deployed along with the application, containers provide
    similar application encapsulation with neither the computing, memory
@@ -50,42 +50,42 @@ OOM deployments of ONAP provide many benefits:
    be able to create a development deployment of ONAP that can be hosted
    on a laptop.
 
--  Rapid Deployment With locally cached images ONAP can be deployed from
+-  *Rapid deployment*. With locally cached images, ONAP can be deployed from
    scratch in 7 minutes. Eliminating the guest operating system results
    in containers coming into service much faster than a VM equivalent.
    This advantage can be particularly useful for ONAP where rapid
    reaction to inevitable failures will be critical in production
    environments.
 
--  Portability OOM takes advantage of Kubernetes' ability to be hosted
+-  *Portability*. OOM takes advantage of Kubernetes' ability to be hosted
    on multiple hosted cloud solutions like Google Compute Engine, AWS
    EC2, Microsoft Azure, CenturyLink Cloud, IBM Bluemix and more.
 
--  Minimal Impact As ONAP is already deployed with Docker containers
+-  *Minimal impact*. As ONAP is already deployed with Docker containers
    minimal changes are required to the components themselves when
    deployed with OOM.
 
-Features of OOM:
+**Features of OOM:**
 
--  Platform Deployment Automated deployment/un-deployment of ONAP
-   instance(s) / Automated deployment/un-deployment of individual
-   platform components using docker containers & kubernetes
+-  *Platform Deployment*. Automated deployment/un-deployment of ONAP
+   instance(s) / automated deployment/un-deployment of individual
+   platform components using Docker containers & Kubernetes.
 
--  Platform Monitoring & healing Monitor platform state, Platform health
-   checks, fault tolerance and self-healing using docker containers &
-   kubernetes
+-  *Platform Monitoring & Healing*. Monitor platform state, platform health
+   checks, fault tolerance and self-healing using Docker containers &
+   Kubernetes.
 
--  Platform Scaling Platform horizontal scalability through using docker
-   containers & kubernetes
+-  *Platform Scaling*. Platform horizontal scalability through using Docker
+   containers & Kubernetes.
 
--  Platform Upgrades Platform upgrades using docker containers &
-   kubernetes
+-  *Platform Upgrades*. Platform upgrades using Docker containers &
+   Kubernetes.
 
--  Platform Configurations Manage overall platform components
-   configurations using docker containers & kubernetes
+-  *Platform Configurations*. Manage overall platform components
+   configurations using Docker containers & Kubernetes.
 
--  | Platform migrations Manage migration of platform components using
-     docker containers & kubernetes
+-  | *Platform migrations*. Manage migration of platform components using
+     Docker containers & Kubernetes.
    | Please note that the ONAP Operations Manager does not provide
      support for containerization of services or VNFs that are managed
      by ONAP; the OOM orchestrates the life-cycle of the ONAP platform
@@ -125,7 +125,7 @@ stopped and deleted. These life-cycle operations are managed by
 the \ `Kubernetes <https://kubernetes.io/>`__ container management
 system which maintains the desired state of the container system as
 described by one or more deployment descriptors - similar in concept to
-OpenStack HEAT Orchestration Templates. The following sections describe
+OpenStack Heat Orchestration Templates. The following sections describe
 the fundamental objects managed by Kubernetes, the network these
 components use to communicate with each other and other entities outside
 of ONAP and the templates that describe the configuration and desired
@@ -137,7 +137,7 @@ ONAP Components to Kubernetes Object Relationships
 Kubernetes deployments consist of multiple objects:
 
 -  nodes - a worker machine - either physical or virtual - that hosts
-   multiple containers managed by kubernetes.
+   multiple containers managed by Kubernetes.
 
 -  services - an abstraction of a logical set of pods that provide a
    micro-service.
@@ -152,7 +152,7 @@ The relationship between these objects is shown in the following figure:
 
 .. figure:: ../kubernetes_objects.png
 
-OOM uses these kubernetes objects as described in the following
+OOM uses these Kubernetes objects as described in the following
 sections.
 
 Nodes
@@ -181,15 +181,15 @@ OOM works with both physical and virtual worker machines.  
    to use
    `Rancher <http://rancher.com/docs/rancher/v1.6/en/quick-start-guide/>`__
    along with `Helm <https://github.com/kubernetes/helm/releases>`__ to
-   associate hosts with a kubernetes cluster.
+   associate hosts with a Kubernetes cluster.
 
 Pods
 ~~~~
 
 A group of containers with shared storage and networking can be grouped
-together into a kubernetes pod.  All of the containers within a pod are
+together into a Kubernetes pod.  All of the containers within a pod are
 co-located and co-scheduled so they operate as a single unit.  Within
-ONAP Amsterdam release, pods are mapped one-to-one to docker containers
+ONAP Amsterdam release, pods are mapped one-to-one to Docker containers
 although this may change in the future.  As explained in the Services
 section below the use of Pods within each ONAP component is abstracted
 from other ONAP components.
@@ -197,13 +197,13 @@ from other ONAP components.
 Services
 ~~~~~~~~
 
-OOM uses the kubernetes service abstraction to provide a consistent
+OOM uses the Kubernetes service abstraction to provide a consistent
 access point for each of the ONAP components independent of the pod or
-container architecture of that component.  For example, the SDNC
+container architecture of that component. For example, the SDNC
 component may introduce OpenDaylight clustering as some point and change
 the number of pods in this component to three or more but this change
 will be isolated from the other ONAP components by the service
-abstraction.  A service can include a load balancer on its ingress to
+abstraction. A service can include a load balancer on its ingress to
 distribute traffic between the pods and even react to dynamic changes in
 the number of pods if they are part of a replica set (see the MSO
 example below for a brief explanation of replica sets).
@@ -213,7 +213,7 @@ Persistent Volumes
 
 As pods and containers are ephemeral, any data that must be persisted
 across pod restart events needs to be stored outside of the pod in a
-persistent volume(s).  Kubernetes supports a wide variety of types of
+persistent volume(s). Kubernetes supports a wide variety of types of
 persistent volumes such as: Fibre Channel, NFS, iSCSI, CephFS, and
 GlusterFS (for a full list look
 `here <https://kubernetes.io/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes>`__)
@@ -231,7 +231,7 @@ OOM Networking with Kubernetes
 Name Spaces
 ~~~~~~~~~~~
 
-Within the namespaces are kubernete's services that provide external
+Within the namespaces are Kubernete's services that provide external
 connectivity to pods that host Docker containers. The following is a
 list of the namespaces and the services within:
 
@@ -378,8 +378,8 @@ Kubernetes Deployment Specifications for ONAP
 
 Each of the ONAP components are deployed as described in a deployment
 specification.  This specification documents key parameters and
-dependencies between the pods of an ONAP components such that kubernetes
-is able to repeatably startup the component.  The components artifacts
+dependencies between the pods of an ONAP components such that Kubernetes
+is able to repeatably startup the component. The components artifacts
 are stored here in the oom/kubernetes repo in \ `ONAP
 gerrit <https://gerrit.onap.org/r/gitweb?p=oom.git;a=tree;f=kubernetes;h=4597d09dbce86d7543174924322435c30cb5b0ee;hb=refs/heads/master>`__.
 The mso project is a relatively simple example, so let's start there.
@@ -473,20 +473,20 @@ specification for a mariadb pod.
 
 The spec section starts off with 'replicas: 1' which states that only 1
 'replica' will be use here.  If one was to change the number of replicas
-to 3 for example, kubernetes would attempt to ensure that three replicas
-of this pod are operational at all times.  One can see that in a
+to 3 for example, Kubernetes would attempt to ensure that three replicas
+of this pod are operational at all times. One can see that in a
 clustered environment the number of replicas should probably be more
 than 1 but for simple deployments 1 is sufficient.
 
-The selector label is a grouping primitive of kubernetes but this simple
+The selector label is a grouping primitive of Kubernetes but this simple
 example doesn't exercise it's full capabilities.
 
 The template/spec section is where the key information required to start
 this pod is found.
 
--  image: is a reference to the location of the docker image in nexus3
+-  image: is a reference to the location of the Docker image in nexus3
 
--  name: is the name of the docker image
+-  name: is the name of the Docker image
 
 -  env is a section supports the creation of operating system
    environment variables within the container and are specified as a set
@@ -501,14 +501,14 @@ this pod is found.
    space by creating a 'nodePort' - a mechanism used to resolve port
    duplication.
 
--  readinessProbe: is the mechanism kubernetes uses to determine the
+-  readinessProbe: is the mechanism Kubernetes uses to determine the
    state of the container. 
 
 -  volumes: a location to define volumes required by the container, in
    this case configuration and initialization information.
 
 -  imagePullSecrets: an key to access the nexus3 repo when pulling
-   docker containers.
+   Docker containers.
 
 As one might image, the mso-deployment.yaml file describes the
 deployment artifacts of the mso application.  Here are the contents:
@@ -614,7 +614,7 @@ relationships need to be specified.
 In this particular init-container, the command '/root/ready.py' will be
 executed to determine when mariadb is ready, but this could be a simple
 bash script. The image/name section describes where and how to get the
-docker image from the init-container.
+Docker image from the init-container.
 
 To ensure that data isn't lost when an ephemeral container undergoes
 life-cycle events (like being restarted), non-volatile or persistent
@@ -656,7 +656,7 @@ mso namespace.
         name: "{{ .Values.nsPrefix }}-mso-db"
 
 The last of the four files is the all-services.yaml file which defines
-the kubernetes service(s) that will be exposed in this name space. Here
+the Kubernetes service(s) that will be exposed in this name space. Here
 is the contents of the file:
 
 **all-services.yaml**::
@@ -725,16 +725,16 @@ is the contents of the file:
     type: NodePort
 
 First of all, note that this file is really two service specification in
-a single file: the mariadb service and the mso service.  In some
+a single file: the mariadb service and the mso service. In some
 circumstances it may be possible to hide some of the complexity of the
 containers/pods by hiding them behind a single service.
 
 The mariadb service specification is quite simple; other than the name
-the only section of interest is the nodePort specification.  When
-containers require exposing ports to the world outside of a kubernetes
+the only section of interest is the nodePort specification. When
+containers require exposing ports to the world outside of a Kubernetes
 namespace, there is a potential for port conflict. To resolve this
-potential port conflict kubernetes uses the concept of a nodePort that
-is mapped one-to-one with a port within the namespace.  In this case the
+potential port conflict Kubernetes uses the concept of a nodePort that
+is mapped one-to-one with a port within the namespace. In this case the
 port 3306 (which was defined in the db-deployment.yaml file) is mapped
 to 30252 externally thus avoiding the conflict that would have arisen
 from deployment multiple mariadb containers.
@@ -768,10 +768,10 @@ Development Deployments
 
 For the Amsterdam release, the deployment specifications represent a
 simple simplex deployment of ONAP that may not have the robustness
-typically required of a full operational deployment.  Follow on releases
+typically required of a full operational deployment. Follow on releases
 will enhance these deployment specifications as follows:
 
--  Load Balancers - kubernets has built in support for user defined or
+-  Load Balancers - Kubernetes has built in support for user defined or
    simple 'ingress' load balances at the service layer to hide the
    complexity of multi-pod deployments from other components.
 
@@ -786,20 +786,20 @@ will enhance these deployment specifications as follows:
 Kubernetes Under-Cloud Deployments
 ==================================
 
-The automated ONAP deployment depends on a fully functional kubernetes
+The automated ONAP deployment depends on a fully functional Kubernetes
 environment being available prior to ONAP installation. Fortunately,
-kubenetes is supported on a wide variety of systems such as Google
+Kubenetes is supported on a wide variety of systems such as Google
 Compute Engine, `AWS
 EC2 <https://wiki.onap.org/display/DW/ONAP+on+AWS#ONAPonAWS-Option0:DeployOOMKubernetestoaspotVM>`__,
 Microsoft Azure, CenturyLink Cloud, IBM Bluemix and more.  If you're
-setting up your own kubernetes environment, please refer to \ `ONAP on
+setting up your own Kubernetes environment, please refer to \ `ONAP on
 Kubernetes <file:///C:\display\DW\ONAP+on+Kubernetes>`__ for a walk
 through of how to set this environment up on several platforms.
 
 ONAP 'OneClick' Deployment Walk-though
 ======================================
 
-Once a kubernetes environment is available and the deployment artifacts
+Once a Kubernetes environment is available and the deployment artifacts
 have been customized for your location, ONAP is ready to be installed. 
 
 The first step is to setup
@@ -807,44 +807,29 @@ the \ `/oom/kubernetes/config/onap-parameters.yaml <https://gerrit.onap.org/r/g
 with key-value pairs specific to your OpenStack environment.  There is
 a \ `sample  <https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/config/onap-parameters-sample.yaml;h=3a74beddbbf7f9f9ec8e5a6abaecb7cb238bd519;hb=refs/heads/master>`__\ that
 may help you out or even be usable directly if you don't intend to
-actually use OpenStack resources.  Here is the contents of this file:
+actually use OpenStack resources. Here is the contents of this file:
 
-**onap-parameters-sample.yaml**
+**onap-parameters-sample.yaml**::
 
-  .. literalinclude:: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob_plain;f=kubernetes/config/onap-parameters-sample.yaml;hb=refs/heads/master
-
-OPENSTACK\_UBUNTU\_14\_IMAGE: "Ubuntu\_14.04.5\_LTS"
-
-OPENSTACK\_PUBLIC\_NET\_ID: "e8f51956-00dd-4425-af36-045716781ffc"
-
-OPENSTACK\_OAM\_NETWORK\_ID: "d4769dfb-c9e4-4f72-b3d6-1d18f4ac4ee6"
-
-OPENSTACK\_OAM\_SUBNET\_ID: "191f7580-acf6-4c2b-8ec0-ba7d99b3bc4e"
-
-OPENSTACK\_OAM\_NETWORK\_CIDR: "192.168.30.0/24"
-
-OPENSTACK\_USERNAME: "vnf\_user"
-
-OPENSTACK\_API\_KEY: "vnf\_password"
-
-OPENSTACK\_TENANT\_NAME: "vnfs"
-
-OPENSTACK\_REGION: "RegionOne"
-
-OPENSTACK\_KEYSTONE\_URL: "http://1.2.3.4:5000"
-
-OPENSTACK\_FLAVOUR\_MEDIUM: "m1.medium"
-
-OPENSTACK\_SERVICE\_TENANT\_NAME: "services"
-
-DMAAP\_TOPIC: "AUTO"
-
-DEMO\_ARTIFACTS\_VERSION: "1.1.0-SNAPSHOT"
+  OPENSTACK_UBUNTU_14_IMAGE: "Ubuntu_14.04.5_LTS"
+  OPENSTACK_PUBLIC_NET_ID: "e8f51956-00dd-4425-af36-045716781ffc"
+  OPENSTACK_OAM_NETWORK_ID: "d4769dfb-c9e4-4f72-b3d6-1d18f4ac4ee6"
+  OPENSTACK_OAM_SUBNET_ID: "191f7580-acf6-4c2b-8ec0-ba7d99b3bc4e"
+  OPENSTACK_OAM_NETWORK_CIDR: "192.168.30.0/24"
+  OPENSTACK_USERNAME: "vnf_user"
+  OPENSTACK_API_KEY: "vnf_password"
+  OPENSTACK_TENANT_NAME: "vnfs"
+  OPENSTACK_REGION: "RegionOne"
+  OPENSTACK_KEYSTONE_URL: "http://1.2.3.4:5000"
+  OPENSTACK_FLAVOUR_MEDIUM: "m1.medium"
+  OPENSTACK_SERVICE_TENANT_NAME: "services"
+  DMAAP_TOPIC: "AUTO"
+  DEMO_ARTIFACTS_VERSION: "1.1.0-SNAPSHOT"
 
 Note that these values are required or the following steps will fail.
 
 In-order to be able to support multiple ONAP instances within a single
-kubernetes environment a configuration set is required.  The
+Kubernetes environment a configuration set is required. The
 `createConfig.sh <https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/config/createConfig.sh;h=f226ccae47ca6de15c1da49be4b8b6de974895ed;hb=refs/heads/master>`__
 script is used to do this.
 
@@ -854,7 +839,7 @@ script is used to do this.
 
 The bash
 script \ `createAll.bash <https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/oneclick/createAll.bash;h=5e5f2dc76ea7739452e757282e750638b4e3e1de;hb=refs/heads/master>`__ is
-used to create an ONAP deployment with kubernetes. It has two primary
+used to create an ONAP deployment with Kubernetes. It has two primary
 functions:
 
 -  Creating the namespaces used to encapsulate the ONAP components, and
@@ -873,7 +858,7 @@ that can be used to separate multiple deployments of onap. The result
 will be set of 10 namespaces (e.g. onapTrial-sdc, onapTrial-aai,
 onapTrial-mso, onapTrial-message-router, onapTrial-robot, onapTrial-vid,
 onapTrial-sdnc, onapTrial-portal, onapTrial-policy, onapTrial-appc)
-being created within the kubernetes environment.  A prerequisite pod
+being created within the Kubernetes environment. A prerequisite pod
 config-init (\ `pod-config-init.yaml <https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/config/pod-config-init.yaml;h=b1285ce21d61815c082f6d6aa3c43d00561811c7;hb=refs/heads/master>`__)
 may editing to match you environment and deployment into the default
 namespace before running createAll.bash.
@@ -891,16 +876,16 @@ integration will be done:
 A registrator to push the service endpoint info to MSB service
 discovery. 
 
--  The needed service endpoint info is put into the kubernetes yaml file
+-  The needed service endpoint info is put into the Kubernetes YAML file
    as annotation, including service name, Protocol,version, visual
    range,LB method, IP, Port,etc.
 
 -  OOM deploy/start/restart/scale in/scale out/upgrade ONAP components
 
--  Registrator watch the kubernetes event
+-  Registrator watch the Kubernetes event
 
 -  When an ONAP component instance has been started/destroyed by OOM,
-   Registrator get the notification from kubernetes
+   Registrator get the notification from Kubernetes
 
 -  Registrator parse the service endpoint info from annotation and
    register/update/unregister it to MSB service discovery
@@ -925,9 +910,9 @@ A message sequence chart of the registration process:
 
 MSB Usage Instructions
 ----------------------
-MSB provides kubernetes charts in OOM, so it can be spun up by oom oneclick command.
+MSB provides Kubernetes charts in OOM, so it can be spun up by oom oneclick command.
 
-Please note that kubernetes authentication token must be set at *kubernetes/kube2msb/values.yaml* so the kube2msb registrator can get the access to watch the kubernetes events and get service annotation by kubernetes APIs. The token can be found in the kubectl configuration file *~/.kube/config*
+Please note that Kubernetes authentication token must be set at *kubernetes/kube2msb/values.yaml* so the kube2msb registrator can get the access to watch the Kubernetes events and get service annotation by Kubernetes APIs. The token can be found in the kubectl configuration file *~/.kube/config*
 
 MSB and kube2msb can be spun up with all the ONAP components together, or separately using the following commands.
 
