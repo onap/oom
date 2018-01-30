@@ -1,4 +1,12 @@
 #{{ if not .Values.disableSdncUeb }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sdnc-ueb-listener
+  namespace: {{ .Values.nsPrefix }}-sdnc
+data:
+{{ tpl (.Files.Glob "resources/ueb/ueb-listener.properties").AsConfig . | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -53,8 +61,8 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: ueb-config
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/ueb/ueb-listener.properties
+          configMap:
+            name: sdnc-ueb-listener
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

@@ -1,4 +1,12 @@
 #{{ if not .Values.disableSdncDmaap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sdnc-dmaap-dhcpalert
+  namespace: {{ .Values.nsPrefix }}-sdnc
+data:
+{{ tpl (.Files.Glob "resources/dmaap/dhcpalert.properties").AsConfig . | indent 2 }}
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -53,8 +61,8 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: dmaap-dhcapalert-config
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/dmaap/dhcpalert.properties
+          configMap:
+            name: sdnc-dmaap-dhcpalert
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
