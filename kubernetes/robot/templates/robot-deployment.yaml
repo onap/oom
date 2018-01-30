@@ -15,21 +15,26 @@ spec:
        name: robot
     spec:
       containers:
-      - image: {{ .Values.image.testsuite }}
+      - command:
+        - bash
+        - "-c"
+        - |
+          git clone -b amsterdam --single-branch http://gerrit.onap.org/r/demo.git /tmp/demo
+          mkdir -p /share/heat && cp -rf /tmp/demo/heat /share
+          git clone -b amsterdam --single-branch http://gerrit.onap.org/r/testsuite/properties.git /tmp/testsuite/properties
+          mkdir -p /share/config && cp /tmp/testsuite/properties/integration_* /share/config
+          lighttpd -D -f /etc/lighttpd/lighttpd.conf
+        image: {{ .Values.image.testsuite }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: robot
         volumeMounts:
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
-        - name: robot-eteshare
-          mountPath: /share
         - name: robot-resources-asdc-interface
           mountPath: /var/opt/OpenECOMP_ETE/robot/resources/asdc_interface.robot
-        - name: robot-resources-policy-interface
-          mountPath: /var/opt/OpenECOMP_ETE/robot/resources/policy_interface.robot
-        - name: robot-resources-sdngc-interface
-          mountPath: /var/opt/OpenECOMP_ETE/robot/resources/sdngc_interface.robot
+        - name: robot-eteshare
+          mountPath: /share
         - name: lighttpd-authorization
           mountPath: /etc/lighttpd/authorization
         ports:
@@ -43,18 +48,12 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: robot-eteshare
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/eteshare
         - name: robot-resources-asdc-interface
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/asdc_interface.robot
-        - name: robot-resources-policy-interface
+        - name: robot-eteshare
           hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/policy_interface.robot
-        - name: robot-resources-sdngc-interface
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/robot/resources/sdngc_interface.robot
+            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/eteshare
         - name: lighttpd-authorization
           hostPath:
             path: /dockerdata-nfs/{{ .Values.nsPrefix }}/robot/authorization
