@@ -14,7 +14,6 @@ spec:
         app: multicloud-vio
       name: multicloud-vio
     spec:
-     hostname: multicloud-vio
      containers:
      - env:
        - name: MSB_ADDR
@@ -33,8 +32,10 @@ spec:
          value: "AAI"
        name: multicloud-vio
        volumeMounts:
-       - mountPath: /service/vio/logs
+       - mountPath: /opt/vio/logs
          name: vio-log
+       - mountPath: /opt/vio/vio/log.conf
+         name: vio-logconf
        image: {{ .Values.image.vio }}
        imagePullPolicy: {{ .Values.pullPolicy }}
        ports:
@@ -49,11 +50,24 @@ spec:
          timeoutSeconds: 10
          successThreshold: 1
          failureThreshold: 5
-     restartPolicy: Always
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+       - mountPath: /var/log/onap/multicloud/vio
+         name: vio-log
      volumes:
      - name: vio-log
+       emptyDir: {}
+     - name: filebeat-conf
        hostPath:
-         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/vio/logs
+        path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+     - name: vio-logconf
+       hostPath:
+        path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/multicloud/vio_log.conf
      imagePullSecrets:
      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}
