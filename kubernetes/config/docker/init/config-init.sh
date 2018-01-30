@@ -267,8 +267,8 @@ UEB_ADDR_IP=$(kubectl get nodes -o jsonpath='{ $.items[*].status.addresses[?(@.t
 # Also, this list has to be comma seperated.
 if [ `echo $UEB_ADDR_IP | wc -w` -gt "1" ]
 then
-    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /","/'`
-    UEB_ADDR_IP_COMMA_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /,/'`
+    UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /","/g'`
+    UEB_ADDR_IP_COMMA_SEPERATED=`echo $UEB_ADDR_IP | sed 's/ /,/g'`
 else
     UEB_ADDR_IP_COMMA_AND_QUOTE_SEPERATED="$UEB_ADDR_IP\",\"$UEB_ADDR_IP"
     UEB_ADDR_IP_COMMA_SEPERATED="$UEB_ADDR_IP,$UEB_ADDR_IP"
