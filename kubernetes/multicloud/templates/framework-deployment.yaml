@@ -14,7 +14,6 @@ spec:
         app: framework
       name: framework
     spec:
-     hostname: framework
      containers:
      - env:
        - name: MSB_ADDR
@@ -31,12 +30,14 @@ spec:
          value: "AAI"
        - name: AAI_PASSWORD
          value: "AAI"
-       name: framework
-       volumeMounts:
-       - mountPath: /service/multivimbroker/logs
-         name: framework-log
        image: {{ .Values.image.framework }}
        imagePullPolicy: {{ .Values.pullPolicy }}
+       name: framework
+       volumeMounts:
+       - mountPath: /opt/multivimbroker/logs
+         name: framework-log
+       - mountPath: /opt/multivimbroker/multivimbroker/log.conf
+         name: framework-logconf
        ports:
        - containerPort: 9001
        livenessProbe:
@@ -49,11 +50,24 @@ spec:
          timeoutSeconds: 10
          successThreshold: 1
          failureThreshold: 5
-     restartPolicy: Always
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+       - mountPath: /var/log/onap/multicloud/framework
+         name: framework-log
      volumes:
      - name: framework-log
+       emptyDir: {}
+     - name: filebeat-conf
        hostPath:
-         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/multicloud/framework/logs
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+     - name: framework-logconf
+       hostPath:
+         path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/multicloud/framework_log.conf
      imagePullSecrets:
      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}
