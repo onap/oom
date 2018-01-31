@@ -101,33 +101,32 @@ do
         #parse yaml files
         for line in  `parse_yaml $filename`
         do
-                #find all image subtag inside converted values.yaml file's lines
-                if echo $line | grep -q $IMAGE_TEXT ; then
-                        #find imageName inside line
-                        imageName=`echo $line | awk -F "=" '{print $2}'`
-                        #remove attional prefix and postfix
-                        imageNameFinal=`echo "$imageName" | sed -e 's/^"//' -e 's/"$//' `
+                #skiping commented line
+                if [[ ${line:0:1} != '#' ]]; then
+                        #find all image subtag inside converted values.yaml file's lines
+                        if echo $line | grep -q $IMAGE_TEXT ; then
+                                #find imageName inside line
+                                imageName=`echo $line | awk -F "=" '{print $2}'`
+                                #remove attional prefix and postfix
+                                imageNameFinal=`echo "$imageName" | sed -e 's/^"//' -e 's/"$//' `
 
-                        #check if line contain Version as a subtag in lines if yes then call docker pull with version
-                        if echo $line | grep -q $IMAGE_VERSION_TEXT ; then
-                                echo docker pull "$imageNameWithVersion":"$imageNameFinal"
-                                docker pull $imageNameWithVersion:$imageNameFinal &
-                                imageNameWithVersion=" "
-                        else
-                                #check Version is not in subtag and old scanned value is present then call docker pull without version
-                                if [ "$imageNameWithVersion" != " " ]; then
-                                        echo docker pull "$imageNameWithVersion"
-                                        docker pull $imageNameWithVersion &
-                                        imageNameWithVersion=$imageNameFinal
+                        	#check if line contain Version as a subtag in lines if yes then call docker pull with version
+                                if echo $line | grep -q $IMAGE_VERSION_TEXT ; then
+                                        echo docker pull "$imageNameWithVersion":"$imageNameFinal"
+                                        docker pull $imageNameWithVersion:$imageNameFinal &
+                                        imageNameWithVersion=" "
                                 else
-                                        imageNameWithVersion=$imageNameFinal
+                                        #check Version is not in subtag and old scanned value is present then call docker pull without version
+                                        if [ "$imageNameWithVersion" != " " ]; then
+                                                echo docker pull "$imageNameWithVersion"
+                                                docker pull $imageNameWithVersion &
+                                                imageNameWithVersion=$imageNameFinal
+                                        else
+                                                imageNameWithVersion=$imageNameFinal
+                                        fi
                                 fi
                         fi
-
-
                 fi
-
-
         done
 done
 # complete processing
