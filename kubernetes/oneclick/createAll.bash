@@ -86,8 +86,8 @@ create_onap_helm() {
 
   # assign default auth token
   if [[ -z $ONAP_DEFAULT_AUTH_TOKEN ]]; then
-    DEFAULT_SECRET=`kubectl get secrets -n kube-system | grep default-token |  awk '{ print $1}'`
-    ONAP_DEFAULT_AUTH_TOKEN=`kubectl get secrets $DEFAULT_SECRET -n kube-system -o yaml | grep  'token:'  | awk '{ print $2}' | base64 --decode`
+    DEFAULT_SECRET=`kubectl get secrets -n $1-$2 | grep default-token |  awk '{ print $1}'`
+    ONAP_DEFAULT_AUTH_TOKEN=`kubectl get secrets $DEFAULT_SECRET -n $1-$2 -o yaml | grep  'token:'  | awk '{ print $2}' | base64 --decode`
   fi
 
   cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3,kubeMasterAuthToken=$ONAP_DEFAULT_AUTH_TOKEN ${HELM_VALUES_ADDITION}`
