@@ -29,8 +29,21 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/search-data-service/config/
+        - mountPath: /opt/app/search-data-service/config/filter-config.json
+          subPath: filter-config.json
           name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/elastic-search.properties
+          subPath: elastic-search.properties
+          name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/analysis-config.json
+          subPath: filter-config.json
+          name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/auth/tomcat_keystore
+          subPath: tomcat_keystore
+          name: aai-search-data-service-auth-config
+        - mountPath: /opt/app/search-data-service/config/auth/search_policy.json
+          subPath: search_policy.json
+          name: aai-search-data-search-policy-config
         - mountPath: /var/log/onap
           name: aai-search-data-service-logs
         - mountPath: /opt/app/search-data-service/bundleconfig/etc/logback.xml
@@ -48,6 +61,7 @@ spec:
         imagePullPolicy: {{ .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
           name: aai-search-data-service-logs
@@ -58,11 +72,17 @@ spec:
         hostPath:
           path: /etc/localtime
       - name: aai-search-data-service-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/search-data-service/appconfig/"
+        configMap:
+          name: search-data-configmap
+      - name: aai-search-data-service-auth-config
+        secret:
+          secretName: search-data-keystone-secret
+      - name: aai-search-data-search-policy-config
+        configMap:
+          name: aai-search-policy-configmap
       - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        configMap:
+          name: aai-filebeat-configmap
       - name: aai-search-data-service-logs
         emptyDir: {}
       - name: aai-search-data-service-filebeat
