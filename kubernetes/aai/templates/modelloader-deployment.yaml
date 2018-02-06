@@ -25,8 +25,11 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/model-loader/config/
-          name: aai-model-loader-config
+        - mountPath: /opt/app/model-loader/config/model-loader.properties
+          subPath: model-loader.properties
+          name: aai-model-loader-prop-config
+        - mountPath: /opt/app/model-loader/config/auth/
+          name: aai-model-loader-auth-config
         - mountPath: /var/log/onap
           name: aai-model-loader-logs
         - mountPath: /opt/app/model-loader/bundleconfig/etc/logback.xml
@@ -40,6 +43,7 @@ spec:
         imagePullPolicy: {{ .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
           name: aai-model-loader-logs
@@ -49,12 +53,15 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aai-model-loader-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/model-loader/appconfig/"
+      - name: aai-model-loader-prop-config
+        configMap:
+          name: model-loader-prop-configmap
+      - name: aai-model-loader-auth-config
+        secret:
+          secretName: model-loader-secret
       - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        configMap:
+          name: aai-filebeat-configmap
       - name: aai-model-loader-logs
         emptyDir: {}
       - name: aai-model-loader-filebeat
