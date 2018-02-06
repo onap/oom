@@ -52,7 +52,10 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /var/chef/aai-data/
+        - mountPath: /var/chef/aai-data/chef-config/dev/.knife/solo.rb
+          subPath: solo.rb
+          name: aai-chef-config
+        - mountPath: /var/chef/aai-data/environments/
           name: aai-data
         - mountPath: /var/log/onap
           name: aai-traversal-logs
@@ -71,6 +74,7 @@ spec:
         imagePullPolicy: {{ .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
           name: aai-traversal-logs
@@ -80,12 +84,15 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: aai-chef-config
+        configMap:
+          name: aai-chef-config-configmap
       - name: aai-data
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/aai-data/"
+        configMap:
+          name: aai-resources-environments-configmap
       - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        configMap:
+          name: aai-filebeat-configmap
       - name: aai-traversal-logs
         emptyDir: {}
       - name: aai-traversal-filebeat
