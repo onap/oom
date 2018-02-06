@@ -14,6 +14,28 @@ spec:
         app: elasticsearch
       name: elasticsearch
     spec:
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - |
+          mkdir -p /logroot/elasticsearch/es-data
+          chmod -R 777 /logroot/elasticsearch/es-data
+          chown -R root:root /logroot
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        securityContext:
+          privileged: true
+        image: {{ .Values.image.es_bb }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: init-sysctl
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /logroot/
       hostname: elasticsearch
       containers:
       - name: elasticsearch
@@ -31,6 +53,7 @@ spec:
           mountPath: /etc/localtime
           readOnly: true
         - name: elasticsearch-config
+          subPath: elasticsearch.yml
           mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
         - name: elasticsearch-data
           mountPath: /usr/share/elasticsearch/data
@@ -39,11 +62,11 @@ spec:
         hostPath:
           path: /etc/localtime
       - name: elasticsearch-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/elasticsearch/config/elasticsearch.yml"
+        configMap:
+          name: aai-elasticsearch-configmap
       - name: elasticsearch-data
         hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/elasticsearch/es-data"
+          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/"
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
