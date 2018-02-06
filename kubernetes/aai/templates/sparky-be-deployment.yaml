@@ -29,8 +29,30 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/sparky/config/
+        - mountPath: /opt/app/sparky/config/auth/
+          name: aai-sparky-be-auth-config
+        - mountPath: /opt/app/sparky/config/synchronizer.properties
+          subPath: synchronizer.properties
           name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/suggestive-search.properties
+          subPath: suggestive-search.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/search-service.properties
+          subPath: search-service.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/roles.config
+          subPath: roles.config
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/elasticsearch.properties
+          subPath: elasticsearch.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/aai.properties
+          subPath: aai.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/model/
+          name: aai-sparky-be-model-config
+        - mountPath: /opt/app/sparky/config/portal/
+          name: aai-sparky-be-portal-config
         - mountPath: /var/log/onap
           name: aai-sparky-be-logs
         - mountPath: /opt/app/sparky/bundleconfig/etc/logback.xml
@@ -48,6 +70,7 @@ spec:
         imagePullPolicy: {{ .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
           name: aai-sparky-be-logs
@@ -58,11 +81,20 @@ spec:
         hostPath:
           path: /etc/localtime
       - name: aai-sparky-be-config
-        hostPath:
-          path: "/dockerdata-nfs/{{ .Values.nsPrefix }}/aai/sparky-be/appconfig/"
+        configMap:
+          name: sparky-be-configmap
+      - name: aai-sparky-be-model-config
+        configMap:
+          name: sparky-be-model-configmap
+      - name: aai-sparky-be-portal-config
+        configMap:
+          name: sparky-be-portal-configmap
+      - name: aai-sparky-be-auth-config
+        secret:
+          secretName: sparky-be-secret
       - name: filebeat-conf
-        hostPath:
-          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+        configMap:
+          name: aai-filebeat-configmap
       - name: aai-sparky-be-logs
         emptyDir: {}
       - name: aai-sparky-filebeat
