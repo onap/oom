@@ -73,7 +73,7 @@ spec:
           value: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
         - name: VID_MYSQL_MAXCONNECTIONS
           value: "5"
-        image: {{ .Values.image.vid }} 
+        image: {{ .Values.image.vid }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: vid-server
         lifecycle:
@@ -90,6 +90,7 @@ spec:
           name: vid-logs
         - mountPath: /tmp/logback.xml
           name: vid-logback
+          subPath: logback.xml
         readinessProbe:
           tcpSocket:
             port: 8080
@@ -101,6 +102,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
+          subPath: filebeat.yml
         - mountPath: /var/log/onap
           name: vid-logs
         - mountPath: /usr/share/filebeat/data
@@ -110,15 +112,15 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: filebeat-conf
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/filebeat/logback/filebeat.yml
+          configMap:
+            name: vid-filebeat-configmap
         - name: vid-logs
           emptyDir: {}
         - name: vid-data-filebeat
           emptyDir: {}
         - name: vid-logback
-          hostPath:
-            path: /dockerdata-nfs/{{ .Values.nsPrefix }}/log/vid/logback.xml
+          configMap:
+            name: vid-log-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
