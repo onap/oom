@@ -19,6 +19,7 @@ import os
 import tempfile
 from git import Repo
 
+
 def get_helm_path(url):
     tarball = _fetch_helm(url)
     helm_dir = _get_tmp_file_name()
@@ -33,6 +34,7 @@ def get_apps_root_path(git_url):
     apps_root = format(dst_repo_path)
     return apps_root
 
+
 def _fetch_helm(url):
     dst_tar_path = _get_tmp_file_name()
 
@@ -40,6 +42,7 @@ def _fetch_helm(url):
     file.retrieve(url, dst_tar_path)
 
     return dst_tar_path
+
 
 def _untar_helm_archive(tar_path, helm_dir):
     helm_tar = tarfile.open(tar_path)
@@ -58,5 +61,3 @@ def _find_file(filename, base_path):
 
 def _get_tmp_file_name():
     return '{}/{}'.format(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
-
-

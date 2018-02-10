@@ -18,6 +18,7 @@ from cloudify.exceptions import NonRecoverableError
 
 from fabric import api as fabric_api
 
+
 def _retrieve_namespace():
     namespace = ctx.node.properties.get(
         'namespace',

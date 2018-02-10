@@ -43,6 +43,7 @@ def do_delete_init_pod():
 
     ctx.logger.info('Init pod deleted successfully')
 
+
 def _add_openstack_envs(yaml_content):
     input_dict = yaml.load(yaml_content)
 
@@ -56,8 +57,10 @@ def _add_openstack_envs(yaml_content):
 
     return input_dict
 
+
 def _retrieve_root_path():
     return ctx.instance.runtime_properties.get(constants.RT_APPS_ROOT_PATH, None)
+
 
 def _retrieve_helm_cli_path():
     return ctx.instance.runtime_properties.get(constants.RT_HELM_CLI_PATH, None)

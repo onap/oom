@@ -55,8 +55,8 @@ def create_resoruces():
 
     ctx.logger.info('Resource created successfully')
 
-def delete_resoruces():
 
+def delete_resoruces():
     ctx.logger.info('Deleting resources')
     apps_path = _retrieve_root_path()
 
@@ -93,11 +93,13 @@ def create_resource(yaml_content_dict):
 
     if yaml_content_dict.get('kind', '') == 'PersistentVolumeClaim':
         ctx.logger.debug("PersistentVolumeClaim custom handling")
-        kubernetes_plugin.custom_resource_create(definition=yaml_content_dict, api_mapping=_get_persistent_volume_mapping_claim_api())
+        kubernetes_plugin.custom_resource_create(definition=yaml_content_dict,
+                                                 api_mapping=_get_persistent_volume_mapping_claim_api())
     else:
         kubernetes_plugin.resource_create(definition=yaml_content_dict)
 
     deployment_result.save_deployment_result('resource_{0}'.format(yaml_content_dict['metadata']['name']))
+
 
 def delete_resource(yaml_content_dict):
     ctx.logger.debug("Loading yaml: {}".format(yaml_content_dict))
@@ -105,7 +107,8 @@ def delete_resource(yaml_content_dict):
     deployment_result.save_deployment_result('resource_{0}'.format(yaml_content_dict['metadata']['name']))
     if yaml_content_dict.get('kind', '') == 'PersistentVolumeClaim':
         ctx.logger.debug("PersistentVolumeClaim custom handling")
-        kubernetes_plugin.custom_resource_delete(definition=yaml_content_dict, api_mapping=_get_persistent_volume_mapping_claim_api())
+        kubernetes_plugin.custom_resource_delete(definition=yaml_content_dict,
+                                                 api_mapping=_get_persistent_volume_mapping_claim_api())
     else:
         kubernetes_plugin.resource_delete(definition=yaml_content_dict)
 
@@ -123,22 +126,23 @@ def _exec_helm_template(helm_path, chart):
 
     return rendered
 
+
 def _get_persistent_volume_mapping_claim_api():
     api_mapping = {
-      'create' : {
-        'api': 'CoreV1Api',
-        'method': 'create_namespaced_persistent_volume_claim',
-        'payload': 'V1PersistentVolumeClaim'
-      },
-      'read' : {
-        'api': 'CoreV1Api',
-        'method': 'read_namespaced_persistent_volume_claim',
-      },
-      'delete': {
-        'api': 'CoreV1Api',
-        'method': 'delete_namespaced_persistent_volume_claim',
-        'payload': 'V1DeleteOptions'
-      }
+        'create': {
+            'api': 'CoreV1Api',
+            'method': 'create_namespaced_persistent_volume_claim',
+            'payload': 'V1PersistentVolumeClaim'
+        },
+        'read': {
+            'api': 'CoreV1Api',
+            'method': 'read_namespaced_persistent_volume_claim',
+        },
+        'delete': {
+            'api': 'CoreV1Api',
+            'method': 'delete_namespaced_persistent_volume_claim',
+            'payload': 'V1DeleteOptions'
+        }
     }
 
     return api_mapping
@@ -159,7 +163,7 @@ def _apply_readiness_workaround(yaml_file):
         for init_cont in init_cont_list:
             if "oomk8s/readiness-check" in init_cont['image']:
                 init_cont['image'] = "clfy/oomk8s-cfy-readiness-check:1.0.1"
-                #init_cont['imagePullPolicy'] = "IfNotPresent"
+                # init_cont['imagePullPolicy'] = "IfNotPresent"
                 init_cont['env'].append(b64_env)
                 new_cont = init_cont
                 new_init_cont_list.append(json.dumps(init_cont))
@@ -168,8 +172,8 @@ def _apply_readiness_workaround(yaml_file):
 
         if new_cont:
             input_dict['spec']['template']['metadata']['annotations'].pop('pod.beta.kubernetes.io/init-containers')
-            input_dict['spec']['template']['metadata']['annotations']['pod.beta.kubernetes.io/init-containers'] = '[{}]'.format(new_payload)
-
+            input_dict['spec']['template']['metadata']['annotations'][
+                'pod.beta.kubernetes.io/init-containers'] = '[{}]'.format(new_payload)
 
     except KeyError as ke:
         ctx.logger.debug('Readiness section is not found.')
@@ -208,6 +212,7 @@ def _retrieve_root_path():
 
     return apps_root_path
 
+
 def _retrieve_helm_cli_path():
     target_relationship = _retrieve_depends_on()
 
@@ -217,11 +222,13 @@ def _retrieve_helm_cli_path():
 
     return helm_cli_path
 
+
 def _retrieve_depends_on():
     result = None
     for relationship in ctx.instance.relationships:
         if relationship.type == 'cloudify.relationships.depends_on':
             return relationship.target
+
 
 def _retrieve_managed_by_master():
     result = None
