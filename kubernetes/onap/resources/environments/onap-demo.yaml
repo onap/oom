@@ -1,0 +1,71 @@
+#################################################################
+# Global configuration overrides.
+# 
+# These overrides will affect all helm charts (ie. applications)
+# that are listed below and are 'enabled'.
+#################################################################
+global:
+  # image repositories
+  repository: nexus3.onap.org:10001
+  readiness:
+    repository: oomk8s
+  logging:
+    repository: docker.elastic.co
+
+  # image pull policy
+  pullPolicy: IfNotPresent
+
+  # override default mount path root directory for hostPath 
+  # referenced persistent volumes and log files
+  persistence:
+    mountPath: /dockerdata-nfs
+
+  # Change to an unused port prefix range to prevent port conflicts
+  # with other instances running within the same k8s cluster
+  nodePortPrefix: 302
+
+  # flag to enable debugging - application support required
+  debugEnabled: false
+
+#################################################################
+# Enable/disable and configure helm charts (ie. applications) 
+# to customize the ONAP deployment.
+#################################################################
+# Consul Health Check Monitoring
+consul:
+  enabled: true
+
+# Message Service Bus
+msb:
+  enabled: false
+
+# DMaaP Message Router
+message-router:
+  enabled: false
+
+# Service Orchestrator
+so:
+  enabled: true
+  replicaCount: 1
+  liveness:
+    # necessary to disable liveness probe when setting breakpoints
+    # in debugger so K8s doesn't restart unresponsive container
+    enabled: true
+    
+  # so server configuration
+  config:
+    # message router configuration
+    dmaapTopic: "AUTO"
+    # openstack configuration
+    openStackUserName: "vnf_user"
+    openStackRegion: "RegionOne"
+    openStackKeyStoneUrl: "http://1.2.3.4:5000"
+    openStackServiceTenantName: "service"
+    openStackEncryptedPasswordHere: "c124921a3a0efbe579782cde8227681e"
+
+  # configure embedded mariadb
+  mariadb:
+    config:
+      mariadbRootPassword: password
+
+#apps: sdnc vid robot portal policy appc aai sdc dcaegen2 log cli multicloud clamp vnfsdk aaf kube2msb
