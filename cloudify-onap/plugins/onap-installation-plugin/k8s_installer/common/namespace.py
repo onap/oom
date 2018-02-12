@@ -56,9 +56,7 @@ def do_delete_namespace():
     ctx.logger.info('Namespace deleted successfully')
 
 
-
 def _retrieve_namespace():
-
     default_namespace = ctx.node.properties.get('options', {}).get('namespace')
     namespace = ctx.node.properties.get('namespace', default_namespace)
 

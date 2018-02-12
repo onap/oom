@@ -20,6 +20,7 @@ try:
     import cloudify_kubernetes
 except ImportError:
     import pip
+
     pip.main(['install', 'https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.1.zip'])
 
 setup(
@@ -31,7 +32,7 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'cloudify-kubernetes-plugin==1.2.1',
-        #'/tmp/k8spl/cloudify-kubernetes-plugin'
+        # '/tmp/k8spl/cloudify-kubernetes-plugin'
         'pyyaml',
         'gitpython',
         'paramiko==1.18.3',
