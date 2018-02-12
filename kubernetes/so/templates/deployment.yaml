@@ -1,0 +1,170 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - mariadb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "common.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ .Chart.Name }}
+          command:
+          - /tmp/start-jboss-server.sh
+          image: {{ include "common.image" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+          - containerPort: {{ .Values.service.internalPort3 }}
+          - containerPort: {{ .Values.service.internalPort4 }}
+          - containerPort: {{ .Values.service.internalPort5 }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container 
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: JBOSS_DEBUG
+              value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /shared/
+            name: so
+          - mountPath: /tmp/start-jboss-server.sh
+            name: so-docker-files
+            subPath: start-jboss-server.sh
+          - mountPath: /opt/jboss/standalone/configuration/standalone-full-ha-mso.xml
+            name: so-config
+            subPath: standalone-full-ha-mso.xml
+
+          - mountPath: /var/log/onap
+            name: so-logs
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.network.xml
+            name: so-logback
+            subPath: logback.network.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.tenant.xml
+            name: so-logback
+            subPath: logback.tenant.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.vnf.xml
+            name: so-logback
+            subPath: logback.vnf.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.vfc.xml
+            name: so-logback
+            subPath: logback.vfc.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-api-handler-infra-config/logback.apihandler-infra.xml
+            name: so-logback
+            subPath: logback.apihandler-infra.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-appc-adapter-config/logback.appc.xml
+            name: so-logback
+            subPath: logback.appc.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-requests-db-adapter-config/logback.msorequestsdbadapter.xml
+            name: so-logback
+            subPath: logback.msorequestsdbadapter.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-asdc-controller-config/logback.asdc.xml
+            name: so-logback
+            subPath: logback.asdc.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-sdnc-adapter-config/logback.sdnc.xml
+            name: so-logback
+            subPath: logback.sdnc.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-bpmn-config/logback.bpmn.xml
+            name: so-logback
+            subPath: logback.bpmn.xml
+          - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-workflow-message-adapter-config/logback.workflow-message-adapter.xml
+            name: so-logback
+            subPath: logback.workflow-message-adapter.xml
+        - name: filebeat-onap
+          image: {{ include "common.image.logging" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: so-logs
+          - mountPath: /usr/share/filebeat/data
+            name: so-data-filebeat
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: so-logback
+          configMap:
+            name: so-log-configmap
+        - name: filebeat-conf
+          configMap:
+            name: so-filebeat-configmap
+        - name: so
+          configMap:
+            name: so-configmap
+            items:
+            - key: mso-docker.json
+              path: mso-docker.json
+              mode: 0755
+            - key: aai.crt
+              path: aai.crt
+              mode: 0755
+            - key: encryption.key
+              path: encryption.key
+              mode: 0644
+        - name: so-config
+          configMap:
+            name: so-configmap
+            items:
+            - key: standalone-full-ha-mso.xml
+              path: standalone-full-ha-mso.xml
+              mode: 0644
+        - name: so-logs
+          emptyDir: {}
+        - name: so-data-filebeat
+          emptyDir: {}
+        - name: so-docker-files
+          configMap:
+            name: so-docker-file-configmap
+            items:
+            - key: start-jboss-server.sh
+              path: start-jboss-server.sh
+              mode: 0755
+      imagePullSecrets:
+      - name: "{{ include "common.name" . }}-docker-registry-key"
+#          resources:
+#{{ toYaml .Values.resources | indent 12 }}
+#    {{- if .Values.nodeSelector }}
+#      nodeSelector:
+#{{ toYaml .Values.nodeSelector | indent 8 }}
+#    {{- end }}
