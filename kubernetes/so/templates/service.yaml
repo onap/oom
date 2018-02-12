@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/ecomp/mso/infra",
+          "protocol": "REST"
+          "port": "8080",
+          "visualRange":"1"
+      },
+      {
+          "serviceName": "so-deprecated",
+          "version": "v1",
+          "url": "/ecomp/mso/infra",
+          "protocol": "REST"
+          "port": "8080",
+          "visualRange":"1",
+          "path":"/ecomp/mso/infra"
+      }
+      ]'
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{if eq .Values.service.type "NodePort" -}}
+    - port: {{ .Values.service.internalPort }}
+      nodePort: {{ include "common.nodeport.prefix" . }}{{ .Values.service.externalPort }}
+      name: {{ .Values.service.name }}
+    - port: {{ .Values.service.internalPort2 }}
+      nodePort: {{ include "common.nodeport.prefix" . }}{{ .Values.service.externalPort2 }}
+      name: {{ .Values.service.name }}2
+    - port: {{ .Values.service.internalPort3 }}
+      nodePort: {{ include "common.nodeport.prefix" . }}{{ .Values.service.externalPort3 }}
+      name: {{ .Values.service.name }}3
+    - port: {{ .Values.service.internalPort4 }}
+      nodePort: {{ include "common.nodeport.prefix" . }}{{ .Values.service.externalPort4 }}
+      name: {{ .Values.service.name }}4
+    - port: {{ .Values.service.internalPort5 }}
+      nodePort: {{ include "common.nodeport.prefix" . }}{{ .Values.service.externalPort5 }}
+      name: {{ .Values.service.name }}5
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+    - port: {{ .Values.service.externalPort2 }}
+      targetPort: {{ .Values.service.internalPort2 }}
+      name: {{ .Values.service.name }}2
+    - port: {{ .Values.service.externalPort3 }}
+      targetPort: {{ .Values.service.internalPort3 }}
+      name: {{ .Values.service.name }}3
+    - port: {{ .Values.service.externalPort4 }}
+      targetPort: {{ .Values.service.internalPort4 }}
+      name: {{ .Values.service.name }}4
+    - port: {{ .Values.service.externalPort5 }}
+      targetPort: {{ .Values.service.internalPort5 }}
+      name: {{ .Values.service.name }}5
+    {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
