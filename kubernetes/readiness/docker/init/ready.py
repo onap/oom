@@ -1,8 +1,13 @@
 #!/usr/bin/python
-from kubernetes import client, config
-import time, argparse, logging, sys, os
+import getopt
+import logging
+import os
+import sys
+import time
 
-#extract env variables.
+from kubernetes import client
+
+# extract env variables.
 namespace = os.environ['NAMESPACE']
 cert = os.environ['CERT']
 host = os.environ['KUBERNETES_SERVICE_HOST']
@@ -11,12 +16,7 @@ token_path = os.environ['TOKEN']
 with open(token_path, 'r') as token_file:
     token = token_file.read().replace('\n', '')
 
-client.configuration.host = "https://" + host
-client.configuration.ssl_ca_cert = cert
-client.configuration.api_key['authorization'] = token
-client.configuration.api_key_prefix['authorization'] = 'Bearer'
-
-#setup logging
+# setup logging
 log = logging.getLogger(__name__)
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
@@ -24,12 +24,16 @@ handler.setLevel(logging.INFO)
 log.addHandler(handler)
 log.setLevel(logging.INFO)
 
-
 def is_ready(container_name):
-    log.info( "Checking if " + container_name + "  is ready")
-    # config.load_kube_config() # for local testing
-    # namespace='onap-sdc' # for local testing
-    v1 = client.CoreV1Api()
+
+    configuration = client.Configuration()
+    configuration.host = "https://" + host
+    configuration.ssl_ca_cert = cert
+    configuration.api_key['authorization'] = token
+    configuration.api_key_prefix['authorization'] = 'Bearer'
+
+    log.info("Checking if " + container_name + "  is ready")
+    v1 = client.CoreV1Api(client.ApiClient(configuration))
 
     ready = False
 
@@ -38,14 +42,14 @@ def is_ready(container_name):
         for i in response.items:
             # container_statuses can be None, which is non-iterable.
             if i.status.container_statuses is None:
-               continue
+                continue
             for s in i.status.container_statuses:
                 if s.name == container_name:
                     ready = s.ready
                     if not ready:
-                        log.info( container_name + " is not ready.")
+                        log.info(container_name + " is not ready.")
                     else:
-                        log.info( container_name + " is ready!")
+                        log.info(container_name + " is ready!")
                 else:
                     continue
         return ready
@@ -53,27 +57,49 @@ def is_ready(container_name):
         log.error("Exception when calling list_namespaced_pod: %s\n" % e)
 
 
-def main(args):
+DEF_TIMEOUT = 10
+DESCRIPTION = "Kubernetes container readiness check utility"
+USAGE = "Usage: ready.py [-t <timeout>] -c <container_name> [-c <container_name> ...]\n" \
+        "where\n" \
+        "<timeout> - wait for container readiness timeout in min, default is " + str(DEF_TIMEOUT) + "\n" \
+        "<container_name> - name of the container to wait for\n"
+
+def main(argv):
     # args are a list of container names
-    for container_name in args:
-        # 5 min, TODO: make configurable
-        timeout = time.time() + 60 * 10
+    container_names = []
+    timeout = DEF_TIMEOUT
+    try:
+        opts, args = getopt.getopt(argv, "hc:t:", ["container-name=", "timeout=", "help"])
+        for opt, arg in opts:
+            if opt in ("-h", "--help"):
+                print("%s\n\n%s" % (DESCRIPTION, USAGE))
+                sys.exit()
+            elif opt in ("-c", "--container-name"):
+                container_names.append(arg)
+            elif opt in ("-t", "--timeout"):
+                timeout = float(arg)
+    except (getopt.GetoptError, ValueError) as e:
+        print("Error parsing input parameters: %s\n" % e)
+        print(USAGE)
+        sys.exit(2)
+    if container_names.__len__() == 0:
+        print("Missing required input parameter(s)\n")
+        print(USAGE)
+        sys.exit(2)
+
+    for container_name in container_names:
+        timeout = time.time() + timeout * 60
         while True:
             ready = is_ready(container_name)
             if ready is True:
                 break
             elif time.time() > timeout:
-                log.warning( "timed out waiting for '" + container_name + "' to be ready")
+                log.warning("timed out waiting for '" + container_name + "' to be ready")
                 exit(1)
             else:
                 time.sleep(5)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process some names.')
-    parser.add_argument('--container-name', action='append', required=True, help='A container name')
-    args = parser.parse_args()
-    arg_dict = vars(args)
+    main(sys.argv[1:])
 
-    for arg in arg_dict.itervalues():
-        main(arg)
