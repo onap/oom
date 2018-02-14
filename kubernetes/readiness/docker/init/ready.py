@@ -36,6 +36,9 @@ def is_ready(container_name):
     try:
         response = v1.list_namespaced_pod(namespace=namespace, watch=False)
         for i in response.items:
+            # container_statuses can be None, which is non-iterable.
+            if i.status.container_statuses is None:
+               continue
             for s in i.status.container_statuses:
                 if s.name == container_name:
                     ready = s.ready
