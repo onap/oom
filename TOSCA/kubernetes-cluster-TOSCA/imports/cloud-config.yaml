@@ -1,0 +1,76 @@
+# ============LICENSE_START==========================================
+# ===================================================================
+# Copyright © 2017 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#============LICENSE_END============================================
+
+# this is the cloud init. It will install the reqiured packages and do some basic config on every VM.
+
+node_templates:
+
+  cloudify_host_cloud_config:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    properties:
+      resource_config:
+        groups:
+          - docker
+        users:
+          - name: { get_input: agent_user }
+            primary-group: wheel
+            groups: docker
+            shell: /bin/bash
+            sudo: ['ALL=(ALL) NOPASSWD:ALL']
+            ssh-authorized-keys:
+              - { get_secret: agent_key_public }
+        write_files:
+          - path: /etc/yum.repos.d/kubernetes.repo
+            owner: root:root
+            permissions: '0444'
+            content: |
+              # installed by cloud-init
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+              enabled=1
+              gpgcheck=1
+              repo_gpgcheck=1
+              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                     https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+          - path: /etc/sysctl.d/k8s.conf
+            owner: root:root
+            permissions: '0444'
+            content: |
+              # installed by cloud-init
+              net.bridge.bridge-nf-call-ip6tables = 1
+              net.bridge.bridge-nf-call-iptables = 1
+
+        packages:
+          - [docker, 1.12.6]
+          - [kubelet, 1.8.6-0]
+          - [kubeadm, 1.8.6-0]
+          - [kubectl, 1.8.6-0]
+          - [kubernetes-cni, 0.5.1-1]
+          - [nfs-utils]
+        runcmd:
+          - [ setenforce, 0 ]
+          - [ sysctl , '--system' ]
+          - [ systemctl, enable, docker ]
+          - [ systemctl, start, docker ]
+          - [ systemctl, enable, kubelet ]
+          - [ systemctl, start, kubelet ]
+          - [ mkdir, '-p', /tmp/data ]
+          - [ chcon, '-Rt', svirt_sandbox_file_t, /tmp/data ]
+          - [ mkdir, '-p', /dockerdata-nfs ]
+          - [ chmod, 777, /dockerdata-nfs ]
