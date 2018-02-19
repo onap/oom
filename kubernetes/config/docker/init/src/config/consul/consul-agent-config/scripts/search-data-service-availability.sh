@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SEARCH_SERVICE_NAME="search-data-service.onap-aai"
+SEARCH_SERVICE_NAME="search-data-service.onap-namespace"
 SEARCH_SERVICE_PORT=9509
 HEALTH_CHECK_INDEX="healthcheck"
 
