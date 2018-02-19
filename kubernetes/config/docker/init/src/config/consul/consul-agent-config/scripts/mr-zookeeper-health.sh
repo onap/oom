@@ -1,6 +1,6 @@
-zkpod=$(/consul/config/bin/kubectl -n onap-message-router get pod | grep -o "zookeeper-[^[:space:]]*")
+zkpod=$(/consul/config/bin/kubectl -n onap get pod | grep -o "zookeeper-[^[:space:]]*")
 if [ -n "$zkpod" ]; then
-   if /consul/config/bin/kubectl -n onap-message-router exec -it $zkpod -- ps ef | grep -i zookeeper; then
+   if /consul/config/bin/kubectl -n onap exec -it $zkpod -- ps ef | grep -i zookeeper; then
       echo Success. Zookeeper process is running. 2>&1
       exit 0
    else
