@@ -3,7 +3,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: appc-dgbuilder
-  namespace: "{{ .Values.nsPrefix }}-appc"
+  namespace: "{{ .Values.nsPrefix }}"
 spec:
   replicas: {{ .Values.dgbuilderReplicas }}
   selector:
@@ -56,10 +56,29 @@ spec:
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
+        - name: dgbuilder-conf
+          mountPath: /opt/onap/sdnc/dgbuilder/releases/sdnc1.0/conf/svclogic.properties
+          subPath: svclogic.properties
+        - name: dgbuilder-conf
+          mountPath: /opt/onap/sdnc/dgbuilder/svclogic/svclogic.properties
+          subPath: svclogic.properties
+        - name: dgbuilder-scripts
+          mountPath: /opt/onap/sdnc/dgbuilder/createReleaseDir.sh
+          subPath: createReleaseDir.sh
+        - name: dgbuilder-scripts
+          mountPath: /opt/onap/sdnc/dgbuilder/releases/sdnc1.0/customSettings.js
+          subPath: customSettings.js
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: dgbuilder-conf
+        configMap:
+          name: appc-dgbuilder-conf-configmap
+      - name: dgbuilder-scripts
+        configMap:
+          name: appc-dgbuilder-scripts-configmap
+          defaultMode: 0755
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"

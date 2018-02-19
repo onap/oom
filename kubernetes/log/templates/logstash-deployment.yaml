@@ -4,8 +4,8 @@ kind: Deployment
 metadata:
   labels:
     app: logstash
-  name: logstash
-  namespace: {{ .Values.nsPrefix }}-log 
+  name: log-logstash
+  namespace: {{ .Values.nsPrefix }}
 spec:
   selector:
     matchLabels:
@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         app: logstash
-      name: logstash
+      name: log-logstash
     spec:
       initContainers:
       - command:
@@ -52,13 +52,13 @@ spec:
       volumes:
         - name: logstash-conf
           configMap:
-            name: logstash-configmap
+            name: log-logstash-configmap
             items:
             - key: logstash.yml
               path: logstash.yml
         - name: logstash-pipeline
           configMap:
-            name: logstash-configmap
+            name: log-logstash-configmap
             items:
             - key: onap-pipeline.conf
               path: onap-pipeline.conf
@@ -67,9 +67,9 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: logstash-configmap
-  namespace: {{ .Values.nsPrefix }}-log
+  name: log-logstash-configmap
+  namespace: {{ .Values.nsPrefix }}
 data:
-{{ (.Files.Glob "resources/logstash/conf/logstash.yml").AsConfig | indent 2 }}
-{{ (.Files.Glob "resources/logstash/pipeline/onap-pipeline.conf").AsConfig | indent 2 }}
+{{ tpl (.Files.Glob "resources/logstash/conf/logstash.yml").AsConfig . | indent 2 }}
+{{ tpl (.Files.Glob "resources/logstash/pipeline/onap-pipeline.conf").AsConfig . | indent 2 }}
 #{{ end }}
