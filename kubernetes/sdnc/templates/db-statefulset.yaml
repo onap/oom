@@ -3,7 +3,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: sdnc-dbhost
-  namespace: "{{ .Values.nsPrefix }}-sdnc"
+  namespace: "{{ .Values.nsPrefix }}"
 spec:
   serviceName: "dbhost"
   replicas: {{ .Values.numberOfDbReplicas }}
@@ -61,7 +61,7 @@ spec:
           echo ${BASH_REMATCH}
           [[ $ordinal -eq 0 ]] && exit 0
           # Clone data from previous peer.
-          ncat --recv-only sdnc-dbhost-$(($ordinal-1)).dbhost.{{ .Values.nsPrefix }}-sdnc 3307 | xbstream -x -C /var/lib/mysql
+          ncat --recv-only sdnc-dbhost-$(($ordinal-1)).dbhost.{{ .Values.nsPrefix }}
           # Prepare the backup.
           xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --prepare --target-dir=/var/lib/mysql
           ls -l /var/lib/mysql
@@ -150,7 +150,7 @@ spec:
             mv change_master_to.sql.in change_master_to.sql.orig
             mysql --user=root --password=$MYSQL_ROOT_PASSWORD -h 127.0.0.1 <<EOF
           $(<change_master_to.sql.orig),
-            MASTER_HOST="sdnc-dbhost-0.dbhost.{{ .Values.nsPrefix }}-sdnc",
+            MASTER_HOST="sdnc-dbhost-0.dbhost.{{ .Values.nsPrefix }}
             MASTER_USER="root",
             MASTER_PASSWORD="$MYSQL_ROOT_PASSWORD",
             MASTER_CONNECT_RETRY=10;
@@ -176,10 +176,15 @@ spec:
         emptyDir: {}
       - name: config-map
         configMap:
-          name: mysql
+          name: sdnc-mysql
       - name: localtime
         hostPath:
           path: /etc/localtime
+#{{ if .Values.disableNfsProvisioner }}
+      - name: sdnc-data
+        hostPath:
+          path: /dockerdata-nfs/{{ .Values.nsPrefix }}/sdnc/data
+#{{ else }}
   volumeClaimTemplates:
   - metadata:
       name: sdnc-data
@@ -190,4 +195,5 @@ spec:
       resources:
         requests:
           storage: 1Gi
+#{{ end }}
 #{{ end }}
