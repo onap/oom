@@ -76,6 +76,25 @@ node_templates:
       - type: cloudify.relationships.contained_in
         target: kubernetes_master_host
 
+  k8s_tools:
+    type: cloudify.nodes.SoftwareComponent
+    properties:
+    interfaces:
+      cloudify.interfaces.lifecycle:
+         start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: scripts/k8s_tools.sh
+            process:
+              args:
+            fabric_env:
+              host_string: { get_attribute: [ kubernetes_master_host, ip ] }
+              user: { get_input: agent_user }
+              key: { get_secret: agent_key_private }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: kubernetes_master
+
   kubernetes_master_host:
     type: cloudify.openstack.nodes.Server
     properties:
