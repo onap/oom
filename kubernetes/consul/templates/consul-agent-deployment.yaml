@@ -16,16 +16,40 @@ spec:
         app: consul-agent
       name: consul-agent
     spec:
-      containers:
-      - image: "{{ .Values.consulimageRegistry }}:{{ .Values.consuldockerTag }}"
-        command: ["/usr/local/bin/docker-entrypoint.sh"]
-        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ .Values.nsPrefix }}-consul"]
-        name: consul-server
+      initContainers:
+      - name: consul-init-hosts
+        image: "{{ .Values.consulagentRegistry }}" 
+        command:
+        - /bin/sh
+        - "-c"
+        - "cd /consul/config; cp /tmp/config/* /consul/config; mkdir scripts; cp /tmp/scripts/* /consul/config/scripts; mkdir certs; cp /tmp/certs/* /consul/config/certs; chmod -R 777 /consul/config/scripts; mkdir bin; cp /consul/bin/kubectl /consul/config/bin"
         volumeMounts:
         - mountPath: /consul/config
+          name: shared-data
+        - mountPath: /tmp/scripts
+          name: consul-agent-scripts-config
+        - mountPath: /tmp/certs
+          name: consul-agent-certs-config
+        - mountPath: /tmp/config
           name: consul-agent-config
+      containers:
+      - image: "{{ .Values.consulagentRegistry }}"
+        command: ["/usr/local/bin/docker-entrypoint.sh"]
+        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ .Values.nsPrefix }}-consul"]
+        name: consul-agent
+        volumeMounts:
+        - mountPath: /consul/config
+          name: shared-data 
       volumes:
-      - hostPath:
-          path: {{ .Values.rootHostPath }}/{{ .Values.nsPrefix }}/consul/consul-agent-config
+      - configMap:
+          name: consul-agent-configmap
         name: consul-agent-config
+      - configMap:
+          name: consul-agent-scripts-configmap
+        name: consul-agent-scripts-config
+      - configMap:
+          name: consul-agent-certs-configmap
+        name: consul-agent-certs-config
+      - emptyDir: {}
+        name: shared-data
 #{{ end }}
