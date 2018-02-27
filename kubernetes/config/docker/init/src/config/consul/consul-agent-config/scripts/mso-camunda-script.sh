@@ -1,5 +1,5 @@
 ## Query the health check API.
-HEALTH_CHECK_ENDPOINT="http://mso.onap-mso.svc.cluster.local:8080/mso/healthcheck"
+HEALTH_CHECK_ENDPOINT="http://mso.namespace-placeholder:8080/mso/healthcheck"
 HEALTH_CHECK_RESPONSE=$(curl -s $HEALTH_CHECK_ENDPOINT)
 
 READY=$(echo $HEALTH_CHECK_RESPONSE | grep "Application ready")
