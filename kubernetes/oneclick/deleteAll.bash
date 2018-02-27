@@ -3,8 +3,7 @@
 . $(dirname "$0")/setenv.bash
 
 delete_namespace() {
-  _NS=$1-$2
-  kubectl delete namespace $_NS
+  kubectl delete namespace $1
 }
 
 delete_service_account() {
@@ -25,13 +24,18 @@ wait_terminate() {
   while true; do
     declare -i _STATUS=0
     for i in ${HELM_APPS[@]}; do
-      kubectl get namespaces $1-$i > /dev/null 2>&1
-      if [ "$?" -eq "0" ]; then
+      kubectl get pods --namespace $1 | grep -w " $i" > /dev/null 2>&1
+      if [ "$?" -ne "0" ]; then
         _STATUS=1
         break
       fi
     done
-    if [ "$_STATUS" -eq "0" ]; then
+
+    if [ "$SINGLE_COMPONENT" == "false" ]; then
+      kubectl get namespaces $1 > /dev/null 2>&1
+      _STATUS=$?
+    fi
+    if [ "$_STATUS" -ne "0" ]; then
       break
     fi
     sleep 2
@@ -60,7 +64,7 @@ APP=
 WAIT_TERMINATE=true
 SKIP_INTERACTIVE_CONFIRMATION=no
 KUBECTL_CONTEXT=
-
+SINGLE_COMPONENT=false
 while getopts ":c:n:u:s:a:yN" PARAM; do
   case $PARAM in
     u)
@@ -76,6 +80,7 @@ while getopts ":c:n:u:s:a:yN" PARAM; do
         usage
         exit 1
       fi
+      SINGLE_COMPONENT=true
       ;;
     N)
       WAIT_TERMINATE=false
@@ -128,15 +133,15 @@ fi
 printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${HELM_APPS[@]}; do
-
   delete_app_helm $NS $i
-  delete_namespace $NS $i
   delete_service_account $NS $i
-
 done
 
-delete_app_helm $NS "config"
-kubectl delete namespace $NS
+if [ "$SINGLE_COMPONENT" == "false" ]
+then
+    delete_app_helm $NS "config"
+    delete_namespace $NS
+fi
 
 if $WAIT_TERMINATE; then
   wait_terminate $NS

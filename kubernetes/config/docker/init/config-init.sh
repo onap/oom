@@ -93,8 +93,8 @@ echo "Substituting configuration parameters"
 # replace the default 'onap' namespace qualification of K8s hostnames within the config files
 SED_NS_PATHS="/config-init/$NAMESPACE/"
 SED_NS_STRINGS=(
-  "s/\.onap-/\.${NAMESPACE}-/g"
-  "s/kubectl -n onap/kubectl -n ${NAMESPACE}/g"
+  "s/\.namespace-placeholder/\.${NAMESPACE}/g"
+  "s/kubectl -n namespace-placeholder/kubectl -n ${NAMESPACE}/g"
 )
 SED_NS_STRING=$(concat_array "${SED_NS_STRINGS[@]}")
 find $SED_NS_PATHS -type f -exec sed -i -e "${SED_NS_STRING}" {} \;
