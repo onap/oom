@@ -1,6 +1,6 @@
-kafkapod=$(/consul/config/bin/kubectl -n onap-message-router get pod | grep -o "global-kafka-[^[:space:]]*")
+kafkapod=$(/consul/config/bin/kubectl -n onap-namespace get pod | grep -o "global-kafka-[^[:space:]]*")
 if [ -n "$kafkapod" ]; then
-   if /consul/config/bin/kubectl -n onap-message-router exec -it $kafkapod -- ps ef | grep -i kafka; then
+   if /consul/config/bin/kubectl -n onap-namespace exec -it $kafkapod -- ps ef | grep -i kafka; then
       echo Success. Kafka process is running. 2>&1
       exit 0
    else
