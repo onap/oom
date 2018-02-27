@@ -3,7 +3,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: mso
-  namespace: "{{ .Values.nsPrefix }}-mso"
+  namespace: "{{ .Values.nsPrefix }}"
 spec:
   replicas: {{ .Values.msoReplicas }}
   selector:
@@ -20,7 +20,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - mariadb
+        - mso-mariadb
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,6 +45,9 @@ spec:
         - mountPath: /tmp/start-jboss-server.sh
           name: mso-docker-files
           subPath: start-jboss-server.sh
+        - mountPath: /opt/jboss/standalone/configuration/standalone-full-ha-mso.xml
+          name: mso-jboss-config
+          subPath: standalone-full-ha-mso.xml
         - mountPath: /var/log/onap
           name: mso-logs
         - mountPath: /var/berks-cookbooks/mso-config/files/default/mso-po-adapter-config/logback.network.xml
@@ -139,6 +142,9 @@ spec:
             - key: start-jboss-server.sh
               path: start-jboss-server.sh
               mode: 0755
+        - name: mso-jboss-config
+          configMap:
+            name: mso-jboss-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

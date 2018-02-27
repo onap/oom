@@ -1,8 +1,8 @@
 
-NAME=$(/consul/config/bin/kubectl -n onap-aai get pod | grep -o "gremlin[^[:space:]]*")
+NAME=$(/consul/config/bin/kubectl -n namespace-placeholder get pod | grep -o "gremlin[^[:space:]]*")
 
 if [ -n "$NAME" ]; then
-   if /consul/config/bin/kubectl -n onap-aai exec -it $NAME -- ps -efww | grep 'java' | grep 'gremlin-server' > /dev/null; then
+   if /consul/config/bin/kubectl -n namespace-placeholder exec -it $NAME -- ps -efww | grep 'java' | grep 'gremlin-server' > /dev/null; then
 
       echo Success. Gremlin Server process is running. 2>&1
       exit 0

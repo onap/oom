@@ -2,8 +2,8 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: drools
-  namespace: "{{ .Values.nsPrefix }}-policy"
+  name: policy-drools
+  namespace: "{{ .Values.nsPrefix }}"
 spec:
   replicas: {{ .Values.droolsReplicas }}
   selector:
@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: drools
-      name: drools
+      name: policy-drools
     spec:
       initContainers:
       - command:
@@ -55,8 +55,21 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /tmp/policy-install/config
-          name: drools
+        - mountPath: /tmp/policy-install/config/policy-keystore
+          name: drools-secret
+          subPath: policy-keystore
+        - mountPath: /tmp/policy-install/config/feature-healthcheck.conf
+          name: drools-secret
+          subPath: feature-healthcheck.conf
+        - mountPath: /tmp/policy-install/config/base.conf
+          name: drools-config
+          subPath: base.conf
+        - mountPath: /tmp/policy-install/config/policy-management.conf
+          name: drools-config
+          subPath: policy-management.conf
+        - mountPath: /tmp/policy-install/config/drools-tweaks.sh
+          name: drools-config
+          subPath: drools-tweaks.sh
         - mountPath: /usr/share/maven/conf/settings.xml
           name: drools-settingsxml
           subPath: settings.xml
@@ -97,16 +110,10 @@ spec:
         - name: drools-settingsxml
           configMap:
             name: policy-dep-drools-settings-configmap
-        - name: drools
-          secret:
-            secretName: policy-dep-drools-secret
+        - name: drools-config
+          configMap:
+            name: policy-dep-drools-configmap
             items:
-            - key: policy-keystore
-              path: policy-keystore
-              mode: 0644
-            - key: feature-healthcheck.conf
-              path: feature-healthcheck.conf
-              mode: 0644
             - key: base.conf
               path: base.conf
               mode: 0755
@@ -116,6 +123,16 @@ spec:
             - key: drools-tweaks.sh
               path: drools-tweaks.sh
               mode: 0755
+        - name: drools-secret
+          secret:
+            secretName: policy-dep-drools-secret
+            items:
+            - key: policy-keystore
+              path: policy-keystore
+              mode: 0644
+            - key: feature-healthcheck.conf
+              path: feature-healthcheck.conf
+              mode: 0644
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
