@@ -3,7 +3,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: appc
-  namespace: "{{ .Values.nsPrefix }}-appc"
+  namespace: "{{ .Values.nsPrefix }}"
 spec:
   replicas: {{ .Values.appcReplicas }}
   selector:
@@ -42,6 +42,8 @@ spec:
           value: /opt/openecomp/appc/data/properties
         - name: DMAAP_TOPIC_ENV
           value: SUCCESS
+        - name: MYSQL_HOST
+          value: appc-dbhost
         image: {{ .Values.image.appc }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         name: appc-controller-container
@@ -58,11 +60,41 @@ spec:
         - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
           name: appc-conf
           subPath: aaiclient.properties
+        - mountPath: /opt/onap/sdnc/data/properties/dblib.properties
+          name: appc-conf
+          subPath: dblib.properties
+        - mountPath: /opt/openecomp/appc/data/properties/dblib.properties
+          name: appc-conf
+          subPath: sdnc.dblib.properties
+        - mountPath: /opt/onap/sdnc/data/properties/svclogic.properties
+          name: appc-conf
+          subPath: svclogic.properties
+        - mountPath: /opt/openecomp/appc/data/properties/svclogic.properties
+          name: appc-conf
+          subPath: sdnc.svclogic.properties
         - mountPath: /var/log/onap
           name: appc-logs
         - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
           name: appc-log-config
           subPath: org.ops4j.pax.logging.cfg
+        - mountPath: /opt/onap/sdnc/bin/installSdncDb.sh
+          name: appc-scripts
+          subPath: installSdncDb.sh
+        - mountPath: /opt/onap/sdnc/bin/startODL.sh
+          name: appc-scripts
+          subPath: startODL.sh
+        - mountPath: /opt/openecomp/appc/bin/startODL.sh
+          name: appc-scripts
+          subPath: startODL.sh
+        - mountPath: /opt/openecomp/appc/bin/installAppcDb.sh
+          name: appc-scripts
+          subPath: installAppcDb.sh
+        - mountPath: /opt/onap/sdnc/svclogic/bin/showActiveGraphs.sh
+          name: appc-scripts
+          subPath: showActiveGraphs.sh
+        - mountPath: /opt/openecomp/appc/svclogic/bin/showActiveGraphs.sh
+          name: appc-scripts
+          subPath: showActiveGraphs.sh
         ports:
         - containerPort: 8181
         - containerPort: 1830
@@ -99,6 +131,10 @@ spec:
         - name: appc-conf
           configMap:
             name: appc-conf-configmap
+        - name: appc-scripts
+          configMap:
+            name: appc-scripts-configmap
+            defaultMode: 0755
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}

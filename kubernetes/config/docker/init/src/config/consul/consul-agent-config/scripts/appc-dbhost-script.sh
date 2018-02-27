@@ -1,6 +1,6 @@
-APPC_DBHOST_POD=$(/consul/config/bin/kubectl -n onap-appc  get pod | grep -o "appc-dbhost-[^[:space:]]*")
+APPC_DBHOST_POD=$(/consul/config/bin/kubectl -n onap-namespace  get pod | grep -o "appc-dbhost-[^[:space:]]*")
 if [ -n "$APPC_DBHOST_POD" ]; then
-   if /consul/config/bin/kubectl -n onap-appc exec -it $APPC_DBHOST_POD -- ./healthcheck.sh |grep -i "mysqld is alive"; then
+   if /consul/config/bin/kubectl -n onap-namespace exec -it $APPC_DBHOST_POD -- ./healthcheck.sh |grep -i "mysqld is alive"; then
       echo Success. APPC DBHost is running. 2>&1
       exit 0
    else
