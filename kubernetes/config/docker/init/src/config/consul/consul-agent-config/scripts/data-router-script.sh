@@ -1,8 +1,8 @@
 
-NAME=$(/consul/config/bin/kubectl -n onap-aai get pod | grep -o "data-router[^[:space:]]*")
+NAME=$(/consul/config/bin/kubectl -n onap-namespace get pod | grep -o "data-router[^[:space:]]*")
 
 if [ -n "$NAME" ]; then
-   if /consul/config/bin/kubectl -n onap-aai exec -it $NAME -- ps -efww | grep 'java' | grep 'data-router' > /dev/null; then
+   if /consul/config/bin/kubectl -n onap-namespace exec -it $NAME -- ps -efww | grep 'java' | grep 'data-router' > /dev/null; then
 
       echo Success. Synapse process is running. 2>&1
       exit 0

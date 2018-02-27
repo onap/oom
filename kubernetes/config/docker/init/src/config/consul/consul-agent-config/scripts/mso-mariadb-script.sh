@@ -1,7 +1,7 @@
-NAME=$(/consul/config/bin/kubectl -n onap-mso get pod | grep -o "mariadb[^[:space:]]*")
+NAME=$(/consul/config/bin/kubectl -n onap-namespace get pod | grep -o "mariadb[^[:space:]]*")
 
    if [ -n "$NAME" ]; then
-       if /consul/config/bin/kubectl -n onap-mso exec -it $NAME -- bash -c 'mysqladmin status -u root -p$MYSQL_ROOT_PASSWORD' > /dev/null; then
+       if /consul/config/bin/kubectl -n onap-namespace exec -it $NAME -- bash -c 'mysqladmin status -u root -p$MYSQL_ROOT_PASSWORD' > /dev/null; then
          echo Success. mariadb process is running. 2>&1
          exit 0
       else
