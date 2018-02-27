@@ -60,7 +60,7 @@ APP=
 WAIT_TERMINATE=true
 SKIP_INTERACTIVE_CONFIRMATION=no
 KUBECTL_CONTEXT=
-
+SINGLE_COMPONENT=false
 while getopts ":c:n:u:s:a:yN" PARAM; do
   case $PARAM in
     u)
@@ -76,6 +76,7 @@ while getopts ":c:n:u:s:a:yN" PARAM; do
         usage
         exit 1
       fi
+      SINGLE_COMPONENT=true
       ;;
     N)
       WAIT_TERMINATE=false
@@ -130,16 +131,19 @@ printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 for i in ${HELM_APPS[@]}; do
 
   delete_app_helm $NS $i
-  delete_namespace $NS $i
+#  delete_namespace $NS $i
   delete_service_account $NS $i
 
 done
 
-delete_app_helm $NS "config"
-kubectl delete namespace $NS
-
-if $WAIT_TERMINATE; then
-  wait_terminate $NS
+if [ "$SINGLE_COMPONENT" == "false" ]
+then
+    delete_app_helm $NS "config"
+    kubectl delete namespace $NS
 fi
+
+#if $WAIT_TERMINATE; then
+#  wait_terminate $NS
+#fi
 
 printf "\n********** Gone **********\n"
