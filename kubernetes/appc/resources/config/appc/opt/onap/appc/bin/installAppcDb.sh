@@ -1,11 +1,8 @@
-#!/bin/bash
-
 ###
 # ============LICENSE_START=======================================================
-# openECOMP : SDN-C
+# APPC
 # ================================================================================
-# Copyright (C) 2017 AT&T Intellectual Property. All rights
-#                                                       reserved.
+# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,25 +19,36 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
+APPC_HOME=${APPC_HOME:-/opt/openecomp/appc}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
-SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
-SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
-SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
+APPC_DB_USER=${APPC_DB_USER:-appcctl}
+APPC_DB_PASSWD=${APPC_DB_PASSWD:-appcctl}
+APPC_DB_DATABASE=${SDN_DB_DATABASE:-appcctl}
 
 
 # Create tablespace and user account
 mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
-CREATE DATABASE ${SDNC_DB_DATABASE};
-CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
-CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
-GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'localhost' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'%' WITH GRANT OPTION;
+CREATE DATABASE ${APPC_DB_DATABASE};
+CREATE USER '${APPC_DB_USER}'@'localhost' IDENTIFIED BY '${APPC_DB_PASSWD}';
+CREATE USER '${APPC_DB_USER}'@'%' IDENTIFIED BY '${APPC_DB_PASSWD}';
+GRANT ALL PRIVILEGES ON ${APPC_DB_DATABASE}.* TO '${APPC_DB_USER}'@'localhost' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON ${APPC_DB_DATABASE}.* TO '${APPC_DB_USER}'@'%' WITH GRANT OPTION;
 commit;
 END
 
-if [ -f ${SDNC_HOME}/data/odlsli.dump ]
+if [ -f ${APPC_HOME}/data/appcctl.dump ]
 then
-mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/odlsli.dump
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} appcctl < ${APPC_HOME}/data/appcctl.dump
+fi
+
+if [ -f ${APPC_HOME}/data/sdnctl.dump ]
+then
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sdnctl.dump
+fi
+
+if [ -f ${APPC_HOME}/data/sqlData.dump ]
+then
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sqlData.dump
 fi
 
