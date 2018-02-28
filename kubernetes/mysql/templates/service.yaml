@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+#{{ if not .Values.disableNfsProvisioner }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+spec:
+  ports:
+    - name: nfs
+      port: {{ .Values.service.nfsPort }}
+    - name: mountd
+      port: {{ .Values.service.mountdPort }}
+    - name: rpcbind
+      port: {{ .Values.service.rpcbindPort }}
+    - name: rpcbind-udp
+      port: {{ .Values.service.rpcbindUdpPort }}
+      protocol: UDP
+  selector:
+    app: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+#{{ end }}
+---
+# Client service for connecting to any MySQL instance for reads.
+# Only master: sdnc-dbhost-0 accepts the write request.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}-read
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sdnctlPrefix }}-sdnctldb01
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sdnctlPrefix }}-sdnctldb02
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None

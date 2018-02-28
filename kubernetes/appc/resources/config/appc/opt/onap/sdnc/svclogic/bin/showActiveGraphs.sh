@@ -22,7 +22,7 @@
 MYSQL_USER=${MYSQL_USER:-sdnctl}
 MYSQL_PWD=${MYSQL_PWD:-gamma}
 MYSQL_DB=${MYSQL_DB:-sdnctl}
-MYSQL_HOST=${MYSQL_HOST:-appc-dbhost.{{.Values.nsPrefix}}}
+MYSQL_HOST=${MYSQL_HOST:-{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 
 mysql --user=${MYSQL_USER} --password=${MYSQL_PWD} --host=${MYSQL_HOST} ${MYSQL_DB} <<-END
 SELECT module, rpc, version, mode from SVC_LOGIC where active='Y';
