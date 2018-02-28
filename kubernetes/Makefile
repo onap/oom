@@ -1,5 +1,8 @@
 PARENT_CHART := onap
 COMMON_CHARTS_DIR := common
+SETUP_CHARTS_DIR := setup
+#Order is important
+SHARED_CHARTS := common setup mysql dgbuilder
 # FIXME OOM-765
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/dist
@@ -7,6 +10,7 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES := $(COMMON_CHARTS_DIR) config oneclick readiness test dist helm $(PARENT_CHART) dcae
+EXCLUDES := $(SHARED_CHARTS) config oneclick readiness test dist $(PARENT_CHART) dcae
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
@@ -14,6 +18,11 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PA
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
 common:
+=======
+all: $(SHARED_CHARTS) $(HELM_CHARTS)
+
+$(SHARED_CHARTS):
+>>>>>>> 36e43b7... Add standardized helm chart for appc
 	@echo "\n[$@]"
 	@make package-$@
 
