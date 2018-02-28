@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 ###
 # ============LICENSE_START=======================================================
@@ -30,7 +30,7 @@ SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
 
 
 # Create tablespace and user account
-mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} mysql <<-END
+mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
 CREATE DATABASE ${SDNC_DB_DATABASE};
 CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
 CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
@@ -41,6 +41,6 @@ END
 
 if [ -f ${SDNC_HOME}/data/odlsli.dump ]
 then
-mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/odlsli.dump
+mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/odlsli.dump
 fi
 

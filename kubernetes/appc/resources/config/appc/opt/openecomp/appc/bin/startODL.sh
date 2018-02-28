@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 ###
 # ============LICENSE_START=======================================================
@@ -55,7 +55,7 @@ echo "" >> $APPC_HOME/data/properties/appc.properties
 # Wait for database to init properly
 #
 echo "Waiting for mysql"
-until mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} mysql &> /dev/null
+until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
