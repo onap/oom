@@ -1,9 +1,8 @@
 ###
 # ============LICENSE_START=======================================================
-# openECOMP : SDN-C
+# APPC
 # ================================================================================
-# Copyright (C) 2017 AT&T Intellectual Property. All rights
-#                                                       reserved.
+# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============LICENSE_END=========================================================
+# ECOMP is a trademark and service mark of AT&T Intellectual Property.
 ###
 
-org.onap.ccsdk.sli.dbtype = jdbc
-org.onap.ccsdk.sli.jdbc.url = jdbc:mysql://{{.Values.mysql.service.name}}.{{.Release.Namespace}}:3306/sdnctl
-org.onap.ccsdk.sli.jdbc.database = sdnctl
-org.onap.ccsdk.sli.jdbc.user = sdnctl
-org.onap.ccsdk.sli.jdbc.password = gamma
+MYSQL_USER=${MYSQL_USER:-sdnctl}
+MYSQL_PWD=${MYSQL_PWD:-gamma}
+MYSQL_DB=${MYSQL_DB:-sdnctl}
+MYSQL_HOST=${MYSQL_HOST:-{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 
+mysql --user=${MYSQL_USER} --password=${MYSQL_PWD} --host=${MYSQL_HOST} ${MYSQL_DB} <<-END
+SELECT module, rpc, version, mode from SVC_LOGIC where active='Y';
+END
