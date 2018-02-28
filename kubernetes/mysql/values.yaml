@@ -4,51 +4,26 @@
 global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  persistence: {}
   readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-# If mountPath is over NFS (e.g. /dockerdata-nfs is NFS mounted between the nodes), uncomment following lines.
-#  persistence:
-#    mountPath: /dockerdata
+  readinessImage: readiness-check:1.0.0
+
 
 #################################################################
 # Application configuration defaults.
 #################################################################
-# application image
-repository: nexus3.onap.org:10001
-image: openecomp/appc-image:v1.2.0
-#image: onap/appc-image:1.3.0-SNAPSHOT-latest
+
+#repository: mysql
+repository: registry.hub.docker.com
+image: library/mysql:5.7
 pullPolicy: Always
-  
-# flag to enable debugging - application support required
-debugEnabled: false
 
 # application configuration
 config:
   dbRootPassword: openECOMP1.0
-  enableClustering: true
-  configDir: /opt/openecomp/appc/data/properties
-  dmaapTopic: SUCCESS
-
-mysql:
-  nameOverride: appcdb
-  service:
-    name: appc-dbhost
-  nfsprovisionerPrefix: appc
-  sdnctlPrefix: appc
-  persistence:
-    mountSubPath: appc/data
-    enabled: true
-  disableNfsProvisioner: true
-
-dgbuilder:
-  nameOverride: appc-dgbuilder
-  dbPodName: appcdb
-  dbServiceName: appcdbhost
 
 # default number of instances
-replicaCount: 3
+replicaCount: 1
 
 nodeSelector: {}
 
@@ -56,28 +31,46 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 30
   periodSeconds: 10
+  timeoutSeconds: 5
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 5
   periodSeconds: 10
 
-service:
-  type: NodePort
-  name: appc
-  #targetPort
-  internalPort: 8181
-  #port
-  externalPort: 8282
-  nodePort: 30
+## Persist data to a persitent volume
+persistence:
+  enabled: false
+  
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
 
-  externalPort2: 1830
-  nodePort2: 31
-  clusterPort: 2550
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  accessMode: ReadWriteMany
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: mysql/data
+
+service:
+  name: mysql
+  internalPort: 3306
+  # nfs provisioner ports
+  nfsPort: 2049
+  mountdPort: 20048
+  rpcbindPort: 111
+  rpcbindUdpPort: 111
 
 ingress:
   enabled: false
@@ -100,3 +93,19 @@ resources: {}
 #  requests:
 #    cpu: 2
 #    memory: 4Gi
+
+#################################################################
+# Sidecar Configuration.
+#
+# xtrabackup configuration defaults.
+#################################################################
+xtrabackupRepository: gcr.io/google-samples
+xtrabackupImage: xtrabackup:1.0
+xtrabackup:
+  internalPort: 3307
+
+nfsprovisionerRepository: quay.io
+nfsprovisionerImage: kubernetes_incubator/nfs-provisioner:v1.0.8
+nfsprovisionerPrefix: mysql
+
+sdnctlPrefix: mysql

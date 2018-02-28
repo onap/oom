@@ -20,7 +20,7 @@
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 APPC_HOME=${APPC_HOME:-/opt/openecomp/appc}
-MYSQL_PASSWD=${MYSQL_PASSWD:-openECOMP1.0}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 APPC_DB_USER=${APPC_DB_USER:-appcctl}
 APPC_DB_PASSWD=${APPC_DB_PASSWD:-appcctl}
@@ -28,7 +28,7 @@ APPC_DB_DATABASE=${SDN_DB_DATABASE:-appcctl}
 
 
 # Create tablespace and user account
-mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} mysql <<-END
+mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
 CREATE DATABASE ${APPC_DB_DATABASE};
 CREATE USER '${APPC_DB_USER}'@'localhost' IDENTIFIED BY '${APPC_DB_PASSWD}';
 CREATE USER '${APPC_DB_USER}'@'%' IDENTIFIED BY '${APPC_DB_PASSWD}';
@@ -39,16 +39,16 @@ END
 
 if [ -f ${APPC_HOME}/data/appcctl.dump ]
 then
-  mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} appcctl < ${APPC_HOME}/data/appcctl.dump
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} appcctl < ${APPC_HOME}/data/appcctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sdnctl.dump ]
 then
-  mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sdnctl.dump
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sdnctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sqlData.dump ]
 then
-  mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sqlData.dump
+  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sqlData.dump
 fi
 
