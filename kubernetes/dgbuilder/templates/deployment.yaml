@@ -1,0 +1,98 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.dbPodName }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /bin/bash
+          - -c
+          - cd /opt/onap/sdnc/dgbuilder/ && ./start.sh sdnc1.0 && wait
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}
+                key: db-root-password
+          - name: SDNC_CONFIG_DIR
+            value: /opt/onap/sdnc/data/properties
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - name: config
+            mountPath: /opt/app/application.properties
+            subPath: application.properties
+          - name: config
+            mountPath: /opt/onap/sdnc/dgbuilder/releases/sdnc1.0/conf/svclogic.properties
+            subPath: svclogic.properties
+          - name: config
+            mountPath: /opt/onap/sdnc/dgbuilder/svclogic/svclogic.properties
+            subPath: svclogic.properties
+          - name: scripts
+            mountPath: /opt/onap/sdnc/dgbuilder/createReleaseDir.sh
+            subPath: createReleaseDir.sh
+          - name: scripts
+            mountPath: /opt/onap/sdnc/dgbuilder/releases/sdnc1.0/customSettings.js
+            subPath: customSettings.js
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}-config
+        - name: scripts
+          configMap:
+            name: {{ include "common.fullname" . }}-scripts
+            defaultMode: 0755
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

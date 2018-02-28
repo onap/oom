@@ -31,7 +31,7 @@ ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJv
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 APPC_HOME=${APPC_HOME:-/opt/openecomp/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-openECOMP1.0}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 #
 # Adding the DMAAP_TOPIC_ENV variable into APPC-ASDC-LISTENER properties
@@ -55,7 +55,7 @@ echo "" >> $APPC_HOME/data/properties/appc.properties
 # Wait for database to init properly
 #
 echo "Waiting for mysql"
-until mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} mysql &> /dev/null
+until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
