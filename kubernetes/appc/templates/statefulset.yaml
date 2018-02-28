@@ -1,0 +1,186 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: "{{ .Values.service.name }}-cluster"
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.mysql.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /opt/appc/bin/startODL.sh
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.externalPort2 }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+            - name: SDNC_CONFIG_DIR
+              value: "{{ .Values.config.configDir }}"
+            - name: APPC_CONFIG_DIR
+              value: "{{ .Values.config.configDir }}"
+            - name: DMAAP_TOPIC_ENV
+              value: "{{ .Values.config.dmaapTopic }}"
+            - name: ENABLE_ODL_CLUSTER
+              value: "{{ .Values.config.enableClustering }}"
+            - name: APPC_REPLICAS
+              value: "{{ .Values.replicaCount }}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /opt/openecomp/appc/data/properties/dblib.properties
+            name: openecomp-appc-data-properties
+            subPath: dblib.properties
+          - mountPath: /opt/openecomp/appc/data/properties/svclogic.properties
+            name: openecomp-appc-data-properties
+            subPath: svclogic.properties
+          - mountPath: /opt/openecomp/appc/data/properties/appc.properties
+            name: openecomp-appc-data-properties
+            subPath: appc.properties
+          - mountPath: /opt/openecomp/appc/data/properties/aaiclient.properties
+            name: openecomp-appc-data-properties
+            subPath: aaiclient.properties
+          - mountPath: /opt/openecomp/appc/svclogic/config/svclogic.properties
+            name: openecomp-appc-svclogic-config
+            subPath: svclogic.properties
+          - mountPath: /opt/openecomp/appc/svclogic/bin/showActiveGraphs.sh
+            name: openecomp-appc-svclogic-bin
+            subPath: showActiveGraphs.sh
+          - mountPath: /opt/openecomp/appc/bin/startODL.sh
+            name: openecomp-appc-bin
+            subPath: startODL.sh
+          - mountPath: /opt/openecomp/appc/bin/installAppcDb.sh
+            name: openecomp-appc-bin
+            subPath: installAppcDb.sh
+          - mountPath: /opt/onap/sdnc/data/properties/dblib.properties
+            name: onap-sdnc-data-properties
+            subPath: dblib.properties
+          - mountPath: /opt/onap/sdnc/data/properties/svclogic.properties
+            name: onap-sdnc-data-properties
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
+            name: onap-sdnc-data-properties
+            subPath: aaiclient.properties
+          - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+            name: onap-sdnc-svclogic-config
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/svclogic/bin/showActiveGraphs.sh
+            name: onap-sdnc-svclogic-bin
+            subPath: showActiveGraphs.sh
+          - mountPath: /opt/onap/sdnc/bin/startODL.sh
+            name: onap-sdnc-bin
+            subPath: startODL.sh
+          - mountPath: /opt/onap/sdnc/bin/installSdncDb.sh
+            name: onap-sdnc-bin
+            subPath: installSdncDb.sh
+          - mountPath: /var/log/onap
+            name: logs
+          - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
+            name: log-config
+            subPath: org.ops4j.pax.logging.cfg
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: logs
+          - mountPath: /usr/share/filebeat/data
+            name: data-filebeat
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-filebeat
+        - name: log-config
+          configMap:
+            name: {{ include "common.fullname" . }}-logging-cfg
+        - name: logs
+          emptyDir: {}
+        - name: data-filebeat
+          emptyDir: {}
+        - name: openecomp-appc-data-properties
+          configMap:
+            name: {{ include "common.fullname" . }}-openecomp-appc-data-properties
+        - name: openecomp-appc-svclogic-config
+          configMap:
+            name: {{ include "common.fullname" . }}-openecomp-appc-svclogic-config
+        - name: openecomp-appc-svclogic-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-openecomp-appc-svclogic-bin
+            defaultMode: 0755
+        - name: openecomp-appc-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-openecomp-appc-bin
+            defaultMode: 0755
+        - name: onap-sdnc-data-properties
+          configMap:
+            name: {{ include "common.fullname" . }}-onap-sdnc-data-properties
+        - name: onap-sdnc-svclogic-config
+          configMap:
+            name: {{ include "common.fullname" . }}-onap-sdnc-svclogic-config
+        - name: onap-sdnc-svclogic-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-onap-sdnc-svclogic-bin
+            defaultMode: 0755
+        - name: onap-sdnc-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-onap-sdnc-bin
+            defaultMode: 0755
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

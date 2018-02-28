@@ -1,24 +1,40 @@
-#################################################################
-# Global configuration defaults.
+# Global configuration default values that can be inherited by
+# all subcharts.
 #################################################################
 global:
+  # Change to an unused port prefix range to prevent port conflicts
+  # with other instances running within the same k8s cluster
   nodePortPrefix: 302
+
+  # image repositories
+  repository: nexus3.onap.org:10001
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+
+  # readiness check
   readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
+  readinessImage: readiness-check:1.0.0
+
+  # logging agent
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
-# If mountPath is over NFS (e.g. /dockerdata-nfs is NFS mounted between the nodes), uncomment following lines.
-#  persistence:
-#    mountPath: /dockerdata
 
+  # image pull policy
+  pullPolicy: Always
+
+  # default mount path root directory referenced
+  # by persistent volumes and log files
+  persistence:
+    mountPath: /dockerdata-nfs
+
+  # flag to enable debugging - application support required
+  debugEnabled: true
+  
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: openecomp/appc-image:v1.2.0
-#image: onap/appc-image:1.3.0-SNAPSHOT-latest
+image: onap/ccsdk-dgbuilder-image:v0.1.0
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -27,25 +43,6 @@ debugEnabled: false
 # application configuration
 config:
   dbRootPassword: openECOMP1.0
-  enableClustering: true
-  configDir: /opt/openecomp/appc/data/properties
-  dmaapTopic: SUCCESS
-
-mysql:
-  nameOverride: appc-db
-  service:
-    name: appc-dbhost
-  nfsprovisionerPrefix: appc
-  sdnctlPrefix: appc
-  persistence:
-    mountSubPath: appc/data
-    enabled: true
-  disableNfsProvisioner: true
-
-dgbuilder:
-  nameOverride: appc-dgbuilder
-  dbPodName: appc-db
-  dbServiceName: appc-dbhost
 
 # default number of instances
 replicaCount: 1
@@ -68,16 +65,10 @@ readiness:
 
 service:
   type: NodePort
-  name: appc
-  #targetPort
-  internalPort: 8181
-  #port
-  externalPort: 8282
-  nodePort: 30
-
-  externalPort2: 1830
-  nodePort2: 31
-  clusterPort: 2550
+  name: dgbuilder
+  externalPort: 3000
+  internalPort: 3100
+  nodePort: 28
 
 ingress:
   enabled: false

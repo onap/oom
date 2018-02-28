@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 ###
 # ============LICENSE_START=======================================================
@@ -26,12 +26,41 @@
 #  if not already installed, and starts the APPC Docker Container
 #
 
+function enable_odl_cluster(){
+  if [ -z $APPC_REPLICAS ]; then
+     echo "APPC_REPLICAS is not configured in Env field"
+     exit
+  fi
+
+  echo "Installing Opendaylight cluster features"
+  ${ODL_HOME}/bin/client -u karaf feature:install odl-mdsal-clustering
+  ${ODL_HOME}/bin/client -u karaf feature:install odl-jolokia
+
+  echo "Update cluster information statically"
+  hm=$(hostname)
+  echo "Get current Hostname ${hm}"
+
+  node=($(echo ${hm} | tr '-' '\n'))
+  node_component=${node[0]}
+  node_name=${node[1]}
+  node_index=${node[2]}
+  node_list="${node_name}-0.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}";
+
+  for ((i=1;i<${APPC_REPLICAS};i++));
+  do
+    node_list="${node_list} ${node_name}-$i.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}"
+  done
+
+  /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
+}
+
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
 ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 APPC_HOME=${APPC_HOME:-/opt/openecomp/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-openECOMP1.0}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 
 #
 # Adding the DMAAP_TOPIC_ENV variable into APPC-ASDC-LISTENER properties
@@ -55,7 +84,7 @@ echo "" >> $APPC_HOME/data/properties/appc.properties
 # Wait for database to init properly
 #
 echo "Waiting for mysql"
-until mysql -h appc-dbhost.{{.Values.nsPrefix}} -u root -p${MYSQL_PASSWD} mysql &> /dev/null
+until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
@@ -96,6 +125,8 @@ then
                 echo "Installing APPC JSON DGs converted to XML using dg-loader"
                 ${APPC_HOME}/svclogic/bin/install-converted-dgs.sh
         fi
+
+        if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
 
         echo "Restarting OpenDaylight"
         ${ODL_HOME}/bin/stop
