@@ -1,4 +1,4 @@
-NAME=$(/consul/config/bin/kubectl -n namespace-placeholder get pod | grep -o "mariadb[^[:space:]]*")
+NAME=$(/consul/config/bin/kubectl -n namespace-placeholder get pod | grep -o "mso-mariadb[^[:space:]]*")
 
    if [ -n "$NAME" ]; then
        if /consul/config/bin/kubectl -n namespace-placeholder exec -it $NAME -- bash -c 'mysqladmin status -u root -p$MYSQL_ROOT_PASSWORD' > /dev/null; then
