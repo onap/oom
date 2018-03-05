@@ -27,8 +27,7 @@ check_return_code(){
 }
 
 create_service_account() {
-#  cmd=`echo kubectl create clusterrolebinding $1-$2-admin-binding --clusterrole=cluster-admin --serviceaccount=$1-$2:default`
-  cmd=`echo kubectl create clusterrolebinding $1-$2-admin-binding --clusterrole=cluster-admin --serviceaccount=$1:default`
+  cmd=`echo kubectl create clusterrolebinding $1-admin-binding --clusterrole=cluster-admin --serviceaccount=$1:default`
   eval ${cmd}
   check_return_code $cmd
 }
@@ -39,7 +38,6 @@ create_namespace() {
 }
 
 create_registry_key() {
-#  cmd=`echo kubectl --namespace $1-$2 create secret docker-registry $3 --docker-server=$4 --docker-username=$5 --docker-password=$6 --docker-email=$7`
 cmd=`echo kubectl --namespace $1 create secret docker-registry $2 --docker-server=$3 --docker-username=$4 --docker-password=$5 --docker-email=$6`
   eval ${cmd}
   check_return_code $cmd
@@ -179,14 +177,14 @@ then
 
     printf "\nCreating registry secret **********\n"
     create_registry_key $NS ${NS}-docker-registry-key $ONAP_DOCKER_REGISTRY $DU $DP $ONAP_DOCKER_MAIL
+
+    printf "\nCreating service account **********\n"
+    create_service_account $NS
 fi
 
 printf "\n\n********** Creating deployments for ${HELM_APPS[*]} ********** \n"
 
 for i in ${HELM_APPS[@]}; do
-
-  printf "\nCreating service account **********\n"
-  create_service_account $NS $i
 
   printf "\nCreating deployments and services **********\n"
   create_onap_helm $NS $i $start

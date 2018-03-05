@@ -7,12 +7,11 @@ delete_namespace() {
 }
 
 delete_service_account() {
-    kubectl delete clusterrolebinding $1-$2-admin-binding
-    printf "Service account $1-$2-admin-binding deleted.\n\n"
+    kubectl delete clusterrolebinding $1-admin-binding
 }
 
 delete_registry_key() {
-  kubectl --namespace $1-$2 delete secret ${1}-docker-registry-key
+  kubectl --namespace $1 delete secret ${1}-docker-registry-key
 }
 
 delete_app_helm() {
@@ -134,13 +133,14 @@ printf "\n********** Cleaning up ONAP: ${ONAP_APPS[*]}\n"
 
 for i in ${HELM_APPS[@]}; do
   delete_app_helm $NS $i
-  delete_service_account $NS $i
 done
 
 if [ "$SINGLE_COMPONENT" == "false" ]
 then
     delete_app_helm $NS "config"
     delete_namespace $NS
+    delete_registry_key $NS
+    delete_service_account $NS
 fi
 
 if $WAIT_TERMINATE; then

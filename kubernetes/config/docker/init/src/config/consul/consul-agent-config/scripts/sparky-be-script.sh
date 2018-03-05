@@ -1,5 +1,5 @@
 
-NAME=$(/consul/config/bin/kubectl -n namespace-placeholder get pod | grep -o "sparky-be[^[:space:]]*")
+NAME=$(/consul/config/bin/kubectl -n namespace-placeholder get pod | grep -o "aai-sparky-be[^[:space:]]*")
 
 if [ -n "$NAME" ]; then
    if /consul/config/bin/kubectl -n namespace-placeholder exec -it $NAME -- ps -efww | grep 'java' | grep 'sparky' > /dev/null; then
