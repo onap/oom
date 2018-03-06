@@ -11,5 +11,6 @@
 */}}
 {{- define "common.fullname" -}}
   {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+  {{- $suffix := default .Chart.Name .Values.nsSuffix -}}
+  {{- printf "%s-%s" $suffix $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

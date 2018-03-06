@@ -8,6 +8,5 @@
 */}}
 {{- define "common.namespace" -}}
   {{- $prefix := default .Release.Name .Values.nsPrefix -}}
-  {{- $suffix := default .Chart.Name .Values.nsSuffix -}}
-  {{- printf "%s-%s" $prefix $suffix -}}
+  {{- printf "%s" $prefix -}}
 {{- end -}}
