@@ -7,7 +7,5 @@
   - .Values.nsSuffix  : override namespace suffix
 */}}
 {{- define "common.namespace" -}}
-  {{- $prefix := default .Release.Name .Values.nsPrefix -}}
-  {{- $suffix := default .Chart.Name .Values.nsSuffix -}}
-  {{- printf "%s-%s" $prefix $suffix -}}
+  {{- default .Release.Name .Values.nsPrefix -}}
 {{- end -}}
