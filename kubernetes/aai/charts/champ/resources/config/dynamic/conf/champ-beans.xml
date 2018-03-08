@@ -1,0 +1,62 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:util="http://www.springframework.org/schema/util"
+xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd
+       ">
+
+    <!-- Event publisher to pass to the Champ library for logging raw graph
+         events (Kafka implementation). -->
+    <bean id="champEventPublisher" class="org.onap.aai.event.client.KafkaEventPublisher" >
+        <constructor-arg name="hosts" value="global-kafka.{{.Release.Namespace}}:9092" />
+        <constructor-arg name="topic" value="champRawEvents" />
+    </bean>
+
+    <!-- Graph Implementation Configuration-->
+    <util:map id="props" map-class="java.util.HashMap" key-type="java.lang.String" value-type="java.lang.Object">
+        <entry key="champcore.event.stream.buffer.capacity" value="50" value-type="java.lang.Integer"/>
+        <entry key="champcore.event.stream.publisher-pool-size" value="10" value-type="java.lang.Integer"/>
+        <entry key="champcore.event.stream.publisher" value-ref="champEventPublisher"/>
+
+        <entry key="graph.name" value="aaigraph.dev"/>
+        <entry key="storage.backend" value="hbase"/>
+        <entry key="storage.hostname" value="hbase.{{.Release.Namespace}}"/>
+
+        <!-- Hbase Config -->
+        <entry key="storage.hbase.ext.hbase.zookeeper.property.clientPort" value="2181"/>
+        <entry key="storage.hbase.ext.zookeeper.znode.parent" value="/hbase"/>
+    </util:map>
+
+    <!-- Janus Implementation -->
+    <bean id="graphBuilder" class="org.onap.aai.champjanus.graph.impl.JanusChampGraphImpl$Builder">
+        <constructor-arg value="aaigraph.dev"/>
+        <constructor-arg ref="props" />
+    </bean>
+
+    <bean id="graphImpl" class="org.onap.aai.champjanus.graph.impl.JanusChampGraphImpl">
+        <constructor-arg ref="graphBuilder" />
+    </bean>
+
+    <bean id="champUUIDService" class="org.onap.champ.service.ChampUUIDService" >
+        <constructor-arg name="graphImpl" ref="graphImpl" />
+    </bean>
+
+    <bean id="cache" class="org.onap.champ.service.ChampTransactionCache" >
+        <constructor-arg name="txTimeOutInSec" value="600" />
+        <constructor-arg name="graphImpl" ref="graphImpl" />
+    </bean>
+
+    <bean id="champDataService" class="org.onap.champ.service.ChampDataService" >
+        <constructor-arg name="champUUIDService" ref="champUUIDService" />
+        <constructor-arg name="graphImpl" ref="graphImpl" />
+        <constructor-arg name="cache" ref="cache" />
+    </bean>
+
+    <bean id="champRestService" class="org.onap.champ.ChampRESTAPI" >
+        <constructor-arg name="champDataService" ref="champDataService" />
+        <constructor-arg name="champAsyncRequestProcessor"><null/></constructor-arg>
+    </bean>
+</beans>

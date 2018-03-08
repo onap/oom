@@ -1,0 +1,94 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: CONFIG_HOME
+              value: "/opt/app/champ-service/appconfig"
+            - name: GRAPHIMPL
+              value: "janus-deps"
+            - name: SERVICE_BEANS
+              value: "/opt/app/champ-service/dynamic/conf"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /opt/app/champ-service/appconfig/champ-api.properties
+            name: {{ include "common.fullname" . }}-config
+            subPath: champ-api.properties
+          - mountPath: /opt/app/champ-service/appconfig/auth
+            name: {{ include "common.fullname" . }}-secrets
+          - mountPath: /opt/app/champ-service/dynamic/conf/champ-beans.xml
+            name: {{ include "common.fullname" . }}-dynamic-config
+            subPath: champ-beans.xml
+          - mountPath: /logs
+            name: {{ include "common.fullname" . }}-logs
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            readOnly: true
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+            - key: champ-api.properties
+              path: champ-api.properties
+        - name: {{ include "common.fullname" . }}-secrets
+          secret:
+            secretName: {{ include "common.fullname" . }}-champ-secrets
+        - name: {{ include "common.fullname" . }}-dynamic-config
+          configMap:
+            name: {{ include "common.fullname" . }}-dynamic-configmap
+            items:
+            - key: champ-beans.xml
+              path: champ-beans.xml
+        - name: {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
