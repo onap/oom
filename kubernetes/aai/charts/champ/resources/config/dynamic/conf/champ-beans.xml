@@ -1,0 +1,104 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:util="http://www.springframework.org/schema/util"
+xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd
+       ">
+	
+	<bean id="asyncResponsePublisher" class="com.att.ecomp.event.client.DMaaPEventPublisher" >
+       <constructor-arg name="host" value="dmaap.{{.Values.nsPrefix}}-message-router" />
+       <constructor-arg name="topic" value="champAsyncResponseEventsGreenbank" />
+       <constructor-arg name="username" value="m08479@aai.ecomp.att.com" />
+       <constructor-arg name="password" value="25deb462f8ffed0b753aa90481a99d91" />
+       <constructor-arg name="maxBatchSize" value="100" />
+       <constructor-arg name="maxAgeMs" value="1" />
+       <constructor-arg name="delayBetweenBatchesMs" value="1" />
+       <constructor-arg name="transportType" value="HTTPAUTH" />
+   </bean>
+
+	<bean id="asyncRequestConsumer" class="com.att.ecomp.event.client.DMaaPEventConsumer">
+       <constructor-arg name="host" value="dmaap.{{.Values.nsPrefix}}-message-router" />
+       <constructor-arg name="topic" value="champAsyncRequestEventsGreenbank" />
+       <constructor-arg name="username" value="m08479@aai.ecomp.att.com" />
+       <constructor-arg name="password" value="25deb462f8ffed0b753aa90481a99d91" />
+		 <constructor-arg name="consumerGroup" value="champ-async-response-greenbank" />
+		 <constructor-arg name="consumerId" value="champ-async-response-greenbank" />
+		 <constructor-arg name="timeoutMs" value="15000" />
+		 <constructor-arg name="messageLimit" value="1000" />
+		 <constructor-arg name="transportType" value="HTTPAUTH" />
+	</bean>
+
+    <bean id="champEventPublisher" class="com.att.ecomp.event.client.DMaaPEventPublisher" >
+        <constructor-arg name="host" value="dmaap.{{.Values.nsPrefix}}-message-router" />
+        <constructor-arg name="topic" value="CHAMP-RAW-EVENTS-SDWAN" />
+        <constructor-arg name="username" value="m08479@aai.ecomp.att.com" />
+        <constructor-arg name="password" value="25deb462f8ffed0b753aa90481a99d91" />
+        <constructor-arg name="maxBatchSize" value="100" />
+        <constructor-arg name="maxAgeMs" value="250" />
+        <constructor-arg name="delayBetweenBatchesMs" value="50" />
+        <constructor-arg name="transportType" value="HTTPAUTH" />		
+    </bean>
+
+    <!-- Graph Implementation Configuration-->
+    <util:map id="props" map-class="java.util.HashMap" key-type="java.lang.String" value-type="java.lang.Object">
+        <entry key="champcore.event.stream.buffer.capacity" value="50" value-type="java.lang.Integer"/>
+        <entry key="champcore.event.stream.publisher-pool-size" value="10" value-type="java.lang.Integer"/>
+        <entry key="champcore.event.stream.publisher" value-ref="champEventPublisher"/>
+
+        <entry key="graph.name" value="aaigraph.dev"/>
+        <entry key="storage.backend" value="hbase"/>
+        <entry key="storage.hostname" value="hbase.onap.svc.cluster.local"/>
+    
+        <!-- Hbase Config -->
+        <entry key="storage.hbase.ext.hbase.zookeeper.property.clientPort" value="2181"/>
+        <entry key="storage.hbase.ext.zookeeper.znode.parent" value="/hbase"/>
+    
+        <!-- Cassandra Config -->
+        <entry key="storage.port" value="2181"/>
+    </util:map>
+
+    <!-- Janus Implementation -->
+    <bean id="graphBuilder" class="org.onap.aai.champjanus.graph.impl.JanusChampGraphImpl$Builder">
+        <constructor-arg value="aaigraph.dev"/>
+        <constructor-arg ref="props" />
+    </bean>
+    <bean id="graphImpl" class="org.onap.aai.champjanus.graph.impl.JanusChampGraphImpl">
+        <constructor-arg ref="graphBuilder" />
+    </bean>
+    
+    <bean id="champAsyncResponsePublisher" class="org.onap.champ.async.ChampAsyncResponsePublisher">
+        <constructor-arg name="asyncResponsePublisher" ref="asyncResponsePublisher" />
+    </bean>
+
+    <bean id="champAsyncRequestProcessor" class="org.onap.champ.async.ChampAsyncRequestProcessor">
+        <constructor-arg name="champDataService" ref="champDataService" />
+        <constructor-arg name="champAsyncResponsePublisher" ref="champAsyncResponsePublisher" />
+        <constructor-arg name="asyncRequestConsumer" ref="asyncRequestConsumer" />
+        <constructor-arg name="requestProcesserQueueSize" value="10000" />
+        <constructor-arg name="requestProcesserPoolSize" value="10" />
+        <constructor-arg name="requestPollingTimeSeconds" value="1000" />
+    </bean>
+	
+    <bean id="champUUIDService" class="org.onap.champ.service.ChampUUIDService" >
+        <constructor-arg name="graphImpl" ref="graphImpl" />         
+    </bean>
+	
+    <bean id="cache" class="org.onap.champ.service.ChampTransactionCache" >
+        <constructor-arg name="txTimeOutInSec" value="600" />         
+        <constructor-arg name="graphImpl" ref="graphImpl" />    
+    </bean>
+	
+    <bean id="champDataService" class="org.onap.champ.service.ChampDataService" >
+        <constructor-arg name="champUUIDService" ref="champUUIDService" />
+        <constructor-arg name="graphImpl" ref="graphImpl" />		
+        <constructor-arg name="cache" ref="cache" />	 
+    </bean>
+	
+	 <bean id="champRestService" class="org.onap.champ.ChampRESTAPI" >
+        <constructor-arg name="champDataService" ref="champDataService" />
+		  <constructor-arg name="champAsyncRequestProcessor" ref="champAsyncRequestProcessor" />		         
+    </bean>
+</beans>
