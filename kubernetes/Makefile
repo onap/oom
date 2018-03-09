@@ -1,18 +1,26 @@
 PARENT_CHART := onap
 COMMON_CHARTS_DIR := common
-
+SETUP_CHARTS_DIR := setup
 # FIXME OOM-765
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
-EXCLUDES := $(COMMON_CHARTS_DIR) config oneclick readiness test dist $(PARENT_CHART) dcae
-HELM_CHARTS := $(COMMON_CHARTS_DIR) $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
+EXCLUDES := $(SETUP_CHARTS_DIR) $(COMMON_CHARTS_DIR) config oneclick readiness test dist $(PARENT_CHART) dcae
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(HELM_CHARTS)
+all: $(COMMON_CHARTS_DIR) $(SETUP_CHARTS_DIR) $(HELM_CHARTS)
+
+common:
+	@echo "\n[$@]"
+	@make package-$@
+
+setup:
+	@echo "\n[$@]"
+	@make package-$@
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"

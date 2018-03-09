@@ -4,8 +4,7 @@
   using the following value:
 
   - .Values.nsPrefix  : override namespace prefix
-  - .Values.nsSuffix  : override namespace suffix
 */}}
 {{- define "common.namespace" -}}
-  {{- default .Release.Name .Values.nsPrefix -}}
+  {{- default .Release.Namespace .Values.nsPrefix -}}
 {{- end -}}
