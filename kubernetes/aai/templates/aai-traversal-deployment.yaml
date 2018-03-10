@@ -245,7 +245,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - hbase
+        - cassandra
         - --container-name
         - aai-resources
         env:
@@ -262,32 +262,39 @@ spec:
         image: "{{ .Values.image.aaiTraversalImage }}:{{ .Values.image.aaiTraversalVersion }}"
         imagePullPolicy: {{ .Values.pullPolicy }}
         env:
-        - name: CHEF_BRANCH
-          value: master
-        - name: AAI_CHEF_ENV
-          value: simpledemo
-        - name: AAI_CORE_VERSION
-          value: {{ .Values.aaicoreversion }}
-        - name: AAI_CHEF_LOC
-          value: /var/chef/aai-data/environments
-        - name: CHEF_GIT_URL
-          value: http://gerrit.onap.org/r/aai
-        - name: RESOURCES_HOSTNAME
-          value: aai-resources.{{ .Values.nsPrefix }}
+        - name: DISABLE_UPDATE_QUERY
+          value: "true"
+        - name: LOCAL_USER_ID
+          value: "1000"
+        - name: LOCAL_GROUP_ID
+          value: "1000"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /var/chef/aai-data/chef-config/dev/.knife/solo.rb
-          subPath: solo.rb
-          name: aai-chef-config
-        - mountPath: /var/chef/aai-data/environments/
-          name: aai-data
+        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/titan-realtime.properties
+          name: aai-traversal-db-real-conf
+          subPath: titan-realtime.properties
+        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/titan-cached.properties
+          name: aai-traversal-db-cached-conf
+          subPath: titan-cached.properties
+        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
+          name: aai-traversal-aaiconfig-conf
+          subPath: aaiconfig.properties
         - mountPath: /var/log/onap
           name: aai-traversal-logs
-        - mountPath: /opt/app/aai-traversal/bundleconfig/etc/logback.xml
+        - mountPath: /opt/app/aai-traversal/resources/logback.xml
           name: aai-traversal-log-conf
           subPath: logback.xml
+        - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
+          name: aai-traversal-localhost-access-log-conf
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-traversal/resources/application.properties
+          name: aai-traversal-springapp-conf
+          subPath: application.properties
+        - mountPath: /opt/app/aai-traversal/resources/etc/auth/aai_keystore
+          name: aai-traversal-auth-sec
+          subPath: aai_keystore
         ports:
         - containerPort: 8446
         readinessProbe:
@@ -310,12 +317,6 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aai-chef-config
-        configMap:
-          name: aai-chef-config-configmap
-      - name: aai-data
-        configMap:
-          name: aai-resources-environments-configmap
       - name: filebeat-conf
         configMap:
           name: aai-filebeat-configmap
@@ -326,6 +327,27 @@ spec:
       - name: aai-traversal-log-conf
         configMap:
          name: aai-traversal-log-configmap
+      - name: aai-traversal-localhost-access-log-conf
+        configMap:
+         name: aai-traversal-localhost-access-log-configmap
+      - name: aai-traversal-db-real-conf
+        configMap:
+         name: aai-traversal-db-real-configmap
+      - name: aai-traversal-db-cached-conf
+        configMap:
+         name: aai-traversal-db-cached-configmap
+      - name: aai-traversal-aaiconfig-conf
+        configMap:
+         name: aai-traversal-aaiconfig-configmap
+      - name: aai-traversal-springapp-conf
+        configMap:
+         name: aai-traversal-springapp-configmap
+      - name: aai-traversal-realm-conf
+        configMap:
+         name: aai-traversal-realm-configmap
+      - name: aai-traversal-auth-sec
+        secret:
+         secretName: aai-traversal-auth-secret
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
