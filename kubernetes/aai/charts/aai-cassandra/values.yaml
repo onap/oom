@@ -1,29 +1,35 @@
-# Default values for traversal.
+# Default values for cassandra.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
 
 
 # application image
-repository: nexus3.onap.org:10001
-image: onap/aai-traversal:1.2-STAGING-latest
+dockerhubRepository: registry.hub.docker.com
+image: cassandra:2.1
 pullPolicy: Always
-restartPolicy: Always
 
 # application configuration
 config:
-  aaicoreversion: 1.1.0-SNAPSHOT
-  userId: 1000
-  groupId: 1000
-  disableUpdateQuery: true
+  heap:
+    max: 512M
+    min: 100M
+  jvmOpts: -Dcassandra.consistent.rangemovement=false
+  clusterName: aai-cluster
+  dataCenter: Pod lab
+  rackName: Rack1
+  autoBootstrap: true
+  ports:
+    cql: 9042
+    thrift: 9160
+    # If a JVM Agent is in place
+    # agent: 61621
 
 
 # default number of instances
-replicaCount: 1
+replicaCount: 3
 
 nodeSelector: {}
 
@@ -31,11 +37,11 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 60
-  periodSeconds: 60
+  initialDelaySeconds: 10
+  periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  enabled: false
+  enabled: true
 
 readiness:
   initialDelaySeconds: 10
@@ -43,13 +49,42 @@ readiness:
 
 service:
   type: ClusterIP
-  name: aai-traversal
-  internalPort: 8446
-  internalPort2: 5005
+  name: aai-cassandra
+  internalPort: 7000
+  internalPort2: 7001
+  internalPort3: 7199
+  internalPort4: 9042
+
+podManagementPolicy: OrderedReady
+updateStrategy:
+  type: OnDelete
 
 ingress:
   enabled: false
 
+persistence:
+  enabled: false
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  ## storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: aai/cassandra
+
+  
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
