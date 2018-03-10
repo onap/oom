@@ -415,7 +415,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - hbase
+        - cassandra
         env:
         - name: NAMESPACE
           valueFrom:
@@ -430,32 +430,37 @@ spec:
         image: "{{ .Values.image.aaiResourcesImage }}:{{ .Values.image.aaiResourcesVersion}}"
         imagePullPolicy: {{ .Values.pullPolicy }}
         env:
-        - name: CHEF_BRANCH
-          value: master
-        - name: AAI_CHEF_ENV
-          value: simpledemo
-        - name: AAI_CORE_VERSION
-          value: {{ .Values.aaicoreversion }}
-        - name: AAI_CHEF_LOC
-          value: /var/chef/aai-data/environments
-        - name: CHEF_GIT_URL
-          value: http://gerrit.onap.org/r/aai
-        - name: HBASE_STARTUP_ARTIFICIAL_DELAY
-          value: "60"
+        - name: LOCAL_USER_ID
+          value: "1000"
+        - name: LOCAL_GROUP_ID
+          value: "1000"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /var/chef/aai-data/chef-config/dev/.knife/solo.rb
-          subPath: solo.rb
-          name: aai-chef-config
-        - mountPath: /var/chef/aai-data/environments/
-          name: aai-data
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/titan-realtime.properties
+          name: aai-resources-db-real-conf
+          subPath: titan-realtime.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/titan-cached.properties
+          name: aai-resources-db-cached-conf
+          subPath: titan-cached.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/aaiconfig.properties
+          name: aai-resources-aaiconfig-conf
+          subPath: aaiconfig.properties
         - mountPath: /var/log/onap
           name: aai-resources-logs
-        - mountPath: /opt/app/aai-resources/bundleconfig/etc/logback.xml
+        - mountPath: /opt/app/aai-resources/resources/logback.xml
           name: aai-resources-log-conf
           subPath: logback.xml
+        - mountPath: /opt/app/aai-resources/resources/localhost-access-logback.xml
+          name: aai-resources-localhost-access-log-conf
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-resources/resources/application.properties
+          name: aai-resources-springapp-conf
+          subPath: application.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/auth/aai_keystore
+          name: aai-resources-auth-sec
+          subPath: aai_keystore
         ports:
         - containerPort: 8447
         readinessProbe:
@@ -478,12 +483,6 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aai-chef-config
-        configMap:
-          name: aai-chef-config-configmap
-      - name: aai-data
-        configMap:
-          name: aai-resources-environments-configmap
       - name: filebeat-conf
         configMap:
           name: aai-filebeat-configmap
@@ -494,6 +493,27 @@ spec:
       - name: aai-resources-log-conf
         configMap:
          name: aai-resources-log-configmap
+      - name: aai-resources-localhost-access-log-conf
+        configMap:
+         name: aai-resources-localhost-access-log-configmap
+      - name: aai-resources-db-real-conf
+        configMap:
+         name: aai-resources-db-real-configmap
+      - name: aai-resources-db-cached-conf
+        configMap:
+         name: aai-resources-db-cached-configmap
+      - name: aai-resources-aaiconfig-conf
+        configMap:
+         name: aai-resources-aaiconfig-configmap
+      - name: aai-resources-springapp-conf
+        configMap:
+         name: aai-resources-springapp-configmap
+      - name: aai-resources-realm-conf
+        configMap:
+         name: aai-resources-realm-configmap
+      - name: aai-resources-auth-sec
+        secret:
+         secretName: aai-resources-auth-secret
       restartPolicy: Always
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
