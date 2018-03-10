@@ -415,12 +415,13 @@ spec:
           }
           ]'
     spec:
+      hostname: aai-resources
       initContainers:
       - command:
         - /root/ready.py
         args:
         - --container-name
-        - aai-hbase
+        - aai-cassandra
         env:
         - name: NAMESPACE
           valueFrom:
@@ -435,32 +436,37 @@ spec:
         image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
-        - name: CHEF_BRANCH
-          value: master
-        - name: AAI_CHEF_ENV
-          value: simpledemo
-        - name: AAI_CORE_VERSION
-          value: {{ .Values.config.aaicoreversion }}
-        - name: AAI_CHEF_LOC
-          value: /var/chef/aai-data/environments
-        - name: CHEF_GIT_URL
-          value: http://gerrit.onap.org/r/aai
-        - name: HBASE_STARTUP_ARTIFICIAL_DELAY
-          value: "60"
+        - name: LOCAL_USER_ID
+          value: "1000"
+        - name: LOCAL_GROUP_ID
+          value: "1000"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /var/chef/aai-data/chef-config/dev/.knife/solo.rb
-          subPath: solo.rb
-          name: aai-chef-config
-        - mountPath: /var/chef/aai-data/environments/
-          name: aai-data
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/janusgraph-realtime.properties
+          name: {{ include "common.fullname" . }}-db-real-conf
+          subPath: janusgraph-realtime.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/janusgraph-cached.properties
+          name: {{ include "common.fullname" . }}-db-cached-conf
+          subPath: janusgraph-cached.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/appprops/aaiconfig.properties
+          name: {{ include "common.fullname" . }}-aaiconfig-conf
+          subPath: aaiconfig.properties
         - mountPath: /var/log/onap
-          name: aai-resources-logs
-        - mountPath: /opt/app/aai-resources/bundleconfig/etc/logback.xml
-          name: aai-resources-log-conf
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /opt/app/aai-resources/resources/logback.xml
+          name: {{ include "common.fullname" . }}-log-conf
           subPath: logback.xml
+        - mountPath: /opt/app/aai-resources/resources/localhost-access-logback.xml
+          name: {{ include "common.fullname" . }}-localhost-access-log-conf
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-resources/resources/application.properties
+          name: {{ include "common.fullname" . }}-springapp-conf
+          subPath: application.properties
+        - mountPath: /opt/app/aai-resources/resources/etc/auth/aai_keystore
+          name: {{ include "common.fullname" . }}-auth-sec
+          subPath: aai_keystore
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -498,30 +504,45 @@ spec:
           subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
-          name: aai-resources-logs
+          name: {{ include "common.fullname" . }}-logs
         - mountPath: /usr/share/filebeat/data
-          name: aai-resources-filebeat
+          name: {{ include "common.fullname" . }}-filebeat
 
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aai-chef-config
-        configMap:
-          name: aai-chef-config
-      - name: aai-data
-        configMap:
-          name: aai-resources-environments
       - name: filebeat-conf
         configMap:
           name: aai-filebeat
-      - name: aai-resources-logs
+      - name: {{ include "common.fullname" . }}-logs
         emptyDir: {}
-      - name: aai-resources-filebeat
+      - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
-      - name: aai-resources-log-conf
+      - name: {{ include "common.fullname" . }}-log-conf
         configMap:
-         name: {{ include "common.fullname" . }}
-      restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
+         name: {{ include "common.fullname" . }}-log-configmap
+      - name: {{ include "common.fullname" . }}-localhost-access-log-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-localhost-access-log-configmap
+      - name: {{ include "common.fullname" . }}-db-real-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-db-real-configmap
+      - name: {{ include "common.fullname" . }}-db-cached-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-db-cached-configmap
+      - name: {{ include "common.fullname" . }}-aaiconfig-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-aaiconfig-configmap
+      - name: {{ include "common.fullname" . }}-springapp-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-springapp-configmap
+      - name: {{ include "common.fullname" . }}-realm-conf
+        configMap:
+         name: {{ include "common.fullname" . }}-realm-configmap
+      - name: {{ include "common.fullname" . }}-auth-sec
+        secret:
+         secretName: {{ include "common.fullname" . }}-auth-secret
+      restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
