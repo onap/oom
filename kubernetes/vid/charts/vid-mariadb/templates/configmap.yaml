@@ -1,4 +1,3 @@
-{{/*
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,37 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
 
 #{{ if not .Values.disableVidVidMariadb }}
 apiVersion: v1
-kind: PersistentVolume
+kind: ConfigMap
 metadata:
-  name: "{{ .Values.nsPrefix }}-vid"
-  namespace: "{{ .Values.nsPrefix }}"
-  labels:
-    name: "{{ .Values.nsPrefix }}-vid"
-spec:
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/vid/mariadb/data
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: vid-db
-  namespace: "{{ .Values.nsPrefix }}"
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 2Gi
-  selector:
-    matchLabels:
-      name: "{{ .Values.nsPrefix }}-vid"
-#{{ end }}
+  name: {{ include "common.fullname" . }}-lfconfig
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/lf_config/*").AsConfig . | indent 2 }}
