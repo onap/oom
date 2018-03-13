@@ -1,0 +1,162 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.mariadb.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }} 
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/usr/local/tomcat/webapps/vid/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: ASDC_CLIENT_REST_HOST
+              value: sdc-be.{{ include "common.namespace" . }}-sdc
+            - name: ASDC_CLIENT_REST_AUTH
+              value: "{{ .Values.config.asdcclientrestauth }}"
+            - name: ASDC_CLIENT_REST_PORT
+              value: "{{ .Values.config.asdcclientrestport }}"
+            - name: VID_AAI_HOST
+              value: aai-service.{{ include "common.namespace" . }}-aai
+            - name: VID_AAI_PORT
+              value: "{{ .Values.config.vidaaiport }}"
+            - name: VID_ECOMP_SHARED_CONTEXT_REST_URL
+              value: http://portalapps.{{ include "common.namespace" . }}-portal:"{{ .Values.config.onapport }}"/ONAPPORTAL/context
+            - name: VID_MSO_SERVER_URL
+              value: http://mso.{{ include "common.namespace" . }}-mso:"{{ .Values.config.msoport }}"
+            - name: VID_MSO_PASS
+              value: "{{ .Values.config.vidmsopass }}"
+            - name: MSO_DME2_SERVER_URL
+              value: "{{ .Values.config.msodme2serverurl }}"
+            - name: MSO_DME2_ENABLED
+              value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
+            - name: VID_ECOMP_REDIRECT_URL
+              value: http://portalapps.{{ include "common.namespace" . }}-portal:"{{ .Values.config.onapport }}"/ONAPPORTAL/login.h\tm
+            - name: VID_ECOMP_REST_URL
+              value: http://portalapps.{{ include "common.namespace" . }}-portal:"{{ .Values.config.onapport }}"/ONAPPORTAL/auxapi
+            - name: VID_CONTACT_US_LINK
+              value: "{{ .Values.config.vidcontactuslink }}"
+            - name: VID_UEB_URL_LIST
+              value: dmaap.{{ include "common.namespace" . }}-message-router
+            - name: VID_MYSQL_HOST
+              value: "{{ .Values.config.vidmysqlhost }}"
+            - name: VID_MYSQL_PORT
+              value: "{{ .Values.config.vidmysqlport }}"
+            - name: VID_MYSQL_DBNAME
+              value: "{{ .Values.config.vidmysqldbname }}"
+            - name: VID_MYSQL_USER
+              value: "{{ .Values.config.vidmysqluser }}"
+            - name: VID_MYSQL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: vid-password
+            - name: VID_MYSQL_MAXCONNECTIONS
+              value: "{{ .Values.config.vidmysqlmaxconnections }}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /var/log/onap
+            name: vid-logs
+          - mountPath: /tmp/logback.xml
+            name: vid-logback
+            subPath: logback.xml
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: vid-logs
+          - mountPath: /usr/share/filebeat/data
+            name: vid-data-filebeat
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-filebeat-configmap
+        - name: vid-logs
+          emptyDir: {}
+        - name: vid-data-filebeat
+          emptyDir: {}
+        - name: vid-logback
+          configMap:
+            name: {{ include "common.fullname" . }}-log-configmap
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
