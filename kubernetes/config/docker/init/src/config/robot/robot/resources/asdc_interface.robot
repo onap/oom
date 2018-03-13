@@ -53,11 +53,13 @@ Distribute Model From ASDC
     [Arguments]    ${model_zip_path}   ${catalog_service_name}=
     ${catalog_service_id}=    Add ASDC Catalog Service    ${catalog_service_name}
     ${catalog_resource_ids}=    Create List
+    ${catalog_resources}=   Create Dictionary
     : FOR    ${zip}     IN     @{model_zip_path}
     \    ${loop_catalog_resource_id}=    Setup ASDC Catalog Resource    ${zip}
     \    Append To List    ${catalog_resource_ids}   ${loop_catalog_resource_id}
     \    ${loop_catalog_resource_resp}=    Get ASDC Catalog Resource    ${loop_catalog_resource_id}
     \    Add ASDC Resource Instance    ${catalog_service_id}    ${loop_catalog_resource_id}    ${loop_catalog_resource_resp['name']}
+    \    Set To Dictionary    ${catalog_resources}   ${loop_catalog_resource_id}=${loop_catalog_resource_resp}
     ${catalog_service_resp}=    Get ASDC Catalog Service    ${catalog_service_id}
     Checkin ASDC Catalog Service    ${catalog_service_id}
     Request Certify ASDC Catalog Service    ${catalog_service_id}
@@ -69,7 +71,7 @@ Distribute Model From ASDC
 	${catalog_service_resp}=    Get ASDC Catalog Service    ${catalog_service_id}
 	${vf_module}=    Find Element In Array    ${loop_catalog_resource_resp['groups']}    type    org.openecomp.groups.VfModule
 	Check Catalog Service Distributed    ${catalog_service_resp['uuid']}
-    [Return]    ${catalog_service_resp['name']}    ${loop_catalog_resource_resp['name']}    ${vf_module}   ${catalog_resource_ids}    ${catalog_service_id}
+    [Return]    ${catalog_service_resp['name']}    ${loop_catalog_resource_resp['name']}    ${vf_module}   ${catalog_resource_ids}    ${catalog_service_id}    ${catalog_resources}
     
 Setup ASDC Catalog Resource
     [Documentation]    Creates all the steps a vf needs for an asdc catalog resource and returns the id
@@ -390,6 +392,7 @@ Check Catalog Service Distributed
     [Arguments]    ${catalog_service_uuid}
     ${dist_resp}=    Get Catalog Service Distribution    ${catalog_service_uuid}
     Should Be Equal As Strings 	${dist_resp['distributionStatusOfServiceList'][0]['deployementStatus']} 	Distributed
+    Sleep 3 minutes
     ${det_resp}=    Get Catalog Service Distribution Details    ${dist_resp['distributionStatusOfServiceList'][0]['distributionID']}
     @{ITEMS}=    Copy List    ${det_resp['distributionStatusList']}
     :FOR    ${ELEMENT}    IN    @{ITEMS}

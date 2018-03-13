@@ -137,9 +137,9 @@ Get Template Parameters
     Set To Dictionary   ${valuemap}   network=${GLOBAL_INJECTED_NETWORK} 
     Set To Dictionary   ${valuemap}   public_net_id=${GLOBAL_INJECTED_PUBLIC_NET_ID}
     Set To Dictionary   ${valuemap}   cloud_env=${GLOBAL_INJECTED_CLOUD_ENV}
-    Set To Dictionary   ${valuemap}   install_script_version=${GLOBAL_INJECTED_INSTALL_SCRIPT_VERSION}
+    Set To Dictionary   ${valuemap}   install_script_version=${GLOBAL_INJECTED_SCRIPT_VERSION}
     Set To Dictionary   ${valuemap}   vm_image_name=${GLOBAL_INJECTED_VM_IMAGE_NAME}
-    Set To Dictionary   ${valuemap}   vm_flavor_name=${GLOBAL_INJECTED_VM_FLAVOR_NAME}
+    Set To Dictionary   ${valuemap}   vm_flavor_name=${GLOBAL_INJECTED_VM_FLAVOR}
     # update the value map with unique values.
     Set To Dictionary   ${valuemap}   uuid=${uuid}   hostid=${hostid}    ecompnet=${ecompnet}
     ${parameters}=    Create Dictionary
@@ -201,7 +201,7 @@ Login To SDNGC Admin GUI
     ## Setup Browser is now being managed by the test case 
     ## Setup Browser
     Go To    ${SDNGC_ADMIN_SIGNUP_URL}
-    Maximize Browser Window
+    ##Maximize Browser Window
     Set Selenium Speed    ${GLOBAL_SELENIUM_DELAY}
     Set Browser Implicit Wait    ${GLOBAL_SELENIUM_BROWSER_IMPLICIT_WAIT}
     Log    Logging in to ${SDNGC_ADMIN_LOGIN_URL}
