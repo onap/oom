@@ -1,0 +1,109 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_DATABASE
+              value: "{{ .Values.config.mysqldb }}"
+            - name: MYSQL_USER
+              value: "{{ .Values.config.mysqluser }}"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /var/lib/mysql
+            name: mariadb-data
+          - mountPath: /docker-entrypoint-initdb.d/vid-pre-init.sql
+            name: lfconfig
+            subPath: vid-pre-init.sql
+          - mountPath: /etc/mysql/my.cnf
+            name: lfconfig
+            subPath: my.cnf
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: mariadb-data
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: lfconfig
+          configMap:
+            name: {{ include "common.fullname" . }}-lfconfig
+            defaultMode: 0755
+            items:
+            - key: vid-my.cnf
+              path: my.cnf
+            - key: vid-pre-init.sql
+              path: vid-pre-init.sql
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
