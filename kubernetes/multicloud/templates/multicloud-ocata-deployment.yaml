@@ -29,7 +29,6 @@ spec:
         app: multicloud-ocata
       name: multicloud-ocata
     spec:
-     hostname: multicloud-ocata
      containers:
      - env:
        - name: MSB_ADDR
@@ -48,8 +47,11 @@ spec:
          value: "AAI"
        name: multicloud-ocata
        volumeMounts:
-       - mountPath: /opt/ocata/logs
+       - mountPath: /var/log/onap
          name: ocata-log
+       - mountPath: /opt/ocata/ocata/pub/config/log.yml
+         name: ocata-logconfig
+         subPath: log.yml
        image: {{ .Values.image.ocata }}
        imagePullPolicy: {{ .Values.pullPolicy }}
        ports:
@@ -64,11 +66,29 @@ spec:
          timeoutSeconds: 10
          successThreshold: 1
          failureThreshold: 5
-     restartPolicy: Always
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: ocata-log
+       - mountPath: /usr/share/filebeat/data
+         name: ocata-data-filebeat
      volumes:
      - name: ocata-log
-       hostPath:
-         path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/multicloud/ocata/logs
+       emptyDir: {}
+     - name: ocata-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: multicloud-filebeat-configmap
+     - name: ocata-logconfig
+       configMap:
+         name: multicloud-ocata-log-configmap
      imagePullSecrets:
      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}

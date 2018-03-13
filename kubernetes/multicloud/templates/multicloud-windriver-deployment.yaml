@@ -29,7 +29,6 @@ spec:
         app: multicloud-windriver
       name: multicloud-windriver
     spec:
-     hostname: multicloud-windriver
      containers:
      - env:
        - name: MSB_ADDR
@@ -48,8 +47,11 @@ spec:
          value: "AAI"
        name: multicloud-windriver
        volumeMounts:
-       - mountPath: /opt/windriver/logs
+       - mountPath: /var/log/onap
          name: windriver-log
+       - mountPath: /opt/windriver/titanium_cloud/pub/config/log.yml
+         name: windriver-logconfig
+         subPath: log.yml
        image: {{ .Values.image.windriver }}
        imagePullPolicy: {{ .Values.pullPolicy }}
        ports:
@@ -64,11 +66,29 @@ spec:
          timeoutSeconds: 10
          successThreshold: 1
          failureThreshold: 5
-     restartPolicy: Always
+    - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: windriver-log
+       - mountPath: /usr/share/filebeat/data
+         name: windriver-data-filebeat
      volumes:
      - name: windriver-log
-       hostPath:
-         path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/multicloud/windriver/logs
+       emptyDir: {}
+     - name: windriver-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: multicloud-filebeat-configmap
+     - name: windriver-logconfig
+       configMap:
+         name: multicloud-windriver-log-configmap
      imagePullSecrets:
      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}
