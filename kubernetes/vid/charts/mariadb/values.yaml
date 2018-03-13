@@ -12,51 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Default values for vid.
+# Default values for mariadb.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-global:
+global: # global defaults
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
+  persistence: {}
 
-subChartsOnly:
-  enabled: true
 
 # application image
 repository: nexus3.onap.org:10001
-image: openecomp/vid:v1.1.1
+image: library/mariadb:10
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
 
 # application configuration
 config:
-  vidmysqlpassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-  asdcclientrestauth: "Basic dmlkOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU="
-  asdcclientrestport: "8080"
-  vidaaiport: "8443"
-  onapport: "8989"
-  msoport: "8080"
-  vidmsopass: OBF:1ih71i271vny1yf41ymf1ylz1yf21vn41hzj1icz
-  msodme2serverurl: http://localhost:8081
-  vidcontactuslink: https://todo_contact_us_link.com
-  vidmysqlhost: vid-mariadb
-  vidmysqlport: "3306"
-  vidmysqldbname: vid_openecomp_epsdk
-  vidmysqluser: vidadmin
-  vidmysqlmaxconnections: "5"
-  logstashServiceName: log-ls
-  logstashPort: 5044
-
-
-# subchart configuration
-mariadb:
-  nameOverride: vid-db
+  mysqldb: vid_openecomp_epsdk
+  mysqluser: vidadmin
+  mariadbRootPassword: LF+tp_1WqgSY
+  mariadbPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
 # default number of instances
 replicaCount: 1
@@ -77,12 +52,32 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: vid/mariadb/data
+
 service:
-  type: NodePort
-  name: vid
-  externalPort: "00"
-  nodePort: "00"
-  internalPort: 8080
+  name: mariadb
+  internalPort: 3306
 
 ingress:
   enabled: false
@@ -105,4 +100,3 @@ resources: {}
 #  requests:
 #    cpu: 2
 #    memory: 4Gi
->>>>>>> Vid Standardization Config
