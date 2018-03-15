@@ -22,7 +22,14 @@ spec:
         name: "vfc-hwvnfmdriver"
         env:
         - name: MSB_ADDR
-          value: {{ tpl .Values.msbaddr . }}
+          value: {{ tpl .Values.msbaddr .  }}
+	  
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: vfc-hwvnfmdriver-log
+        - mountPath: /opt/vfc/hwvnfmdriver/config/log4j.properties
+          name: vfc-hwvnfmdriver-logconfig
+          subPath: log4j.properties
         ports:
         - containerPort: {{ .Values.hwvnfmdriver.port }}
         readinessProbe:
@@ -31,6 +38,29 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy }}"
+      - image: {{ .Values.filebeat}}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+          subPath: filebeat.yml
+        - mountPath: /var/log/onap
+          name: vfc-hwvnfmdriver-log
+        - mountPath: /usr/share/filebeat/data
+          name: vfc-hwvnfmdriver-data-filebeat
+      volumes:
+      - name: vfc-hwvnfmdriver-log
+        emptyDir: {}
+      - name: vfc-hwvnfmdriver-data-filebeat
+        emptyDir: {}
+      - name: filebeat-conf
+        configMap:
+          name: vfc-filebeat-configmap
+      - name: vfc-hwvnfmdriver-logconfig
+        configMap:
+          name: vfc-hwvnfmdriver-log-configmap   
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      restartPolicy: Always
 #{{ end }}
