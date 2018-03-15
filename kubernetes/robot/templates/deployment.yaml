@@ -1,0 +1,85 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.name" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.robotReplicas }}
+  template:
+    metadata:
+       labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: JBOSS_DEBUG
+              value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
+          volumeMounts:
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: robot-eteshare
+            mountPath: /share/config
+          - name: robot-resources
+            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/asdc_interface.robot
+            subPath: asdc_interface.robot
+          - name: robot-resources
+            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/policy_interface.robot
+            subPath: policy_interface.robot
+          - name: robot-resources
+            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/sdngc_interface.robot
+            subPath: sdngc_interface.robot
+          - name: robot-lighttpd-authorization
+            mountPath: /etc/lighttpd/authorization
+            subPath: authorization
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}          
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: robot-eteshare
+          configMap:
+            name: robot-eteshare-configmap
+            defaultMode: 0755
+        - name: robot-resources
+          configMap:
+            name: robot-resources-configmap
+        - name: robot-lighttpd-authorization
+          configMap:
+            name: robot-lighttpd-authorization-configmap
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
