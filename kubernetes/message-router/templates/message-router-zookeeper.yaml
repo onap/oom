@@ -29,6 +29,18 @@ spec:
         app: zookeeper
       name: message-router-zookeeper
     spec:
+      initContainers:
+      - command:
+        - bash
+        args:
+        - -c
+        - "if [ -d /var/tmp/version-2 ]; then echo nothing to do; else cp -a /opt/config/src/message-router/dcae-startup-vm-message-router/docker_files/data-zookeeper/* /var/tmp/; fi"
+        image: {{ .Values.image.config }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /var/tmp
+          name: zookeeper-data
+        name: zookeeper-primer
       containers:
       - image: {{ .Values.image.zookeeper }}
         imagePullPolicy: {{ .Values.pullPolicy }}
@@ -57,3 +69,4 @@ spec:
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
 #{{ end }}
+
