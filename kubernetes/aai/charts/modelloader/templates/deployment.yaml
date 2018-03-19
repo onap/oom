@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: CONFIG_HOME
+          value: /opt/app/model-loader/config/
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/model-loader/config/model-loader.properties
+          subPath: model-loader.properties
+          name: aai-model-loader-prop-config
+        - mountPath: /opt/app/model-loader/config/auth/
+          name: aai-model-loader-auth-config
+        - mountPath: /var/log/onap
+          name: aai-model-loader-logs
+        - mountPath: /opt/app/model-loader/bundleconfig/etc/logback.xml
+          name: aai-model-loader-log-conf
+          subPath: logback.xml
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-model-loader-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-model-loader-filebeat
+
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aai-model-loader-prop-config
+        configMap:
+          name: aai-model-loader-prop-configmap
+      - name: aai-model-loader-auth-config
+        secret:
+          secretName: aai-model-loader-secret
+      - name: filebeat-conf
+        configMap:
+          name: aai-filebeat-configmap
+      - name: aai-model-loader-logs
+        emptyDir: {}
+      - name: aai-model-loader-filebeat
+        emptyDir: {}
+      - name: aai-model-loader-log-conf
+        configMap:
+         name: aai-model-loader-log-configmap
+      restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

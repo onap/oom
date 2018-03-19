@@ -1,0 +1,135 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: CONFIG_HOME
+          value: /opt/app/sparky/config/
+        - name: KEY_MANAGER_PASSWORD
+          value: OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
+        - name: KEY_STORE_PASSWORD
+          value: OBF:1i9a1u2a1unz1lr61wn51wn11lss1unz1u301i6o
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/sparky/config/auth/
+          name: aai-sparky-be-auth-config
+        - mountPath: /opt/app/sparky/config/synchronizer.properties
+          subPath: synchronizer.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/suggestive-search.properties
+          subPath: suggestive-search.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/search-service.properties
+          subPath: search-service.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/roles.config
+          subPath: roles.config
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/elasticsearch.properties
+          subPath: elasticsearch.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/aai.properties
+          subPath: aai.properties
+          name: aai-sparky-be-config
+        - mountPath: /opt/app/sparky/config/model/
+          name: aai-sparky-be-model-config
+        - mountPath: /opt/app/sparky/config/portal/
+          name: aai-sparky-be-portal-config
+        - mountPath: /var/log/onap
+          name: aai-sparky-be-logs
+        - mountPath: /opt/app/sparky/bundleconfig/etc/logback.xml
+          name: aai-sparky-be-log-conf
+          subPath: logback.xml
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-sparky-be-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-sparky-filebeat
+
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aai-sparky-be-config
+        configMap:
+          name: aai-sparky-be-configmap
+      - name: aai-sparky-be-model-config
+        configMap:
+          name: aai-sparky-be-model-configmap
+      - name: aai-sparky-be-portal-config
+        configMap:
+          name: aai-sparky-be-portal-configmap
+      - name: aai-sparky-be-auth-config
+        secret:
+          secretName: aai-sparky-be-secret
+      - name: filebeat-conf
+        configMap:
+          name: aai-filebeat-configmap
+      - name: aai-sparky-be-logs
+        emptyDir: {}
+      - name: aai-sparky-filebeat
+        emptyDir: {}
+      - name: aai-sparky-be-log-conf
+        configMap:
+         name: aai-sparky-be-log-configmap
+      restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

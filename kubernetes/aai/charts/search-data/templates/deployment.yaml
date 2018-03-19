@@ -1,0 +1,123 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: CONFIG_HOME
+          value: /opt/app/search-data-service/config/
+        - name: KEY_STORE_PASSWORD
+          value: OBF:1y0q1uvc1uum1uvg1pil1pjl1uuq1uvk1uuu1y10
+        - name: KEY_MANAGER_PASSWORD
+          value: OBF:1y0q1uvc1uum1uvg1pil1pjl1uuq1uvk1uuu1y10
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/search-data-service/config/filter-config.json
+          subPath: filter-config.json
+          name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/elastic-search.properties
+          subPath: elastic-search.properties
+          name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/analysis-config.json
+          subPath: filter-config.json
+          name: aai-search-data-service-config
+        - mountPath: /opt/app/search-data-service/config/auth/tomcat_keystore
+          subPath: tomcat_keystore
+          name: aai-search-data-service-auth-config
+        - mountPath: /opt/app/search-data-service/config/auth/search_policy.json
+          subPath: search_policy.json
+          name: aai-search-data-search-policy-config
+        - mountPath: /var/log/onap
+          name: aai-search-data-service-logs
+        - mountPath: /opt/app/search-data-service/bundleconfig/etc/logback.xml
+          name: aai-search-data-service-log-conf
+          subPath: logback.xml
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: aai-search-data-service-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-search-data-service-filebeat
+
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aai-search-data-service-config
+        configMap:
+          name: aai-search-data-configmap
+      - name: aai-search-data-service-auth-config
+        secret:
+          secretName: aai-search-data-keystone-secret
+      - name: aai-search-data-search-policy-config
+        configMap:
+          name: aai-search-policy-configmap
+      - name: filebeat-conf
+        configMap:
+          name: aai-filebeat-configmap
+      - name: aai-search-data-service-logs
+        emptyDir: {}
+      - name: aai-search-data-service-filebeat
+        emptyDir: {}
+      - name: aai-search-data-service-log-conf
+        configMap:
+         name: aai-search-data-service-log-configmap
+      restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1,4 +1,4 @@
-# Default values for aai.
+# Default values for resources.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global: # global defaults
@@ -6,23 +6,21 @@ global: # global defaults
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
   readinessRepository: oomk8s
   readinessImage: readiness-check:1.1.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  restartPolicy: Always
 
-subChartsOnly:
-  enabled: true
 
 # application image
-repository: registry.hub.docker.com
-image: aaionap/haproxy:1.1.0
+repository: nexus3.onap.org:10001
+image: openecomp/aai-resources:v1.1.0
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
+restartPolicy: Always
 
 # application configuration
 config:
+
+# override chart name (resources) to share a common namespace
+# suffix with parent chart (aai)
+nsSuffix: aai
+
 
 # default number of instances
 replicaCount: 1
@@ -33,23 +31,26 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
+  initialDelaySeconds: 60
+  periodSeconds: 60
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+  enabled: false
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 60
   periodSeconds: 10
 
+## Persist data to a persitent volume
+persistence:
+
 service:
-  type: NodePort
-  name: aai
-  externalPort: 32
-  internalPort: 8080
-  externalPort2: 33
-  internalPort2: 8443
+  type: ClusterIP
+  name: resources-service
+  #externalPort:
+  internalPort: 8447
+  internalPort2: 5005
+
 
 ingress:
   enabled: false
