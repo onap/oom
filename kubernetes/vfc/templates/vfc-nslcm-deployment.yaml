@@ -23,6 +23,12 @@ spec:
         env:
         - name: MSB_ADDR
           value: {{ tpl .Values.msbaddr . }}
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: vfc-nslcm-log
+        - mountPath: /opt/vfc/nslcm/config/log.yml
+          name: vfc-nslcm-logconfig
+          subPath: log.yml
         ports:
         - containerPort: {{ .Values.nslcm.port }}
         readinessProbe:
@@ -31,6 +37,29 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy }}"
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: vfc-nslcm-log
+       - mountPath: /usr/share/filebeat/data
+         name: vfc-nslcm-data-filebeat
+     volumes:
+     - name: vfc-nslcm-log
+       emptyDir: {}
+     - name: vfc-nslcm-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: vfc-nslcm-configmap
+     - name: vfc-nslcm-logconfig
+       configMap:
+         name: vfc-nslcm-log-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      restartPolicy: Always
 #{{ end }}

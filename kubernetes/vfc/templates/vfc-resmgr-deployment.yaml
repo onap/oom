@@ -23,6 +23,12 @@ spec:
         env:
         - name: MSB_ADDR
           value: {{ tpl .Values.msbaddr . }}
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: vfc-resmgr-log
+        - mountPath: /opt/vfc/resmgr/config/log4j.properties
+          name: vfc-resmgr-logconfig
+          subPath: log4j.properties
         ports:
         - containerPort: {{ .Values.resmgr.port }}
         readinessProbe:
@@ -31,6 +37,29 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy }}"
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: vfc-resmgr-log
+       - mountPath: /usr/share/filebeat/data
+         name: vfc-resmgr-data-filebeat
+     volumes:
+     - name: vfc-resmgr-log
+       emptyDir: {}
+     - name: vfc-resmgr-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: vfc-filebeat-configmap
+     - name: vfc-resmgr-logconfig
+       configMap:
+         name: vfc-resmgr-log-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}
