@@ -1,0 +1,96 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - |
+          mkdir -p /logroot/elasticsearch/es-data
+          chmod -R 777 /logroot/elasticsearch/es-data
+          chown -R root:root /logroot
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        securityContext:
+          privileged: true
+        image: {{ .Values.global.dockerhubRepository | default .Values.dockerhubRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: init-sysctl
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /logroot/
+      hostname: {{ include "common.name" . }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: elasticsearch-config
+            subPath: elasticsearch.yml
+            mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          - name: elasticsearch-data
+            mountPath: /usr/share/elasticsearch/data
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: elasticsearch-config
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: elasticsearch-data
+        hostPath:
+          path: {{ .Values.persistence.mountPath }}/{{ include "common.namespace" . }}/aai/elasticsearch/data
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

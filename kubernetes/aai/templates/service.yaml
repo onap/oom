@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  ports:
+  {{if eq .Values.service.type "NodePort" -}}
+  - name: {{ .Values.service.name }}
+    port: {{ .Values.service.internalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+  - name: {{ .Values.service.name }}2
+    port: {{ .Values.service.internalPort2 }}
+    targetPort: {{ .Values.service.internalPort2 }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
+  {{- else -}}
+  - port: {{ .Values.service.externalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    name: {{ .Values.service.name }}
+  - port: {{ .Values.service.externalPort2 }}
+    targetPort: {{ .Values.service.internalPort2 }}
+    name: {{ .Values.service.name }}2
+  {{- end}}
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "common.name" . }}
+  clusterIP: {{ .Values.config.aaiServiceClusterIp }}
