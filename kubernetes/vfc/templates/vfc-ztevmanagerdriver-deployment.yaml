@@ -23,6 +23,12 @@ spec:
         env:
         - name: MSB_ADDR
           value: {{ tpl .Values.msbaddr . }}
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: vfc-ztevnfmdriver-log
+        - mountPath: /opt/vfc/ztevnfmdriver/config/log.yml
+          name: vfc-ztevnfmdriver-logconfig
+          subPath: log.yml
         ports:
         - containerPort: {{ .Values.ztevnfmdriver.port }}
         readinessProbe:
@@ -31,6 +37,29 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy }}"
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: vfc-ztevnfmdriver-log
+       - mountPath: /usr/share/filebeat/data
+         name: vfc-ztevnfmdriver-data-filebeat
+     volumes:
+     - name: vfc-ztevnfmdriver-log
+       emptyDir: {}
+     - name: vfc-ztevnfmdriver-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: vfc-filebeat-configmap
+     - name: vfc-ztevnfmdriver-logconfig
+       configMap:
+         name: vfc-ztevnfmdriver-log-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}

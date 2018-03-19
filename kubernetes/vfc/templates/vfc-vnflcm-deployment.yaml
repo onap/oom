@@ -23,6 +23,12 @@ spec:
         env:
         - name: MSB_ADDR
           value: {{ tpl .Values.msbaddr . }}
+        volumeMounts:
+        - mountPath: /var/log/onap
+          name: vfc-vnflcm-log
+        - mountPath: /opt/vfc/gvnfm-vnflcm/config/log.yml
+          name: vfc-vnflcm-logconfig
+          subPath: log.yml
         ports:
         - containerPort: {{ .Values.vnflcm.port }}
         readinessProbe:
@@ -31,6 +37,29 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy }}"
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: vfc-vnflcm-log
+       - mountPath: /usr/share/filebeat/data
+         name: vfc-vnflcm-data-filebeat
+     volumes:
+     - name: vfc-vnflcm-log
+       emptyDir: {}
+     - name: vfc-vnflcm-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: vfc-filebeat-configmap
+     - name: vfc-vnflcm-logconfig
+       configMap:
+         name: vfc-vnflcm-log-configmap
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
 #{{ end }}
