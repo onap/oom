@@ -1,0 +1,94 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ include "common.name" .  }}
+          image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+          volumeMounts:
+          - mountPath: /docker-entrypoint-initdb.d/load-sql-files-tests-automation.sh
+            name: docker-entrypoint-initdb
+            subPath: load-sql-files-tests-automation.sh
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /docker-entrypoint-initdb.d/drop/
+            name: docker-entrypoint-clds-drop
+          - mountPath: /docker-entrypoint-initdb.d/bulkload/
+            name: docker-entrypoint-bulkload
+          - mountPath: /etc/mysql/conf.d/conf1/
+            name:  clamp-mariadb-conf
+          - mountPath: /var/lib/mysql
+            name: clamp-mariadb-data
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+      {{- if .Values.persistence.enabled }}
+        - name: clamp-mariadb-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+        - name: docker-entrypoint-initdb
+          configMap:
+            name: clamp-entrypoint-initdb-configmap
+        - name: docker-entrypoint-clds-drop
+          configMap:
+            name: clamp-entrypoint-drop-configmap
+        - name: docker-entrypoint-bulkload
+          configMap:
+            name: clamp-entrypoint-bulkload-configmap
+        - name: clamp-mariadb-conf
+          configMap:
+            name: clamp-mariadb-conf-configmap
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
