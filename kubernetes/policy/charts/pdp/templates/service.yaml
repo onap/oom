@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "{{ include "common.fullname" . }}",
+          "version": "v1",
+          "url": "/pdp",
+          "protocol": "REST",
+          "port": "8081",
+          "visualRange":"1"
+      },
+      {
+          "serviceName": "{{ include "common.fullname" . }}-deprecated",
+          "version": "v1",
+          "url": "/pdp",
+          "protocol": "REST",
+          "port": "8081",
+          "visualRange":"1",
+          "path":"/pdp"
+      }
+      ]'
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{if eq .Values.service.type "NodePort" -}}
+    - port: {{ .Values.service.externalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      name: {{ .Values.service.name }}
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
+    {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  sessionAffinity: None
+  
