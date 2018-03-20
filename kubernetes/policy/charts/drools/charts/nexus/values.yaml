@@ -20,53 +20,24 @@ global:
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
   readinessRepository: oomk8s
   readinessImage: readiness-check:1.0.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  ubuntuImage: ubuntu:16.04
-  mariadb:
-    nameOverride: policydb
-  pdp:
-    nameOverride: pdp
-  pap:
-    nameOverride: pap
-  drools:
-    nameOverride: drools
-  brmwgw:
-    nameOverride: brmsgw
-  nexus:
-    nameOverride: nexus
+  persistence: {}
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/policy-pe:1.2-SNAPSHOT-latest
+image: onap/policy-nexus:1.2-SNAPSHOT-latest
 pullPolicy: Always
-
-subChartsOnly:
-  enabled: true
-
-nameOverride: pap
-
-pdp:
-  nameOverride: pdp
-mariadb:
-  nameOverride: policydb
-drools:
-  nameOverride: drools
-brmwgw:
-  nameOverride: brmsgw
-nexus:
-  nameOverride: nexus
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
 # Example:
-config:
-  preloadPolicies: true
+config: {}
+#  username: myusername
+#  password: mypassword
 
 # default number of instances
 replicaCount: 1
@@ -86,14 +57,21 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+  path: /nexus/service/local/status
+
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: nexus/data
 
 service:
   type: NodePort
-  name: pap
-  externalPort: 8443
-  nodePort: 19
-  externalPort2: 9091
-  nodePort2: 18
+  name: nexus
+  internalPort: 8081
 
 ingress:
   enabled: false
