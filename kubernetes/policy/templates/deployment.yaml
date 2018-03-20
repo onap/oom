@@ -1,0 +1,151 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Release.Name }}-mariadb
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      - command: ["/bin/bash", "-c", "echo $POD_IP > /config/ip_addr.txt"]
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        volumeMounts:
+        - mountPath: /config/
+          name: pe
+        image: {{ .Values.global.ubuntuImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: generate-ip-addr-txt
+      containers:
+        - command:
+          - /bin/bash
+          - ./do-start.sh
+          - pap
+          name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.externalPort }}
+          - containerPort: {{ .Values.service.externalPort2 }}
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.externalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.externalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: PRELOAD_POLICIES
+            value: "true"
+          - name: ONAP_NAMESPACE
+            value: {{ include "common.namespace" . }}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /tmp/policy-install/config/base.conf
+            name: pe
+            subPath: base.conf
+          - mountPath: /tmp/policy-install/config/
+            name: pe-pap
+          - mountPath: /tmp/policy-install/do-start.sh
+            name: pe-scripts
+            subPath: do-start.sh
+          - mountPath: /var/log/onap
+            name: policy-logs
+          - mountPath: /tmp/policy-install/logback.xml
+            name: policy-sdk-logback
+            subPath: logback.xml
+          - mountPath: /tmp/logback.xml
+            name: policy-logback
+            subPath: logback.xml
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/opt/app/policy/servers/pap/webapps/pap/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; export SRC=/tmp/policy-install/logback.xml; export DST=/opt/app/policy/servers/console/webapps/onap/WEB-INF/classes/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+        - image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.global.loggingImage | default .Values.loggingImage }}"
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          name: filebeat-onap
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: policy-logs
+          - mountPath: /usr/share/filebeat/data
+            name: policy-data-filebeat
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            readOnly: true
+        - name: filebeat-conf
+          configMap:
+            name: policy-filebeat-configmap
+        - name: policy-logs
+          emptyDir: {}
+        - name: policy-data-filebeat
+          emptyDir: {}
+        - name: policy-logback
+          configMap:
+            name: {{ include "common.fullname" . }}-log-configmap
+        - name: policy-sdk-logback
+          configMap:
+            name: {{ include "common.fullname" . }}-sdk-log-configmap
+        - name: pe
+          configMap:
+            name: {{ .Release.Name }}-pe-configmap
+            defaultMode: 0755
+        - name: pe-scripts
+          configMap:
+            name: {{ .Release.Name }}-pe-scripts-configmap
+            defaultMode: 0777
+        - name: pe-pap
+          configMap:
+            name: {{ include "common.fullname" . }}-pe-configmap
+            defaultMode: 0755
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
