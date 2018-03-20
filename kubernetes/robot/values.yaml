@@ -1,7 +1,31 @@
-nsPrefix: onap
+#################################################################
+# Global configuration defaults.
+#################################################################
+global: # global defaults
+  nodePortPrefix: 302
+  repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:1.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+
+subChartsOnly:
+  enabled: true
+
+# application image
+repository: nexus3.onap.org:10001
+image: openecomp/testsuite:1.1-STAGING-latest
 pullPolicy: Always
-nodePortPrefix: 302
-robotReplicas: 1
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+# openstack configuration
+
 demoArtifactsVersion: "1.1.0-SNAPSHOT"
 openStackPrivateNetCidr: "192.168.30.0"
 openStackFlavourMedium: "m1.medium"
@@ -15,5 +39,53 @@ openStackPrivateSubnetId: "e8f51956-00dd-4425-af36-045716781ffc"
 openStackTenantId: "47899782ed714295b1151681fdfd51f5"
 openStackUserName: "vnf_user"
 ubuntuImage: "Ubuntu_14.04.5_LTS"
-image:
-  testsuite: nexus3.onap.org:10001/openecomp/testsuite:1.1-STAGING-latest
+
+# default number of instances
+robotReplicas: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+
+service:
+  type: NodePort
+  name: robot
+  externalPort: "09"
+  internalPort: 88
+
+
+ingress:
+  enabled: false
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+#resources:
+#  limits:
+#    cpu: 2
+#    memory: 4Gi
+#  requests:
+#    cpu: 2
+#    memory: 4Gi
