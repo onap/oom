@@ -1,0 +1,61 @@
+#{{ if not .Values.disableSMSService }}
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  labels:
+    app: aaf-sms-backend
+  name: aaf-sms-backend
+  namespace: {{ .Values.nsPrefix }}
+spec:
+  replicas: {{ .Values.sms.consul.replicas }}
+  serviceName: aaf-sms-backend
+  selector:
+    matchLabels:
+      app: aaf-sms-backend
+  template:
+    metadata:
+      labels:
+        app: aaf-sms-backend
+      name: aaf-sms-backend
+    spec:
+      containers:
+      - image: {{ .Values.sms.image.consul }}
+        name: sms-consul-server
+        imagePullPolicy: {{ .Values.sms.image.pullPolicy }}
+        command: ["consul","agent","-server","-client","0.0.0.0","-bootstrap-expect=1","-config-file","/consul/config/config.json"]
+        ports:
+        - name: http
+          containerPort: 8500
+        volumeMounts:
+        - mountPath: /consul/data
+          name: aaf-sms-data
+        - mountPath: /consul/config/config.json
+          name: aaf-sms-consul-configmap
+          subPath: config.json
+      volumes:
+        - name: aaf-sms-data
+          persistentVolumeClaim:
+            claimName: aaf-sms-data
+        - name: aaf-sms-consul-configmap
+          configMap:
+            name: aaf-sms-consul-config
+
+      - image: {{ .Values.sms.image.vault }}
+        name: vault-server
+        imagePullPolicy: {{ .Values.sms.vault.pullPolicy }}
+        command: ["vault","server","-config","/vault/config/config.json"]
+        ports:
+        - containerPort: 8200
+        volumeMounts:
+        - mountPath: /vault/config/config.json
+          name: aaf-sms-vault-configmap
+          subPath: config.json
+      volumes:
+        - name: aaf-sms-vault-configmap
+          configMap:
+            name: aaf-sms-vault-config
+        - name: aaf-sms-server-configmap
+          configMap:
+            name: aaf-sms-server-config
+
+#{{ end }}
