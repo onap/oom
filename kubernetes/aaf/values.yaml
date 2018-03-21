@@ -9,3 +9,45 @@ image:
   aafVersion: latest
   csImage: nexus3.onap.org:10001/library/cassandra
   csVersion: 2.1.17
+
+sms:
+  replicas: 1
+  dataRootDir: /dockerdata-nfs
+  image:
+    readiness: oomk8s/readiness-check:1.1.0
+    consul: docker.io/consul:1.0.6
+    vault: docker.io/vault:0.9.5
+    sms: nexus3.onap.org:10003/onap/aaf/sms
+
+  vault:
+    pullPolicy: IfNotPresent
+    config:
+      storage:
+        consul:
+          address: aaf-sms-backend:8500
+          path: vault
+      listener:
+        tcp:
+          address: '[::]:8200'
+          tls_disable: true
+      disable_mlock: true
+
+  consul:
+    replicas: 1
+    pullPolicy: IfNotPresent
+    config:
+      server: true
+      log_level: INFO
+      server: true
+      data_dir: '/consul/data'
+      ports:
+        http: 8500
+        https: -1
+
+  smsserver:
+    pullPolicy: IfNotPresent
+    config:
+      vaultaddress: "http://localhost:8200"
+      cafile: "/sms/auth/selfsignedca.pem"
+      servercert: "/sms/auth/server.cert"
+      serverkey: "/sms/auth/server.key"
