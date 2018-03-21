@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableEsrServer }}
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ include "common.namespace" . }}
   labels:
-    app: esr-esrserver
-  name: esr-esrserver
-  namespace: "{{ .Values.nsPrefix }}"
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
   annotations:
     msb.onap.org/service-info: '[
       {
@@ -27,42 +29,15 @@ metadata:
           "version": "v1",
           "url": "/api/aai-esr-server/v1",
           "protocol": "REST",
-          "port": "{{.Values.esrserver.port}}",
+          "port": "{{.Values.service.internalPort}}",
           "enable_ssl": true,
           "visualRange":"1"
       }
       ]'
 spec:
   ports:
-  - name: esr-esrserver
-    port: {{.Values.esrserver.port}}
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.name }}
   selector:
-    app: esr-esrserver
-#{{ end }}
-#{{ if not .Values.disableEsrGui }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: esr-esrgui
-  name: esr-esrgui
-  namespace: "{{ .Values.nsPrefix }}"
-  annotations:
-    msb.onap.org/service-info: '[
-      {
-          "serviceName": "aai-esr-gui",
-          "version": "v1",
-          "url": "/esr-gui",
-          "protocol": "UI",
-          "port": "{{.Values.esrgui.port}}",
-          "visualRange":"1"
-      }
-      ]'
-spec:
-  ports:
-  - name: esr-esrgui
-    port: {{.Values.esrgui.port}}
-  selector:
-    app: esr-esrgui
-#{{ end }}
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
