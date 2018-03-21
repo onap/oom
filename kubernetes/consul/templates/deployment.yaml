@@ -12,30 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableConsulConsulAgent }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
   labels:
-    app: consul-agent
-  name: consul-agent
-  namespace: "{{ .Values.nsPrefix }}"
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.consulAgentReplicas }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: consul-agent
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
-        app: consul-agent
-      name: consul-agent
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
     spec:
       containers:
-      - image: "{{ .Values.consulagentRegistry }}"
+      - image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}"
         command: ["/usr/local/bin/docker-entrypoint.sh"]
-        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ .Values.nsPrefix }}"]
-        name: consul-server
+        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","{{ .Release.Name }}-{{ index .Values "consul-server" "nameOverride" }}.{{ include "common.namespace" .}}"]
+        name: {{ include "common.name" . }}
         volumeMounts:
         - mountPath: /consul/config
           name: consul-agent-config
@@ -45,13 +48,13 @@ spec:
           name: consul-agent-certs-config
       volumes:
       - configMap:
-          name: consul-agent-configmap
+          name: {{ include "common.fullname" . }}-configmap
         name: consul-agent-config
       - configMap:
-          name: consul-agent-scripts-configmap
+          name: {{ include "common.fullname" . }}-scripts-configmap
           defaultMode: 0755
         name: consul-agent-scripts-config
       - secret:
-          secretName: consul-agent-certs-secret
+          secretName: {{ include "common.fullname" . }}-certs-secret
         name: consul-agent-certs-config
-#{{ end }}
+
