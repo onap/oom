@@ -1,8 +1,64 @@
-nsPrefix: "onap"
-nodePortPrefix: 302
-consulserverRegistry: "docker.io/consul:1.0.6"
-consulagentRegistry: "oomk8s/consul:1.0.0"
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:1.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+consulserverRepository: docker.io
+consulserverImage: consul:1.0.6
+consulagentRepository: oomk8s
+consulagentImage: consul:1.0.0
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+# Example:
+config:
+#  username: myusername
+#  password: mypassword
+
+# default number of instances
 consulAgentReplicas: 1
 consulServerReplicas: 3
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
 service:
-      type: NodePort
+  type: NodePort
+  name: consul-ui
+  externalPort: 70
+  internalPort: 8500
+  name2: consul-join
+  externalPort2: 71
+  internalPort2: 8301
+
+ingress:
+  enabled: false
+
+resources: {}
+
