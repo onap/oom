@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright 2018 Intel Corporation, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,26 +24,23 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
-      name: {{ .Release.Name }}
+        release: {{ .Release.Name }}
     spec:
-      hostname: {{ include "common.name" . }}
       containers:
-      - args:
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - image: "{{ .Values.repository }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
-        volumeMounts:
-        - mountPath: /data
-          name: aaf-cs-data
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command: ["/sms/bin/sms"]
+        workingDir: /sms/
+        env:
+        - name: {{ .Values.config.smsdburlenv }}
+          value: "http://{{ include "common.namespace" . }}-smsdb:8200"
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -56,20 +53,29 @@ spec:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /sms/smsconfig.json
+            name: {{ include "common.name" .}}
+            subPath: smsconfig.json
         resources:
 {{ toYaml .Values.resources | indent 12 }}
-      {{- if .Values.nodeSelector }}
-      nodeSelector:
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
-      {{- end -}}
-      {{- if .Values.affinity }}
-      affinity:
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
 {{ toYaml .Values.affinity | indent 10 }}
-      {{- end }}
-
+        {{- end }}
       volumes:
-        - name: aaf-cs-data
-          secret:
-            secretName: {{ include "common.fullname" . }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name : {{ include "common.name" . }}
+        configMap:
+          name: {{ include "common.fullname" . }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
