@@ -1,0 +1,49 @@
+#{{ if not .Values.disableSMSService }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: aaf-sms
+  name: aaf-sms
+  namespace: {{ .Values.nsPrefix }}
+spec:
+  replicas: {{ .Values.sms.Replicas }}
+  selector:
+    matchLabels:
+      app: aaf-sms-service
+  template:
+    metadata:
+      labels:
+        app: aaf-sms-service
+      name: aaf-sms-service
+    spec:
+      containers:
+      - image: {{ .Values.sms.image.sms }}
+        name: sms-server
+        imagePullPolicy: {{ .Values.sms.smsserver.pullPolicy }}
+        command: ["/sms/bin/sms"]
+        workingDir: /sms/
+        ports:
+        - containerPort: 10443
+        volumeMounts:
+        - mountPath: /sms/smsconfig.json
+          name: aaf-sms-server-configmap
+          subPath: smsconfig.json
+      - image: {{ .Values.sms.image.vault }}
+        name: vault-server
+        imagePullPolicy: {{ .Values.sms.vault.pullPolicy }}
+        command: ["vault","server","-config","/vault/config/config.json"]
+        ports:
+        - containerPort: 8200
+        volumeMounts:
+        - mountPath: /vault/config/config.json
+          name: aaf-sms-vault-configmap
+          subPath: config.json
+      volumes:
+        - name: aaf-sms-vault-configmap
+          configMap:
+            name: aaf-sms-vault-config
+        - name: aaf-sms-server-configmap
+          configMap:
+            name: aaf-sms-server-config
+#{{ end }}
