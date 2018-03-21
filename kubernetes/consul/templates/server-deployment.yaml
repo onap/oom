@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.name" . }}-server
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-server
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.consulServerReplicas }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}-server
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-server
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}-server
+    spec:
+      containers:
+      - image: "{{ .Values.consulserverRepository }}/{{ .Values.consulserverImage }}"
+        command: ["/usr/local/bin/docker-entrypoint.sh"]
+        args: ["agent","-server","-client","0.0.0.0","-enable-script-checks","-bootstrap-expect=3","-ui","-join","consul-server.{{ include "common.namespace" . }}"]
+        name: {{ include "common.name" . }}-server

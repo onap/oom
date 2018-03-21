@@ -12,30 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableConsulConsulAgent }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  name: {{ include "common.name" . }}-agent
+  namespace: {{ include "common.namespace" . }}
   labels:
-    app: consul-agent
-  name: consul-agent
-  namespace: "{{ .Values.nsPrefix }}"
+    app: {{ include "common.name" . }}-agent
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.consulAgentReplicas }}
   selector:
     matchLabels:
-      app: consul-agent
+      app: {{ include "common.name" . }}-agent
   template:
     metadata:
       labels:
-        app: consul-agent
-      name: consul-agent
+        app: {{ include "common.name" . }}-agent
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}-agent
     spec:
       containers:
-      - image: "{{ .Values.consulagentRegistry }}"
+      - image: "{{ .Values.consulagentRepository }}/{{ .Values.consulagentImage }}"
         command: ["/usr/local/bin/docker-entrypoint.sh"]
-        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ .Values.nsPrefix }}"]
-        name: consul-server
+        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","consul-server.{{ include "common.namespace" . }}"]
+        name: {{ include "common.name" . }}-server
         volumeMounts:
         - mountPath: /consul/config
           name: consul-agent-config
@@ -54,4 +57,4 @@ spec:
       - secret:
           secretName: consul-agent-certs-secret
         name: consul-agent-certs-config
-#{{ end }}
+

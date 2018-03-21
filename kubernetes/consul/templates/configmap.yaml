@@ -12,27 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableConsulConsulServer }}
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  labels:
-    app: consul-server
-  name: consul-server
-  namespace: "{{ .Values.nsPrefix }}"
-spec:
-  ports:
-  - name: consul-ui
-    nodePort: {{ .Values.nodePortPrefix }}70
-    port: 8500
-    protocol: TCP
-    targetPort: 8500
-  - name: consul-join
-    nodePort: {{ .Values.nodePortPrefix }}71
-    port: 8301
-    protocol: TCP
-    targetPort: 8301
-  selector:
-    app: consul-server
-  type: {{ .Values.service.type | quote }}
-#{{ end }}
+  name: consul-agent-configmap
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/consul-agent-config/*").AsConfig . | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consul-agent-scripts-configmap
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/consul-agent-config/scripts/*").AsConfig . | indent 2 }}
