@@ -17,12 +17,18 @@ spec:
       name: esr-esrserver
     spec:
       containers:
-      - image: {{ .Values.esrserver.image }}
+      - name: esr-esrserver
+        image: {{ .Values.esrserver.image }}
         imagePullPolicy: {{ .Values.pullPolicy }}
-        name: esr-esrserver
         env:
         - name: MSB_ADDR
           value: {{ tpl .Values.msbaddr . }}
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        - mountPath: /home/esr/works/logs
+          name: esr-server-logs
         ports:
         - containerPort: {{ .Values.esrserver.port }}
         readinessProbe:
@@ -30,6 +36,26 @@ spec:
             port: {{ .Values.esrserver.port }}
           initialDelaySeconds: 5
           periodSeconds: 10
-      imagePullSecrets:
-      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      - name: filebeat-onap-esr-server
+        image: {{ .Values.filebeat.image }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /home/esr/works/logs
+          name: esr-server-logs
+        - mountPath: /usr/share/filebeat/data
+          name: esr-server-filebeat
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: esr-filebeat-configmap
+      - name: esr-server-logs
+        emptyDir: {}
+      - name: esr-server-filebeat
+        emptyDir: {}
 #{{ end }}
