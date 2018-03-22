@@ -1,9 +1,15 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. http://creativecommons.org/licenses/by/4.0
+.. Copyright 2018 Amdocs, Bell Canada
+
 
 OOM Documentation Repository
 ----------------------------
 .. toctree::
   :maxdepth: 2
 
-  OOM Project Description/oom_project_description.rst
-  OOM User Guide/oom_user_guide.rst
+  oom_project_description.rst
+  oom_quickstart_guide.rst
+  oom_user_guide.rst
+  oom_developer_guide.rst
+  oom_cloud_setup_guide.rst
