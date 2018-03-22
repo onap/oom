@@ -1,0 +1,102 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-logs-init
+        command:
+        - /bin/bash
+        - "-c"
+        - |
+          mkdir -p /ubuntu-init/ASDC/ASDC-ES/
+          chmod -R 777 /ubuntu-init/
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.global.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-logs
+          mountPath: /ubuntu-init/
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            httpGet:
+              path: "_cluster/health?wait_for_status=yellow&timeout=120s"
+              port: {{ .Values.service.internalPort }}
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: ENVNAME
+            value: {{ .Values.global.env.name }}
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: ES_HEAP_SIZE
+            value: "1024M"                
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-environments
+            mountPath: /root/chef-solo/environments/
+          - name: {{ include "common.fullname" . }}-localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/lib/jetty/logs
+          - name: {{ include "common.fullname" . }}-data
+            mountPath: /usr/share/elasticsearch/data/
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: {{ include "common.fullname" . }}-localtime
+          hostPath:
+            path: /etc/localtime
+      {{- if .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}            
+        - name: {{ include "common.fullname" . }}-environments
+          configMap:
+            name: {{ .Release.Name }}-sdc-environments-configmap
+            defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
