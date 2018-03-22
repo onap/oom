@@ -1,0 +1,119 @@
+#apiVersion: extensions/v1beta1
+#kind: Deployment
+#metadata:
+#  labels:
+#    app: sdc-fe
+#  name: sdc-fe
+#  namespace: "{{ .Values.nsPrefix }}"
+#spec:
+#  selector:
+#    matchLabels:
+#      app: sdc-fe
+#  template:
+#    metadata:
+#      labels:
+#        app: sdc-fe
+#      name: sdc-fe
+#    spec:
+#      initContainers:
+#      - command:
+#        - /root/ready.py
+#        args:
+#        - --container-name
+#        - sdc-es
+#        - --container-name
+#        - sdc-cs
+#        - --container-name
+#        - sdc-kb
+#        - --container-name
+#        - sdc-be
+#        env:
+#        - name: NAMESPACE
+#          valueFrom:
+#            fieldRef:
+#              apiVersion: v1
+#              fieldPath: metadata.namespace
+#        image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
+#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        name: sdc-fe-readiness
+#      containers:
+#      - name: sdc-fe
+#        env:
+#        - name: ENVNAME
+#          value: AUTO
+#        - name: HOST_IP
+#          valueFrom:
+#            fieldRef:
+#              fieldPath: status.podIP
+#        image: {{ .Values.image.sdcFrontend }}
+#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        volumeMounts:
+#        - mountPath: /usr/share/elasticsearch/data/
+#          name: sdc-sdc-es-es
+#        - mountPath: /root/chef-solo/environments/
+#          name: sdc-environments
+#        - mountPath: /etc/localtime
+#          name: sdc-localtime
+#          readOnly: true
+#        - mountPath: /var/lib/jetty/logs
+#          name: sdc-logs
+#        - mountPath: /var/log/onap
+#          name: sdc-logs-2
+#        - mountPath: /root/chef-solo/cookbooks/sdc-catalog-fe/recipes/FE_2_setup_configuration.rb
+#          name: sdc-fe-config
+#          subPath: FE_2_setup_configuration.rb
+#        - mountPath: /tmp/logback.xml
+#          name: sdc-logback
+#        lifecycle:
+#          postStart:
+#            exec:
+#              command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-fe/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+#        ports:
+#        - containerPort: 9443
+#        - containerPort: 8181
+#        readinessProbe:
+#          tcpSocket:
+#            port: 8181
+#          initialDelaySeconds: 5
+#          periodSeconds: 10
+#      - image: {{ .Values.image.filebeat }}
+#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        name: filebeat-onap
+#        volumeMounts:
+#        - mountPath: /usr/share/filebeat/filebeat.yml
+#          name: filebeat-conf
+#          subPath: filebeat.yml
+#        - mountPath: /var/log/onap
+#          name: sdc-logs-2
+#        - mountPath: /usr/share/filebeat/data
+#          name: sdc-data-filebeat
+#      volumes:
+#        - name: filebeat-conf
+#          configMap:
+#           name : sdc-filebeat-configmap
+#        - name: sdc-logs-2
+#          emptyDir: {}
+#        - name: sdc-data-filebeat
+#          emptyDir: {}
+#        - name: sdc-logback
+#          configMap:
+#           name : sdc-log-fe-configmap
+#        - name: sdc-sdc-es-es
+#          hostPath:
+#            path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/sdc/sdc-es/ES
+#        - name: sdc-environments
+#          configMap:
+#            name: sdc-environments-configmap
+#            defaultMode: 0755
+#        - name: sdc-localtime
+#          hostPath:
+#            path:  /etc/localtime
+#        - name:  sdc-logs
+#          hostPath:
+#            path:  {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/sdc/logs
+#        - name:  sdc-fe-config
+#          configMap:
+#            name: sdc-fe-configmap
+#            defaultMode: 0755
+#      imagePullSecrets:
+#      - name: "{{ .Values.nsPrefix }}-docker-registry-key"

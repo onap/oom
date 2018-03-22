@@ -1,0 +1,80 @@
+#apiVersion: extensions/v1beta1
+#kind: Deployment
+#metadata:
+#  labels:
+#    app: sdc-cs
+#  name: sdc-cs
+#  namespace: "{{ .Values.nsPrefix }}"
+#spec:
+#  selector:
+#    matchLabels:
+#      app: sdc-cs
+#  template:
+#    metadata:
+#      labels:
+#        app: sdc-cs
+#      name: sdc-cs
+#    spec:
+#      initContainers:
+#      - command:
+#        - /root/ready.py
+#        args:
+#        - --container-name
+#        - sdc-es
+#        env:
+#        - name: NAMESPACE
+#          valueFrom:
+#            fieldRef:
+#              apiVersion: v1
+#              fieldPath: metadata.namespace
+#        image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
+#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        name: sdc-cs-readiness
+#      containers:
+#      - env:
+#        - name: ENVNAME
+#          value: AUTO
+#        - name: HOST_IP
+#          valueFrom:
+#            fieldRef:
+#              fieldPath: status.podIP
+#        - name: ES_HEAP_SIZE
+#          value: "1024M"
+#        image: {{ .Values.image.sdcCassandra }}
+#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        name: sdc-cs
+#        volumeMounts:
+#        - mountPath: /var/lib/cassandra/
+#          name: sdc-sdc-cs-cs
+#        - mountPath: /root/chef-solo/environments/
+#          name: sdc-environments
+#        - mountPath: /etc/localtime
+#          name: sdc-localtime
+#          readOnly: true
+#        - mountPath: /var/lib/jetty/logs
+#          name: sdc-logs
+#        ports:
+#        - containerPort: 9042
+#        - containerPort: 9160
+#        readinessProbe:
+#          tcpSocket:
+#            port: 9160
+#          initialDelaySeconds: 5
+#          periodSeconds: 10
+#      volumes:
+#        - name: sdc-sdc-cs-cs
+#          persistentVolumeClaim:
+#            claimName: sdc-cs-db
+#        - name: sdc-environments
+#          configMap:
+#            name : sdc-environments-configmap
+#            defaultMode: 0755
+#        - name: sdc-localtime
+#          hostPath:
+#            path:  /etc/localtime
+#        - name:  sdc-logs
+#          hostPath:
+#            path:  {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/sdc/logs
+#      imagePullSecrets:
+#      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+#

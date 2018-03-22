@@ -7,7 +7,7 @@ template "catalog-fe-config" do
    mode "0755"
    variables({
       :fe_host_ip   => node['HOST_IP'],
-      :be_host_ip   => "sdc-be.{{.Values.nsPrefix}}",
+      :be_host_ip   => "sdc-be.{{include "common.namespace" .}}",
       :catalog_port => node['BE'][:http_port],
       :ssl_port     => node['BE'][:https_port]
    })
