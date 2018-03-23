@@ -150,11 +150,11 @@ then
     sleep 10
 
     # get the DCAE Boostrap VM ip, to configure Robot with it, for Healthcheck
-    DCAE_CONTROLLER_IP=`openstack stack output show dcae dcae_floating_ip -c output_value -f yaml | awk '{ print $2}'`
+    DCAE_CONTROLLER_IP=`openstack stack output show $STACK_NAME dcae_floating_ip -c output_value -f yaml | awk '{ print $2}'`
     sed -i -e "s/DCAE_CONTROLLER_IP_HERE/$DCAE_CONTROLLER_IP/g" /opt/robot/vm_properties.py;
 
     # Retrieve current deployment random string
-    RANDOM_STRING=`openstack stack output show dcae random_string -c output_value -f yaml | awk '{ print $2}'`
+    RANDOM_STRING=`openstack stack output show $STACK_NAME random_string -c output_value -f yaml | awk '{ print $2}'`
     SIMPLEDEMO_ONAP_ORG_ZONE_NAME="$RANDOM_STRING.$SIMPLEDEMO_ONAP_ORG_ZONE_NAME"
 fi
 
