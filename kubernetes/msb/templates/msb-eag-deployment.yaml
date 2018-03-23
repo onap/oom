@@ -65,6 +65,34 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: {{ .Values.pullPolicy}}
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        - mountPath: /usr/local/apiroute-works/logs
+          name: msb-eag-logs
+      - name: filebeat-onap-msb-eag
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap/msb/eag
+          name: msb-eag-logs
+        - mountPath: /usr/share/filebeat/data
+          name: msb-eag-filebeat
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: msb-filebeat-configmap
+      - name: msb-eag-logs
+        emptyDir: {}
+      - name: msb-eag-filebeat
+        emptyDir: {}
 #{{ end }}

@@ -56,6 +56,12 @@ spec:
           value: msb-discovery.{{ .Values.nsPrefix }}
         - name: ROUTE_LABELS
           value: "visualRange:1"
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        - mountPath: /usr/local/apiroute-works/logs
+          name: msb-iag-logs
         ports:
         - containerPort: {{ .Values.iagPort }}
           name: msb-iag
@@ -65,6 +71,28 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: "{{ .Values.pullPolicy}}"
+      - name: filebeat-onap-msb-iag
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap/msb/iag
+          name: msb-iag-logs
+        - mountPath: /usr/share/filebeat/data
+          name: msb-iag-filebeat
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: msb-filebeat-configmap
+      - name: msb-iag-logs
+        emptyDir: {}
+      - name: msb-iag-filebeat
+        emptyDir: {}
 #{{ end }}

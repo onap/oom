@@ -52,6 +52,12 @@ spec:
         env:
         - name: CONSUL_IP
           value: msb-consul.{{ .Values.nsPrefix }}
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        - mountPath: /usr/local/discover-works/logs
+          name: msb-discovery-logs
         ports:
         - containerPort: {{ .Values.discoveryPort }}
           name: msb-discovery
@@ -61,6 +67,28 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         imagePullPolicy: {{ .Values.pullPolicy }}
+      - name: filebeat-onap-msb-discovery
+        image: {{ .Values.image.filebeat }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap/msb/discovery
+          name: msb-discovery-logs
+        - mountPath: /usr/share/filebeat/data
+          name: msb-discovery-filebeat
       imagePullSecrets:
       - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: msb-filebeat-configmap
+      - name: msb-discovery-logs
+        emptyDir: {}
+      - name: msb-discovery-filebeat
+        emptyDir: {}
 #{{ end }}
