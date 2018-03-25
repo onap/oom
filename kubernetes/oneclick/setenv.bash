@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Deploying MSB first so the started ONAP services can be registered to MSB
-HELM_APPS=('consul' 'msb' 'mso' 'message-router' 'sdnc' 'vid' 'robot' 'portal' 'policy' 'aai' 'sdc' 'dcaegen2' 'log' 'cli' 'multicloud' 'clamp' 'vnfsdk' 'uui' 'aaf' 'vfc' 'esr')
+HELM_APPS=('consul' 'msb' 'mso' 'message-router' 'sdnc' 'vid' 'robot' 'portal' 'policy' 'aai' 'sdc' 'dcaegen2' 'cli' 'multicloud' 'clamp' 'vnfsdk' 'uui' 'aaf' 'vfc' 'esr')
 ONAP_DOCKER_REGISTRY=${ONAP_DOCKER_REGISTRY:-nexus3.onap.org:10001}
 ONAP_DOCKER_USER=${ONAP_DOCKER_USER:-docker}
 ONAP_DOCKER_PASS=${ONAP_DOCKER_PASS:-docker}
