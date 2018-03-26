@@ -1,0 +1,80 @@
+# Copyright © 2017 Amdocs, AT&T, Bell Canada, VMware
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#{{ if not .Values.disableOptfOsdf }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: optf-osdf
+  namespace: "{{ .Values.nsPrefix }}"
+spec:
+  replicas: {{ .Values.OptfOsdfReplicaCount }}
+  selector:
+    matchLabels:
+      app: optf-osdf
+  template:
+    metadata:
+      labels:
+        app: optf-osdf
+      name: optf-osdf
+    spec:
+     containers:
+     - env:
+       - name: MSB_ADDR
+         value: {{ tpl .Values.msbgateway . }}
+       - name: MSB_PORT
+         value: "{{ .Values.msbPort }}"
+       image: {{ .Values.image.optf_osdf }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: framework
+       volumeMounts:
+       - mountPath: /var/log/onap
+         name: optf-osdf-log
+       - mountPath: /opt/optf-osdf/pub/config/log.yml
+         name: optf-osdf-logconfig
+         subPath: log.yml
+       ports:
+       - containerPort: 8699
+       livenessProbe:
+         httpGet:
+           path: /api/oof/v1/healthcheck
+           port: 8699
+           scheme: HTTP
+         initialDelaySeconds: 30
+         periodSeconds: 10
+         timeoutSeconds: 10
+         successThreshold: 1
+         failureThreshold: 5
+     - image: {{ .Values.image.filebeat }}
+       imagePullPolicy: {{ .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+     volumes:
+     - name: optf-osdf-logconfig
+       emptyDir: {}
+     - name: optf-osdf-log
+       emptyDir: {}
+     - name: optf-osdf-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       emptyDir: {}
+     - name: framework-logconfig
+       emptyDir: {}
+     imagePullSecrets:
+     - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+     restartPolicy: Always
+#{{ end }}
