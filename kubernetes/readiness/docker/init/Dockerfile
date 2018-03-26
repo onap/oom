@@ -17,4 +17,8 @@ ENV TOKEN="/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 COPY ready.py /root/ready.py
 RUN chmod a+x /root/ready.py
+
+COPY job_complete.py /root/job_complete.py
+RUN chmod a+x /root/job_complete.py
+
 ENTRYPOINT /root/ready.py
