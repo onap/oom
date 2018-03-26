@@ -17,7 +17,7 @@ available), follow the following instructions to deploy ONAP.
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
   > git clone http://gerrit.onap.org/r/oom
-  > cd kubernetes
+  > cd oom/kubernetes
 
 
 **Step 2.** Customize the onap/values.yaml file to suit your deployment. You
@@ -61,41 +61,41 @@ may want to selectively enable or disable ONAP components by changing the
   # to customize the ONAP deployment.
   #################################################################
   aaf:
-    enabled: false
+    enabled: true
   aai:
-    enabled: false
+    enabled: true
   appc:
-    enabled: false
+    enabled: true
   clamp:
-    enabled: false
+    enabled: true
   cli:
-    enabled: false
+    enabled: true
   consul: # Consul Health Check Monitoring
-    enabled: false
+    enabled: true
   dcaegen2:
-    enabled: false
+    enabled: true
   esr:
-    enabled: false
+    enabled: true
   log:
-    enabled: false
+    enabled: true
   message-router:
-    enabled: false
+    enabled: true
   mock:
-    enabled: false
+    enabled: true
   msb:
-    enabled: false
+    enabled: true
   multicloud:
-    enabled: false
+    enabled: true
   policy:
-    enabled: false
+    enabled: true
   portal:
-    enabled: false
+    enabled: true
   robot: # Robot Health Check
     enabled: true
   sdc:
-    enabled: false
+    enabled: true
   sdnc:
-    enabled: false
+    enabled: true
   so: # Service Orchestrator
     enabled: true
 
@@ -122,13 +122,13 @@ may want to selectively enable or disable ONAP components by changing the
       config:
         mariadbRootPassword: password
   uui:
-    enabled: false
+    enabled: true
   vfc:
-    enabled: false
+    enabled: true
   vid:
-    enabled: false
+    enabled: true
   vnfsdk:
-    enabled: false
+    enabled: true
 
 **Step 3.** Build a local Helm repository (from the kubernetes directory)::
 
@@ -161,12 +161,15 @@ follows::
   local/so                2.0.0      ONAP Service Orchestrator
 
 .. note::
-  The of this Helm repository setup is a one time activity. If you make changes to your deployment charts or values be sure to use `make` to update your local Helm repository.
+  The setup of the Helm repository is a one time activity. If you make changes to your deployment charts or values be sure to use `make` to update your local Helm repository.
 
 **Step 7.** Once the repo is setup, installation of ONAP can be done with a
 single command::
 
-  > helm install local/onap -name development
+  > helm install local/onap -name dev --namespace onap
+
+.. note::
+  The requirement for the use of the `onap` namespace will be lifted once the OOM team completes their Beijing deveivers.
 
 Use the following to monitor your deployment and determine when ONAP is ready for use::
 
