@@ -45,5 +45,12 @@ clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
+
+# start up a local helm repo to serve up
+repo:
+	@mkdir -p $(PACKAGE_DIR)
+	@helm serve --repo-path $(PACKAGE_DIR) &
+	@helm repo index $(PACKAGE_DIR)
+	@helm repo add local http://127.0.0.1:8879
 %:
 	@:
