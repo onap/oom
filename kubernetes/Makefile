@@ -1,26 +1,33 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 PARENT_CHART := onap
 COMMON_CHARTS_DIR := common
-SETUP_CHARTS_DIR := setup
-#Order is important
-SHARED_CHARTS := common setup mysql dgbuilder
 # FIXME OOM-765
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
-EXCLUDES := $(COMMON_CHARTS_DIR) config oneclick readiness test dist helm $(PARENT_CHART) dcae
-EXCLUDES := $(SHARED_CHARTS) config oneclick readiness test dist $(PARENT_CHART) dcae
+EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
-common:
-all: $(SHARED_CHARTS) $(HELM_CHARTS)
-
-$(SHARED_CHARTS):
+$(COMMON_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
 
