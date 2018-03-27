@@ -1,0 +1,108 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#{{ if not .Values.disablePortalPortaldb }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: portaldb
+  namespace: "{{ .Values.nsPrefix }}"
+  labels:
+    app: portaldb
+spec:
+  ports:
+  - name: portaldb
+    port: 3306
+  selector:
+    app: portaldb
+  clusterIP: None
+#{{ end }}
+#{{ if not .Values.disablePortalPortalapps }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: portalapps
+  name: portalapps
+  namespace: "{{ .Values.nsPrefix }}"
+  annotations:
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "portal",
+          "version": "v2",
+          "url": "/",
+          "protocol": "REST"
+          "port": "8989",
+          "visualRange":"1"
+      }
+      ]'
+spec:
+  ports:
+  - name: portal-1
+    nodePort: {{ .Values.nodePortPrefix }}13
+    port: 8006
+    targetPort: 8005
+  - name: portal-2
+    nodePort: {{ .Values.nodePortPrefix }}14
+    port: 8010
+    targetPort: 8009
+  - name: portal-3
+    nodePort: {{ .Values.nodePortPrefix }}15
+    port: 8989
+    targetPort: 8080
+  selector:
+    app: portalapps
+  type: NodePort
+#{{ end }}
+#{{ if not .Values.disablePortalVncPortal }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: portal-vnc
+  name: portal-vnc
+  namespace: "{{ .Values.nsPrefix }}"
+spec:
+  ports:
+  - name: tcp-1
+    port: 6080
+    targetPort: 80
+    nodePort: {{ .Values.nodePortPrefix }}11
+  - name: tcp-2
+    port: 5900
+    targetPort: 5900
+    nodePort: {{ .Values.nodePortPrefix }}12
+  selector:
+    app: portal-vnc
+  type: NodePort
+#{{ end }}
+#{{ if not .Values.disablePortalPortalwidgets }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portalwidgets
+  namespace: "{{ .Values.nsPrefix }}"
+  labels:
+    app: portalwidgets
+spec:
+  ports:
+  - name: portalwidgets
+    port: 8082
+  selector:
+    app: portalwidgets
+  clusterIP: None
+#{{ end }}

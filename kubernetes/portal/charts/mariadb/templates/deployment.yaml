@@ -1,0 +1,132 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      hostname: mariadb
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+          volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: mariadb-data
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /etc/mysql/conf.d
+            name: mariadb-conf
+          - mountPath: /docker-entrypoint-initdb.d/02-load-additional-changes.sh
+            name: mariadb-docker-entrypoint-initdb
+            subPath: 02-load-additional-changes.sh
+          - mountPath: /docker-entrypoint-initdb.d/01-load-default-sql-files.sh
+            name: mariadb-docker-entrypoint-initdb
+            subPath: 01-load-default-sql-files.sh
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/automated-tests
+            name: mariadb-docker-entrypoint-automated-tests
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/default
+            name: mariadb-docker-entrypoint-bulkload-default
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-dns
+            name: mariadb-docker-entrypoint-demo-dns
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/bulkload-files/demo-vfw
+            name: mariadb-docker-entrypoint-demo-vfw
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/camunda
+            name: mariadb-docker-entrypoint-camunda
+          - mountPath: /docker-entrypoint-initdb.d/db-sql-scripts/main-schemas
+            name: mariadb-docker-entrypoint-main-schemas
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+      {{- if .Values.persistence.enabled }}
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+        - name: mariadb-conf
+          configMap:
+            name: confd-configmap
+        - name: mariadb-docker-entrypoint-initdb
+          configMap:
+            name: docker-entry-initd-configmap
+        - name: mariadb-docker-entrypoint-automated-tests
+          configMap:
+            name: automated-tests-configmap
+        - name: mariadb-docker-entrypoint-bulkload-default
+          configMap:
+            name: bulkload-default-configmap
+        - name: mariadb-docker-entrypoint-demo-dns
+          configMap:
+            name: demo-dns-configmap
+        - name: mariadb-docker-entrypoint-demo-vfw
+          configMap:
+            name: demo-vfw-configmap
+        - name: mariadb-docker-entrypoint-camunda
+          configMap:
+            name: scripts-camunda-configmap
+        - name: mariadb-docker-entrypoint-main-schemas
+          configMap:
+            name: main-schemas-configmap
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
