@@ -1,4 +1,4 @@
-# File generated from /opt/config
+#file generated from /opt/config
 #
 GLOBAL_INJECTED_AAI1_IP_ADDR = "{{.Release.Name}}-aai.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
@@ -38,6 +38,7 @@ GLOBAL_INJECTED_VID_IP_ADDR = "{{.Release.Name}}-vid-server.{{include "common.na
 GLOBAL_INJECTED_VM_FLAVOR = "{{ .Values.openStackFlavourMedium }}"
 GLOBAL_INJECTED_VM_IMAGE_NAME = "{{ .Values.ubuntuImage }}"
 GLOBAL_INJECTED_PUBLIC_NET_ID = "{{ .Values.openStackPublicNetId }}"
+GLOBAL_INJECTED_SCRIPT_VERSION = "{{ .Values.scriptVersion }}"
 GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_AAI1_IP_ADDR" : "{{.Release.Name}}-aai.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_APPC_IP_ADDR" : "{{.Release.Name}}-appc-sdnhost.{{include "common.namespace" .}}",
@@ -73,5 +74,6 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_VID_IP_ADDR" : "{{.Release.Name}}-vid-server.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
     "GLOBAL_INJECTED_VM_IMAGE_NAME" : "{{ .Values.ubuntuImage }}",
-    "GLOBAL_INJECTED_PUBLIC_NET_ID" : "{{ .Values.openStackPublicNetId }}"
+    "GLOBAL_INJECTED_PUBLIC_NET_ID" : "{{ .Values.openStackPublicNetId }}",
+    "GLOBAL_INJECTED_SCRIPT_VERSION" : "{{ .Values.scriptVersion }}"
 }
