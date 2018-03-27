@@ -12,40 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Default values for so.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-global: # global defaults
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
   readinessRepository: oomk8s
   readinessImage: readiness-check:1.1.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
+  persistence: {}
 
-subChartsOnly:
-  enabled: true
+#################################################################
+# Application configuration defaults.
+#################################################################
 
 # application image
-repository: nexus3.onap.org:10001
-image: openecomp/mso:1.2-STAGING-latest
+loggingRepository: docker.elastic.co
+image: logstash/logstash:5.4.3
 pullPolicy: Always
-  
+
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
 config:
-  # message router configuration
-  dmaapTopic: "AUTO"
-  # openstack configuration
-  openStackUserName: "vnf_user"
-  openStackRegion: "RegionOne"
-  openStackKeyStoneUrl: "http://1.2.3.4:5000"
-  openStackServiceTenantName: "service"
-  openStackEncryptedPasswordHere: "c124921a3a0efbe579782cde8227681e"
-  logstashServiceName: log-ls
-  logstashPort: 5044
+  elasticsearchServiceName: log-es
+  elasticsearchPort: 9200
 
 # default number of instances
 replicaCount: 1
@@ -56,7 +48,7 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 120
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
@@ -67,19 +59,15 @@ readiness:
   periodSeconds: 10
 
 service:
-  type: NodePort
-  name: so
-  externalPort: 23
-  internalPort: 8080
-  externalPort2: 25
-  internalPort2: 3904
-  externalPort3: 24
-  internalPort3: 3905
-  externalPort4: 22
-  internalPort4: 9990
-  externalPort5: 50
-  internalPort5: 8787
-
+  #Example service definition with external, internal and node ports.
+  #Services may use any combination of ports depending on the 'type' of
+  #service being defined.
+  type: ClusterIP
+  name: log-ls
+  externalPort: 5044
+  internalPort: 5044
+  externalPortHttp: 9600
+  internalPortHttp: 9600
 ingress:
   enabled: false
 
@@ -92,8 +80,8 @@ resources: {}
   # Example:
   # Configure resource requests and limits
   # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory 
-  # Minimum memory for production is 4 CPU cores and 8GB memory 
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
 #resources:
 #  limits:
 #    cpu: 2

@@ -12,40 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Default values for so.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-global: # global defaults
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
+  persistence: {}
 
-subChartsOnly:
-  enabled: true
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+# BusyBox image
+busyboxRepository: registry.hub.docker.com
+busyboxImage: library/busybox:latest
 
 # application image
-repository: nexus3.onap.org:10001
-image: openecomp/mso:1.2-STAGING-latest
+loggingRepository: docker.elastic.co
+image: elasticsearch/elasticsearch:5.5.0
 pullPolicy: Always
-  
+
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
-config:
-  # message router configuration
-  dmaapTopic: "AUTO"
-  # openstack configuration
-  openStackUserName: "vnf_user"
-  openStackRegion: "RegionOne"
-  openStackKeyStoneUrl: "http://1.2.3.4:5000"
-  openStackServiceTenantName: "service"
-  openStackEncryptedPasswordHere: "c124921a3a0efbe579782cde8227681e"
-  logstashServiceName: log-ls
-  logstashPort: 5044
+# Example:
+config: {}
 
 # default number of instances
 replicaCount: 1
@@ -66,20 +59,38 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-service:
-  type: NodePort
-  name: so
-  externalPort: 23
-  internalPort: 8080
-  externalPort2: 25
-  internalPort2: 3904
-  externalPort3: 24
-  internalPort3: 3905
-  externalPort4: 22
-  internalPort4: 9990
-  externalPort5: 50
-  internalPort5: 8787
+## Persist data to a persitent volume
+persistence:
+  enabled: true
 
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  accessMode: ReadWriteMany
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: log/elasticsearch/data
+  mountSubPathLogs: log
+
+service:
+  #Example service definition with external, internal and node ports.
+  #Services may use any combination of ports depending on the 'type' of
+  #service being defined.
+  type: ClusterIP
+  name: log-es
+  externalPort: 9200
+  internalPort: 9200
+  externalPortTcp: 9300
+  internalPortTcp: 9300
 ingress:
   enabled: false
 
@@ -92,8 +103,8 @@ resources: {}
   # Example:
   # Configure resource requests and limits
   # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory 
-  # Minimum memory for production is 4 CPU cores and 8GB memory 
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
 #resources:
 #  limits:
 #    cpu: 2
