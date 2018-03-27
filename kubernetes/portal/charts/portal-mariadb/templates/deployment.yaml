@@ -1,0 +1,98 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_HOST
+              value: "{{ .Values.service.name }}"
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+          volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: mariadb-data
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - name: mariadb-docker-entrypoint-initdb
+            mountPath: /docker-entrypoint-initdb.d/zzz_apps_users_onboarding.sql
+            subPath: Apps_Users_OnBoarding_Script.sql
+          - name: mariadb-docker-entrypoint-initdb
+            mountPath: /docker-entrypoint-initdb.d/PortalDDLMySql_2_1_Common.sql
+            subPath: PortalDDLMySql_2_1_Common.sql
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+      {{- if .Values.persistence.enabled }}
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+        - name: mariadb-docker-entrypoint-initdb
+          configMap:
+            name: {{ include "common.fullname" . }}-docker-entry-initd-configmap
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
