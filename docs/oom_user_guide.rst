@@ -70,10 +70,6 @@ To prepare your system for an installation of ONAP, you'll need to::
   > git clone http://gerrit.onap.org/r/oom
   > cd kubernetes
 
-Then build your local Helm repository::
-
-  > make all
-
 To setup a local Helm server to server up the ONAP charts::
 
   > helm serve &
@@ -87,6 +83,10 @@ To get a list of all of the available Helm chart repositories::
   > helm repo list
   NAME   URL
   local  http://127.0.0.1:8879
+
+Then build your local Helm repository::
+
+  > make all
 
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::

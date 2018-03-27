@@ -130,11 +130,7 @@ may want to selectively enable or disable ONAP components by changing the
   vnfsdk:
     enabled: true
 
-**Step 3.** Build a local Helm repository (from the kubernetes directory)::
-
-  > make all
-
-**Step 4.** To setup a local Helm server to server up the ONAP charts::
+**Step 3.** To setup a local Helm server to server up the ONAP charts::
 
   > helm serve &
 
@@ -143,11 +139,15 @@ follows::
 
   > helm repo add local http://127.0.0.1:8879
 
-**Step 5.** Verify your Helm repository setup with::
+**Step 4.** Verify your Helm repository setup with::
 
   > helm repo list
   NAME   URL
   local  http://127.0.0.1:8879
+
+**Step 5.** Build a local Helm repository (from the kubernetes directory)::
+
+  > make all
 
 **Step 6.** Display the charts that available to be deployed::
 
