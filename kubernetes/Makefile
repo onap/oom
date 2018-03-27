@@ -47,17 +47,23 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+	@helm repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
-	@rm -rf $(PACKAGE_DIR)
+	@rm -rf $(PACKAGE_DIR)/*
 
-# start up a local helm repo to serve up
+# start up a local helm repo to serve up helm chart packages
 repo:
 	@mkdir -p $(PACKAGE_DIR)
 	@helm serve --repo-path $(PACKAGE_DIR) &
 	@helm repo index $(PACKAGE_DIR)
 	@helm repo add local http://127.0.0.1:8879
+
+# stop local helm repo
+repo-stop:
+	@pkill helm
+	@helm repo remove local
 %:
 	@:

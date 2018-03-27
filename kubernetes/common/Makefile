@@ -41,6 +41,7 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+	@helm repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock
