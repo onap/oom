@@ -1,0 +1,68 @@
+#{{ if not .Values.disableBuscontroller }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dmaap-prov
+
+  namespace: "{{ .Values.nsPrefix }}"
+spec:
+  replicas: {{ .Values.dmaapProvReplicas }}
+  selector:
+    matchLabels:
+      app: buscontroller
+  template:
+    metadata:
+      labels:
+        app:  buscontroller
+      name: dmaap-buscontroller
+    spec:
+#      initContainers:
+#      - command:
+#        - /root/ready.py
+#        args:
+#        - --container-name
+#        - buscontroller
+#        env:
+#        - name: NAMESPACE
+#          valueFrom:
+#            fieldRef:
+#              apiVersion: v1
+#              fieldPath: metadata.namespace
+#        image: "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}"
+#        imagePullPolicy: {{ .Values.pullPolicy }}
+#        name: dmaap-buscontroller-readiness
+      imagePullSecrets:
+      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+      containers:
+      - image: "{{ .Values.image.buscontrollerImage }}:{{ .Values.image.buscontrollerVersion }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: dmaap-buscontroller
+        ports:
+        - containerPort: 8080
+        - containerPort: 8443
+        readinessProbe:
+          httpGet:
+            port: 8080
+            path: /webapi/info
+          initialDelaySeconds: 10
+          periodSeconds: 60
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/config
+          name: buscontroller-config
+      restartPolicy: Always
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: buscontroller-config
+        configMap:
+          name: buscontroller-config
+          items:
+          - key: conf
+            path: conf
+#        hostPath:
+#          path: {{ .Values.dataRootDir }}/{{ .Values.nsPrefix }}/dmaapbc/myconf
+{{ end }}
