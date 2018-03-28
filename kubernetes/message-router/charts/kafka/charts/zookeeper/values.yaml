@@ -22,29 +22,23 @@ global:
   readinessImage: readiness-check:1.1.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  configRepository: oomk8s
+  configImage: config-init:2.0.0-SNAPSHOT
+  persistence: {}
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/dmaap/dmaap-mr:latest
+repository: wurstmeister
+image: zookeeper:latest
 pullPolicy: Always
-
-nameOverride: dmaap
-
-kafka:
-  nameOverride: global-kafka
-zookeeper:
-  nameOverride: zookeeper
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
-config:
-  zookeeperPort: 2181
-  kafkaPort: 9092
+config: {}
 
 # default number of instances
 replicaCount: 1
@@ -65,13 +59,33 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: message-router/data-zookeeper/
+
 service:
   type: NodePort
-  name: message-router
-  externalPort: 3904
-  nodePort: 27
-  externalPort2: 3905
-  nodePort2: 26
+  name: zookeeper
+  internalPort: 2181
 
 ingress:
   enabled: false
