@@ -1,0 +1,43 @@
+# Copyright (c) 2018 ZTE Corporation.
+# All rights reserved. This program and the accompanying materials
+# are made available under the Apache License, Version 2.0
+# and the Eclipse Public License v1.0 which both accompany this distribution,
+# and are available at http://www.eclipse.org/legal/epl-v10.html
+# and http://www.apache.org/licenses/LICENSE-2.0
+#
+# Contributors:
+#     ZTE - initial API and implementation and/or initial documentation
+
+#{{ if not .Values.disableWorkflowModeler }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: workflow-modeler
+  name: workflow-modeler
+  namespace: "{{ .Values.nsPrefix }}"
+spec:
+  selector:
+    matchLabels:
+      app: workflow-modeler
+  template:
+    metadata:
+      labels:
+        app: workflow-modeler
+      name: workflow-modeler
+    spec:
+      containers:
+      - name: workflow-modeler
+        image: {{ .Values.wfdesigner.image }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        env:
+        - name: MSB_ADDR
+          value: {{ tpl .Values.msbaddr . }}
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+#{{ end }}
