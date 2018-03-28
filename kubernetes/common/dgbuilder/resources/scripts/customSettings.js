@@ -29,7 +29,7 @@ module.exports={
         "user": "dguser",
         "pass": "cc03e747a6afbbcbf8be7668acfebee5"
     },
-    "dbHost": "{{.Values.dbServiceName}}.{{ include "common.namespace" . }}",
+    "dbHost": "{{.Values.config.dbServiceName}}.{{ include "common.namespace" . }}",
     "dbPort": "3306",
     "dbName": "sdnctl",
     "dbUser": "sdnctl",
