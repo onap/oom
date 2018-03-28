@@ -12,22 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableMessageRouterGlobalKafka }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: message-router-global-kafka
-  namespace: "{{ .Values.nsPrefix }}"
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.kafkaReplicas }}
-  selector:
-    matchLabels:
-      app: global-kafka
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
-        app: global-kafka
-      name: message-router-global-kafka
+        app:  {{ include "common.name" . }}
+        release: {{ .Release.Name }}
     spec:
       initContainers:
       - command:
@@ -35,8 +36,8 @@ spec:
         args:
         - -c
         - "if [ -d /var/tmp/SDC-DISTR-NOTIF-TOPIC-SDC-OPENSOURCE-ENV1-0 ]; then echo nothing to do; else cp -a /opt/config/src/message-router/dcae-startup-vm-message-router/docker_files/data-kafka/* /var/tmp/; fi"
-        image: {{ .Values.image.config }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
+        image: "{{ .Values.global.configRepository }}/{{ .Values.global.configImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /var/tmp
           name: kafka-data
@@ -45,38 +46,47 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - zookeeper
+        - {{ .Values.zookeeper.nameOverride }}
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: {{ .Values.image.readiness }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: kafka-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
-      - image: {{ .Values.image.kafka }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: global-kafka
+      - name: {{ include "common.name" .  }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
-        - containerPort: 9092
+        - containerPort: {{ .Values.service.internalPort }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
         readinessProbe:
           tcpSocket:
-            port: 9092
-          initialDelaySeconds: 5
-          periodSeconds: 10
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
         env:
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value: "zookeeper.{{ .Values.nsPrefix }}:2181"
+          value: "{{.Values.zookeeper.nameOverride}}:{{.Values.config.zookeeperPort}}"
         - name: KAFKA_ADVERTISED_HOST_NAME
-          value: "global-kafka"
+          value: "{{ include "common.fullname" .  }}"
         - name: KAFKA_BROKER_ID
           value: "1"
         - name: KAFKA_ADVERTISED_PORT
-          value: "9092"
+          value: "{{.Values.service.internalPort}}"
         - name: KAFKA_PORT
-          value: "9092"
+          value: "{{.Values.service.internalPort}}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -85,7 +95,6 @@ spec:
           name: docker-socket
         - mountPath: /kafka
           name: kafka-data
-      restartPolicy: Always
       volumes:
       - name: localtime
         hostPath:
@@ -95,8 +104,6 @@ spec:
           path: /var/run/docker.sock
       - name: kafka-data
         persistentVolumeClaim:
-          claimName: message-router-kafka
+          claimName: {{ include "common.fullname" . }}
       imagePullSecrets:
-      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
-#{{ end }}
-
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
