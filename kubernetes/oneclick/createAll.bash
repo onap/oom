@@ -89,7 +89,7 @@ create_onap_helm() {
     ONAP_DEFAULT_AUTH_TOKEN=`kubectl get secrets $DEFAULT_SECRET -n $1 -o yaml | grep  'token:'  | awk '{ print $2}' | base64 --decode`
   fi
 
-  cmd=`echo helm install $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3,kubeMasterAuthToken=$ONAP_DEFAULT_AUTH_TOKEN ${HELM_VALUES_ADDITION}`
+  cmd=`echo helm install --debug $LOCATION/$2/ --name $1-$2 --namespace $1 --set nsPrefix=$1,nodePortPrefix=$3,kubeMasterAuthToken=$ONAP_DEFAULT_AUTH_TOKEN ${HELM_VALUES_ADDITION}`
   eval ${cmd}
   check_return_code $cmd
 }
