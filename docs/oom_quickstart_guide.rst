@@ -166,7 +166,7 @@ follows::
 **Step 7.** Once the repo is setup, installation of ONAP can be done with a
 single command::
 
-  > helm install local/onap -name dev --namespace onap
+  > helm install local/onap -n dev --namespace onap
 
 .. note::
   The requirement for the use of the `onap` namespace will be lifted once the OOM team completes their Beijing deveivers.
