@@ -26,7 +26,7 @@ wget -O cl-amsterdam-template.drl https://git.onap.org/policy/drools-application
 
 sleep 2
 
-curl -v --silent -X POST --header 'Content-Type: multipart/form-data' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -F "file=@cl-amsterdam-template.drl" -F "importParametersJson={\"serviceName\":\"ClosedLoopControlName\",\"serviceType\":\"BRMSPARAM\"}" 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/policyEngineImport' 
+curl -v --silent -X POST --header 'Content-Type: multipart/form-data' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -F "file=@cl-amsterdam-template.drl" -F "importParametersJson={\"serviceName\":\"ClosedLoopControlName\",\"serviceType\":\"BRMSPARAM\"}" 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/policyEngineImport' 
 
 echo "PRELOAD_POLICIES is $PRELOAD_POLICIES"
 
@@ -56,7 +56,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a%0D%0A++trigger_policy%3A+unique-policy-id-1-modifyConfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-modifyConfig%0D%0A++++name%3A+modify+packet+gen+config%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+TBD+-+Cannot+be+known+until+instantiation+is+done%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
 		}
 	}
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
@@ -76,7 +76,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3%0D%0A++trigger_policy%3A+unique-policy-id-1-scale-up%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-scale-up%0D%0A++++name%3A+Create+a+new+VF+Module%0D%0A++++description%3A%0D%0A++++actor%3A+SO%0D%0A++++recipe%3A+VF+Module+Create%0D%0A++++target%3A%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
 		}
 	}
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
@@ -96,7 +96,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-VOLTE-2179b738-fd36-4843-a71a-a8c24c70c55b%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+VFC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
 		}
 	}
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
@@ -116,7 +116,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+true%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
 		}
 	}
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Create Micro Service Config policies##########################################
 
@@ -130,7 +130,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 	"policyConfigType": "MicroService",
 	"policyName": "com.MicroServicevFirewall",
 	"onapName": "DCAE"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 
 sleep 2
@@ -141,7 +141,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 	"policyConfigType": "MicroService",
 	"policyName": "com.MicroServicevDNS",
 	"onapName": "DCAE"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 
 sleep 2
@@ -152,7 +152,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 	"policyConfigType": "MicroService",
 	"policyName": "com.MicroServicevCPE",
 	"onapName": "DCAE"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 
 #########################################Creating Decision Guard policy######################################### 
@@ -179,7 +179,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
 			"guardActiveEnd": "00:00:00-05:00" 
 		} 
 	} 
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/createPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Push Decision policy#########################################
 
@@ -190,7 +190,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default", 
   "policyName": "com.AllPermitGuard", 
   "policyType": "DECISION" 
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 #########################################Pushing BRMS Param policies##########################################
 
@@ -203,7 +203,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.BRMSParamvFirewall",
   "policyType": "BRMS_Param"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 2
 
@@ -212,7 +212,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.BRMSParamvDNS",
   "policyType": "BRMS_Param"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 2
 
@@ -221,7 +221,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.BRMSParamVOLTE",
   "policyType": "BRMS_Param"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 2
 
@@ -230,7 +230,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.BRMSParamvCPE",
   "policyType": "BRMS_Param"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 #########################################Pushing MicroService Config policies##########################################
 
@@ -243,7 +243,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.MicroServicevFirewall",
   "policyType": "MicroService"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy'
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 10
 
@@ -252,7 +252,7 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.MicroServicevDNS",
   "policyType": "MicroService"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy' 
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
 
 sleep 10
 
@@ -261,4 +261,4 @@ curl -v --silent -X PUT --header 'Content-Type: application/json' --header 'Acce
   "pdpGroup": "default",
   "policyName": "com.MicroServicevCPE",
   "policyType": "MicroService"
-}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:8081/pdp/api/pushPolicy' 
+}' 'http://{{.Release.Name}}-{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
