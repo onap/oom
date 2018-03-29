@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -23,7 +23,11 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  serviceName: {{ include "common.fullname" . }}
   replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
@@ -48,7 +52,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       hostAliases:
-      - ip: "{{ .Values.aaiServiceClusterIp }}"
+      - ip: "{{ .Values.config.aaiServiceClusterIp }}"
         hostnames:
         - "aai.api.simpledemo.openecomp.org"
       containers:
