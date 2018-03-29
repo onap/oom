@@ -1,0 +1,176 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: "{{ .Values.service.name }}-cluster"
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.mysql.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "/opt/sdnc/bin/startODL.sh"]
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+          - containerPort: {{ .Values.service.internalPort3 }}
+          - containerPort: {{ .Values.service.clusterPort }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+            - name: SDNC_CONFIG_DIR
+              value: "{{ .Values.config.configDir }}"
+            - name: ENABLE_ODL_CLUSTER
+              value: "{{ .Values.config.enableClustering }}"
+            - name: SDNC_REPLICAS
+              value: "{{ .Values.replicaCount }}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
+            name: sdnc-logging-cfg-config
+            subPath: org.ops4j.pax.logging.cfg
+          - mountPath: /opt/onap/sdnc/bin/startODL.sh
+            name: startodl
+            subPath: startODL.sh
+          - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
+            name: aaiclient-conf
+            subPath: aaiclient.properties
+          - mountPath: /opt/onap/sdnc/data/properties/dblib.properties
+            name: sdnc-dblib-properties
+            subPath: dblib.properties
+          - mountPath: /opt/onap/sdnc/data/properties/svclogic.properties
+            name: sdnc-svclogic-config
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+            name: onap-sdnc-svclogic-config
+            subPath: svclogic.properties
+          - mountPath: /var/log/onap
+            name: logs
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: logs
+          - mountPath: /usr/share/filebeat/data
+            name: data-filebeat
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: logs
+          emptyDir: {}
+        - name: data-filebeat
+          emptyDir: {}
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-filebeat-configmap
+        - name: sdnc-logging-cfg-config
+          configMap:
+            name: {{ include "common.fullname" . }}-log-configmap
+        - name: startodl
+          configMap:
+            name: {{ include "common.fullname" . }}-startodl
+            items:
+            - key: startODL.sh
+              path: startODL.sh
+              mode: 0755
+        - name: aaiclient-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-aaiclient-properties
+            items:
+            - key: aaiclient.properties
+              path: aaiclient.properties
+              mode: 0644
+        - name: sdnc-dblib-properties
+          configMap:
+            name: {{ include "common.fullname" . }}-dblib-properties
+            items:
+            - key: dblib.properties
+              path: dblib.properties
+              mode: 0644
+        - name: sdnc-svclogic-config
+          configMap:
+            name: {{ include "common.fullname" . }}-svclogic-config
+            items:
+            - key: svclogic.properties
+              path: svclogic.properties
+              mode: 0644
+        - name: onap-sdnc-svclogic-config
+          configMap:
+            name: {{ include "common.fullname" . }}-onap-sdnc-svclogic-config
+            items:
+            - key: svclogic.properties
+              path: svclogic.properties
+              mode: 0644
+
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
