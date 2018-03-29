@@ -12,58 +12,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableSdncDmaap }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: sdnc-dmaap-listener
-  namespace: "{{ .Values.nsPrefix }}"
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.dmaapReplicas }}
-  selector:
-    matchLabels:
-      app: dmaap-listener
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
-        app: dmaap-listener
-      name: sdnc-dmaap-listener
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
     spec:
       initContainers:
       - command:
         - /root/ready.py
         args:
         - --container-name
-        - sdnc-db-container
+        - {{ .Values.config.mysqlChartName }}
         - --container-name
-        - sdnc-controller-container
+        - {{ .Values.config.sdncChartName }}
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: {{ .Values.image.readiness }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: sdnc-dmaap-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
       - command:
         - /opt/onap/sdnc/dmaap-listener/bin/start-dmaap-listener.sh
+        name: {{ include "common.name" . }}
+        image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: PROPERTY_DIR
-          value: /opt/onap/sdnc/data/properties
+          value: "{{ .Values.config.configDir }}"
         - name: SDNC_CONFIG_DIR
-          value: /opt/onap/sdnc/data/properties
-        image: {{ .Values.image.dmaaplistener }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: dmaapp-listener-container
+          value: "{{ .Values.config.configDir }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/onap/sdnc/data/properties/dhcpalert.properties
+        - mountPath: {{ .Values.config.configDir }}/dhcpalert.properties
           subPath: dhcpalert.properties
           name: dmaap-dhcapalert-config
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
       volumes:
         - name: localtime
           hostPath:
@@ -72,5 +84,4 @@ spec:
           configMap:
             name: sdnc-dmaap-configmap
       imagePullSecrets:
-      - name: "{{ .Values.nsPrefix }}-docker-registry-key"
-#{{ end }}
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
