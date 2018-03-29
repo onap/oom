@@ -18,7 +18,7 @@ Step 1. Clone the OOM repository from ONAP gerrit:
 > cd oom/kubernetes
 ```
 
-Step 2. Customize the oom/kubernetes/onap parent chart, like the values.yaml file, to suit your deployment. You may want to selectively enable or disable ONAP components by changing the subchart **enabled** flags to *true* or *false*.
+Step 2. Customize the oom/kubernetes/onap parent chart, like the values.yaml file, to suit your deployment. You may want to selectively enable or disable ONAP components by changing the subchart **enabled** flags to *true* or *false*.  The .yaml file for OpenStackEncryptedPassword should be the MSO ecnrypted value of the openstack tenant password
 ```
 Example:
 ...
@@ -32,8 +32,8 @@ so: # Service Orchestrator
   enabled: true
 ...
 ```
-
 Step 3. To setup a local Helm repository to serve up the local ONAP charts:
+        [Note: ensure helm init has been executed on the node, or run helm init --client-only]
 ```
 > helm serve &
 ```
@@ -64,7 +64,7 @@ Setup of this Helm repository is a one time activity. If you make changes to you
 
 Step 6. Once the repo is setup, installation of ONAP can be done with a single command:
 ```
-> helm install local/onap -name dev --namespace onap
+> helm install local/onap --name dev --namespace onap
 ```
 **Note:** the **--namespace onap** is currently required while all onap helm charts are migrated to version 2.0. After this activity is complete, namespaces will be optional.
 
