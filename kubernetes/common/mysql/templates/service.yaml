@@ -88,3 +88,27 @@ spec:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
   clusterIP: None
+---
+#{{ if .Values.geoEnabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}-nodeport
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    statefulset.kubernetes.io/pod-name: {{ include "common.name" . }}-0
+spec:
+  ports:
+  - name: {{ .Values.service.internalPort }}
+    port: {{ .Values.service.internalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.externalPort1 }}
+  - name: {{ .Values.xtrabackup.internalPort }}
+    port: {{ .Values.xtrabackup.internalPort }}
+    targetPort: {{ .Values.xtrabackup.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.externalPort2 }}
+  type: NodePort
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "common.name" . }}-0
+    release: {{ .Release.Name }}
+#{{ end }}
