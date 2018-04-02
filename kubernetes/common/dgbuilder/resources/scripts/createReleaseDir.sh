@@ -6,7 +6,7 @@ then
 	echo "Usage $0 releaseDir  loginId emailAddress [gitLocalRepository]"
 	echo "Note: Specify the gitLocalRepository path if you would want to be able to import flows from your local git repository"
 	exit
-fi 
+fi
 if [ ! -e "releases" ]
 then
 	mkdir releases
@@ -15,7 +15,7 @@ releaseDir="$1"
 name="Release $releaseDir"
 loginId="$2"
 emailid="$3"
-dbHost="{{.Values.dbServiceName}}.{{.Release.Namespace}}"
+dbHost="{{.Values.config.dbServiceName}}.{{.Release.Namespace}}"
 dbPort="3306"
 dbName="sdnctl"
 dbUser="sdnctl"
@@ -76,7 +76,7 @@ fi
 	#echo "Created custom settings  file $customSettingsFile"
 	echo "Done ....."
 else
-	echo "ERROR:customSettings file $customSettingsFile already exists for $releaseDir"	
+	echo "ERROR:customSettings file $customSettingsFile already exists for $releaseDir"
 	exit
 fi
 #echo "Content of custom settings file"
@@ -86,17 +86,17 @@ fi
 svclogicPropFile="./conf/svclogic.properties"
 if [ ! -d "${appDir}/yangFiles" ]
 then
-	mkdir -p "${appDir}/yangFiles" 
+	mkdir -p "${appDir}/yangFiles"
 fi
 if [ ! -d "${appDir}/generatedJS" ]
 then
-	mkdir -p "${appDir}/generatedJS" 
+	mkdir -p "${appDir}/generatedJS"
 fi
 
 if [ ! -e "./$svclogicPropFile" ]
 then
 	echo "org.onap.ccsdk.sli.dbtype=jdbc" >$svclogicPropFile
-	echo "org.onap.ccsdk.sli.jdbc.url=jdbc:mysql://{{.Values.dbServiceName}}.{{.Release.Namespace}}:3306/sdnctl" >>$svclogicPropFile
+	echo "org.onap.ccsdk.sli.jdbc.url=jdbc:mysql://{{.Values.config.dbServiceName}}.{{.Release.Namespace}}:3306/sdnctl" >>$svclogicPropFile
 	echo "org.onap.ccsdk.sli.jdbc.database=sdnctl" >>$svclogicPropFile
 	echo "org.onap.ccsdk.sli.jdbc.user=sdnctl" >>$svclogicPropFile
 	echo "org.onap.ccsdk.sli.jdbc.password=gamma" >>$svclogicPropFile
