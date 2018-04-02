@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    msb.onap.org/service-info: '[
+    {
+      "serviceName": "multicloud-vio",
+      "version": "v0",
+      "url": "/api/multicloud-vio/v0",
+      "protocol": "REST",
+      "port": "{{ .Values.service.externalPort }}",
+      "visualRange": "1"
+    }
+    ]'
+spec:
+  ports:
+  {{if eq .Values.service.type "NodePort" -}}
+  - name: {{ .Values.service.name }}
+    port: {{ .Values.service.externalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+  {{- else -}}
+  - port: {{ .Values.service.externalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    name: {{ .Values.service.name }}
+  {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  type: {{ .Values.service.type }}
