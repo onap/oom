@@ -12,48 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableVnfsdkRefrepo }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
   labels:
-    app: refrepo
-  name: vnfsdk-refrepo
-  namespace: "{{ .Values.nsPrefix }}"
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
   selector:
     matchLabels:
-      app: refrepo
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
-        app: refrepo
-      name: vnfsdk-refrepo
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
     spec:
       initContainers:
       - command:
         - /root/ready.py
         args:
         - --container-name
-        - postgres
+        - "{{ index .Values "vnfsdk-postgres" "nameOverride" }}"
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ .Values.image.readiness }}:{{ .Values.image.readinessVersion }}"
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: vnfsdk-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy}}
+        name: {{ include "common.name" . }}-readiness
       containers:
-      - image: {{ .Values.image.refrepoImage }}:{{ .Values.image.refrepoVersion }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: refrepo
+      - image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        name: {{ include "common.name" . }}
         readinessProbe:
           tcpSocket:
             port: 8702
           initialDelaySeconds: 5
           periodSeconds: 10
       imagePullSecrets:
-      - name: {{ .Values.nsPrefix }}-docker-registry-key
-#{{ end }}
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
