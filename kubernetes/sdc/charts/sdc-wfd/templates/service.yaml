@@ -1,0 +1,52 @@
+#
+# Copyright (c) 2018 ZTE Corporation.
+# All rights reserved. This program and the accompanying materials
+# are made available under the Apache License, Version 2.0
+# and the Eclipse Public License v1.0 which both accompany this distribution,
+# and are available at http://www.eclipse.org/legal/epl-v10.html
+# and http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Contributors:
+#     ZTE - initial API and implementation and/or initial documentation
+#
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "workflow-modeler",
+          "version": "v1",
+          "url": "/api/workflow-modeler/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": true,
+          "visualRange":"1"
+      },
+      {
+          "serviceName": "workflow-modeler-ui",
+          "version": "v1",
+          "url": "/workflow-modeler",
+          "protocol": "UI",
+          "path": "/workflow-modeler",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"1"
+      }
+      ]'
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      name: {{ .Values.service.name }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
