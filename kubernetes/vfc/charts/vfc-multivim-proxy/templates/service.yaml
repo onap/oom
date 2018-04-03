@@ -15,7 +15,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "common.servicename" . }}
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -23,24 +23,22 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-# Example MSB registration annotation
-#    msb.onap.org/service-info: '[
-#      {
-#          "serviceName": "so",
-#          "version": "v1",
-#          "url": "/ecomp/mso/infra",
-#          "protocol": "REST"
-#          "port": "8080",
-#          "visualRange":"1"
-#      }
-#      ]'
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "multivimproxy",
+          "version": "v1",
+          "url": "/api/multivimproxy/v1",
+          "protocol": "REST",
+          "port": "{{.Values.service.externalPort}}",
+          "visualRange":"1"
+      }
+      ]'
 spec:
   type: {{ .Values.service.type }}
   ports:
     {{if eq .Values.service.type "NodePort" -}}
     - port: {{ .Values.service.externalPort }}
-      #Example internal target port if required
-      #targetPort: {{ .Values.service.internalPort }}
+      targetPort: {{ .Values.service.internalPort }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
       name: {{ .Values.service.name }}
     {{- else -}}
