@@ -12,29 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#{{ if not .Values.disableVnfsdkPostgres }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: vnfsdk-postgres
-  namespace: {{ .Values.nsPrefix }}
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: postgres
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
-        app: postgres
-      name: vnfsdk-postgres
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
     spec:
       hostname: postgres
       containers:
       - args:
-        image: {{ .Values.image.postgresImage }}:{{ .Values.image.postgresVersion }}
-        imagePullPolicy: {{ .Values.pullPolicy }}
-        name: "postgres"
+        image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }} 
+        name: {{ include "common.name" . }}
       imagePullSecrets:
-      - name: {{ .Values.nsPrefix }}-docker-registry-key
-#{{ end }}
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
