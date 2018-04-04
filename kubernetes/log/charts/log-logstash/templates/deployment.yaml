@@ -73,12 +73,10 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/logstash/config/logstash.yml
-            name: {{ include "common.fullname" . }}
-            subPath: logstash.yml
-          - mountPath: /usr/share/logstash/pipeline/onap-pipeline.conf
-            name: {{ include "common.fullname" . }}
-            subPath: onap-pipeline.conf
+          - mountPath: /usr/share/logstash/config/
+            name: {{ include "common.fullname" . }}-config
+          - mountPath: /usr/share/logstash/pipeline/
+            name: {{ include "common.fullname" . }}-pipeline
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -93,12 +91,16 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}
+        - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
             items:
             - key: logstash.yml
               path: logstash.yml
+        - name: {{ include "common.fullname" . }}-pipeline
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
             - key: onap-pipeline.conf
               path: onap-pipeline.conf
       imagePullSecrets:
