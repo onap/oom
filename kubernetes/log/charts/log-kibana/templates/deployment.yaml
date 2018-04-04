@@ -53,27 +53,30 @@ spec:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: "/"
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: "/"
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           env:
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/kibana/config/kibana.yml
+          - mountPath: /usr/share/kibana/config/
             name: {{ include "common.fullname" . }}
-            subPath: kibana.yml
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
