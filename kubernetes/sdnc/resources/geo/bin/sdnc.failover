@@ -1,0 +1,65 @@
+#!/usr/bin/perl -s
+use strict;
+
+my $keyWord_standby = "standby";
+my $keyWord_active = "active";
+my $keyWord_true = "true";
+my $keyWord_false = "false";
+my $keyWord_success = "success";
+my $keyWord_failure = "failure";
+my $file_cluster = "sdnc.cluster";
+my $file_switchVoting = "switchVoting.sh";
+my $file_isPrimaryCluster = "sdnc.isPrimaryCluster";
+
+if ((!(-e $file_cluster)) || (!(-e $file_switchVoting))|| (!(-e $file_isPrimaryCluster))) {
+  # file not exist.
+  print qq|$keyWord_failure\n|;
+  exit 1;
+}
+
+my $roleRes = qx("./$file_isPrimaryCluster");
+my $clusterRes = qx("./$file_cluster");
+
+if ( index ($clusterRes, $keyWord_standby) != -1) {
+	# We are at standby side
+	if ( index ($roleRes, $keyWord_false) != -1) {
+	   # We are at Secondary cluster
+	   sub_activate_secondary();
+    } elsif ( index ($roleRes, $keyWord_true) != -1) {
+       # We are at Primary cluster
+	   sub_activate_primary();
+    } else {
+      # Error.
+      print qq|$keyWord_failure\n|;
+      exit 1;   	
+	}	
+} elsif ( index ($clusterRes, $keyWord_active) != -1) {
+    # We are at active side	
+	if ( index ($roleRes, $keyWord_false) != -1) {
+	   # We are at Secondary cluster
+	   sub_activate_primary();
+    } elsif ( index ($roleRes, $keyWord_true) != -1)  {
+       # We are at Primary cluster
+	   sub_activate_secondary();
+    } else {
+      # Error.
+      print qq|$keyWord_failure\n|;
+      exit 1;   	
+	}	
+} else {
+   # Error.
+  print qq|$keyWord_failure\n|;
+  exit 1;   
+}
+
+sub sub_activate_primary {
+		#Switching voting in Primary cluster 
+        system("./$file_switchVoting primary");
+	    print qq|$keyWord_success\n|;
+}
+
+sub sub_activate_secondary {
+		#Switching voting in secondary cluster
+        system("./$file_switchVoting secondary");
+	    print qq|$keyWord_success\n|;
+}
