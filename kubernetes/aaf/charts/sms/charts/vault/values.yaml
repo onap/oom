@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright 2018 Intel Corporation, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,21 +18,41 @@
 global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  persistence: {}
 
-
-#################################################################
-# Application configuration defaults.
-#################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: library/cassandra:2.1.17
+repository: docker.io
+image:
+  consul: consul:1.0.6
+  vault: vault:0.9.6
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-config: {}
+#################################################################
+# Application configuration defaults.
+#################################################################
+config:
+  consul:
+    server: true
+    log_level: INFO
+    server: true
+    data_dir: '/consul/data'
+    ports:
+      http: 8500
+      https: -1
+
+  vault:
+    storage:
+      consul:
+        address: localhost:8500
+        path: smsvault
+    listener:
+      tcp:
+        address: '[::]:8200'
+        tls_disable: true
+    disable_mlock: true
 
 # default number of instances
 replicaCount: 1
@@ -53,20 +73,21 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
+persistence:
+  enabled: true
+
+  volumeReclaimPolicy: Retain
+
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sms/consul/data
+
 service:
-  type: ClusterIP
-  name: aaf-cs
-  #targetPort
-  internalPort: 7000
-  #port
-  externalPort: 7000
-  
-  internalPort2: 7001
-  externalPort2: 7001
-  internalPort3: 9042
-  externalPort3: 9042
-  internalPort4: 9160
-  externalPort4: 9160
+  type: NodePort
+  name: vault
+  internalPort: 8200
+  nodePort: 44
 
 ingress:
   enabled: false
