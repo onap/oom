@@ -1,3 +1,17 @@
+# Copyright © 2017-2018 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
@@ -84,7 +98,7 @@ spec:
           echo ${BASH_REMATCH}
           [[ $ordinal -eq 0 ]] && exit 0
           # Clone data from previous peer.
-          ncat --recv-only {{ template "common.name" . }}-$(($ordinal-1)).{{ .Values.service.name }}.{{ include "common.namespace" . }} 3307 | xbstream -x -C /var/lib/mysql
+          ncat --recv-only {{ include "common.fullname" . }}-$(($ordinal-1)).{{ .Values.service.name }}.{{ include "common.namespace" . }} 3307 | xbstream -x -C /var/lib/mysql
           # Prepare the backup.
           xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --prepare --target-dir=/var/lib/mysql
           ls -l /var/lib/mysql
@@ -180,20 +194,24 @@ spec:
                     MASTER_LOG_POS=${BASH_REMATCH[2]}" > change_master_to.sql.in
             fi
 
+            [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+            ordinal=${BASH_REMATCH[1]}
+            echo $ordinal
+
+            mysqlhost={{ include "common.fullname" . }}-$(($ordinal)).{{ .Values.service.name }}.{{ include "common.namespace" . }}
+            echo $mysqlhost
+
             # Check if we need to complete a clone by starting replication.
             if [[ -f change_master_to.sql.in ]]; then
               echo "Waiting for mysqld to be ready (accepting connections)"
-              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
-              ordinal=${BASH_REMATCH[1]}
-              echo $ordinal
-              until mysql --user=root --password=$MYSQL_ROOT_PASSWORD -h localhost -e "SELECT 1"; do sleep 1; done
+              until mysql --user=root --password=$MYSQL_ROOT_PASSWORD -h $mysqlhost -e "SELECT 1"; do sleep 1; done
 
               echo "Initializing replication from clone position"
               # In case of container restart, attempt this at-most-once.
               mv change_master_to.sql.in change_master_to.sql.orig
-              mysql --user=root --password=$MYSQL_ROOT_PASSWORD -h localhost <<EOF
+              mysql --user=root --password=$MYSQL_ROOT_PASSWORD -h $mysqlhost <<EOF
             $(<change_master_to.sql.orig),
-              MASTER_HOST="{{ template "common.name" . }}-0.{{ .Values.service.name }}.{{ include "common.namespace" . }}",
+              MASTER_HOST="{{ include "common.fullname" . }}-0.{{ .Values.service.name }}.{{ include "common.namespace" . }}",
               MASTER_USER="root",
               MASTER_PASSWORD="$MYSQL_ROOT_PASSWORD",
               MASTER_CONNECT_RETRY=10;
@@ -203,7 +221,7 @@ spec:
 
             # Start a server to send backups when requested by peers.
             exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
-              "xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --backup --slave-info --stream=xbstream --host=localhost"
+              "xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --backup --slave-info --stream=xbstream --host=$mysqlhost"
           volumeMounts:
           - name: {{ include "common.fullname" . }}-data
             mountPath: /var/lib/mysql
