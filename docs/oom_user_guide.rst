@@ -48,7 +48,48 @@ The OOM team with assistance from the ONAP project teams, have built a
 comprehensive set of Helm charts, yaml files very similar to TOSCA files, that
 describe the composition of each of the ONAP components and the relationship
 within and between components. Using this model Helm is able to deploy all of
-ONAP this simple command::
+ONAP with a few simple commands.
+
+Pre-requisites
+--------------
+Your environment must have both the Kubernetes `kubectl` and Helm setup as a one time activity.
+
+Install Kubectl
+~~~~~~~~~~~~~~~
+Enter the following to install kubectl (on Ubuntu, there are slight differences on other O/Ss), the Kubernetes command line interface used to manage a Kubernetes cluster::
+
+  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.8.6/bin/linux/amd64/kubectl
+  > chmod +x ./kubectl
+  > sudo mv ./kubectl /usr/local/bin/kubectl
+  > mkdir ~/.kube
+
+Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for alternative Kubenetes environment setups) into the `~/.kube/config` file.
+
+Verify that the Kubernetes config is correct::
+
+  > kubectl get pods --all-namespaces
+
+At this point you should see six Kubernetes pods running.
+
+Install Helm
+~~~~~~~~~~~~
+Helm is used by OOM for package and configuration management. To install Helm, enter the following::
+
+  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.6.1-linux-amd64.tar.gz
+  > tar -zxvf helm-v2.6.1-linux-amd64.tar.gz
+  > sudo mv linux-amd64/helm /usr/local/bin/helm
+
+Verify the Helm version with::
+
+  > helm version
+
+Install the Helm Tiller application and initialize with::
+
+  > helm init
+
+Install the Helm Repo
+---------------------
+Once kubectl and Helm are setup, one needs to setup a local Helm server to server up the ONAP charts::
 
   > helm install osn/onap
 
@@ -68,10 +109,12 @@ stable which should be removed to avoid confusion::
 To prepare your system for an installation of ONAP, you'll need to::
 
   > git clone http://gerrit.onap.org/r/oom
-  > cd kubernetes
+  > cd oom/kubernetes
+
 
 To setup a local Helm server to server up the ONAP charts::
 
+  > helm init
   > helm serve &
 
 Note the port number that is listed and use it in the Helm repo add as follows::
