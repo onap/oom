@@ -1,0 +1,52 @@
+#!/bin/bash
+
+OOM_HOME=${OOM_HOME:-$HOME}
+
+if ! [ "$(command -v jq)" ]; then
+  echo "Error: jq is not installed."
+  echo "use: sudo apt install jq"
+  exit 1
+fi
+
+IS_PRIMARY_CLUSTER=`./sdnc.isPrimaryCluster`
+
+case $IS_PRIMARY_CLUSTER in
+true)
+   MEMBER_NUMBER=1
+   ;;
+false)
+   MEMBER_NUMBER=4
+   ;;
+*)
+  echo "Error: isPrimaryODLCluster not defined in ${OOM_HOME}/oom/kubernetes/sdnc/values.yaml."
+  exit 1
+  ;;
+esac
+
+for pod_number in {0..2}
+do
+   curl  "http://localhost:3026$((${pod_number} + 1))" > /dev/null 2>&1
+   if [ "$?" = "7" ]; then
+      continue
+   fi
+
+   VOTING_RESULT=`curl -u admin:admin -H "Content-Type: application/json" -H "Accept: application/json" -X GET http://localhost:3026$((${pod_number} + 1))/jolokia/read/org.opendaylight.controller:Category=Shards,name=member-$((${MEMBER_NUMBER} + ${pod_number}))-shard-default-config,type=DistributedConfigDatastore 2>/dev/null | jq '.value.Voting'`
+
+   case $VOTING_RESULT in
+   true)
+      echo "active"
+      exit 0
+      ;;
+   false)
+      echo "standby"
+      exit 0
+      ;;
+   *)
+     echo "Error: Voting status could not be determined."
+     exit 1
+     ;;
+   esac
+done
+
+echo "Error: Voting status could not be determined."
+exit 1
