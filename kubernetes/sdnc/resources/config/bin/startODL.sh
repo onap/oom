@@ -52,12 +52,13 @@ SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
+MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 
 #
 # Wait for database to init properly
 #
 echo "Waiting for mysql"
-until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
+until mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} mysql &> /dev/null
 do
   printf "."
   sleep 1
