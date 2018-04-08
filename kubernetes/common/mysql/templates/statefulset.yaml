@@ -1,4 +1,5 @@
-# Copyright © 2017-2018 Amdocs, Bell Canada
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
@@ -48,8 +50,24 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 #{{ end }}
+#{{ if (and (and (.Values.persistence.enabled) (not .Values.persistence.existingClaim)) ( .Values.disableNfsProvisioner)) }}
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ include "common.fullname" . }}-create-fs-job
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+#{{ end }}
       - name: init-mysql
-        image: "{{ .Values.repository | default .Values.repository }}/{{ .Values.image }}"
+        image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - bash
@@ -110,9 +128,8 @@ spec:
           mountPath: /etc/mysql/conf.d
 
       containers:
-        #sdnc-db-container
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.repository | default .Values.repository }}/{{ .Values.image }}"
+          image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
