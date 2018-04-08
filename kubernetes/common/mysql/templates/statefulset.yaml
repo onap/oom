@@ -1,4 +1,5 @@
-# Copyright © 2017-2018 Amdocs, Bell Canada
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
@@ -49,7 +51,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 #{{ end }}
       - name: init-mysql
-        image: "{{ .Values.repository | default .Values.repository }}/{{ .Values.image }}"
+        image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - bash
@@ -105,14 +107,12 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-data
           mountPath: /var/lib/mysql
-          subPath: mysql
         - name: conf
           mountPath: /etc/mysql/conf.d
 
       containers:
-        #sdnc-db-container
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.repository | default .Values.repository }}/{{ .Values.image }}"
+          image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -144,7 +144,6 @@ spec:
           volumeMounts:
           - mountPath: /var/lib/mysql
             name: {{ include "common.fullname" . }}-data
-            subPath: mysql
           - mountPath: /etc/mysql/conf.d
             name: conf
           resources:
@@ -225,7 +224,6 @@ spec:
           volumeMounts:
           - name: {{ include "common.fullname" . }}-data
             mountPath: /var/lib/mysql
-            subPath: mysql
           - name: conf
             mountPath: /etc/mysql/conf.d
       volumes:
