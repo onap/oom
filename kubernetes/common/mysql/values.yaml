@@ -6,7 +6,7 @@ global:
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
   persistence: {}
   readinessRepository: oomk8s
-  readinessImage: readiness-check:1.0.0
+  readinessImage: readiness-check:1.1.1
 
 
 #################################################################
@@ -16,6 +16,11 @@ global:
 #repository: mysql
 repository: registry.hub.docker.com
 image: library/mysql:5.7
+
+# BusyBox image
+busyboxRepository: registry.hub.docker.com
+busyboxImage: library/busybox:latest
+
 pullPolicy: Always
 
 # application configuration
@@ -28,6 +33,8 @@ replicaCount: 1
 nodeSelector: {}
 
 affinity: {}
+
+disableNfsProvisioner: true
 
 # probe configuration parameters
 liveness:
@@ -61,7 +68,8 @@ persistence:
   accessMode: ReadWriteMany
   size: 1Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: mysql/data
+  mountInitPath: mysql
+  mountSubPath: "{{ .Values.persistence.mountInitPath }}/data"
 
 service:
   name: mysql
