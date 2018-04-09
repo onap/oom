@@ -147,13 +147,13 @@ In any case, setup of the Helm repository is a one time activity.
 
 Once the repo is setup, installation of ONAP can be done with a single command::
 
-  > helm install local/onap -name development
+  > helm install local/onap --name development
 
 This will install ONAP from a local repository in a 'development' Helm release.
 As described below, to override the default configuration values provided by
 OOM, an environment file can be provided on the command line as follows::
 
-  > helm install local/onap -name development -f onap-development.yaml
+  > helm install local/onap --name development -f onap-development.yaml
 
 To get a summary of the status of all of the pods (containers) running in your
 deployment::
@@ -170,7 +170,7 @@ deployment::
   was created for each of the ONAP components.
 
 .. note::
-  The Helm `-name` option refers to a release name and not a Kubernetes namespace.
+  The Helm `--name` option refers to a release name and not a Kubernetes namespace.
 
 
 To install a specific version of a single ONAP component (`so` in this example)
