@@ -1,4 +1,3 @@
-{{/*
 # Copyright 2018 Intel Corporation, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,26 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
 
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-kind: PersistentVolume
 apiVersion: v1
+kind: ConfigMap
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
-{{- end -}}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  config.json: |
+    {{ .Values.config | toJson }}

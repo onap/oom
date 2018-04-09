@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -24,6 +24,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  serviceName:
   template:
     metadata:
       labels:
@@ -34,30 +35,16 @@ spec:
       - image: "{{ .Values.repository }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.pullPolicy }}
-        command: ["/sms/bin/sms"]
-        workingDir: /sms/
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        {{- if eq .Values.liveness.enabled true }}
-        livenessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end -}}
-        readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        command: ["/quorumclient/bin/quorumclient"]
+        workingDir: /quorumclient/
         volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /sms/smsconfig.json
+          - mountPath: /quorumclient/config.json
             name: {{ include "common.name" .}}
-            subPath: smsconfig.json
-          - mountPath: /sms/auth
+            subPath: config.json
+          - mountPath: /quorumclient/auth
             name: {{ include "common.fullname" . }}-auth
         resources:
 {{ toYaml .Values.resources | indent 12 }}
