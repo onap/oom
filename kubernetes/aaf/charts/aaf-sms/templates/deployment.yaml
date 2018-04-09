@@ -31,7 +31,7 @@ spec:
         release: {{ .Release.Name }}
     spec:
       containers:
-      - image: "{{ .Values.repository }}/{{ .Values.image }}"
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         command: ["/sms/bin/sms"]
@@ -57,6 +57,8 @@ spec:
           - mountPath: /sms/smsconfig.json
             name: {{ include "common.name" .}}
             subPath: smsconfig.json
+          - mountPath: /sms/auth
+            name: {{ include "common.fullname" . }}-auth
         resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -74,5 +76,8 @@ spec:
       - name : {{ include "common.name" . }}
         configMap:
           name: {{ include "common.fullname" . }}
+      - name: {{ include "common.fullname" . }}-auth
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
