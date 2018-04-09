@@ -18,41 +18,35 @@
 global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
   persistence: {}
 
+#################################################################
+# Application configuration defaults.
+#################################################################
 # application image
-repository: docker.io
-image:
-  consul: consul:1.0.6
-  vault: vault:0.9.6
+repository: nexus3.onap.org:10001
+image: onap/aaf/sms
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
-#################################################################
-# Application configuration defaults.
-#################################################################
+# application configuration
+# Example:
 config:
-  consul:
-    server: true
-    log_level: INFO
-    server: true
-    data_dir: '/consul/data'
-    ports:
-      http: 8500
-      https: -1
+  smsdbaddress: "http://aaf-sms-db:8200"
+  cafile: "/sms/auth/selfsignedca.pem"
+  servercert: "/sms/auth/server.cert"
+  serverkey: "/sms/auth/server.key"
+  disable_tls: true
 
-  vault:
-    storage:
-      consul:
-        address: localhost:8500
-        path: smsvault
-    listener:
-      tcp:
-        address: '[::]:8200'
-        tls_disable: true
-    disable_mlock: true
+# subchart configuration
+vault:
+  nameOverride: smsdb
 
 # default number of instances
 replicaCount: 1
@@ -64,30 +58,28 @@ affinity: {}
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 10
-  periodSeconds: 10
+  periodSeconds: 20
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
   initialDelaySeconds: 10
-  periodSeconds: 10
-
-persistence:
-  enabled: true
-
-  volumeReclaimPolicy: Retain
-
-  accessMode: ReadWriteMany
-  size: 2Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: sms/consul/data
+  periodSeconds: 20
 
 service:
   type: NodePort
-  name: aaf-sms-db
-  internalPort: 8200
-  nodePort: 44
+  name: aaf-sms
+  internalPort: 10443
+  nodePort: 43
+
+persistence:
+  enabled: true
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sms/auth
 
 ingress:
   enabled: false
