@@ -65,6 +65,8 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: /usr/local/apiroute-works/logs
+            name: msb-discovery-logs
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -75,9 +77,22 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /var/log/onap
+            name: msb-discovery-logs
+          - mountPath: /usr/share/filebeat/data
+            name: msb-discovery-filebeat
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: msb-discovery-logs
+          emptyDir: {}
+        - name: msb-discovery-filebeat
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
