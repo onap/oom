@@ -34,6 +34,19 @@ spec:
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-inject-models
+        command:
+        - /bin/bash
+        - "-c"
+        - |
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit
+          cp -rp /tmp/gerrit/data-router/appconfig/model/* /model-dir
+        image: "{{ .Values.global.repository | default .Values.dockerHubRepository }}/{{ .Values.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: modeldir
+          mountPath: "/model-dir"
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
@@ -69,8 +82,6 @@ spec:
         - mountPath: /opt/app/sparky/config/aai.properties
           subPath: aai.properties
           name: {{ include "common.fullname" . }}-config
-        - mountPath: /opt/app/sparky/config/model/
-          name: {{ include "common.fullname" . }}-model-config
         - mountPath: /opt/app/sparky/config/portal/
           name: {{ include "common.fullname" . }}-portal-config
         - mountPath: /var/log/onap
@@ -78,6 +89,8 @@ spec:
         - mountPath: /opt/app/sparky/bundleconfig/etc/logback.xml
           name: {{ include "common.fullname" . }}-log-conf
           subPath: logback.xml
+        - name: modeldir
+          mountPath: /opt/app/sparky/config/model
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -125,9 +138,6 @@ spec:
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: {{ include "common.fullname" . }}-model-config
-        configMap:
-          name: {{ include "common.fullname" . }}-model
       - name: {{ include "common.fullname" . }}-portal-config
         configMap:
           name: {{ include "common.fullname" . }}-portal
@@ -144,6 +154,8 @@ spec:
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
          name: {{ include "common.fullname" . }}-log
+      - name: modeldir
+        emptyDir: {}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
