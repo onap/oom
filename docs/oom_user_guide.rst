@@ -75,8 +75,8 @@ Install Helm
 ~~~~~~~~~~~~
 Helm is used by OOM for package and configuration management. To install Helm, enter the following::
 
-  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.6.1-linux-amd64.tar.gz
-  > tar -zxvf helm-v2.6.1-linux-amd64.tar.gz
+  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.7.2-linux-amd64.tar.gz
+  > tar -zxvf helm-v2.7.2-linux-amd64.tar.gz
   > sudo mv linux-amd64/helm /usr/local/bin/helm
 
 Verify the Helm version with::
