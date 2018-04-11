@@ -56,10 +56,7 @@ spec:
           - name: CASSUSER
             value: "{{ .Values.config.cassandraUsername }}"
           - name: CASSPASS
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}
-                key: db-root-password
+            value: "{{ .Values.config.cassandraPassword }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -70,6 +67,8 @@ spec:
         - name: cassandra-docker-entrypoint-initdb
           mountPath: /docker-entrypoint-initdb.d/zzz_portalsdk.cql
           subPath: portalsdk.cql
+        - name: {{ include "common.fullname" . }}-data
+          mountPath: /var/lib/cassandra/
         resources:
 {{ toYaml .Values.resources | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -84,8 +83,16 @@ spec:
         - name: cassandra-docker-entrypoint-initdb
           configMap:
             name: {{ include "common.fullname" . }}-docker-entry-initd
+            defaultMode: 0666
         - name: localtime
           hostPath:
             path: /etc/localtime
+      {{- if .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
