@@ -36,11 +36,15 @@ spec:
     spec:
       containers:
       - image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}"
-        command: ["/usr/local/bin/docker-entrypoint.sh"]
-        args: ["agent","-client","0.0.0.0","-enable-script-checks","-join","{{ .Release.Name }}-{{ index .Values "consul-server" "nameOverride" }}.{{ include "common.namespace" .}}"]
+        command:
+        - /bin/sh
+        - "-c"
+        - |
+          cp /tmp/consul/config/* /consul/config
+          /usr/local/bin/docker-entrypoint.sh agent -client 0.0.0.0 -enable-script-checks -join {{ .Release.Name }}-{{ .Values.consulServer.nameOverride }}.{{ include "common.namespace" .}}
         name: {{ include "common.name" . }}
         volumeMounts:
-        - mountPath: /consul/config
+        - mountPath: /tmp/consul/config
           name: consul-agent-config
         - mountPath: /consul/scripts
           name: consul-agent-scripts-config
