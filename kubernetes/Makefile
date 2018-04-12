@@ -51,7 +51,7 @@ package-%: lint-%
 
 clean:
 	@rm -f */requirements.lock
-	@rm -f *tgz */charts/*tgz
+	@find . -type f -name '*.tgz' -delete
 	@rm -rf $(PACKAGE_DIR)/*
 
 # start up a local helm repo to serve up helm chart packages
