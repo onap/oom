@@ -12,16 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#################################################################
-# Global configuration defaults.
-#################################################################
-global:
-  nodePortPrefix: 302
-  repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  postgresDatabase: dmaap
-  postgresUser: dmaap_admin
-  postgresPassword: onapdemodb
+make-dmaap:
+	cd charts && helm dep up dmaap-bus-controller
