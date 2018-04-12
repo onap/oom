@@ -1,0 +1,54 @@
+# ================================================================================
+# Copyright (c) 2017-2018 AT&T Intellectual Property. All rights reserved.
+# Copyright © 2018 Amdocs, Bell Canada
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+#
+# ECOMP is a trademark and service mark of AT&T Intellectual Property.
+{{ if .Values.componentImages.policy_handler }}
+policy_handler_image: {{ .Values.componentImages.policy_handler }}
+{{ end }}
+application_config:
+  policy_handler :
+    # parallelize the getConfig queries to policy-engine on each policy-update notification
+    thread_pool_size : 4
+
+    # parallelize requests to policy-engine and keep them alive
+    pool_connections : 20
+
+    # list of policyName prefixes (filters) that DCAE-Controller handles (=ignores any other policyName values)
+    scope_prefixes : ["DCAE.Config_"]
+
+    # retry to getConfig from policy-engine on policy-update notification
+    policy_retry_count : 5
+    policy_retry_sleep : 5
+
+    # policy-engine config
+    # These are the url of and the auth for the external system, namely the policy-engine (PDP).
+    # We obtain that info manually from PDP folks at the moment.
+    # In long run we should figure out a way of bringing that info into consul record
+    #    related to policy-engine itself.
+    policy_engine :
+        url : "http://{{ .Values.address.policy_pdp }}.{{include "common.namespace" . }}:8081"
+        path_pdp : "/pdp/"
+        path_api : "/pdp/api/"
+        headers :
+            Accept : "application/json"
+            "Content-Type" : "application/json"
+            ClientAuth : "cHl0aG9uOnRlc3Q="
+            Authorization : "Basic dGVzdHBkcDphbHBoYTEyMw=="
+            Environment : "TEST"
+        target_entity : "policy_engine"
+    # name of deployment-handler service in consul for policy-handler to direct the policy-updates to
+    deploy_handler : "deployment_handler"
