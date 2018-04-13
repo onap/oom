@@ -6,7 +6,7 @@
 # Note: Do not run multiple concurrent ete.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ] || [ "$2" == "" ]; then
-   echo "Usage: ete.sh [namespace] [ health | ete | closedloop | instantiate | distribute ]"
+   echo "Usage: ete-k8s.sh [namespace] [ health | ete | closedloop | instantiate | distribute ]"
    exit
 fi
 
