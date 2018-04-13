@@ -56,18 +56,6 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /logroot/
-      - name: {{ include "common.name" . }}-inject-models
-        command:
-        - /bin/bash
-        - "-c"
-        - |
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit
-          cp -rp /tmp/gerrit/data-router/appconfig/model/* /model-dir
-        image: "{{ .Values.global.repository | default .Values.dockerHubRepository }}/{{ .Values.ubuntuInitImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: modeldir
-          mountPath: "/model-dir"
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
@@ -104,8 +92,6 @@ spec:
           name: {{ include "common.fullname" . }}-dynamic-policy
         - mountPath: /logs/
           name: {{ include "common.fullname" . }}-logs
-        - name: modeldir
-          mountPath: /opt/app/data-router/config/model
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         {{- if eq .Values.liveness.enabled true }}
@@ -139,8 +125,6 @@ spec:
       - name: {{ include "common.fullname" . }}-logs
         hostPath:
           path: {{ .Values.persistence.mountPath }}/{{ include "common.namespace" . }}/{{ .Values.persistence.mountSubPath }}
-      - name: modeldir
-        emptyDir: {}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
