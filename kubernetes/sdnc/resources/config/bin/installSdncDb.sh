@@ -22,7 +22,8 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
-MYSQL_PASSWD=${MYSQL_PASSWD:-openECOMP1.0}
+MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
 SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
@@ -30,7 +31,7 @@ SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
 
 
 # Create tablespace and user account
-mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
+mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} mysql <<-END
 CREATE DATABASE ${SDNC_DB_DATABASE};
 CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
 CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
@@ -42,12 +43,12 @@ END
 # load schema
 if [ -f ${SDNC_HOME}/data/sdnctl.dump ]
 then
-  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/sdnctl.dump
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/sdnctl.dump
 fi
 
 for datafile in ${SDNC_HOME}/data/*.data.dump
 do
-  mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < $datafile
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < $datafile
 done
 
 # Create VNIs 100-199
