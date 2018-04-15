@@ -363,7 +363,7 @@ in a values.yaml file.  The content of this file is as follows:
   nsPrefix: onap
   pullPolicy: IfNotPresent
   image:
-    readiness: oomk8s/readiness-check:1.0.0
+    readiness: oomk8s/readiness-check:2.0.0
     mso: nexus3.onap.org:10001/openecomp/mso:1.0-STAGING-latest
     mariadb: nexus3.onap.org:10001/mariadb:10.1.11
 
