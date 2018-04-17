@@ -45,19 +45,6 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-      - command: ["/bin/bash", "-c", "echo $POD_IP > /config/ip_addr.txt"]
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
-        volumeMounts:
-        - mountPath: /config/
-          name: pe
-        image: {{ .Values.global.ubuntuImage }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: generate-ip-addr-txt
       containers:
         - command:
           - /bin/bash
@@ -88,11 +75,30 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: /tmp/policy-install/config/push-policies.sh
+            name: pe-pap
+            subPath: push-policies.sh
+          - mountPath: /tmp/policy-install/config/pap-tweaks.sh
+            name: pe-pap
+            subPath: pap-tweaks.sh
+          - mountPath: /tmp/policy-install/config/paplp.conf
+            name: pe-pap
+            subPath: paplp.conf
+          - mountPath: /tmp/policy-install/config/pap.conf
+            name: pe-pap
+            subPath: pap.conf
+          - mountPath: /tmp/policy-install/config/mysql.conf
+            name: pe-pap
+            subPath: mysql.conf
+          - mountPath: /tmp/policy-install/config/elk.conf
+            name: pe-pap
+            subPath: elk.conf
+          - mountPath: /tmp/policy-install/config/console.conf
+            name: pe-pap
+            subPath: console.conf
           - mountPath: /tmp/policy-install/config/base.conf
             name: pe
             subPath: base.conf
-          - mountPath: /tmp/policy-install/config/
-            name: pe-pap
           - mountPath: /tmp/policy-install/do-start.sh
             name: pe-scripts
             subPath: do-start.sh
