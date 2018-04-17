@@ -23,52 +23,64 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.robotReplicas }}
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
-       labels:
+      labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-inject-demo-project
+        command:
+        - /bin/bash
+        - -c
+        - >
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/heat to /share";
+          cp -rf /tmp/gerrit/heat /share;
+          echo "Done.";
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: demodir
+          mountPath: "/share"
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts:
-          - name: localtime
-            mountPath: /etc/localtime
-            readOnly: true
-          - name: robot-eteshare
-            mountPath: /share/config
-          - name: robot-resources
-            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/asdc_interface.robot
-            subPath: asdc_interface.robot
-          - name: robot-resources
-            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/policy_interface.robot
-            subPath: policy_interface.robot
-          - name: robot-resources
-            mountPath: /var/opt/OpenECOMP_ETE/robot/resources/sdngc_interface.robot
-            subPath: sdngc_interface.robot
-          - name: robot-lighttpd-authorization
-            mountPath: /etc/lighttpd/authorization
-            subPath: authorization
-          resources:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+        - name: robot-eteshare
+          mountPath: /share/config
+        - name: robot-resources
+          mountPath: /var/opt/OpenECOMP_ETE/robot/resources/policy_interface.robot
+          subPath: policy_interface.robot
+        - name: robot-resources
+          mountPath: /var/opt/OpenECOMP_ETE/robot/resources/sdngc_interface.robot
+          subPath: sdngc_interface.robot
+        - name: robot-lighttpd-authorization
+          mountPath: /etc/lighttpd/authorization
+          subPath: authorization
+        - name: demodir
+          mountPath: /share
+        resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -79,18 +91,20 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: robot-eteshare
-          configMap:
-            name: {{ include "common.fullname" . }}-eteshare-configmap
-            defaultMode: 0755
-        - name: robot-resources
-          configMap:
-            name: {{ include "common.fullname" . }}-resources-configmap
-        - name: robot-lighttpd-authorization
-          configMap:
-            name: {{ include "common.fullname" . }}-lighttpd-authorization-configmap
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: robot-eteshare
+        configMap:
+          name: {{ include "common.fullname" . }}-eteshare-configmap
+          defaultMode: 0755
+      - name: robot-resources
+        configMap:
+          name: {{ include "common.fullname" . }}-resources-configmap
+      - name: robot-lighttpd-authorization
+        configMap:
+          name: {{ include "common.fullname" . }}-lighttpd-authorization-configmap
+      - name: demodir
+        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
