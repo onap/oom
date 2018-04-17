@@ -34,17 +34,38 @@ function enable_odl_cluster(){
   hm=$(hostname)
   echo "Get current Hostname ${hm}"
 
-  node=($(echo ${hm} | sed 's/-[0-9]*$//g'))
-  node_index=($(echo ${hm} | awk -F"-" '{print $NF}'))
-  node_list="${node}-0.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}";
+  node=($(echo ${hm} | tr '-' '\n'))
+  node_name=${node[0]}
+  node_index=${node[1]}
 
-  for ((i=1;i<${SDNC_REPLICAS};i++));
-  do
-    node_list="${node_list} ${node}-$i.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}"
-  done
+  if [ -z $PEER_ODL_CLUSTER ]; then
+    echo "This is a local cluster"
+    node_list="${node_name}-0.{{.Values.service.name}}-cluster.{{.Release.Namespace}}";
 
-  /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
+    for ((i=1;i<${SDNC_REPLICAS};i++));
+    do
+      node_list="${node_list} ${node_name}-$i.{{.Values.service.name}}-cluster.{{.Release.Namespace}}"
+    done
+    /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
+  else
+    echo "This is a Geo cluster"
+
+    if $IS_PRIMARY_CLUSTER; then
+       PRIMARY_NODE=${MY_ODL_CLUSTER}
+       SECONDARY_NODE=${PEER_ODL_CLUSTER}
+    else
+       PRIMARY_NODE=${PEER_ODL_CLUSTER}
+       SECONDARY_NODE=${MY_ODL_CLUSTER}
+       member_offset=4
+    fi
+
+    node_list="${PRIMARY_NODE} ${SECONDARY_NODE}"
+    /opt/onap/sdnc/bin/configure_geo_cluster.sh $((node_index+member_offset)) ${node_list}
+  fi
 }
+
+
+# Install SDN-C platform components if not already installed and start container
 
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
 ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U}
@@ -53,6 +74,8 @@ SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
+IS_PRIMARY_CLUSTER=${IS_PRIMARY_CLUSTER:-false}
+MY_ODL_CLUSTER=${MY_ODL_CLUSTER:-127.0.0.1}
 
 #
 # Wait for database to init properly
