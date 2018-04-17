@@ -18,11 +18,14 @@
 global: # global defaults
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  ubuntuInitRepository: registry.hub.docker.com
 
 # application image
 repository: nexus3.onap.org:10001
 image: onap/testsuite:1.2-STAGING-latest
 pullPolicy: Always
+
+ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -30,26 +33,54 @@ debugEnabled: false
 #################################################################
 # Application configuration defaults.
 #################################################################
+config:
+  # Username of the lighthttpd server.  Used for HTML auth for webpage access
+  lightHttpdUsername: robot
+  # Password of the lighthttpd server.  Used for HTML auth for webpage access
+  lightHttpdPassword: robot
+  # gerrit branch where the latest heat code is checked in
+  gerritBranch: master
+  # gerrit project where the latest heat code is checked in
+  gerritProject: http://gerrit.onap.org/r/demo.git
 
-# openstack configuration
 
+# Demo configuration
+# Nexus demo artifact version.  Maps to GLOBAL_INJECTED_ARTIFACTS_VERSION
 demoArtifactsVersion: "1.2.0-SNAPSHOT"
-openStackPrivateNetCidr: "192.168.30.0"
+# Openstack medium sized flavour name.  Maps GLOBAL_INJECTED_VM_FLAVOR
 openStackFlavourMedium: "m1.medium"
+# Openstack keystone URL.  Maps to GLOBAL_INJECTED_KEYSTONE
 openStackKeyStoneUrl: "http://1.2.3.4:5000"
+# UUID of the Openstack network that can assign floating ips.  Maps to GLOBAL_INJECTED_PUBLIC_NET_ID
 openStackPublicNetId: "e8f51958045716781ffc"
-openStackPrivateNetId: "e8f51956-00dd-4425-af36-045716781ffc"
-openStackOamNetworkCidrPrefix: "192.168.120"
-openStackEncryptedPassword: "c124921a3a0efbe579782cde8227681e"
+# password for Openstack tenant where VNFs will be spawned.  Maps to GLOBAL_INJECTED_OPENSTACK_PASSWORD
+openStackPassword: "tenantPassword"
+# Openstack region.  Maps to GLOBAL_INJECTED_REGION
 openStackRegion: "RegionOne"
-openStackPrivateSubnetId: "e8f51956-00dd-4425-af36-045716781ffc"
+# Openstack tenant UUID where VNFs will be spawned. Maps to GLOBAL_INJECTED_OPENSTACK_TENANT_ID
 openStackTenantId: "47899782ed714295b1151681fdfd51f5"
-openStackUserName: "vnf_user"
-ubuntuImage: "Ubuntu_14.04.5_LTS"
-scriptVersion: "1.1.1"
+# username for Openstack tenant where VNFs will be spawned.  Maps to GLOBAL_INJECTED_OPENSTACK_USERNAME
+openStackUserName: "tenantUsername"
+# Openstack glance image name for Ubuntu 14.  Maps to GLOBAL_INJECTED_UBUNTU_1404_IMAGE
+ubuntu14Image: "Ubuntu_14_trusty"
+# Openstack glance image name for Ubuntu 16.  Maps to GLOBAL_INJECTED_UBUNTU_1604_IMAGE
+ubuntu16Image: "Ubuntu_16_xenial"
+# GLOBAL_INJECTED_SCRIPT_VERSION.  Maps to GLOBAL_INJECTED_SCRIPT_VERSION
+scriptVersion: "1.2.0-SNAPSHOT"
+# Openstack network to which VNFs will bind their primary (first) interface.  Maps to GLOBAL_INJECTED_NETWORK
+openStackPrivateNetId: "e8f51956-00dd-4425-af36-045716781ffc"
+
+# SDNC Preload configuration
+# Openstack subnet UUID for the network defined by openStackPrivateNetId.  Maps to onap_private_subnet_id
+openStackPrivateSubnetId: "e8f51956-00dd-4425-af36-045716781ffc"
+# CIDR notation for the Openstack private network where VNFs will be spawned.  Maps to onap_private_net_cidr
+openStackPrivateNetCidr: "10.0.0.0/8"
+# The first 2 octets of the private Openstack subnet where VNFs will be spawned.
+# Needed because sdnc preload templates hardcodes things like this 10.0.${ecompnet}.X
+openStackOamNetworkCidrPrefix: "10.0"
 
 # default number of instances
-robotReplicas: 1
+replicaCount: 1
 
 nodeSelector: {}
 
@@ -69,10 +100,12 @@ readiness:
 
 
 service:
-  type: NodePort
   name: robot
-  externalPort: "09"
+  type: NodePort
+  portName: httpd
+  externalPort: 88
   internalPort: 88
+  nodePort: "09"
 
 
 ingress:

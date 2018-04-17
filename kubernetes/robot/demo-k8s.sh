@@ -22,7 +22,7 @@ function usage
 	echo "       demo.sh <namespace> appc <module_name>"
     echo "               - provide APPC with vFW module mount point for closed loop"
 	echo " "
-	echo "       demo.sh <namespace> init_robot"
+	echo "       demo.sh <namespace> init_robot [ <etc_hosts_prefix> ]"
     echo "               - Initialize robot after all ONAP VMs have started"
 	echo " "
 	echo "       demo.sh <namespace> instantiateVFW"
@@ -36,7 +36,7 @@ function usage
 }
 
 # Set the defaults
-if [ $# -le 1 ];then
+if [ $# -le 3 ];then
 	usage
 	exit
 fi
@@ -49,7 +49,7 @@ shift
 ##
 while [ $# -gt 0 ]
 do
-	key="$1"
+	key="$2"
 
 	case $key in
     	init_robot)
@@ -61,6 +61,10 @@ do
 				exit
 			fi
 			VARIABLES="$VARIABLES -v WEB_PASSWORD:$WEB_PASSWORD"
+			shift
+			if [ $# -eq 2 ];then
+				VARIABLES="$VARIABLES -v HOSTS_PREFIX:$2"
+			fi
 			shift
 			;;
     	init)
@@ -75,7 +79,7 @@ do
 			TAG="InitDistribution"
 			shift
 			if [ $# -eq 1 ];then
-				VARIABLES="$VARIABLES -v DEMO_PREFIX:$1"
+				VARIABLES="$VARIABLES -v DEMO_PREFIX:$2"
 			fi
 			shift
 			;;
@@ -86,9 +90,9 @@ do
 				echo "Usage: demo.sh preload <vnf_name> <module_name>"
 				exit
 			fi
-			VARIABLES="$VARIABLES -v VNF_NAME:$1"
+			VARIABLES="$VARIABLES -v VNF_NAME:$2"
 			shift
-			VARIABLES="$VARIABLES -v MODULE_NAME:$1"
+			VARIABLES="$VARIABLES -v MODULE_NAME:$2"
 			shift
 			;;
     	appc)
@@ -98,7 +102,7 @@ do
 			echo "Usage: demo.sh appc <module_name>"
 			exit
 		fi
-    	VARIABLES="$VARIABLES -v MODULE_NAME:$1"
+    	VARIABLES="$VARIABLES -v MODULE_NAME:$2"
     	shift
     	;;
     	instantiateVFW)
@@ -113,14 +117,14 @@ do
 				echo "Usage: demo.sh deleteVNF <module_name from instantiateVFW>"
 				exit
 			fi
-			VARFILE=$1.py
+			VARFILE=$2.py
 			if [ -e /opt/eteshare/${VARFILE} ]; then
 				VARIABLES="$VARIABLES -V /share/${VARFILE}"
 			else
 				echo "Cache file ${VARFILE} is not found"
 				exit
 			fi
-      shift
+			shift
 			;;
     	heatbridge)
 			TAG="heatbridge"
@@ -129,11 +133,11 @@ do
 				echo "Usage: demo.sh heatbridge <stack_name> <service_instance_id> <service>"
 				exit
 			fi
-			VARIABLES="$VARIABLES -v HB_STACK:$1"
+			VARIABLES="$VARIABLES -v HB_STACK:$2"
 			shift
-			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$1"
+			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$2"
 			shift
-			VARIABLES="$VARIABLES -v HB_SERVICE:$1"
+			VARIABLES="$VARIABLES -v HB_SERVICE:$2"
 			shift
 			;;
     	*)

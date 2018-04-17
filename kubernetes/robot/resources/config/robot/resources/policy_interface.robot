@@ -28,6 +28,7 @@ Run Policy Health Check
      :FOR    ${ELEMENT}    IN    @{ITEMS}
      \    Should Be Equal As Strings 	${ELEMENT['code']} 	200
      \    Should Be True    ${ELEMENT['healthy']}
+
 Run Policy Put Request
      [Documentation]    Runs Policy Put request
      [Arguments]    ${data_path}  ${data}
@@ -37,6 +38,7 @@ Run Policy Put Request
      ${resp}= 	Put Request 	policy 	${data_path}     data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
      [Return]    ${resp}
+
 Run Policy Delete Request
      [Documentation]    Runs Policy Delete request
      [Arguments]    ${data_path}  ${data}
@@ -46,12 +48,13 @@ Run Policy Delete Request
      ${resp}= 	Delete Request 	policy 	${data_path}    data=${data}    headers=${headers}
      Log    Received response from policy ${resp.text}
      [Return]    ${resp}
+
 Run Policy Get Configs Request
     [Documentation]    Runs Policy Get Configs request
     [Arguments]    ${data_path}  ${data}
     Log    Creating session ${POLICY_ENDPOINT}
     ${session}=    Create Session 	policy 	${POLICY_ENDPOINT}
-    ${headers}=    Create Dictionary     Accept=application/json    Content-Type=application/json    Authorization=Basic ${GLOBAL_POLICY_AUTH}   ClientAuth=${GLOBAL_POLICY_CLIENTAUTH}    
+    ${headers}=    Create Dictionary     Accept=application/json    Content-Type=application/json    Authorization=Basic ${GLOBAL_POLICY_AUTH}   ClientAuth=${GLOBAL_POLICY_CLIENTAUTH}
     ${resp}= 	Post Request 	policy 	${data_path}    data=${data}    headers=${headers}
     Log    Received response from policy ${resp.text}
     [Return]    ${resp}
