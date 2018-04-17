@@ -26,5 +26,5 @@
   Expand the service name for a chart.
 */}}
 {{- define "common.servicename" -}}
-  {{- default .Chart.Name .Values.service.name trunc 63 | trimSuffix "-" -}}
+  {{- default .Chart.Name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
