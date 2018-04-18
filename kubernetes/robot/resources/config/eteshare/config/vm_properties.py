@@ -13,6 +13,9 @@ GLOBAL_INJECTED_DNS_IP_ADDR = "N/A"
 GLOBAL_INJECTED_DOCKER_VERSION = "1.2-STAGING-latest"
 GLOBAL_INJECTED_EXTERNAL_DNS = "N/A"
 GLOBAL_INJECTED_GERRIT_BRANCH = "master"
+GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR = "{{.Release.Name}}-log-elasticsearch.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = "{{.Release.Name}}-log-kibana.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "{{.Release.Name}}-log-logstash.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MSO_IP_ADDR = "so.{{include "common.namespace" .}}"
@@ -62,6 +65,9 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_EXTERNAL_DNS" : "N/A",
     "GLOBAL_INJECTED_GERRIT_BRANCH" : "master",
     "GLOBAL_INJECTED_KEYSTONE" : "{{ .Values.openStackKeyStoneUrl }}",
+    "GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR" : "{{.Release.Name}}-log-elasticsearch.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR" : "{{.Release.Name}}-log-kibana.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR" : "{{.Release.Name}}-log-logstash.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MR_IP_ADDR" : "message-router.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MSO_IP_ADDR" : "so.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
@@ -94,5 +100,4 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_VID_IP_ADDR" : "{{.Release.Name}}-vid.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
     "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : "{{.Release.Name}}-vnfsdk.{{include "common.namespace" .}}"
-
 }
