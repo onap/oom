@@ -43,6 +43,9 @@ GLOBAL_INJECTED_UBUNTU_1404_IMAGE = "{{ .Values.ubuntu14Image }}"
 GLOBAL_INJECTED_UBUNTU_1604_IMAGE = "{{ .Values.ubuntu16Image }}"
 GLOBAL_INJECTED_VID_IP_ADDR = "{{.Release.Name}}-vid.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_VM_FLAVOR = "{{ .Values.openStackFlavourMedium }}"
+GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR = "{{.Release.Name}}-log-elasticsearch.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = "{{.Release.Name}}-log-kibana.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "{{.Release.Name}}-log-logstash.{{include "common.namespace" .}}"
 
 GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_AAF_IP_ADDR" : "{{.Release.Name}}-aaf.{{include "common.namespace" .}}",
@@ -87,5 +90,8 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_UBUNTU_1404_IMAGE" : "{{.Values.ubuntu14Image}}",
     "GLOBAL_INJECTED_UBUNTU_1604_IMAGE" : "{{.Values.ubuntu16Image}}",
     "GLOBAL_INJECTED_VID_IP_ADDR" : "{{.Release.Name}}-vid.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}"
+    "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
+    "GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR" : "{{.Release.Name}}-log-elasticsearch.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR" : "{{.Release.Name}}-log-kibana.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR" : "{{.Release.Name}}-log-logstash.{{include "common.namespace" .}}"
 }
