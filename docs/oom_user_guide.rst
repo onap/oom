@@ -58,7 +58,7 @@ Install Kubectl
 ~~~~~~~~~~~~~~~
 Enter the following to install kubectl (on Ubuntu, there are slight differences on other O/Ss), the Kubernetes command line interface used to manage a Kubernetes cluster::
 
-  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.8.6/bin/linux/amd64/kubectl
+  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.8.10/bin/linux/amd64/kubectl
   > chmod +x ./kubectl
   > sudo mv ./kubectl /usr/local/bin/kubectl
   > mkdir ~/.kube
