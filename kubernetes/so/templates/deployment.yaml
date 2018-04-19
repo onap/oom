@@ -35,7 +35,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - mariadb
+        - {{ .Values.mariadb.nameOverride }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,7 +49,7 @@ spec:
         - name: {{ .Chart.Name }}
           command:
           - /tmp/start-jboss-server.sh
-          image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}"
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -59,13 +59,13 @@ spec:
           - containerPort: {{ .Values.service.internalPort5 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container 
-          {{- if eq .Values.liveness.enabled true }}
+          {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{ end }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
