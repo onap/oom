@@ -52,9 +52,15 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /root/chef-solo/environments/
+        - name: {{ include "common.fullname" . }}-data
+          mountPath: /var/lib/cassandra/
+        - name: {{ include "common.fullname" . }}-chef-cache
+          mountPath: /root/chef-solo/cache
         env:
         - name: ENVNAME
           value: {{ .Values.global.env.name }}
+        - name: RELEASE
+          value: {{ .Values.config.release }}
         - name: SDC_USER
           valueFrom:
             secretKeyRef: {name: {{ include "common.fullname" . }}, key: sdc_user}
@@ -64,11 +70,24 @@ spec:
         - name: CS_PASSWORD
           valueFrom:
             secretKeyRef: {name: {{ include "common.fullname" . }}, key: cs_password}
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
       volumes:
-        - name: {{ include "common.fullname" . }}-environments
-          configMap:
-            name: {{ .Release.Name }}-sdc-environments-configmap
-            defaultMode: 0755
+      - name: {{ include "common.fullname" . }}-environments
+        configMap:
+          name: {{ .Release.Name }}-sdc-environments-configmap
+          defaultMode: 0755
+      - name: {{ include "common.fullname" . }}-data
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      - name: {{ include "common.fullname" . }}-chef-cache
+        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       restartPolicy: Never
