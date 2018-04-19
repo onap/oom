@@ -57,13 +57,13 @@ spec:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
+          {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{ end }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -82,7 +82,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: {{ .Values.config.configDir }}
-            name: sdnc-conf
+            name: {{ include "common.fullname" . }}-portal
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -97,8 +97,8 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: sdnc-conf
+        - name: {{ include "common.fullname" . }}-portal
           configMap:
-            name: sdnc-portal-configmap
+            name: {{ include "common.fullname" . }}-portal
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
