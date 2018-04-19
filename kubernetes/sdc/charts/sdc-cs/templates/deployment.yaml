@@ -54,6 +54,12 @@ spec:
           env:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
+          - name: RELEASE
+            value: {{ .Values.config.release }}
+          - name: MAX_HEAP_SIZE
+            value: {{ .Values.config.maxHeapSize }}
+          - name: HEAP_NEWSIZE
+            value: {{ .Values.config.heapNewSize }}
           - name: HOST_IP
             valueFrom:
               fieldRef:
@@ -82,21 +88,21 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-        - name: {{ include "common.fullname" . }}-localtime
-          hostPath:
-            path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-logs
-          emptyDir: {}
+      - name: {{ include "common.fullname" . }}-localtime
+        hostPath:
+          path: /etc/localtime
+      - name: {{ include "common.fullname" . }}-logs
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-data
       {{- if .Values.persistence.enabled }}
-        - name: {{ include "common.fullname" . }}-data
-          persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
       {{- else }}
-          emptyDir: {}
+        emptyDir: {}
       {{- end }}
-        - name: {{ include "common.fullname" . }}-environments
-          configMap:
-            name: {{ .Release.Name }}-sdc-environments-configmap
-            defaultMode: 0755
+      - name: {{ include "common.fullname" . }}-environments
+        configMap:
+          name: {{ .Release.Name }}-sdc-environments-configmap
+          defaultMode: 0755
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

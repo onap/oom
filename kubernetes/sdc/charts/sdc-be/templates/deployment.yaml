@@ -86,7 +86,9 @@ spec:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
           - name: JAVA_OPTIONS
-            value: ""
+            value: {{ .Values.config.javaOptions }}
+          - name: cassandra_ssl_enabled
+            value: {{ .Values.config.cassandraSslEnabled | quote }}
           - name: HOST_IP
             valueFrom:
               fieldRef:
@@ -129,22 +131,22 @@ spec:
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
       volumes:
-        - name: {{ include "common.fullname" . }}-localtime
-          hostPath:
-            path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          configMap:
-           name: {{ .Release.Name }}-sdc-filebeat-configmap
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          emptyDir: {}
-        - name: {{ include "common.fullname" . }}-logback
-          configMap:
-            name : {{ include "common.fullname" . }}-logging-configmap
-        - name: {{ include "common.fullname" . }}-environments
-          configMap:
-            name: {{ .Release.Name }}-sdc-environments-configmap
-            defaultMode: 0755
-        - name:  {{ include "common.fullname" . }}-logs
-          emptyDir: {}
+      - name: {{ include "common.fullname" . }}-localtime
+        hostPath:
+          path: /etc/localtime
+      - name: {{ include "common.fullname" . }}-filebeat-conf
+        configMap:
+          name: {{ .Release.Name }}-sdc-filebeat-configmap
+      - name: {{ include "common.fullname" . }}-data-filebeat
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-logback
+        configMap:
+          name : {{ include "common.fullname" . }}-logging-configmap
+      - name: {{ include "common.fullname" . }}-environments
+        configMap:
+          name: {{ .Release.Name }}-sdc-environments-configmap
+          defaultMode: 0755
+      - name:  {{ include "common.fullname" . }}-logs
+        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
