@@ -16,6 +16,10 @@
 # limitations under the License.
 #============LICENSE_END============================================
 
-helm delete $2 --purge
+printf "%s" "$*"
+printf `pwd`
+printf "%s" "---------------"
 
-
+kubectl create namespace $1
+kubectl create clusterrolebinding $1-admin-binding --clusterrole=cluster-admin --serviceaccount=$1:default
+kubectl --namespace $1 create secret docker-registry $1-docker-registry-key --docker-server=nexus3.onap.org:10001 --docker-username=docker --docker-password=docker --docker-email=@

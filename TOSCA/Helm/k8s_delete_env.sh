@@ -16,6 +16,9 @@
 # limitations under the License.
 #============LICENSE_END============================================
 
-helm delete $2 --purge
+kubectl delete secret $1-docker-registry-key
+kubectl delete clusterrolebinding $1-admin-binding
+kubectl delete namespace $1
+
 
 

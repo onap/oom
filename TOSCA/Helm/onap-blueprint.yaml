@@ -28,7 +28,7 @@ inputs:
   ip:
   user:
     default: centos
-  namespace_perfix:
+  namespace:
     default: onap
 
 node_types:
@@ -36,7 +36,7 @@ node_types:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:
       cwd:
-        default: /home/centos/oom/kubernetes/oneclick
+        default: /home/centos/oom/kubernetes
       args:
         default:
         - onap
@@ -79,203 +79,261 @@ node_templates:
          key: { get_secret: agent_key_private }
          user: { get_input: user }
 
+  k8s_env:
+    type: cloudify.nodes.SoftwareComponent
+    properties:
+    interfaces:
+      cloudify.interfaces.lifecycle:
+         start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: k8s_setup_env.sh
+            process:
+              args:  [{ get_input: namespace }]
+            fabric_env:
+              host_string: { get_input: ip }
+              user: { get_input: user }
+              key: { get_secret: agent_key_private }
+         stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: k8s_delete_env.sh
+            process:
+              args:  [{ get_input: namespace }]
+            fabric_env:
+              host_string: { get_input: ip }
+              user: { get_input: user }
+              key: { get_secret: agent_key_private }
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
   consul:
      type: cloudify.nodes.Helm
      properties:
        args:
-       - { get_input: namespace_perfix }
+       - { get_input: namespace }
        - consul
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
   msb:
      type: cloudify.nodes.Helm
      properties:
        args:
-       - { get_input: namespace_perfix }
+       - { get_input: namespace }
        - msb
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
-
-  mso:
+  so:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
-      - mso
+      - { get_input: namespace }
+      - so
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   appc:
      type: cloudify.nodes.Helm
      properties:
        args:
-       - { get_input: namespace_perfix }
+       - { get_input: namespace }
        - appc
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
   message-router:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - message-router
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   sdnc:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - sdnc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vid:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - vid
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   robot:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - robot
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   policy:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - policy
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   portal:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - portal
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   aai:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - aai
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   sdc:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - sdc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   log:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - log
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   cli:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - cli
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   multicloud:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - multicloud
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   clamp:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - clamp
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vnfsdk:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - vnfsdk
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   uui:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - uui
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   aaf:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - aaf
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vfc:
     type: cloudify.nodes.Helm
     properties:
       args:
-      - { get_input: namespace_perfix }
+      - { get_input: namespace }
       - vfc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
+
+  dcaegen2:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace }
+      - dcaegen2
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
+
+  esr:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace }
+      - esr
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
+
+  mock:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace }
+      - mock
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
