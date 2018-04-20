@@ -36,7 +36,7 @@ node_types:
     derived_from: cloudify.nodes.SoftwareComponent
     properties:
       cwd:
-        default: /home/centos/oom/kubernetes/oneclick
+        default: /home/centos/oom/kubernetes
       args:
         default:
         - onap
@@ -79,6 +79,35 @@ node_templates:
          key: { get_secret: agent_key_private }
          user: { get_input: user }
 
+  k8s_env:
+    type: cloudify.nodes.SoftwareComponent
+    properties:
+    interfaces:
+      cloudify.interfaces.lifecycle:
+         start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: k8s_setup_env.sh
+            process:
+              args:  [{ get_input: namespace_perfix }]
+            fabric_env:
+              host_string: { get_input: ip }
+              user: { get_input: user }
+              key: { get_secret: agent_key_private }
+         stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: k8s_delete_env.sh
+            process:
+              args:  [{ get_input: namespace_perfix }]
+            fabric_env:
+              host_string: { get_input: ip }
+              user: { get_input: user }
+              key: { get_secret: agent_key_private }
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_master
+
   consul:
      type: cloudify.nodes.Helm
      properties:
@@ -87,7 +116,7 @@ node_templates:
        - consul
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
   msb:
      type: cloudify.nodes.Helm
@@ -97,18 +126,17 @@ node_templates:
        - msb
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
-
-  mso:
+  so:
     type: cloudify.nodes.Helm
     properties:
       args:
       - { get_input: namespace_perfix }
-      - mso
+      - so
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   appc:
      type: cloudify.nodes.Helm
@@ -118,7 +146,7 @@ node_templates:
        - appc
      relationships:
        - type: cloudify.relationships.connected_to
-         target: k8s_master
+         target: k8s_env
 
   message-router:
     type: cloudify.nodes.Helm
@@ -128,7 +156,7 @@ node_templates:
       - message-router
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   sdnc:
     type: cloudify.nodes.Helm
@@ -138,7 +166,7 @@ node_templates:
       - sdnc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vid:
     type: cloudify.nodes.Helm
@@ -148,7 +176,7 @@ node_templates:
       - vid
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   robot:
     type: cloudify.nodes.Helm
@@ -158,7 +186,7 @@ node_templates:
       - robot
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   policy:
     type: cloudify.nodes.Helm
@@ -168,7 +196,7 @@ node_templates:
       - policy
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   portal:
     type: cloudify.nodes.Helm
@@ -178,7 +206,7 @@ node_templates:
       - portal
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   aai:
     type: cloudify.nodes.Helm
@@ -188,7 +216,7 @@ node_templates:
       - aai
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   sdc:
     type: cloudify.nodes.Helm
@@ -198,7 +226,7 @@ node_templates:
       - sdc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   log:
     type: cloudify.nodes.Helm
@@ -208,7 +236,7 @@ node_templates:
       - log
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   cli:
     type: cloudify.nodes.Helm
@@ -218,7 +246,7 @@ node_templates:
       - cli
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   multicloud:
     type: cloudify.nodes.Helm
@@ -228,7 +256,7 @@ node_templates:
       - multicloud
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   clamp:
     type: cloudify.nodes.Helm
@@ -238,7 +266,7 @@ node_templates:
       - clamp
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vnfsdk:
     type: cloudify.nodes.Helm
@@ -248,7 +276,7 @@ node_templates:
       - vnfsdk
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   uui:
     type: cloudify.nodes.Helm
@@ -258,7 +286,7 @@ node_templates:
       - uui
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   aaf:
     type: cloudify.nodes.Helm
@@ -268,7 +296,7 @@ node_templates:
       - aaf
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
 
   vfc:
     type: cloudify.nodes.Helm
@@ -278,4 +306,34 @@ node_templates:
       - vfc
     relationships:
       - type: cloudify.relationships.connected_to
-        target: k8s_master
+        target: k8s_env
+
+  dcaegen2:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace_perfix }
+      - dcaegen2
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
+
+  esr:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace_perfix }
+      - esr
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
+
+  mock:
+    type: cloudify.nodes.Helm
+    properties:
+      args:
+      - { get_input: namespace_perfix }
+      - mock
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: k8s_env
