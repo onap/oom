@@ -40,13 +40,13 @@ spec:
         - containerPort: {{ .Values.service.internalPort3 }}
         - containerPort: {{ .Values.service.internalPort4 }}
         - containerPort: {{ .Values.service.internalPort5 }}
-        {{- if eq .Values.liveness.enabled true }}
+        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{end -}}
+        {{ end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -56,10 +56,7 @@ spec:
           - name: CASSUSER
             value: "{{ .Values.config.cassandraUsername }}"
           - name: CASSPASS
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}
-                key: db-root-password
+            value: "{{ .Values.config.cassandraPassword }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -70,6 +67,8 @@ spec:
         - name: cassandra-docker-entrypoint-initdb
           mountPath: /docker-entrypoint-initdb.d/zzz_portalsdk.cql
           subPath: portalsdk.cql
+        - name: {{ include "common.fullname" . }}-data
+          mountPath: /var/lib/cassandra/data
         resources:
 {{ toYaml .Values.resources | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -87,5 +86,12 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
+      {{- if .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
