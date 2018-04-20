@@ -22,6 +22,9 @@ GLOBAL_ASDC_BE_PASSWORD = "boop"
 # clamp info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLAMP_SERVER_PROTOCOL = "http"
 GLOBAL_CLAMP_SERVER_PORT = "8080"
+# nbi info - everything is from the private oam network (also called onap private network)
+GLOBAL_NBI_SERVER_PROTOCOL = "http"
+GLOBAL_NBI_SERVER_PORT = "8080"
 # cli info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLI_SERVER_PROTOCOL = "http"
 GLOBAL_CLI_SERVER_PORT = "8080"
@@ -76,6 +79,9 @@ GLOBAL_VID_USERNAME = "demo"
 GLOBAL_VID_PASSWORD = "Kp8bJ4SXszM0WX"
 GLOBAL_VID_HEALTH_USERNAME = "Default"
 GLOBAL_VID_HEALTH_PASSWORD = "AppPassword!1"
+# vnfsdk info - everything is from the private oam network (also called onap private network)
+GLOBAL_VNFSDK_SERVER_PROTOCOL = "http"
+GLOBAL_VNFSDK_SERVER_PORT = "8702"
 #global selenium info
 GLOBAL_PROXY_WARNING_TITLE=""
 GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""

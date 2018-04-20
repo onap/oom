@@ -6,6 +6,7 @@ GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
 GLOBAL_INJECTED_APPC_IP_ADDR = "{{.Release.Name}}-appc.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_ARTIFACTS_VERSION = "{{.Values.demoArtifactsVersion}}"
 GLOBAL_INJECTED_CLAMP_IP_ADDR = "{{.Release.Name}}-clamp.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_CLI_IP_ADDR = "cli.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_CLOUD_ENV = "openstack"
 GLOBAL_INJECTED_DCAE_IP_ADDR = "{{.Release.Name}}-dcae-controller.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_DNS_IP_ADDR = "N/A"
@@ -16,6 +17,7 @@ GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MSO_IP_ADDR = "so.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_NBI_IP_ADDR = "nbi.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_NETWORK = "{{ .Values.openStackPrivateNetId }}"
 GLOBAL_INJECTED_NEXUS_DOCKER_REPO = "nexus3.onap.org:10001"
 GLOBAL_INJECTED_NEXUS_PASSWORD = "docker"
@@ -43,6 +45,7 @@ GLOBAL_INJECTED_UBUNTU_1404_IMAGE = "{{ .Values.ubuntu14Image }}"
 GLOBAL_INJECTED_UBUNTU_1604_IMAGE = "{{ .Values.ubuntu16Image }}"
 GLOBAL_INJECTED_VID_IP_ADDR = "{{.Release.Name}}-vid.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_VM_FLAVOR = "{{ .Values.openStackFlavourMedium }}"
+GLOBAL_INJECTED_VNFSDK_IP_ADDR = "{{.Release.Name}}-vnfsdk.{{include "common.namespace" .}}"
 
 GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_AAF_IP_ADDR" : "{{.Release.Name}}-aaf.{{include "common.namespace" .}}",
@@ -51,6 +54,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_APPC_IP_ADDR" : "{{.Release.Name}}-appc.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_ARTIFACTS_VERSION" : "{{.Values.demoArtifactsVersion}}",
     "GLOBAL_INJECTED_CLAMP_IP_ADDR" : "{{.Release.Name}}-clamp.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_CLI_IP_ADDR" : "cli.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_CLOUD_ENV" : "openstack",
     "GLOBAL_INJECTED_DCAE_IP_ADDR" : "{{.Release.Name}}-dcae-controller.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_DNS_IP_ADDR" : "N/A",
@@ -61,6 +65,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_MR_IP_ADDR" : "message-router.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MSO_IP_ADDR" : "so.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NETWORK" : "{{ .Values.openStackPrivateNetId }}",
     "GLOBAL_INJECTED_NEXUS_DOCKER_REPO" : "nexus3.onap.org:10001",
     "GLOBAL_INJECTED_NEXUS_PASSWORD" : "docker",
@@ -87,5 +92,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_UBUNTU_1404_IMAGE" : "{{.Values.ubuntu14Image}}",
     "GLOBAL_INJECTED_UBUNTU_1604_IMAGE" : "{{.Values.ubuntu16Image}}",
     "GLOBAL_INJECTED_VID_IP_ADDR" : "{{.Release.Name}}-vid.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}"
+    "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
+    "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : "{{.Release.Name}}-vnfsdk.{{include "common.namespace" .}}"
+
 }
