@@ -31,20 +31,20 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - command:
-        - /root/ready.py
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
         args:
-        - --container-name
-        - {{ .Values.mariadb.nameOverride }}
+        - --job-name
+        - {{ .Release.Name }}-so-db-config
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ .Chart.Name }}
           command:
