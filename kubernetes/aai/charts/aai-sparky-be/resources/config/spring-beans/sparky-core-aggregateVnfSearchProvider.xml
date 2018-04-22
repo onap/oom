@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+         http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+         <bean id="aggregateVnfSearchProvider"
+            class="org.onap.aai.sparky.aggregatevnf.search.AggregateVnfSearchProvider">
+            <constructor-arg ref="searchServiceAdapter"/>
+            <constructor-arg name="autoSuggestIndexName" value="entityautosuggestindex"/>
+            <constructor-arg name="vnfSearchSuggestionRoute" value="vnfSearch"/>
+          </bean>
+
+          <bean id="aggregateSummaryProcessor"
+            class="org.onap.aai.sparky.aggregatevnf.search.AggregateSummaryProcessor">
+            <constructor-arg ref="elasticSearchAdapter"/>
+            <constructor-arg ref="filtersConfig"/>
+            <property name="vnfAggregationIndexName" value="aggregate_generic-vnf_index"/>
+          </bean>
+
+          <bean id="registerAggregateVnfSearchProvider"
+            class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+            <property name="targetObject" ref="searchProviderRegistry"/>
+            <property name="targetMethod">
+              <value>addSearchProviders</value>
+            </property>
+            <property name="arguments">
+              <list value-type="org.onap.aai.sparky.search.api.SearchProvider">
+                <ref bean="aggregateVnfSearchProvider"/>
+              </list>
+            </property>
+          </bean>
+</beans>
