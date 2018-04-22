@@ -1,0 +1,241 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	       http://www.springframework.org/schema/beans
+	       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+				 <bean id="searchServiceRestEndpointConfig" class="org.onap.aai.sparky.dal.rest.config.RestEndpointConfig">
+			 		<property name="endpointIpAddress" value="{{.Values.global.searchData.serviceName}}.{{.Release.Namespace}}" />
+			 		<property name="endpointServerPort" value="9509" />
+			 		<property name="numRequestRetries" value="5" />
+			 		<property name="restAuthenticationMode" value="SSL_CERT" />
+			 		<property name="connectTimeoutInMs" value="60000" />
+			 		<property name="readTimeoutInMs" value="30000" />
+			 		<property name="certFileName" value="/auth/client-cert-onap.p12" />
+			 		<property name="certPassword" value="OBF:1y0q1uvc1uum1uvg1pil1pjl1uuq1uvk1uuu1y10" />
+			 		<property name="truststoreFileName" value="/auth/inventory-ui-keystore" />
+			 		<property name="validateServerCertChain" value="false" />
+			 		<property name="validateServerHostname" value="false" />
+			 		<property name="resourceLoader" ref="sparkyResourceLoader" />
+			 	</bean>
+
+			 	<bean id="searchServiceAdapter" class="org.onap.aai.sparky.search.SearchServiceAdapter">
+			 		<constructor-arg ref="searchServiceRestEndpointConfig" />
+			 		<constructor-arg name="serviceApiVersion" value="v1" />
+			 	</bean>
+
+			 	<bean id="filtersConfig" class="org.onap.aai.sparky.search.filters.config.FiltersConfig">
+			 		<constructor-arg name="filtersFileName" value="/filters/aaiui_filters.json" />
+			 		<constructor-arg name="viewsFileName" value="/filters/aaiui_views.json" />
+			 		<constructor-arg name="resourceLoader" ref="sparkyResourceLoader" />
+			 	</bean>
+
+			 	<bean id="crossEntityReferenceLookup"
+			 		class="org.onap.aai.sparky.config.oxm.CrossEntityReferenceLookup" />
+
+			 	<bean id="geoEntityLookup" class="org.onap.aai.sparky.config.oxm.GeoEntityLookup" />
+
+			 	<bean id="oxmEntityLookup" class="org.onap.aai.sparky.config.oxm.OxmEntityLookup" />
+
+			 	<bean id="searchableEntityLookup" class="org.onap.aai.sparky.config.oxm.SearchableEntityLookup" />
+
+			 	<bean id="suggestionEntityLookup" class="org.onap.aai.sparky.config.oxm.SuggestionEntityLookup">
+			 		<constructor-arg ref="filtersConfig" />
+			 	</bean>
+
+			 	<bean id="oxmModelProcessorSet" class="org.springframework.beans.factory.config.SetFactoryBean">
+			 		<property name="targetSetClass" value="java.util.HashSet" />
+			 		<property name="sourceSet">
+			 			<set>
+			 				<ref bean="crossEntityReferenceLookup" />
+			 				<ref bean="geoEntityLookup" />
+			 				<ref bean="oxmEntityLookup" />
+			 				<ref bean="searchableEntityLookup" />
+			 				<ref bean="suggestionEntityLookup" />
+			 			</set>
+			 		</property>
+			 	</bean>
+
+			 	<bean id="oxmModelLoader" class="org.onap.aai.sparky.config.oxm.OxmModelLoader" init-method="loadLatestOxmModel">
+			 		<!-- the int argument is the latestVersionOverride.  -1 disables the override -->
+			 		<constructor-arg type="int" value="-1" />
+			 		<constructor-arg ref="oxmModelProcessorSet" />
+			 	</bean>
+
+			 	<bean id="searchProviderRegistry"
+			 		class="org.onap.aai.sparky.search.registry.SearchProviderRegistry" />
+
+			 	<bean id="sparkyResourceLoader" class="org.onap.aai.sparky.config.SparkyResourceLoader">
+			 	   <property name="configHomeEnvVar" value="CONFIG_HOME" />
+			 	</bean> 
+
+			 	<bean id="filterElasticSearchAdapter"
+			 		class="org.onap.aai.sparky.search.filters.FilterElasticSearchAdapter">
+			 		<constructor-arg ref="elasticSearchAdapter" />
+			 	</bean>
+
+			 	<bean id="filteredSearchHelper" class="org.onap.aai.sparky.search.filters.FilteredSearchHelper" >
+			 		<constructor-arg ref="filtersConfig" />
+			 		<constructor-arg ref="filterElasticSearchAdapter" />
+			 	</bean>
+
+			 	<bean id="filterProcessor" class="org.onap.aai.sparky.search.filters.FilterProcessor" >
+			 		<property name="filteredSearchHelper" ref="filteredSearchHelper" />
+			 	</bean>
+
+			 	<bean id="unifiedSearchProcessor" class="org.onap.aai.sparky.search.UnifiedSearchProcessor">
+			 		<property name="searchProviderRegistry" ref="searchProviderRegistry" />
+			 	</bean>
+
+			 	<bean id="entityCountHistoryProcessor" class="org.onap.aai.sparky.search.EntityCountHistoryProcessor">
+			 		<constructor-arg ref="elasticSearchAdapter" />
+			 		<constructor-arg name="entityTypesToSummarizeDelimitedList"
+			 			value="customer,service-instance,complex,pserver,vserver,vnf" />
+			 		<constructor-arg name="vnfEntityTypesDelimitedList"
+			 			value="vnf,newvce,vce,vpe" />
+			 		<constructor-arg name="entityCountHistoryIndexName"
+			 			value="entitycounthistoryindex" />
+			 	</bean>
+
+			 	<bean id="attributeUpdater"
+			         class="org.onap.aai.sparky.editattributes.AttributeUpdater">
+			         <constructor-arg ref="oxmModelLoader" />
+			         <constructor-arg ref="oxmEntityLookup" />
+			         <constructor-arg ref="activeInventoryAdapter" />
+			     </bean>
+
+			     <bean id="attributeEditProcessor"
+			         class="org.onap.aai.sparky.editattributes.AttributeEditProcessor">
+			         <constructor-arg ref="attributeUpdater" />
+			     </bean>
+
+			    <bean id="geoVisualizationProcessor" class="org.onap.aai.sparky.inventory.GeoVisualizationProcessor">
+			 		<constructor-arg ref="elasticSearchAdapter" />
+			 		<constructor-arg name="topographicalSearchIndexName"
+			 			value="topographicalsearchindex" />
+			 	</bean>
+
+			     <bean id = "pairingHashMap" class="org.springframework.beans.factory.config.MapFactoryBean">
+			 				<property name="targetMapClass">
+			 					<value>java.util.HashMap</value>
+			 				</property>
+			 				<property name="sourceMap">
+			 					<map key-type="java.lang.String" value-type="java.lang.String" >
+			 						<entry key="volume-group-id" value="called" />
+			 						<entry key="volume-group-name" value="called" />
+			 						<entry key="physical-location-id" value="called" />
+			 						<entry key="data-center-code" value="called" />
+			 						<entry key="complex-name" value="called" />
+			 						<entry key="tenant-id" value="called" />
+			 						<entry key="tenant-name" value="called" />
+			 						<entry key="vserver-id" value="called" />
+			 						<entry key="vserver-name" value="called" />
+			 						<entry key="vserver-name2" value="called" />
+			 						<entry key="hostname" value="called" />
+			 						<entry key="pserver-name2" value="called" />
+			 						<entry key="pserver-id" value="called" />
+			 						<entry key="global-customer-id" value="called" />
+			 						<entry key="subscriber-name" value="called" />
+			 						<entry key="service-instance-id" value="called" />
+			 						<entry key="service-instance-name" value="called" />
+			 						<entry key="link-name" value="called" />
+			 						<entry key="vpn-id" value="called" />
+			 						<entry key="vpn-name" value="called" />
+			 						<entry key="vpe-id" value="called" />
+			 						<entry key="vnf-id" value="called" />
+			 						<entry key="vnf-name" value="called" />
+			 						<entry key="vnf-name2" value="called" />
+			 						<entry key="vnfc-name" value="called" />
+			 						<entry key="network-id" value="called" />
+			 						<entry key="network-name" value="called" />
+			 						<entry key="network-policy-id" value="called" />
+			 						<entry key="vf-module-id" value="called" />
+			 						<entry key="vf-module-name" value="called" />
+			 						<entry key="vnf-id2" value="called" />
+			 						<entry key="pnf-name" value="called" />
+			 						<entry key="circuit-id" value="called" />
+			 						<entry key="id" value="called" />
+			 						<entry key="group-id" value="called" />
+			 						<entry key="group-name" value="called" />
+			 						<entry key="street1" value="at" />
+			 						<entry key="street2" value="at" />
+			 						<entry key="code" value="at" />
+			 						<entry key="ipv4-oam-address" value="at" />
+			 						<entry key="network-policy-fqdn" value="at" />
+			 					</map>
+			 				</property>
+			 	</bean>
+
+			     <bean id="suggestiveSearchConfigs" class="org.onap.aai.sparky.search.config.SuggestionConfig">
+			 		<property name="defaultPairingValue" value="with" />
+			 		<property name="pairingList" ref="pairingHashMap"></property>
+			 		<property name="stopWords">
+			 			<list value-type="java.lang.String">
+			 				<value>a</value>
+			 				<value>an</value>
+			 				<value>and</value>
+			 				<value>are</value>
+			 				<value>as</value>
+			 				<value>at</value>
+			 				<value>be</value>
+			 				<value>but</value>
+			 				<value>by</value>
+			 				<value>called</value>
+			 				<value>for</value>
+			 				<value>if</value>
+			 				<value>in</value>
+			 				<value>into</value>
+			 				<value>is</value>
+			 				<value>it</value>
+			 				<value>no</value>
+			 				<value>not</value>
+			 				<value>of</value>
+			 				<value>on</value>
+			 				<value>or</value>
+			 				<value>such</value>
+			 				<value>that</value>
+			 				<value>the</value>
+			 				<value>their</value>
+			 				<value>then</value>
+			 				<value>there</value>
+			 				<value>these</value>
+			 				<value>they</value>
+			 				<value>this</value>
+			 				<value>to</value>
+			 				<value>was</value>
+			 				<value>will</value>
+			 				<value>with</value>
+			 			</list>
+			 		</property>
+
+			     </bean>
+
+					 <bean id="subscriptionConfig"
+                     class="org.onap.aai.sparky.subscription.config.SubscriptionConfig">
+                     <property name="subscriptionTarget" value="" />
+                     <property name="subscriptionOrigin" value="" />
+                     <property name="subscriptionMessageType" value="" />
+                     <property name="subscriptionTopic" value="" />
+                     <property name="launchOITarget" value="" />
+                     <property name="launchOIOrigin" value="" />
+                     <property name="launchOIMessageType" value="" />
+                     <property name="launchOITopic" value="" />
+										 <property name="annEntitiyTypes">
+											 <list value-type="java.lang.String">
+												 <value>pserver</value>
+												 <value>pnf</value>
+											 </list>
+									 </property>
+									 <property name="isLaunchOIEnabled" value="false" />
+            </bean>
+
+            <bean id="subscriptionService"
+                     class="org.onap.aai.sparky.subscription.services.SubscriptionService">
+                     <constructor-arg ref="subscriptionConfig" />
+            </bean>
+
+            <bean id="subscriptionServiceProcessor"
+                     class="org.onap.aai.sparky.subscription.SubscriptionServiceProcessor">
+                     <constructor-arg ref="subscriptionService" />
+            </bean>
+</beans>
