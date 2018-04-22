@@ -1,0 +1,373 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	       http://www.springframework.org/schema/beans
+	       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="elasticSearchSchemaFactory" class="org.onap.aai.sparky.sync.ElasticSearchSchemaFactory">
+		<property name="resourceLoader" ref="sparkyResourceLoader" />
+	</bean> 
+
+
+    <bean id="elasticSearchRestEndpointConfig" class="org.onap.aai.sparky.dal.rest.config.RestEndpointConfig">
+       <property name="endpointIpAddress" value="{{.Values.global.aaiElasticsearch.serviceName}}.{{.Release.Namespace}}" />
+       <property name="endpointServerPort" value="9200" />
+       <property name="numRequestRetries" value="5" />
+       <property name="restAuthenticationMode" value="HTTP_NOAUTH" />
+       <property name="connectTimeoutInMs" value="60000" />
+       <property name="readTimeoutInMs" value="30000" />
+    </bean>
+	       
+	<bean id="elasticSearchAdapter" class="org.onap.aai.sparky.dal.ElasticSearchAdapter">
+		<constructor-arg ref="elasticSearchRestEndpointConfig" />
+	</bean>
+
+	<bean id="elasticSearchNetworkStatConfig" class="org.onap.aai.sparky.sync.config.NetworkStatisticsConfig">
+		<property name="numSamplesPerThreadForRunningAverage" value="100" />
+		<property name="bytesHistogramLabel" value="[Response Size In Bytes]" />
+		<property name="bytesHistogramMaxYAxis" value="1000000" />
+		<property name="bytesHistogramNumBins" value="20" />
+		<property name="bytesHistogramNumDecimalPoints" value="2" />
+		<property name="queueLengthHistogramLabel" value="[Queue Item Length]" />
+		<property name="queueLengthHistogramMaxYAxis" value="20000" />
+		<property name="queueLengthHistogramNumBins" value="20" />
+		<property name="queueLengthHistogramNumDecimalPoints" value="2" />
+		<property name="taskAgeHistogramLabel" value="[Task Age In Ms]" />
+		<property name="taskAgeHistogramMaxYAxis" value="600000" />
+		<property name="taskAgeHistogramNumBins" value="20" />
+		<property name="taskAgeHistogramNumDecimalPoints" value="2" />
+		<property name="responseTimeHistogramLabel" value="[Response Time In Ms]" />
+		<property name="responseTimeHistogramMaxYAxis" value="1000" />
+		<property name="responseTimeHistogramNumBins" value="20" />
+		<property name="responseTimeHistogramNumDecimalPoints" value="2" />
+		<property name="tpsHistogramLabel" value="[Transactions Per Second]" />
+		<property name="tpsHistogramMaxYAxis" value="100" />
+		<property name="tpsHistogramNumBins" value="20" />
+		<property name="tpsHistogramNumDecimalPoints" value="2" />
+	</bean>
+
+	<bean id="aaiNetworkStatConfig" class="org.onap.aai.sparky.sync.config.NetworkStatisticsConfig">
+		<property name="numSamplesPerThreadForRunningAverage" value="100" />
+		<property name="bytesHistogramLabel" value="[Response Size In Bytes]" />
+		<property name="bytesHistogramMaxYAxis" value="1000000" />
+		<property name="bytesHistogramNumBins" value="20" />
+		<property name="bytesHistogramNumDecimalPoints" value="2" />
+		<property name="queueLengthHistogramLabel" value="[Queue Item Length]" />
+		<property name="queueLengthHistogramMaxYAxis" value="20000" />
+		<property name="queueLengthHistogramNumBins" value="20" />
+		<property name="queueLengthHistogramNumDecimalPoints" value="2" />
+		<property name="taskAgeHistogramLabel" value="[Task Age In Ms]" />
+		<property name="taskAgeHistogramMaxYAxis" value="600000" />
+		<property name="taskAgeHistogramNumBins" value="20" />
+		<property name="taskAgeHistogramNumDecimalPoints" value="2" />
+		<property name="responseTimeHistogramLabel" value="[Response Time In Ms]" />
+		<property name="responseTimeHistogramMaxYAxis" value="10000" />
+		<property name="responseTimeHistogramNumBins" value="20" />
+		<property name="responseTimeHistogramNumDecimalPoints" value="2" />
+		<property name="tpsHistogramLabel" value="[Transactions Per Second]" />
+		<property name="tpsHistogramMaxYAxis" value="100" />
+		<property name="tpsHistogramNumBins" value="20" />
+		<property name="tpsHistogramNumDecimalPoints" value="2" />
+	</bean>
+
+    <bean id="aaiRestEndpointConfig" class="org.onap.aai.sparky.dal.rest.config.RestEndpointConfig">
+       <property name="endpointIpAddress" value="{{.Values.global.aai.serviceName}}" />
+       <property name="endpointServerPort" value="8443" />
+       <property name="numRequestRetries" value="5" />
+       <property name="restAuthenticationMode" value="SSL_BASIC" />
+       <property name="connectTimeoutInMs" value="60000" />
+       <property name="readTimeoutInMs" value="30000" />
+       <property name="basicAuthUserName" value="AaiUI" />
+       <property name="basicAuthPassword" value="OBF:1gfr1p571unz1p4j1gg7" />
+       <property name="truststoreFileName" value="/auth/inventory-ui-keystore" />
+       <property name="validateServerCertChain" value="false" />
+       <property name="validateServerHostname" value="false" />
+       <property name="resourceLoader" ref="sparkyResourceLoader" />
+    </bean>
+
+	<bean id="activeInventoryAdapter" class="org.onap.aai.sparky.dal.ActiveInventoryAdapter">
+		<constructor-arg ref="oxmModelLoader" />
+		<constructor-arg ref="oxmEntityLookup" />
+		<constructor-arg ref="aaiRestEndpointConfig" />
+	</bean>
+
+	<bean id="syncControllerRegistry" class="org.onap.aai.sparky.sync.SyncControllerRegistry" />
+
+	<bean id="elasticSearchEndpointConfig"
+		class="org.onap.aai.sparky.sync.config.ElasticSearchEndpointConfig">
+		<property name="esIpAddress" value="{{.Values.global.aaiElasticsearch.serviceName}}.{{.Release.Namespace}}" />
+		<property name="esServerPort" value="9200" />
+		<property name="scrollContextTimeToLiveInMinutes" value="5" />
+		<property name="scrollContextBatchRequestSize" value="5000" />
+	</bean>
+	
+	<bean id="aggregationSyncControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+		<property name="controllerName" value="Aggregation-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="aggregationSyncControllerFactory"
+		class="org.onap.aai.sparky.aggregation.sync.AggregationSyncControllerFactory"
+		init-method="registerController">
+
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg ref="aggregationSyncControllerConfig" />
+		<constructor-arg ref="syncControllerRegistry" />
+		<constructor-arg ref="suggestionEntityLookup" />
+		<constructor-arg ref="oxmEntityLookup" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="esAdapter" ref="elasticSearchAdapter" />
+		<property name="esStatConfig" ref="elasticSearchNetworkStatConfig" />
+
+		<property name="aaiAdapter" ref="activeInventoryAdapter" />
+		<property name="aaiStatConfig" ref="aaiNetworkStatConfig" />
+
+		<property name="aggregationEntityToIndexMap">
+			<map>
+				<entry key="generic-vnf" value="aggregate_generic-vnf_index" />
+			</map>
+		</property>
+
+		<property name="indexNameToSchemaConfigMap">
+			<map>
+				<entry key="aggregate_generic-vnf_index">
+					<bean class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+						<property name="indexName" value="aggregate_generic-vnf_index" />
+						<property name="indexDocType" value="default" />
+						<property name="indexMappingsFileName" value="/schemas/dynamicMappings.json" />
+					</bean>
+				</entry>
+			</map>
+		</property>
+
+	</bean>
+
+
+	<bean id="historicalEntitySyncControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+
+		<property name="controllerName" value="Historical-Entity-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="historicalEntitySchemaConfig" class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+		<property name="indexName" value="entitycounthistoryindex" />
+		<property name="indexDocType" value="default" />
+		<property name="indexMappingsFileName" value="/schemas/entityCountHistoryMappings.json" />
+		<property name="indexSettingsFileName" value="/schemas/es_settings.json" />
+	</bean>
+
+	<bean id="historicalEntitySyncController"
+		class="org.onap.aai.sparky.aggregation.sync.HistoricalEntitySyncController"
+		init-method="registerController">
+
+		<constructor-arg ref="historicalEntitySyncControllerConfig" />
+		<constructor-arg ref="activeInventoryAdapter" />
+		<constructor-arg ref="elasticSearchAdapter" />
+		<constructor-arg ref="historicalEntitySchemaConfig" />
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg value="60" />
+		<constructor-arg ref="aaiNetworkStatConfig" />
+		<constructor-arg ref="elasticSearchNetworkStatConfig" />
+		<constructor-arg ref="searchableEntityLookup" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="syncControllerRegistry" ref="syncControllerRegistry" />
+
+	</bean>
+	
+	
+	
+	<bean id="autoSuggestionSyncControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+
+		<property name="controllerName" value="Auto-Suggestion-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="autoSuggestionEntitySchemaConfig" class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+		<property name="indexName" value="entityautosuggestindex" />
+		<property name="indexDocType" value="default" />
+		<property name="indexMappingsFileName" value="/schemas/autoSuggestMappings.json" />
+		<property name="indexSettingsFileName" value="/schemas/autoSuggestSettings.json" />
+	</bean>
+
+	<bean id="autoSuggestionEntitySyncController"
+		class="org.onap.aai.sparky.autosuggestion.sync.AutoSuggestionSyncController"
+		init-method="registerController">
+
+		<constructor-arg ref="autoSuggestionSyncControllerConfig" />
+		<constructor-arg ref="activeInventoryAdapter" />
+		<constructor-arg ref="elasticSearchAdapter" />
+		<constructor-arg ref="autoSuggestionEntitySchemaConfig" />
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg ref="aaiNetworkStatConfig" />
+		<constructor-arg ref="elasticSearchNetworkStatConfig" />
+		<constructor-arg ref="oxmEntityLookup" />
+		<constructor-arg ref="suggestionEntityLookup" />
+		<constructor-arg ref="filtersConfig" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="syncControllerRegistry" ref="syncControllerRegistry" />
+
+	</bean>
+	
+	
+	
+	<bean id="vnfAliasSyncControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+
+		<property name="controllerName" value="Vnf-Alias-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="vnfAliasEntitySchemaConfig" class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+		<property name="indexName" value="entityautosuggestindex" />
+		<property name="indexDocType" value="default" />
+		<property name="indexMappingsFileName" value="/schemas/autoSuggestMappings.json" />
+		<property name="indexSettingsFileName" value="/schemas/autoSuggestSettings.json" />
+	</bean>
+
+	<bean id="vnfAliasSyncController"
+		class="org.onap.aai.sparky.autosuggestion.sync.VnfAliasSyncController"
+		init-method="registerController">
+
+		<constructor-arg ref="vnfAliasSyncControllerConfig" />
+		<constructor-arg ref="activeInventoryAdapter" />
+		<constructor-arg ref="elasticSearchAdapter" />
+		<constructor-arg ref="vnfAliasEntitySchemaConfig" />
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg ref="aaiNetworkStatConfig" />
+		<constructor-arg ref="elasticSearchNetworkStatConfig" />
+		<constructor-arg ref="filtersConfig" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="syncControllerRegistry" ref="syncControllerRegistry" />
+
+	</bean>
+	
+	<bean id="geoSyncControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+
+		<property name="controllerName" value="Geo-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="geoEntitySchemaConfig" class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+		<property name="indexName" value="topographicalsearchindex" />
+		<property name="indexDocType" value="default" />
+		<property name="indexMappingsFileName" value="/schemas/dynamicMappings.json" />
+	</bean>
+
+	<bean id="geoSyncController"
+		class="org.onap.aai.sparky.topology.sync.GeoSyncController"
+		init-method="registerController">
+
+		<constructor-arg ref="geoSyncControllerConfig" />
+		<constructor-arg ref="activeInventoryAdapter" />
+		<constructor-arg ref="elasticSearchAdapter" />
+		<constructor-arg ref="geoEntitySchemaConfig" />
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg ref="aaiNetworkStatConfig" />
+		<constructor-arg ref="elasticSearchNetworkStatConfig" />
+		<constructor-arg ref="geoEntityLookup" />
+		<constructor-arg ref="oxmEntityLookup" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="syncControllerRegistry" ref="syncControllerRegistry" />
+
+	</bean>
+	
+	<bean id="viewInspectControllerConfig" class="org.onap.aai.sparky.sync.config.SyncControllerConfig">
+
+		<property name="controllerName" value="View-Inspect-Sync-Controller" />
+		<property name="enabled" value="true" />
+		<property name="syncTaskDelayInMs" value="5000" />
+		<property name="syncTaskFrequencyInDays" value="1" />
+		<property name="numSyncControllerWorkers" value="2" />
+		<property name="runOnceSyncEnabled" value="true" />
+		<property name="periodicSyncEnabled" value="false" />
+		<property name="numInternalSyncWorkers" value="2" />
+		<property name="numSyncElasticWorkers" value="5" />
+		<property name="numSyncActiveInventoryWorkers" value="5" />
+		<property name="targetSyncStartTimeStamp" value="05:00:00 UTC+00:00" />
+	</bean>
+
+	<bean id="viewInspectySchemaConfig" class="org.onap.aai.sparky.sync.config.ElasticSearchSchemaConfig">
+		<property name="indexName" value="entitysearchindex" />
+		<property name="indexDocType" value="default" />
+		<property name="indexMappingsFileName" value="/schemas/es_mappings.json" />
+		<property name="indexSettingsFileName" value="/schemas/es_settings.json" />
+	</bean>
+
+
+	<bean id="viewInspectSyncController"
+		class="org.onap.aai.sparky.viewinspect.sync.ViewInspectSyncController"
+		init-method="registerController">
+
+		<constructor-arg ref="viewInspectControllerConfig" />
+		<constructor-arg ref="activeInventoryAdapter" />
+		<constructor-arg ref="elasticSearchAdapter" />
+		<constructor-arg ref="viewInspectySchemaConfig" />
+		<constructor-arg ref="elasticSearchEndpointConfig" />
+		<constructor-arg ref="aaiNetworkStatConfig" />
+		<constructor-arg ref="elasticSearchNetworkStatConfig" />
+		<constructor-arg ref="crossEntityReferenceLookup" />
+		<constructor-arg ref="oxmEntityLookup" />
+		<constructor-arg ref="searchableEntityLookup" />
+		<constructor-arg ref="elasticSearchSchemaFactory" />
+
+		<property name="syncControllerRegistry" ref="syncControllerRegistry" />
+
+	</bean>
+
+	<bean id="syncControllerService" class="org.onap.aai.sparky.sync.SyncControllerService"
+		destroy-method="shutdown">
+		<constructor-arg ref="syncControllerRegistry" />
+		<constructor-arg value="5" />
+		<constructor-arg value="5" />
+	</bean>
+
+</beans>		
