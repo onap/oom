@@ -1,0 +1,95 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2017-2018 AT&T Intellectual Property. All rights reserved.
+# Copyright © 2018 Amdocs, Bell Canada
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  completions: 1
+{{/*  backoffLimit: 0*/}}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /root/ready.py
+        args:
+          - --container-name
+          - dcae-cloudify-manager
+          - --container-name
+          - consul-server
+          - --container-name
+          - msb-discovery
+          - --container-name
+          - kube2msb
+          - "-t"
+          - "15"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /inputs
+              name: {{ include "common.fullname" . }}-dcae-inputs
+            - mountPath: /dcae-configs
+              name: {{ include "common.fullname" . }}-dcae-config
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+          env:
+            - name: CMADDR
+              value: {{ .Values.config.address.cm }}
+            - name: CMPASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.name" . }}-cmpass
+                  key: password
+            - name: CONSUL
+              value: {{ .Values.config.address.consul.host }}:{{ .Values.config.address.consul.port }}
+      volumes:
+        - name: {{ include "common.fullname" . }}-dcae-inputs
+          configMap:
+            name: {{ include "common.fullname" . }}-dcae-inputs
+        - name: {{ include "common.fullname" . }}-dcae-config
+          configMap:
+            name: {{ include "common.fullname" . }}-dcae-config
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
