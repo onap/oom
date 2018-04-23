@@ -36,7 +36,11 @@ function usage
 }
 
 # Set the defaults
-if [ $# -le 2 ];then
+
+echo "Number of parameters:" 
+echo $#
+
+if [ $# -lt 2 ];then
 	usage
 	exit
 fi
@@ -47,9 +51,11 @@ shift
 ##
 ## if more than 1 tag is supplied, the must be provided with -i or -e
 ##
-while [ $# -gt 1 ]
+while [ $# -gt 0 ]
 do
-	key="$2"
+	key="$1"
+        echo "KEY:"
+        echo $key
 
 	case $key in
     	init_robot)
