@@ -42,14 +42,20 @@ spec:
         - containerPort: {{ .Values.service.internalPort5 }}
         {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end }}
         readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         env:
@@ -57,6 +63,10 @@ spec:
             value: "{{ .Values.config.cassandraUsername }}"
           - name: CASSPASS
             value: "{{ .Values.config.cassandraPassword }}"
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
