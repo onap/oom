@@ -1,5 +1,5 @@
 # aaf info - everything is from the private oam network (also called onap private network)
-GLOBAL_AAF_SERVER = "http://{{.Release.Name}}-aaf.{{include "common.namespace" .}}:8101"
+GLOBAL_AAF_SERVER = "http://aaf.{{include "common.namespace" .}}:8101"
 GLOBAL_AAF_USERNAME = "dgl@openecomp.org"
 GLOBAL_AAF_PASSWORD = "ecomp_admin"
 # aai info - everything is from the private oam network (also called onap private network)
@@ -10,7 +10,7 @@ GLOBAL_AAI_PASSWORD = "AAI"
 # appc info - everything is from the private oam network (also called onap private network)
 GLOBAL_APPC_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_SERVER_PORT = "8282"
-GLOBAL_APPC_SERVER = "http://{{.Release.Name}}-appc.{{include "common.namespace" .}}:"
+GLOBAL_APPC_SERVER = "http://appc.{{include "common.namespace" .}}:"
 GLOBAL_APPC_USERNAME = "admin"
 GLOBAL_APPC_PASSWORD = "admin"
 # sdc info - everything is from the private oam network (also called onap private network)
