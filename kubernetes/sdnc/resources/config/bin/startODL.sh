@@ -74,7 +74,7 @@ CCSDK_HOME=${CCSDK_HOME:-/opt/onap/ccsdk}
 SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
-MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
+MYSQL_HOST=${MYSQL_HOST:{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 IS_PRIMARY_CLUSTER=${IS_PRIMARY_CLUSTER:-false}
 MY_ODL_CLUSTER=${MY_ODL_CLUSTER:-127.0.0.1}
 
