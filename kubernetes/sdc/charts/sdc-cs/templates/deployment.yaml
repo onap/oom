@@ -32,23 +32,22 @@ spec:
     spec:
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
+          {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+              - "/var/lib/ready-probe.sh"
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -66,7 +65,7 @@ spec:
                 fieldPath: status.podIP
           - name: CS_PASSWORD
             valueFrom:
-              secretKeyRef: {name: {{ include "common.fullname" . }}, key: cs_password}
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: cs_password}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-data
             mountPath: /var/lib/cassandra/
@@ -75,8 +74,6 @@ spec:
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/lib/jetty/logs
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -91,8 +88,6 @@ spec:
       - name: {{ include "common.fullname" . }}-localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-logs
-        emptyDir: {}
       - name: {{ include "common.fullname" . }}-data
       {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
