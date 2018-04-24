@@ -12,31 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: batch/v1
-kind: Job
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: {{ include "common.fullname" . }}-config
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}-job
+    app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}-job
+        app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
     spec:
-      restartPolicy: Never
-      hostname: postgres
+      hostname: {{ include "common.name" . }}
       containers:
-      - name: {{ include "common.name" . }}-job
+      - args:
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+<<<<<<< 0c6d4b84819ef03fceaf64d220854432f4cbb6ca:kubernetes/vnfsdk/charts/vnfsdk-postgres/templates/job.yaml
         env:
         - name: DB_HOST
           value: "{{ include "common.servicename" . }}"
+=======
+        name: {{ include "common.name" . }}
+>>>>>>> VNFSDK - use embedded DB, change image path:kubernetes/vnfsdk/charts/vnfsdk-postgres/templates/deployment.yaml
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
