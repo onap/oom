@@ -36,7 +36,11 @@ spec:
         - /root/ready.py
         args:
         - --container-name
+        - "sdc-kb"
+        - --container-name
         - "sdc-be"
+        - --container-name
+        - "sdc-onboarding-be"
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,6 +49,20 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-sdc-be-config-backend
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
@@ -52,8 +70,6 @@ spec:
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:

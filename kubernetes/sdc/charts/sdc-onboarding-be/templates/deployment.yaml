@@ -30,6 +30,35 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - "sdc-cs"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-sdc-cs-config-cassandra
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}"
@@ -37,8 +66,6 @@ spec:
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
@@ -55,29 +82,36 @@ spec:
           env:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
-          - name: RELEASE
-            value: {{ .Values.config.release }}
-          - name: MAX_HEAP_SIZE
-            value: {{ .Values.config.maxHeapSize }}
-          - name: HEAP_NEWSIZE
-            value: {{ .Values.config.heapNewSize }}
+          - name: JAVA_OPTIONS
+            value: {{ .Values.config.javaOptions }}
+          - name: SDC_CLUSTER_NAME
+            value: "SDC-CS-{{ .Values.global.env.name }}"
+          - name: cassandra_ssl_enabled
+            value: {{ .Values.config.cassandraSslEnabled | quote }}
           - name: HOST_IP
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-          - name: CS_PASSWORD
+          - name: SDC_USER
             valueFrom:
-              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: cs_password}
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
+          - name: SDC_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-data
-            mountPath: /var/lib/cassandra/
           - name: {{ include "common.fullname" . }}-environments
             mountPath: /root/chef-solo/environments/
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/lib/jetty/logs
+            mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-logback
+            mountPath: /tmp/logback.xml
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/onboarding-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -88,22 +122,36 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+
+        # side car containers
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
       volumes:
       - name: {{ include "common.fullname" . }}-localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-logs
+      - name: {{ include "common.fullname" . }}-filebeat-conf
+        configMap:
+          name: {{ .Release.Name }}-sdc-filebeat-configmap
+      - name: {{ include "common.fullname" . }}-data-filebeat
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
+      - name: {{ include "common.fullname" . }}-logback
+        configMap:
+          name : {{ include "common.fullname" . }}-logging-configmap
       - name: {{ include "common.fullname" . }}-environments
         configMap:
           name: {{ .Release.Name }}-sdc-environments-configmap
           defaultMode: 0755
+      - name:  {{ include "common.fullname" . }}-logs
+        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
