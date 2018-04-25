@@ -16,7 +16,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ include "common.name" . }}-{{ .Values.buscontroller.service }}
-  namespace: {{ .Values.global.nsPrefix }}
+  namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}-{{ .Values.buscontroller.service }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
@@ -31,21 +31,6 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-#Example init container for dependency checking
-#      - command:
-#        - /root/ready.py
-#        args:
-#        - --container-name
-#        - mariadb
-#        env:
-#        - name: NAMESPACE
-#          valueFrom:
-#            fieldRef:
-#              apiVersion: v1
-#              fieldPath: metadata.namespace
-#        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-#        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}-{{ .Values.buscontroller.service }}
           image: "{{ .Values.global.repository | default .Values.repository }}/{{ .Values.image.buscontrollerImage }}:{{ .Values.image.buscontrollerVersion }}"
@@ -71,9 +56,6 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-#Example environment variable passed to container
-#            - name: DEBUG_FLAG
-#              value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
@@ -101,12 +83,5 @@ spec:
             items:
             - key: buscontroller.env
               path: conf
-#Example config file mount into container
-#        - name: {{ include "common.fullname" . }}-config
-#          configMap:
-#            name: {{ include "common.fullname" . }}-configmap
-#            items:
-#            - key: application.properties
-#              path: application.properties
       imagePullSecrets:
-      - name: "{{ .Values.global.nsPrefix }}-docker-registry-key"
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
