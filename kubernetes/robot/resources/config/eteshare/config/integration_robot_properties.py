@@ -30,7 +30,7 @@ GLOBAL_CLI_SERVER_PROTOCOL = "http"
 GLOBAL_CLI_SERVER_PORT = "8080"
 # dcae info - everything is from the private oam network (also called onap private network)
 GLOBAL_DCAE_SERVER_PROTOCOL = "http"
-GLOBAL_DCAE_HEALTH_SERVER_PORT = "8000"
+GLOBAL_DCAE_HEALTH_SERVER_PORT = "80"
 GLOBAL_DCAE_USERNAME = "console"
 GLOBAL_DCAE_PASSWORD = "ZjJkYjllMjljMTI2M2Iz"
 # microservice bus info - everything is from the private oam network (also called onap private network)
