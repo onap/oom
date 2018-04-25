@@ -15,7 +15,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-config-cassandra
+  name: {{ include "common.fullname" . }}-cassandra-init
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}-job
@@ -45,22 +45,36 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-sdc-cs-config-cassandra
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - name: {{ include "common.name" . }}-job
-        image: "{{ include "common.repository" . }}/{{ .Values.cassandraInitImage }}"
+        image: "{{ include "common.repository" . }}/{{ .Values.onboardingInitImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /root/chef-solo/environments/
         - name: {{ include "common.fullname" . }}-data
           mountPath: /var/lib/cassandra/
-        - name: {{ include "common.fullname" . }}-chef-cache
-          mountPath: /root/chef-solo/cache
         env:
         - name: ENVNAME
           value: {{ .Values.global.env.name }}
-        - name: RELEASE
-          value: {{ .Values.config.release }}
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         - name: SDC_USER
           valueFrom:
             secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
@@ -70,10 +84,8 @@ spec:
         - name: CS_PASSWORD
           valueFrom:
             secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: cs_password}
-        - name: HOST_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
+        - name: CS_HOST_IP
+          value: "sdc-cs"
       volumes:
       - name: {{ include "common.fullname" . }}-environments
         configMap:
@@ -86,8 +98,6 @@ spec:
       {{- else }}
         emptyDir: {}
       {{- end }}
-      - name: {{ include "common.fullname" . }}-chef-cache
-        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       restartPolicy: Never
