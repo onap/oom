@@ -102,6 +102,8 @@ spec:
           - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
             name: onap-sdnc-svclogic-config
             subPath: svclogic.properties
+          - mountPath: {{ .Values.persistence.mdsalPath }}
+            name: {{ include "common.fullname" . }}-data
           - mountPath: /var/log/onap
             name: logs
           resources:
@@ -183,6 +185,21 @@ spec:
             - key: svclogic.properties
               path: svclogic.properties
               mode: 0644
-
+{{ if not .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          emptyDir: {}
+{{ else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-data
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+{{ end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
