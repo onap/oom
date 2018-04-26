@@ -15,8 +15,9 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 
-
-if [[ "$HOSTNAME" == *{{.Chart.Name}}-0 ]]; then
+(if [[ "$HOSTNAME" == *{{.Chart.Name}}-0 ]]; then
+  echo "delay by 10 seconds for redis server starting"
+  sleep 10
 
   NODES=""
   echo "====> wait for all {{.Values.replicaCount}} redis pods up"
@@ -24,11 +25,16 @@ if [[ "$HOSTNAME" == *{{.Chart.Name}}-0 ]]; then
   do
     echo "======> $(echo $NODES |wc -w) / {{.Values.replicaCount}} pods up"
     sleep 5
-    RESP=$(wget -vO- --ca-certificate /var/run/secrets/kubernetes.io/serviceaccount/ca.crt  --header "Authorization: Bearer $(</var/run/secrets/kubernetes.io/serviceaccount/token)" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/{{.Release.Namespace}}/pods?labelSelector=app={{.Chart.Name}})
+    RESP=$(wget -vO- --ca-certificate /var/run/secrets/kubernetes.io/serviceaccount/ca.crt  --header "Authorization
+: Bearer $(</var/run/secrets/kubernetes.io/serviceaccount/token)" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT
+_443_TCP_PORT/api/v1/namespaces/{{.Release.Namespace}}/pods?labelSelector=app={{.Chart.Name}})
 
-    IPS=$(echo $RESP | jq -r '.items[].status.podIP')
+    IPS=$(echo $RESP | jq -r '.items[].status.podIP') 
+    IPS2=$(echo $IPS | sed -e 's/[a-zA-Z]*//g')
+    echo "======> IPs: ["$IPS2"]"
     NODES=""
-    for I in $IPS; do NODES="$NODES $I:{{.Values.service.externalPort}}"; done
+    for I in $IPS2; do NODES="$NODES $I:{{.Values.service.externalPort}}"; done
+    echo "======> nodes: ["$NODES"]"
   done
   echo "====> all {{.Values.replicaCount}} redis cluster pods are up. wait 10 seconds before the next step"; echo
   sleep 10
@@ -36,6 +42,9 @@ if [[ "$HOSTNAME" == *{{.Chart.Name}}-0 ]]; then
   echo "====> Configure the cluster"
 
   # $NODES w/o quotes
+  echo "======> nodes: [$(echo $NODES |paste -s)]"
   redis-trib create --replicas 1 $(echo $NODES |paste -s)
+fi ) &
 
-fi
+redis-server /conf/redis.conf
+
