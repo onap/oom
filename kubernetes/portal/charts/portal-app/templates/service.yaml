@@ -29,14 +29,14 @@ metadata:
           "version": "v2",
           "url": "/",
           "protocol": "REST"
-          "port": "8989",
+          "port": "{{ .Values.service.externalPort }}",
           "visualRange":"1"
       }
       ]'
 spec:
   type: {{ .Values.service.type }}
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
+    {{- if or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer") }}
     - port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
@@ -59,7 +59,7 @@ spec:
     - port: {{ .Values.service.externalPort3 }}
       targetPort: {{ .Values.service.internalPort3 }}
       name: {{ .Values.service.portName }}3
-    {{- end}}
+    {{- end }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
