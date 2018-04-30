@@ -99,6 +99,9 @@ then
         echo "Installing APPC database"
         ${APPC_HOME}/bin/installAppcDb.sh
 
+        echo "Installing ODL Host Key"
+        ${SDNC_HOME}/bin/installOdlHostKey.sh
+
         echo "Starting OpenDaylight"
         ${ODL_HOME}/bin/start
 
@@ -108,7 +111,7 @@ then
         echo "Copying a working version of the logging configuration into the opendaylight etc folder"
         cp ${APPC_HOME}/data/org.ops4j.pax.logging.cfg ${ODL_HOME}/etc/org.ops4j.pax.logging.cfg
         echo "Copying a new version of aaf cadi shiro into the opendaylight deploy folder"
-        cp ${APPC_HOME}/data/aaf-cadi-shiro.jar ${ODL_HOME}/deploy/aaf-cadi-shiro.jar
+        cp ${APPC_HOME}/data/aaf-shiro-aafrealm-osgi-bundle.jar ${ODL_HOME}/deploy/aaf-shiro-aafrealm-osgi-bundle.jar
 
         echo "Installing SDNC platform features"
         ${SDNC_HOME}/bin/installFeatures.sh
@@ -141,13 +144,31 @@ then
         echo "cadi_prop_files=${APPC_HOME}/data/properties/cadi.properties" >> ${ODL_HOME}/etc/system.properties
         echo "" >> ${ODL_HOME}/etc/system.properties
 
-        echo "Copying a working version of the shiro configuration into the opendaylight etc folder"
-        cp ${APPC_HOME}/data/shiro.ini ${ODL_HOME}/etc/shiro.ini
+        echo "Copying the aaa shiro configuration into opendaylight"
+        cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
+
 
         echo "Restarting OpenDaylight"
         ${ODL_HOME}/bin/stop
-        echo "Waiting 60 seconds for OpenDaylight stop to complete"
-        sleep 60
+        checkRun () {
+                running=0
+                while read a b c d e f g h
+                do
+                if [ "$h" == "/bin/sh /opt/opendaylight/current/bin/karaf server" ]
+                then
+                     running=1
+                fi
+                done < <(ps -eaf)
+                echo $running
+        }
+
+        while [ $( checkRun ) == 1 ]
+        do
+                echo "Karaf is still running, waiting..."
+                sleep 5s
+        done
+        echo "Karaf process has stopped"
+        sleep 10s
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
