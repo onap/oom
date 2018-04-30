@@ -12,5 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make-dmaap:
+make-dmaap: make-bus-controller make-message-router
+
+make-bus-controller:
 	cd charts && helm dep up dmaap-bus-controller
+
+make-message-router:
+	cd charts && helm dep up message-router
+
+clean:
+	@find . -type f -name '*.tgz' -delete
