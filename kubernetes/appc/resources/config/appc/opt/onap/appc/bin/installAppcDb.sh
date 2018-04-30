@@ -18,8 +18,8 @@
 # ============LICENSE_END=========================================================
 ###
 
-SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
-APPC_HOME=${APPC_HOME:-/opt/openecomp/appc}
+SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
+APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 APPC_DB_USER=${APPC_DB_USER:-appcctl}
