@@ -147,9 +147,9 @@ In any case, setup of the Helm repository is a one time activity.
 
 Once the repo is setup, installation of ONAP can be done with a single command::
 
-  > helm install local/onap --name development
+  > helm install local/onap -n development --namespace onap
 
-This will install ONAP from a local repository in a 'development' Helm release.
+This will install ONAP from a local repository in a 'development' Helm release under the namespace 'onap'.
 As described below, to override the default configuration values provided by
 OOM, an environment file can be provided on the command line as follows::
 
