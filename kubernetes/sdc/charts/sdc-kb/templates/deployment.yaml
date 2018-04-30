@@ -31,20 +31,20 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
         command:
-        - /root/ready.py
+        - /root/job_complete.py
         args:
-        - --container-name
-        - "sdc-es"
+        - --job-name
+        - {{ .Release.Name }}-sdc-es-config-elasticsearch
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
