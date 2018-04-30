@@ -38,7 +38,7 @@ may want to selectively enable or disable ONAP components by changing the
     nodePortPrefix: 302
 
     # image repositories
-    repository: nexus3.onap.org:10001
+    #repository: nexus3.onap.org:10001
     repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
     # readiness check
     readinessRepository: oomk8s
