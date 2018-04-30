@@ -47,7 +47,7 @@ The versions of Kubernetes that are supported by OOM are as follows:
   Release         Kubernetes  Helm   kubectl  Docker
   ==============  ==========  =====  =======  ========
   amsterdam       1.7.x       2.3.x  1.7.x    1.12.x
-  beijing/master  1.8.5       2.7.x  1.8.5    1.12.x
+  beijing/master  1.8.10      2.7.x  1.8.10   17.03.x
   ==============  ==========  =====  =======  ========
 
 Minimum Hardware Configuration
@@ -62,7 +62,7 @@ least three if not six nodes to ensure there is no single point of failure.
   =====  =====  ======  ====================
   RAM    HD     vCores  Ports
   =====  =====  ======  ====================
-  128GB  160GB  16      0.0.0.0/0 (all open)
+  96GB   120GB  8       0.0.0.0/0 (all open)
   =====  =====  ======  ====================
 
 Cloud Installation
