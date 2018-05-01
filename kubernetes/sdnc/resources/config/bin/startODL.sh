@@ -38,17 +38,13 @@ function enable_odl_cluster(){
   node_index=($(echo ${hm} | awk -F"-" '{print $NF}'))
   member_offset=1
 
-  if [ -z $PEER_ODL_CLUSTER ]; then
-    echo "This is a local cluster"
-    node_list="${node}-0.{{.Values.service.name}}-cluster.{{.Release.Namespace}}";
-
-    for ((i=1;i<${SDNC_REPLICAS};i++));
-    do
-      node_list="${node_list} ${node}-$i.{{.Values.service.name}}-cluster.{{.Release.Namespace}}"
-    done
-    /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
-  else
+  if $GEO_ENABLED; then
     echo "This is a Geo cluster"
+
+    if [ -z $IS_PRIMARY_CLUSTER ] || [ -z $MY_ODL_CLUSTER ] || [ -z $PEER_ODL_CLUSTER ]; then
+     echo "IS_PRIMARY_CLUSTER, MY_ODL_CLUSTER and PEER_ODL_CLUSTER must all be configured in Env field"
+     return
+    fi
 
     if $IS_PRIMARY_CLUSTER; then
        PRIMARY_NODE=${MY_ODL_CLUSTER}
@@ -60,7 +56,19 @@ function enable_odl_cluster(){
     fi
 
     node_list="${PRIMARY_NODE} ${SECONDARY_NODE}"
+
     /opt/onap/sdnc/bin/configure_geo_cluster.sh $((node_index+member_offset)) ${node_list}
+  else
+    echo "This is a local cluster"
+
+    node_list="${node}-0.{{.Values.service.name}}-cluster.{{.Release.Namespace}}";
+
+    for ((i=1;i<${SDNC_REPLICAS};i++));
+    do
+      node_list="${node_list} ${node}-$i.{{.Values.service.name}}-cluster.{{.Release.Namespace}}"
+    done
+
+    /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
   fi
 }
 
@@ -73,10 +81,9 @@ SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 CCSDK_HOME=${CCSDK_HOME:-/opt/onap/ccsdk}
 SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
-ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
-IS_PRIMARY_CLUSTER=${IS_PRIMARY_CLUSTER:-false}
-MY_ODL_CLUSTER=${MY_ODL_CLUSTER:-127.0.0.1}
+ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
+GEO_ENABLED=${GEO_ENABLED:-false}
 
 #
 # Wait for database to init properly
