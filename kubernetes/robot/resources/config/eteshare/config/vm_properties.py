@@ -26,7 +26,9 @@ GLOBAL_INJECTED_NEXUS_DOCKER_REPO = "nexus3.onap.org:10001"
 GLOBAL_INJECTED_NEXUS_PASSWORD = "docker"
 GLOBAL_INJECTED_NEXUS_REPO = "https://nexus.onap.org/content/sites/raw"
 GLOBAL_INJECTED_NEXUS_USERNAME = "docker"
-GLOBAL_INJECTED_OOF_IP_ADDR = "oof.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_OOF_IP_ADDR = "oof-osdf.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_OOF_HOMING_ENDPOINT = "http://oof-has-api.{{include "common.namespace" .}}:8091/v1/plans/healthcheck"
+GLOBAL_INJECTED_OOF_SNIRO_ENDPOINT = "http://oof-osdf.{{include "common.namespace" .}}:8698/api/oof/v1/healthcheck"
 GLOBAL_INJECTED_OPENO_IP_ADDR = "msb-iag.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_OPENSTACK_PASSWORD = "{{ .Values.openStackPassword }}"
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID = "{{ .Values.openStackTenantId }}"
@@ -77,7 +79,9 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_NEXUS_PASSWORD" : "docker",
     "GLOBAL_INJECTED_NEXUS_REPO" : "https://nexus.onap.org/content/sites/raw",
     "GLOBAL_INJECTED_NEXUS_USERNAME" : "docker",
-    "GLOBAL_INJECTED_OOF_IP_ADDR" : "oof.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_OOF_IP_ADDR" : "oof-osdf.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_OOF_HOMING_ENDPOINT" : "http://oof-has-api.{{include "common.namespace" .}}:8091/v1/plans/healthcheck",
+    "GLOBAL_INJECTED_OOF_SNIRO_ENDPOINT" : "http://oof-osdf.{{include "common.namespace" .}}:8698/api/oof/v1/healthcheck",
     "GLOBAL_INJECTED_OPENO_IP_ADDR" : "msb-iag.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD" : "{{ .Values.openStackEncryptedPassword }}",
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID" : "{{ .Values.openStackTenantId }}",
