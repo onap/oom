@@ -1,7 +1,7 @@
 # aaf info - everything is from the private oam network (also called onap private network)
-GLOBAL_AAF_SERVER = "http://aaf.{{include "common.namespace" .}}:8101"
-GLOBAL_AAF_USERNAME = "dgl@openecomp.org"
-GLOBAL_AAF_PASSWORD = "ecomp_admin"
+GLOBAL_AAF_SERVER = "https://aaf-authz.{{include "common.namespace" .}}:8100"
+GLOBAL_AAF_USERNAME = "demo@people.osaaf.org"
+GLOBAL_AAF_PASSWORD = "demo123456!"
 # aai info - everything is from the private oam network (also called onap private network)
 GLOBAL_AAI_SERVER_PROTOCOL = "https"
 GLOBAL_AAI_SERVER_PORT = "8443"
