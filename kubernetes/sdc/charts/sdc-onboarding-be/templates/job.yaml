@@ -23,6 +23,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  backoffLimit: 20
   template:
     metadata:
       labels:
@@ -31,20 +32,6 @@ spec:
     spec:
       restartPolicy: Never
       initContainers:
-      - name: {{ include "common.name" . }}-init-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - sdc-cs
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
       - name: {{ include "common.name" . }}-job-completion
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
