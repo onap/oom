@@ -21,7 +21,7 @@
 # ============LICENSE_END=========================================================
 ###
 
-SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
+SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
