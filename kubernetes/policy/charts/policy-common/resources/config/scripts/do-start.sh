@@ -26,6 +26,11 @@ pap)
 	comps="base pap paplp console mysql elk"
 	;;
 pdp)
+        mkdir /tmp/tmp_pdp
+        cp /tmp/policy-install/config/pdp.conf /tmp/tmp_pdp/
+        sed -i 's/SED_LOCAL_HOST_NAME/'`hostname`'/g' /tmp/tmp_pdp/pdp.conf
+        cp /tmp/tmp_pdp/pdp.conf /tmp/policy-install/config/
+        rm -rf /tmp/tmp_pdp
 	comps="base pdp pdplp"
 	;;
 brmsgw)
