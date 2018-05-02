@@ -100,13 +100,13 @@ spec:
           echo ${BASH_REMATCH}
           [[ $ordinal -eq 0 ]] && exit 0
           # Clone data from previous peer.
-          ncat --recv-only {{ include "common.fullname" . }}-$(($ordinal-1)).{{ .Values.service.name }}.{{ include "common.namespace" . }} 3307 | xbstream -x -C /var/lib/mysql
+          ncat --recv-only {{ include "common.fullname" . }}-$(($ordinal-1)).{{ .Values.service.name }}.{{ include "common.namespace" . }} 3307 | xbstream -x -C {{ .Values.persistence.mysqlPath }}
           # Prepare the backup.
-          xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --prepare --target-dir=/var/lib/mysql
-          ls -l /var/lib/mysql
+          xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --prepare --target-dir={{ .Values.persistence.mysqlPath }}
+          ls -l {{ .Values.persistence.mysqlPath }}
         volumeMounts:
-        - name: {{ include "common.fullname" . }}-data
-          mountPath: /var/lib/mysql
+        - name: {{ include "common.fullname" . }}-mysql
+          mountPath: {{ .Values.persistence.mysqlPath }}
         - name: conf
           mountPath: /etc/mysql/conf.d
 
@@ -142,8 +142,8 @@ spec:
             - name: MYSQL_ALLOW_EMPTY_PASSWORD
               value: {{ .Values.config.dbAllowEmptyPassword | default "0" | quote }}
           volumeMounts:
-          - mountPath: /var/lib/mysql
-            name: {{ include "common.fullname" . }}-data
+          - mountPath: {{ .Values.persistence.mysqlPath }}
+            name: {{ include "common.fullname" . }}-mysql
           - mountPath: /etc/mysql/conf.d
             name: conf
           resources:
@@ -174,7 +174,7 @@ spec:
           - "-c"
           - |
             set -ex
-            cd /var/lib/mysql
+            cd {{ .Values.persistence.mysqlPath }}
             ls -l
             # Determine binlog position of cloned data, if any.
             if [[ -f xtrabackup_slave_info ]]; then
@@ -222,8 +222,8 @@ spec:
             exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
               "xtrabackup --user=root --password=$MYSQL_ROOT_PASSWORD --backup --slave-info --stream=xbstream --host=$mysqlhost"
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-data
-            mountPath: /var/lib/mysql
+          - name: {{ include "common.fullname" . }}-mysql
+            mountPath: {{ .Values.persistence.mysqlPath }}
           - name: conf
             mountPath: /etc/mysql/conf.d
       volumes:
@@ -235,11 +235,20 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-data
-#{{ if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}-data
-#{{ else }}
+      - name: {{ include "common.fullname" . }}-mysql
+  {{ if not .Values.persistence.enabled }}
+      - name: {{ include "common.fullname" . }}-mysql
         emptyDir: {}
-#{{ end }}
-
+  {{ else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-mysql
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-mysql
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+  {{ end }}
