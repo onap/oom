@@ -84,7 +84,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_USERNAME" : "{{ .Values.openStackUserName }}",
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : "pdp.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : "drools.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_PORTAL_IP_ADDR" : "portalapps.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_PORTAL_IP_ADDR" : "portal-app.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_PUBLIC_NET_ID" : "{{ .Values.openStackPublicNetId }}",
     "GLOBAL_INJECTED_REGION" : "{{ .Values.openStackRegion }}",
     "GLOBAL_INJECTED_REMOTE_REPO" : "http://gerrit.onap.org/r/testsuite/properties.git",
