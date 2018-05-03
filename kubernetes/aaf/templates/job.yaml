@@ -1,0 +1,132 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-create-config
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: aaf-init-job
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - command: ["/bin/bash","-c","if [ ! -d /data/backup ]; then mkdir /data/data && cp -Ra /data1/data/..data/* /data/data/ && mkdir /data/etc && cp -Ra /data1/etc/..data/* data/etc/ && mkdir /data/backup && cp -Ra /data1/backup/..data/* /data/backup/ && cp -Ra /data1/public /data/ && cp -Ra /data1/local /data && mkdir -p /data/logs/oauth && mkdir -p /data/logs/hello && mkdir -p /data/logs/fs && mkdir -p /data/logs/gui && mkdir -p /data/logs/locate && mkdir -p /data/logs/cm && mkdir -p /data/logs/service; fi; exit 0"]
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: aaf-init-job
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /data
+          name: aaf-persistent-data
+        - mountPath: /data1/etc
+          name: aaf-etc 
+        - mountPath: /data1/data
+          name: aaf-data
+        - mountPath: /data1/public/iframe_denied_test.html
+          name: aaf-public
+          subPath: iframe_denied_test.html
+        - mountPath: /data1/public/aaf_2_0.xsd
+          name: aaf-public
+          subPath: aaf_2_0.xsd
+        - mountPath: /data1/public/truststoreONAP.p12
+          name: aaf-public-secret
+          subPath: truststoreONAP.p12
+        - mountPath: /data1/public/AAF_RootCA.cer
+          name: aaf-public-secret
+          subPath: AAF_RootCA.cer
+        - mountPath: /data1/public/truststoreONAPall.jks
+          name: aaf-public-secret
+          subPath: truststoreONAPall.jks
+        - mountPath: /data1/local/org.osaaf.location.props
+          name: aaf-local
+          subPath: org.osaaf.location.props
+        - mountPath: /data1/local/org.osaaf.cm.ca.props
+          name: aaf-local
+          subPath: org.osaaf.cm.ca.props
+        - mountPath: /data1/local/org.osaaf.cassandra.props
+          name: aaf-local
+          subPath: org.osaaf.cassandra.props
+        - mountPath: /data1/local/org.osaaf.aaf.props
+          name: aaf-local
+          subPath: org.osaaf.aaf.props
+        - mountPath: /data1/local/org.osaaf.aaf.trust.p12
+          name: aaf-local-secret
+          subPath: org.osaaf.aaf.trust.p12
+        - mountPath: /data1/local/org.osaaf.aaf.p12
+          name: aaf-local-secret
+          subPath: org.osaaf.aaf.p12
+        - mountPath: /data1/local/org.osaaf.aaf.keyfile
+          name: aaf-local-secret
+          subPath: org.osaaf.aaf.keyfile
+        - mountPath: /data1/local/org.osaaf.aaf.cm.p12
+          name: aaf-local-secret
+          subPath: org.osaaf.aaf.cm.p12
+        - mountPath: /data1/backup
+          name: aaf-backup
+        resources: 
+{{ toYaml .Values.resources | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+        path: /etc/localtime
+      - name: aaf-local-secret
+        secret:
+          secretName: {{ .Release.Name }}-aaf-local-secret
+      - name: aaf-public-secret
+        secret:
+          secretName: {{ .Release.Name }}-aaf-public-secret
+      - name: aaf-etc
+        configMap:
+          name: {{ .Release.Name }}-aaf-etc
+      - name: aaf-local
+        configMap:
+          name: {{ .Release.Name }}-aaf-local
+      - name: aaf-backup
+        configMap:
+          name: {{ .Release.Name }}-aaf-backup
+      - name: aaf-public
+        configMap:
+          name: {{ .Release.Name }}-aaf-public
+      - name: aaf-data
+        configMap:
+          name: {{ .Release.Name }}-aaf-data
+      - name: aaf-persistent-data
+      {{- if .Values.global.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-aaf-pvc
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      restartPolicy: OnFailure
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
