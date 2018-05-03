@@ -1,6 +1,6 @@
 # File generated from /opt/config
 #
-GLOBAL_INJECTED_AAF_IP_ADDR = "aaf.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_AAF_IP_ADDR = "aaf-service.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_AAI1_IP_ADDR = "aai.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
 GLOBAL_INJECTED_APPC_IP_ADDR = "appc.{{include "common.namespace" .}}"
@@ -51,7 +51,7 @@ GLOBAL_INJECTED_VM_FLAVOR = "{{ .Values.openStackFlavourMedium }}"
 GLOBAL_INJECTED_VNFSDK_IP_ADDR = "vnfsdk.{{include "common.namespace" .}}"
 
 GLOBAL_INJECTED_PROPERTIES = {
-    "GLOBAL_INJECTED_AAF_IP_ADDR" : "aaf.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_AAF_IP_ADDR" : "aaf-service.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_AAI1_IP_ADDR" : "aai.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_AAI2_IP_ADDR" : "N/A",
     "GLOBAL_INJECTED_APPC_IP_ADDR" : "appc.{{include "common.namespace" .}}",

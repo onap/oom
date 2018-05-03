@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright 2018 Intel Corporation, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,25 +17,42 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  repository: nexus3.onap.org:10001
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
-  persistence: 
-    enabled: true
+  persistence: {}
+
+# application image
+repository: docker.io
+image:
+  consul: consul:1.0.6
+  vault: vault:0.9.6
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
 
 #################################################################
 # Application configuration defaults.
 #################################################################
-config: 
-  serviceServiceName: aaf-service
-  locateServiceName: aaf-locate
-  cmServiceName: aaf-cm
-  fsServiceName: aaf-fs
-  guiServiceName: aaf-gui
-  helloServiceName: aaf-hello
-  oauthServiceName: aaf-oauth
-  csServiceName: aaf-cass
+config:
+  consul:
+    server: true
+    log_level: INFO
+    server: true
+    data_dir: '/consul/data'
+    ports:
+      http: 8500
+      https: -1
+
+  vault:
+    storage:
+      consul:
+        address: localhost:8500
+        path: smsvault
+    listener:
+      tcp:
+        address: '[::]:8200'
+        tls_disable: true
+    disable_mlock: true
 
 # default number of instances
 replicaCount: 1
@@ -56,29 +73,25 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-ingress:
-  enabled: false
-
-## Persist data to a persitent volume
 persistence:
-  ## A manually managed Persistent Volume and Claim
-  ## Requires persistence.enabled: true
-  ## If defined, PVC must be created manually before volume will be bound
-  # existingClaim:
+  enabled: true
+
   volumeReclaimPolicy: Retain
 
-  ## database data Persistent Volume Storage Class
-  ## If defined, storageClassName: <storageClass>
-  ## If set to "-", storageClassName: "", which disables dynamic provisioning
-  ## If undefined (the default) or set to null, no storageClassName spec is
-  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-  ##   GKE, AWS & OpenStack)
-  ##
-  # storageClass: "-"
   accessMode: ReadWriteMany
   size: 2Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: aaf/data
+  mountSubPath: sms/consul/data
+
+service:
+  type: NodePort
+  name: aaf-sms-db
+  portName: aaf-sms-db
+  internalPort: 8200
+  nodePort: 44
+
+ingress:
+  enabled: false
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

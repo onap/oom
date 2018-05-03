@@ -17,25 +17,23 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  repository: nexus3.onap.org:10001
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
   readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
-  persistence: 
-    enabled: true
-
+  readinessImage: readiness-check:1.1.0
+  
 #################################################################
 # Application configuration defaults.
 #################################################################
-config: 
-  serviceServiceName: aaf-service
-  locateServiceName: aaf-locate
-  cmServiceName: aaf-cm
-  fsServiceName: aaf-fs
-  guiServiceName: aaf-gui
-  helloServiceName: aaf-hello
-  oauthServiceName: aaf-oauth
-  csServiceName: aaf-cass
+# application image
+repository: nexus3.onap.org:10001
+image: onap/aaf/aaf_cm:2.1.0-SNAPSHOT
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+config: {}
 
 # default number of instances
 replicaCount: 1
@@ -56,29 +54,18 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
+service:
+  name: aaf-cm
+  type: NodePort
+  portName: aaf-cm
+  #targetPort
+  internalPort: 8150
+  #port
+  externalPort: 8150
+  nodePort: 49
+
 ingress:
   enabled: false
-
-## Persist data to a persitent volume
-persistence:
-  ## A manually managed Persistent Volume and Claim
-  ## Requires persistence.enabled: true
-  ## If defined, PVC must be created manually before volume will be bound
-  # existingClaim:
-  volumeReclaimPolicy: Retain
-
-  ## database data Persistent Volume Storage Class
-  ## If defined, storageClassName: <storageClass>
-  ## If set to "-", storageClassName: "", which disables dynamic provisioning
-  ## If undefined (the default) or set to null, no storageClassName spec is
-  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-  ##   GKE, AWS & OpenStack)
-  ##
-  # storageClass: "-"
-  accessMode: ReadWriteMany
-  size: 2Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: aaf/data
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

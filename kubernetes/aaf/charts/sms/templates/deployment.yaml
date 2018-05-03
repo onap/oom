@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright 2018 Intel Corporation, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,66 +30,49 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{ include "common.name" . }}
       containers:
-      - args:
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - image: "{{ .Values.repository }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command: ["/sms/bin/sms"]
+        workingDir: /sms/
         ports:
-        - containerPort: {{ .Values.service.externalPort }}
-        - containerPort: {{ .Values.service.externalPort2 }}
-        - containerPort: {{ .Values.service.externalPort3 }}
-        - containerPort: {{ .Values.service.externalPort4 }}
-        volumeMounts:
-        - mountPath: /data
-          name: aaf-cs-data
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
+        - containerPort: {{ .Values.service.internalPort }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort3 }}
+            port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort3 }}
+            port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        lifecycle:
-          postStart:
-            exec:
-              command: 
-              - /bin/sh
-              - -c
-              - >
-                /bin/sleep 30;
-                cd /data/;
-                cqlsh -u root -p root -f keyspace.cql ;
-                cqlsh -u root -p root -f init.cql ;
-                cqlsh -u root -p root -f osaaf.cql ;
-                cqlsh -u root -p root -f temp_identity.cql
-        resources: 
+        volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /sms/smsconfig.json
+            name: {{ include "common.name" .}}
+            subPath: smsconfig.json
+        resources:
 {{ toYaml .Values.resources | indent 12 }}
-      {{- if .Values.nodeSelector }}
-      nodeSelector:
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
-      {{- end -}}
-      {{- if .Values.affinity }}
-      affinity:
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
 {{ toYaml .Values.affinity | indent 10 }}
-      {{- end }}
+        {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: aaf-cs-data
-          secret:
-            secretName: {{ include "common.fullname" . }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name : {{ include "common.name" . }}
+        configMap:
+          name: {{ include "common.fullname" . }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
