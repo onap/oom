@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SEARCH_SERVICE_NAME="search-data-service.{{ .Values.nsPrefix }}"
+SEARCH_SERVICE_NAME="search-data-service.{{ include "common.namespace" . }}"
 SEARCH_SERVICE_PORT=9509
 HEALTH_CHECK_INDEX="healthcheck"
 

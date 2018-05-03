@@ -1,5 +1,5 @@
 ## Query the health check API.
-HEALTH_CHECK_ENDPOINT="http://mso.{{ .Values.nsPrefix }}:8080/ecomp/mso/infra/healthcheck"
+HEALTH_CHECK_ENDPOINT="http://so:8080/networks/rest/healthcheck"
 HEALTH_CHECK_RESPONSE=$(curl -s $HEALTH_CHECK_ENDPOINT)
 
 READY=$(echo $HEALTH_CHECK_RESPONSE | grep "Application ready")
