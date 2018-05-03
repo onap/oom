@@ -24,21 +24,34 @@ metadata:
   namespace: {{ include "common.namespace" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
-      name: {{ include "common.fullname" . }}
+        release: {{ .Release.Name }}
     spec:
       initContainers:
+      - command:
+        - /root/job_complete.py
+        args:
+        - -j
+        - {{ .Release.Name }}-aaf-create-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-job-complete
       - command:
         - /root/ready.py
         args:
         - --container-name
         - aaf-cs
+        - --container-name
+        - aaf-locate
         env:
         - name: NAMESPACE
           valueFrom:
@@ -52,12 +65,16 @@ spec:
       - env:
         - name: CASSANDRA_CLUSTER
           value: cassandra_container
+        name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["/bin/bash","-c"," ln -s /opt/app/osaaf/data /data;/opt/app/aaf/oauth/bin/oauth >> /opt/app/osaaf/logs/oauth/stdout`date -I` 2>> /opt/app/osaaf/logs/oauth/stderr`date -I`"]
         volumeMounts:
-        - mountPath: /data
-          name: aaf-data
-        name: {{ include "common.name" . }}
+        - mountPath: /opt/app/osaaf
+          name: aaf-persistent-vol
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
@@ -82,10 +99,16 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
-
       volumes:
-        - name: aaf-data
-          configMap:
-            name: {{ include "common.fullname" . }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aaf-persistent-vol
+      {{- if .Values.global.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-aaf-pvc
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

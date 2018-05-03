@@ -1,0 +1,527 @@
+<!-- Used by AAF (ATT inc 2013) -->
+<xs:schema 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	xmlns:aaf="urn:aaf:v2_0" 
+	targetNamespace="urn:aaf:v2_0" 
+	elementFormDefault="qualified">
+	
+<!-- 
+	June 2, 2017, adding Roles, Perms, etc to NSRequest for Onboarding purposes.
+	
+	Note: jan 22, 2015.  Deprecating the "force" element in the "Request" Structure.  Do that
+	with Query Params. 
+	
+	Eliminate in 3.0 
+ -->
+<!--
+	Errors
+	Note: This Error Structure has been made to conform to the AT&T TSS Policies
+ -->
+	<xs:element name="error">
+		<xs:complexType>
+			<xs:sequence>
+				<!--
+				Unique message identifier of the format ‘ABCnnnn’ where ‘ABC’ is
+					either ‘SVC’ for Service Exceptions or ‘POL’ for Policy Exception.
+					Exception numbers may be in the	range of 0001 to 9999 where :
+					* 0001 to 0199 are reserved for	common exception messages
+					* 0200 to 0999 are reserved for Parlay Web Services specification use
+					* 1000-9999 are available for exceptions 
+				 -->
+				<xs:element name="messageId" type="xs:string" minOccurs="1" maxOccurs="1"/>
+				
+				<!-- 
+				Message text, with replacement
+					variables marked with %n, where n is
+					an index into the list of <variables>
+					elements, starting at 1
+				 -->
+				<xs:element name="text" type="xs:string" minOccurs="1" maxOccurs="1"/>
+				
+				<!-- 
+				List of zero or more strings that
+					represent the contents of the variables
+					used by the message text. -->
+				<xs:element name="variables" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+<!-- 
+	Requests
+ -->
+	<xs:complexType name="Request">
+		<xs:sequence>
+			<xs:element name="start" type="xs:dateTime" minOccurs="1" maxOccurs="1" />
+			<xs:element name="end" type="xs:dateTime" minOccurs="1" maxOccurs="1"/>
+			<!-- Deprecated.  Use Query Command 
+			<xs:element name="force" type="xs:string" minOccurs="1" maxOccurs="1" default="false"/>
+			-->
+		</xs:sequence>
+	</xs:complexType>
+
+<!--
+	Keys
+ -->
+    <xs:element name="keys">
+    	<xs:complexType>
+    		<xs:sequence>
+    			<xs:element name="key" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    		</xs:sequence>
+    	</xs:complexType>
+    </xs:element>
+ 
+ 
+<!-- 
+	Permissions 
+-->	
+	<xs:complexType name = "pkey">
+		<xs:sequence>
+			<xs:element name="type" type="xs:string"/>
+			<xs:element name="instance" type="xs:string"/>
+			<xs:element name="action" type="xs:string"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="permKey">
+		<xs:complexType >
+			<xs:complexContent>
+				<xs:extension base="aaf:pkey" />
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="perm">
+		<xs:complexType >
+			<xs:complexContent>
+				<xs:extension base="aaf:pkey">
+					<xs:sequence>					
+						<xs:element name="roles" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+						<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+ 						<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+ 						<!-- This data not filled in unless Requested  -->
+ 						<xs:element name="ns" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="perms">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="aaf:perm" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="permRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="type" type="xs:string"/>
+						<xs:element name="instance" type="xs:string"/>
+						<xs:element name="action" type="xs:string"/>
+						<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+						<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+
+<!-- 
+	Roles 
+-->	
+	<xs:complexType name="rkey">
+		<xs:sequence>
+			<xs:element name="name" type="xs:string"/>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="roleKey">
+		<xs:complexType >
+			<xs:complexContent>
+				<xs:extension base="aaf:rkey" />
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="role">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:rkey">
+					<xs:sequence>
+						<xs:element name="perms" type="aaf:pkey" minOccurs="0" maxOccurs="unbounded"/>
+						<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+						<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+						<!-- This data not filled in unless Requested  -->
+ 						<xs:element name="ns" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="roles">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="aaf:role" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="roleRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+						<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+						<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<!-- Added userRole return types jg1555 9/16/2015 -->
+	<xs:element name="userRole">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="user" type="xs:string" minOccurs="1" maxOccurs="1"/>
+				<xs:element name="role" type="xs:string" minOccurs="1" maxOccurs="1"/>
+				<xs:element name="expires" type="xs:date" minOccurs="1" maxOccurs="1" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<!-- Added userRoles return types jg1555 9/16/2015 -->
+	<xs:element name="userRoles">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="aaf:userRole" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="userRoleRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="user" type="xs:string" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="role" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="rolePermRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="perm" type="aaf:pkey" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="role" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="nsRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="admin" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+						<xs:element name="responsible" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+						<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+						<xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+						<!-- Note: dec 11, 2015.  Request-able NS Type JG -->
+						<xs:element name="type" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	
+						<!-- "scope" is deprecated and unused as of AAF 2.0.11.  It will be removed in future versions
+							<xs:element name="scope" type="xs:int" minOccurs="0" maxOccurs="1"/>
+							
+													
+						<xs:element ref="aaf:roleRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:permRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element name="aaf_id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+						<xs:element ref="aaf:userRoleRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element name = "attrib" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name = "key" type="xs:string" minOccurs="1" maxOccurs="1"/>
+										<xs:element name = "value" type="xs:string" minOccurs="0" maxOccurs="1"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+
+							
+						-->
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="nsAttribRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="ns" type="xs:string" minOccurs="1" maxOccurs="1"/>
+						<xs:element name = "attrib" minOccurs="0" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name = "key" type="xs:string" minOccurs="1" maxOccurs="1"/>
+									<xs:element name = "value" type="xs:string" minOccurs="0" maxOccurs="1"/>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name = "nss">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name = "ns" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name = "name" type = "xs:string" minOccurs="1" maxOccurs="1"/>
+							<xs:element name = "responsible" type = "xs:string" minOccurs="0" maxOccurs="unbounded"/>
+							<xs:element name = "admin" type = "xs:string" minOccurs="0" maxOccurs="unbounded"/>
+							<!-- Note: feb 23, 2015.  Added description field. Verify backward compatibility. JR -->
+							<xs:element name = "description" type = "xs:string" minOccurs="0" maxOccurs="1"/>
+							<!-- Note: Dec 16, 2015.  Added description field. Verify backward compatibility. JG -->
+							<xs:element name = "attrib" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name = "key" type="xs:string" minOccurs="1" maxOccurs="1"/>
+										<xs:element name = "value" type="xs:string" minOccurs="0" maxOccurs="1"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+<!-- 
+	Users 
+-->	
+	<xs:element name="users">
+		<xs:complexType>
+			<xs:sequence>
+		   		<xs:element name="user" minOccurs="0" maxOccurs="unbounded">
+		   			<xs:complexType>
+		   				<xs:sequence>
+				       		<xs:element name="id" type="xs:string"  minOccurs="1" maxOccurs="1" />
+				       		<!-- Changed type to dateTime, because of importance of Certs -->
+				       		<xs:element name="expires" type="xs:dateTime" minOccurs="1" maxOccurs="1" />
+				       		<!-- need to differentiate User Cred Types, jg1555 5/20/2015
+				       			 This Return Object is shared by multiple functions: 
+				       			 	Type is not returned for "UserRole", but only "Cred" 
+				       		-->
+				       		<xs:element name="type" type="xs:int" minOccurs="0" maxOccurs="1" />
+		   				</xs:sequence>
+		   			</xs:complexType>
+		   		</xs:element>
+		   	</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+<!-- 
+	Certs
+	Added jg1555 5/20/2015 to support identifying Certificate based Services
+ -->
+	<xs:element name="certs">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="cert" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="id" type="xs:string" minOccurs="1" maxOccurs="1" />
+							<xs:element name="x500" type="xs:string" minOccurs="1" maxOccurs="1" />
+							<xs:element name="expires" type="xs:dateTime" minOccurs="1" maxOccurs="1" />
+							<xs:element name="fingerprint" type="xs:hexBinary" minOccurs="1" maxOccurs="1" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+<!-- 
+	Credentials 
+-->	
+	<xs:element name="credRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element name="id" type="xs:string"/>
+						<xs:element name="type" type="xs:int" minOccurs="0" maxOccurs="1"/>
+						<xs:choice >
+							<xs:element name="password" type="xs:string" />
+							<xs:element name="entry" type="xs:string" />
+						</xs:choice>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+<!--
+	Multi Request 
+ -->
+ 
+    <xs:element name="multiRequest"> 
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+						<xs:element ref="aaf:nsRequest" minOccurs="0" maxOccurs="1"/>
+						<xs:element ref="aaf:nsAttribRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:roleRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:permRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:credRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:userRoleRequest" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element ref="aaf:rolePermRequest" minOccurs="0" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+    </xs:element>
+	
+<!--
+	History 
+ -->
+ 	<xs:element name="history">
+ 		<xs:complexType>
+ 			<xs:sequence>
+ 				<xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+			 		<xs:complexType>
+			 			<xs:sequence>
+			 				<xs:element name="YYYYMM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="timestamp" type="xs:dateTime" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="subject" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="target" type = "xs:string" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="action" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="memo" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			 				<xs:element name="user" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			 			</xs:sequence>
+			 		</xs:complexType>
+			 	</xs:element>
+		 	</xs:sequence>
+		 </xs:complexType>
+ 	</xs:element>
+ 
+<!-- 
+	Approvals
+ -->
+ 	<xs:complexType name="approval">
+	   <xs:sequence>
+	   	   <!-- Note, id is set by system -->
+	   	   <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	   	   <xs:element name="ticket" type="xs:string"/>
+	       <xs:element name="user" type="xs:string"/>
+	       <xs:element name="approver" type="xs:string"/>
+	       <xs:element name="type" type="xs:string"/>
+	       <xs:element name="memo" type="xs:string"/>
+	       <xs:element name="updated" type="xs:dateTime"/>
+	       <xs:element name="status">
+			  <xs:simpleType>
+			    <xs:restriction base="xs:string">
+			      <xs:enumeration value="approve"/>
+			      <xs:enumeration value="reject"/>
+			      <xs:enumeration value="pending"/>
+			    </xs:restriction>
+			  </xs:simpleType>
+		   </xs:element> 	
+		   <xs:element name="operation">
+			  <xs:simpleType>
+			    <xs:restriction base="xs:string">
+			      <xs:enumeration value="C"/>
+			      <xs:enumeration value="U"/>
+			      <xs:enumeration value="D"/>
+			      <xs:enumeration value="G"/>
+			      <xs:enumeration value="UG"/>
+			    </xs:restriction>
+			  </xs:simpleType>
+		   </xs:element> 	
+	   </xs:sequence>
+	</xs:complexType>
+	<xs:element name="approvals">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="approvals" type="aaf:approval" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+<!-- 
+	Delegates 
+-->	
+	<xs:complexType name="delg">
+	   <xs:sequence>
+	       <xs:element name="user" type="xs:string"/>
+	       <xs:element name="delegate" type="xs:string"/>
+	       <xs:element name="expires" type="xs:date"/>
+	   </xs:sequence>
+	</xs:complexType>
+	
+	<xs:element name="delgRequest">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="aaf:Request">
+					<xs:sequence>
+				       <xs:element name="user" type="xs:string" minOccurs="1" maxOccurs="1"/>
+				       <xs:element name="delegate" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="delgs">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="delgs" type="aaf:delg" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<!-- jg 3/11/2015 New for 2.0.8 -->
+	<xs:element name="api">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="route" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="meth" type="xs:string" minOccurs="1" maxOccurs="1"/>
+							<xs:element name="path" type="xs:string" minOccurs="1" maxOccurs="1"/>
+							<xs:element name="param" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+							<xs:element name="desc" type="xs:string" minOccurs="1" maxOccurs="1"/>
+							<xs:element name="comments" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+							<xs:element name="contentType" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+							<xs:element name="expected" type="xs:int" minOccurs="1" maxOccurs="1"/>
+							<xs:element name="explicitErr" type="xs:int" minOccurs="0" maxOccurs="unbounded"/>
+						</xs:sequence>	
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

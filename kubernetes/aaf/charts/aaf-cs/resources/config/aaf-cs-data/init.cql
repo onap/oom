@@ -1,35 +1,6 @@
-// For Developer Machine single instance
-//
-CREATE KEYSPACE authz
-WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor':1};
-// 
-// From Ravi, 6-17-2014.  User for DEVL->TEST
-//
-// CREATE KEYSPACE authz WITH replication = { 'class': 'NetworkTopologyStrategy', 'HYWRCA02': '2', 'BRHMALDC': '2' };
-// 
-// PROD
-// 
-// CREATE KEYSPACE authz WITH replication = {'class': 'NetworkTopologyStrategy','ALPSGACT': '2','STLSMORC': '2','BRHMALDC': '2' };
-//
-//  create user authz with password '<AUTHZ PASSWORD>' superuser;
-//  grant all on keyspace authz to authz;
-//
-// For TEST (aaf_test)
-// CREATE KEYSPACE authz WITH replication = { 'class': 'NetworkTopologyStrategy', 'BRHMALDC': '1' };
-//
-// DEVL
-// CREATE KEYSPACE authz WITH replication = {'class': 'NetworkTopologyStrategy','STLSMORC': '2' };
-//
-// TEST / PERF
-// CREATE KEYSPACE authz WITH replication = {'class': 'NetworkTopologyStrategy','STLSMORC': '3','KGMTNC20': '3' };
-//
-// IST
-// CREATE KEYSPACE authz WITH replication = {'class': 'NetworkTopologyStrategy','STLSMORC':'3',
-// 'DLLSTXCF':'3','KGMTNC20':'3','SFLDMIBB':'3','HYWRCA02':'3' };
-//
-// with 6 localized with ccm
-// CREATE KEYSPACE authz WITH replication = { 'class': 'NetworkTopologyStrategy', 'dc1': '2', 'dc2': '2' };
-// 
+
+// Table Initialization
+// First make sure the keyspace exists.
 
 USE authz;
 
@@ -51,12 +22,6 @@ CREATE TABLE ns (
 );
 CREATE INDEX ns_parent on ns(parent);
   
-
-// Oct 2015, not performant.  Made Owner and Attrib first class Roles,
-// April, 2015.  Originally, the plan was to utilize Cassandra 2.1.2, however, other team's preferences were to remain at current levels.
-// Therefore, we are taking the separate table approach.  (coder Jeremiah Rohwedder)
-// We had dropped this by making first class objects of Responsible (Owner) and Admin.  We need this again to mark namespaces
-// as having certain tools, like SWM, etc.
 CREATE TABLE ns_attrib (
   ns            varchar,
   key           varchar,
@@ -125,10 +90,10 @@ CREATE INDEX cert_id ON cert(id);
 CREATE INDEX cert_x500 ON cert(x500);
 
 CREATE TABLE notify (
-  user text,
-  type int,
-  last timestamp,
-  checksum int,
+  user 		text,
+  type 		int,
+  last 		timestamp,
+  checksum 	int,
   PRIMARY KEY (user,type)
 );
 
@@ -155,14 +120,16 @@ CREATE TABLE artifact (
   sponsor       text,
   ca            text,
   dir           text,
-  appName       text,
   os_user       text,
+  ns	        text,
   notify        text,
   expires	timestamp,
-  renewDays   int,
+  renewDays     int,
+  sans		Set<text>,
   PRIMARY KEY (mechid,machine)
 );
 CREATE INDEX artifact_machine ON artifact(machine); 
+CREATE INDEX artifact_ns ON artifact(ns); 
 
 //
 // Non-Critical Table functions
@@ -216,12 +183,26 @@ CREATE TABLE approval (
   status    varchar,          // approval status. pending, approved, denied
   memo      varchar,          // Text for Approval to know what's going on
   operation varchar,	      // List operation to perform
+  last_notified timestamp,    // Timestamp for the last time approver was notified
   PRIMARY KEY(id)
  );
 CREATE INDEX appr_approver_idx ON approval(approver);
 CREATE INDEX appr_user_idx ON approval(user);
 CREATE INDEX appr_ticket_idx ON approval(ticket);
 CREATE INDEX appr_status_idx ON approval(status);
+
+CREATE TABLE approved (
+  id        timeuuid,         // unique Key
+  user      varchar,          // the user who needs to be approved
+  approver  varchar,          // user approving
+  type      varchar,          // approver types i.e. Supervisor, Owner
+  status    varchar,          // approval status. pending, approved, denied
+  memo      varchar,          // Text for Approval to know what's going on
+  operation varchar,          // List operation to perform
+  PRIMARY KEY(id)
+ );
+CREATE INDEX approved_approver_idx ON approved(approver);
+CREATE INDEX approved_user_idx ON approved(user);
 
 CREATE TABLE delegate (
   user      varchar,
@@ -230,6 +211,49 @@ CREATE TABLE delegate (
   PRIMARY KEY (user)  
 );
 CREATE INDEX delg_delg_idx ON delegate(delegate);
+
+// OAuth Tokens
+CREATE TABLE oauth_token (
+  id            text,                   // Reference
+  client_id     text,                   // Creating Client ID
+  user          text,                   // User requesting
+  active	boolean,		// Active or not
+  type		int,			// Type of Token
+  refresh       text,                   // Refresh Token
+  expires       timestamp,              // Expiration time/Date (signed long)
+  exp_sec	bigint,			// Seconds from Jan 1, 1970
+  content       text,                   // Content of Token
+  scopes        Set<text>,	 	// Scopes
+  state		text,			// Context string (Optional)
+  req_ip	text,			// Requesting IP (for logging purpose)
+  PRIMARY KEY(id)
+) with default_time_to_live = 21600;    // 6 hours
+CREATE INDEX oauth_token_user_idx ON oauth_token(user);
+
+CREATE TABLE locate (
+  name		text,			// Component/Server name
+  hostname	text,			// FQDN of Service/Component
+  port		int,			// Port of Service
+  major		int,			// Version, Major
+  minor		int,			// Version, Minor
+  patch		int,			// Version, Patch
+  pkg		int,			// Version, Package (if available)
+  latitude	float,			// Latitude
+  longitude	float,			// Longitude
+  protocol	text,			// Protocol (i.e. http https)
+  subprotocol   set<text>,		// Accepted SubProtocols, ie. TLS1.1 for https
+  port_key      uuid,			// Key into locate_ports
+  PRIMARY KEY(name,hostname,port)
+) with default_time_to_live = 1200;	// 20 mins
+
+CREATE TABLE locate_ports (
+  id		uuid,			// Id into locate
+  port		int,			// SubPort
+  name		text,			// Name of Other Port
+  protocol	text,			// Protocol of Other (i.e. JMX, DEBUG)
+  subprotocol   set<text>,		// Accepted sub protocols or versions
+  PRIMARY KEY(id, port)
+) with default_time_to_live = 1200;	// 20 mins; 
 
 //
 // Used by authz-batch processes to ensure only 1 runs at a time
