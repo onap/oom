@@ -15,13 +15,13 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
@@ -30,20 +30,46 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{ include "common.name" . }}
+      initContainers:
+      - command:
+        - /root/job_complete.py
+        args:
+        - -j
+        - {{ .Release.Name }}-aaf-create-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-job-complete
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aaf-cs
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
-      - args:
+      - env:
+        - name: CASSANDRA_CLUSTER
+          value: cassandra_container
+        name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}
-        ports:
-        - containerPort: {{ .Values.service.externalPort }}
-        - containerPort: {{ .Values.service.externalPort2 }}
-        - containerPort: {{ .Values.service.externalPort3 }}
-        - containerPort: {{ .Values.service.externalPort4 }}
+        command: ["/bin/bash","-c"," ln -s /opt/app/osaaf/data /data;/opt/app/aaf/locate/bin/locate >> /opt/app/osaaf/logs/locate/stdout`date -I` 2>> /opt/app/osaaf/logs/locate/stderr`date -I`"]
         volumeMounts:
-        - mountPath: /data
-          name: aaf-cs-data
+        - mountPath: /opt/app/osaaf
+          name: aaf-persistent-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -52,29 +78,16 @@ spec:
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort3 }}
+            port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort3 }}
+            port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        lifecycle:
-          postStart:
-            exec:
-              command: 
-              - /bin/sh
-              - -c
-              - >
-                /bin/sleep 30;
-                cd /data/;
-                cqlsh -u root -p root -f keyspace.cql ;
-                cqlsh -u root -p root -f init.cql ;
-                cqlsh -u root -p root -f osaaf.cql ;
-                cqlsh -u root -p root -f temp_identity.cql
-        resources: 
+        resources:
 {{ toYaml .Values.resources | indent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -85,11 +98,15 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: aaf-cs-data
-          secret:
-            secretName: {{ include "common.fullname" . }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aaf-persistent-vol
+      {{- if .Values.global.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-aaf-pvc
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
