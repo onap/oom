@@ -18,95 +18,50 @@
 global:
   nodePortPrefix: 302
   repositorySecret: eyJuZXh1czMub25hcC5vcmc6MTAwMDEiOnsidXNlcm5hbWUiOiJkb2NrZXIiLCJwYXNzd29yZCI6ImRvY2tlciIsImVtYWlsIjoiQCIsImF1dGgiOiJaRzlqYTJWeU9tUnZZMnRsY2c9PSJ9fQ==
+  persistence: {}
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  persistence:
-    mountPath: /dockerdata-nfs
+
 
 #################################################################
 # Application configuration defaults.
 #################################################################
-# application image
-repository: nexus3.onap.org:10001
-image: onap/appc-image:1.3.0-SNAPSHOT-latest
-pullPolicy: Always
 
-# flag to enable debugging - application support required
-debugEnabled: false
+dockerHubRepository: registry.hub.docker.com
+image: library/mysql:5.7
+pullPolicy: Always
 
 # application configuration
 config:
   dbRootPassword: openECOMP1.0
-  enableClustering: true
-  configDir: /opt/onap/appc/data/properties
-  dmaapTopic: SUCCESS
-  logstashServiceName: log-ls
-  logstashPort: 5044
-  openStackType: OpenStackProvider
-  openStackName: OpenStack
-  openStackKeyStoneUrl: http://localhost:8181/apidoc/explorer/index.html
-  openStackServiceTenantName: default
-  openStackDomain: default
-  openStackUserName: admin
-  openStackEncryptedPassword: admin
-
-mysql:
-  nameOverride: appc-db
-  service:
-    name: appc-dbhost
-  sdnctlPrefix: appc
-  persistence:
-    mountSubPath: appc/data
-    enabled: true
-  disableProvisioner: true
-
-dgbuilder:
-  nameOverride: appc-dgbuilder
-  config:
-    dbPodName: appc-db
-    dbServiceName: appc-dbhost
-  service:
-    name: appc-dgbuilder
 
 # default number of instances
-replicaCount: 3
+replicaCount: 1
 
 nodeSelector: {}
 
 affinity: {}
 
+disableProvisioner: true
+provisioner: nfs
+
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 30
   periodSeconds: 10
+  timeoutSeconds: 5
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 5
   periodSeconds: 10
-
-service:
-  type: NodePort
-  name: appc
-  portName: appc
-  #targetPort
-  internalPort: 8181
-  #port
-  externalPort: 8282
-  nodePort: 30
-
-  externalPort2: 1830
-  nodePort2: 31
-  clusterPort: 2550
 
 ## Persist data to a persitent volume
 persistence:
-  enabled: true
-
+  enabled: false
+  
   ## A manually managed Persistent Volume and Claim
   ## Requires persistence.enabled: true
   ## If defined, PVC must be created manually before volume will be bound
@@ -119,11 +74,19 @@ persistence:
   ## If undefined (the default) or set to null, no storageClassName spec is
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
-  accessMode: ReadWriteOnce
+  accessMode: ReadWriteMany
   size: 1Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: appc/mdsal
-  mdsalPath: /opt/opendaylight/current/daexim
+  mountSubPath: "mysql/data"
+
+service:
+  name: mysql
+  internalPort: 3306
+  # nfs provisioner ports
+  nfsPort: 2049
+  mountdPort: 20048
+  rpcbindPort: 111
+  rpcbindUdpPort: 111
 
 ingress:
   enabled: false
@@ -137,8 +100,8 @@ resources: {}
   # Example:
   # Configure resource requests and limits
   # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory
-  # Minimum memory for production is 4 CPU cores and 8GB memory
+  # Minimum memory for development is 2 CPU cores and 4GB memory 
+  # Minimum memory for production is 4 CPU cores and 8GB memory 
 #resources:
 #  limits:
 #    cpu: 2
@@ -146,3 +109,23 @@ resources: {}
 #  requests:
 #    cpu: 2
 #    memory: 4Gi
+
+#################################################################
+# Sidecar Configuration.
+#
+# xtrabackup configuration defaults.
+#################################################################
+xtrabackupRepository: gcr.io/google-samples
+xtrabackupImage: xtrabackup:1.0
+xtrabackup:
+  internalPort: 3307
+
+nfsprovisionerRepository: quay.io
+nfsprovisionerImage: kubernetes_incubator/nfs-provisioner:v1.0.8
+nfsprovisionerPrefix: mysql
+
+sdnctlPrefix: mysql
+
+geoEnabled: false
+geoSiteId: 1
+nfsserver: "0.0.0.0"

@@ -1,0 +1,99 @@
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+{{ if eq .Values.provisioner "nfs-client" }}
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: {{ include "common.storagename" . }}-provisioner
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.storagename" . }}-provisioner
+    spec:
+      serviceAccountName: {{ include "common.storagename" . }}
+      containers:
+        - name: {{ include "common.storagename" . }}-provisioner
+          image: quay.io/external_storage/nfs-client-provisioner:modified
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: {{ include "common.storagename" . }}/{{ .Values.provisioner }}
+            - name: NFS_SERVER
+              value: {{ .Values.nfsserver }}
+            - name: NFS_PATH
+#              value: /mnt/nfs-client
+              value: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.storagename" . }}/{{ .Values.provisioner }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: {{ .Values.nfsserver }}
+#            path: /mnt/nfs-client
+            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.storagename" . }}/{{ .Values.provisioner }}
+{{ end }}
+
+#kind: Deployment
+#apiVersion: extensions/v1beta1
+#metadata:
+#  name: nfs-client-provisioner
+#  namespace: onapint
+#  labels:
+#    app: nfs-client
+#spec:
+#  replicas: 1
+#  strategy:
+#    type: Recreate
+#  template:
+#    metadata:
+#      labels:
+#        app: nfs-client-provisioner
+#    spec:
+#      serviceAccountName: onap-storage
+#      containers:
+#        - name: nfs-client-provisioner
+#          image: quay.io/external_storage/nfs-client-provisioner:modified
+#          command:
+#          - /nfs-client-provisioner
+#          args:
+#          - -v=4
+#          volumeMounts:
+#            - name: nfs-client-root
+#              mountPath: /persistentvolumes
+#          env:
+#            - name: PROVISIONER_NAME
+#              value: onap-storage/nfs-client
+#            - name: NFS_SERVER
+#              value: 10.0.2.15
+#            - name: NFS_PATH
+#              value: /mnt/nfs-client
+#      volumes:
+#        - name: nfs-client-root
+#          nfs:
+#            server: 10.0.2.15
+#            path: /mnt/nfs-client
+#
