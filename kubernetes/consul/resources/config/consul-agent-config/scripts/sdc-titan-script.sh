@@ -1,5 +1,5 @@
 ## Query the health check API.
-HEALTH_CHECK_ENDPOINT="http://sdc-fe.{{ .Values.nsPrefix }}:8181/sdc1/rest/healthCheck"
+HEALTH_CHECK_ENDPOINT="http://sdc-fe:8181/sdc1/rest/healthCheck"
 HEALTH_CHECK_RESPONSE=$(curl -s $HEALTH_CHECK_ENDPOINT)
 
 ## Strip out the ON_BOARDING section from the response XML (otherwise we will
