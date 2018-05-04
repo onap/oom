@@ -39,6 +39,7 @@ GLOBAL_INJECTED_REGION = "{{ .Values.openStackRegion }}"
 GLOBAL_INJECTED_REMOTE_REPO = "http://gerrit.onap.org/r/testsuite/properties.git"
 GLOBAL_INJECTED_SCRIPT_VERSION = "{{ .Values.scriptVersion }}"
 GLOBAL_INJECTED_SDC_BE_IP_ADDR = "sdc-be.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_SDC_BE_ONBOARD_IP_ADDR = "sdc-onboarding-be.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_SDC_FE_IP_ADDR = "sdc-fe.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_SDC_IP_ADDR = "N/A"
 GLOBAL_INJECTED_SDNC_IP_ADDR = "sdnc.{{include "common.namespace" .}}"
@@ -89,6 +90,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_REGION" : "{{ .Values.openStackRegion }}",
     "GLOBAL_INJECTED_REMOTE_REPO" : "http://gerrit.onap.org/r/testsuite/properties.git",
     "GLOBAL_INJECTED_SDC_BE_IP_ADDR" : "sdc-be.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_SDC_BE_ONBOARD_IP_ADDR" : "sdc-onboarding-be.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_SDC_FE_IP_ADDR" : "sdc-fe.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_SDC_IP_ADDR" : "N/A",
     "GLOBAL_INJECTED_SCRIPT_VERSION" : "{{ .Values.scriptVersion }}",
