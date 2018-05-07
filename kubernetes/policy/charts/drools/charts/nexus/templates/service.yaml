@@ -23,10 +23,17 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.internalPort }}
+    {{if eq .Values.service.type "NodePort" -}}
+    - port: {{ .Values.service.externalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
       name: {{ .Values.service.portName }}
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+    {{- end}}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
-  clusterIP: None
