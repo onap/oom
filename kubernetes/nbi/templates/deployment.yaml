@@ -1,0 +1,137 @@
+# Copyright © 2018 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+        name: {{ include "common.fullname" . }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mariadb://{{ .Values.mariadb.service.name }}.{{ include "common.namespace" . }}:{{.Values.mariadb.service.internalPort }}/{{ .Values.mariadb.config.db.database }}
+            - name: SPRING_DATASOURCE_USERNAME
+              value: {{ .Values.mariadb.config.db.user }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}-secret
+                  key: db-user-password
+            - name: SPRING_DATA_MONGODB_HOST
+              value: {{ .Values.mongo.service.name }}.{{ include "common.namespace" . }}
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "{{ .Values.mongo.service.internalPort }}"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: {{ .Values.mongo.config.dbName }}
+            - name: ONAP_LCPCLOUDREGIONID
+              value: {{ .Values.config.openStackRegion }}
+            - name: ONAP_TENANTID
+              value: {{ .Values.config.openStackServiceTenantName }}
+            - name: ONAP_CLOUDOWNER
+              value: {{ .Values.config.cloudOwner }}
+            - name: NBI_URL
+              value: "http://nbi.{{ include "common.namespace" . }}:8080/nbi/api/v1"
+            - name: SDC_HOST
+              value: "http://sdc-fe.{{ include "common.namespace" . }}:8080"
+            - name: SDC_HEADER_ECOMPINSTANCEID
+              value: {{ .Values.config.ecompInstanceId }}
+            - name: SDC_HEADER_AUTHORIZATION
+              value: {{ .Values.sdc_authorization }}
+            - name: AAI_HOST
+              value: "http://aai.{{ include "common.namespace" . }}:8443"
+            - name: AAI_HEADER_AUTHORIZATION
+              value: {{ .Values.aai_authorization }}
+            - name: SO_HOST
+              value: http://so.{{ include "common.namespace" . }}:8080
+            {{- if .Values.so_authorization }}
+            - name: SO_HEADER_AUTHORIZATION
+              value: {{ .Values.so_authorization }}
+            {{- end }}
+            - name: LOGGING_LEVEL_ORG_ONAP_NBI
+              value: {{ .Values.config.loglevel }}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      # side car containers
+        # - name: filebeat-onap
+        #   image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        #   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        #   volumeMounts:
+        #   - mountPath: /usr/share/filebeat/filebeat.yml
+        #     name: filebeat-conf
+        #     subPath: filebeat.yml
+        #   - mountPath: /home/esr/works/logs
+        #     name: esr-server-logs
+        #   - mountPath: /usr/share/filebeat/data
+        #     name: esr-server-filebeat
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        # - name: filebeat-conf
+        #   configMap:
+        #     name: {{ include "common.fullname" . }}-esr-filebeat
+        # - name: esr-server-logs
+        #   emptyDir: {}
+        # - name: esr-server-filebeat
+        #   emptyDir: {}
+        # - name: esrserver-log
+        #   configMap:
+        #     name: {{ include "common.fullname" . }}-esr-esrserver-log
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

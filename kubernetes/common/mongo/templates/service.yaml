@@ -1,0 +1,97 @@
+{{/*
+# Copyright © 2018 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+#{{ if not .Values.disableNfsProvisioner }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+spec:
+  ports:
+    - name: nfs
+      port: {{ .Values.service.nfsPort }}
+    - name: mountd
+      port: {{ .Values.service.mountdPort }}
+    - name: rpcbind
+      port: {{ .Values.service.rpcbindPort }}
+    - name: rpcbind-udp
+      port: {{ .Values.service.rpcbindUdpPort }}
+      protocol: UDP
+  selector:
+    app: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+#{{ end }}
+---
+# Client service for connecting to any Mongo instance for reads.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-read
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+---
+{{ if .Values.geoEnabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-nodeport
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
+spec:
+  ports:
+  - name: {{ .Values.service.internalPort }}
+    port: {{ .Values.service.internalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.externalPort1 }}
+  - name: {{ .Values.xtrabackup.internalPort }}
+    port: {{ .Values.xtrabackup.internalPort }}
+    targetPort: {{ .Values.xtrabackup.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.externalPort2 }}
+  type: NodePort
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
+    release: {{ .Release.Name }}
+{{ end }}
