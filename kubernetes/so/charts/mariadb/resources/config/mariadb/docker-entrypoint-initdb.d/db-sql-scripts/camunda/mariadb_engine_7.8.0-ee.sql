@@ -1,31 +1,13 @@
-/* Copyright © 2017 AT&T, Amdocs, Bell Canada
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*       http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
 DROP DATABASE IF EXISTS `camundabpmn`;
 
 CREATE DATABASE `camundabpmn`;
 
 USE `camundabpmn`;
 
-# DROP USER IF EXISTS 'camunda';
 delete from mysql.user where User='camunda';
 CREATE USER 'camunda';
 GRANT ALL on camundabpmn.* to 'camunda' identified by 'camunda123' with GRANT OPTION;
 FLUSH PRIVILEGES;
-
-USE `camundabpmn`;
 
 create table ACT_GE_PROPERTY (
     NAME_ varchar(64),
@@ -48,6 +30,9 @@ values ('deployment.lock', '0', 1);
 
 insert into ACT_GE_PROPERTY
 values ('history.cleanup.job.lock', '0', 1);
+
+insert into ACT_GE_PROPERTY
+values ('startup.lock', '0', 1);
 
 create table ACT_GE_BYTEARRAY (
     ID_ varchar(64),
@@ -201,8 +186,8 @@ create table ACT_RU_VARIABLE (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB NULL,
-    TEXT2_ LONGBLOB NULL,
+    TEXT_ LONGBLOB,
+    TEXT2_ LONGBLOB,
     VAR_SCOPE_ varchar(64) not null,
     SEQUENCE_COUNTER_ bigint,
     IS_CONCURRENT_LOCAL_ TINYINT,
@@ -249,7 +234,7 @@ create table ACT_RU_AUTHORIZATION (
   GROUP_ID_ varchar(255),
   USER_ID_ varchar(255),
   RESOURCE_TYPE_ integer not null,
-  RESOURCE_ID_ varchar(64),
+  RESOURCE_ID_ varchar(255),
   PERMS_ integer,
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -640,6 +625,7 @@ create table ACT_RE_DECISION_DEF (
     DEC_REQ_KEY_ varchar(255),
     TENANT_ID_ varchar(64),
     HISTORY_TTL_ integer,
+    VERSION_TAG_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -757,9 +743,10 @@ create table ACT_HI_VARINST (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB NULL,
-    TEXT2_ LONGBLOB NULL,
+    TEXT_ LONGBLOB,
+    TEXT2_ LONGBLOB,
     TENANT_ID_ varchar(64),
+    STATE_ varchar(20),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -784,8 +771,8 @@ create table ACT_HI_DETAIL (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB NULL,
-    TEXT2_ LONGBLOB NULL,
+    TEXT_ LONGBLOB,
+    TEXT2_ LONGBLOB,
     SEQUENCE_COUNTER_ bigint,
     TENANT_ID_ varchar(64),
     OPERATION_ID_ varchar(64),
@@ -957,6 +944,8 @@ create index ACT_IDX_HI_ACT_INST_PROC_DEF_KEY on ACT_HI_ACTINST(PROC_DEF_KEY_);
 
 create index ACT_IDX_HI_TASK_INST_TENANT_ID on ACT_HI_TASKINST(TENANT_ID_);
 create index ACT_IDX_HI_TASK_INST_PROC_DEF_KEY on ACT_HI_TASKINST(PROC_DEF_KEY_);
+create index ACT_IDX_HI_TASKINST_PROCINST on ACT_HI_TASKINST(PROC_INST_ID_);
+create index ACT_IDX_HI_TASKINSTID_PROCINST on ACT_HI_TASKINST(ID_,PROC_INST_ID_);
 
 create index ACT_IDX_HI_DETAIL_PROC_INST on ACT_HI_DETAIL(PROC_INST_ID_);
 create index ACT_IDX_HI_DETAIL_ACT_INST on ACT_HI_DETAIL(ACT_INST_ID_);
@@ -967,34 +956,47 @@ create index ACT_IDX_HI_DETAIL_NAME on ACT_HI_DETAIL(NAME_);
 create index ACT_IDX_HI_DETAIL_TASK_ID on ACT_HI_DETAIL(TASK_ID_);
 create index ACT_IDX_HI_DETAIL_TENANT_ID on ACT_HI_DETAIL(TENANT_ID_);
 create index ACT_IDX_HI_DETAIL_PROC_DEF_KEY on ACT_HI_DETAIL(PROC_DEF_KEY_);
+create index ACT_IDX_HI_DETAIL_BYTEAR on ACT_HI_DETAIL(BYTEARRAY_ID_);
 
 create index ACT_IDX_HI_IDENT_LNK_USER on ACT_HI_IDENTITYLINK(USER_ID_);
 create index ACT_IDX_HI_IDENT_LNK_GROUP on ACT_HI_IDENTITYLINK(GROUP_ID_);
 create index ACT_IDX_HI_IDENT_LNK_TENANT_ID on ACT_HI_IDENTITYLINK(TENANT_ID_);
 create index ACT_IDX_HI_IDENT_LNK_PROC_DEF_KEY on ACT_HI_IDENTITYLINK(PROC_DEF_KEY_);
+create index ACT_IDX_HI_IDENT_LINK_TASK on ACT_HI_IDENTITYLINK(TASK_ID_);
 
 create index ACT_IDX_HI_PROCVAR_PROC_INST on ACT_HI_VARINST(PROC_INST_ID_);
 create index ACT_IDX_HI_PROCVAR_NAME_TYPE on ACT_HI_VARINST(NAME_, VAR_TYPE_);
 create index ACT_IDX_HI_CASEVAR_CASE_INST on ACT_HI_VARINST(CASE_INST_ID_);
 create index ACT_IDX_HI_VAR_INST_TENANT_ID on ACT_HI_VARINST(TENANT_ID_);
 create index ACT_IDX_HI_VAR_INST_PROC_DEF_KEY on ACT_HI_VARINST(PROC_DEF_KEY_);
+create index ACT_IDX_HI_VARINST_BYTEAR on ACT_HI_VARINST(BYTEARRAY_ID_);
 
 create index ACT_IDX_HI_INCIDENT_TENANT_ID on ACT_HI_INCIDENT(TENANT_ID_);
 create index ACT_IDX_HI_INCIDENT_PROC_DEF_KEY on ACT_HI_INCIDENT(PROC_DEF_KEY_);
+create index ACT_IDX_HI_INCIDENT_PROCINST on ACT_HI_INCIDENT(PROC_INST_ID_);
 
 create index ACT_IDX_HI_JOB_LOG_PROCINST on ACT_HI_JOB_LOG(PROCESS_INSTANCE_ID_);
 create index ACT_IDX_HI_JOB_LOG_PROCDEF on ACT_HI_JOB_LOG(PROCESS_DEF_ID_);
 create index ACT_IDX_HI_JOB_LOG_TENANT_ID on ACT_HI_JOB_LOG(TENANT_ID_);
 create index ACT_IDX_HI_JOB_LOG_JOB_DEF_ID on ACT_HI_JOB_LOG(JOB_DEF_ID_);
 create index ACT_IDX_HI_JOB_LOG_PROC_DEF_KEY on ACT_HI_JOB_LOG(PROCESS_DEF_KEY_);
+create index ACT_IDX_HI_JOB_LOG_EX_STACK on ACT_HI_JOB_LOG(JOB_EXCEPTION_STACK_ID_);
 
 create index ACT_HI_EXT_TASK_LOG_PROCINST on ACT_HI_EXT_TASK_LOG(PROC_INST_ID_);
 create index ACT_HI_EXT_TASK_LOG_PROCDEF on ACT_HI_EXT_TASK_LOG(PROC_DEF_ID_);
 create index ACT_HI_EXT_TASK_LOG_PROC_DEF_KEY on ACT_HI_EXT_TASK_LOG(PROC_DEF_KEY_);
 create index ACT_HI_EXT_TASK_LOG_TENANT_ID on ACT_HI_EXT_TASK_LOG(TENANT_ID_);
+create index ACT_IDX_HI_EXTTASKLOG_ERRORDET on ACT_HI_EXT_TASK_LOG(ERROR_DETAILS_ID_);
 
 create index ACT_IDX_HI_OP_LOG_PROCINST on ACT_HI_OP_LOG(PROC_INST_ID_);
 create index ACT_IDX_HI_OP_LOG_PROCDEF on ACT_HI_OP_LOG(PROC_DEF_ID_);
+
+create index ACT_IDX_HI_COMMENT_TASK on ACT_HI_COMMENT(TASK_ID_);
+create index ACT_IDX_HI_COMMENT_PROCINST on ACT_HI_COMMENT(PROC_INST_ID_);
+
+create index ACT_IDX_HI_ATTACHMENT_CONTENT on ACT_HI_ATTACHMENT(CONTENT_ID_);
+create index ACT_IDX_HI_ATTACHMENT_PROCINST on ACT_HI_ATTACHMENT(PROC_INST_ID_);
+create index ACT_IDX_HI_ATTACHMENT_TASK on ACT_HI_ATTACHMENT(TASK_ID_);
 create table ACT_HI_CASEINST (
     ID_ varchar(64) not null,
     CASE_INST_ID_ varchar(64) not null,
@@ -1074,8 +1076,8 @@ create table ACT_HI_DEC_IN (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB NULL,
-    TEXT2_ LONGBLOB NULL,
+    TEXT_ LONGBLOB,
+    TEXT2_ LONGBLOB,
     TENANT_ID_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -1093,8 +1095,8 @@ create table ACT_HI_DEC_OUT (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB NULL,
-    TEXT2_ LONGBLOB NULL,
+    TEXT_ LONGBLOB,
+    TEXT2_ LONGBLOB,
     TENANT_ID_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -1119,8 +1121,7 @@ create index ACT_IDX_HI_DEC_IN_CLAUSE on ACT_HI_DEC_IN(DEC_INST_ID_, CLAUSE_ID_)
 create index ACT_IDX_HI_DEC_OUT_INST on ACT_HI_DEC_OUT(DEC_INST_ID_);
 create index ACT_IDX_HI_DEC_OUT_RULE on ACT_HI_DEC_OUT(RULE_ORDER_, CLAUSE_ID_);
 
-
--- mariadb identity:
+-- mariadb_identity_7.8.0-ee
 
 create table ACT_ID_GROUP (
     ID_ varchar(64),
@@ -1207,4 +1208,3 @@ alter table ACT_ID_TENANT_MEMBER
     add constraint ACT_FK_TENANT_MEMB_GROUP
     foreign key (GROUP_ID_)
     references ACT_ID_GROUP (ID_);
-

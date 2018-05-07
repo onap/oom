@@ -1,18 +1,3 @@
-/* Copyright © 2017 AT&T, Amdocs, Bell Canada
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*       http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
 
     alter table HEAT_TEMPLATE_PARAMS 
         drop 
@@ -123,6 +108,8 @@
         MIN_INSTANCES integer,
         MAX_INSTANCES integer,
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
+        PROVIDING_SERVICE_MODEL_UUID varchar(255),
+        PROVIDING_SERVICE_MODEL_NAME varchar(255),
         primary key (MODEL_CUSTOMIZATION_UUID)
     );
 
@@ -225,6 +212,8 @@
         NEUTRON_NETWORK_TYPE varchar(20),
         DESCRIPTION varchar(1200),
         ORCHESTRATION_MODE varchar(20),
+        RESOURCE_CATEGORY varchar(20),
+        RESOURCE_SUB_CATEGORY varchar(20),
         HEAT_TEMPLATE_ARTIFACT_UUID varchar(200) not null,
         AIC_VERSION_MIN varchar(20) default 2.5 not null,
         AIC_VERSION_MAX varchar(20) default 2.5,
@@ -252,8 +241,11 @@
         TOSCA_CSAR_ARTIFACT_UUID varchar(200),
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         MODEL_INVARIANT_UUID varchar(200) default 'MANUAL_RECORD' not null,
+        SERVICE_CATEGORY varchar(20),
         SERVICE_TYPE varchar(20),
         SERVICE_ROLE varchar(20),
+        ENVIRONMENT_CONTEXT varchar(255) default null,
+        WORKLOAD_CONTEXT varchar(255) default null,
         primary key (MODEL_UUID)
     );
 
@@ -288,9 +280,9 @@
     create table SERVICE_TO_RESOURCE_CUSTOMIZATIONS (
         MODEL_TYPE varchar(20) not null,
         RESOURCE_MODEL_CUSTOMIZATION_UUID varchar(200) not null,
-        CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         SERVICE_MODEL_UUID varchar(200) not null,
-        primary key (MODEL_TYPE, RESOURCE_MODEL_CUSTOMIZATION_UUID)
+        CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
+        primary key (MODEL_TYPE, RESOURCE_MODEL_CUSTOMIZATION_UUID, SERVICE_MODEL_UUID)
     );
 
     create table TEMP_NETWORK_HEAT_TEMPLATE_LOOKUP (
@@ -396,6 +388,8 @@
         ORCHESTRATION_MODE varchar(20) not null,
         AIC_VERSION_MIN varchar(20),
         AIC_VERSION_MAX varchar(20),
+        RESOURCE_CATEGORY varchar(20),
+        RESOURCE_SUB_CATEGORY varchar(20),
         HEAT_TEMPLATE_ARTIFACT_UUID varchar(200),
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         primary key (MODEL_UUID)
@@ -411,6 +405,7 @@
         NF_TYPE varchar(200),
         NF_ROLE varchar(200),
         NF_NAMING_CODE varchar(200),
+        MULTI_STAGE_DESIGN varchar(200),
         VNF_RESOURCE_MODEL_UUID varchar(200) not null,
         CREATION_TIMESTAMP datetime default CURRENT_TIMESTAMP,
         primary key (MODEL_CUSTOMIZATION_UUID)

@@ -1,19 +1,4 @@
-/* Copyright © 2017 AT&T, Amdocs, Bell Canada
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*       http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
-SOURCE ../../camunda/mariadb_engine_7.7.3-ee.sql
+SOURCE ../../camunda/mariadb_engine_7.8.0-ee.sql
 
 --
 -- Create an admin user automatically for the cockpit
@@ -96,6 +81,8 @@ INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCH
 INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCHESTRATION_URI`, `NETWORK_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TYPE`, `CREATION_TIMESTAMP`, `VERSION_STR`) VALUES (22,'CONTRAIL30_GNDIRECT','CREATE',NULL,'/mso/async/services/CreateNetworkV2',NULL,180,NULL,'2017-10-05 18:52:03','1');
 INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCHESTRATION_URI`, `NETWORK_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TYPE`, `CREATION_TIMESTAMP`, `VERSION_STR`) VALUES (23,'CONTRAIL30_GNDIRECT','UPDATE',NULL,'/mso/async/services/UpdateNetworkV2',NULL,180,NULL,'2017-10-05 18:52:03','1');
 INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCHESTRATION_URI`, `NETWORK_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TYPE`, `CREATION_TIMESTAMP`, `VERSION_STR`) VALUES (24,'CONTRAIL30_GNDIRECT','DELETE',NULL,'/mso/async/services/DeleteNetworkV2',NULL,180,NULL,'2017-10-05 18:52:03','1');
+INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCHESTRATION_URI`, `NETWORK_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TYPE`, `CREATION_TIMESTAMP`, `VERSION_STR`) VALUES (25,'SDNC_DEFAULT','createInstance','E2E DEFAULT recipe to create network if no custom BPMN flow is found','/mso/async/services/CreateSDNCNetworkResource',NULL,180,NULL,'2017-04-19 18:52:19','1.0');
+INSERT INTO `network_recipe` (`id`, `MODEL_NAME`, `ACTION`, `DESCRIPTION`, `ORCHESTRATION_URI`, `NETWORK_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TYPE`, `CREATION_TIMESTAMP`, `VERSION_STR`) VALUES (26,'SDNC_DEFAULT','deleteInstance','E2E DEFAULT recipe to delete network if no custom BPMN flow is found','/mso/async/services/DeleteSDNCNetworkResource',NULL,180,NULL,'2017-04-19 18:52:19','1.0');
 
 INSERT INTO `service` (`MODEL_UUID`, `MODEL_NAME`, `MODEL_INVARIANT_UUID`, `MODEL_VERSION`, `DESCRIPTION`, `CREATION_TIMESTAMP`, `TOSCA_CSAR_ARTIFACT_UUID`) VALUES ('48cc36cc-a9fe-11e7-8b4b-0242ac120002','VID_DEFAULT','48cd56c8-a9fe-11e7-8b4b-0242ac120002','1.0','Default service for VID to use for infra APIH orchestration1707MIGRATED1707MIGRATED','2017-10-05 18:52:03',NULL);
 INSERT INTO `service` (`MODEL_UUID`, `MODEL_NAME`, `MODEL_INVARIANT_UUID`, `MODEL_VERSION`, `DESCRIPTION`, `CREATION_TIMESTAMP`, `TOSCA_CSAR_ARTIFACT_UUID`) VALUES ('48cc3acd-a9fe-11e7-8b4b-0242ac120002','*','48ce2256-a9fe-11e7-8b4b-0242ac120002','1.0','Default service to use for infra APIH orchestration1707MIGRATED1707MIGRATED','2017-10-05 18:52:03',NULL);
@@ -110,9 +97,16 @@ INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORC
 --
 
 INSERT INTO `service` (`MODEL_UUID`, `MODEL_NAME`, `MODEL_INVARIANT_UUID`, `MODEL_VERSION`, `DESCRIPTION`, `CREATION_TIMESTAMP`, `TOSCA_CSAR_ARTIFACT_UUID`) VALUES ('dfcd7471-16c7-444e-8268-d4c50d90593a','UUI_DEFAULT','dfcd7471-16c7-444e-8268-d4c50d90593a','1.0','Default service for UUI to use for infra APIH orchestration1707MIGRATED1707MIGRATED','2017-10-23 18:52:03',NULL);
+INSERT INTO `service` (`MODEL_UUID`, `MODEL_NAME`, `MODEL_INVARIANT_UUID`, `MODEL_VERSION`, `DESCRIPTION`, `CREATION_TIMESTAMP`, `TOSCA_CSAR_ARTIFACT_UUID`) VALUES ('f2e1dc69-c8ef-47e9-8b64-966cc87f2110','*','f2e1dc69-c8ef-47e9-8b64-966cc87f2110','1.0','Default service to use for infra APIH orchestration','2018-01-19 18:52:03',NULL);
 
 INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORCHESTRATION_URI`, `SERVICE_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TIMEOUT_INTERIM`, `CREATION_TIMESTAMP`, `SERVICE_MODEL_UUID`) VALUES (11,'createInstance','1','Custom recipe to create E2E service-instance if no custom BPMN flow is found','/mso/async/services/CreateCustomE2EServiceInstance',NULL,180,NULL,'2017-10-05 18:52:03','dfcd7471-16c7-444e-8268-d4c50d90593a');
 INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORCHESTRATION_URI`, `SERVICE_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TIMEOUT_INTERIM`, `CREATION_TIMESTAMP`, `SERVICE_MODEL_UUID`) VALUES (12,'deleteInstance','1','Custom recipe to delete E2E service-instance if no custom BPMN flow is found','/mso/async/services/DeleteCustomE2EServiceInstance',NULL,180,NULL,'2017-10-05 18:52:03','dfcd7471-16c7-444e-8268-d4c50d90593a');
+
+-- Recipe for E2E service update (R2 just support adding/deleting network service)
+INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORCHESTRATION_URI`, `SERVICE_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TIMEOUT_INTERIM`, `CREATION_TIMESTAMP`, `SERVICE_MODEL_UUID`) VALUES (15,'updateInstance','1','Custom recipe to update E2E service-instance if no custom BPMN flow is found','/mso/async/services/UpdateCustomE2EServiceInstance',NULL,180,NULL,'2018-03-05 10:52:03','dfcd7471-16c7-444e-8268-d4c50d90593a');
+
+INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORCHESTRATION_URI`, `SERVICE_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TIMEOUT_INTERIM`, `CREATION_TIMESTAMP`, `SERVICE_MODEL_UUID`) VALUES (13,'createInstance','1','DEFAULT recipe to create service-instance if no custom BPMN flow is found','/mso/async/services/CreateGenericALaCarteServiceInstance',NULL,180,NULL,'2017-10-05 18:52:03','f2e1dc69-c8ef-47e9-8b64-966cc87f2110');
+INSERT INTO `service_recipe` (`id`, `ACTION`, `VERSION_STR`, `DESCRIPTION`, `ORCHESTRATION_URI`, `SERVICE_PARAM_XSD`, `RECIPE_TIMEOUT`, `SERVICE_TIMEOUT_INTERIM`, `CREATION_TIMESTAMP`, `SERVICE_MODEL_UUID`) VALUES (14,'deleteInstance','1','DEFAULT recipe to delete service-instance if no custom BPMN flow is found','/mso/async/services/DeleteGenericALaCarteServiceInstance',NULL,180,NULL,'2017-10-05 18:52:03','f2e1dc69-c8ef-47e9-8b64-966cc87f2110');
 
 INSERT INTO `temp_network_heat_template_lookup` (`NETWORK_RESOURCE_MODEL_NAME`, `HEAT_TEMPLATE_ARTIFACT_UUID`, `AIC_VERSION_MIN`, `AIC_VERSION_MAX`) VALUES ('CONTRAIL30_GNDIRECT','4885c7a1-a9fe-11e7-8b4b-0242ac120002','3.0',NULL);
 INSERT INTO `temp_network_heat_template_lookup` (`NETWORK_RESOURCE_MODEL_NAME`, `HEAT_TEMPLATE_ARTIFACT_UUID`, `AIC_VERSION_MIN`, `AIC_VERSION_MAX`) VALUES ('CONTRAIL30_L2NODHCP','4885c198-a9fe-11e7-8b4b-0242ac120002','3.0',NULL);
@@ -150,5 +144,9 @@ INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSI
 INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (6,'*','UPDATE_VF_MODULE',NULL,'1',NULL,'Recipe Match All for VNFs if no custom flow exists','/mso/async/services/UpdateVfModule',NULL,180,'2017-10-05 18:52:03');
 INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (7,NULL,'createInstance',NULL,'1','VID_DEFAULT','VID_DEFAULT recipe to create VNF if no custom BPMN flow is found','/mso/async/services/CreateVnfInfra',NULL,180,'2017-10-05 18:52:03');
 INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (8,NULL,'deleteInstance',NULL,'1','VID_DEFAULT','VID_DEFAULT recipe to delete VNF if no custom BPMN flow is found','/mso/async/services/DeleteVnfInfra',NULL,180,'2017-10-05 18:52:03');
+INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (9,NULL,'createInstance',NULL,'1','RESOURCE_NS_DEFAULT','NS default recipe to create network service if no custom BPMN flow is found','/mso/async/services/CreateVFCNetworkService',NULL,180,'2017-10-05 18:52:03');
+INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (10,NULL,'deleteInstance',NULL,'1','RESOURCE_NS_DEFAULT','NS default recipe to delete network service if no custom BPMN flow is found','/mso/async/services/DeleteVFCNetworkService',NULL,180,'2017-10-05 18:52:03');
+INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (11,NULL,'createInstance',NULL,'1','NS_DEFAULT','default custom E2E recipe to create NS if no custom BPMN flow is found','/mso/async/services/CreateVFCNSResource',NULL,180,'2018-04-18 18:52:03');
+INSERT INTO `vnf_recipe` (`id`, `VF_MODULE_ID`, `ACTION`, `SERVICE_TYPE`, `VERSION_STR`, `VNF_TYPE`, `DESCRIPTION`, `ORCHESTRATION_URI`, `VNF_PARAM_XSD`, `RECIPE_TIMEOUT`, `CREATION_TIMESTAMP`) VALUES (12,NULL,'deleteInstance',NULL,'1','NS_DEFAULT','default custom E2E recipe to delete NS if no custom BPMN flow is found','/mso/async/services/DeleteVFCNSResource',NULL,180,'2018-04-18 18:52:03');
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
