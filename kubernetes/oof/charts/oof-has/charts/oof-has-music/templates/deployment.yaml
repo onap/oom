@@ -1,0 +1,86 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+# War Container
+       - name: "{{ include "common.name" . }}-war"
+         image: "{{ include "common.repository" . }}/{{ .Values.warImage }}"  #"
+         command: ["cp","/app/MUSIC.war","/webapps"]
+         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+         ports:
+         volumeMounts:
+         - mountPath: /webapps
+           name: shared-data
+      containers:
+      # Tomcat Container
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"   #"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /usr/local/tomcat/webapps
+            name: shared-data
+          - name: properties-music
+            mountPath: /opt/app/music/etc/music.properties
+            subPath: music.properties
+          - name: properties-music
+            mountPath: /opt/app/music/startup.sh
+            subPath: startup.sh
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: properties-music
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

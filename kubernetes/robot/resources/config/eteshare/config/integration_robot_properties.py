@@ -48,6 +48,10 @@ GLOBAL_MSO_PASSWORD = "password1$"
 # music info - everything is from the private oam network (also called onap private network)
 GLOBAL_MUSIC_SERVER_PROTOCOL = "http"
 GLOBAL_MUSIC_SERVER_PORT = "8080"
+# oof
+GLOBAL_OOF_SERVER_PROTOCOL = "http"
+GLOBAL_OOF_HOMING_SERVER_PORT = "8091"
+GLOBAL_OOF_SNIRO_SERVER_PORT = "8698"
 # openstack info - info to select right info in environment
 # packet generate vnf info - everything is from the private oam network (also called onap private network)
 GLOBAL_PACKET_GENERATOR_PORT = "8183"
