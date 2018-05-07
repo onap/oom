@@ -1,0 +1,78 @@
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+{{ if not .Values.disableNfsProvisioner }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  #replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+          image: "{{ .Values.global.nfsprovisionerRepository | default .Values.nfsprovisionerRepository }}/{{ .Values.nfsprovisionerImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+            - name: nfs
+              containerPort: {{ .Values.service.nfsPort }}
+            - name: mountd
+              containerPort: {{ .Values.service.mountdPort }}
+            - name: rpcbind
+              containerPort: {{ .Values.service.rpcbindPort }}
+            - name: rpcbind-udp
+              containerPort: {{ .Values.service.rpcbindUdpPort }}
+              protocol: UDP
+          securityContext:
+            capabilities:
+              add:
+                - DAC_READ_SEARCH
+                - SYS_RESOURCE
+          args:
+            - "-provisioner={{ include "common.fullname" . }}/nfs"
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SERVICE_NAME
+              value: {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - name: export-volume
+              mountPath: /export
+      volumes:
+        - name: export-volume
+          hostPath:
+            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+{{ end }}
