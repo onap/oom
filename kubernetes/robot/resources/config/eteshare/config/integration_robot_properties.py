@@ -18,6 +18,7 @@ GLOBAL_APPC_PASSWORD = "admin"
 GLOBAL_ASDC_SERVER_PROTOCOL = "http"
 GLOBAL_ASDC_FE_PORT = "8181"
 GLOBAL_ASDC_BE_PORT = "8080"
+GLOBAL_ASDC_BE_ONBOARD_PORT = "8081"
 GLOBAL_ASDC_BE_USERNAME = "beep"
 GLOBAL_ASDC_BE_PASSWORD = "boop"
 # clamp info - everything is from the private oam network (also called onap private network)
