@@ -1,4 +1,4 @@
-kafkapod=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "message-router-global-kafka-[^[:space:]]*")
+kafkapod=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "message-router-kafka-[^[:space:]]*")
 if [ -n "$kafkapod" ]; then
    if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $kafkapod -- ps ef | grep -i kafka; then
       echo Success. Kafka process is running. 2>&1
