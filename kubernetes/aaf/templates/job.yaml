@@ -29,6 +29,21 @@ spec:
         app: aaf-init-job
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-inject-config
+        command:
+        - /bin/bash
+        - -c
+        - >
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/ to /public";
+          cp -rf /tmp/gerrit/auth/sample/public/* /public;
+          echo "Done.";
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.global.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: aaf-public
+          mountPath: "/public"
       containers:
       - command: ["/bin/bash","-c","if [ ! -d /data/backup ]; then mkdir /data/data && cp -Ra /data1/data/..data/* /data/data/ && mkdir /data/etc && cp -Ra /data1/etc/..data/* data/etc/ && mkdir /data/backup && cp -Ra /data1/backup/..data/* /data/backup/ && cp -Ra /data1/public /data/ && cp -Ra /data1/local /data && mkdir -p /data/logs/oauth && mkdir -p /data/logs/hello && mkdir -p /data/logs/fs && mkdir -p /data/logs/gui && mkdir -p /data/logs/locate && mkdir -p /data/logs/cm && mkdir -p /data/logs/service; fi; exit 0"]
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -51,13 +66,13 @@ spec:
           name: aaf-public
           subPath: aaf_2_0.xsd
         - mountPath: /data1/public/truststoreONAP.p12
-          name: aaf-public-secret
+          name: aaf-public
           subPath: truststoreONAP.p12
         - mountPath: /data1/public/AAF_RootCA.cer
-          name: aaf-public-secret
+          name: aaf-public
           subPath: AAF_RootCA.cer
         - mountPath: /data1/public/truststoreONAPall.jks
-          name: aaf-public-secret
+          name: aaf-public
           subPath: truststoreONAPall.jks
         - mountPath: /data1/local/org.osaaf.location.props
           name: aaf-local
@@ -85,6 +100,8 @@ spec:
           subPath: org.osaaf.aaf.cm.p12
         - mountPath: /data1/backup
           name: aaf-backup
+        - mountPath: /share
+          name: aaf-public
         resources: 
 {{ toYaml .Values.resources | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -102,9 +119,6 @@ spec:
       - name: aaf-local-secret
         secret:
           secretName: {{ .Release.Name }}-aaf-local-secret
-      - name: aaf-public-secret
-        secret:
-          secretName: {{ .Release.Name }}-aaf-public-secret
       - name: aaf-etc
         configMap:
           name: {{ .Release.Name }}-aaf-etc
@@ -114,9 +128,6 @@ spec:
       - name: aaf-backup
         configMap:
           name: {{ .Release.Name }}-aaf-backup
-      - name: aaf-public
-        configMap:
-          name: {{ .Release.Name }}-aaf-public
       - name: aaf-data
         configMap:
           name: {{ .Release.Name }}-aaf-data
@@ -127,6 +138,8 @@ spec:
       {{- else }}
         emptyDir: {}
       {{- end }}
+      - name: aaf-public
+        emptyDir: {}
       restartPolicy: OnFailure
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
