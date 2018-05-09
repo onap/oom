@@ -25,14 +25,39 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.internalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}
-    - port: {{ .Values.service.internalPort2 }}
-      targetPort: {{ .Values.service.internalPort2 }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
-      name: {{ .Values.service.portName2 }}
+  {{if eq .Values.service.type "NodePort" -}}
+  - port: {{ .Values.service.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+    name: {{ .Values.service.portName }}
+  {{- else -}}
+  - port: {{ .Values.service.internalPort }}
+    name: {{ .Values.service.portName }}
+  {{- end}}
   selector:
-    app: {{ template "common.name" . }}
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+---
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-ui
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type2 }}
+  ports:
+  {{if eq .Values.service.type2 "NodePort" -}}
+  - port: {{ .Values.service.internalPort2 }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
+    name: {{ .Values.service.portName2 }}
+  {{- else -}}
+  - port: {{ .Values.service.internalPort2 }}
+    name: {{ .Values.service.portName2 }}
+  {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
