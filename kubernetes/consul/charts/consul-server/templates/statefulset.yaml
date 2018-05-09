@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -23,6 +23,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -32,10 +33,10 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
-      name: {{ include "common.name" . }}
     spec:
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+      - name: {{ include "common.name" . }}
+        image: "{{ .Values.repository | default .Values.global.repository }}/{{ .Values.image }}" 
         command: ["/usr/local/bin/docker-entrypoint.sh"]
         args: ["agent","-server","-client","0.0.0.0","-enable-script-checks","-bootstrap-expect={{ .Values.replicaCount }}","-ui"]
-        name: {{ include "common.name" . }}
+
