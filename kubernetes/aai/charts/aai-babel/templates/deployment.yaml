@@ -75,7 +75,7 @@ spec:
             subPath: babel-auth.properties
           - mountPath: /opt/app/babel/config/auth
             name: {{ include "common.fullname" . }}-secrets
-          - mountPath: /logs
+          - mountPath: /var/log/onap
             name: {{ include "common.fullname" . }}-logs
           - mountPath: /opt/app/babel/config/logback.xml
             name: {{ include "common.fullname" . }}-config
@@ -90,6 +90,20 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+            name: filebeat-conf
+          - mountPath: /var/log/onap
+            name: {{ include "common.fullname" . }}-logs
+          - mountPath: /usr/share/filebeat/data
+            name: aai-filebeat
+
       volumes:
         - name: localtime
           hostPath:
@@ -107,7 +121,12 @@ spec:
         - name: {{ include "common.fullname" . }}-secrets
           secret:
             secretName: {{ include "common.fullname" . }}-babel-secrets
+        - name: filebeat-conf
+          configMap:
+            name: aai-filebeat
         - name: {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+        - name: aai-filebeat
           emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
