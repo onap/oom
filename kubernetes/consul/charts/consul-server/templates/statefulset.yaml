@@ -1,0 +1,65 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ include "common.servicename" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        command: ["/bin/sh","-c","if [ $HOSTNAME = \"{{ include "common.fullname" . }}-0\" ]; then /usr/local/bin/docker-entrypoint.sh agent -bootstrap -server -ui -enable-script-checks -client=0.0.0.0; else /usr/local/bin/docker-entrypoint.sh agent -bootstrap-expect={{ .Values.replicaCount }} -server -ui -enable-script-checks -client=0.0.0.0 -retry-join={{ include "common.fullname" . }}-0.{{ include "common.servicename" . }}; fi"]
+        #args:
+        #- "agent"
+        #- "-bootstrap-expect={{ .Values.replicaCount }}"
+        #- "-enable-script-checks"
+        #- "-retry-join={{ include "common.fullname" . }}-0.{{ include "common.servicename" . }}"
+        #- "-client=0.0.0.0"
+        #- "-server"
+        #- "-ui"
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
