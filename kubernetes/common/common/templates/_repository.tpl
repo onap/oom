@@ -29,3 +29,20 @@
     {{- default .Values.repository .Values.global.repository -}}
   {{end}}
 {{- end -}}
+
+
+{{/*
+  Resolve the image repository secret token.
+  The value for .Values.global.repositoryCred is used:
+  repositoryCred:
+    u: user
+    p: password
+    m: email (optional)
+*/}}
+{{- define "common.repository.secret" -}}
+  {{- $repo := include "common.repository" . }}
+  {{- $cred := .Values.global.repositoryCred }}
+  {{- $mail := default "@" $cred.m }}
+  {{- $auth := printf "%s:%s" $cred.u $cred.p | b64enc }}
+  {{- printf "{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}" $repo $cred.u $cred.p $mail $auth | b64enc -}}
+{{- end -}}
