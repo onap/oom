@@ -1,4 +1,4 @@
-NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "vid-mariadb[^[:space:]]*")
+NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "{{ .Release.Name }}-vid-mariadb[^[:space:]]*")
 
    if [ -n "$NAME" ]; then
        if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $NAME -- bash -c 'mysqladmin status -u root -p$MYSQL_ROOT_PASSWORD' > /dev/null; then
