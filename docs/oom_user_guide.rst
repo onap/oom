@@ -10,7 +10,7 @@
 .. _Helm Documentation: https://docs.helm.sh/helm/
 .. _Helm: https://docs.helm.sh/
 .. _Kubernetes: https://Kubernetes.io/
-
+.. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
 .. _user-guide-label:
 
 OOM User Guide
@@ -347,6 +347,60 @@ can be modified, for example the `so`'s `liveness` probe could be disabled
       enabled: true
 
   <...>
+
+Accessing the ONAP Portal using OOM and a Kubernetes Cluster
+------------------------------------------------------------
+
+The ONAP deployment created by OOM operates in a private IP network that isn't
+publically accessible (i.e. Openstack VMs with private internal network) which
+blocks access to the ONAP Portal. To enable direct access to this Portal from a
+user's own environment (a laptop etc.) the portal application's port 8989 is
+exposed through a `Kubernetes LoadBalancer`_ object.
+
+Typically, to be able to access the Kubernetes nodes publicly a public address is
+assigned.  In Openstack this is a floating IP address.
+
+When the `portal-app` chart is deployed a Kubernetes service is created that
+instantiates a load balancer.  The LB chooses the private interface of one of
+the nodes as in the example below (10.0.0.4 is private to the K8s cluster only).
+Then to be able to access the portal on port 8989 from outside theK K8s &
+Openstack environment, the user needs to assign/get the floating IP address that
+corresponds to the private IP as follows::
+
+  > kubectl -n onap get services|grep "portal-app"
+  portal-app  LoadBalancer   10.43.142.201   10.0.0.4   8989:30215/TCP,8006:30213/TCP,8010:30214/TCP   1d   app=portal-app,release=dev
+
+
+In this example, use the 10.0.0.4 private address as a key find the
+corresponding public address which in this example is 10.12.5.155. If you're
+using OpenStack you'll do the lookup with the horizon GUI or the Openstack CLI
+for your tenant (openstack server list).  That IP is then used in your
+`/etc/hosts` to map the fixed DNS aliases required by the ONAP Portal as shown
+below::
+
+  10.12.6.155 portal.api.simpledemo.onap.org
+  10.12.6.155 vid.api.simpledemo.onap.org
+  10.12.6.155 sdc.api.fe.simpledemo.onap.org
+  10.12.6.155 portal-sdk.simpledemo.onap.org
+  10.12.6.155 policy.api.simpledemo.onap.org
+  10.12.6.155 aai.api.sparky.simpledemo.onap.org
+  10.12.6.155 cli.api.simpledemo.onap.org
+  10.12.6.155 msb.api.discovery.simpledemo.onap.org
+
+Ensure you've disabled any proxy settings the browser you are using to access
+the portal and then simply access the familiar URL:
+http://portal.api.simpledemo.onap.org:8989/ONAPPORTAL/login.htm
+
+.. note:: Alternatives Considered.
+
+  Kubernetes port forwarding was considered but discarded as it would require
+  the end user to run a script that opens up port forwarding tunnels to each of
+  the pods that provides a portal application widget.
+
+  Reverting to a VNC server similar to what was deployed in the Amsterdam
+  release was also considered but there were many issues with resolution, lack
+  of volume mount, /etc/hosts dynamic update, file upload that were a tall order
+  to solve in time for the Beijing release.
 
 .. figure:: oomLogoV2-Monitor.png
    :align: right
