@@ -69,6 +69,11 @@ spec:
                 secretKeyRef:
                   name: {{ template "common.fullname" . }}
                   key: db-root-password
+            - name: ODL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}-odl
+                  key: odl-password
             - name: SDNC_CONFIG_DIR
               value: "{{ .Values.config.configDir }}"
             - name: ENABLE_ODL_CLUSTER
@@ -84,23 +89,23 @@ spec:
           - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
             name: sdnc-logging-cfg-config
             subPath: org.ops4j.pax.logging.cfg
-          - mountPath: /opt/onap/sdnc/bin/startODL.sh
-            name: startodl
+          - mountPath: {{ .Values.config.binDir }}/startODL.sh
+            name: bin
             subPath: startODL.sh
-          - mountPath: /opt/onap/sdnc/bin/installSdncDb.sh
-            name: installsdncdb
+          - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+            name: bin
             subPath: installSdncDb.sh
-          - mountPath: /opt/onap/sdnc/data/properties/aaiclient.properties
-            name: aaiclient-conf
+          - mountPath: {{ .Values.config.configDir }}/aaiclient.properties
+            name: properties
             subPath: aaiclient.properties
-          - mountPath: /opt/onap/sdnc/data/properties/dblib.properties
-            name: sdnc-dblib-properties
+          - mountPath: {{ .Values.config.configDir }}/dblib.properties
+            name: properties
             subPath: dblib.properties
-          - mountPath: /opt/onap/sdnc/data/properties/svclogic.properties
-            name: sdnc-svclogic-config
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+            name: properties
             subPath: svclogic.properties
           - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
-            name: onap-sdnc-svclogic-config
+            name: properties
             subPath: svclogic.properties
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
@@ -145,48 +150,14 @@ spec:
         - name: sdnc-logging-cfg-config
           configMap:
             name: {{ include "common.fullname" . }}-log-configmap
-        - name: startodl
+        - name: bin
           configMap:
-            name: {{ include "common.fullname" . }}-startodl
-            items:
-            - key: startODL.sh
-              path: startODL.sh
-              mode: 0755
-        - name: installsdncdb
+            name: {{ include "common.fullname" . }}-bin
+            defaultMode: 0755
+        - name: properties
           configMap:
-            name: {{ include "common.fullname" . }}-installsdncdb
-            items:
-            - key: installSdncDb.sh
-              path: installSdncDb.sh
-              mode: 0755
-        - name: aaiclient-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-aaiclient-properties
-            items:
-            - key: aaiclient.properties
-              path: aaiclient.properties
-              mode: 0644
-        - name: sdnc-dblib-properties
-          configMap:
-            name: {{ include "common.fullname" . }}-dblib-properties
-            items:
-            - key: dblib.properties
-              path: dblib.properties
-              mode: 0644
-        - name: sdnc-svclogic-config
-          configMap:
-            name: {{ include "common.fullname" . }}-svclogic-config
-            items:
-            - key: svclogic.properties
-              path: svclogic.properties
-              mode: 0644
-        - name: onap-sdnc-svclogic-config
-          configMap:
-            name: {{ include "common.fullname" . }}-onap-sdnc-svclogic-config
-            items:
-            - key: svclogic.properties
-              path: svclogic.properties
-              mode: 0644
+            name: {{ include "common.fullname" . }}-properties
+            defaultMode: 0644
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
