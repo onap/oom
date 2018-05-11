@@ -49,6 +49,7 @@ GLOBAL_INJECTED_SDNC_PORTAL_IP_ADDR = "sdnc-portal.{{include "common.namespace" 
 GLOBAL_INJECTED_SO_IP_ADDR = "so.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_UBUNTU_1404_IMAGE = "{{ .Values.ubuntu14Image }}"
 GLOBAL_INJECTED_UBUNTU_1604_IMAGE = "{{ .Values.ubuntu16Image }}"
+GLOBAL_INJECTED_VM_IMAGE_NAME = "{{ .Values.ubuntu14Image }}"
 GLOBAL_INJECTED_VID_IP_ADDR = "vid.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_VM_FLAVOR = "{{ .Values.openStackFlavourMedium }}"
 GLOBAL_INJECTED_VNFSDK_IP_ADDR = "refrepo.{{include "common.namespace" .}}"
@@ -103,6 +104,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_SO_IP_ADDR" : "so.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_UBUNTU_1404_IMAGE" : "{{.Values.ubuntu14Image}}",
     "GLOBAL_INJECTED_UBUNTU_1604_IMAGE" : "{{.Values.ubuntu16Image}}",
+    "GLOBAL_INJECTED_VM_IMAGE_NAME" : "{{ .Values.ubuntu14Image }}",
     "GLOBAL_INJECTED_VID_IP_ADDR" : "vid.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
     "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : "refrepo.{{include "common.namespace" .}}"

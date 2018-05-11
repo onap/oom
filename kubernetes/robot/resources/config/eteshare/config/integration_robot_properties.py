@@ -78,6 +78,10 @@ GLOBAL_SDNGC_REST_PORT = "8282"
 GLOBAL_SDNGC_ADMIN_PORT = "8843"
 GLOBAL_SDNGC_USERNAME = "admin"
 GLOBAL_SDNGC_PASSWORD = "Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U"
+# sms (AAF)  info
+GLOBAL_SMS_SERVER_PROTOCOL = "https"
+GLOBAL_SMS_SERVER_NAME = "aaf-sms.{{include "common.namespace" .}}"
+GLOBAL_SMS_SERVER_PORT = "10443"
 # vid info - everything is from the private oam network (also called onap private network)
 GLOBAL_VID_SERVER_PROTOCOL = "http"
 GLOBAL_VID_SERVER_PORT = "8080"
