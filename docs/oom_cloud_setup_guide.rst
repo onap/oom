@@ -82,6 +82,6 @@ Cloud Installation
    (or even a combination of the two). The following guides describe how to
    create a Kubernetes cluster with popular tools:
 
-   - `Setting up Kubernetes with Rancher`_ (recommended)
+   - :ref:`setup-kubernetes-rancher-label` (recommended)
    - `Setting up Kubernetes with Kubeadm`_
    - `Setting up Kubernetes with Cloudify`_
