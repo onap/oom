@@ -94,10 +94,11 @@ done
 echo docker login -u $USER_NAME -p $PASSWORD $IMAGE_REPOSITORY
 docker login -u $USER_NAME -p $PASSWORD $IMAGE_REPOSITORY
 
+imageNameWithVersion=" ";
+
 #scan all values.yaml files recursively
 for filename in `find $LOCATION -name $VALUES_FILE_NAME`
 do
-        imageNameWithVersion=" ";
         #parse yaml files
         for line in  `parse_yaml $filename`
         do
@@ -129,14 +130,16 @@ do
                 fi
         done
 done
+
 # complete processing
 echo "finished launching pulls"
 #MAX_WAIT_INTERVALS=300
-INTERVAL_COUNT=300
+INTERVAL_COUNT=800
 while [  $(ps -ef | grep docker | grep pull | grep -v $0 | wc -l) -gt 0 ]; do
   sleep 10
+  LEFT=$(ps -ef | grep docker | grep pull | grep -v $0 | wc -l)
   INTERVAL_COUNT=$((INTERVAL_COUNT - 1))
-  echo "waiting for last pull"
+  echo "waiting for last pull - $LEFT left"
   if [ "$INTERVAL_COUNT" -eq 0 ]; then
     break
   fi
