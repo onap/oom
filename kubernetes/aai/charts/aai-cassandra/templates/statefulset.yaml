@@ -9,7 +9,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  serviceName: {{ include "common.fullname" . }}
+  serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
@@ -29,7 +29,6 @@ spec:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
         - containerPort: {{ .Values.service.internalPort3 }}
-        - containerPort: {{ .Values.service.internalPort4 }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           exec:
@@ -60,7 +59,7 @@ spec:
           - name: HEAP_NEWSIZE
             value: {{ .Values.config.heap.min }}
           - name: CASSANDRA_SEEDS
-            value: "{{- range $i, $e := until $seed_size }}{{ template "common.fullname" $global }}-{{ $i }},{{- end }}"
+            value: "{{- range $i, $e := until $seed_size }}{{ template "common.fullname" $global }}-{{ $i }}.{{ include "common.servicename" $global }},{{- end }}"
           - name: JVM_OPTS
             value: {{ .Values.config.jvmOpts | quote }}
           - name: CASSANDRA_CLUSTER_NAME
