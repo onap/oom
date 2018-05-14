@@ -2,15 +2,15 @@ GLOBAL_PRELOAD_PARAMETERS = {
     # heat template parameter values common to all heat template continaing these parameters
      "defaults" : {
          'key_name' : 'vfw_key${uuid}',
-         "pub_key" : "${pub_key}",
+         "pub_key" : "{{ .Values.vnfPubKey }}",
          "repo_url_blob" : "https://nexus.onap.org/content/repositories/raw",
          "repo_url_artifacts" : "https://nexus.onap.org/content/groups/staging",
          "demo_artifacts_version" : "${GLOBAL_INJECTED_ARTIFACTS_VERSION}",
          "onap_private_net_id" : "${GLOBAL_INJECTED_NETWORK}",
          "onap_private_subnet_id" : "{{ .Values.openStackPrivateSubnetId }}",
          "onap_private_net_cidr" : "{{ .Values.openStackPrivateNetCidr }}",
-         "dcae_collector_ip" : "${dcae_collector_ip}",
-         "dcae_collector_port" : "8080",
+         "dcae_collector_ip" : "{{ .Values.dcaeCollectorIp }}",
+         "dcae_collector_port" : "30235",
          "public_net_id" : "${GLOBAL_INJECTED_PUBLIC_NET_ID}",
          "cloud_env" : "${GLOBAL_INJECTED_CLOUD_ENV}",
          "install_script_version" : "${GLOBAL_INJECTED_SCRIPT_VERSION}",
