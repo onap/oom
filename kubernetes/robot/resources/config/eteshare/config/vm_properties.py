@@ -85,7 +85,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OOF_HOMING_IP_ADDR" : "oof-has-api.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_OOF_SNIRO_IP_ADDR" : "oof-osdf.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_OPENO_IP_ADDR" : "msb-iag.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_OPENSTACK_PASSWORD" : "{{ .Values.openStackEncryptedPassword }}",
+    "GLOBAL_INJECTED_OPENSTACK_PASSWORD" : "{{ .Values.openStackPassword }}",
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID" : "{{ .Values.openStackTenantId }}",
     "GLOBAL_INJECTED_OPENSTACK_USERNAME" : "{{ .Values.openStackUserName }}",
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : "pdp.{{include "common.namespace" .}}",
