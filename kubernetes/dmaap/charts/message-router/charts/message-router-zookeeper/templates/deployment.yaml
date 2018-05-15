@@ -31,32 +31,37 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - command:
-        - bash
-        args:
+      - name: {{ include "common.name" . }}-seed-zookeeper-topics
+        command:
+        - /bin/bash
         - -c
-        - "if [ -d /var/tmp/version-2 ]; then echo nothing to do; else cp -a /opt/config/src/message-router/dcae-startup-vm-message-router/docker_files/data-zookeeper/* /var/tmp/; fi"
-        image: "{{ .Values.global.configRepository }}/{{ .Values.global.configImage }}"
+        - >
+          if [ -d /tmp/topics/version-2 ]; then
+          echo "nothing to do";
+          else
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/oom-projects/data-zookeeper/* to /tmp/topics";
+          cp -var /tmp/gerrit/oom-topics/data-zookeeper/* /tmp/topics;
+          echo "Done.";
+          fi
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-        - mountPath: /var/tmp
+        - mountPath: /tmp/topics
           name: zookeeper-data
-        name: zookeeper-primer
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
-        {{- if eq .Values.liveness.enabled true }}
+        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end -}}
+        {{ end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
