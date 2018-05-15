@@ -16,3 +16,7 @@
 
 
 ${POLICY_HOME}/bin/features enable healthcheck
+${POLICY_HOME}/bin/features enable pooling-dmaap
+${POLICY_HOME}/bin/features enable distributed-locking
+
+${POLICY_HOME}/bin/db-migrator -s pooling -o upgrade
