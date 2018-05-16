@@ -19,7 +19,7 @@ dbHost="{{.Values.config.dbServiceName}}.{{.Release.Namespace}}"
 dbPort="3306"
 dbName="sdnctl"
 dbUser="sdnctl"
-dbPassword="gamma"
+dbPassword="{{.Values.config.dbSdnctlPassword}}"
 gitLocalRepository="$4"
 
 lastPort=$(find "releases/" -name "customSettings.js" |xargs grep uiPort|cut -d: -f2|sed -e s/,//|sort|tail -1)
@@ -99,7 +99,7 @@ then
 	echo "org.onap.ccsdk.sli.jdbc.url=jdbc:mysql://{{.Values.config.dbServiceName}}.{{.Release.Namespace}}:3306/sdnctl" >>$svclogicPropFile
 	echo "org.onap.ccsdk.sli.jdbc.database=sdnctl" >>$svclogicPropFile
 	echo "org.onap.ccsdk.sli.jdbc.user=sdnctl" >>$svclogicPropFile
-	echo "org.onap.ccsdk.sli.jdbc.password=gamma" >>$svclogicPropFile
+	echo "org.onap.ccsdk.sli.jdbc.password={{.Values.config.dbSdnctlPassword}}" >>$svclogicPropFile
 fi
 if [ ! -e "${appDir}/flowShareUsers.js" ]
 then
