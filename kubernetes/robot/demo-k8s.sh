@@ -69,7 +69,7 @@ do
 			VARIABLES="$VARIABLES -v WEB_PASSWORD:$WEB_PASSWORD"
 			shift
 			if [ $# -eq 2 ];then
-				VARIABLES="$VARIABLES -v HOSTS_PREFIX:$2"
+				VARIABLES="$VARIABLES -v HOSTS_PREFIX:$1"
 			fi
 			shift
 			;;
@@ -85,7 +85,7 @@ do
 			TAG="InitDistribution"
 			shift
 			if [ $# -eq 1 ];then
-				VARIABLES="$VARIABLES -v DEMO_PREFIX:$2"
+				VARIABLES="$VARIABLES -v DEMO_PREFIX:$1"
 			fi
 			shift
 			;;
@@ -93,24 +93,24 @@ do
 			TAG="PreloadDemo"
 			shift
 			if [ $# -ne 2 ];then
-				echo "Usage: demo.sh preload <vnf_name> <module_name>"
+				echo "Usage: demo.sh <namespace> preload <vnf_name> <module_name>"
 				exit
 			fi
-			VARIABLES="$VARIABLES -v VNF_NAME:$2"
+			VARIABLES="$VARIABLES -v VNF_NAME:$1"
 			shift
-			VARIABLES="$VARIABLES -v MODULE_NAME:$2"
+			VARIABLES="$VARIABLES -v MODULE_NAME:$1"
 			shift
 			;;
     	appc)
-    	TAG="APPCMountPointDemo"
-    	shift
-    	if [ $# -ne 1 ];then
-			echo "Usage: demo.sh appc <module_name>"
-			exit
-		fi
-    	VARIABLES="$VARIABLES -v MODULE_NAME:$2"
-    	shift
-    	;;
+			TAG="APPCMountPointDemo"
+			shift
+			if [ $# -ne 1 ];then
+					echo "Usage: demo.sh <namespace> appc <module_name>"
+					exit
+				fi
+			VARIABLES="$VARIABLES -v MODULE_NAME:$1"
+			shift
+			;;
     	instantiateVFW)
 			TAG="instantiateVFW"
 			VARIABLES="$VARIABLES -v GLOBAL_BUILD_NUMBER:$$"
@@ -120,10 +120,10 @@ do
 			TAG="deleteVNF"
 			shift
 			if [ $# -ne 1 ];then
-				echo "Usage: demo.sh deleteVNF <module_name from instantiateVFW>"
+				echo "Usage: demo.sh <namespace> deleteVNF <module_name from instantiateVFW>"
 				exit
 			fi
-			VARFILE=$2.py
+			VARFILE=$1.py
 			if [ -e /opt/eteshare/${VARFILE} ]; then
 				VARIABLES="$VARIABLES -V /share/${VARFILE}"
 			else
@@ -136,14 +136,14 @@ do
 			TAG="heatbridge"
 			shift
 			if [ $# -ne 3 ];then
-				echo "Usage: demo.sh heatbridge <stack_name> <service_instance_id> <service>"
+				echo "Usage: demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service>"
 				exit
 			fi
-			VARIABLES="$VARIABLES -v HB_STACK:$2"
+			VARIABLES="$VARIABLES -v HB_STACK:$1"
 			shift
-			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$2"
+			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$1"
 			shift
-			VARIABLES="$VARIABLES -v HB_SERVICE:$2"
+			VARIABLES="$VARIABLES -v HB_SERVICE:$1"
 			shift
 			;;
     	*)
