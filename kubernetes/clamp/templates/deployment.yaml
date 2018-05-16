@@ -65,6 +65,10 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+          - mountPath: /opt/clamp/sdc-controllers-config.json
+            name: {{ include "common.fullname" . }}-config
+            subPath: sdc-controllers-config.json
           env:
             - name: SPRING_APPLICATION_JSON
               valueFrom:
@@ -81,5 +85,12 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+      volumes:
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
+            - key: sdc-controllers-config.json
+              path: sdc-controllers-config.json
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
