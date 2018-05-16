@@ -27,25 +27,25 @@ module.exports={
     "userDir": "releases/sdnc1.0",
     "httpAuth": {
         "user": "dguser",
-        "pass": "cc03e747a6afbbcbf8be7668acfebee5"
+        "pass": "{{.Values.config.dgUserPassword}}"
     },
     "dbHost": "{{.Values.config.dbServiceName}}.{{ include "common.namespace" . }}",
     "dbPort": "3306",
     "dbName": "sdnctl",
     "dbUser": "sdnctl",
-    "dbPassword": "gamma",
+    "dbPassword": "{{.Values.config.dbSdnctlPassword}}",
     "gitLocalRepository": "",
     "httpRoot": "/",
     "disableEditor": false,
     "httpAdminRoot": "/",
     "httpAdminAuth": {
         "user": "dguser",
-        "pass": "cc03e747a6afbbcbf8be7668acfebee5"
+        "pass": "{{.Values.config.dgUserPassword}}"
     },
     "httpNodeRoot": "/",
     "httpNodeAuth": {
         "user": "dguser",
-        "pass": "cc03e747a6afbbcbf8be7668acfebee5"
+        "pass": "{{.Values.config.dgUserPassword}}"
     },
     "uiHost": "0.0.0.0",
     "version": "0.9.1",
