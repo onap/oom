@@ -13,3 +13,4 @@ OOM Documentation Repository
   oom_user_guide.rst
   oom_developer_guide.rst
   oom_cloud_setup_guide.rst
+  release-notes.rst

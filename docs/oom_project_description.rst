@@ -32,12 +32,14 @@ OOM supports a wide variety of Kubernetes private clouds - built with Rancher,
 Kubeadm or Cloudify - and public cloud infrastructures such as: Microsoft Azure,
 Amazon AWS, Google GCD, VMware VIO, and Openstack.
 
-The OOM documentation is broken into three different areas each targeted at a differnet user:
+The OOM documentation is broken into four different areas each targeted at a differnet user:
 
 - :ref:`quick-start-label` - deploy ONAP on an existing cloud
 - :ref:`user-guide-label` - a guide for operators of an ONAP instance
 - :ref:`developer-guide-label` - a guide for developers of OOM and ONAP
 - :ref:`cloud-setup-guide-label` - a guide for those setting up cloud environments that ONAP will use
+
+The :ref:`release-notes-label` for OOM describe the incremental features per release.
 
 Component Orchestration Overview
 ================================
