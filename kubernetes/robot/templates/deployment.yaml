@@ -77,12 +77,14 @@ spec:
           subPath: sdngc_interface.robot
         - name: robot-resources
           mountPath: /var/opt/OpenECOMP_ETE/robot/resources/oof_interface.robot
-          subPath: oof_interface.robot         
+          subPath: oof_interface.robot
         - name: robot-lighttpd-authorization
           mountPath: /etc/lighttpd/authorization
           subPath: authorization
         - name: demodir
           mountPath: /share
+        - name: robot-logs
+          mountPath: /share/logs
         resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -94,6 +96,13 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+    {{- if .Values.persistence.enabled }}
+      - name: robot-logs
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
+    {{- else }}
+        emptyDir: {}
+    {{- end }}
       - name: localtime
         hostPath:
           path: /etc/localtime
