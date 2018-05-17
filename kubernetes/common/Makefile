@@ -17,13 +17,14 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/../dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
+COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.)))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(HELM_CHARTS)
+all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
