@@ -37,8 +37,13 @@ spec:
         - /bin/sh
         - -c
         - |
-          for i in $(seq 0 $(({{ .Values.replicaCount }}-1))); do mkdir -p /podroot/data$i; done
-          chmod 777 /podroot/*
+          for i in $(seq 0 $(({{ .Values.replicaCount }}-1))); do
+            if [ ! -d /podroot/data$i ]; then
+              mkdir -p /podroot/data$i;
+              chown 26:26 /podroot/data$i;
+              chmod 700 /podroot/data$i;
+            fi;
+          done
         env:
         - name: POD_NAME
           valueFrom: { fieldRef: { fieldPath: metadata.name } }
