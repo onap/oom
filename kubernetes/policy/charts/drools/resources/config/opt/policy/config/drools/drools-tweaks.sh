@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/bash -xv
 
 # Copyright © 2017-2018 Amdocs, Bell Canada, AT&T
 #
@@ -15,8 +15,58 @@
 # limitations under the License.
 
 
-${POLICY_HOME}/bin/features enable healthcheck
-${POLICY_HOME}/bin/features enable pooling-dmaap
-${POLICY_HOME}/bin/features enable distributed-locking
+"${POLICY_HOME}"/bin/features enable healthcheck
+"${POLICY_HOME}"/bin/features enable pooling-dmaap
+"${POLICY_HOME}"/bin/features enable distributed-locking
 
-${POLICY_HOME}/bin/db-migrator -s pooling -o upgrade
+"${POLICY_HOME}"/bin/db-migrator -s pooling -o upgrade
+
+# make sure the PDPD-CONFIGURATION anonymous topic is created
+# so not to lose any configuration updates
+
+echo
+echo "creating PDPD-CONFIGURATION topic"
+echo
+
+curl --silent --connect-timeout 60 -X POST --header "Content-Type: application/json" -d "{}"   http://message-router:3904/events/PDPD-CONFIGURATION
+
+echo
+echo "removing PDPD-CONFIGURATION topic dummy message"
+echo
+
+curl --silent --connect-timeout 60 -X GET http://message-router:3904/events/PDPD-CONFIGURATION/1/1?timeout=15000
+
+# for resiliency/scalability scenarios, check to see
+# if there's an amsterdam artifact  already deployed
+# by brmsgw.  If so, update the amsterdam controller
+# coordinates.  In the future, a more sophisticated
+# solution will be put in place, that will required
+# coordination among policy components.
+
+echo
+echo "checking if there are amsterdam policies already deployed .."
+echo
+
+AMSTERDAM_VERSION=$(curl --silent --connect-timeout 60 -X GET "http://nexus:8081/nexus/service/local/artifact/maven/resolve?r=releases&g=org.onap.policy-engine.drools.amsterdam&a=policy-amsterdam-rules&v=RELEASE" | grep -Po "(?<=<version>).*(?=</version>)")
+
+if [[ -z ${AMSTERDAM_VERSION} ]]; then
+	echo "no amsterdam policies have been found .."
+	exit 0
+fi
+
+echo
+echo "The latest deployed amsterdam artifact in nexus has version ${AMSTERDAM_VERSION}"
+echo
+
+sed -i.INSTALL -e "s/^rules.artifactId=.*/rules.artifactId=policy-amsterdam-rules/g" \
+               -e "s/^rules.groupId=.*/rules.groupId=org.onap.policy-engine.drools.amsterdam/g" \
+               -e "s/^rules.version=.*/rules.version=${AMSTERDAM_VERSION}/g" "${POLICY_HOME}"/config/amsterdam-controller.properties
+
+echo
+echo "amsterdam controller will be started brained with maven coordinates:"
+echo
+
+grep "^rules" "${POLICY_HOME}"/config/amsterdam-controller.properties
+
+echo
+echo
