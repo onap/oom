@@ -196,7 +196,7 @@ Many technologies are used across the projects resulting in significant
 operational complexity and an inability to apply global parameters across the
 entire ONAP deployment. OOM solves this problem by introducing a common
 configuration technology, Helm charts, that provide a hierarchical
-configuration configuration with the ability to override values with higher
+configuration with the ability to override values with higher
 level charts or command line options.
 
 The structure of the configuration of ONAP is shown in the following diagram.
@@ -420,10 +420,10 @@ to monitor the real-time health of an ONAP deployment:
 - a set of liveness probes which feed into the Kubernetes manager which
   are described in the Heal section.
 
-Within ONAP Consul is the monitoring system of choice and deployed by OOM in two parts:
+Within ONAP, Consul is the monitoring system of choice and deployed by OOM in two parts:
 
 - a three-way, centralized Consul server cluster is deployed as a highly
-  available monitor of all of the ONAP components,and
+  available monitor of all of the ONAP components, and
 - a number of Consul agents.
 
 The Consul server provides a user interface that allows a user to graphically
