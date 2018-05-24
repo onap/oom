@@ -1,4 +1,5 @@
-.. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. This work is licensed under a Creative Commons Attribution 4.0
+.. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2018 Amdocs, Bell Canada
 
@@ -47,7 +48,7 @@ The versions of Kubernetes that are supported by OOM are as follows:
   Release         Kubernetes  Helm   kubectl  Docker
   ==============  ==========  =====  =======  ========
   amsterdam       1.7.x       2.3.x  1.7.x    1.12.x
-  beijing/master  1.8.10      2.7.x  1.8.10   17.03.x
+  beijing/master  1.8.10      2.8.2  1.8.10   17.03.x
   ==============  ==========  =====  =======  ========
 
 Minimum Hardware Configuration
