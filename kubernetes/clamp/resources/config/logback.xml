@@ -1,0 +1,236 @@
+<configuration scan="true" scanPeriod="10 seconds" debug="false">
+		<jmxConfigurator />
+		<property resource="application.properties" />
+		<property name="logDirectory" value="/var/log/onap/clamp" />
+		<!-- Example evaluator filter applied against console appender -->
+		<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+				<!-- filter class="ch.qos.logback.classic.filter.LevelFilter"> <level>ERROR</level> 
+						<onMatch>ACCEPT</onMatch> <onMismatch>DENY</onMismatch> </filter -->
+				<!-- deny all events with a level below INFO, that is TRACE and DEBUG -->
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+						<level>INFO</level>
+				</filter>
+				<encoder>
+						<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} - %msg%n
+						</pattern>
+				</encoder>
+		</appender>
+
+		<appender name="ERROR"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+						<level>INFO</level>
+				</filter>
+				<file>${logDirectory}/error.log</file>
+				<append>true</append>
+				<encoder>
+						<pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC}|%X{RequestId}|%.20thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDescription}|%msg%n</pattern>
+				</encoder>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<maxIndex>10</maxIndex>
+						<FileNamePattern>${logDirectory}/error.%i.log.zip
+						</FileNamePattern>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>10MB</maxFileSize>
+				</triggeringPolicy>
+		</appender>
+
+		<appender name="DEBUG"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>${logDirectory}/debug.log</file>
+				<append>true</append>
+				<encoder>
+						<pattern>%date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX",UTC}|%X{RequestId}|%.20thread|%.-5level|%logger{36}|%msg%n</pattern>
+				</encoder>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<fileNamePattern>${logDirectory}/debug.%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>10MB</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<maxHistory>5</maxHistory>
+				</rollingPolicy>
+		</appender>
+
+		<appender name="AUDIT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>${logDirectory}/audit.log</file>
+				<append>true</append>
+				<encoder>
+						<pattern>%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%.20thread|%X{VirtualServerName}|%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDescription}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}|%X{ClassName}|%X{Unused}|%X{ProcessKey}|%X{CustomField1}|%X{CustomField2}|%X{CustomField3}|%X{CustomField4}|%msg%n
+						</pattern>
+				</encoder>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<maxIndex>10</maxIndex>
+						<FileNamePattern>${logDirectory}/audit.%i.log.zip
+						</FileNamePattern>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>10MB</maxFileSize>
+				</triggeringPolicy>
+		</appender>
+		<appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
+				<queueSize>256</queueSize>
+				<appender-ref ref="AUDIT" />
+		</appender>
+
+		<appender name="METRIC"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>${logDirectory}/metric.log</file>
+				<append>true</append>
+				<encoder>
+						<pattern>%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%.20thread|%X{VirtualServerName}|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDescription}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}|%X{ClassName}|%X{Unused}|%X{ProcessKey}|%X{TargetVirtualEntity}|%X{CustomField1}|%X{CustomField2}|%X{CustomField3}|%X{CustomField4}|
+								%msg%n</pattern>
+				</encoder>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<maxIndex>10</maxIndex>
+						<FileNamePattern>${logDirectory}/metric.%i.log.zip
+						</FileNamePattern>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>10MB</maxFileSize>
+				</triggeringPolicy>
+		</appender>
+		<appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
+				<queueSize>256</queueSize>
+				<appender-ref ref="METRIC" />
+		</appender>
+
+		<!-- SECURITY related loggers -->
+		<appender name="SECURITY"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>${logDirectory}/security.log</file>
+				<append>true</append>
+				<encoder>
+						<pattern>%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%.20thread|%X{VirtualServerName}|%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDescription}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}|%X{ClassName}|%X{Unused}|%X{ProcessKey}|%X{CustomField1}|%X{CustomField2}|%X{CustomField3}|%X{CustomField4}|%msg%n
+						</pattern>
+				</encoder>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<maxIndex>10</maxIndex>
+						<FileNamePattern>${logDirectory}/security.%i.log.zip
+						</FileNamePattern>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>10MB</maxFileSize>
+				</triggeringPolicy>
+		</appender>
+		<appender name="asyncEELFSecurity" class="ch.qos.logback.classic.AsyncAppender">
+				<queueSize>256</queueSize>
+				<appender-ref ref="SECURITY" />
+		</appender>
+
+		<!-- CLDS related loggers -->
+		<logger name="org.onap.clamp.clds" level="INFO" additivity="true">
+				<appender-ref ref="ERROR" />
+		</logger>
+
+		<!-- CLDS related loggers -->
+		<logger name="com.att.eelf.error" level="OFF" additivity="true">
+				<appender-ref ref="ERROR" />
+		</logger>
+		<!-- EELF related loggers -->
+		<logger name="com.att.eelf.audit" level="INFO" additivity="false">
+				<appender-ref ref="asyncEELFAudit" />
+		</logger>
+		<logger name="com.att.eelf.metrics" level="DEBUG" additivity="false">
+				<appender-ref ref="asyncEELFMetrics" />
+		</logger>
+		<logger name="com.att.eelf.security" level="DEBUG" additivity="false">
+				<appender-ref ref="asyncEELFSecurity" />
+		</logger>
+
+
+		<!-- Spring related loggers -->
+		<logger name="org.springframework" level="WARN" />
+		<logger name="org.springframework.beans" level="WARN" />
+		<logger name="org.springframework.web" level="WARN" />
+		<logger name="com.blog.spring.jms" level="WARN" />
+
+		<!-- Other Loggers that may help troubleshoot -->
+		<logger name="net.sf" level="WARN" />
+		<logger name="org.apache.commons.httpclient" level="WARN" />
+		<logger name="org.apache.commons" level="WARN" />
+		<logger name="org.apache.coyote" level="WARN" />
+		<logger name="org.apache.jasper" level="WARN" />
+
+		<!-- Camel Related Loggers (including restlet/servlet/jaxrs/cxf logging.
+				May aid in troubleshooting) -->
+		<logger name="org.apache.camel" level="WARN" />
+		<logger name="org.apache.cxf" level="WARN" />
+		<logger name="org.apache.camel.processor.interceptor" level="WARN" />
+		<logger name="org.apache.cxf.jaxrs.interceptor" level="WARN" />
+		<logger name="org.apache.cxf.service" level="WARN" />
+		<logger name="org.restlet" level="DEBUG" />
+		<logger name="org.apache.camel.component.restlet" level="DEBUG" />
+
+		<!-- logback internals logging -->
+		<logger name="ch.qos.logback.classic" level="INFO" />
+		<logger name="ch.qos.logback.core" level="INFO" />
+
+		<!-- logback jms appenders & loggers definition starts here -->
+		<!-- logback jms appenders & loggers definition starts here -->
+		<appender name="auditLogs"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+				</filter>
+				<file>${logDirectory}/Audit.log</file>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<fileNamePattern>${logDirectory}/Audit.%i.log.zip
+						</fileNamePattern>
+						<minIndex>1</minIndex>
+						<maxIndex>9</maxIndex>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>5MB</maxFileSize>
+				</triggeringPolicy>
+				<encoder>
+						<pattern>"%d [%thread] %-5level %logger{1024} - %msg%n"</pattern>
+				</encoder>
+		</appender>
+		<appender name="perfLogs"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+				</filter>
+				<file>${logDirectory}/Perform.log</file>
+				<rollingPolicy
+						class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+						<fileNamePattern>${logDirectory}/Perform.%i.log.zip
+						</fileNamePattern>
+						<minIndex>1</minIndex>
+						<maxIndex>9</maxIndex>
+				</rollingPolicy>
+				<triggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+						<maxFileSize>5MB</maxFileSize>
+				</triggeringPolicy>
+				<encoder>
+						<pattern>"%d [%thread] %-5level %logger{1024} - %msg%n"</pattern>
+				</encoder>
+		</appender>
+		<logger name="AuditRecord" level="INFO" additivity="FALSE">
+				<appender-ref ref="auditLogs" />
+		</logger>
+		<logger name="AuditRecord_DirectCall" level="INFO" additivity="FALSE">
+				<appender-ref ref="auditLogs" />
+		</logger>
+		<logger name="PerfTrackerRecord" level="INFO" additivity="FALSE">
+				<appender-ref ref="perfLogs" />
+		</logger>
+		<!-- logback jms appenders & loggers definition ends here -->
+
+		<root level="WARN">
+				<appender-ref ref="DEBUG" />
+				<appender-ref ref="STDOUT" />
+		</root>
+
+</configuration>
