@@ -71,6 +71,11 @@ if [ -z "$DMAAP_TOPIC_ENV" ]
                 echo "DMAAP_TOPIC_ENV shell variable exists and it's $DMAAP_TOPIC_ENV"
 fi
 
+if [ -f /tmp/health_check.sh ]
+then
+  rm /tmp/health_check.sh
+fi
+
 echo "Adding a value to property appc.asdc.env in appc.properties for appc-asdc-listener feature"
 echo "" >> $APPC_HOME/data/properties/appc.properties
 echo "appc.asdc.env=$DMAAP_TOPIC_ENV" >> $APPC_HOME/data/properties/appc.properties
@@ -172,6 +177,10 @@ fi
 
         appcInstallEndTime=$(date +%s)
         echo "Total Appc install took $(expr $appcInstallEndTime - $appcInstallStartTime) seconds"
+
+echo "#!/bin/bash -x" > /tmp/health_check.sh
+echo "echo healthy" >> /tmp/health_check.sh
+chmod +x /tmp/health_check.sh
 
 exec ${ODL_HOME}/bin/karaf
 
