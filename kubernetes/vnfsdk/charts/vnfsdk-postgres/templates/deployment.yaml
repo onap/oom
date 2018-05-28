@@ -23,6 +23,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: {{ include "common.name" . }}
@@ -33,29 +34,11 @@ spec:
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - "{{ .Values.vnfsdkpostgres.nameOverride }}"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy}}
-        name: {{ include "common.name" . }}-readiness
+      hostname: {{ include "common.name" . }}
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+      - args:
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
         name: {{ include "common.name" . }}
-        readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readiness.periodSeconds }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
