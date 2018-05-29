@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, AT&T, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - "sdc-onboarding-be"
+        - "dcae-be"
         env:
         - name: NAMESPACE
           valueFrom:
@@ -52,7 +52,7 @@ spec:
         - /root/job_complete.py
         args:
         - --job-name
-        - {{ .Release.Name }}-sdc-onboarding-be-cassandra-init
+        - {{ .Release.Name }}-dcae-be-tools
         env:
         - name: NAMESPACE
           valueFrom:
@@ -74,9 +74,9 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
-            exec:
-              command:
-              - "/var/lib/ready-probe.sh"
+            httpGet:
+              path: /dcaed/healthCheck
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -84,15 +84,13 @@ spec:
             value: {{ .Values.global.env.name }}
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
-          - name: cassandra_ssl_enabled
-            value: {{ .Values.config.cassandraSslEnabled | quote }}
           - name: HOST_IP
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
           volumeMounts:
           - name: {{ include "common.fullname" . }}-environments
-            mountPath: /root/chef-solo/environments/
+            mountPath: /var/opt/dcae-fe/chef-solo/environments/
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -104,7 +102,7 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/dcae-fe/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -129,22 +127,22 @@ spec:
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
       volumes:
-      - name: {{ include "common.fullname" . }}-localtime
-        hostPath:
-          path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ .Release.Name }}-sdc-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
-      - name: {{ include "common.fullname" . }}-logback
-        configMap:
-          name : {{ include "common.fullname" . }}-logging-configmap
-      - name: {{ include "common.fullname" . }}-environments
-        configMap:
-          name: {{ .Release.Name }}-sdc-environments-configmap
-          defaultMode: 0755
-      - name:  {{ include "common.fullname" . }}-logs
-        emptyDir: {}
+        - name: {{ include "common.fullname" . }}-localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-sdc-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name: {{ include "common.fullname" . }}-logback
+          configMap:
+            name : {{ include "common.fullname" . }}-logging-configmap
+        - name: {{ include "common.fullname" . }}-environments
+          configMap:
+            name: {{ .Release.Name }}-sdc-environments-configmap
+            defaultMode: 0755
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
