@@ -1,4 +1,4 @@
-# Copyright Â© 2017 Amdocs, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,11 +31,18 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
+#dd775k: This container checks if the job that wait for all db instances to be up and initializes the db had finished.
+#      - command:
+#        - /bin/sh
+#        args:
+#        - "-c"
+#        - "sleep 1000000000m"
       - command:
-        - /root/ready.py
+        - python
         args:
-        - --container-name
-        - {{ .Values.mariadb.nameOverride }}
+        - /tmp/vid-check-job-completion/vid_check_job_completion.py
+        - --job-name
+        - vid-config-galera
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,6 +52,9 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+        volumeMounts:
+        - mountPath: /tmp/vid-check-job-completion
+          name: vid-check-job-completion
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -83,7 +93,7 @@ spec:
             - name: VID_ECOMP_SHARED_CONTEXT_REST_URL
               value: http://portal-app.{{ include "common.namespace" . }}:{{ .Values.config.onapport }}/ONAPPORTAL/context
             - name: VID_MSO_SERVER_URL
-              value: http://so.{{ include "common.namespace" . }}:{{ .Values.config.msoport }}
+              value: http://mso.{{ include "common.namespace" . }}:{{ .Values.config.msoport }}
             - name: VID_MSO_PASS
               value: "{{ .Values.config.vidmsopass }}"
             - name: MSO_DME2_SERVER_URL
@@ -107,10 +117,9 @@ spec:
             - name: VID_MYSQL_USER
               value: "{{ .Values.config.vidmysqluser }}"
             - name: VID_MYSQL_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: vid-password
+              value: "{{ .Values.config.vidmysqlpassword }}"
+              #valueFrom:
+              #  secretKeyRef: {name: {{ include "common.fullname" . }}, key: vid-password}
             - name: VID_MYSQL_MAXCONNECTIONS
               value: "{{ .Values.config.vidmysqlmaxconnections }}"
           volumeMounts:
@@ -158,5 +167,10 @@ spec:
         - name: vid-logback
           configMap:
             name: {{ include "common.fullname" . }}-log-configmap
+        - name: vid-check-job-completion
+          configMap:
+            name: {{ include "common.fullname" . }}-check-job-completion
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
+

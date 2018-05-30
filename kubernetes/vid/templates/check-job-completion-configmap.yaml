@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-check-job-completion
+  namespace: {{ include "common.namespace" . }}
+data:
+  vid_check_job_completion.py: |
+    #!/usr/bin/python
+    from __future__ import print_function
+    import time, argparse, logging, sys, os
+    import kubernetes.client
+    from kubernetes import client, config
+    from pprint import pprint
+
+    #extract env variables.
+    namespace = os.environ['NAMESPACE']
+    cert = os.environ['CERT']
+    host = os.environ['KUBERNETES_SERVICE_HOST']
+    token_path = os.environ['TOKEN']
+
+    with open(token_path, 'r') as token_file:
+        token = token_file.read().replace('\n', '')
+
+    client.configuration.api_key['authorization'] = token
+    client.configuration.api_key_prefix['authorization'] = 'Bearer'
+    client.configuration.host = "https://" + str(host)
+    client.configuration.ssl_ca_cert = cert
+
+    api_instance = client.BatchV1Api()
+
+    #setup logging
+    log = logging.getLogger(__name__)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    handler.setLevel(logging.INFO)
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+
+
+    def is_ready(job_name):
+        log.info( "[INFO] Checking if " + job_name + "  is completed")
+        pretty = True
+        job_status = False
+
+        try:
+            api_response = api_instance.read_namespaced_job_status(job_name, namespace, pretty=pretty)
+        except Exception as e:
+          print("Exception when calling BatchV1Api->read_namespaced_job_status: %s\n" % e)
+
+        pprint(api_response)
+        if api_response.status.succeeded == 1:
+          job_status_type = api_response.status.conditions[0].type
+          if job_status_type == "Complete":
+            job_status = True
+
+        print("[DBG] jobStatus: " + unicode(job_status))
+        return job_status
+
+
+    def main(args):
+        for job_name in args:
+            timeout = time.time() + 60 * 10
+            while True:
+                ready = is_ready(job_name)
+                if ready is True :
+                    break
+                elif time.time() > timeout:
+                    log.warning( "timed out waiting for '" + job_name + "' to be ready")
+                    exit(1)
+                else:
+                    time.sleep(5)
+
+
+    if __name__ == "__main__":
+        parser = argparse.ArgumentParser(description='Process some names.')
+        parser.add_argument('--job-name', action='append', required=True, help='A container name')
+        args = parser.parse_args()
+        arg_dict = vars(args)
+
+        for arg in arg_dict.itervalues():
+            main(arg)
+
+
