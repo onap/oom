@@ -21,6 +21,8 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /opt/startCdt.sh
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
@@ -39,6 +41,11 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          # This sets the port that CDT will use to connect to the main appc container.
+          # The 32 is the node port suffix that is used in the main appc oom templates
+          # for nodePort3.
+          - name: CDT_PORT
+            value: "{{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}32"
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
