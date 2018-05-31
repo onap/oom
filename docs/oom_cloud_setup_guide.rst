@@ -12,6 +12,7 @@
 .. _Setting Up Kubernetes with Rancher: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Rancher
 .. _Setting Up Kubernetes with Kubeadm: https://wiki.onap.org/display/DW/Deploying+Kubernetes+Cluster+with+kubeadm
 .. _Setting Up Kubernetes with Cloudify: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Cloudify
+.. _ONAP on Kubernetes Wiki: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes
 
 .. figure:: oomLogoV2-medium.png
    :align: right
@@ -63,26 +64,38 @@ least three if not six nodes to ensure there is no single point of failure.
   =====  =====  ======  ====================
   RAM    HD     vCores  Ports
   =====  =====  ======  ====================
-  128GB  160GB  16      0.0.0.0/0 (all open)
+  128GB  160GB  32      0.0.0.0/0 (all open)
   =====  =====  ======  ====================
+
+.. note::
+  Kubernetes supports a maximum of 110 pods per node which forces one to use at
+  least two nodes to deploy all of ONAP although at least three are recommended
+  (for example 4x32GB - 8 vCores each). Subsets of ONAP may still be deployed
+  on a single node.
 
 Cloud Installation
 ==================
 
-#. OOM supports deployment on major public clouds. The following guides
-   provide instructions on how to deploy ONAP on these clouds:
+.. #. OOM supports deployment on major public clouds. The following guides
+..    provide instructions on how to deploy ONAP on these clouds:
+..
+..    - `Microsoft Azure`_,
+..    - `Amazon AWS`_,
+..    - `Google GCE`_,
+..    - `VMware VIO`_,
+..    - IBM, and
+..    - `Openstack`_.
+..
+.. #. Alternatively, OOM can be deployed on a private set of physical hosts or VMs
+..    (or even a combination of the two). The following guides describe how to
+..    create a Kubernetes cluster with popular tools:
+..
+..    - `Setting up Kubernetes with Rancher`_ (recommended)
+..    - `Setting up Kubernetes with Kubeadm`_
+..    - `Setting up Kubernetes with Cloudify`_
 
-   - `Microsoft Azure`_,
-   - `Amazon AWS`_,
-   - `Google GCE`_,
-   - `VMware VIO`_,
-   - IBM, and
-   - `Openstack`_.
+OOM can be deployed on a private set of physical hosts or VMs (or even a
+combination of the two). The following guide describe the recommended method to
+setup a Kubernetes cluster: :ref:`onap-on-kubernetes-with-rancher`.
 
-#. Alternatively, OOM can be deployed on a private set of physical hosts or VMs
-   (or even a combination of the two). The following guides describe how to
-   create a Kubernetes cluster with popular tools:
-
-   - `Setting up Kubernetes with Rancher`_ (recommended)
-   - `Setting up Kubernetes with Kubeadm`_
-   - `Setting up Kubernetes with Cloudify`_
+There are alternative deployment methods described on the `ONAP on Kubernetes Wiki`_
