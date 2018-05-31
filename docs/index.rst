@@ -14,3 +14,4 @@ OOM Documentation Repository
   oom_developer_guide.rst
   oom_cloud_setup_guide.rst
   release-notes.rst
+  oom_setup_kubernetes_rancher.rst
