@@ -8,66 +8,10 @@
 Release Notes
 =============
 
-Version: 1.1.0
---------------
-
-:Release Date: 2017-11-16
-
-**New Features**
-
-The Amsterdam release is the first release of the ONAP Operations Manager (OOM).
-
-The main goal of the Amsterdam release was to:
-
-    - Support Flexible Platform Deployment via Kubernetes of fully containerized OMAP components - on any type of environment.
-    - Support State Management of ONAP platform components.
-    - Support full production ONAP deployment and any variation of component level deployment for development.
-    - Platform Operations Orchestration / Control Loop Actions.
-    - Platform centralized logging with ELK stack.
-
-**Bug Fixes**
-
-    The full list of implemented user stories and epics is available on `JIRA <https://jira.onap.org/secure/RapidBoard.jspa?rapidView=41&view=planning.nodetail&epics=visible>`_
-    This is the first release of OOM, the defects fixed in this release were raised during the course of the release.
-    Anything not closed is captured below under Known Issues. If you want to review the defects fixed in the Amsterdam release, refer to Jira link above.
-
-**Known Issues**
-    - `OOM-6 <https://jira.onap.org/browse/OOM-6>`_ Automated platform deployment on Docker/Kubernetes
-
-        VFC, AAF, MSB minor issues.
-
-        Workaround: Manual configuration changes - however the reference vFirewall use case does not currently require these components.
-
-    - `OOM-10 <https://jira.onap.org/browse/OOM-10>`_ Platform configuration management.
-
-        OOM ONAP Configuration Management - Handling of Secrets.
-
-        Workaround: Automated workaround to be able to pull from protected docker repositories.
-
-
-**Security Issues**
-    N/A
-
-
-**Upgrade Notes**
-
-    N/A
-
-**Deprecation Notes**
-
-    N/A
-
-**Other**
-
-
-
-===========
-
-
 Version 2.0.0 Beijing Release
 -----------------------------
 
-:Release Date: 2018-05-24
+:Release Date: 2018-06-07
 
 Epic
 ****
@@ -198,7 +142,7 @@ Story
 * [`OOM-748 <https://jira.onap.org/browse/OOM-748>`_] - Add Standardized Configuration to SDNC
 * [`OOM-749 <https://jira.onap.org/browse/OOM-749>`_] - Add Standardized Configuration to UUI
 * [`OOM-750 <https://jira.onap.org/browse/OOM-750>`_] - Add Standardized Configuration to VFC
-* [`OOM-751 <https://jira.onap.org/browse/OOM-751>`_] - Add Standardized Configuration to VNFSDK
+* [`OOM-751 <https://jira.onap.org/browse/OOM-751>`_] - Add Standardized Configuration to OOM
 * [`OOM-758 <https://jira.onap.org/browse/OOM-758>`_] - Common Mariadb Galera Helm Chart to be reused by many applications
 * [`OOM-771 <https://jira.onap.org/browse/OOM-771>`_] - OOM - update master with new policy db deployment
 * [`OOM-777 <https://jira.onap.org/browse/OOM-777>`_] - Add Standardized Configuration Helm Starter Chart
@@ -216,7 +160,7 @@ Story
 * [`OOM-914 <https://jira.onap.org/browse/OOM-914>`_] - Add LOG component robot healthcheck
 * [`OOM-960 <https://jira.onap.org/browse/OOM-960>`_] - OOM Healthcheck lockdown - currently 32/39 : 20180421
 * [`OOM-979 <https://jira.onap.org/browse/OOM-979>`_] - Enhance OOM TOSCA solution to support standardized Helm Chart
-* [`OOM-1006 <https://jira.onap.org/browse/OOM-1006>`_] - VNFSDK healthcheck fails
+* [`OOM-1006 <https://jira.onap.org/browse/OOM-1006>`_] - OOM healthcheck fails
 * [`OOM-1073 <https://jira.onap.org/browse/OOM-1073>`_] - Change the Repository location in the image oomk8s/config-init:2.0.0-SNAPSHOT
 * [`OOM-1078 <https://jira.onap.org/browse/OOM-1078>`_] - Update Kubectl, docker, helm version
 
@@ -444,5 +388,66 @@ Sub-task
 * [`OOM-1036 <https://jira.onap.org/browse/OOM-1036>`_] - update helm from 2.7.2 to 2.8.2 wiki/rtd
 * [`OOM-1063 <https://jira.onap.org/browse/OOM-1063>`_] - Document Portal LoadBalancer Ingress IP Settings
 
+**Security Notes**
+
+OOM code has been formally scanned during build time using NexusIQ and no Critical vulnerability was found.
+
+Quick Links:
+ 	- `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+ 	
+ 	- `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
+
+Version: 1.1.0
+--------------
+
+:Release Date: 2017-11-16
+
+**New Features**
+
+The Amsterdam release is the first release of the ONAP Operations Manager (OOM).
+
+The main goal of the Amsterdam release was to:
+
+    - Support Flexible Platform Deployment via Kubernetes of fully containerized OMAP components - on any type of environment.
+    - Support State Management of ONAP platform components.
+    - Support full production ONAP deployment and any variation of component level deployment for development.
+    - Platform Operations Orchestration / Control Loop Actions.
+    - Platform centralized logging with ELK stack.
+
+**Bug Fixes**
+
+    The full list of implemented user stories and epics is available on `JIRA <https://jira.onap.org/secure/RapidBoard.jspa?rapidView=41&view=planning.nodetail&epics=visible>`_
+    This is the first release of OOM, the defects fixed in this release were raised during the course of the release.
+    Anything not closed is captured below under Known Issues. If you want to review the defects fixed in the Amsterdam release, refer to Jira link above.
+
+**Known Issues**
+    - `OOM-6 <https://jira.onap.org/browse/OOM-6>`_ Automated platform deployment on Docker/Kubernetes
+
+        VFC, AAF, MSB minor issues.
+
+        Workaround: Manual configuration changes - however the reference vFirewall use case does not currently require these components.
+
+    - `OOM-10 <https://jira.onap.org/browse/OOM-10>`_ Platform configuration management.
+
+        OOM ONAP Configuration Management - Handling of Secrets.
+
+        Workaround: Automated workaround to be able to pull from protected docker repositories.
+
+
+**Security Issues**
+    N/A
+
+
+**Upgrade Notes**
+
+    N/A
+
+**Deprecation Notes**
+
+    N/A
+
+**Other**
+
+    N/A
 
 End of Release Notes
