@@ -25,9 +25,7 @@
   do
     echo "======> $(echo $NODES |wc -w) / {{.Values.replicaCount}} pods up"
     sleep 5
-    RESP=$(wget -vO- --ca-certificate /var/run/secrets/kubernetes.io/serviceaccount/ca.crt  --header "Authorization
-: Bearer $(</var/run/secrets/kubernetes.io/serviceaccount/token)" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT
-_443_TCP_PORT/api/v1/namespaces/{{.Release.Namespace}}/pods?labelSelector=app={{.Chart.Name}})
+    RESP=$(wget -vO- --ca-certificate /var/run/secrets/kubernetes.io/serviceaccount/ca.crt  --header "Authorization: Bearer $(</var/run/secrets/kubernetes.io/serviceaccount/token)" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/{{.Release.Namespace}}/pods?labelSelector=app={{.Chart.Name}})
 
     IPS=$(echo $RESP | jq -r '.items[].status.podIP')
     IPS2=$(echo $IPS | sed -e 's/[a-zA-Z]*//g')
