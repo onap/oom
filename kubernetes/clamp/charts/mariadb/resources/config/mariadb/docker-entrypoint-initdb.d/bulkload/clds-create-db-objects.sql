@@ -17,13 +17,6 @@
 # Create CLDS database objects (tables, etc.)
 #
 #
-CREATE DATABASE `camundabpm`;
-USE `camundabpm`;
-DROP USER 'camunda';
-CREATE USER 'camunda';
-GRANT ALL on camundabpm.* to 'camunda' identified by 'ndMSpw4CAM' with GRANT OPTION;
-FLUSH PRIVILEGES;
-
 CREATE DATABASE `cldsdb4`;
 USE `cldsdb4`;
 DROP USER 'clds';
