@@ -53,3 +53,6 @@ done
 
 # Create VNIs 100-199
 ${SDNC_HOME}/bin/addVnis.sh 100 199
+
+# Drop FK_NETWORK_MODEL foreign key as workaround for SDNC-291.
+${SDNC_HOME}/bin/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
