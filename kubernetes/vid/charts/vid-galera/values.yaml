@@ -1,0 +1,118 @@
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  persistence: {}
+  repository: nexus3.onap.org:10001
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+#repository: mysql
+repository: nexus3.onap.org:10001
+image: adfinissygroup/k8s-mariadb-galera-centos:v002
+imageInit: busybox
+pullPolicy: IfNotPresent
+
+# application configuration
+config:
+  mariadbRootPassword: secretpassword
+#  userName: my-user
+#  userPassword: my-password
+#  mysqlDatabase: my-database
+  userName: vidadmin
+  userPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  mysqlDatabase: vid_openecomp_epsdk
+
+
+# default number of instances in the StatefulSet 
+# keep in mind that if the number is increased you need to update vid-galera-config-job.yaml so that the job will know to wait for all pods.
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: false
+
+readiness:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+
+## Persist data to a persitent volume
+persistence:
+  enabled: false
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteOnce
+  size: 2Gi
+
+
+service:
+  internalPort: 3306
+  name: vid-galera
+  portName: vid-galera
+  sstPort: 4444
+  sstName: sst
+  replicationPort: 4567
+  replicationName: replication
+  istPort: 4568
+  istName: ist
+
+ingress:
+  enabled: false
+
+
+## Configure MariaDB-Galera with a custom my.cnf file
+## ref: https://mariadb.com/kb/en/mariadb/configuring-mariadb-with-mycnf/#example-of-configuration-file
+##
+#externalConfig: {}
+externalConfig: |-
+  lower_case_table_names = 1
+#resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+resources:
+  limits:
+    cpu: 2
+    memory: 4Gi
+  requests:
+    cpu: 2
+    memory: 4Gi
+
+# Name for mariadb-galera cluster - should be unique accross all projects or other clusters
+nameOverride: vid-galera
+
+# DNS name for mariadb-galera cluster - should be unique accross all projects other clusters
+#dnsnameOverride: mariadb-galera

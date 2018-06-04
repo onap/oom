@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vid-config-galera
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: vid-config-galera
+    release: {{ .Release.Name }}
+spec:
+  template:
+    metadata:
+      name: vid-galera-init
+    spec:
+      initContainers:
+#dd775k:  This container checks that all galera instances are up before initializing it.
+      - name: vid-init-galera-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+#        - /bin/sh
+#        args:
+#        - "-c"
+#        - "sleep 1000000000m"
+        command:
+        - python
+        args:
+        - /root/vid_ready.py
+        - --container-name
+        - {{ include "common.fullname" . }}-mariadb-galera-0
+        env:
+        - name: NAMESPACE
+          value: {{ include "common.namespace" . }}
+        volumeMounts:
+        - name: init-config
+          mountPath: /root/
+      containers:
+      - name: vid-config-galeradb
+        image: {{ .Values.mariadb_image }}
+        imagePullPolicy: "{{ .Values.pullPolicy }}"
+        volumeMounts:
+        - name: vid-db-config
+          mountPath: /db-config
+        - name: dbcmd-config
+          mountPath: /dbcmd-config
+        command:
+        - /bin/sh
+        args:
+        - -x
+        - /dbcmd-config/db_cmd.sh
+        env:
+        - name: MYSQL_PASSWORD
+          value: "{{ .Values.config.vidmysqlpassword }}"
+#          valueFrom:
+#            secretKeyRef:
+#              name: {{ template "common.fullname" . }}
+#              key: vid-password
+        - name: MYSQL_HOST
+          value: "{{ .Values.config.vidmysqlhost }}"
+      volumes:
+        - name: vid-db-config
+          configMap:
+            name: {{ include "common.fullname" . }}-galera-sql-configmap
+        - name: dbcmd-config
+          configMap:
+            name: {{ include "common.fullname" . }}-dbcmd-configmap
+        - name: init-config
+          configMap:
+            name: {{ include "common.fullname" . }}-cluster-ready-configmap
+      restartPolicy: Never
+
+
