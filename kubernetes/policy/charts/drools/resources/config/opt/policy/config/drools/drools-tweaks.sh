@@ -16,7 +16,6 @@
 
 
 "${POLICY_HOME}"/bin/features enable healthcheck
-"${POLICY_HOME}"/bin/features enable pooling-dmaap
 "${POLICY_HOME}"/bin/features enable distributed-locking
 
 "${POLICY_HOME}"/bin/db-migrator -s pooling -o upgrade
@@ -25,16 +24,16 @@
 # so not to lose any configuration updates
 
 echo
-echo "creating PDPD-CONFIGURATION topic"
+echo "testing publish to PDPD-CONFIGURATION topic"
 echo
 
-curl --silent --connect-timeout 60 -X POST --header "Content-Type: application/json" -d "{}"   http://message-router:3904/events/PDPD-CONFIGURATION
+curl --silent --connect-timeout 15 -X POST --header "Content-Type: application/json" -d "{}"   http://message-router:3904/events/PDPD-CONFIGURATION
 
 echo
-echo "removing PDPD-CONFIGURATION topic dummy message"
+echo "testing subscribe to PDPD-CONFIGURATION topic "
 echo
 
-curl --silent --connect-timeout 60 -X GET http://message-router:3904/events/PDPD-CONFIGURATION/1/1?timeout=15000
+curl --silent --connect-timeout 15 -X GET http://message-router:3904/events/PDPD-CONFIGURATION/1/1?timeout=5000
 
 # for resiliency/scalability scenarios, check to see
 # if there's an amsterdam artifact  already deployed
@@ -47,7 +46,7 @@ echo
 echo "checking if there are amsterdam policies already deployed .."
 echo
 
-AMSTERDAM_VERSION=$(curl --silent --connect-timeout 60 -X GET "http://nexus:8081/nexus/service/local/artifact/maven/resolve?r=releases&g=org.onap.policy-engine.drools.amsterdam&a=policy-amsterdam-rules&v=RELEASE" | grep -Po "(?<=<version>).*(?=</version>)")
+AMSTERDAM_VERSION=$(curl --silent --connect-timeout 20 -X GET "http://nexus:8081/nexus/service/local/artifact/maven/resolve?r=releases&g=org.onap.policy-engine.drools.amsterdam&a=policy-amsterdam-rules&v=RELEASE" | grep -Po "(?<=<version>).*(?=</version>)")
 
 if [[ -z ${AMSTERDAM_VERSION} ]]; then
 	echo "no amsterdam policies have been found .."
