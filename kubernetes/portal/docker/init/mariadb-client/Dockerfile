@@ -1,6 +1,6 @@
 FROM boxfuse/flyway:5.0.7-alpine
 
-ARG branch=master
+ARG branch=beijing
 ENV no_proxy "localhost,127.0.0.1,.cluster.local,$KUBERNETES_SERVICE_HOST"
 # Setup Corporate proxy
 ENV https_proxy ${HTTP_PROXY}
