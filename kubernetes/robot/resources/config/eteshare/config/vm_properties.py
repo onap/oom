@@ -12,7 +12,7 @@ GLOBAL_INJECTED_DCAE_IP_ADDR = "dcae-healthcheck.{{include "common.namespace" .}
 GLOBAL_INJECTED_DNS_IP_ADDR = "N/A"
 GLOBAL_INJECTED_DOCKER_VERSION = "1.2-STAGING-latest"
 GLOBAL_INJECTED_EXTERNAL_DNS = "N/A"
-GLOBAL_INJECTED_GERRIT_BRANCH = "beijing"
+GLOBAL_INJECTED_GERRIT_BRANCH = "2.0.0-ONAP"
 GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR = "log-es.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = "log-kibana.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "log-ls-http.{{include "common.namespace" .}}"
@@ -67,7 +67,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_DNS_IP_ADDR" : "N/A",
     "GLOBAL_INJECTED_DOCKER_VERSION" : "1.2-STAGING-latest",
     "GLOBAL_INJECTED_EXTERNAL_DNS" : "N/A",
-    "GLOBAL_INJECTED_GERRIT_BRANCH" : "beijing",
+    "GLOBAL_INJECTED_GERRIT_BRANCH" : "2.0.0-ONAP",
     "GLOBAL_INJECTED_KEYSTONE" : "{{ .Values.openStackKeyStoneUrl }}",
     "GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR" : "log-es.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR" : "log-kibana.{{include "common.namespace" .}}",
