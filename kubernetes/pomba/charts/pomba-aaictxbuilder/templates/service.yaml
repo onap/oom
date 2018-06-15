@@ -1,0 +1,53 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+# Example MSB registration annotation
+#    msb.onap.org/service-info: '[
+#      {
+#          "serviceName": "so",
+#          "version": "v1",
+#          "url": "/ecomp/mso/infra",
+#          "protocol": "REST"
+#          "port": "8080",
+#          "visualRange":"1"
+#      }
+#      ]'
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{if eq .Values.service.type "NodePort" -}}
+    - port: {{ .Values.service.externalPort }}
+      #Example internal target port if required
+      #targetPort: {{ .Values.service.internalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      name: {{ .Values.service.portName | default "http" }}
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName | default "http" }}
+    {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
