@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2018 Amdocs
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 #################################################################
 # Global configuration defaults.
 #################################################################
 global:
   nodePortPrefix: 302
+  repository: nexus3.onap.org:10001
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
@@ -25,19 +27,48 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-repository: docker.io
-image: oomk8s/consul:1.0.0
+repository: nexus3.onap.org:10001
 pullPolicy: Always
+image: onap/music/prom:1.0.5-latest
 
-#subchart name
-consulServer:
-  nameOverride: consul-server
+# application configuration
+config:
+  aid: "ae91f3d9-7964-41b1-8b33-1eb88b0c9c76"
+  deployment: "test_onap"
+  password: "onap123"
+  musicLocation:
+  - "10.147.99.147"
+  - "10.147.99.155"
+  - "10.147.99.156"
+  musicConnectionTimeoutMs: "1000"
+  promTimeout: "35000"
+  coreMonitorSleepTime: "15000"
+  noOfRetryAttempts: "2"
+  restartBackoffTime: "15000"
+  healthChecks:
+    # All top-level checks must pass
+    - "Health Check: SDNC - SDN Host"
+    - "Health Check: SDNC"
+    - "Health Check: SDNC ODL Cluster"
+    - "Health Check: SDNC Portal"
+    # Within nested lists, only one must pass
+    - - "Health Check: SDNC-SDN-CTL-DB-01"
+      - "Health Check: SDNC-SDN-CTL-DB-02"
+  messageRouterTopic: "SDNC-GEO-REDUNDANCY"
 
-# flag to enable debugging - application support required
-debugEnabled: false
+odl:
+  jolokia:
+    username: "admin"
+    password: "admin"
+  restconf:
+    username: "admin"
+    password: "Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U"
 
-# default number of instances
-replicaCount: 1
+coreDNS:
+  host: 10.147.100.5
+  sshUser: root
+  sshKeyFile: /app/config/coredns/coredns.key
+  switchScript: /home/ubuntu/dnsSwitch.bash
 
 nodeSelector: {}
 
@@ -46,23 +77,19 @@ affinity: {}
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 90
-  periodSeconds: 10
+  periodSeconds: 90
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 90
+  initialDelaySeconds: 10
   periodSeconds: 10
-
-service: {}
 
 ingress:
   enabled: false
 
-resources: {}
+service:
+  name: prom
 
-odl:
-  jolokia:
-    username: admin
-    password: admin
+resources: {}
