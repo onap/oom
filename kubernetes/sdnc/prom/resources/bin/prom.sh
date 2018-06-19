@@ -14,20 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dir=$( dirname $0 )
-
-IS_PRIMARY_CLUSTER=`awk '/isPrimaryCluster/ {print $2}' $dir/../../../values.yaml`
-
-if [ "$?" -eq "2" ]; then
-      echo "Make sure you are ubuntu user." >&2
+if [ "${SDNC_IS_PRIMARY_CLUSTER:-true}" = "true" ];then
+  id=sdnc01
+else
+  id=sdnc02
 fi
 
-case $IS_PRIMARY_CLUSTER in
-true|false)
-	echo $IS_PRIMARY_CLUSTER
-	;;
-*)
-	echo "NOT CLUSTERED"
-	exit 1
-	;;
-esac
+# should PROM start as passive?
+state=$( bin/sdnc.cluster )
+if [ "$state" == "standby" ]; then
+  echo "Starting PROM in passive mode"
+  passive="-p"
+fi
+
+# start PROM as foreground process
+java -jar prom.jar --id $id $passive --config config
