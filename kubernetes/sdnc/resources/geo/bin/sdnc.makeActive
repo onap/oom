@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Copyright © 2018 Amdocs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if [ $# -lt 1 ];then
+  echo "Usage: makeactive <release> [namespace]"
+  exit 1
+fi
+
+RELEASE=$1
+NAMESPACE=onap
+if [ -n "$2" ];then
+  NAMESPACE=$2
+fi
+
+dir=$(dirname $0)
+isPrimary=$( $dir/sdnc.isPrimaryCluster)
+if [ "$isPrimary" = "true" ];then
+  SITE_NAME="sdnc01"
+elif [ "$isPrimary" = "false" ];then
+  SITE_NAME="sdnc02"
+else
+  echo "sdnc.isPrimaryCluster returned unexpected value \"$isPrimary\""
+  exit 1
+fi
+
+pod=$( kubectl -n $NAMESPACE get pods -l app=sdnc-prom,release=$RELEASE | grep Running | cut -f1 -d' ' )
+if [ -z "$pod" ];then
+  echo "prom pod not found - is prom running?"
+  exit 1
+fi
+
+kubectl -n $NAMESPACE exec $pod -- /app/promoverride.py --id $SITE_NAME --config /app/config/config.json

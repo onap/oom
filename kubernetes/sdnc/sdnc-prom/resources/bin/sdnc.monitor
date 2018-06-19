@@ -1,0 +1,125 @@
+#!/usr/bin/env python2
+# encoding: utf-8
+
+# Copyright © 2018 Amdocs
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import os
+import json
+import requests
+from datetime import datetime
+
+consul_server = "consul-server:8500"
+message_router = "message-router:3904"
+topic = '{{.Values.config.messageRouterTopic}}'
+log_file='/app/monitor.log'
+status_file='/app/.health'
+logEnabled=False
+
+siteName='sdnc01'
+if os.environ.get('SDNC_IS_PRIMARY_CLUSTER', 'true') == 'false':
+    siteName='sdnc02'
+
+debug=False
+if len(sys.argv) > 1 and sys.argv[1] == '--debug':
+    debug=True
+
+def get_state(healthcheck):
+    response = requests.get("http://" + consul_server + "/v1/health/checks/" + healthcheck)
+    if response.status_code != 200:
+        raise RuntimeError("HTTP " + str(response.status_code))
+    data = response.json()
+    if len(data) == 0:
+        raise RuntimeError(healthcheck + " not found")
+    if len(data) > 1:
+        raise RuntimeError("Multiple states for " + healthcheck + " found")
+
+    return data[0]
+
+
+def log(message):
+    if logEnabled:
+        with open(log_file, 'a') as f:
+            f.write(str(datetime.now()) + " " + message + "\n")
+
+def healthcheck(checks, failFirst=True):
+    if len(checks) == 0:
+        return True
+
+    for check in checks:
+        if type(check) is list:
+            passing = healthcheck(check, False)
+        else:
+            state = get_state(check)
+            status = state['Status']
+            passing = status == "passing" or status == "warning"
+            log(check + " " + status)
+            if debug:
+                if status == "passing":
+                    color = "\033[32m" # green
+                elif status == "warning":
+                    color = "\033[33m" # yellow
+                else:
+                    color = "\033[31m" # red
+                print check, color + status + "\033[0m"
+                if not passing:
+                    print "\tCause:", state['Output']
+
+
+        if passing:
+            if not failFirst:
+                # found a passing check so can stop here
+                return True
+        else:
+            if failFirst:
+                # found a failing check so can stop here
+                return False
+
+    return failFirst
+
+
+try:
+    with open("/app/config/healthchecks.json") as f:
+        checks = json.load(f)
+
+    try:
+        with open(status_file) as f:
+           previous_result = f.read()
+    except IOError:
+        # file doesn't exist
+        previous_result = 'unknown'
+
+    if healthcheck(checks):
+        result = "healthy"
+    else:
+        result = "unhealthy"
+
+    print result
+
+    # save current result to file
+    with open(status_file, 'w') as f:
+        f.write(result)
+
+    if previous_result != 'unknown' and result != previous_result:
+        payload = { 'type' : 'health-change', 'status': result, 'site': siteName, 'deployment': '{{.Values.config.deployment}}', 'timestamp': str(datetime.now())  }
+        log("Posting event " + str(payload))
+        try:
+            requests.post("http://" + message_router + "/events/" + topic, data=json.dumps(payload), headers={ 'Content-Type' : 'application/json' } )
+        except Exception:
+            # events are best-effort
+            pass
+
+except Exception as e:
+    sys.exit(str(e))
