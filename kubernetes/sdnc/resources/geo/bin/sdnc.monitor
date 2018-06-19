@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if [ $# -lt 1 ];then
+  echo "Usage: $(basename $0) [--debug] <release> [namespace]"
+  exit 1
+fi
+
+if [ "$1" = "--debug" -o "$1" = "-debug" -o "$1" = "-d" ];then
+  DEBUG="--debug"
+  shift
+fi
+
+RELEASE=$1
+NAMESPACE=onap
+if [ -n "$2" ];then
+  NAMESPACE=$2
+fi
+
+pod=$( kubectl -n $NAMESPACE get pods -l app=prom,release=$RELEASE | grep Running | cut -f1 -d' ' )
+if [ -z "$pod" ];then
+  echo "prom pod not found - is prom running?"
+  exit 1
+fi
+
+kubectl -n $NAMESPACE exec $pod -- /app/bin/sdnc.monitor $DEBUG
+ 
