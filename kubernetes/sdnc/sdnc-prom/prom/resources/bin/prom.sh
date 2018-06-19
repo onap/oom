@@ -1,4 +1,6 @@
-# Copyright © 2017 Amdocs, Bell Canada
+#!/bin/bash
+
+# Copyright © 2018 Amdocs
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dependencies:
-  - name: common
-    version: ~2.0.0
-    repository: '@local'
-  - name: mysql
-    version: ~2.0.0
-    repository: '@local'
-  - name: dgbuilder
-    version: ~2.0.0
-    repository: '@local'
-  - name: sdnc-prom
-    version: ~2.0.0
-    repository: '@local'
-    condition: config.geoEnabled
+if [ "${SDNC_IS_PRIMARY_CLUSTER:-true}" = "true" ];then
+  id=sdnc01
+else
+  id=sdnc02
+fi
+
+# should PROM start as passive?
+state=$( bin/sdnc.cluster )
+if [ "$state" == "standby" ]; then
+  echo "Starting PROM in passive mode"
+  passive="-p"
+fi
+
+# start PROM as foreground process
+java -jar prom.jar --id $id $passive --config config

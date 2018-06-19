@@ -1,4 +1,6 @@
-# Copyright © 2017 Amdocs, Bell Canada
+#!/bin/sh
+
+# Copyright © 2018 Amdocs
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dependencies:
-  - name: common
-    version: ~2.0.0
-    repository: '@local'
-  - name: mysql
-    version: ~2.0.0
-    repository: '@local'
-  - name: dgbuilder
-    version: ~2.0.0
-    repository: '@local'
-  - name: sdnc-prom
-    version: ~2.0.0
-    repository: '@local'
-    condition: config.geoEnabled
+if [ $# -lt 1 ];then
+  echo "Usage: $(basename $0) [--debug] <release> [namespace]"
+  exit 1
+fi
+
+if [ "$1" = "--debug" -o "$1" = "-debug" -o "$1" = "-d" ];then
+  DEBUG="--debug"
+  shift
+fi
+
+RELEASE=$1
+NAMESPACE=onap
+if [ -n "$2" ];then
+  NAMESPACE=$2
+fi
+
+pod=$( kubectl -n $NAMESPACE get pods -l app=prom,release=$RELEASE | grep Running | cut -f1 -d' ' )
+if [ -z "$pod" ];then
+  echo "prom pod not found - is prom running?"
+  exit 1
+fi
+
+kubectl -n $NAMESPACE exec $pod -- /app/bin/sdnc.monitor $DEBUG
