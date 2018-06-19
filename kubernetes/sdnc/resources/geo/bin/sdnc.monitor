@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright © 2018 Amdocs
 #
@@ -14,20 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dir=$( dirname $0 )
-
-IS_PRIMARY_CLUSTER=`awk '/isPrimaryCluster/ {print $2}' $dir/../../../values.yaml`
-
-if [ "$?" -eq "2" ]; then
-      echo "Make sure you are ubuntu user." >&2
+if [ $# -lt 1 ];then
+  echo "Usage: $(basename $0) [--debug] <release> [namespace]"
+  exit 1
 fi
 
-case $IS_PRIMARY_CLUSTER in
-true|false)
-	echo $IS_PRIMARY_CLUSTER
-	;;
-*)
-	echo "NOT CLUSTERED"
-	exit 1
-	;;
-esac
+if [ "$1" = "--debug" -o "$1" = "-debug" -o "$1" = "-d" ];then
+  DEBUG="--debug"
+  shift
+fi
+
+RELEASE=$1
+NAMESPACE=onap
+if [ -n "$2" ];then
+  NAMESPACE=$2
+fi
+
+pod=$( kubectl -n $NAMESPACE get pods -l app=sdnc-prom,release=$RELEASE | grep Running | cut -f1 -d' ' )
+if [ -z "$pod" ];then
+  echo "prom pod not found - is prom running?"
+  exit 1
+fi
+
+kubectl -n $NAMESPACE exec $pod -- /app/bin/sdnc.monitor $DEBUG
