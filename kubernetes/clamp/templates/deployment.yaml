@@ -66,6 +66,7 @@ spec:
             - ""
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -89,6 +90,15 @@ spec:
           - mountPath: /opt/clamp/logback.xml
             name: {{ include "common.fullname" . }}-config
             subPath: logback.xml
+          - mountPath: /opt/clamp/org.onap.clamp.keyfile
+            name: clamp-secret
+            subPath: org.onap.clamp.keyfile
+          - mountPath: /opt/clamp/org.onap.clamp.p12
+            name: clamp-secret
+            subPath: org.onap.clamp.p12
+          - mountPath: /opt/clamp/truststoreONAPall.jks
+            name: clamp-secret
+            subPath: truststoreONAPall.jks
           env:
             - name: SPRING_APPLICATION_JSON
               valueFrom:
@@ -114,6 +124,9 @@ spec:
               path: sdc-controllers-config.json
             - key: logback.xml
               path: logback.xml
+         - name: clamp-secret
+           secret:
+             secretName: {{ .Release.Name }}-clamp-secret
         - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
             name: {{ .Release.Name }}-clamp-filebeat-configmap
