@@ -1,0 +1,72 @@
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgresql-data
+        - mountPath: /etc/postgresql/conf.d/
+          name: postgresql-conf
+        - mountPath: /docker-entrypoint-initdb.d/
+          name: postgresql-initdb
+        env:
+        - name: POSTGRES_DB
+          value: icedb
+        - name: ICE_CMS_DB_NAME
+          value: icecmsdb
+        - name: POSTGRES_USER
+          value: em_postgresuser
+        - name: ICE_CMS_DB_USER
+          value: cms_postgresuser
+        - name: ICE_CMS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-passwords
+              key: cmsPassword
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-passwords
+              key: emPassword
+      volumes:
+      - name: postgresql-data
+        emptyDir: {}
+      - name: postgresql-conf
+        configMap:
+          name: postgresql-conf
+      - name: postgresql-initdb
+        configMap:
+          name: postgresql-initdb
