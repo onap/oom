@@ -1,0 +1,79 @@
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resolvers dns
+    nameserver pod_dns "10.3.0.10:53"
+    resolve_retries    3
+    timeout retry      1s
+    hold valid         30s
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+    option httpclose
+    option redispatch
+    option abortonclose
+    option httplog
+    option dontlognull
+    default-server init-addr last,libc,none
+
+backend gitlab_ssh
+    mode tcp
+    option tcplog
+    timeout server 2h
+    server gitlabssh vvp-gitlab:22 resolvers dns
+
+frontend gitlab_ssh_frontend
+    mode tcp
+    option tcplog
+    timeout client 2h
+    bind 0.0.0.0:22
+    acl is_ssh dst_port 22
+    use_backend gitlab_ssh if is_ssh
+
+backend portal_backend
+    mode http
+    server ice_portal vvp:8181 resolvers dns
+
+backend api
+    mode http
+    server engagement_manager em:80 resolvers dns
+
+backend s3
+    mode http
+    balance roundrobin
+    option httpchk HEAD /
+    server ceph-01 10.252.0.21:8080 check inter 10000ms
+
+frontend portal
+    mode http
+    acl is_api_call path_beg -i /vvp
+    acl is_s3       hdr_beg(host) s3.  staging-s3.  dev-s3.
+    use_backend api if is_api_call
+    use_backend s3 if is_s3
+    bind 0.0.0.0:80
+    bind 0.0.0.0:443 ssl crt /etc/haproxy/site.pem force-tlsv12
+    default_backend portal_backend
+
+listen stats
+    bind 0.0.0.0:9001
+    mode http
+    stats enable  # Enable stats page
+    stats realm Haproxy\ Statistics
+    stats uri /haproxy_stats
+    stats auth "${HAPROXY_USER}:${HAPROXY_PASS}"
+    acl network_allowed src 10.252.0.0/16 127.0.0.1/32 10.2.0.0/16
+    http-request deny if !network_allowed
