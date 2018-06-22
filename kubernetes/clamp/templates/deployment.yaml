@@ -45,6 +45,26 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - /bin/bash
+        - -c
+        - >
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/ to /certificate";
+          cp -rf /tmp/gerrit/src/main/resources/clds/aaf/* /certificate;
+          echo "Done."
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-init-certificate
+        volumeMounts:
+        - name: clamp-certificate
+          mountPath: "/certificate"
       containers:
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
@@ -66,6 +86,7 @@ spec:
             - ""
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -89,6 +110,15 @@ spec:
           - mountPath: /opt/clamp/logback.xml
             name: {{ include "common.fullname" . }}-config
             subPath: logback.xml
+          - mountPath: /opt/clamp/org.onap.clamp.keyfile
+            name: clamp-certificate
+            subPath: org.onap.clamp.keyfile
+          - mountPath: /opt/clamp/org.onap.clamp.p12
+            name: clamp-certificate
+            subPath: org.onap.clamp.p12
+          - mountPath: /opt/clamp/truststoreONAPall.jks
+            name: clamp-certificate
+            subPath: truststoreONAPall.jks
           env:
             - name: SPRING_APPLICATION_JSON
               valueFrom:
@@ -120,6 +150,8 @@ spec:
         - name: {{ include "common.fullname" . }}-data-filebeat
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+        - name: clamp-certificate
           emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
