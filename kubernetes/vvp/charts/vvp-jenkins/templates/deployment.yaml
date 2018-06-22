@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        - name: jenkins-users-admin
+          mountPath: /var/jenkins_home/users/admin
+        - name: jenkins-ssh
+          mountPath: /var/jenkins_home/.ssh
+      volumes:
+      - name: jenkins-home
+        rbd:
+          monitors:
+          - "10.252.0.21"
+          pool: rbd
+          image: jenkins
+          user: admin
+          secretRef:
+            name: "ceph-secret"
+          fsType: xfs
+          readOnly: false
+      - name: jenkins-users-admin
+        secret:
+          secretName: jenkins-users-admin
+      - name: jenkins-ssh
+        secret:
+          secretName: jenkins-ssh
+          
