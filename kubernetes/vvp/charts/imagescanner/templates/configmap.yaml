@@ -1,0 +1,88 @@
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: imagescanner-settings
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/imagescanner/*").AsConfig . | indent 2 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: slack-tokens
+type: Opaque
+data:
+  notifications: ""
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: imagescanner-ssh
+type: Opaque
+data:
+  # FIXME the imagescanner really should have its own private key, but then we
+  # have to adjust the gitlab wrapper script to set two public keys as
+  # deploykeys.
+  id_ed25519: "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNDRDEwanpvNGlSZjF4bTYzSWxMSEpGeTVUK0FoUnVmenZLdmdpMEhwZ1RVQUFBQUpqV3dKZDkxc0NYCmZRQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDQ0QxMGp6bzRpUmYxeG02M0lsTEhKRnk1VCtBaFJ1Znp2S3ZnaTBIcGdUVUEKQUFBRUFXRktNV0xsNkZnRUJ1Zzk3MSthdE5ZQnQ4R2R1V3pDWWd0L2o5VHU0U2g0UFhTUE9qaUpGL1hHYnJjaVVzY2tYTApsUDRDRkc1L084cStDTFFlbUJOUUFBQUFFM0JoZFd4QVVHRjFiQ2R6SUUxaFl5QlFjbThCQWc9PQotLS0tLUVORCBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K"
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: site-certificate
+data:
+  site.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDEDCCAfgCCQDhahVKE9/eUjANBgkqhkiG9w0BAQsFADBKMRAwDgYDVQQKDAdF
+    eGFtcGxlMRAwDgYDVQQLDAdleGFtcGxlMSQwIgYDVQQDDBtkZXZlbG9wbWVudC52
+    dnAuZXhhbXBsZS5jb20wHhcNMTcxMjI0MTUzOTA3WhcNMTgxMjI0MTUzOTA3WjBK
+    MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdleGFtcGxlMSQwIgYDVQQDDBtk
+    ZXZlbG9wbWVudC52dnAuZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IB
+    DwAwggEKAoIBAQCkvNGXe+bdvL2kvrP2L3WABt2WCFoZ2Pn8Px0eEsRiJHVD0eWz
+    rgJYHFJu0C0cK9NYSKxVVI8LnKH7Ny5MFfM4Tqyr3UEOLs+fSwaAqM5tSyZU/tEK
+    ractA7bi9fDk2lkcs+LLuZMqGPZ37UZcZwsUQ0BONHP668LqkWqT9hNLIN4ejInr
+    32WA3Y7hPNd8Cj+AaLt1x2cXYzi9hrE5l3h9ofkOpXsgDzeIHlp4jJ6kXXQf8UM5
+    1viqa2CWXHBHEG+5eftLSaeE6LAlNt5IJ6LcWEZgNtXr2es4LJC3FjXrv0gc04Cp
+    U2OfizpbhT11cLGaeXOq1cUCXNIb4FcJApoXAgMBAAEwDQYJKoZIhvcNAQELBQAD
+    ggEBAFGPDG9iurAhUKbFkY97xLA443U01bdwi7eAT5T9qo/RzOwcbuKWXVm1k5HK
+    CQO81nlLqLQwhI1+uTTmR41epuJxyGIaDgUySB+8fLzyRSIFaxKD+UeVPgipDNZs
+    h0sKSKrO6MoWzMLUYvdZRw6VIc+UpSCqPY+FKUBUHZtMpSFLnhHjRvVkiP4VvFXj
+    b7jQzHughzeITygws42fKK/MK7wQ6byaMVRbPbQKPAXNxd/UrSPeX+RzKRWOZ6R8
+    Ulyp7dezXCP77UaTZTsxwlurPQIZNMshDxE/SbWt0Q1g28rj5KfAjoZs5Tg/gmQ8
+    LLKI/b1OvKohaANGZ6We5U+ceeU=
+    -----END CERTIFICATE-----
+  wrapper.sh: |
+    #!/bin/sh
+    # This script is meant to be used as a wrapper, so that it can be easily
+    # used with docker or kubernetes' container command specification.
+    #
+    # Kubernetes' volumeMount creates symlinks for configMapped files at the
+    # target directory.
+    # Alpine's update-ca-certificates ignores symlinks.
+    # So we must contrive to copy the contents of the mounted cert (a symlink)
+    # into place as a normal file.
+    dev_cert="${0%/*}/site.crt"
+    echo >&2 "$0: Checking for site CA certificate at $dev_cert..."
+    if [ -s "$dev_cert" ]; then
+        echo >&2 "$0: Updating container CA certificate bundle with site certificate..."
+        cp -L "$dev_cert" /usr/local/share/ca-certificates/
+        update-ca-certificates
+    else
+        echo >&2 "$0: No site CA certificate found."
+    fi
+    echo >&2 "$0: Launching command: $@"
+    exec "$@"
+

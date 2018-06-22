@@ -1,0 +1,66 @@
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: 80
+        - containerPort: 22
+        - containerPort: 443
+        - containerPort: 9001
+        env:
+        - name: HAPROXY_USER
+          valueFrom:
+            secretKeyRef:
+              name: haproxy-auth
+              key: user
+        - name: HAPROXY_PASS
+          valueFrom:
+            secretKeyRef:
+              name: haproxy-auth
+              key: pass
+        volumeMounts:
+        - mountPath: /usr/local/etc/haproxy/
+          name: ext-haproxy-cfg
+        - mountPath: /etc/haproxy/
+          name: site-pem
+      volumes:
+      - name: ext-haproxy-cfg
+        configMap:
+          name: ext-haproxy-cfg
+          items:
+          - key: file
+            path: haproxy.cfg
+      - name: site-pem
+        secret:
+          secretName: site-pem            
