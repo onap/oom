@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        volumeMounts:
+        - mountPath: /tmp
+          name: portal-nginx-config
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+      volumes:
+      - name: portal-nginx-config
+        configMap:
+          name: portal-nginx-config
+      imagePullSecrets:
+      - name: onapkey 

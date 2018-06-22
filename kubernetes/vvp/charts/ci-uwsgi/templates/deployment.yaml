@@ -1,0 +1,121 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: 80
+        - containerPort: 8282
+        - containerPort: 9000
+        volumeMounts:
+        - name: ci-settings
+          mountPath: /opt/configmaps/settings/
+        - name: site-crt
+          mountPath: /opt/secrets/site-crt/
+        env:
+        - name: ICE_ENVIRONMENT
+          value: "development"
+        - name: PROGRAM_NAME_URL_PREFIX
+          value: "vvp"
+        - name: SERVICE_PROVIDER
+          value: "NA"
+        - name: PROGRAM_NAME
+          value: "VVP"
+        - name: SERVICE_PROVIDER_DOMAIN
+          value: "na.com"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: key}
+        - name: EM_DB_HOST
+          value: postgresql
+        - name: EM_DB_PORT
+          value: "5432"
+        - name: EM_DB_NAME
+          value: icedb
+        - name: EM_DB_USER
+          value: "em_postgresuser"
+        - name: EM_DB_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: postgresql-passwords, key: emPassword}
+        - name: CMS_DB_HOST
+          value: postgresql
+        - name: CMS_DB_PORT
+          value: "5432"
+        - name: CMS_DB_NAME
+          value: "icecmsdb"
+        - name: CMS_DB_USER
+          value: "cms_postgresuser"
+        - name: CMS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: postgresql-passwords, key: cmsPassword}
+        - name: CI_DB_HOST
+          value: postgresql
+        - name: CI_DB_PORT
+          value: "5432"
+        - name: CI_DB_NAME
+          value: icedb
+        - name: CI_DB_USER
+          value: "em_postgresuser"
+        - name: CI_DB_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: postgresql-passwords, key: ciPassword}
+        - name: STATIC_ROOT
+          value: "/app/htdocs"
+        - name: ICE_CONTACT_FROM_ADDRESS
+          value: "example"
+        - name: SECRET_WEBHOOK_TOKEN
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: em_webhook_token}
+        - name: SECRET_GITLAB_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef: {name: gitlab-password, key: auth-token}
+        - name: SECRET_JENKINS_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: jenkins_admin_password}
+        - name: ICE_DOMAIN
+          value: https://development.vvp.example.com
+        - name: ICE_EM_DOMAIN_NAME
+          value: https://development.vvp.example.com
+        - name: OAUTHLIB_INSECURE_TRANSPORT
+          value: "1"
+        - name: CI_ADMIN_USER
+          value: "ciadminuser"
+        - name: CI_ADMIN_MAIL
+          value: "ciadminmail@example.com"
+        - name: CI_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: ci-secret, key: admin_password}
+        - name: S3_HOST
+          value: "dev-s3.vvp.example.com"
+        - name: S3_PORT
+          value: "443"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_access_key_id}
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_secret_access_key}
+        command: ["/app/docker-entrypoint.sh", "/usr/local/bin/gunicorn", "-c", "/opt/configmaps/settings/gunicorn.ini", "web.wsgi:application", ]
+      volumes:
+      - name: ci-settings
+        configMap:
+          name: ci-settings
+      - name: site-crt
+        secret:
+          secretName: site-crt

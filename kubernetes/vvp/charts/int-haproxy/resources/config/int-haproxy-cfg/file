@@ -1,0 +1,74 @@
+resolvers dns
+    nameserver pod_dns "10.3.0.10:53"
+    resolve_retries    3
+    timeout retry      1s
+    hold valid         30s
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+    option httpclose
+    option redispatch
+    option abortonclose
+    option httplog
+    option dontlognull
+    default-server init-addr last,libc,none
+
+backend gitlab_web_backend
+    mode http
+    server gitlab_web_1 vvp-gitlab:80 resolvers dns
+
+frontend gitlab_web
+    mode http
+    bind 0.0.0.0:80
+
+    acl is_scanner  path_beg /imagescanner
+    acl is_em_admin hdr_beg(host) em.  staging-em.  dev-em.
+    acl is_cms      hdr_beg(host) cms. staging-cms. dev-cms.
+    acl is_ci_admin hdr_beg(host)      staging-ci.  dev-ci.
+    acl is_s3       hdr_beg(host) s3.  staging-s3.  dev-s3.
+
+    use_backend imagescanner if is_em_admin is_scanner
+    use_backend cms if is_cms
+    use_backend api if is_em_admin
+    use_backend ci  if is_ci_admin
+    use_backend s3  if is_s3
+
+    default_backend gitlab_web_backend
+
+backend s3
+    mode http
+    balance roundrobin
+    server ceph-01 10.252.0.21:8080
+
+backend cms
+  mode http
+  server cms_server cms-uwsgi:80 resolvers dns
+
+backend api
+    mode http
+    server engagement_manager em-uwsgi:80 resolvers dns
+
+backend ci
+    mode http
+    server ci_test ci-uwsgi:8282 resolvers dns
+
+listen jenkins
+    bind 0.0.0.0:8080
+    server jenkins vvp-jenkins:8080 resolvers dns
+
+backend imagescanner
+    mode http
+    server imagescanner imagescanner:80 resolvers dns
+
+listen stats
+    bind 0.0.0.0:9000
+    mode http
+    stats enable  # Enable stats page
+    stats realm Haproxy\ Statistics
+    stats uri /haproxy_stats
+    stats auth "${HAPROXY_USER}:${HAPROXY_PASS}"
+    acl network_allowed src 10.252.0.0/16 127.0.0.1/32 10.2.0.0/16
+    block if !network_allowed

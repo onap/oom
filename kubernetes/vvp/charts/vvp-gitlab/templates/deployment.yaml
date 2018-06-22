@@ -1,0 +1,57 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "common.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort1 }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/opt/gitlab
+          name: gitlab
+          subPath: var/opt/gitlab
+        - mountPath: /etc/gitlab
+          name: gitlab
+          subPath: etc/gitlab
+        - mountPath: /var/log/gitlab
+          name: gitlab
+          subPath: var/log/gitlab
+        - mountPath: /tmp/deploykey
+          name: jenkins-deploykey
+        env:
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-password
+              key: password
+        - name: AUTHENTICATION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-password
+              key: auth-token
+        - name: EXTERNAL_URL
+          value: "http://dev-git.vvp.example.com"
+      volumes:
+      - name: gitlab
+        emptyDir: {}
+      - name: jenkins-deploykey
+        secret:
+          secretName: jenkins-deploykey
+    imagePullSecrets:
+      - name: onapkey 
