@@ -1,0 +1,119 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: 80
+        - containerPort: 9000
+        volumeMounts:
+        - name: em-settings
+          mountPath: /opt/configmaps/settings/
+        - name: site-crt
+          mountPath: /opt/secrets/site-crt/
+        env:
+        - name: ENVIRONMENT
+          value: "development"
+        - name: PROGRAM_NAME_URL_PREFIX
+          value: "vvp"
+        - name: SERVICE_PROVIDER
+          value: "NA"
+        - name: PROGRAM_NAME
+          value: "VVP"
+        - name: SERVICE_PROVIDER_DOMAIN
+          value: "na.com"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: key}
+        - name: EMAIL_HOST
+          value: "localhost"
+        - name: EMAIL_HOST_USER
+          value: "example"
+        - name: EMAIL_PORT
+          value: "25"
+        - name: EMAIL_HOST_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: email-secret, key: password}
+        - name: PGHOST
+          value: vvp-postgres
+        - name: PGPORT
+          value: "5432"
+        - name: PGDATABASE
+          value: icedb
+        - name: PGUSER
+          value: "em_postgresuser"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: {name: postgresql-passwords, key: emPassword}
+        - name: DOMAIN
+          value: https://development.vvp.example.com
+        - name: ICE_EM_DOMAIN_NAME
+          value: https://development.vvp.example.com
+        - name: CONTACT_FROM_ADDRESS
+          value: "example"
+        - name: OAUTHLIB_INSECURE_TRANSPORT
+          value: "1"
+        - name: SECRET_WEBHOOK_TOKEN
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: em_webhook_token}
+        - name: SECRET_GITLAB_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef: {name: gitlab-password, key: auth-token}
+        - name: SECRET_JENKINS_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: jenkins_admin_password}
+        - name: SECRET_CMS_APP_CLIENT_ID
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: cms_app_client_id}
+        - name: SECRET_CMS_APP_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: cms_app_client_secret}
+        - name: STATIC_ROOT
+          value: "/app/htdocs"
+        - name: DJANGO_DEBUG_MODE
+          value: "True"
+        - name: SLACK_API_TOKEN
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: slack_api_token}
+        - name: ENGAGEMENTS_CHANNEL
+          value: ""
+        - name: ENGAGEMENTS_NOTIFICATIONS_CHANNEL
+          value: ""
+        - name: DEVOPS_CHANNEL
+          value: ""
+        - name: DEVOPS_NOTIFICATIONS_CHANNEL
+          value: ""
+        - name: S3_HOST
+          value: "dev-s3.vvp.example.com"
+        - name: S3_PORT
+          value: "443"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_access_key_id}
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_secret_access_key}
+        command: ["/docker-entrypoint.sh", "/usr/local/bin/gunicorn", "-c", "/opt/configmaps/settings/gunicorn.ini", "vvp.wsgi:application", ]
+      volumes:
+      - name: site-crt
+        secret:
+          secretName: site-crt
+      - name: em-settings
+        configMap:
+          name: em-settings

@@ -1,0 +1,97 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort1 }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+        env:
+        - name: ENVIRONMENT
+          value: "development"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: key}
+        - name: EMAIL_HOST
+          value: "localhost"
+        - name: EMAIL_HOST_USER
+          value: "example"
+        - name: EMAIL_PORT
+          value: "25"
+        - name: EMAIL_HOST_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: email-secret, key: password}
+        - name: PGHOST
+          value: vvp-postgres
+        - name: PGPORT
+          value: "5432"
+        - name: PGDATABASE
+          value: "icecmsdb"
+        - name: PGUSER
+          value: "cms_postgresuser"
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef: {name: postgresql-passwords, key: cmsPassword}
+        - name: ICE_CONTACT_FROM_ADDRESS
+          value: "example"
+        - name: CMS_NEVERCACHE_KEY
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: nevercache_key}
+        - name: CMS_APP_USER
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: app_user}
+        - name: CMS_APP_USER_MAIL
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: app_user_mail}
+        - name: CMS_APP_USER_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: app_user_password}
+        - name: CMS_APP_CLIENT_ID
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: app_client_id}
+        - name: CMS_APP_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef: {name: cms-secret, key: app_client_secret}
+        - name: STATIC_ROOT
+          value: "/app/htdocs"
+        - name: DJANGO_DEBUG_MODE
+          value: "True"
+        - name: S3_HOST
+          value: "dev-s3.vvp.example.com"
+        - name: S3_PORT
+          value: "443"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_access_key_id}
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_secret_access_key}
+        command: ["/docker-entrypoint.sh", "/usr/local/bin/gunicorn", "-c", "/opt/configmaps/settings/gunicorn.ini", "cms.wsgi:application", ]
+        volumeMounts:
+        - name: settings
+          mountPath: /opt/configmaps/settings/
+        - name: site-crt
+          mountPath: /opt/secrets/site-crt/
+      volumes:
+      - name: settings
+        configMap:
+          name: cms-settings
+      - name: site-crt
+        secret:
+          secretName: site-crt
