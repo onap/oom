@@ -1,0 +1,112 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+      name: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+      - name: onapkey
+      containers: 
+      - name: imagescanner-worker
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        command:
+        - "sh"
+        - "/opt/site-certificate/wrapper.sh"
+        - "/usr/local/bin/imagescanner-worker"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: imagescanner-ssh
+          mountPath: /root/.ssh
+        - name: dev
+          mountPath: /dev
+        - name: logs
+          mountPath: /var/log/imagescanner
+        - name: imagescanner-settings
+          mountPath: /opt/imagescanner-settings
+        - name: site-certificate
+          mountPath: /opt/site-certificate
+        env:
+        - name: PYTHONPATH
+          value: /opt/imagescanner-settings
+        - name: S3_HOST
+          value: "dev-s3.vvp.example.com"
+        - name: S3_PORT
+          value: "443"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_access_key_id}
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: aws_secret_access_key}
+        - name: SECRET_JENKINS_PASSWORD
+          value: ''
+        - name: REQUESTS_CA_BUNDLE
+          value: /etc/ssl/certs/ca-certificates.crt
+
+      - name: notifications-worker
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        command: ["/usr/local/bin/notifications-worker"]
+        securityContext:
+          privileged: true
+        env:
+        - name: SLACK_TOKEN
+          valueFrom:
+            secretKeyRef: {name: slack-tokens, key: notifications}
+        - name: DOMAIN
+          value: "dev-em.vvp.example.com"
+        - name: PYTHONPATH
+          value: /opt/imagescanner-settings
+        - name: SECRET_JENKINS_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: em-secret, key: jenkins_admin_password}
+        volumeMounts:
+        - name: imagescanner-settings
+          mountPath: /opt/imagescanner-settings
+
+      - name: imagescanner-frontend
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        command: ["/usr/local/bin/imagescanner-frontend"]
+        securityContext:
+          privileged: true
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/imagescanner
+        - name: imagescanner-settings
+          mountPath: /opt/imagescanner-settings
+        env:
+        - name: DEFAULT_SLACK_CHANNEL
+          value: "#notifications"
+        - name: SECRET_JENKINS_PASSWORD
+          value: ''
+
+      volumes:
+      - name: imagescanner-ssh
+        secret:
+          secretName: imagescanner-ssh
+          defaultMode: 0600
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: logs
+        emptyDir: {}
+      - name: imagescanner-settings
+        configMap:
+          name: imagescanner-settings
+      - name: site-certificate
+        configMap:
+          name: site-certificate
