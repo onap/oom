@@ -16,7 +16,7 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone http://gerrit.onap.org/r/oom
+  > git clone -b beijing http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 

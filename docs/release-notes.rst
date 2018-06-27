@@ -19,7 +19,7 @@ Epic
 * [`OOM-6 <https://jira.onap.org/browse/OOM-6>`_] - Automated platform deployment on Docker/Kubernetes
 * [`OOM-7 <https://jira.onap.org/browse/OOM-7>`_] - Platform monitoring and auto-healing
 * [`OOM-8 <https://jira.onap.org/browse/OOM-8>`_] - Automated platform scalability
-* [`OOM-9 <https://jira.onap.org/browse/OOM-9>`_] - Platform upgradability&rollbacks
+* [`OOM-9 <https://jira.onap.org/browse/OOM-9>`_] - Platform upgradability & rollbacks
 * [`OOM-10 <https://jira.onap.org/browse/OOM-10>`_] - Platform configuration management
 * [`OOM-46 <https://jira.onap.org/browse/OOM-46>`_] - Platform infrastructure deployment with TOSCA
 * [`OOM-109 <https://jira.onap.org/browse/OOM-109>`_] - Platform Centralized Logging
@@ -181,7 +181,6 @@ Task
 * [`OOM-624 <https://jira.onap.org/browse/OOM-624>`_] - CII security badging: cleartext password for keystone and docker repo creds
 * [`OOM-726 <https://jira.onap.org/browse/OOM-726>`_] - Mirror AAI docker version changes into OOM from AAI-791
 * [`OOM-772 <https://jira.onap.org/browse/OOM-772>`_] - Remove old DCAE from Release
-* [`OOM-793 <https://jira.onap.org/browse/OOM-793>`_] - Document OOM-722 health/ete script changes for onap-discuss/wiki/rtd/integration team
 * [`OOM-801 <https://jira.onap.org/browse/OOM-801>`_] - Policy docker images rename - key off new name in POLICY-674
 * [`OOM-810 <https://jira.onap.org/browse/OOM-810>`_] - Improve emsdriver code
 * [`OOM-819 <https://jira.onap.org/browse/OOM-819>`_] - expose log/logstash 5044 as nodeport for external log producers outside of the kubernetes cluster
@@ -191,6 +190,7 @@ Task
 * [`OOM-975 <https://jira.onap.org/browse/OOM-975>`_] - Notes are missing in multicloud
 * [`OOM-1031 <https://jira.onap.org/browse/OOM-1031>`_] - Config Changes for consul to make vid, so, log health checks pass
 * [`OOM-1032 <https://jira.onap.org/browse/OOM-1032>`_] - Making consul Stateful
+* [`OOM-1122 <https://jira.onap.org/browse/OOM-1122>`_] - Update APPC OOM chart to use Beijing release artifacts
 
 Bug
 ***
@@ -268,7 +268,7 @@ Bug
 * [`OOM-874 <https://jira.onap.org/browse/OOM-874>`_] - Inconsistent repository references in ONAP charts
 * [`OOM-875 <https://jira.onap.org/browse/OOM-875>`_] - Cannot retrieve robot logs
 * [`OOM-876 <https://jira.onap.org/browse/OOM-876>`_] - Some containers ignore the repository setting
-* [`OOM-878 <https://jira.onap.org/browse/OOM-878>`_] - MySQL slave nodes don't deploy when mysql.replicaCount>1
+* [`OOM-878 <https://jira.onap.org/browse/OOM-878>`_] - MySQL slave nodes don't deploy when mysql.replicaCount > 1
 * [`OOM-881 <https://jira.onap.org/browse/OOM-881>`_] - SDN-C Portal pod fails to come up
 * [`OOM-882 <https://jira.onap.org/browse/OOM-882>`_] - Some SDNC service names should be prefixed with the helm release name
 * [`OOM-884 <https://jira.onap.org/browse/OOM-884>`_] - VID-VID mariadb pv is pointing to a wrong location
@@ -313,7 +313,6 @@ Bug
 * [`OOM-964 <https://jira.onap.org/browse/OOM-964>`_] - SDC Healthcheck failure on sdc-be and sdc-kb containers down
 * [`OOM-968 <https://jira.onap.org/browse/OOM-968>`_] - warning on default deployment values.yaml
 * [`OOM-969 <https://jira.onap.org/browse/OOM-969>`_] - oomk8s images have no Dockerfile's
-* [`OOM-970 <https://jira.onap.org/browse/OOM-970>`_] - Can't configure mysql password for sdnctl user
 * [`OOM-971 <https://jira.onap.org/browse/OOM-971>`_] - Common service name template should allow for chart name override
 * [`OOM-974 <https://jira.onap.org/browse/OOM-974>`_] - Cassandra bootstrap is done incorrectly
 * [`OOM-977 <https://jira.onap.org/browse/OOM-977>`_] - The esr-gui annotations should include a "path" param when register to MSB
@@ -347,7 +346,6 @@ Bug
 * [`OOM-1039 <https://jira.onap.org/browse/OOM-1039>`_] - Service distribution to SO fails
 * [`OOM-1041 <https://jira.onap.org/browse/OOM-1041>`_] - aai-service was renamed, but old references remain
 * [`OOM-1042 <https://jira.onap.org/browse/OOM-1042>`_] - portalapps service was renamed, but old references remain
-* [`OOM-1044 <https://jira.onap.org/browse/OOM-1044>`_] - Fix image/table warning during deploy - since helm install switch a month ago - non-affecting - but check the yaml
 * [`OOM-1045 <https://jira.onap.org/browse/OOM-1045>`_] - top level values.yaml missing entry for dmaap chart
 * [`OOM-1049 <https://jira.onap.org/browse/OOM-1049>`_] - SDNC_UEB_LISTENER db
 * [`OOM-1050 <https://jira.onap.org/browse/OOM-1050>`_] - Impossible to deploy consul using cache docker registry
@@ -359,12 +357,33 @@ Bug
 * [`OOM-1064 <https://jira.onap.org/browse/OOM-1064>`_] - Improve docker registry secret management
 * [`OOM-1066 <https://jira.onap.org/browse/OOM-1066>`_] - Updating TOSCA blueprint to sync up with helm configuration changes (add dmaap and oof/delete message-router)
 * [`OOM-1068 <https://jira.onap.org/browse/OOM-1068>`_] - Update SO with new AAI cert
-* [`OOM-1070 <https://jira.onap.org/browse/OOM-1070>`_] - SO logs partially going to /var/log/ecomp/MSO
 * [`OOM-1076 <https://jira.onap.org/browse/OOM-1076>`_] - some charts still using readiness check image from amsterdam 1.x
 * [`OOM-1077 <https://jira.onap.org/browse/OOM-1077>`_] - AAI resources and traversal deployment failure on non-rancher envs
 * [`OOM-1079 <https://jira.onap.org/browse/OOM-1079>`_] - Robot charts dont allow over ride of pub_key, dcae_collector_ip and dcae_collector_port
-* [`OOM-1081 <https://jira.onap.org/browse/OOM-1081>`_] - Remove component'mock'from TOSCA deployment
+* [`OOM-1081 <https://jira.onap.org/browse/OOM-1081>`_] - Remove component 'mock' from TOSCA deployment
 * [`OOM-1082 <https://jira.onap.org/browse/OOM-1082>`_] - Wrong pv location of dcae postgres
+* [`OOM-1085 <https://jira.onap.org/browse/OOM-1085>`_] - appc hostname is incorrect in url
+* [`OOM-1086 <https://jira.onap.org/browse/OOM-1086>`_] - clamp deployment changes /dockerdata-nfs/ReleaseName dir permissions
+* [`OOM-1088 <https://jira.onap.org/browse/OOM-1088>`_] - APPC returns error for vCPE restart message from Policy
+* [`OOM-1089 <https://jira.onap.org/browse/OOM-1089>`_] - DCAE pods are not getting purged
+* [`OOM-1093 <https://jira.onap.org/browse/OOM-1093>`_] - Line wrapping issue in redis-cluster-config.sh script
+* [`OOM-1094 <https://jira.onap.org/browse/OOM-1094>`_] - Fix postgres startup
+* [`OOM-1095 <https://jira.onap.org/browse/OOM-1095>`_] - common makefile builds out of order
+* [`OOM-1096 <https://jira.onap.org/browse/OOM-1096>`_] - node port conflict SDNC (Geo enabled) & other charts
+* [`OOM-1097 <https://jira.onap.org/browse/OOM-1097>`_] - Nbi needs dep-nbi - crash on make all
+* [`OOM-1099 <https://jira.onap.org/browse/OOM-1099>`_] - Add External Interface NBI project into OOM TOSCA
+* [`OOM-1102 <https://jira.onap.org/browse/OOM-1102>`_] - Incorrect AAI services
+* [`OOM-1103 <https://jira.onap.org/browse/OOM-1103>`_] - Cannot disable NBI
+* [`OOM-1104 <https://jira.onap.org/browse/OOM-1104>`_] - Policy DROOLS configuration across container restarts
+* [`OOM-1110 <https://jira.onap.org/browse/OOM-1110>`_] - Clamp issue when connecting Policy
+* [`OOM-1111 <https://jira.onap.org/browse/OOM-1111>`_] - Please revert to using VNFSDK Postgres container
+* [`OOM-1114 <https://jira.onap.org/browse/OOM-1114>`_] - APPC is broken in latest helm chart
+* [`OOM-1115 <https://jira.onap.org/browse/OOM-1115>`_] - SDNC DGBuilder cant operate on DGs in database - need NodePort
+* [`OOM-1116 <https://jira.onap.org/browse/OOM-1116>`_] - Correct values needed by NBI chart
+* [`OOM-1124 <https://jira.onap.org/browse/OOM-1124>`_] - Update OOM APPC chart to enhance AAF support
+* [`OOM-1126 <https://jira.onap.org/browse/OOM-1126>`_] - Incorrect Port mapping between CDT Application and APPC main application
+* [`OOM-1127 <https://jira.onap.org/browse/OOM-1127>`_] - SO fails healthcheck
+* [`OOM-1128 <https://jira.onap.org/browse/OOM-1128>`_] - AAF CS fails to start in OpenLab
 
 Sub-task
 ********
@@ -377,12 +396,10 @@ Sub-task
 * [`OOM-655 <https://jira.onap.org/browse/OOM-655>`_] - Create alternate prepull script which provides more user feedback and logging
 * [`OOM-753 <https://jira.onap.org/browse/OOM-753>`_] - Create Helm Sub-Chart for SO's embedded mariadb
 * [`OOM-754 <https://jira.onap.org/browse/OOM-754>`_] - Create Helm Chart for SO
-* [`OOM-763 <https://jira.onap.org/browse/OOM-763>`_] - Work with Robot team to minimize/optimize configuration requirements
 * [`OOM-774 <https://jira.onap.org/browse/OOM-774>`_] - Create Helm Sub-Chart for APPC's embedded mySQL database
 * [`OOM-775 <https://jira.onap.org/browse/OOM-775>`_] - Create Helm Chart for APPC
 * [`OOM-778 <https://jira.onap.org/browse/OOM-778>`_] - Replace NFS Provisioner with configurable PV storage solution
 * [`OOM-825 <https://jira.onap.org/browse/OOM-825>`_] - Apache 2 License updation for All sqls and .js file
-* [`OOM-833 <https://jira.onap.org/browse/OOM-833>`_] - Apache 2 license addition for all configuration
 * [`OOM-849 <https://jira.onap.org/browse/OOM-849>`_] - Policy Nexus component needs persistent volume for /sonatype-work
 * [`OOM-991 <https://jira.onap.org/browse/OOM-991>`_] - Adjust SDC-BE init job timing from 10 to 30s to avoid restarts on single node systems
 * [`OOM-1036 <https://jira.onap.org/browse/OOM-1036>`_] - update helm from 2.7.2 to 2.8.2 wiki/rtd
