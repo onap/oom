@@ -55,6 +55,9 @@ APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
+ENABLE_AAF=${ENABLE_AAF:-false}
+AAF_EXT_IP=${AAF_EXT_IP:-{{.Values.config.aafExtIP}}}
+AAF_EXT_FQDN=${AAF_EXT_FQDN:-{{.Values.config.aafExtFQDN}}}
 
 appcInstallStartTime=$(date +%s)
 
@@ -143,8 +146,13 @@ then
         echo "" >> ${ODL_HOME}/etc/system.properties
 
         echo "Copying the aaa shiro configuration into opendaylight"
-        cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
-
+        if $ENABLE_AAF
+        then
+             echo "${AAF_EXT_IP} ${AAF_EXT_FQDN}" >> /etc/hosts
+             cp ${APPC_HOME}/data/properties/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
+        else
+             cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
+        fi
 
         echo "Restarting OpenDaylight"
         ${ODL_HOME}/bin/stop
