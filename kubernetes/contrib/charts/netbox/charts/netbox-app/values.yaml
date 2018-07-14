@@ -1,0 +1,100 @@
+# Copyright © 2017 Amdocs, AT&T, Bell Canada, VMware
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+global: # global defaults
+  nodePortPrefix: 302
+  persistence: {}
+
+config:
+  # Secrets configuration values
+  dbPassword: J5brHrAXFLQSif0K
+  emailPassword: password
+  napalmPassword: password
+  secretKey: r8OwDznj!!dci#P9ghmRfdu1Ysxm0AiPeDCQhKE+N_rClfWNj
+  superuserPassword: admin
+  superuserAPIToken: 0123456789abcdef0123456789abcdef01234567
+
+  # Remaining environment configuration values
+  allowedHosts: "*"
+  dbName: netbox
+  dbUser: netbox
+  dbHost: netbox-postgres
+  emailServer: localhost
+  emailPort: 25
+  emailUsername: netbox
+  emailTimeout: 5
+  emailFrom: netbox@bar.com
+  mediaRoot: /opt/netbox/netbox/media
+  napalmUsername: napalm
+  napalmTimeout: 10
+  maxPageSize: 0
+  superuserName: admin
+  superuserEmail: admin@example.com
+
+repository: docker.io
+image: ninech/netbox:v2.3.5
+service:
+  type: ClusterIP
+  name: netbox-app
+  externalPort: 8001
+  internalPort: 8001
+  portName: netbox-app
+
+ingress:
+  enabled: false
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 100Mi
+  mountPath: /dockerdata-nfs
+  mountSubPath: netbox/shared
+
+  # Names used for shared pv/pvcs across App & Nginx containers
+  staticPvName: netbox-static
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+resources: {}
