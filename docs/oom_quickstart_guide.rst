@@ -130,6 +130,9 @@ may want to selectively enable or disable ONAP components by changing the
   vnfsdk:
     enabled: true
 
+.. note::
+  openStackEncryptedPasswordHere = echo -n "4rfv%TGB6yhn" | openssl aes-128-ecb -e -K `cat so/resources/config/mso/encryption.key` -nosalt | xxd -c 256 -p
+
 **Step 3.** To setup a local Helm server to server up the ONAP charts::
 
   > helm serve &
