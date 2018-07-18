@@ -130,6 +130,13 @@ may want to selectively enable or disable ONAP components by changing the
   vnfsdk:
     enabled: true
 
+.. note::
+  To generate openStackEncryptedPasswordHere :
+
+  root@olc-rancher:~# cd so/resources/config/mso/
+
+  root@olc-rancher:~/oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p
+
 **Step 3.** To setup a local Helm server to server up the ONAP charts::
 
   > helm serve &
