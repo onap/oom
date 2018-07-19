@@ -25,8 +25,8 @@ function usage
 	echo "       demo.sh <namespace> init_robot [ <etc_hosts_prefix> ]"
     echo "               - Initialize robot after all ONAP VMs have started"
 	echo " "
-	echo "       demo.sh <namespace> instantiateVFW"
-    echo "               - Instantiate vFW module for the a demo customer (DemoCust<uuid>)"
+	echo "       demo.sh <namespace> instantiateVFW | instantiateVFWCL"
+    echo "               - Instantiate vFW or VFWCL module for the a demo customer (DemoCust<uuid>)"
 	echo " "
 	echo "       demo.sh <namespace> deleteVNF <module_name from instantiateVFW>"
     echo "               - Delete the module created by instantiateVFW"
@@ -113,6 +113,11 @@ do
 			;;
     	instantiateVFW)
 			TAG="instantiateVFW"
+			VARIABLES="$VARIABLES -v GLOBAL_BUILD_NUMBER:$$"
+			shift
+			;;
+    	instantiateVFWCL)
+			TAG="instantiateVFWCL"
 			VARIABLES="$VARIABLES -v GLOBAL_BUILD_NUMBER:$$"
 			shift
 			;;

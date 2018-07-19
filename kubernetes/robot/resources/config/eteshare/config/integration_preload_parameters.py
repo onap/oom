@@ -267,7 +267,7 @@ GLOBAL_PRELOAD_PARAMETERS = {
             "vpg_private_ip_0" : "192.168.10.200",
             "vsn_private_ip_0" : "192.168.20.250",
             "vsn_private_ip_1" : "{{.Values.openStackOamNetworkCidrPrefix}}.${ecompnet}.122",
-            'vfw_name_0':'${generic_vnf_name}',
+            'vfw_name_0':'demofwl01fwl${hostid}',
             'vsn_name_0':'demofwl01snk${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
             "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
