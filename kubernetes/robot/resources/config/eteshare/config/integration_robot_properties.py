@@ -67,6 +67,8 @@ GLOBAL_POLICY_AUTH = "dGVzdHBkcDphbHBoYTEyMw=="
 GLOBAL_POLICY_CLIENTAUTH = "cHl0aG9uOnRlc3Q="
 GLOBAL_POLICY_USERNAME = "healthcheck"
 GLOBAL_POLICY_PASSWORD = "zb!XztG34"
+GLOBAL_DROOLS_USERNAME = "@1b3rt"
+GLOBAL_DROOLS_PASSWORD = "'31nst31n"
 # portal info - everything is from the private oam network (also called onap private network)
 GLOBAL_PORTAL_SERVER_PROTOCOL = "http"
 GLOBAL_PORTAL_SERVER_PORT = "8989"

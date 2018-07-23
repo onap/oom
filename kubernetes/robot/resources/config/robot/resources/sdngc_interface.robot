@@ -117,7 +117,7 @@ Preload One Vnf Topology
     [Arguments]    ${service_type_uuid}    ${generic_vnf_name}    ${generic_vnf_type}       ${vf_module_name}    ${vf_module_type}    ${service}    ${filename}   ${uuid}
     Return From Keyword If    '${filename}' == ''
     ${data_template}=    OperatingSystem.Get File    ${PRELOAD_VNF_TOPOLOGY_OPERATION_BODY}/preload.template
-    ${parameters}=    Get Template Parameters    ${filename}   ${uuid}
+    ${parameters}=    Get Template Parameters    ${filename}   ${uuid}   ${generic_vnf_name}
     Set To Dictionary   ${parameters}   generic_vnf_name=${generic_vnf_name}     generic_vnf_type=${generic_vnf_type}  service_type=${service_type_uuid}    vf_module_name=${vf_module_name}    vf_module_type=${vf_module_type}
     ${data}=	Fill JSON Template    ${data_template}    ${parameters}
 	${put_resp}=    Run SDNGC Post Request     ${SDNGC_INDEX_PATH}${PRELOAD_VNF_TOPOLOGY_OPERATION_PATH}     ${data}
@@ -126,7 +126,7 @@ Preload One Vnf Topology
     Should Be Equal As Strings 	${get_resp.status_code} 	200
 
 Get Template Parameters
-    [Arguments]    ${template}    ${uuid}
+    [Arguments]    ${template}    ${uuid}   ${generic_vnf_name}
     ${rest}   ${suite}=    Split String From Right    ${SUITE NAME}   .   1
     ${uuid}=    Catenate    ${uuid}
     ${hostid}=    Get Substring    ${uuid}    -4
@@ -147,7 +147,7 @@ Get Template Parameters
 
 
     # update the value map with unique values.
-    Set To Dictionary   ${valuemap}   uuid=${uuid}   hostid=${hostid}    ecompnet=${ecompnet}
+    Set To Dictionary   ${valuemap}   uuid=${uuid}   hostid=${hostid}    ecompnet=${ecompnet}   generic_vnf_name=${generic_vnf_name}
 
     #
     # Mash together the defaults dict with the test case dict to create the set of

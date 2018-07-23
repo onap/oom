@@ -37,6 +37,7 @@ GLOBAL_INJECTED_POLICY_IP_ADDR = "pdp.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = "drools.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_PORTAL_IP_ADDR = "portal-app.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_PUBLIC_NET_ID = "{{ .Values.openStackPublicNetId }}"
+GLOBAL_INJECTED_RANCHER_IP= "{{ .Values.rancherIpAddress }}"
 GLOBAL_INJECTED_REGION = "{{ .Values.openStackRegion }}"
 GLOBAL_INJECTED_REMOTE_REPO = "http://gerrit.onap.org/r/testsuite/properties.git"
 GLOBAL_INJECTED_SCRIPT_VERSION = "{{ .Values.scriptVersion }}"
@@ -92,6 +93,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : "drools.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_PORTAL_IP_ADDR" : "portal-app.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_PUBLIC_NET_ID" : "{{ .Values.openStackPublicNetId }}",
+    "GLOBAL_INJECTED_RANCHER_IP" : "{{ .Values.rancherIpAddress}}",
     "GLOBAL_INJECTED_REGION" : "{{ .Values.openStackRegion }}",
     "GLOBAL_INJECTED_REMOTE_REPO" : "http://gerrit.onap.org/r/testsuite/properties.git",
     "GLOBAL_INJECTED_SDC_BE_IP_ADDR" : "sdc-be.{{include "common.namespace" .}}",
