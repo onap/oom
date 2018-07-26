@@ -391,16 +391,28 @@ Ensure you've disabled any proxy settings the browser you are using to access
 the portal and then simply access the familiar URL:
 http://portal.api.simpledemo.onap.org:8989/ONAPPORTAL/login.htm
 
-.. note:: Alternatives Considered.
 
-  Kubernetes port forwarding was considered but discarded as it would require
-  the end user to run a script that opens up port forwarding tunnels to each of
-  the pods that provides a portal application widget.
+.. note::     
 
-  Reverting to a VNC server similar to what was deployed in the Amsterdam
-  release was also considered but there were many issues with resolution, lack
-  of volume mount, /etc/hosts dynamic update, file upload that were a tall order
-  to solve in time for the Beijing release.
+   | Alternatives Considered:
+
+   -  Kubernetes port forwarding was considered but discarded as it would require
+      the end user to run a script that opens up port forwarding tunnels to each of
+      the pods that provides a portal application widget.
+
+   -  Reverting to a VNC server similar to what was deployed in the Amsterdam
+      release was also considered but there were many issues with resolution, lack
+      of volume mount, /etc/hosts dynamic update, file upload that were a tall order
+      to solve in time for the Beijing release.
+
+   Observations:
+
+   -  If you are not using floating IPs in your Kubernetes deployment and directly attaching
+      a public IP address (i.e. by using your public provider network) to your K8S Node
+      VMs' network interface, then the output of 'kubectl -n onap get services | grep "portal-app"'
+      will show your public IP instead of the private network's IP. Therefore,
+      you can grab this public IP directly (as compared to trying to find the floating
+      IP first) and map this IP in /etc/hosts.
 
 .. figure:: oomLogoV2-Monitor.png
    :align: right
@@ -675,4 +687,4 @@ deployment enter::
 
 will remove `so` as the configuration indicates it's no longer part of the
 deployment. This might be useful if a one wanted to replace just `so` by
-installing a custom version.
+installing a custom version.  
