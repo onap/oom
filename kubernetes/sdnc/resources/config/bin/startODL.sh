@@ -104,9 +104,6 @@ then
         echo "Installing SDN-C keyStore"
         ${SDNC_HOME}/bin/addSdncKeyStore.sh
 
-	# No longer needed (this was a workaround for bug in Nitrogen)
-        #${CCSDK_HOME}/bin/installOdlHostKey.sh
-
         if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
         then
                 echo "Installing directed graphs"
@@ -118,5 +115,5 @@ then
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
-exec ${ODL_HOME}/bin/karaf
+exec ${ODL_HOME}/bin/karaf server
 
