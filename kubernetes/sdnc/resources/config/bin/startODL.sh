@@ -105,9 +105,6 @@ then
         echo "Installing SDN-C keyStore"
         ${SDNC_HOME}/bin/addSdncKeyStore.sh
 
-	# No longer needed (this was a workaround for bug in Nitrogen)
-        #${CCSDK_HOME}/bin/installOdlHostKey.sh
-
         if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
         then
                 echo "Installing directed graphs"
