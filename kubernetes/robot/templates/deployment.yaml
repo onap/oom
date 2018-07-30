@@ -30,21 +30,6 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - name: {{ include "common.name" . }}-inject-demo-project
-        command:
-        - /bin/bash
-        - -c
-        - >
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
-          echo "Clone complete. Copying from /tmp/gerrit/heat to /share";
-          cp -rf /tmp/gerrit/heat /share;
-          echo "Done.";
-        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: demodir
-          mountPath: "/share"
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -69,11 +54,6 @@ spec:
           readOnly: true
         - name: robot-eteshare
           mountPath: /share/config
-        - name: robot-lighttpd-authorization
-          mountPath: /etc/lighttpd/authorization
-          subPath: authorization
-        - name: demodir
-          mountPath: /share
         - name: robot-logs
           mountPath: /share/logs
         resources:
@@ -101,10 +81,5 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-eteshare-configmap
           defaultMode: 0755
-      - name: robot-lighttpd-authorization
-        configMap:
-          name: {{ include "common.fullname" . }}-lighttpd-authorization-configmap
-      - name: demodir
-        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
