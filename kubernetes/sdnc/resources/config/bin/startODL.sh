@@ -118,5 +118,5 @@ then
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
-exec ${ODL_HOME}/bin/karaf
+exec ${ODL_HOME}/bin/karaf server
 
