@@ -98,7 +98,7 @@ GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""
 # dns info
 GLOBAL_DNS_TRAFFIC_DURATION = "600"
 # location where heat templates are loaded from
-GLOBAL_HEAT_TEMPLATES_FOLDER = "/share/heat"
+GLOBAL_HEAT_TEMPLATES_FOLDER = "/var/opt/OpenECOMP_ETE/demo/heat"
 # Log info
 GLOBAL_LOG_SERVER_PROTOCOL = "http"
 GLOBAL_LOG_ELASTICSEARCH_PORT = "9200"
