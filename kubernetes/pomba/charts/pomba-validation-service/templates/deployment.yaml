@@ -1,0 +1,119 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end }}
+          {{ if .Values.readiness.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          {{ end }}
+          env:
+            - name: CONFIG_HOME
+              value: "{{ .Values.config.configDir }}"
+            - name: MAX_HEAP
+              value: "{{ .Values.config.maxHeap }}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: {{ .Values.config.configDir }}/validation-service.properties
+            name: properties
+            subPath: validation-service.properties
+          - mountPath: {{ .Values.config.configDir }}/application.properties
+            name: properties
+            subPath: application.properties            
+          - mountPath: {{ .Values.config.configDir }}/validation-service-auth.properties
+            name: properties
+            subPath: validation-service-auth.properties
+          - mountPath: {{ .Values.config.configDir }}/rule-indexing.properties
+            name: properties
+            subPath: rule-indexing.properties
+          - mountPath: {{ .Values.config.configDir }}/aai-environment.properties
+            name: properties
+            subPath: aai-environment.properties
+          - mountPath: {{ .Values.config.configDir }}/schemaIngest.properties
+            name: properties
+            subPath: schemaIngest.properties
+          - mountPath: {{ .Values.config.configAuthDir }}/auth_policy.json
+            name: config-auth
+            subPath: auth_policy.json
+          - mountPath: {{ .Values.config.configTopicsDir }}/topic-poa-audit-result.properties
+            name: config-topics
+            subPath: topic-poa-audit-result.properties
+          - mountPath: {{ .Values.config.configTopicsDir }}/topic-poa-rule-validation.properties
+            name: config-topics
+            subPath: topic-poa-rule-validation.properties
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: properties
+          configMap:
+            name: {{ include "common.fullname" . }}-config-properties
+            defaultMode: 0644
+        - name: config-auth
+          configMap:
+            name: {{ include "common.fullname" . }}-config-auth
+            defaultMode: 0644
+        - name: config-topics
+          configMap:
+            name: {{ include "common.fullname" . }}-config-topics
+            defaultMode: 0644
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
