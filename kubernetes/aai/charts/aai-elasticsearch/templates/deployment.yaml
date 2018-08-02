@@ -39,9 +39,10 @@ spec:
         - /bin/sh
         - -c
         - |
-          mkdir -p /logroot/elasticsearch/es-data
-          chmod -R 777 /logroot/elasticsearch/es-data
-          chown -R root:root /logroot
+          mkdir -p /logroot/elasticsearch/logs
+          mkdir -p /logroot/elasticsearch/data
+          chmod -R 777 /logroot/elasticsearch
+          chown -R 1000:1000 /logroot
         env:
         - name: NAMESPACE
           valueFrom:
@@ -59,7 +60,7 @@ spec:
       hostname: {{ include "common.name" . }}
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.dockerhubRepository | default .Values.dockerhubRepository }}/{{ .Values.image }}
+        image: {{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
@@ -84,6 +85,12 @@ spec:
           - name: elasticsearch-config
             subPath: elasticsearch.yml
             mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          - name: elasticsearch-config
+            subPath: jvm.options
+            mountPath: /usr/share/elasticsearch/config/jvm.options
+          - name: elasticsearch-config
+            subPath: log4j2.properties
+            mountPath: /usr/share/elasticsearch/config/log4j2.properties
           - name: elasticsearch-data
             mountPath: /usr/share/elasticsearch/data
         resources:
