@@ -1,6 +1,6 @@
 #! /bin/bash -xv
 
-# Copyright © 2017-2018 Amdocs, Bell Canada, AT&T
+# Copyright 2018 AT&T, Amdocs, Bell Canada Intellectual Property. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
