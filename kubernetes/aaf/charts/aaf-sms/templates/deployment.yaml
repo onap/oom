@@ -30,10 +30,27 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - image:  "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - "aaf-sms-vault"
+        - --container-name
+        - "aaf-sms-vault-backend"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.pullPolicy }}
+        name: {{ include "common.name" . }}
         command: ["/sms/bin/sms"]
         workingDir: /sms/
         ports:
