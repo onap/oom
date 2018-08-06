@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright © 2018 Amdocs
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+
+#!/bin/bash
+
+OOM_HOME=${OOM_HOME:-$HOME}
+
 if ! [ "$(command -v jq)" ]; then
   echo "Error: jq is not installed."
   echo "use: sudo apt install jq"
   exit 1
 fi
 
-dir=$( dirname $0 )
-IS_PRIMARY_CLUSTER=$( $dir/sdnc.isPrimaryCluster )
+IS_PRIMARY_CLUSTER=`./sdnc.isPrimaryCluster`
 
 case $IS_PRIMARY_CLUSTER in
 true)
@@ -31,30 +34,21 @@ false)
    MEMBER_NUMBER=4
    ;;
 *)
-  echo "Error: isPrimaryCluster not defined in $dir/../../../values.yaml."
+  echo "Error: isPrimaryODLCluster not defined in ${OOM_HOME}/oom/kubernetes/sdnc/values.yaml."
   exit 1
   ;;
 esac
 
-USERNAME=admin
-PASSWORD=admin
-
 for pod_number in {0..2}
 do
-
-   response=`curl -s -u $USERNAME:$PASSWORD -H "Content-Type: application/json" -H "Accept: application/json" -X GET http://localhost:3026$((${pod_number} + 1))/jolokia/read/org.opendaylight.controller:Category=Shards,name=member-$((${MEMBER_NUMBER} + ${pod_number}))-shard-default-config,type=DistributedConfigDatastore`
-
-   if [ $? -ne 0 ]; then
+   curl  "http://localhost:3026$((${pod_number} + 1))" > /dev/null 2>&1
+   if [ "$?" = "7" ]; then
       continue
    fi
 
-   status=$( echo -E "$response" | jq -r ".status" )
-   if [ "$status" != "200" ]; then
-      continue
-   fi
+   VOTING_RESULT=`curl -u admin:admin -H "Content-Type: application/json" -H "Accept: application/json" -X GET http://localhost:3026$((${pod_number} + 1))/jolokia/read/org.opendaylight.controller:Category=Shards,name=member-$((${MEMBER_NUMBER} + ${pod_number}))-shard-default-config,type=DistributedConfigDatastore 2>/dev/null | jq '.value.Voting'`
 
-   voting=$( echo -E "$response" | jq -r ".value.Voting" )
-   case $voting in
+   case $VOTING_RESULT in
    true)
       echo "active"
       exit 0
