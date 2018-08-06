@@ -1,11 +1,10 @@
 #!/bin/bash
-
-###
+#
 # ============LICENSE_START=======================================================
 # ONAP : SDN-C
 # ================================================================================
-# Copyright (C) 2017 AT&T Intellectual Property. All rights
-# 							reserved.
+# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
+# Modifications Copyright © 2018 Amdocs, Bell Canada
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +19,6 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 ###
-
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
