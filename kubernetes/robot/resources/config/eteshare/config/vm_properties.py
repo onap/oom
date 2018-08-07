@@ -18,6 +18,7 @@ GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = "log-kibana.{{include "common.namespace" .}
 GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "log-ls-http.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_DMAAP_DR_ADDR = "dmaap-dr-prov.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MSO_IP_ADDR = "so.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_NBI_IP_ADDR = "nbi.{{include "common.namespace" .}}"
@@ -72,6 +73,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR" : "log-kibana.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR" : "log-ls.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MR_IP_ADDR" : "message-router.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_DMAAP_DR_ADDR" : "dmaap-dr-prov.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MSO_IP_ADDR" : "so.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
