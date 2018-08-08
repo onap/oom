@@ -1,0 +1,24 @@
+---
+{{- $nodePort := index .Values "asdc-controller" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: asdc-controller-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: asdc-controller-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: asdc-port 
+     {{- if eq $nodePort "NodePort" }}
+     nodePort: {{ index .Values "asdc-controller" "service" "nodePort" }}
+     {{- end}} 
+    port: {{ index .Values "asdc-controller" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "asdc-controller" "service" "targetPort" }}
+  selector:
+    app: asdc-controller
+  sessionAffinity: None
+  type: {{$nodePort}}

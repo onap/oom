@@ -1,0 +1,24 @@
+---
+{{- $nodePort := index .Values "global" "request-db-adapter" "chartValues" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: request-db-adapter-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: request-db-adapter-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: reqdb-port
+     {{- if eq $nodePort "NodePort" }}
+       nodePort: {{ index .Values "global" "request-db-adapter" "chartValues" "service" "nodePort" }} 
+    {{- end}} 
+    port: {{ index .Values "global" "request-db-adapter" "chartValues" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "global" "request-db-adapter" "chartValues" "service" "targetPort" }}
+  selector:
+    app: request-db-adapter
+  sessionAffinity: None
+  type: {{$nodePort}}

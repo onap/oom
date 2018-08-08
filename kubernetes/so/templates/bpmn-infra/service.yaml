@@ -1,0 +1,24 @@
+---
+{{- $nodePort := index .Values "bpmn-infra" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: bpmn-infra-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: bpmn-infra-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: bpmn-port
+    {{- if eq $nodePort "NodePort" }} 
+    nodePort: {{ index .Values "bpmn-infra" "service" "nodePort" }}
+    {{- end}} 
+    port: {{ index .Values "bpmn-infra" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "bpmn-infra" "service" "targetPort" }}
+  selector:
+    app: bpmn-infra
+  sessionAffinity: ClientIP
+  type: {{$nodePort}}

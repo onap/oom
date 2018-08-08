@@ -1,19 +1,27 @@
-1. Get the application URL by running these commands:
-{{- if .Values.ingress.enabled }}
-{{- range .Values.ingress.hosts }}
-  http://{{ . }}
-{{- end }}
-{{- else if contains "NodePort" .Values.service.type }}
-  export NODE_PORT=$(kubectl get --namespace {{ include "common.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "common.name" . }})
-  export NODE_IP=$(kubectl get nodes --namespace {{ include "common.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.service.type }}
-     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-           You can watch the status of by running 'kubectl get svc -w {{ include "common.name" . }}'
-  export SERVICE_IP=$(kubectl get svc --namespace {{ include "common.namespace" . }} {{ include "common.name" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  echo http://$SERVICE_IP:{{ .Values.service.externalPort }}
-{{- else if contains "ClusterIP" .Values.service.type }}
-  export POD_NAME=$(kubectl get pods --namespace {{ include "common.namespace" . }} -l "app={{ template "so.name" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
-  echo "Visit http://127.0.0.1:8080 to use your application"
-  kubectl port-forward $POD_NAME 8080:{{ .Values.service.internalPort }}
-{{- end }}
+1. main components included in umbrella chart
+-- api-handler-infra
+-- asdc-controller
+-- bpmn-infra
+-- openstack-adapter
+-- sdnc-adapter
+-- vfc-adapter 
+2. dependencies included in charts sub directory
+-- db-secrets
+-- ssl-secrets
+-- catalog-db-adapter
+-- request-db-adapter
+3. use global.environment to set environment to deploy to.  Possible values are dev, e2e-s1, e2e-s2, e2e-ti, ist, ist-ti, prod-s1, prod-s2, psl
+4. use global.secretdeploy to enable/disable deployment of secrets.  Possible values are true and false
+5. use global.secretenvironment to set environment to deploy secrets.  Possible values are dev, e2e, e2e-ti, ist, ist-ti, prod
+6. use global.mso-{component name}.configmap, global.mso-{component name}.deployment, global.mso-{component name}.service flags to enable/disable which object(s) in each mso component(s) to deploy
+7. Run the following helm command to deploy chart(s), remove --dry-run option
+	helm upgrade -f ./helm/values-dev.yaml --install --debug --dry-run so ./so
+8. there are nine (9) variation of values.yaml files each representing a different environment with environment specific values
+9. replace ./helm/values-dev.yaml values yaml file to install in to different environments 	
+	9.1 for example: 
+		helm upgrade -f ./helm/values-ist.yaml --install --debug --dry-run --tiller-namespace=com-att-ist helm ./helm
+	9.2 if there's only config changes, then you need to force the pods to restart by adding --recreate-pods --force
+		helm upgrade -f ./helm/values-ist.yaml --install --debug --dry-run --recreate-pods --force --tiller-namespace=com-att-ist helm ./helm
+	9.3 if you prefer to export tiller namespace rather than specifying it in the option:
+		export TILLER_NAMESPACE=com-att-ist
+		helm upgrade -f ./helm/values-ist.yaml --install --debug --dry-run --recreate-pods --force helm ./helm

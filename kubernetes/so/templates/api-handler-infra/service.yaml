@@ -1,0 +1,24 @@
+---
+{{- $nodePort := index .Values "api-handler-infra" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-handler-infra-svc
+  labels:
+    app: api-handler-infra-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  namespace: {{ include "common.namespace" . }} 
+spec:  
+  ports:
+    - name: apih-port
+       {{- if eq $nodePort "NodePort" }}
+      nodePort: {{ index .Values "api-handler-infra" "service" "nodePort" }}
+       {{- end}}  
+      port: {{ index .Values "api-handler-infra" "service" "port" }}
+      targetPort: {{ index .Values "api-handler-infra" "service" "targetPort" }}      
+      protocol: TCP      
+  selector:
+    app: api-handler-infra
+  sessionAffinity: ClientIP
+  type: {{$nodePort}}
