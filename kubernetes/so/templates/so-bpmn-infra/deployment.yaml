@@ -1,0 +1,148 @@
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- $baseName := index .Values "global" "bpmn-infra" }}
+{{- $dbSecretName := index .Values "global" "dbSecretName" }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{$baseName}}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{$baseName}}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ index .Values $baseName "replicaCount" }}
+  minReadySeconds: {{ index .Values $baseName "pod" "minReadySeconds" }}
+  selector:
+    matchLabels:
+      app: {{$baseName}}
+  strategy:
+    type: {{ index .Values $baseName "updateStrategy" "type" }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values $baseName "updateStrategy" "maxUnavailable" }}
+      maxSurge: {{ index .Values $baseName "updateStrategy" "maxSurge" }}
+  template:
+    metadata:
+      labels:
+        app: {{$baseName}}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: mso-chown
+        image: alpine:3.6
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /app/logs"]
+      restartPolicy: Always
+      containers:
+      - name: {{$baseName}}
+        image: {{ index .Values "global" "dockerRepository"}}/{{ index .Values $baseName "pod" "imageName" }}:{{ index .Values "global" "tag" }}
+        resources:
+          requests:
+            memory: {{ index .Values $baseName "resources" "requests" "memory"}}
+            cpu: {{ index .Values $baseName "resources" "requests" "cpu"}}
+          limits:
+            memory: {{ index .Values $baseName "resources" "limits" "memory"}}
+            cpu: {{ index .Values $baseName "resources" "limits" "cpu"}}
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.readwrite.host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.readwrite.port
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.readwrite.rolename
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.readwrite.password
+        - name: DB_ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.admin.rolename
+        - name: DB_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{- $dbSecretName }}
+              key: mariadb.admin.password
+        - name: CADI_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: so-server-certs-pwd-secret
+              key: cadi_keystore_password
+        - name: CADI_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: so-server-certs-pwd-secret
+              key: cadi_truststore_password
+        - name: MSO_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: so-client-certs-secret
+              key: keystore_password
+        - name: MSO_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: so-client-certs-secret
+              key: truststore_password
+        envFrom:
+        - configMapRef:
+            name: {{- printf "%s-%s" $baseName "config"}}
+        imagePullPolicy:  {{ index .Values "global" "pullPolicy" }}
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: certs
+          mountPath: /app/certs/
+          readOnly: true
+        - name: config
+          mountPath: /app/config/
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: {{- index .Values $baseName "livenessProbe" "path"| indent 2}}
+            port: {{- index .Values $baseName "livenessProbe" "port"}}
+            scheme: {{- index .Values $baseName "livenessProbe" "scheme"| indent 2}}
+          initialDelaySeconds: {{- index .Values $baseName "livenessProbe" "initialDelaySeconds"}}
+          periodSeconds: {{- index .Values $baseName "livenessProbe" "periodSeconds"}}
+          timeoutSeconds: {{- index .Values $baseName "livenessProbe" "timeoutSeconds"}}
+          successThreshold: {{- index .Values $baseName "livenessProbe" "successThreshold"}}
+          failureThreshold: {{- index .Values $baseName "livenessProbe" "failureThreshold"}}
+        ports:
+        - containerPort: {{ index .Values $baseName "pod" "containerPort" }}
+          protocol: TCP
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: certs
+        secret:
+            secretName: so-server-certs-secret
+      - name: config
+        configMap:
+            name: {{- printf "%s-%s" $baseName "app-config"}}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
