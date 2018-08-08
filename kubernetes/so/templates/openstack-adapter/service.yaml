@@ -1,0 +1,23 @@
+---
+{{- $nodePort := index .Values "openstack-adapter" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: openstack-adapter-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: openstack-adapter-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: openstack-port
+    {{- if eq $nodePort "NodePort" }}    
+    nodePort: {{ index .Values "openstack-adapter" "service" "nodePort" }}
+    {{- end}} 
+    port: {{ index .Values "openstack-adapter" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "openstack-adapter" "service" "targetPort" }}
+  selector:
+    app: openstack-adapter 
+  type: {{$nodePort}}

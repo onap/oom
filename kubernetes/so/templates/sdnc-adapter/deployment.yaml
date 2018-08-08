@@ -1,0 +1,133 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sdnc-adapter
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: sdnc-adapter
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+spec:
+  replicas: {{ index .Values "sdnc-adapter" "replicaCount" }}
+  minReadySeconds: {{ index .Values "sdnc-adapter" "updateStrategy" "minReadySeconds" }}
+  strategy:
+    type: {{ index .Values "sdnc-adapter" "updateStrategy" "type" }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values "sdnc-adapter" "updateStrategy" "maxUnavailable" }} 
+      maxSurge: {{ index .Values "sdnc-adapter" "updateStrategy" "maxSurge" }}
+  selector:
+    matchLabels:
+      app: sdnc-adapter
+  template:
+    metadata:
+      labels:
+        app: sdnc-adapter
+    spec:
+      initContainers:
+      - name: mso-chown 
+        image: alpine:3.6 
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        imagePullPolicy: IfNotPresent 
+        command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /app/logs"]
+      restartPolicy: Always
+      containers:
+      - name: sdnc-adapter
+        image: {{ index .Values "global" "dockerRepository"}}/{{ index .Values "sdnc-adapter" "pod" "imageName" }}:{{ index .Values "global" "tag" }}
+        resources:
+          requests:
+            memory: 1Gi
+            cpu: 500m
+          limits:
+            memory: 4Gi
+            cpu: 2000m
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.readwrite.host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.readwrite.port
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.readwrite.rolename
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.readwrite.password
+        - name: DB_ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.admin.rolename
+        - name: DB_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ index .Values "global" "dbSecretName" }}
+              key: mariadb.admin.password
+        - name: CADI_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mso-aaf-certs-pwd-secret
+              key: cadi_keystore_password
+        - name: CADI_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mso-aaf-certs-pwd-secret
+              key: cadi_truststore_password
+        - name: MSO_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mso-client-certs-secret
+              key: keystore_password
+        - name: MSO_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mso-client-certs-secret
+              key: truststore_password
+        envFrom: 
+        - configMapRef:
+            name: sdnc-adapter-config				
+        imagePullPolicy:  {{ index .Values "global" "pullPolicy" }}        
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: certs
+          mountPath: /app/certs/
+          readOnly: true
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /manage/health
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        ports:
+        - containerPort:  8443
+          protocol: TCP
+      volumes:
+      - name: config
+        configMap:
+          name: sdnc-adapter-app-config 
+      - name: logs
+        emptyDir: {}
+      - name: certs
+        secret: 
+            secretName: mso-aaf-certs-secret
+      imagePullSecrets: 
+        - name: {{ index .Values "global" "pullsecret" }}

@@ -1,0 +1,23 @@
+---
+{{- $nodePort := index .Values "vfc-adapter" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: vfc-adapter-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: vfc-adapter-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: vfc-port
+    {{- if eq $nodePort "NodePort" }} 
+    nodePort: {{ index .Values "vfc-adapter" "service" "nodePort" }}
+    {{- end}} 
+    port: {{ index .Values "vfc-adapter" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "vfc-adapter" "service" "targetPort" }}
+  selector:
+    app: vfc-adapter 
+  type: {{$nodePort}}

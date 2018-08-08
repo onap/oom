@@ -1,0 +1,23 @@
+---
+{{- $nodePort := index .Values "sdnc-adapter" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: sdnc-adapter-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: sdnc-adapter-svc
+  namespace: {{ include "common.namespace" . }}
+spec: 
+  ports:
+  - name: sdnc-port
+    {{- if eq $nodePort "NodePort" }} 
+    nodePort: {{ index .Values "sdnc-adapter" "service" "nodePort" }}
+    {{- end}} 
+    port: {{ index .Values "sdnc-adapter" "service" "port" }}
+    protocol: TCP
+    targetPort: {{ index .Values "sdnc-adapter" "service" "targetPort" }}
+  selector:
+    app: sdnc-adapter 
+  type: {{$nodePort}}
