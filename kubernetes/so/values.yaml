@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,27 +11,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Default values for so.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-global: # global defaults
+# global values
+global:
   nodePortPrefix: 302
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
 
-subChartsOnly:
-  enabled: true
 
-# application image
-repository: nexus3.onap.org:10001
-image: openecomp/mso:1.2.2
-pullPolicy: Always
-  
-# flag to enable debugging - application support required
-debugEnabled: false
+  tag: 1.3.0-STAGING-latest
+  # This will be a environment variable in the container for loading client certs
+  target_env: dev
+  # environment to be deployed into
+  # dev, e2e-s1, e2e-s2, e2e-ti, ist, ist-ti, prod-s1, prod-s2, psl
+  environment: dev
+  # environment for secrets to be deployed into
+  # dev, e2e, e2e-ti, ist, ist-ti, prod
+  secretEnv: dev
+  # whether or not to deploy secrets
+  deploySslSecrets: false
+  # db secret name
+  dbSecretName: mso-maria-db-secret
+  # docker repository
+  dockerRepository: nexus3.onap.org:10001/so/
+  # image pull Policy
+  pullPolicy: IfNotPresent
+  #charts
+  openstack-adapter: so-openstack-adapter
+  api-handler-infra: so-api-handler-infra
+  asdc-controller: so-asdc-controller
+  bpmn-infra: so-bpmn-infra
+  sdnc-adapter: so-sdnc-adapter
+  vfc-adapter: so-vfc-adapter
+
+subChartsOnly:
+  enabled: true  
 
 # application configuration
 config:
@@ -109,20 +124,202 @@ ingress:
   enabled: false
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  #
-  # Example:
-  # Configure resource requests and limits
-  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory 
-  # Minimum memory for production is 4 CPU cores and 8GB memory 
-#resources:
-#  limits:
-#    cpu: 2
-#    memory: 4Gi
-#  requests:
-#    cpu: 2
-#    memory: 4Gi
+# openstack
+so-openstack-adapter:
+    pod:
+        imageName: openstack-adapter
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/openstack/
+    service:
+        type: ClusterIP
+        port: 8300
+        targetPort: 8443
+        portName: openstack-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+# apihandler specific values
+so-api-handler-infra:
+    pod:
+        imageName: api-handler-infra
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/apih/
+    service:
+        type: NodePort
+        nodePort: 30251
+        port: 8100
+        targetPort: 8443
+        portName: apih-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+# asdccontroller specific values
+so-asdc-controller:
+    pod:
+        imageName: asdc-controller
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/asdc/
+    service:
+        type: ClusterIP
+        port: 8500
+        targetPort: 8443
+        portName: asdc-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+# bpmninfra specific values
+so-bpmn-infra:
+    pod:
+        imageName: bpmn-infra
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/bpmn/
+    service:
+        type: ClusterIP
+        port: 8200
+        targetPort: 8443
+        portName: bpmn-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 8Gi
+          cpu: 4000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+# sdncadapter specific values
+so-sdnc-adapter:
+    pod:
+        imageName: sdnc-adapter
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/sdnc/
+    service:
+        type: ClusterIP
+        port: 8400
+        targetPort: 8443
+        portName: sdnc-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+# sdncadapter specific values
+so-vfc-adapter:
+    pod:
+        imageName: vfc-adapter
+        replicaCount: 1
+        minReadySeconds: 10
+        containerPort: 8443
+        logPath: ./logs/vfc/
+    service:
+        type: ClusterIP
+        port: 8600
+        targetPort: 8443
+        portName: vfc-port
+    updateStrategy:
+        type: RollingUpdate
+        maxUnavailable: 1
+        maxSurge: 1
+    resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 4Gi
+          cpu: 2000m
+    livenessProbe:
+        path: /manage/health
+        port: 8443
+        scheme: HTTPS
+        initialDelaySeconds: 90
+        periodSeconds: 60
+        timeoutSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
