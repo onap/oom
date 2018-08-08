@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+{{- $baseName := index .Values "global" "openstack-adapter"  }}
 apiVersion: v1
-description: ONAP Service Orchestrator
-name: so
-version: 3.0.0
+kind: ConfigMap
+metadata:
+  name:  {{- printf "%s-%s" $baseName "app-config"}}
+  namespace: {{ include "common.namespace" . }}
+data:
+  {{- $yamlpath := printf "resources/config/overrides/%s/override.yaml" $baseName -}}
+  {{- $root := . }}
+  {{- range $path, $bytes := .Files.Glob $yamlpath }}
+  override.yaml: {{ $root.Files.Get $path | quote }}
+  {{- end }}
