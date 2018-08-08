@@ -1,0 +1,24 @@
+---
+{{- $nodePort := index .Values "global" "catalog-db-adapter" "chartValues" "service" "type" }}
+apiVersion: v1
+kind: Service
+metadata: 
+  labels:
+    app: catalog-db-adapter-svc
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}    
+  name: catalog-db-adapter-svc
+  namespace: {{ include "common.namespace" . }}
+spec:
+  ports:
+    - name: catalog-db-port     
+    {{- if eq $nodePort "NodePort" }}
+      nodePort: {{ index .Values "global" "catalog-db-adapter" "chartValues" "service" "nodePort" }} 
+    {{- end}}  
+      port: {{ index .Values "global" "catalog-db-adapter" "chartValues" "service" "port" }}
+      protocol: TCP
+      targetPort: {{ index .Values "global" "catalog-db-adapter" "chartValues" "service" "targetPort" }}
+  selector:
+    app: catalog-db-adapter 
+  type: {{$nodePort}}
+          
