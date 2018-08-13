@@ -188,8 +188,6 @@ Launch Instance
 Assign Floating IP for external access
 --------------------------------------
 
-.. image:: K8s-Assign_Floating_IP_for_external_access.jpeg
-
 .. image:: K8s-Manage_Floating_IP_Associations.jpeg
 
 .. image:: K8s-Launch_Instance.jpeg
