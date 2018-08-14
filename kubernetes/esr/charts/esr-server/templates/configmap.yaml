@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright ? 2017 Amdocs, Bell Canada
 # Modifications Copyright ? 2018 ZTE
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#################################################################
-# Global configuration defaults.
-#################################################################
-global:
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-
-# application configuration
-config:
-  logstashServiceName: log-ls
-  logstashPort: 5044
-
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-log
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/logback.xml").AsConfig . | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-esr-filebeat-configmap
+  namespace: {{ include "common.namespace" . }}
+data:
+{{ tpl (.Files.Glob "resources/config/log/filebeat/filebeat.yml").AsConfig . | indent 2 }}
