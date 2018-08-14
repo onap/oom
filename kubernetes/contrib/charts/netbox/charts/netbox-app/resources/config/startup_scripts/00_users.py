@@ -12,7 +12,13 @@ with open('/opt/netbox/initializers/users.yml', 'r') as stream:
       if not User.objects.filter(username=username):
         user = User.objects.create_user(
           username = username,
-          password = user_details.get('password', 0) or User.objects.make_random_password)
+          password = user_details.get('password', 0) or User.objects.make_random_password,
+          is_staff = user_details.get('is_staff', 0) or false,
+          is_superuser = user_details.get('is_superuser', 0) or false,
+          is_active = user_details.get('is_active', 0) or true,
+          first_name = user_details.get('first_name', 0),
+          last_name = user_details.get('last_name', 0),
+          email = user_details.get('email', 0))
 
         print("👤 Created user ",username)
 
