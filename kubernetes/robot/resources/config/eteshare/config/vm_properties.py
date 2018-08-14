@@ -4,6 +4,7 @@ GLOBAL_INJECTED_AAF_IP_ADDR = "aaf-service.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_AAI1_IP_ADDR = "aai.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_AAI2_IP_ADDR = "N/A"
 GLOBAL_INJECTED_APPC_IP_ADDR = "appc.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_APPC_CDT_IP_ADDR = "appc-cdt.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_ARTIFACTS_VERSION = "{{.Values.demoArtifactsVersion}}"
 GLOBAL_INJECTED_CLAMP_IP_ADDR = "clamp.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_CLI_IP_ADDR = "cli.{{include "common.namespace" .}}"
@@ -57,6 +58,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_AAI1_IP_ADDR" : "aai.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_AAI2_IP_ADDR" : "N/A",
     "GLOBAL_INJECTED_APPC_IP_ADDR" : "appc.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_APPC_CDT_IP_ADDR" : "appc-cdt.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_ARTIFACTS_VERSION" : "{{.Values.demoArtifactsVersion}}",
     "GLOBAL_INJECTED_CLAMP_IP_ADDR" : "clamp.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_CLI_IP_ADDR" : "cli.{{include "common.namespace" .}}",
