@@ -58,7 +58,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: /home/esr/works/logs
-            name: esr-server-logs
+            name: {{ include "common.fullname" . }}-logs
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -69,31 +69,34 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      # side car containers
-        - name: filebeat-onap
+        # Filebeat sidecar container
+        - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
-          - mountPath: /usr/share/filebeat/filebeat.yml
-            name: filebeat-conf
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
             subPath: filebeat.yml
-          - mountPath: /home/esr/works/logs
-            name: esr-server-logs
-          - mountPath: /usr/share/filebeat/data
-            name: esr-server-filebeat
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap/esr/esr-server
+          - mountPath: /opt/ajsc/etc/config/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: filebeat-conf
+        - name: {{ include "common.fullname" . }}-log-conf
           configMap:
-            name: {{ include "common.fullname" . }}-esr-filebeat
-        - name: esr-server-logs
-          emptyDir: {}
-        - name: esr-server-filebeat
-          emptyDir: {}
-        - name: esrserver-log
+            name: {{ include "common.fullname" . }}-log
+        - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
-            name: {{ include "common.fullname" . }}-esr-esrserver-log
+            name: {{ .Release.Name }}-esr-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
