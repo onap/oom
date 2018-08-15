@@ -88,7 +88,7 @@ This customization script will:
 * install nfs server
 
 .. note::
-  The Beijing release of OOM only supports Helm 2.8.2 not the 2.7.2 shown in
+  The Beijing release of OOM only supports Helm 2.8.2-2.9.1 not the 2.7.2 shown in
   the screen capture below. The supported versions of all the software components
   are listed in the :ref:`cloud-setup-guide-label`.
 
@@ -442,7 +442,7 @@ and show running pods::
    will be displayed::
 
     ubuntu@sb4-k8s-1:~$ helm list
-    Error: incompatible versions c1ient[v2.8.2] server[v2.6.1]
+    Error: incompatible versions c1ient[v2.9.1] server[v2.6.1]
     ubuntu@sb4-k8s-1:~$
 
 7. Upgrade the server-side component of helm (tiller) via `helm init --upgrade`::
