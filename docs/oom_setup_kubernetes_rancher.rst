@@ -442,7 +442,7 @@ and show running pods::
    will be displayed::
 
     ubuntu@sb4-k8s-1:~$ helm list
-    Error: incompatible versions c1ient[v2.8.2] server[v2.6.1]
+    Error: incompatible versions c1ient[v2.9.1] server[v2.6.1]
     ubuntu@sb4-k8s-1:~$
 
 7. Upgrade the server-side component of helm (tiller) via `helm init --upgrade`::
