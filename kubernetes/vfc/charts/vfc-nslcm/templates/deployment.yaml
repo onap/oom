@@ -33,21 +33,20 @@ spec:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
       initContainers:
-#Example init container for dependency checking
-#      - command:
-#        - /root/ready.py
-#        args:
-#        - --container-name
-#        - mariadb
-#        env:
-#        - name: NAMESPACE
-#          valueFrom:
-#            fieldRef:
-#              apiVersion: v1
-#              fieldPath: metadata.namespace
-#        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-#        name: {{ include "common.name" . }}-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - vfc-db
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -71,6 +70,8 @@ spec:
           env:
             - name: MSB_ADDR
               value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+            - name: MYSQL_ADDR
+              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
           volumeMounts:
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
