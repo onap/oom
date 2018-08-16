@@ -1,4 +1,4 @@
-# Copyright © 2018 ZTE
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,13 +30,30 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ include "common.fullname" . }}-workflow-init
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
-          {{ if eq .Values.liveness.enabled true }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -48,5 +65,22 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: JAVA_OPTIONS
+            value: {{ .Values.config.javaOptions }}
+          - name: CS_HOSTS
+            value: "{{ .Values.config.cassandraHosts }}"
+          - name: CS_PORT
+            value: "{{ .Values.config.cassandraClientPort }}"
+          - name: CS_USER
+            valueFrom:
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
+          - name: CS_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
+          - name: SDC_PROTOCOL
+            value: "{{ .Values.config.sdcProtocol }}"
+          - name: SDC_ENDPOINT
+            value: "{{ .Values.config.sdcEndpoint }}"
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

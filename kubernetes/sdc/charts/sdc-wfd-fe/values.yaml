@@ -1,4 +1,4 @@
-# Copyright © 2018 ZTE
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,40 +17,70 @@
 #################################################################
 global:
   nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/sdc/sdc-workflow-designer:1.1.0
+image: onap/workflow-frontend:1.3.0-SNAPSHOT
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
+config:
+  javaOptions: "-Xdebug -agentlib:jdwp=transport=dt_socket,address=6001,server=y,suspend=n -Xmx256m -Xms256m"
+  backendServerURL: "http://sdc-wfd-be:8080"
+
 # default number of instances
 replicaCount: 1
 
+nodeSelector: {}
+
+affinity: {}
+
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 60
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 60
   periodSeconds: 10
 
 service:
   type: NodePort
-  name: sdc-wfd
-  portName: sdc-wfd
-  nodePort: "56"
   internalPort: 8080
+  externalPort: 8080
+  portName: sdc-wfd-fe
+  nodePort: "56"
 
 ingress:
   enabled: false
 
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+#resources:
+#  limits:
+#    cpu: 2
+#    memory: 4Gi
+#  requests:
+#    cpu: 2
+#    memory: 4Gi
