@@ -59,9 +59,15 @@ else
 	. /opt/app/policy/etc/profile.d/env.sh
 
 	# install keystore
-	#changed to use http instead of http, so keystore no longer needed
-	#cp config/policy-keystore.jks $POLICY_HOME/etc/ssl/policy-keystore
-	
+        # override the policy keystore and truststore if present
+	if [[ -f config/policy-keystore ]]; then
+		cp config/policy-keystore $POLICY_HOME/etc/ssl
+	fi
+
+	if [[ -f config/policy-truststore ]]; then
+		cp -f config/policy-truststore $[POLICY_HOME]/etc/ssl
+	fi
+
 	if [[ -f config/$container-tweaks.sh ]] ; then
 		# file may not be executable; running it as an
 		# argument to bash avoids needing execute perms.
