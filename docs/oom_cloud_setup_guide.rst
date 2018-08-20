@@ -45,12 +45,13 @@ The versions of Kubernetes that are supported by OOM are as follows:
 
 .. table:: OOM Software Requirements
 
-  ==============  ==========  =====  =======  ========
-  Release         Kubernetes  Helm   kubectl  Docker
-  ==============  ==========  =====  =======  ========
-  amsterdam       1.7.x       2.3.x  1.7.x    1.12.x
-  beijing/master  1.8.10      2.8.2  1.8.10   17.03.x
-  ==============  ==========  =====  =======  ========
+  ==============     ==========  =====  =======  ========
+  Release            Kubernetes  Helm   kubectl  Docker
+  ==============     ==========  =====  =======  ========
+  amsterdam          1.7.x       2.3.x  1.7.x    1.12.x
+  beijing            1.8.10      2.8.2  1.8.10   17.03.x
+  casablanca/master  1.8.10      2.9.1  1.8.10   17.03.x
+  ==============     ==========  =====  =======  ========
 
 Minimum Hardware Configuration
 ==============================
