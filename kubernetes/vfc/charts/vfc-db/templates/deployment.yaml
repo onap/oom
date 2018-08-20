@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright (C) 2018 Verizon. All Rights Reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,30 +29,14 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
-      annotations:
-        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
-      initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - vfc-db
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
@@ -70,17 +54,6 @@ spec:
           env:
             - name: MSB_ADDR
               value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-            - name: MYSQL_ADDR
-              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-localtime
-            mountPath: /etc/localtime
-            readOnly: true
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-logconfig
-            mountPath: /opt/vfc/catalog/config/log.yml
-            subPath: log.yml
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -91,34 +64,5 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
-        # side car containers
-        - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-
-      volumes:
-        - name: {{ include "common.fullname" . }}-localtime
-          hostPath:
-            path: /etc/localtime
-        - name:  {{ include "common.fullname" . }}-logs
-          emptyDir: {}
-        - name: {{ include "common.fullname" . }}-logconfig
-          configMap:
-            name : {{ include "common.fullname" . }}-logging-configmap
-
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          configMap:
-            name: {{ .Release.Name }}-vfc-filebeat-configmap
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
