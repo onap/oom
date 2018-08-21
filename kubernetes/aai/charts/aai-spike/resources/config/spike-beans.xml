@@ -1,0 +1,26 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+   <bean id="eventConsumer" class="org.onap.aai.event.client.KafkaEventConsumer" >
+      <constructor-arg name="topic" value="champRawEvents" />
+      <constructor-arg name="groupId" value="spike" />
+      <constructor-arg name="hosts" value="message-router-kafka.{{.Release.Namespace}}:9092" />
+   </bean>
+
+   <bean id="eventPublisher" class="org.onap.aai.event.client.KafkaEventPublisher" >
+      <constructor-arg name="hosts" value="message-router-kafka.{{.Release.Namespace}}:9092" />
+      <constructor-arg name="topic" value="spikeEvents" />
+   </bean>
+
+   <bean id="spikeService" class="org.onap.aai.spike.service.SpikeService" init-method="startup">
+      <constructor-arg ref="eventConsumer" />
+      <constructor-arg ref="eventPublisher" />
+   </bean>
+
+</beans>
