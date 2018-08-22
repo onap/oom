@@ -1,0 +1,128 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modifications copyright (c) 2018 AT&T Intellectual Property
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.logstashPodName }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.global.loggingRepository| default .Values.loggingRepository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.envenabled }}
+          env:
+          - name: dmaap_consumer_group
+            value: "{{ .Values.config.dmaapConsumerGroup }}"
+          - name: dmaap_consumer_id
+            value: "{{ .Values.config.dmaapConsumerId }}"
+          - name: event_topic
+            value: "{{ .Values.config.eventTopic }}"
+          - name: notification_topic
+            value: "{{ .Values.config.notificationTopic }}"
+          - name: request_topic
+            value: {{ .Values.config.requestTopic }}
+          - name: dmaap_base_url
+            value: {{ .Values.config.dmaapScheme }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
+          - name: elasticsearch_base_url
+            value: "http://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
+          {{- end }}
+          ports:
+          {{- if .Values.extraparam }}
+          - containerPort: {{ .Values.service.internalPort }}
+            name: {{ .Values.service.portname }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+            name: {{ .Values.service.name2 }}
+          {{- else }}
+          - containerPort: {{ .Values.service.internalPort }}
+            name: {{ .Values.service.portname }}
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+# disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: {{ .Values.mountpath }}
+            name: {{ .Values.volume.name }}
+            subPath: logstash.yml
+          - mountPath: {{ .Values.mountpath_pipeline }}
+            name: {{ .Values.volume.name }}
+            subPath: {{ .Values.pathname }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ .Values.volume.name }}
+          configMap:
+            name: {{ .Values.configmap.name }}
+            items:
+            - key: {{ .Values.lskeyname }}
+              path: {{ .Values.lspathname }}
+            - key: {{ .Values.keyname }}
+              path: {{ .Values.pathname }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
