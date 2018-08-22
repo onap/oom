@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, AT&T, Bell Canada
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-init-activity-spec
+  name: {{ include "common.fullname" . }}-workflow-init
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}-job
@@ -36,10 +36,10 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - /root/ready.py
+        - /root/job_complete.py
         args:
-        - --container-name
-        - sdc-cs
+        - --job-name
+        - {{ .Release.Name }}-sdc-cs-config-cassandra
         env:
         - name: NAMESPACE
           valueFrom:
@@ -52,7 +52,11 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: CS_HOST
-          value: sdc-cs
+          value: "sdc-cs"
+        - name: CS_PORT
+          value: "{{ .Values.config.cassandraThriftClientPort }}"
+        - name: CS_AUTHENTICATE
+          value: "{{ .Values.config.cassandaAuthenticationEnabled }}"
         - name: CS_USER
           valueFrom:
             secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
@@ -61,4 +65,3 @@ spec:
             secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      restartPolicy: Never

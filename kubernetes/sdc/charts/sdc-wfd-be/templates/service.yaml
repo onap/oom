@@ -1,4 +1,4 @@
-# Copyright © 2018 ZTE
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,33 +22,18 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-  annotations:
-    msb.onap.org/service-info: '[
-      {
-          "serviceName": "workflow-modeler",
-          "version": "v1",
-          "url": "/api/workflow-modeler/v1",
-          "protocol": "REST",
-          "port": "{{ .Values.service.internalPort }}",
-          "enable_ssl": true,
-          "visualRange":"1"
-      },
-      {
-          "serviceName": "workflow-modeler-ui",
-          "version": "v1",
-          "url": "/workflow-modeler",
-          "protocol": "UI",
-          "path": "/workflow-modeler",
-          "port": "{{ .Values.service.internalPort }}",
-          "visualRange":"1"
-      }
-      ]'
 spec:
   type: {{ .Values.service.type }}
   ports:
+    {{if eq .Values.service.type "NodePort" -}}
     - port: {{ .Values.service.internalPort }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}
+      name: {{ .Values.service.portName | default "http" }}
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName | default "http" }}
+    {{- end}}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}

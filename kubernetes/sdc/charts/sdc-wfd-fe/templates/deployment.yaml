@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, AT&T, Bell Canada
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,28 +31,26 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-job-completion
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+      - name: {{ include "common.name" . }}-readiness
         command:
-        - /root/job_complete.py
+        - /root/ready.py
         args:
-        - --job-name
-        - {{ include "common.fullname" . }}-init-activity-spec
+        - --container-name
+        - "sdc-wfd-be"
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
@@ -66,15 +64,49 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          - name: ENVNAME
+            value: {{ .Values.global.env.name }}
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
+          - name: BACKEND
+            value: {{ .Values.config.backendServerURL }}
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-config
-            mountPath: /etc/onap/activity-spec/be/config
+          - name: {{ include "common.fullname" . }}-localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+        # side car containers
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
       volumes:
-      - name: {{ include "common.fullname" . }}-config
-        configMap:
-          name : {{ include "common.fullname" . }}-configmap
-          defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-sdc-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
