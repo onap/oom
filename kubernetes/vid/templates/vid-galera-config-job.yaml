@@ -1,4 +1,4 @@
-# Copyright Â© 2018 Amdocs, Bell Canada
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,35 +28,34 @@ spec:
       name: vid-galera-init
     spec:
       initContainers:
-#dd775k:  This container checks that all galera instances are up before initializing it.
+#This container checks that all galera instances are up before initializing it.
       - name: vid-init-galera-readiness
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-#        - /bin/sh
-#        args:
-#        - "-c"
-#        - "sleep 1000000000m"
         command:
-        - python
-        args:
-        - /root/vid_ready.py
+        - /root/ready.py
+{{- $fullname := include "common.fullname" . -}}
+{{- range $i,$t := until (int .Values.vid_mariadb_galera.replicaCount)}}
         - --container-name
-        - {{ include "common.fullname" . }}-mariadb-galera-0
+        - {{ $fullname }}-mariadb-galera-{{$i}}
+{{- end }}
         env:
         - name: NAMESPACE
-          value: {{ include "common.namespace" . }}
-        volumeMounts:
-        - name: init-config
-          mountPath: /root/
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - name: vid-config-galeradb
         image: {{ .Values.mariadb_image }}
         imagePullPolicy: "{{ .Values.pullPolicy }}"
         volumeMounts:
-        - name: vid-db-config
-          mountPath: /db-config
-        - name: dbcmd-config
-          mountPath: /dbcmd-config
+        - mountPath: /dbcmd-config/db_cmd.sh
+          name: {{ include "common.fullname" . }}-config
+          subPath: db_cmd.sh
+        - mountPath: /db-config/vid-pre-init.sql
+          name: {{ include "common.fullname" . }}-config
+          subPath: vid-pre-init.sql
         command:
         - /bin/sh
         args:
@@ -65,22 +64,20 @@ spec:
         env:
         - name: MYSQL_PASSWORD
           value: "{{ .Values.config.vidmysqlpassword }}"
-#          valueFrom:
-#            secretKeyRef:
-#              name: {{ template "common.fullname" . }}
-#              key: vid-password
         - name: MYSQL_HOST
           value: "{{ .Values.config.vidmysqlhost }}"
-      volumes:
-        - name: vid-db-config
-          configMap:
-            name: {{ include "common.fullname" . }}-galera-sql-configmap
-        - name: dbcmd-config
-          configMap:
-            name: {{ include "common.fullname" . }}-dbcmd-configmap
-        - name: init-config
-          configMap:
-            name: {{ include "common.fullname" . }}-cluster-ready-configmap
+        - name: MYSQL_USER
+          value: "{{ .Values.config.vidmysqluser }}"
+        - name: MYSQL_PORT
+          value: "{{ .Values.config.vidmysqlport }}"
       restartPolicy: Never
-
+      volumes:
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
+              - key: db_cmd.sh
+                path: db_cmd.sh
+              - key: vid-pre-init.sql
+                path: vid-pre-init.sql
 
