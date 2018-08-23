@@ -22,13 +22,50 @@ global: # global defaults
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
 
-subChartsOnly:
-  enabled: true
+logstash:
+  nameOverride: clamp-logstash
+  mountpath: /usr/share/logstash/config/logstash.yml
+  mountpath_pipeline: /usr/share/logstash/pipeline/logstash.conf
+  lskeyname: logstash.yml
+  lspathname: logstash.yml
+  keyname: pipeline.conf
+  pathname: pipeline.conf
+  logstashPodName: clamp-dash-es
+  envenabled: true
+  extraparam: false
+  configmap:
+     name: clamp-ls
+  volume:
+    name: clamplsvol
+  config:
+    elasticsearchServiceName: cdash-es
+    elasticsearchPort: 9200
+    dmaapHost: message-router.{{ include "common.namespace" . }}
+    dmaapScheme: https
+    dmaapPort: 3905
+    dmaapConsumerGroup: "clampdashboard"
+    dmaapConsumerId: "clampdashboard"
+    eventTopic: "DCAE-CL-EVENT"
+    notificationTopic: "POLICY-CL-MGT"
+    request_topic: "APPC-CL"
+    requestTopic: "APPC-CL"
+    httphost: "0.0.0.0"
+    workers: 3
+    reload: true
+    monitoring: false
+  service:
+    type: ClusterIP
+    name: cdash-ls
+    portName: cdash-ls-healthcheck
+    externalPort: 9600
+    internalPort: 9600
 
 # application image
 repository: nexus3.onap.org:10001
 image: onap/clamp:2.0.2
 pullPolicy: Always
+configmap:
+     name: clamp-ls
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -38,7 +75,7 @@ debugEnabled: false
 #################################################################
 config:
   log:
-    logstashServiceName: log-ls
+    logstashServiceName: logstash
     logstashPort: 5044
   mysqlPassword: strong_pitchou
   dataRootDir: /dockerdata-nfs
@@ -63,7 +100,6 @@ config:
 mariadb:
   nameOverride: clampdb
 
-
 # default number of instances
 replicaCount: 1
 
@@ -82,7 +118,6 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
-
 
 service:
   type: NodePort
@@ -108,7 +143,7 @@ ingress:
 resources:
   limits:
     cpu: 1
-    memory: 1.2Gi
+    memory: 1.3Gi
   requests:
     cpu: 10m
-    memory: 800Mi
+    memory: 750Mi
