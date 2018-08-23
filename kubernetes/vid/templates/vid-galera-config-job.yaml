@@ -23,17 +23,16 @@ spec:
 #        - "-c"
 #        - "sleep 1000000000m"
         command:
-        - python
+        - /root/ready.py
         args:
-        - /root/vid_ready.py
         - --container-name
         - {{ include "common.fullname" . }}-mariadb-galera-0
         env:
         - name: NAMESPACE
-          value: {{ include "common.namespace" . }}
-        volumeMounts:
-        - name: init-config
-          mountPath: /root/
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - name: vid-config-galeradb
         image: {{ .Values.mariadb_image }}
@@ -64,9 +63,6 @@ spec:
         - name: dbcmd-config
           configMap:
             name: {{ include "common.fullname" . }}-dbcmd-configmap
-        - name: init-config
-          configMap:
-            name: {{ include "common.fullname" . }}-cluster-ready-configmap
       restartPolicy: Never
 
 
