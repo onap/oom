@@ -1,4 +1,5 @@
-# Copyright © 2018 Amdocs, Bell Canada
+/*
+# Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/
 
-apiVersion: v1
-description: Chart for MariaDB Galera cluster
-name: mariadb-galera
-version: 2.0.0
-keywords:
-  - mariadb
-  - mysql
-  - database
-  - sql
-  - galera
-  - cluster
+CREATE TABLE IF NOT EXISTS `vid_openecomp_epsdk`.`schema_info` (
+`SCHEMA_ID` VARCHAR(25) NOT NULL,
+`SCHEMA_DESC` VARCHAR(75) NOT NULL,
+`DATASOURCE_TYPE` VARCHAR(100) NULL DEFAULT NULL,
+`CONNECTION_URL` VARCHAR(200) NOT NULL,
+`USER_NAME` VARCHAR(45) NOT NULL,
+`PASSWORD` VARCHAR(45) NULL DEFAULT NULL,
+`DRIVER_CLASS` VARCHAR(100) NOT NULL,
+`MIN_POOL_SIZE` INT(11) NOT NULL,
+`MAX_POOL_SIZE` INT(11) NOT NULL,
+`IDLE_CONNECTION_TEST_PERIOD` INT(11) NOT NULL)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
