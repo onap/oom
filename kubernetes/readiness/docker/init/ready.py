@@ -41,7 +41,16 @@ def is_ready(container_name):
             if i.status.container_statuses is None:
                 continue
             for s in i.status.container_statuses:
-                if s.name == container_name:
+                if i.metadata.owner_references[0].kind  == "StatefulSet":
+                    if i.metadata.name == container_name:
+                        ready = s.ready
+                        if not ready:
+                            log.info(container_name + " is not ready.")
+                        else:
+                            log.info(container_name + " is ready!")
+                    else:
+                        continue
+                elif s.name == container_name:
                     ready = s.ready
                     if not ready:
                         log.info(container_name + " is not ready.")
