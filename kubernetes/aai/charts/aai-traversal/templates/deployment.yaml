@@ -249,12 +249,10 @@ spec:
       hostname: aai-traversal
       initContainers:
       - command:
-        - /root/ready.py
+        - /root/job_complete.py
         args:
-        - --container-name
-        - aai-cassandra
-        - --container-name
-        - aai-resources
+        - --job-name
+        - {{ .Release.Name }}-aai-graphadmin-create-db-schema
         env:
         - name: NAMESPACE
           valueFrom:
@@ -302,6 +300,10 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/etc/auth/aai_keystore
           name: {{ include "common.fullname" . }}-auth-sec
           subPath: aai_keystore
+        - mountPath: /opt/app/aai-traversal/resources/schema/onap/oxm/v14/
+          name: aai-schema-oxm
+        - mountPath: /opt/app/aai-traversal/resources/schema/onap/dbedgerules/v14/
+          name: aai-schema-edgerules
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -374,6 +376,12 @@ spec:
       - name: {{ include "common.fullname" . }}-realm-conf
         configMap:
          name: {{ include "common.fullname" . }}-realm-configmap
+      - name: aai-schema-oxm
+        configMap:
+         name: aai-schema-oxm-configmap
+      - name: aai-schema-edgerules
+        configMap:
+         name: aai-schema-edgerules-configmap
       - name: {{ include "common.fullname" . }}-auth-sec
         secret:
          secretName: aai-auth-secret
