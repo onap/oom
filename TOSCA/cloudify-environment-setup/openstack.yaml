@@ -1,0 +1,399 @@
+# ============LICENSE_START==========================================
+# ===================================================================
+# Copyright (c) 2018 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#============LICENSE_END============================================
+
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.3.1/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/2.7.4/plugin.yaml
+  - http://www.getcloudify.org/spec/utilities-plugin/1.5.2/plugin.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.5.1/plugin.yaml
+  - imports/manager-configuration.yaml
+
+inputs:
+
+  helm_version:
+    default: v2.9.1
+
+  username:
+    description: OS_USERNAME as specified in Openstack RC file.
+
+  keystone_password:
+    description: Openstack user password.
+
+  tenant_name:
+    description: OS_TENANT_NAME as specified in Openstack RC file.
+
+  auth_url:
+    description: OS_AUTH_URL as specified in Openstack RC file.
+
+  region:
+    description: OS_REGION_NAME as specified in Openstack RC file.
+
+  external_network_name:
+    description: Openstack tenant external network name.
+
+  local_ssh_directory:
+    default: '~/.ssh/'
+
+  manager_key_name:
+    default: cfy-manager-key-os
+
+  agent_key_name:
+    default: cfy-agent-key-os
+
+  cloudify_key_file:
+    default: { concat: [ { get_input: local_ssh_directory }, { get_input: manager_key_name } ] }
+
+  nameservers:
+    default: [8.8.4.4, 8.8.8.8]
+
+  public_network_subnet_cidr:
+    default: 192.168.120.0/24
+
+  public_network_subnet_allocation_pools:
+    default:
+    - start: 192.168.120.2
+      end: 192.168.120.254
+
+  private_network_subnet_cidr:
+    default: 192.168.121.0/24
+
+  private_network_subnet_allocation_pools:
+    default:
+    - start: 192.168.121.2
+      end: 192.168.121.254
+
+  large_image_flavor:
+    type: string
+
+  small_image_flavor:
+    type: string
+
+  cloudify_image_username:
+    default: centos
+
+  centos_core_image:
+    type: string
+
+  ubuntu_trusty_image:
+    type: string
+
+  private_ip:
+    description: >
+      Resolving the IP for manager setup.
+    default: { get_attribute: [ cloudify_host, ip ] }
+
+  public_ip:
+    description: >
+      Resolving the IP for manager setup.
+    default: { get_attribute: [ public_network_subnet_port_fip, floating_ip_address ] }
+
+  secrets:
+    description: >
+      key, value pairs of secrets used in AWS blueprint examples.
+    default:
+    - key: keystone_username
+      value: { get_input: username }
+    - key: keystone_password
+      value: { get_input: keystone_password }
+    - key: keystone_tenant_name
+      value: { get_input: tenant_name }
+    - key: keystone_url
+      value: { get_input: auth_url }
+    - key: region
+      value: { get_input: region }
+    - key: keystone_region
+      value: { get_input: region }
+    - key: external_network_name
+      value: { get_property: [ external_network, resource_id ] }
+    - key: router_name
+      value: { get_attribute: [ public_network_router, external_name ] }
+    - key: public_network_name
+      value: { get_attribute: [ public_network, external_name ] }
+    - key: private_network_name
+      value: { get_attribute: [ private_network, external_name ] }
+    - key: public_subnet_name
+      value: { get_attribute: [ public_network_subnet, external_name ] }
+    - key: private_subnet_name
+      value: { get_attribute: [ private_network_subnet, external_name ] }
+    - key: ubuntu_trusty_image
+      value: { get_input: ubuntu_trusty_image }
+    - key: centos_core_image
+      value: { get_input: centos_core_image }
+    - key: small_image_flavor
+      value: { get_input: small_image_flavor }
+    - key: large_image_flavor
+      value: { get_input: large_image_flavor }
+    - key: agent_key_public
+      value: { get_attribute: [ agent_key, public_key_export ] }
+    - key: agent_key_private
+      value: { get_attribute: [ agent_key, private_key_export ] }
+
+dsl_definitions:
+
+  client_config: &client_config
+    username: { get_input: username }
+    password: { get_input: keystone_password }
+    tenant_name: { get_input: tenant_name }
+    auth_url: { get_input: auth_url }
+    region: { get_input: region }
+
+node_templates:
+
+  manager_key:
+    type: cloudify.keys.nodes.RSAKey
+    properties:
+      resource_config:
+        public_key_path: { concat: [ { get_input: local_ssh_directory }, { get_input: manager_key_name }, '.pub' ] }
+        private_key_path: { concat: [ { get_input: local_ssh_directory }, { get_input: manager_key_name } ] }
+        openssh_format: true
+      use_secret_store: false
+      key_name: { get_input: manager_key_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: keys.cloudify_ssh_key.operations.create
+          inputs:
+            store_private_key_material: true
+
+  agent_key:
+    type: cloudify.keys.nodes.RSAKey
+    properties:
+      resource_config:
+        public_key_path: { concat: [ { get_input: local_ssh_directory }, { get_input: agent_key_name }, '.pub' ] }
+        private_key_path: { concat: [ { get_input: local_ssh_directory }, { get_input: agent_key_name } ] }
+        openssh_format: true
+      use_secret_store: false
+      key_name: { get_input: agent_key_name }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: keys.cloudify_ssh_key.operations.create
+          inputs:
+            store_private_key_material: true
+
+  external_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *client_config
+      use_external_resource: true
+      resource_id: { get_input: external_network_name }
+
+  public_network_subnet_port_fip:
+    type: cloudify.openstack.nodes.FloatingIP
+    properties:
+      openstack_config: *client_config
+      floatingip:
+        floating_network_name: { get_input: external_network_name }
+
+  public_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *client_config
+
+  private_network:
+    type: cloudify.openstack.nodes.Network
+    properties:
+      openstack_config: *client_config
+
+  public_network_router:
+    type: cloudify.openstack.nodes.Router
+    properties:
+      openstack_config: *client_config
+    relationships:
+    - type: cloudify.relationships.connected_to
+      target: external_network
+
+  public_network_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      openstack_config: *client_config
+      subnet:
+        ip_version: 4
+        cidr: { get_input: public_network_subnet_cidr }
+        dns_nameservers: { get_input: nameservers }
+        allocation_pools: { get_input: public_network_subnet_allocation_pools }
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: public_network
+    - type: cloudify.openstack.subnet_connected_to_router
+      target: public_network_router
+
+  private_network_subnet:
+    type: cloudify.openstack.nodes.Subnet
+    properties:
+      openstack_config: *client_config
+      subnet:
+        ip_version: 4
+        cidr: { get_input: private_network_subnet_cidr }
+        dns_nameservers: { get_input: nameservers }
+        allocation_pools: { get_input: private_network_subnet_allocation_pools }
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: private_network
+    - type: cloudify.openstack.subnet_connected_to_router
+      target: public_network_router
+
+  cloudify_security_group:
+    type: cloudify.openstack.nodes.SecurityGroup
+    properties:
+      openstack_config: *client_config
+      rules:
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: null
+        port_range_max: null
+        protocol: icmp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 22
+        port_range_max: 22
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 80
+        port_range_max: 80
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 443
+        port_range_max: 443
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 5671
+        port_range_max: 5671
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 8086
+        port_range_max: 8086
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 8101
+        port_range_max: 8101
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 8300
+        port_range_max: 8301
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 8500
+        port_range_max: 8500
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 15432
+        port_range_max: 15432
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 22000
+        port_range_max: 22000
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 53229
+        port_range_max: 53229
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 53333
+        port_range_max: 53333
+        protocol: tcp
+      - remote_ip_prefix: 0.0.0.0/0
+        port_range_min: 30000
+        port_range_max: 40000
+        protocol: tcp
+
+  public_network_subnet_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *client_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: public_network
+    - type: cloudify.relationships.depends_on
+      target: public_network_subnet
+    - type: cloudify.openstack.port_connected_to_security_group
+      target: cloudify_security_group
+    - type: cloudify.openstack.port_connected_to_floating_ip
+      target: public_network_subnet_port_fip
+
+  private_network_subnet_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *client_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: private_network
+    - type: cloudify.relationships.depends_on
+      target: private_network_subnet
+    - type: cloudify.openstack.port_connected_to_security_group
+      target: cloudify_security_group
+
+  cloudify_host_cloud_config:
+    type: cloudify.nodes.CloudInit.CloudConfig
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            resource_config:
+              users:
+              - name: { get_input: cloudify_image_username }
+                primary-group: wheel
+                shell: /bin/bash
+                sudo: ['ALL=(ALL) NOPASSWD:ALL']
+                ssh-authorized-keys:
+                - { get_attribute: [ manager_key, public_key_export ] }
+              packages:
+                - wget
+              runcmd:
+              - { concat: [ 'usermod -aG wheel ', { get_input: cloudify_image_username } ] }
+              - yum install -y python-backports-ssl_match_hostname python-setuptools python-backports
+              - { concat: [ 'wget http://storage.googleapis.com/kubernetes-helm/helm-', { get_input: helm_version }, -linux-amd64.tar.gz ] }
+              - { concat: [ 'tar -zxvf helm-', { get_input: helm_version }, '-linux-amd64.tar.gz' ] }
+              - mv linux-amd64/helm /usr/bin/helm
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: manager_key
+    - type: cloudify.relationships.depends_on
+      target: public_network_subnet_port
+    - type: cloudify.relationships.depends_on
+      target: private_network_subnet_port
+
+  cloudify_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *client_config
+      agent_config:
+        install_method: none
+      server:
+        key_name: ''
+        image: { get_input: centos_core_image }
+        flavor: { get_input: large_image_flavor }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            args:
+              image: { get_input: centos_core_image }
+              flavor: { get_input: large_image_flavor }
+              userdata: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
+              nics:
+              - port-id: { get_attribute: [ public_network_subnet_port, external_id ] }
+              # - port-id: { get_attribute: [ private_network_subnet_port, external_id ] }
+    relationships:
+    # Implicitly dependent on ports.
+    - type: cloudify.relationships.depends_on
+      target: cloudify_host_cloud_config
+
+outputs:
+
+  manager_ip:
+    value: { get_input: public_ip }

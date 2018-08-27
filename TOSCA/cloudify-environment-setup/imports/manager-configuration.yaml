@@ -1,0 +1,77 @@
+# ============LICENSE_START==========================================
+# ===================================================================
+# Copyright (c) 2018 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#============LICENSE_END============================================
+
+inputs:
+
+  password:
+    description: >
+      Your manager password. If you do not provide one will be randomly generated, but it will not be displayed at the end.
+
+  rpm:
+    description: >
+      If inputs.bootstrap is false, this is the CLI RPM to install and bootstrap with.
+    default:  http://repository.cloudifysource.org/cloudify/18.3.23/community-release/cloudify-manager-install-community-18.3.23.rpm
+
+  blueprints:
+    default:
+    - file: update-blueprint.yaml
+      name: aws-example-network
+      url: https://github.com/cloudify-examples/aws-example-network/archive/4.3.zip
+    - file: simple-blueprint.yaml
+      name: openstack-example-network
+      url: https://github.com/cloudify-examples/openstack-example-network/archive/4.3.zip
+    - file: simple-blueprint.yaml
+      name: azure-example-network
+      url: https://github.com/cloudify-examples/azure-example-network/archive/4.3.zip
+    - file: simple-blueprint.yaml
+      name: gcp-example-network
+      url: https://github.com/cloudify-examples/gcp-example-network/archive/4.3.zip
+
+node_types:
+
+  cloudify.nodes.Manager.EnvironmentSetup:
+    derived_from: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/manager/tasks.py
+            task_name:
+              default: create
+            task_properties:
+              default:
+                private_ip: { get_input: private_ip }
+                public_ip: { get_input: public_ip }
+                rpm: { get_input: rpm }
+                secrets: { get_input: secrets }
+                blueprints: { get_input: blueprints }
+                password: { get_input: password }
+            fabric_env:
+              default:
+                host_string: { get_input: public_ip }
+                user: { get_input: cloudify_image_username }
+                key_filename: { get_input: cloudify_key_file  }
+
+node_templates:
+
+  ManagerSetup:
+    type: cloudify.nodes.Manager.EnvironmentSetup
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: cloudify_host
