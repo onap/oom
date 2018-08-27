@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PARENT_CHART := onap
+PARENT_CHART := ecomp-aai
 COMMON_CHARTS_DIR := common
 # FIXME OOM-765
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -28,12 +28,13 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PA
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
 $(COMMON_CHARTS):
-	@echo "\n[$@]"
+	@echo "\n [$@]"
 	@make package-$@
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
+	@if [ $@ = "aai" ]; then bash aai/aai_schema.sh; fi
 
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
@@ -53,6 +54,7 @@ clean:
 	@rm -f */requirements.lock
 	@find . -type f -name '*.tgz' -delete
 	@rm -rf $(PACKAGE_DIR)/*
+	@rm -rf $(ROOT_DIR)/aai/resources/config/schema
 
 # start up a local helm repo to serve up helm chart packages
 repo:
