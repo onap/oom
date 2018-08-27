@@ -30,6 +30,21 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-inject-clamp-project
+        command:
+        - /bin/bash
+        - -c
+        - >
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/extra/sql/ to /docker-entrypoint-initdb.d";
+          cp -rf /tmp/gerrit/extra/sql/* /docker-entrypoint-initdb.d;
+          echo "Done.";
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: docker-entrypoint-initdb-d
+          mountPath: "/docker-entrypoint-initdb.d"
       containers:
         - name: {{ include "common.name" .  }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -57,16 +72,11 @@ spec:
                   name: {{ template "common.fullname" . }}
                   key: db-root-password
           volumeMounts:
-          - mountPath: /docker-entrypoint-initdb.d/load-sql-files-tests-automation.sh
-            name: docker-entrypoint-initdb
-            subPath: load-sql-files-tests-automation.sh
+          - name: docker-entrypoint-initdb-d
+            mountPath: "/docker-entrypoint-initdb.d"
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /docker-entrypoint-initdb.d/drop/
-            name: docker-entrypoint-clds-drop
-          - mountPath: /docker-entrypoint-initdb.d/bulkload/
-            name: docker-entrypoint-bulkload
           - mountPath: /etc/mysql/conf.d/conf1/
             name:  clamp-mariadb-conf
           - mountPath: /var/lib/mysql
@@ -89,15 +99,8 @@ spec:
       {{- else }}
           emptyDir: {}
       {{- end }}
-        - name: docker-entrypoint-initdb
-          configMap:
-            name: clamp-entrypoint-initdb-configmap
-        - name: docker-entrypoint-clds-drop
-          configMap:
-            name: clamp-entrypoint-drop-configmap
-        - name: docker-entrypoint-bulkload
-          configMap:
-            name: clamp-entrypoint-bulkload-configmap
+        - name: docker-entrypoint-initdb-d
+          emptyDir: {}
         - name: clamp-mariadb-conf
           configMap:
             name: clamp-mariadb-conf-configmap
