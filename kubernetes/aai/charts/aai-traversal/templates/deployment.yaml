@@ -247,14 +247,20 @@ spec:
           ]'
     spec:
       hostname: aai-traversal
+    {{ if .Values.global.initContainers.enabled }}
       initContainers:
       - command:
+      {{  if .Values.global.jobs.createSchema.enabled  }}
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-aai-graphadmin-create-db-schema
+      {{  else }}
         - /root/ready.py
         args:
         - --container-name
         - aai-cassandra
-        - --container-name
-        - aai-resources
+      {{  end  }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -264,6 +270,7 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+    {{ end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -299,9 +306,12 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/application.properties
           name: {{ include "common.fullname" . }}-springapp-conf
           subPath: application.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/aai_keystore
-          name: {{ include "common.fullname" . }}-auth-sec
-          subPath: aai_keystore
+        - mountPath: /opt/app/aai-traversal/resources/etc/auth
+          name: {{ include "common.fullname" . }}-auth-truststore-sec
+        - mountPath: /opt/app/aai-traversal/resources/schema/{{ .Values.config.schema.source.name }}/oxm/v14/
+          name: aai-schema-oxm
+        - mountPath: /opt/app/aai-traversal/resources/schema/{{ .Values.config.schema.source.name }}/dbedgerules/v14/
+          name: aai-schema-edgerules
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -374,9 +384,22 @@ spec:
       - name: {{ include "common.fullname" . }}-realm-conf
         configMap:
          name: {{ include "common.fullname" . }}-realm-configmap
-      - name: {{ include "common.fullname" . }}-auth-sec
+      - name: aai-schema-oxm
+        configMap:
+         name: aai-schema-oxm-configmap
+      - name: aai-schema-edgerules
+        configMap:
+         name: aai-schema-edgerules-configmap
+      - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-auth-secret
+         secretName: aai-auth-truststore-secret
+         items:
+          - key: {{ .Values.config.truststore.filename }}
+            path: {{ .Values.config.truststore.filename }}
+          {{ if ne .Values.config.schema.source.name "onap" }} 
+          - key: {{ .Values.config.truststore.filename }}
+            path: {{ .Values.config.truststore.filename }}
+          {{ end }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
