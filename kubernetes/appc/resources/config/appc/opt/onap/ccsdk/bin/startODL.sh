@@ -28,18 +28,18 @@ ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
 ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
 
 #
 # Wait for database
 #
-echo "Waiting for mysql"
-until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
+echo "Waiting for mariadbgalera"
+until mysql -h {{.Values.mariadbgalera.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
 done
-echo -e "\nmysql ready"
+echo -e "\nmariadbgalera ready"
 
 if [ ! -f ${SDNC_HOME}/.installed ]
 then
