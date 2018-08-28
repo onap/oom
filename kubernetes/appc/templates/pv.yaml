@@ -13,118 +13,29 @@
 # # See the License for the specific language governing permissions and
 # # limitations under the License.
 */}}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-{{ $pvNum := default 1 .Values.replicaCount | int }}
+{{- $global := . }}
+{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) -}}
+{{- range $i, $t := until (int $global.Values.replicaCount)}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}-data0
-  namespace: {{ include "common.namespace" . }}
+  name: {{ include "common.fullname" $global }}-data{{$i}}
+  namespace: {{ include "common.namespace" $global }}
   labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
+    app: {{ include "common.fullname" $global }}
+    chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
+    release: "{{ $global.Release.Name }}"
+    heritage: "{{ $global.Release.Service }}"
+    name: {{ include "common.fullname" $global }}
 spec:
   capacity:
-    storage: {{ .Values.persistence.size}}
+    storage: {{ $global.Values.persistence.size}}
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+    - {{ $global.Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" $global }}-data"
+  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}0
-{{ if gt $pvNum 1 }}
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.mountSubPath }}{{$i}}
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data1
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}1
-{{ end }}
-{{ if gt $pvNum 2 }}
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data2
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}2
-{{ end }}
-{{ if gt $pvNum 3 }}
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data3
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}3
-{{ end }}
-{{ if gt $pvNum 4 }}
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data4
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}4
-{{ end }}
+{{- end -}}
 {{- end -}}
