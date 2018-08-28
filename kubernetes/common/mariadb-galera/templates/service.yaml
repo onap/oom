@@ -17,3 +17,77 @@ spec:
   clusterIP: None
   selector:
     app: {{ include "common.fullname" . }}
+---
+# Client service for connecting to any MySQL instance for reads.
+# Only master: sdnc-dbhost-0 accepts the write request.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-read
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sdnctlPrefix }}-sdnctldb01
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.sdnctlPrefix }}-sdnctldb02
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+  clusterIP: None
+---
+{{ if .Values.geoEnabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-nodeport
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
+spec:
+  ports:
+  - name: {{ .Values.service.portName | default .Values.service.name }}-1
+    port: {{ .Values.service.internalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodeport1 }}
+  - name: {{ .Values.service.portName | default .Values.service.name }}-2
+    port: {{ .Values.xtrabackup.internalPort }}
+    targetPort: {{ .Values.xtrabackup.internalPort }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodeport2 }}
+  type:  {{ .Values.service.type }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
+    release: {{ .Release.Name }}
+{{ end }}
+
