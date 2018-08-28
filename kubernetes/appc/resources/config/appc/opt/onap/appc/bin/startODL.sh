@@ -53,7 +53,7 @@ ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-admin}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 ENABLE_AAF=${ENABLE_AAF:-false}
 AAF_EXT_IP=${AAF_EXT_IP:-{{.Values.config.aafExtIP}}}
@@ -82,13 +82,13 @@ echo "" >> $APPC_HOME/data/properties/appc.properties
 #
 # Wait for database to init properly
 #
-echo "Waiting for mysql"
-until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
+echo "Waiting for mariadbgalera"
+until mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
 done
-echo -e "\nmysql ready"
+echo -e "\nmariadbgalera ready"
 
 if [ ! -f ${SDNC_HOME}/.installed ]
 then
@@ -160,7 +160,7 @@ then
                 running=0
                 while read a b c d e f g h
                 do
-                if [ "$h" == "/bin/sh /opt/opendaylight/current/bin/karaf server" ]
+                if [ "$h" == "/bin/sh /opt/opendaylight/bin/karaf server" ]
                 then
                      running=1
                 fi
@@ -184,5 +184,5 @@ fi
 echo "Starting cdt-proxy-service jar, logging to ${APPC_HOME}/cdt-proxy-service/jar.log"
 java -jar ${APPC_HOME}/cdt-proxy-service/cdt-proxy-service.jar > ${APPC_HOME}/cdt-proxy-service/jar.log &
 
-exec ${ODL_HOME}/bin/karaf
+exec ${ODL_HOME}/bin/karaf server
 
