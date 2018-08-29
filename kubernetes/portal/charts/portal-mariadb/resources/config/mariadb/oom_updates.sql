@@ -15,7 +15,7 @@ update fn_app set app_url = 'http://{{.Values.config.sdcFeHostName}}:{{.Values.c
 --pap => 8443:30219
 update fn_app set app_url = 'http://{{.Values.config.papHostName}}:{{.Values.config.papPort}}/onap/policy', app_rest_endpoint = 'http://pap:8443/onap/api/v2' where app_name = 'Policy';
 --vid => 8080:30200
-update fn_app set app_url = 'http://{{.Values.config.vidHostName}}:{{.Values.config.vidPort}}/vid/welcome.htm', app_rest_endpoint = 'http://vid:8080/vid/api/v2' where app_name = 'Virtual Infrastructure Deployment';
+update fn_app set app_url = 'https://{{.Values.config.vidHostName}}:{{.Values.config.vidPort}}/vid/welcome.htm', app_rest_endpoint = 'https://vid:8443/vid/api/v2' where app_name = 'Virtual Infrastructure Deployment';
 --sparky => TODO: sparky doesn't open a node port yet
 update fn_app set app_url = 'http://{{.Values.config.aaiSparkyHostName}}:{{.Values.config.aaiSparkyPort}}/services/aai/webapp/index.html#/viewInspect', app_rest_endpoint = 'http://aai-sparky-be.{{.Release.Namespace}}:9517/api/v2' where app_name = 'A&AI UI';
 --cli => 8080:30260
