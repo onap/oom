@@ -12,27 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-init-postgres
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}
+    app: {{ include "common.name" . }}-job
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  backoffLimit: 20
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}
+        app: {{ include "common.name" . }}-job
         release: {{ .Release.Name }}
-      name: {{ include "common.name" . }}
     spec:
+      restartPolicy: Never
       initContainers:
       - command:
         - /root/ready.py
@@ -49,16 +47,24 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy}}
         name: {{ include "common.name" . }}-readiness
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        imagePullPolicy: {{ .Values.pullPolicy | default .Values.global.pullPolicy }}
-        name: {{ include "common.name" . }}
+      - name: {{ include "common.name" . }}-job
+        image: "{{ .Values.postgresRepository }}/{{ .Values.postgresImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
-        - name: POSTGRES_SERVICE_HOST
-          value: "$(VNFSDK_DBSET_SERVICE_HOST)"
-        readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        - name: PGPASSWORD
+          value: "{{ .Values.postgres.config.pgUserPassword }}"         
+        command:
+        - /bin/sh 
+        - -c 
+        - |
+          psql -U {{ .Values.postgres.config.pgUserName }} -h $(VNFSDK_DBPRI_SERVICE_HOST) -f /aaa/init/marketplace_tables_postgres.sql        
+        volumeMounts:
+        - name: init-data
+          mountPath: /aaa/init/marketplace_tables_postgres.sql
+          subPath: marketplace_tables_postgres.sql
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      volumes:
+      - name: init-data
+        configMap:
+          name: {{ include "common.fullname" . }}
