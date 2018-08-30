@@ -160,7 +160,7 @@ then
                 running=0
                 while read a b c d e f g h
                 do
-                if [ "$h" == "/bin/sh /opt/opendaylight/current/bin/karaf server" ]
+                if [ "$h" == "/bin/sh /opt/opendaylight/bin/karaf server" ]
                 then
                      running=1
                 fi
@@ -184,5 +184,5 @@ fi
 echo "Starting cdt-proxy-service jar, logging to ${APPC_HOME}/cdt-proxy-service/jar.log"
 java -jar ${APPC_HOME}/cdt-proxy-service/cdt-proxy-service.jar > ${APPC_HOME}/cdt-proxy-service/jar.log &
 
-exec ${ODL_HOME}/bin/karaf
+exec ${ODL_HOME}/bin/karaf server
 
