@@ -11,22 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: v1
-data:
-  LOG_PATH: {{ index .Values.logPath }}
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-configmap
-  namespace: {{ include "common.namespace" . }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-app-configmap
-  namespace: {{ include "common.namespace" . }}
-data:
-  {{- $yamlpath := printf "resources/config/overrides/override.yaml" -}}
-  {{- $root := . }}
-  {{- range $path, $bytes := .Files.Glob $yamlpath }}
-  override.yaml: {{ $root.Files.Get $path | quote }}
-  {{- end }}
+logging:
+  path: logs
+spring:
+  datasource:
+     driver-class-name: org.mariadb.jdbc.Driver
+     url: jdbc:mariadb://so-db:3306/requestdb
+     username: requestuser
+     password: request123
+     dbcp2:
+      initial-size: 5
+      max-total: 20
+      validation-query: select 1
+      test-on-borrow: true
+server:
+    port: 8084
+    tomcat:
+        max-threads: 50
+mso:
+  site-name: localSite
+#Actuator
+management:
+  security:
+    enabled: false
+    basic:
+      enabled: false
