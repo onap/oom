@@ -11,26 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# global values
 repository: nexus3.onap.org:10001
-image: onap/so/api-handler-infra:latest
+image: onap/so/bpmn-infra:latest
 pullPolicy: IfNotPresent
 replicaCount: 1
 minReadySeconds: 10
 containerPort: 8081
-logPath: ./logs/apih/
-app: api-handler-infra
-pod:
-    replicaCount: 1
-    minReadySeconds: 10
-    containerPort: 8080
-    logPath: ./logs/apih/
+logPath: ./logs/bpmn/
+app: bpmn-infra
 service:
-    type: NodePort
-    nodePort: 58
-    port: 8080
-    internalPort: 10100
-    portName: apih-port
+    type: ClusterIP
+    internalPort: 8081
+    externalPort: 10200
+    portName: bpmn-port
 updateStrategy:
     type: RollingUpdate
     maxUnavailable: 1
@@ -40,24 +33,19 @@ resources:
       memory: 1Gi
       cpu: 500m
     limits:
-      memory: 4Gi
-      cpu: 2000m
+      memory: 8Gi
+      cpu: 4000m
 livenessProbe:
     path: /manage/health
-    port: 8443
-    scheme: HTTPS
+    port: 8081
+    scheme: HTTP
     initialDelaySeconds: 600
     periodSeconds: 60
     timeoutSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-global:
-  nodePortPrefix: 302
-  # docker repository
-  repository: nexus3.onap.org:10001
-  # image pull Policy
-  pullPolicy: IfNotPresent
-mariadb:
-  nameOverride: so-db
+ingress:
+  enabled: false
 nodeSelector: {}
+tolerations: []
 affinity: {}

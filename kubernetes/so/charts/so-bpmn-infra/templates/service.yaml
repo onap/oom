@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -22,17 +21,39 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  annotations:
+    msb.onap.org/service-info: '[
+         {
+        "serviceName": "so/bpmn",
+        "version": "v1",
+        "url": "/VNFAdaptercallback/",
+        "protocol": "REST",
+        "port": "{{ .Values.service.externalPort }}",
+        "visualRange":"1" ,
+        "lb_policy":"ip_hash"
+         },
+         {
+        "serviceName": "so/bpmn",
+        "version": "v1",
+        "url": "/SDNCAdapterCallbackService",
+        "protocol": "REST",
+        "port": "{{ .Values.service.externalPort }}",
+        "visualRange":"1",
+        "lb_policy":"ip_hash"
+         }
+         ]'
 spec:
   type: {{ .Values.service.type }}
   ports:
     {{if eq .Values.service.type "NodePort" -}}
     - port: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default "302" }}{{ .Values.service.nodePort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      name: {{ .Values.service.portName }}
     {{- else -}}
     - port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-    {{- end}}
       name: {{ .Values.service.portName }}
+    {{- end}}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}

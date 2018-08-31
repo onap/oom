@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,19 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 apiVersion: v1
+data:
+  LOG_PATH: {{ index .Values.logPath }}
+  APP: {{ index .Values.app }}
 kind: ConfigMap
 metadata:
-  name: so-log-configmap
+  name: {{ include "common.fullname" . }}-configmap
   namespace: {{ include "common.namespace" . }}
-data:
-{{ tpl (.Files.Glob "resources/config/log/*").AsConfig . | indent 2 }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: so-filebeat-configmap
+  name: {{ include "common.fullname" . }}-app-configmap
   namespace: {{ include "common.namespace" . }}
 data:
-{{ tpl (.Files.Glob "resources/config/log/filebeat/*").AsConfig . | indent 2 }}
+  {{- $yamlpath := printf "resources/config/overrides/override.yaml" -}}
+  {{- $root := . }}
+  {{- range $path, $bytes := .Files.Glob $yamlpath }}
+  override.yaml: {{ $root.Files.Get $path | quote }}
+  {{- end }}
