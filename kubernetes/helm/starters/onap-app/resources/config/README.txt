@@ -1,3 +1,9 @@
+# Copyright © 2018 Amdocs, Bell Canada
+#
+# This file is licensed under the CREATIVE COMMONS ATTRIBUTION 4.0 INTERNATIONAL LICENSE
+#
+# Full license text at https://creativecommons.org/licenses/by/4.0/legalcode
+
 This directory contains all external configuration files that
 need to be mounted into an application container.
 
