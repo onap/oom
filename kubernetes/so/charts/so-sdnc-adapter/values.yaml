@@ -11,26 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# global values
-repository: nexus3.onap.org:10001
-image: onap/so/api-handler-infra:latest
+image: onap/so/sdnc-adapter:latest
 pullPolicy: IfNotPresent
 replicaCount: 1
 minReadySeconds: 10
-containerPort: 8081
-logPath: ./logs/apih/
-app: api-handler-infra
-pod:
-    replicaCount: 1
-    minReadySeconds: 10
-    containerPort: 8080
-    logPath: ./logs/apih/
+containerPort: 8086
+logPath: ./logs/sdnc/
+app: sdnc-adapter
 service:
-    type: NodePort
-    nodePort: 58
-    port: 8080
-    internalPort: 10100
-    portName: apih-port
+    type: ClusterIP
+    internalPort: 8086
+    externalPort: 10400
+    portName: sdnc-port
 updateStrategy:
     type: RollingUpdate
     maxUnavailable: 1
@@ -44,20 +36,15 @@ resources:
       cpu: 2000m
 livenessProbe:
     path: /manage/health
-    port: 8443
-    scheme: HTTPS
+    port: 8086
+    scheme: HTTP
     initialDelaySeconds: 600
     periodSeconds: 60
     timeoutSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-global:
-  nodePortPrefix: 302
-  # docker repository
-  repository: nexus3.onap.org:10001
-  # image pull Policy
-  pullPolicy: IfNotPresent
-mariadb:
-  nameOverride: so-db
+ingress:
+  enabled: false
 nodeSelector: {}
+tolerations: []
 affinity: {}
