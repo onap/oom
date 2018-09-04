@@ -1,3 +1,9 @@
+# Copyright © 2018 Amdocs, Bell Canada
+#
+# This file is licensed under the CREATIVE COMMONS ATTRIBUTION 4.0 INTERNATIONAL LICENSE
+#
+# Full license text at https://creativecommons.org/licenses/by/4.0/legalcode
+
 # Starter Helm Chart for ONAP Applications
 
 Clone the onap-app directory and rename it to the name for your new Helm Chart.
