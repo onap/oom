@@ -20,11 +20,48 @@ global:
   readinessRepository: oomk8s
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
-  repository: nexus3.onap.org:10001
-  dockerhubRepository: docker.io
 
 # application configuration
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
+configmap:
+     name: pomba-es
+service:
+  externalPort: 9200
+  externalPort2: 9300
+config: {}
+nodeSelector: {}
+affinity: {}
 
+elasticsearch:
+   nameOverride: pomba-elasticsearch
+   mountPath: /logroot/
+   mountPath_data: /usr/share/elasticsearch/data/
+   configmap:
+        name: pomba-es
+   logsdirPath: /logroot/elasticsearch/logs
+   datadirPath: /logroot/elasticsearch/data
+   dirPath: /logroot/elasticsearch
+   dir: /logroot
+   subPath: elasticsearch.yml
+   replicaCount: 1
+   persistence:
+       enabled: true
+       volumeReclaimPolicy: Retain
+       accessMode: ReadWriteMany
+       size: 1Gi
+       mountPath: /dockerdata-nfs
+       mountSubPath: pomba/elasticsearch/data
+       mountSubPathLogs: pomba
+   service:
+      type: ClusterIP
+      name: pomba-es
+      externalPort: 9200
+      internalPort: 9200
+      type2: ClusterIP
+      name2: pomba-es-tcp
+      externalPort2: 9300
+      internalPort2: 9300
+
+resources: {}

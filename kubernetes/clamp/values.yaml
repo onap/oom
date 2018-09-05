@@ -1,5 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,6 +74,36 @@ nodeSelector: {}
 
 affinity: {}
 
+elasticsearch:
+    nameOverride: clamp-dash-es
+    service:
+       name: cdash-es
+       type: ClusterIP
+       internalPort: 9200
+       externalPort: 9200
+       portName: cdash-es-rest
+       name2: cdash-tcp
+       internalPort2: 9300
+       externalPort2: 9300
+       portName2: cdash-es-tcp
+    configmap:
+         name: cdash-es
+    logsdirPath: /usr/share/elasticsearch/logs
+    datadirPath: /usr/share/elasticsearch/data
+    dirPath: /usr/share/elasticsearch
+    dir: /usr/share
+    mountPath: /usr/share/elasticsearch/logs/
+    mountPath_data: /usr/share/elasticsearch/data/
+    subPath: elasticsearch.yml
+    persistence:
+        enabled: true
+        volumeReclaimPolicy: Retain
+        accessMode: ReadWriteMany
+        size: 1Gi
+        mountPath: /dockerdata-nfs
+        mountSubPath: clamp/elasticsearch/data
+        mountSubPathLogs: clamp
+
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 120
@@ -87,34 +116,23 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-
 service:
   type: NodePort
   name: clamp
   portName: clamp
   internalPort: 8080
+  externalPort: 9200
+  externalPort2: 9300
   nodePort: 95
   portName2: clamp-ssl
   internalPort2: 8443
-  # as of 20180904 port 58 is reserved for clamp from log/logdemonode
-  # see https://wiki.onap.org/display/DW/OOM+NodePort+List
-  nodePort2: 58
- 
+  nodePort2: 36
+configmap:
+    name: cdash-es 
 
 ingress:
   enabled: false
 
-#resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  #
-  # Example:
-  # Configure resource requests and limits
-  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory
-  # Minimum memory for production is 4 CPU cores and 8GB memory
 resources:
   limits:
     cpu: 1
