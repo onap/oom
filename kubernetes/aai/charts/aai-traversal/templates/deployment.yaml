@@ -248,14 +248,20 @@ spec:
           ]'
     spec:
       hostname: aai-traversal
+    {{ if .Values.global.initContainers.enabled }}
       initContainers:
       - command:
+      {{  if .Values.global.jobs.createSchema.enabled  }}
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-aai-graphadmin-create-db-schema
+      {{  else }}
         - /root/ready.py
         args:
         - --container-name
         - aai-cassandra
-        - --container-name
-        - aai-resources
+      {{  end  }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -265,6 +271,7 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+    {{ end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -273,9 +280,9 @@ spec:
         - name: DISABLE_UPDATE_QUERY
           value: {{ .Values.config.disableUpdateQuery | quote }}
         - name: LOCAL_USER_ID
-          value: {{ .Values.config.userId | quote }}
+          value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
-          value: {{ .Values.config.groupId | quote }}
+          value: {{ .Values.global.config.groupId | quote }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -300,9 +307,12 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/application.properties
           name: {{ include "common.fullname" . }}-springapp-conf
           subPath: application.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/aai_keystore
-          name: {{ include "common.fullname" . }}-auth-sec
-          subPath: aai_keystore
+          {{ $global := . }}
+          {{ range $job := .Values.global.config.auth.files }}
+        - mountPath: /opt/app/aai-traversal/resources/etc/auth/{{ . }}
+          name: {{ include "common.fullname" $global }}-auth-truststore-sec
+          subPath: {{ . }}
+          {{ end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -375,9 +385,14 @@ spec:
       - name: {{ include "common.fullname" . }}-realm-conf
         configMap:
          name: {{ include "common.fullname" . }}-realm-configmap
-      - name: {{ include "common.fullname" . }}-auth-sec
+      - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-auth-secret
+         secretName: aai-auth-truststore-secret
+         items:
+          {{ range $job := .Values.global.config.auth.files }}
+           - key: {{ . }}
+             path: {{ . }}
+          {{ end }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
