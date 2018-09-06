@@ -1,16 +1,21 @@
-# Copyright © 2018 Amdocs, Bell Canada, AT&T
 #
+# ============LICENSE_START=======================================================
+# org.onap.aai
+# ================================================================================
+# Copyright © 2018 AT&T Intellectual Property. All rights reserved.
+# ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ============LICENSE_END=========================================================
 
 # Default values for resources.
 # This is a YAML-formatted file.
@@ -20,37 +25,60 @@ global: # global defaults
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
 
+
 # application image
 repository: nexus3.onap.org:10001
-image: onap/aai-resources:1.3-STAGING-latest
+image: onap/aai-graphadmin:1.0-STAGING-latest
 pullPolicy: Always
 restartPolicy: Always
 
 # default number of instances
 replicaCount: 1
 
-# Configuration for the resources deployment
+# Configuration for the graphadmin deployment
 config:
 
-  # Specifies crud related operation timeouts and overrides
-  crud:
-    timeout:
-      # Specifies if the timeout for REST GET calls should be enabled 
-      enabled: true
-      # Specifies the timeout values for application specific
-      # Its a pipe seperated list where each element before comma represents 
-      # the X-FromAppId and the comma after specifies the timeout limit in ms
-      # If the timeout limit is -1 then it means for these apps no timeout
-      appspecific: JUNITTESTAPP1,1|JUNITTESTAPP2,-1|DCAE-CCS,-1|DCAES,-1|AAIRctFeed,-1|NewvceCreator,-1|IANewvceCreator,-1|AAI-CSIOVALS,-1
-      # Specifies what is the maximum timeout limit in milliseconds
-      limit: 100000
+  # Specifies the timeout limit for the REST API requests
+  timeout:
+    enabled: true
+    limit: 180000
 
-  # Specifies configuration for bulk apis
-  bulk:
-    # Specifies for a bulk payload how many transactions in total allowed
-    limit: 30
-    # Specifies if the bulk can be override and if it can the value
-    override: false
+  # Default maximum records to fix for the data grooming and dupeTool
+  maxFix: 
+    dataGrooming: 150
+    dupeTool: 25
+    
+  # Default number of sleep minutes for dataGrooming and dupeTool
+  sleepMinutes:
+    dataGrooming: 7
+    dupeTool: 7
+
+  # Cron specific attributes to be triggered for the graphadmin spring cron tasks
+  cron:
+    # Specifies that the data grooming tool which runs duplicates should be enabled
+    dataGrooming:
+      enabled: true
+    # Specifies that the data snapshot which takes a graphson snapshot should be enabled
+    dataSnapshot:
+      enabled: true
+      params: JUST_TAKE_SNAPSHOT
+
+    # Data cleanup which zips snapshots older than x days and deletes older than y days
+    dataCleanup:
+
+      dataGrooming:
+        enabled: true
+        # Zips up the dataGrooming files older than 5 days
+        ageZip: 5
+        # Deletes the dataGrooming files older than 30 days
+        ageDelete: 30
+
+      dataSnapshot:
+        enabled: true
+        # Zips up the dataSnapshot graphson files older than 5 days
+        ageZip: 5
+        # Deletes the dataSnapshot graphson files older than 30 days
+        ageDelete: 30
 
 nodeSelector: {}
 
@@ -68,12 +96,12 @@ readiness:
   initialDelaySeconds: 60
   periodSeconds: 10
 
-
 service:
   type: ClusterIP
-  portName: aai-resources-8447
-  internalPort: 8447
-  portName2: aai-resources-5005
+  # REST API port for the graphadmin microservice
+  portName: aai-graphadmin-8449
+  internalPort: 8449
+  portName2: aai-graphadmin-5005
   internalPort2: 5005
 
 ingress:
