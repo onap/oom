@@ -1,24 +1,26 @@
-# Copyright © 2017-2018 AT&T
-# Modifications Copyright © 2018 Amdocs, Bell Canada
 #
+# ============LICENSE_START=======================================================
+# org.onap.aai
+# ================================================================================
+# Copyright © 2018 AT&T Intellectual Property. All rights reserved.
+# ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ============LICENSE_END=========================================================
 
-{{ if .Values.global.jobs.updateQueryData.enabled }}
-
-apiVersion: batch/v1
-kind: Job
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: {{ include "common.fullname" . }}-update-query-data
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -26,19 +28,34 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}-job
+        app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      hostname: aai-graphadmin
+    {{ if .Values.global.initContainers.enabled }}
       initContainers:
       - command:
+      {{  if .Values.global.jobs.createSchema.enabled  }}
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-aai-graphadmin-create-db-schema
+      {{  else }}
         - /root/ready.py
         args:
         - --container-name
-        - aai
+        - aai-cassandra
+      {{  end  }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -48,54 +65,87 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{  end  }}
       containers:
-      - name: {{ include "common.name" . }}-job
+      - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - bash
-        - "-c"
-        - |
-          set -x
-          mkdir -p /opt/aai/logroot/AAI-GQ/misc
-          bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
         env:
         - name: LOCAL_USER_ID
-          value: {{ .Values.global.config.userId | quote }}
+          value: {{ .Values.config.userId | quote }}
         - name: LOCAL_GROUP_ID
-          value: {{ .Values.global.config.groupId | quote }}
+          value: {{ .Values.config.groupId | quote }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: {{ include "common.fullname" . }}-db-real-conf
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
           name: {{ include "common.fullname" . }}-db-cached-conf
           subPath: janusgraph-cached.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: {{ include "common.fullname" . }}-aaiconfig-conf
           subPath: aaiconfig.properties
-        - mountPath: /var/log/onap
+        - mountPath: /opt/aai/logroot/AAI-RES
           name: {{ include "common.fullname" . }}-logs
-        - mountPath: /opt/app/aai-traversal/resources/logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
           name: {{ include "common.fullname" . }}-log-conf
           subPath: logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
           name: {{ include "common.fullname" . }}-localhost-access-log-conf
           subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/application.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: {{ include "common.fullname" . }}-springapp-conf
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/{{ . }}
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
           name: {{ include "common.fullname" $global }}-auth-truststore-sec
           subPath: {{ . }}
           {{ end }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.internalPort2 }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /usr/share/filebeat/data
+          name: {{ include "common.fullname" . }}-filebeat
+
       volumes:
       - name: localtime
         hostPath:
@@ -104,8 +154,7 @@ spec:
         configMap:
           name: aai-filebeat
       - name: {{ include "common.fullname" . }}-logs
-        hostPath:
-          path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}-update-query
+        emptyDir: {}
       - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-log-conf
@@ -137,7 +186,6 @@ spec:
            - key: {{ . }}
              path: {{ . }}
           {{ end }}
-      restartPolicy: OnFailure
+      restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-{{ end }}
