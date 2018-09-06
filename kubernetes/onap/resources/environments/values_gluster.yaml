@@ -1,0 +1,299 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# README GLUSTERFS 
+# This custom values.yaml is to leverage GlusterFS as persistent storage.
+# The pre-requisite is that you have a glusterFS storage set up and that you have
+# a storage class defined as "glusterfs-sc"
+# All components are disabled by default. To deploy components use
+# e.g.
+# helm upgrade -i dev  local/onap --namespace default  -f resources/environments/values_gluster.yaml --set aai:enabled=true --set cli:enabled=true
+# This version allows you to turn on and off gluster on a per-component basis
+# Future versions will set it at a global level
+
+#################################################################
+# Global configuration overrides.
+#
+# These overrides will affect all helm charts (ie. applications)
+# that are listed below and are 'enabled'.
+#################################################################
+global:
+  # Change to an unused port prefix range to prevent port conflicts
+  # with other instances running within the same k8s cluster
+  nodePortPrefix: 302
+
+  # ONAP Repository
+  # Uncomment the following to enable the use of a single docker
+  # repository but ONLY if your repository mirrors all ONAP
+  # docker images. This includes all images from dockerhub and
+  # any other repository that hosts images for ONAP components.
+  #repository: nexus3.onap.org:10001
+  repositoryCred:
+    user: docker
+    password: docker
+
+  # readiness check - temporary repo until images migrated to nexus3
+  readinessRepository: oomk8s
+  # logging agent - temporary repo until images migrated to nexus3
+  loggingRepository: docker.elastic.co
+
+  # image pull policy
+  pullPolicy: Always
+
+  # default mount path root directory referenced
+  # by persistent volumes and log files
+  persistence:
+    mountPath: /dockerdata-nfs
+
+  # flag to enable debugging - application support required
+  debugEnabled: false
+
+# Repository for creation of nexus3.onap.org secret
+repository: nexus3.onap.org:10001
+
+
+#################################################################
+# Enable/disable and configure helm charts (ie. applications)
+# to customize the ONAP deployment.
+#################################################################
+aaf:
+  enabled: false
+  aaf-sms:
+    persistence:
+       enabled: true
+       accessMode: ReadWriteMany
+       size: 1Gi
+       mountPath: /dockerdata-nfs   #change this
+       storageClass: glusterfs-sc   #statefulset or pvc needs to reference storageClass or this won't work
+    aaf-sms-vault:
+       persistence:
+          enabled: true
+          accessMode: ReadWriteMany
+          size: 2Gi
+          mountPath: /dockerdata-nfs   #change this
+          storageClass: glusterfs-sc   #statefulset or pvc needs to reference storageClass or this won't work
+###################################################################################################
+aai:
+  enabled: false
+  aai-cassandra:
+    persistence:
+       enabled: true
+       accessMode: ReadWriteMany
+       size: 2Gi
+       mountPath: /dockerdata-nfs   #change this
+       storageClass: glusterfs-sc   #statefulset or pvc needs to reference storageClass or this won't work
+###################################################################################################
+appc:
+  enabled: false
+  config:
+    openStackType: OpenStackProvider
+    openStackName: OpenStack
+    openStackKeyStoneUrl: http://localhost:8181/apidoc/explorer/index.html
+    openStackServiceTenantName: default
+    openStackDomain: default
+    openStackUserName: admin
+    openStackEncryptedPassword: admin
+  persistence: #This should set global and mysql levels
+    enabled: true
+    accessMode: ReadWriteMany
+    size: 2Gi
+    storageClass: glusterfs-sc
+
+  mysql:
+    persistence:
+      enabled: true
+      storageClass: glusterfs-sc
+
+###################################################################################################
+clamp:
+  enabled: false
+  #clamp-dash-es (4Gi) and clampdb (2Gi) and mariadb can use gluster - but pvc.yaml needs to reference storageClass
+###################################################################################################
+cli:
+  enabled: true
+  #no gluster needed
+###################################################################################################
+consul:
+  enabled: false
+###################################################################################################
+dcaegen2:
+  enabled: false
+  dcae-redis:
+  # in statefulset  storageClassName: manual needs to be changed
+    persistence:
+      enabled: true
+      accessMode: ReadWriteMany
+      size: 10Mi
+      storageClass: glusterfs-sc
+###################################################################################################
+dmaap:
+  enabled: true
+###################################################################################################
+esr:
+  enabled: false
+###################################################################################################
+log:
+  enabled: true
+  log-elasticsearch:
+    persistence: 
+      enabled: true
+      accessMode: ReadWriteMany
+      size: 1Gi
+      storageClass: glusterfs-sc
+###################################################################################################
+sniro-emulator:
+  enabled: false
+###################################################################################################
+oof:
+  enabled: false
+  oof-has:
+    oof-has-cassandra: # should work via pvc.yaml
+      persistence:
+        enabled: true
+        accessMode: ReadWriteMany
+        size: 2Gi
+        storageClass: glusterfs-sc
+###################################################################################################
+
+msb:
+  enabled: false
+  #doesnt look like msb or subcharts use persistence
+###################################################################################################
+multicloud:
+  enabled: false
+  #doesnt look like multicloud or subcharts use persistence
+###################################################################################################
+nbi:
+  enabled: false
+  config:
+    # openstack configuration
+    openStackRegion: "Yolo"
+    openStackVNFTenantId: "1234"
+  mariadb:  #should work via pvc.yaml
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+###################################################################################################
+policy:
+  enabled: false
+  mariadb:  #should work via pvc.yaml
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+###################################################################################################
+  
+portal:
+  enabled: false
+  portal-cassandra:
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+  portal-mariadb:  #should work via pvc.yaml
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+###################################################################################################
+robot:
+  enabled: true
+  persistence: # should work via pvc.yaml
+    enabled: true
+    size: 2Gi
+    storageClass: glusterfs-sc
+###################################################################################################
+sdc:
+  enabled: false
+  sdc-cs:
+    persistence: # should work via pvc.yaml
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+      accessMode: ReadWriteMany
+  sdc-es:
+    persistence: # should work via pvc.yaml
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+      accessMode: ReadWriteMany
+  sdc-onboarding-be:
+    persistence: # should work via pvc.yaml
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+      accessMode: ReadWriteMany
+###################################################################################################
+sdnc: #values.yaml in root sdnc is messed up - persistence is referenced in too many places
+      #sdnc-mdsal pvc might be configured at root level?
+  enabled: false
+
+  replicaCount: 1
+
+  mysql:
+    replicaCount: 1
+    persistence: # should work via pvc.yaml
+      enabled: true
+      size: 1Gi
+      storageClass: glusterfs-sc
+
+###################################################################################################
+so:
+  enabled: false
+
+
+  replicaCount: 1
+
+  liveness:
+    # necessary to disable liveness probe when setting breakpoints
+    # in debugger so K8s doesn't restart unresponsive container
+    enabled: true
+
+  # so server configuration
+  config:
+    # message router configuration
+    dmaapTopic: "AUTO"
+    # openstack configuration
+    openStackUserName: "vnf_user"
+    openStackRegion: "RegionOne"
+    openStackKeyStoneUrl: "http://1.2.3.4:5000"
+    openStackServiceTenantName: "service"
+    openStackEncryptedPasswordHere: "c124921a3a0efbe579782cde8227681e"
+
+  # configure embedded mariadb
+  mariadb:
+    config:
+      mariadbRootPassword: password
+    persistence: # should work via pvc.yaml
+      enabled: true
+      size: 2Gi
+      storageClass: glusterfs-sc
+###################################################################################################
+uui:
+  enabled: false
+  # doesn't look like persistence is needed
+###################################################################################################
+vfc:
+  enabled: false
+  # doesn't look like persistence is needed in any of many sub-charts
+###################################################################################################
+vid:
+  enabled: false
+  # doesn't look like persistence is used, but probably should be (e.g. galera-sql-configmap.yaml
+###################################################################################################
+vnfsdk:
+  enabled: false
+  #although there is a vnfsdk-postgres component, persistnet volumes not used
+###################################################################################################
