@@ -1,44 +1,63 @@
-# Copyright © 2017-2018 AT&T
-# Modifications Copyright © 2018 Amdocs, Bell Canada
 #
+# ============LICENSE_START=======================================================
+# org.onap.aai
+# ================================================================================
+# Copyright © 2018 AT&T Intellectual Property. All rights reserved.
+# ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ============LICENSE_END=========================================================
 
-{{ if .Values.global.jobs.updateQueryData.enabled }}
+# In ONAP, the following job will always be run on each installation
+# The following job will go through the latest oxm and
+# create properties based on the data type defined in the oxm
+# and create the required indexes for the appropriate properties
+# This can be run multiple times as the code if the index or property already exists
+# then the index or property won't be created again
+# NOTE - During the execution of the createSchema job, there should
+# be no other janusgraph connection to the graph as its the reason
+# that resources traversal and graphadmin wait until this job is done
+# If you are using an existing cassandra cluster not coming from oom
+# then it is your job to ensure that there are no connections to the database
+
+{{ if .Values.global.jobs.createSchema.enabled }}
 
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-update-query-data
+  name: {{ include "common.fullname" . }}-create-db-schema
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}
+    app: {{ include "common.name" . }}-job
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  backoffLimit: 20
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}-job
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - command:
         - /root/ready.py
         args:
         - --container-name
-        - aai
+        - aai-cassandra
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,16 +68,13 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:
-      - name: {{ include "common.name" . }}-job
+      - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - bash
-        - "-c"
-        - |
-          set -x
-          mkdir -p /opt/aai/logroot/AAI-GQ/misc
-          bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
+        - /bin/bash
+        - docker-entrypoint.sh
+        - createDBSchema.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
@@ -68,34 +84,42 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: {{ include "common.fullname" . }}-db-real-conf
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
           name: {{ include "common.fullname" . }}-db-cached-conf
           subPath: janusgraph-cached.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: {{ include "common.fullname" . }}-aaiconfig-conf
           subPath: aaiconfig.properties
-        - mountPath: /var/log/onap
+        - mountPath: /opt/aai/logroot/AAI-RES
           name: {{ include "common.fullname" . }}-logs
-        - mountPath: /opt/app/aai-traversal/resources/logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
           name: {{ include "common.fullname" . }}-log-conf
           subPath: logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
           name: {{ include "common.fullname" . }}-localhost-access-log-conf
           subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/application.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: {{ include "common.fullname" . }}-springapp-conf
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/{{ . }}
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
           name: {{ include "common.fullname" $global }}-auth-truststore-sec
           subPath: {{ . }}
           {{ end }}
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
       volumes:
       - name: localtime
         hostPath:
@@ -104,8 +128,7 @@ spec:
         configMap:
           name: aai-filebeat
       - name: {{ include "common.fullname" . }}-logs
-        hostPath:
-          path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}-update-query
+        emptyDir: {}
       - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-log-conf
@@ -137,7 +160,7 @@ spec:
            - key: {{ . }}
              path: {{ . }}
           {{ end }}
-      restartPolicy: OnFailure
+      restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end }}
