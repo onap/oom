@@ -84,8 +84,8 @@ echo "Restarting PDP-D .."
 echo
 echo
 
-POD=$(kubectl --namespace onap-policy get pods | sed 's/ .*//'| grep drools)
-kubectl --namespace onap-policy exec -it ${POD} -- bash -c "source /opt/app/policy/etc/profile.d/env.sh && policy stop && sleep 5 && policy start"
+POD=$(kubectl --namespace onap get pods | sed 's/ .*//'| grep drools)
+kubectl --namespace onap exec -it ${POD} -- bash -c "source /opt/app/policy/etc/profile.d/env.sh && policy stop && sleep 5 && policy start"
 
 sleep 20
 
