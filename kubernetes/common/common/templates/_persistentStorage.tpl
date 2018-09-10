@@ -1,3 +1,4 @@
+{{/*
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-apiVersion: v1
-name: onap
-version: 2.0.0
-appVersion: beijing
-description: Open Network Automation Platform (ONAP)
-home: https://www.onap.org/
-sources:
-- https://gerrit.onap.org/r/#/admin/projects/
-icon: https://wiki.onap.org/download/thumbnails/1015829/onap_704x271%20copy.png?version=1&modificationDate=1488326334000&api=v2
-tillerVersion: "~2.8.2"
+{{/*
+  If storageClassName is defined at the child level, use that (allow override). StorageClassName is typically not set for components. 
+  Else use the global setting.
+  Note: with current logic, having it set to "" or "-" will override global.
+   default DEFAULT_VALUE GIVEN_VALUE
+  TODO: what happens when both global and local are undefined? storageClassName shouldn't be set in chart...
+*/}}
+{{- define "common.persistence.storageClass" -}}
+  {{- default .Values.global.persistence.storageClass .Values.persistence.storageClass -}}
+{{- end -}}
+
