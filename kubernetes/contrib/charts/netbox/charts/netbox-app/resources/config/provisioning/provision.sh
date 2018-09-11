@@ -102,3 +102,24 @@ curl --silent -X POST \
   "is_pool": true,
   "description": "IP Pool for ONAP - general purpose"
 }'
+
+
+# Assign the first IP of the subnets in Netbox to avoid getting IP 0 from auto assignment.
+
+echo "Assign IP 0 from prefix for vFW protected network"
+curl --silent -X POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/1/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+echo "Assign IP 0 from prefix for vFW unprotected network"
+curl --silent -X POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/2/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+echo "Assign IP 0 from prefix for ONAP general purpose network"
+curl --silent -X POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/3/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
