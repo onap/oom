@@ -70,10 +70,10 @@ curl --silent -X POST \
   -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
   -H 'Content-Type: application/json' \
   -d '{
-  "prefix": "192.168.20.0/24",
+  "prefix": "{{ .Values.service.vfw_protected_pool }}",
   "site": 1,
   "tenant": 1,
-  "is_pool": true,
+  "is_pool": false,
   "description": "IP Pool for protected network - vFW use case"
 }'
 
@@ -83,10 +83,10 @@ curl --silent -X POST \
   -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
   -H 'Content-Type: application/json' \
   -d '{
-  "prefix": "192.168.10.0/24",
+  "prefix": "{{ .Values.service.vfw_unprotected_pool }}",
   "site": 1,
   "tenant": 1,
-  "is_pool": true,
+  "is_pool": false,
   "description": "IP Pool for unprotected network - vFW use case"
 }'
 
@@ -96,30 +96,10 @@ curl --silent -X POST \
   -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
   -H 'Content-Type: application/json' \
   -d '{
-  "prefix": "10.0.0.0/8",
+  "prefix": "{{ .Values.service.vfw_mgmt_pool }}",
   "site": 1,
   "tenant": 1,
-  "is_pool": true,
+  "is_pool": false,
   "description": "IP Pool for ONAP - general purpose"
 }'
 
-
-# Assign the first IP of the subnets in Netbox to avoid getting IP 0 from auto assignment.
-
-echo "Assign IP 0 from prefix for vFW protected network"
-curl --silent -X POST \
-  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/1/available-ips/ \
-  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
-  -H 'Content-Type: application/json'
-
-echo "Assign IP 0 from prefix for vFW unprotected network"
-curl --silent -X POST \
-  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/2/available-ips/ \
-  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
-  -H 'Content-Type: application/json'
-
-echo "Assign IP 0 from prefix for ONAP general purpose network"
-curl --silent -X POST \
-  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/3/available-ips/ \
-  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
-  -H 'Content-Type: application/json'
