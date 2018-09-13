@@ -14,15 +14,26 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: ConfigMap
+kind: Service
 metadata:
-  name: portal-filebeat
+  name: {{ include "common.servicename" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-data:
-{{ tpl (.Files.Glob "resources/config/log/filebeat/filebeat.yml").AsConfig . | indent 2 }}
-
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{if eq .Values.service.type "NodePort" -}}
+    - port: {{ .Values.service.internalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default "302" }}{{ .Values.service.externalPort }}
+    {{- else -}}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+    {{- end}}
+      name: {{ .Values.service.portName }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}

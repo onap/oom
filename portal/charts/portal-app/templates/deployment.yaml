@@ -1,0 +1,139 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-portal-db-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /start-apache-tomcat.sh
+          - -i
+          - ""
+          - -n
+          - ""
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+        - containerPort: {{ .Values.service.internalPort3 }}
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/fusion/conf/fusion.properties"
+          subPath: fusion.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/openid-connect.properties"
+          subPath: openid-connect.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/conf/system.properties"
+          subPath: system.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/portal.properties"
+          subPath: portal.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/music.properties"
+          subPath: music.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/logback.xml"
+          subPath: logback.xml
+        - name: portal-tomcat-logs
+          mountPath: "{{ .Values.global.env.tomcatDir }}/logs"
+        - name: var-log-onap
+          mountPath: /var/log/onap
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+          subPath: filebeat.yml
+        - name: portal-data-filebeat
+          mountPath: /usr/share/filebeat/data
+        - name: var-log-onap
+          mountPath: /var/log/onap
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: properties-onapportal
+          configMap:
+            name: {{ include "common.fullname" . }}-onapportal
+            defaultMode: 0755
+        - name: filebeat-conf
+          configMap:
+            name: portal-filebeat
+        - name: var-log-onap
+          emptyDir: {}
+        - name: portal-data-filebeat
+          emptyDir: {}
+        - name: portal-tomcat-logs
+          emptyDir: {}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

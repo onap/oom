@@ -1,0 +1,91 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-config
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-job
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: {{ include "common.name" . }}-init-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ include "common.name" . }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - name: {{ include "common.name" . }}-job
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.mariadbInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: DB_HOST
+          value: "{{ include "common.servicename" . }}"
+        - name: DB_USER
+          value: {{ .Values.config.mariadbUser }}
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.fullname" . }}, key: db-root-password}
+        - name: SQL_SRC_DIR
+          value: {{ .Values.config.sqlSourceDirectory }}
+      - name: {{ include "common.name" . }}-oom-update-job
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.mariadbInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: DB_HOST
+          value: "{{ include "common.servicename" . }}"
+        - name: DB_USER
+          value: {{ .Values.config.mariadbUser }}
+        - name: DB_PORT
+          value: "{{ .Values.service.internalPort }}"
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.fullname" . }}, key: db-root-password}
+        command:
+        - /bin/sh
+        - -x
+        - -c
+        - "mysql -vv --user=$DB_USER --password=$DB_PASS --host=$DB_HOST --port=$DB_PORT < /tmp/oom_updates.sql"
+        volumeMounts:
+        - name: portal-mariadb-sql
+          mountPath: /tmp/oom_updates.sql
+          subPath: oom_updates.sql
+      volumes:
+      - name: portal-mariadb-sql
+        configMap:
+          name: {{ include "common.fullname" . }}-mariadb
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      restartPolicy: Never
