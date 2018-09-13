@@ -54,7 +54,7 @@ ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-admin}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 ENABLE_AAF=${ENABLE_AAF:-false}
 AAF_EXT_IP=${AAF_EXT_IP:-{{.Values.config.aafExtIP}}}
@@ -83,13 +83,13 @@ echo "" >> $APPC_HOME/data/properties/appc.properties
 #
 # Wait for database to init properly
 #
-echo "Waiting for mysql"
-until mysql -h {{.Values.mysql.service.name}}.{{.Release.Namespace}} -u root -p{{.Values.config.dbRootPassword}} mysql &> /dev/null
+echo "Waiting for mariadbgalera"
+until mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql &> /dev/null
 do
   printf "."
   sleep 1
 done
-echo -e "\nmysql ready"
+echo -e "\nmariadbgalera ready"
 
 if [ ! -f ${SDNC_HOME}/.installed ]
 then
