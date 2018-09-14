@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash -x
+#!/bin/bash
 
 #
 # Execute tags built to support the hands on demo,
@@ -165,6 +165,8 @@ do
 			exit
 	esac
 done
+
+set -x
 
 ETEHOME=/var/opt/OpenECOMP_ETE
 VARIABLEFILES="-V /share/config/vm_properties.py -V /share/config/integration_robot_properties.py -V /share/config/integration_preload_parameters.py"
