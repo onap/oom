@@ -1,0 +1,114 @@
+# Copyright 2018 Intel Corporation, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  persistence: {}
+
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+#Alertmanager Configuration
+image:
+  repository: grafana/grafana
+  tag: 5.2.4
+
+downloadDashboardsImage:
+  repository: appropriate/curl
+  tag: latest
+
+persistence:
+  enabled: true
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: multicloud/prometheus/grafana
+  containerMountPath: /grafana/data
+
+#Service configuration for this chart
+service:
+  type: NodePort
+  name: multicloud-prometheus-grafana
+  portName: prometheus-grafana
+  internalPort: 3000
+  nodePort: 63
+
+#Grafana Datasources
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      #Make sure the port number matches for the prometheus service
+      url: http://multicloud-prometheus:9090
+      access: proxy
+      isDefault: true
+
+
+#Grafana Dashboard providers
+dashboardProviders: {}
+
+#Grafana Dashboards for importing
+#This requires dashboardProviders to be enabled with some data
+#The dashboards will be downloaded from the URL provided in
+#dashboardProviders
+dashboards: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 30
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 30
+  enabled: true
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+ingress:
+  enabled: false
+
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 10m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 8Gi
+    requests:
+      cpu: 20m
+      memory: 2Gi
+  unlimited: {}
