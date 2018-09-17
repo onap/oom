@@ -1,0 +1,230 @@
+# ================================================================================
+# Copyright (c) 2018 Cisco Systems. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+infrastructure :
+  # infrastructure used for pnda deployment
+  # Valid Values are:
+  #   - aws
+  #   - openstack
+  #   - existing-machines
+  #   - terraform
+  INFRASTRUCTURE_TYPE: openstack
+
+  # The user name to use when logging into the  instances
+  # For aws target user-name allowed :
+  #            Target         AWS         Openstack
+  #
+  #   Distro   Redhat:       ec2-user     cloud-user
+  #            CentOS:       centos       cloud-user
+  OS_USER: {{ .Values.pnda.osUser }}
+
+  # CIDR specifying the address range for the network containing all PNDA instances
+  networkCidr: {{ .Values.pnda.networkCidr }}
+
+openstack_parameters:
+  # KEYSTONE_USER: Username for the openstack clients to use
+  KEYSTONE_USER: {{ .Values.openstack.keystoneUser }}
+
+  # KEYSTONE_PASSWORD: Password for the openstack clients to use
+  KEYSTONE_PASSWORD: {{ .Values.openstack.keystonePassword }}
+
+  # KEYSTONE_TENANT: Name of the tenant / project in the openstack environment. The
+  # PNDA stack will be created in this project.
+  KEYSTONE_TENANT: {{ .Values.openstack.keystoneTenant }}
+
+  # KEYSTONE_AUTH_URL: Keystone authentication URL. The Openstack console provides this
+  # under the Access & Security section.
+  KEYSTONE_AUTH_URL: {{ .Values.openstack.keystoneAuthUrl }}
+
+  # KEYSTONE_AUTH_VERSION: Keystone authentication version. The Openstack console provides this
+  # under the Access & Security section.
+  KEYSTONE_AUTH_VERSION: '2'
+
+  # KEYSTONE_REGION_NAME: Keystone region. The Openstack console provides this
+  # under the Access & Security section.
+  KEYSTONE_REGION_NAME: {{ .Values.openstack.keystoneRegion }}
+
+  # imageId: Base image to use for the created instances. It should be created by
+  # following the guide in https://github.com/pndaproject/pnda-dib-elements
+  #
+  imageId: {{ .Values.openstack.imageId }}
+
+  # CIDR specifying the address range that may access the created PNDA instances
+  whitelistSshAccess: {{ .Values.openstack.whitelistSshAccess }}
+
+  # UUID of the public network in openstack to use
+  externalPublicNetworkId: {{ .Values.openstack.publicNetworkId }}
+
+  useExistingNetwork: {{ .Values.openstack.useExistingNetwork }}
+
+  existingNetworkId: {{ .Values.openstack.existingNetworkId }}
+
+  existingSubnetId: {{ .Values.openstack.existingSubnetId }}
+
+  # CIDR specifying the address range for the public subnet (bastion access)
+  publicSubnetCidr: {{ .Values.openstack.publicSubnetCidr }}
+
+platform_salt:
+  # Use either PLATFORM_GIT_REPO_URI + PLATFORM_GIT_BRANCH or PLATFORM_SALT_LOCAL
+  PLATFORM_SALT_LOCAL: /platform-salt
+
+pnda_application_repo:
+  # Type of storage to use for PNDA application packages
+  #   s3     - AWS S3. Also set PNDA_APPS_CONTAINER, PNDA_APPS_FOLDER, PNDA_APPS_REGION, PNDA_APPS_ACCESS_KEY_ID, PNDA_APPS_SECRET_ACCESS_KEY
+  #   sshfs  - standard file system. Also set PR_FS_LOCATION_PATH, PR_SSHFS_USER, PR_SSHFS_HOST, PR_SSHFS_PATH and PR_SSHFS_KEY
+  #   local  - local filesystem on the package repository service server. Also set PR_FS_LOCATION_PATH.
+  #   swift  - Openstack swift. Also set PNDA_APPS_CONTAINER and PNDA_APPS_FOLDER
+  PR_FS_TYPE: {{ .Values.pnda.apps.fsType }}
+
+  # S3 container to use for PNDA application packages
+  PNDA_APPS_CONTAINER: {{ .Values.pnda.apps.s3container }}
+
+  # Name of folder within PNDA_APPS_CONTAINER that contains the PNDA application packages
+  PNDA_APPS_FOLDER: {{ .Values.pnda.apps.s3folder }}
+
+  # AWS region that contains the PNDA_APPS_CONTAINER bucket
+  PNDA_APPS_REGION: {{ .Values.pnda.apps.s3region }}
+
+  # API key for s3 access to PNDA_APPS_CONTAINER. These keys are stored on the cloud instances so should be restricted
+  # only allow access to the PNDA_APPS_CONTAINER bucket
+  PNDA_APPS_ACCESS_KEY_ID: {{ .Values.pnda.apps.s3keyid }}
+  PNDA_APPS_SECRET_ACCESS_KEY: {{ .Values.pnda.apps.s3secret }}
+
+  # Path on file system if PR_FS_TYPE is 'local' or 'sshfs'
+  PR_FS_LOCATION_PATH: {{ .Values.pnda.apps.fsLocation | print "/opt/pnda/packages" }}
+
+  # SSH accessed file system to use for PNDA application packages
+  PR_SSHFS_USER: centos
+  PR_SSHFS_HOST: 127.0.0.1
+  PR_SSHFS_PATH: /mnt/packages
+  PR_SSHFS_KEY: key.pem
+
+pnda_data_archive:
+  # S3 container to use for archiving PNDA datasets
+  PNDA_ARCHIVE_CONTAINER: pnda-archive
+
+  # AWS region that contains the PNDA_ARCHIVE_CONTAINER bucket
+  PNDA_ARCHIVE_REGION: eu-west-1
+
+  # API key for s3 access to PNDA_ARCHIVE_CONTAINER. These keys are stored on the cloud instances so should be restricted
+  # only allow access to the PNDA_ARCHIVE_CONTAINER bucket
+  PNDA_ARCHIVE_ACCESS_KEY_ID: xxxx
+  PNDA_ARCHIVE_SECRET_ACCESS_KEY: xxxx
+
+ntp:
+  # Optional ntp servers. Use this if the standard NTP servers on the Internet cannot be reached
+  # and a local NTP server has been configured. PNDA will not work without NTP.
+  # example format: 'xxx.ntp.org'
+  #For REJECT_OUTBOUND="YES" then NTP server/s must.
+  NTP_SERVERS:
+    - {{ .Values.pnda.ntp }}
+
+dns:
+  # External DNS servers list
+  nameServers:
+    - {{ .Values.pnda.nameserver }}
+
+mirrors:
+  # Mirror of resources required for provisioning PNDA, see PNDA guide for instructions on how to set this up
+  PNDA_MIRROR:
+
+hadoop:
+  # Hadoop distribution to install
+  # Valid values are:
+  # - HDP
+  # - CDH
+  HADOOP_DISTRO: HDP
+  # Spark version to enable for oozie (HDP only)
+  # Valid values are:
+  # - 1
+  # - 2
+  OOZIE_SPARK_VERSION: 1
+
+connectivity:
+  # The IP address of the client that created PNDA
+  CLIENT_IP: {{ .Values.pnda.outboundCidr }}
+  # Add online repositories for yum, apt-get, pip, etc alongside PNDA mirror
+  ADD_ONLINE_REPOS: "YES"
+  # RPM Extras repository to enable when ADD_ONLINE_REPOS=YES
+  RPM_EXTRAS_REPO_NAME: rhui-REGION-rhel-server-optional
+  # RPM Optional repository to enable when ADD_ONLINE_REPOS=YES
+  RPM_OPTIONAL_REPO_NAME: rhui-REGION-rhel-server-extras
+
+network_interfaces:
+  PNDA_INTERNAL_NETWORK: eth0
+  PNDA_INGEST_NETWORK: eth0
+
+cli:
+  # Maximum number of outbound connections that the CLI will attempt to open at once
+  # Consider increasing this when creating clusters with more than 100 nodes to speed
+  # up PNDA creation time.
+  MAX_SIMULTANEOUS_OUTBOUND_CONNECTIONS: 100
+
+security:
+  # The path were to find the security material (certificate/key).
+  # The directory should be structured as defined in this' repo's directory structure with the same name.
+  # The security material should conform to the guidelines defined in the README.md file in
+  # the containing sub directory.
+  SECURITY_MATERIAL_PATH: ./platform-certificates/
+
+  # Address of LDAP server
+  # All instances will have PAM configured to authenticate with this LDAP server if set
+  # Leave blank to disable LDAP-PAM integration
+  LDAP_SERVER: ''
+
+  # Base DN for LDAP server to use when enabling client PAM integration with LDAP
+  LDAP_BASE_DN: dc=nodomain
+
+features:
+  # Include experimental features.
+  # Set to "NO", omit setting or omit features section entirely to turn off experimental features
+  EXPERIMENTAL_FEATURES: "NO"
+
+domain:
+  # Top-level domain
+  TOP_LEVEL_DOMAIN: pnda.local
+
+  # Second-level domain
+  SECOND_LEVEL_DOMAIN: dc1
+
+dataset_compaction:
+  # Enable/Disable compaction on datasets.
+  # "YES" to enable.
+  # "NO" to disable.
+  COMPACTION: "NO"
+  # If compaction is enabled, PATTERN sets the frequency of compaction.
+  # H - hourly compaction.
+  # d - daily compaction.
+  # M - monthly compaction.
+  # Y - yearly compaction.
+  PATTERN: d
+
+datanode:
+  # DATANODE_VOLUME_COUNT sets the number of data volumes on each hadoop datanode
+  DATA_VOLUME_COUNT: 1
+  # DEVICE_ROOT sets the disk device root name
+  DEVICE_ROOT: xvdb
+
+kafka:
+  # DATA_DIRS sets the data dirs on kafka node
+  KAFKA_DATA_DIRS:
+    - /var/kafka-logs
+  # DEVICE_ROOT sets the disk device root name
+  KAFKA_DEVICE_ROOT: xvdb
+
+generic:
+  #GENERIC_DEVICE_ROOT sets the disk device root name for generic instances.
+  GENERIC_DEVICE_ROOT: xvdb
