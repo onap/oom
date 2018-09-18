@@ -31,23 +31,6 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - aai-resources
-        - --container-name
-        - message-router-kafka
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -100,7 +83,7 @@ spec:
           - mountPath: /opt/app/champ-service/bundleconfig/etc/logback.xml
             name: {{ include "common.fullname" . }}-logback-config
             subPath: logback.xml
-          - mountPath: /logs
+          - mountPath: /var/log/onap
             name: {{ include "common.fullname" . }}-logs
           resources:
 {{ toYaml .Values.resources | indent 12 }}
@@ -112,6 +95,19 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+            name: filebeat-conf
+          - mountPath: /var/log/onap
+            name: {{ include "common.fullname" . }}-logs
+          - mountPath: /usr/share/filebeat/data
+            name: aai-filebeat
 
       volumes:
         - name: localtime
@@ -140,5 +136,10 @@ spec:
             items:
             - key: logback.xml
               path: logback.xml
+        - name: filebeat-conf
+          configMap:
+            name: aai-filebeat
+        - name: aai-filebeat
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
