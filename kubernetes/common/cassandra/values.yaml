@@ -1,5 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright © 2018 Amdocs, Bell Canada, AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,27 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Default values for mariadb.
+# Default values for cassandra.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
-  persistence: {}
 
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/music/cassandra_music:3.0.0
+image: library/cassandra:3.11 
 pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# configmapping detail whether it exist locally or not
+# by default it is false, if you wanna configure it then mention
+# locally TRUE value in local values.yaml.
+
+configmapping: false 
 
 # application configuration
 config:
+  heap:
+    max: 512M
+    min: 100M
+  jvmOpts: -Dcassandra.consistent.rangemovement=false
+  clusterName: cassandra
+  dataCenter: Pod
+  rackName: Rack
+  autoBootstrap: true
   cassandraUsername: root
-  cassandraPassword: Aa123456
-  cassandraJvmOpts: -Xmx2536m -Xms2536m
+  cassandraPassword: root
 
 # default number of instances
-replicaCount: 1
+replicaCount: 1 
 
 nodeSelector: {}
 
@@ -41,17 +55,34 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 60
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 60
   periodSeconds: 10
 
-## Persist data to a persitent volume
+service:
+  type: ClusterIP
+  name: cassandra
+  numports: none
+  # numports paramter must be same as number of ports are using in your components
+  # example: if you are using 2 ports in your components
+  # then mention "numports: two" likewise three, four, five, you need mention in your local components values.yaml
+  # by default in common chart. we are keeping none, make sure you should write in lower case and no numberic value
+  # Maximum numports value we can five only, otherwise we need to change few configuration file.
+  portName: cassandra
+
+podManagementPolicy: OrderedReady
+updateStrategy:
+  type: OnDelete
+
+ingress:
+  enabled: false
+
 persistence:
   enabled: true
 
@@ -68,29 +99,13 @@ persistence:
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
   ##
-  # storageClass: "-"
-  accessMode: ReadWriteMany
+  ## storageClass: "-"
+  accessMode: ReadWriteOnce
   size: 2Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: portal/cassandra/data
-
-service:
-  type: ClusterIP
-  name: portal-cassandra
-  portName: portal-cassandra
-  externalPort: 9160
-  internalPort: 9160
-  externalPort2: 7000
-  internalPort2: 7000
-  externalPort3: 7001
-  internalPort3: 7001
-  externalPort4: 7199
-  internalPort4: 7199
-  externalPort5: 9042
-  internalPort5: 9042
-
-ingress:
-  enabled: false
+  mountSubPath: cassandra
+  storageType: local
+  storageClass: ""
 
 # Resource Limit flavor -By Default using small
 flavor: small
