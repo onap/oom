@@ -118,6 +118,26 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
 	}
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
+sleep 2
+
+echo "Create BRMSParamvPCI Policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+	"policyConfigType": "BRMS_PARAM",
+	"policyName": "com.BRMSParamvPCI",
+	"policyDescription": "BRMS Param vPCI policy",
+	"policyScope": "com",
+	"attributes": {
+	    "MATCHING": {
+	    	"controller" : "casablanca"
+	    },
+		"RULE": {
+			"templateName": "ClosedLoopControlName",
+			"closedLoopControlName": "ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459",
+			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+3.0.0%0D%0A++controlLoopName%3A+ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459%0D%0A++trigger_policy%3A+unique-policy-id-123-modifyconfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-123-modifyconfig%0D%0A++++name%3A+modify+PCI+config%0D%0A++++description%3A%0D%0A++++actor%3A+SDNR%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+These+fields+are+not+used%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+		}
+	}
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+
 #########################################Create Micro Service Config policies##########################################
 
 echo "Create MicroService Config Policies"
@@ -186,6 +206,45 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
     "guard": "false",
     "priority": "4",
     "description": "ONAP_VPG_NAMING_TIMESTAMP"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+
+#########################################Creating OOF PCI Policies##########################################
+sleep 2
+
+echo "Create MicroServicevPCI Policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+        "configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation_pci\", \"uuid\": \"test_pci\", \"policyName\": \"MicroServicevPCI\", \"description\": \"MicroService vPCI Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"vFirewallBroadcastPackets\", \"controlLoopSchemaType\": \"VNF\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.executePolicy\", \"thresholdValue\": 1, \"direction\": \"GREATER_OR_EQUAL\", \"severity\": \"MAJOR\", \"closedLoopEventStatus\": \"ONSET\" } ] }] } } }",
+        "policyConfigType": "MicroService",
+        "policyName": "com.MicroServicevPCI",
+        "onapName": "DCAE"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+
+sleep 2
+
+echo "Create PCI MS Config Policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "policyName": "com.PCIMS_CONFIG_POLICY",
+  "configBody": "{ \"PCI_NEIGHBOR_CHANGE_CLUSTER_TIMEOUT_IN_SECS\":60, \"PCI_MODCONFIG_POLICY_NAME\":\"ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459\", \"PCI_OPTMIZATION_ALGO_CATEGORY_IN_OOF\":\"OOF-PCI-OPTIMIZATION\", \"PCI_SDNR_TARGET_NAME\":\"SDNR\" }",
+  "policyType": "Config",
+  "attributes" : { "matching" : { "key1" : "value1" } },
+  "policyConfigType": "Base",
+  "onapName": "DCAE",
+  "configName": "PCIMS_CONFIG_POLICY",
+  "configBodyType": "JSON"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+
+sleep 2
+
+echo "Create OOF Config Policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "policyName": "com.OOF_PCI_CONFIG_POLICY",
+  "configBody": "{ \"ALGO_CATEGORY\":\"OOF-PCI-OPTIMIZATION\", \"PCI_OPTMIZATION_ALGO_NAME\":\"OOF-PCI-OPTIMIZATION-LEVEL1\", \"PCI_OPTIMIZATION_NW_CONSTRAINT\":\"MAX5PCICHANGESONLY\", \"PCI_OPTIMIZATION_PRIORITY\": 2, \"PCI_OPTIMIZATION_TIME_CONSTRAINT\":\"ONLYATNIGHT\" }",
+  "attributes" : { "matching" : { "key1" : "value1" } },
+  "policyType": "Config",
+  "policyConfigType": "Base",
+  "onapName": "DCAE",
+  "configName": "OOF_PCI_CONFIG_POLICY",
+  "configBodyType": "JSON"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Creating Decision Guard policy######################################### 
@@ -265,6 +324,15 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "policyType": "BRMS_Param"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
+sleep 2
+
+echo "pushPolicy : PUT : com.BRMSParamvPCI"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.BRMSParamvPCI",
+  "policyType": "BRMS_Param"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
+
 #########################################Pushing MicroService Config policies##########################################
 
 echo "Pushing MicroService Config policies"
@@ -315,4 +383,32 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "SDNC_Policy.ONAP_VPG_NAMING_TIMESTAMP",
   "policyType": "MicroService"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+
+#########################################Pushing OOF PCI Policies##########################################
+sleep 10
+
+echo "pushPolicy : PUT : com.MicroServicevPCI"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.MicroServicevPCI",
+  "policyType": "MicroService"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+
+sleep 10
+
+echo "pushPolicy : PUT : com.PCIMS_CONFIG_POLICY"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.PCIMS_CONFIG_POLICY",
+  "policyType": "Base"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+
+sleep 10
+
+echo "pushPolicy : PUT : com.OOF_PCI_CONFIG_POLICY"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.OOF_PCI_CONFIG_POLICY",
+  "policyType": "Base"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
