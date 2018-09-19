@@ -26,7 +26,7 @@ wget -O cl-amsterdam-template.drl https://git.onap.org/policy/drools-application
 
 sleep 2
 
-curl -k -v --silent -X POST --header 'Content-Type: multipart/form-data' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -F "file=@cl-amsterdam-template.drl" -F "importParametersJson={\"serviceName\":\"ClosedLoopControlName\",\"serviceType\":\"BRMSPARAM\"}" 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/policyEngineImport' 
+curl -k -v --silent -X POST --header 'Content-Type: multipart/form-data' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -F "file=@cl-amsterdam-template.drl" -F "importParametersJson={\"serviceName\":\"ClosedLoopControlName\",\"serviceType\":\"BRMSPARAM\"}" 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/policyEngineImport'
 
 echo "PRELOAD_POLICIES is $PRELOAD_POLICIES"
 
@@ -42,100 +42,100 @@ sleep 2
 
 echo "Create BRMSParamvFirewall Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"policyConfigType": "BRMS_PARAM",
-	"policyName": "com.BRMSParamvFirewall",
-	"policyDescription": "BRMS Param vFirewall policy",
-	"policyScope": "com",
-	"attributes": {
-		"MATCHING": {
-	    	"controller" : "amsterdam"
-	    },
-		"RULE": {
-			"templateName": "ClosedLoopControlName",
-			"closedLoopControlName": "ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a",
-			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a%0D%0A++trigger_policy%3A+unique-policy-id-1-modifyConfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-modifyConfig%0D%0A++++name%3A+modify+packet+gen+config%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+TBD+-+Cannot+be+known+until+instantiation+is+done%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
-		}
-	}
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamvFirewall",
+    "policyDescription": "BRMS Param vFirewall policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "amsterdam"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a%0D%0A++trigger_policy%3A+unique-policy-id-1-modifyConfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-modifyConfig%0D%0A++++name%3A+modify+packet+gen+config%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+TBD+-+Cannot+be+known+until+instantiation+is+done%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
 echo "Create BRMSParamvDNS Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"policyConfigType": "BRMS_PARAM",
-	"policyName": "com.BRMSParamvDNS",
-	"policyDescription": "BRMS Param vDNS policy",
-	"policyScope": "com",
-	"attributes": {
-		"MATCHING": {
-	    	"controller" : "amsterdam"
-	    },
-		"RULE": {
-			"templateName": "ClosedLoopControlName",
-			"closedLoopControlName": "ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3",
-			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3%0D%0A++trigger_policy%3A+unique-policy-id-1-scale-up%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-scale-up%0D%0A++++name%3A+Create+a+new+VF+Module%0D%0A++++description%3A%0D%0A++++actor%3A+SO%0D%0A++++recipe%3A+VF+Module+Create%0D%0A++++target%3A%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
-		}
-	}
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamvDNS",
+    "policyDescription": "BRMS Param vDNS policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "amsterdam"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3%0D%0A++trigger_policy%3A+unique-policy-id-1-scale-up%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-scale-up%0D%0A++++name%3A+Create+a+new+VF+Module%0D%0A++++description%3A%0D%0A++++actor%3A+SO%0D%0A++++recipe%3A+VF+Module+Create%0D%0A++++target%3A%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
 echo "Create BRMSParamVOLTE Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"policyConfigType": "BRMS_PARAM",
-	"policyName": "com.BRMSParamVOLTE",
-	"policyDescription": "BRMS Param VOLTE policy",
-	"policyScope": "com",
-	"attributes": {
-		"MATCHING": {
-	    	"controller" : "amsterdam"
-	    },
-		"RULE": {
-			"templateName": "ClosedLoopControlName",
-			"closedLoopControlName": "ControlLoop-VOLTE-2179b738-fd36-4843-a71a-a8c24c70c55b",
-			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-VOLTE-2179b738-fd36-4843-a71a-a8c24c70c55b%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+VFC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
-		}
-	}
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamVOLTE",
+    "policyDescription": "BRMS Param VOLTE policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "amsterdam"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-VOLTE-2179b738-fd36-4843-a71a-a8c24c70c55b",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-VOLTE-2179b738-fd36-4843-a71a-a8c24c70c55b%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+VFC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
 echo "Create BRMSParamvCPE Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"policyConfigType": "BRMS_PARAM",
-	"policyName": "com.BRMSParamvCPE",
-	"policyDescription": "BRMS Param vCPE policy",
-	"policyScope": "com",
-	"attributes": {
-	    "MATCHING": {
-	    	"controller" : "amsterdam"
-	    },
-		"RULE": {
-			"templateName": "ClosedLoopControlName",
-			"closedLoopControlName": "ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e",
-			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+true%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
-		}
-	}
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamvCPE",
+    "policyDescription": "BRMS Param vCPE policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "amsterdam"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e%0D%0A++trigger_policy%3A+unique-policy-id-1-restart%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+true%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-restart%0D%0A++++name%3A+Restart+the+VM%0D%0A++++description%3A%0D%0A++++actor%3A+APPC%0D%0A++++recipe%3A+Restart%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 sleep 2
 
 echo "Create BRMSParamvPCI Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"policyConfigType": "BRMS_PARAM",
-	"policyName": "com.BRMSParamvPCI",
-	"policyDescription": "BRMS Param vPCI policy",
-	"policyScope": "com",
-	"attributes": {
-	    "MATCHING": {
-	    	"controller" : "casablanca"
-	    },
-		"RULE": {
-			"templateName": "ClosedLoopControlName",
-			"closedLoopControlName": "ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459",
-			"controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+3.0.0%0D%0A++controlLoopName%3A+ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459%0D%0A++trigger_policy%3A+unique-policy-id-123-modifyconfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-123-modifyconfig%0D%0A++++name%3A+modify+PCI+config%0D%0A++++description%3A%0D%0A++++actor%3A+SDNR%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+These+fields+are+not+used%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
-		}
-	}
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamvPCI",
+    "policyDescription": "BRMS Param vPCI policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "casablanca"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+3.0.0%0D%0A++controlLoopName%3A+ControlLoop-vPCI-fb41f388-a5f2-11e8-98d0-529269fb1459%0D%0A++trigger_policy%3A+unique-policy-id-123-modifyconfig%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-123-modifyconfig%0D%0A++++name%3A+modify+PCI+config%0D%0A++++description%3A%0D%0A++++actor%3A+SDNR%0D%0A++++recipe%3A+ModifyConfig%0D%0A++++target%3A%0D%0A++++++%23+These+fields+are+not+used%0D%0A++++++resourceID%3A+Eace933104d443b496b8.nodes.heat.vpg%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+300%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Create Micro Service Config policies##########################################
@@ -146,10 +146,10 @@ sleep 2
 
 echo "Create MicroServicevFirewall Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation\", \"uuid\": \"test\", \"policyName\": \"MicroServicevFirewall\", \"description\": \"MicroService vFirewall Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"vFirewallBroadcastPackets\", \"controlLoopSchemaType\": \"VNF\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 300, \"direction\": \"LESS_OR_EQUAL\", \"severity\": \"MAJOR\", \"closedLoopEventStatus\": \"ONSET\" }, { \"closedLoopControlName\": \"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 700, \"direction\": \"GREATER_OR_EQUAL\", \"severity\": \"CRITICAL\", \"closedLoopEventStatus\": \"ONSET\" } ] }] } } }",
-	"policyConfigType": "MicroService",
-	"policyName": "com.MicroServicevFirewall",
-	"onapName": "DCAE"
+    "configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation\", \"uuid\": \"test\", \"policyName\": \"MicroServicevFirewall\", \"description\": \"MicroService vFirewall Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"vFirewallBroadcastPackets\", \"controlLoopSchemaType\": \"VNF\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 300, \"direction\": \"LESS_OR_EQUAL\", \"severity\": \"MAJOR\", \"closedLoopEventStatus\": \"ONSET\" }, { \"closedLoopControlName\": \"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 700, \"direction\": \"GREATER_OR_EQUAL\", \"severity\": \"CRITICAL\", \"closedLoopEventStatus\": \"ONSET\" } ] }] } } }",
+    "policyConfigType": "MicroService",
+    "policyName": "com.MicroServicevFirewall",
+    "onapName": "DCAE"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 
@@ -157,10 +157,10 @@ sleep 2
 
 echo "Create MicroServicevDNS Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
-	"configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation\", \"uuid\": \"test\", \"policyName\": \"MicroServicevDNS\", \"description\": \"MicroService vDNS Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"vLoadBalancer\", \"controlLoopSchemaType\": \"VM\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 300, \"direction\": \"GREATER_OR_EQUAL\", \"severity\": \"CRITICAL\", \"closedLoopEventStatus\": \"ONSET\" }] }] } } }",
-	"policyConfigType": "MicroService",
-	"policyName": "com.MicroServicevDNS",
-	"onapName": "DCAE"
+    "configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation\", \"uuid\": \"test\", \"policyName\": \"MicroServicevDNS\", \"description\": \"MicroService vDNS Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"vLoadBalancer\", \"controlLoopSchemaType\": \"VM\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.vNicUsageArray[*].receivedTotalPacketsDelta\", \"thresholdValue\": 300, \"direction\": \"GREATER_OR_EQUAL\", \"severity\": \"CRITICAL\", \"closedLoopEventStatus\": \"ONSET\" }] }] } } }",
+    "policyConfigType": "MicroService",
+    "policyName": "com.MicroServicevDNS",
+    "onapName": "DCAE"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 
@@ -169,9 +169,9 @@ sleep 2
 echo "Create MicroServicevCPE Policy"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
     "configBody": "{ \"service\": \"tca_policy\", \"location\": \"SampleServiceLocation\", \"uuid\": \"test\", \"policyName\": \"MicroServicevCPE\", \"description\": \"MicroService vCPE Policy\", \"configName\": \"SampleConfigName\", \"templateVersion\": \"OpenSource.version.1\", \"version\": \"1.1.0\", \"priority\": \"1\", \"policyScope\": \"resource=SampleResource,service=SampleService,type=SampleType,closedLoopControlName=ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e\", \"riskType\": \"SampleRiskType\", \"riskLevel\": \"1\", \"guard\": \"False\", \"content\": { \"tca_policy\": { \"domain\": \"measurementsForVfScaling\", \"metricsPerEventName\": [{ \"eventName\": \"Measurement_vGMUX\", \"controlLoopSchemaType\": \"VNF\", \"policyScope\": \"DCAE\", \"policyName\": \"DCAE.Config_tca-hi-lo\", \"policyVersion\": \"v0.0.1\", \"thresholds\": [{ \"closedLoopControlName\": \"ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.additionalMeasurements[*].arrayOfFields[0].value\", \"thresholdValue\": 0, \"direction\": \"EQUAL\", \"severity\": \"MAJOR\", \"closedLoopEventStatus\": \"ABATED\" }, { \"closedLoopControlName\": \"ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e\", \"version\": \"1.0.2\", \"fieldPath\": \"$.event.measurementsForVfScalingFields.additionalMeasurements[*].arrayOfFields[0].value\", \"thresholdValue\": 0, \"direction\": \"GREATER\", \"severity\": \"CRITICAL\", \"closedLoopEventStatus\": \"ONSET\" }] }] } } }",
-	"policyConfigType": "MicroService",
-	"policyName": "com.MicroServicevCPE",
-	"onapName": "DCAE"
+    "policyConfigType": "MicroService",
+    "policyName": "com.MicroServicevCPE",
+    "onapName": "DCAE"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Create SDNC Naming Policies##########################################
@@ -181,7 +181,7 @@ echo "Create SDNC Naming Policies"
 sleep 2
 
 echo "Create SDNC vFW Naming Policy"
-curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{ 
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
     "configBody": "{\"service\":\"SDNC-GenerateName\",\"version\":\"CSIT\",\"content\":{\"policy-instance-name\":\"ONAP_VFW_NAMING_TIMESTAMP\",\"naming-models\":[{\"naming-properties\":[{\"property-name\":\"AIC_CLOUD_REGION\"},{\"property-name\":\"nfRole\"},{\"property-name\":\"TIMESTAMP\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"VNF\",\"nfRole\":\"vFW\",\"naming-recipe\":\"AIC_CLOUD_REGION|DELIMITER|nfRole|DELIMITER|TIMESTAMP\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-name\":\"SEQUENCE\",\"increment-sequence\":{\"max\":\"zzz\",\"scope\":\"ENTIRETY\",\"start-value\":\"001\",\"length\":\"3\",\"increment\":\"1\",\"sequence-type\":\"alpha-numeric\"}},{\"property-name\":\"NFC_NAMING_CODE\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"VNFC\",\"nfRole\":\"vFW\",\"naming-recipe\":\"VNF_NAME|DELIMITER|NFC_NAMING_CODE|DELIMITER|SEQUENCE\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"},{\"property-name\":\"VF_MODULE_LABEL\"},{\"property-name\":\"VF_MODULE_TYPE\"},{\"property-name\":\"SEQUENCE\",\"increment-sequence\":{\"max\":\"zzz\",\"scope\":\"PRECEEDING\",\"start-value\":\"01\",\"length\":\"3\",\"increment\":\"1\",\"sequence-type\":\"alpha-numeric\"}}],\"naming-type\":\"VF-MODULE\",\"nfRole\":\"vFW\",\"naming-recipe\":\"VNF_NAME|DELIMITER|VF_MODULE_LABEL|DELIMITER|VF_MODULE_TYPE|DELIMITER|SEQUENCE\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"}],\"naming-type\":\"KEY\",\"nfRole\":\"vFW\",\"naming-recipe\":\"VNF_NAME\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"protected\",\"property-name\":\"CONSTANT\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"protected_private_net_id\",\"nfRole\":\"vFW\",\"naming-recipe\":\"VNF_NAME|DELIMITER|CONSTANT\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"unprotected\",\"property-name\":\"CONSTANT\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"unprotected_private_net_id\",\"nfRole\":\"vFW\",\"naming-recipe\":\"VNF_NAME|DELIMITER|CONSTANT\"}]}}",
     "policyName": "SDNC_Policy.ONAP_VFW_NAMING_TIMESTAMP",
     "policyConfigType": "MicroService",
@@ -196,7 +196,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
 sleep 2
 
 echo "Create SDNC vPG Naming Policy"
-curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{ 
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
     "configBody": "{\"service\":\"SDNC-GenerateName\",\"version\":\"CSIT\",\"content\":{\"policy-instance-name\":\"ONAP_VPG_NAMING_TIMESTAMP\",\"naming-models\":[{\"naming-properties\":[{\"property-name\":\"AIC_CLOUD_REGION\"},{\"property-name\":\"nfRole\"},{\"property-name\":\"TIMESTAMP\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"VNF\",\"nfRole\":\"vPG\",\"naming-recipe\":\"AIC_CLOUD_REGION|DELIMITER|nfRole|DELIMITER|TIMESTAMP\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-name\":\"SEQUENCE\",\"increment-sequence\":{\"max\":\"zzz\",\"scope\":\"ENTIRETY\",\"start-value\":\"001\",\"length\":\"3\",\"increment\":\"1\",\"sequence-type\":\"alpha-numeric\"}},{\"property-name\":\"NFC_NAMING_CODE\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"VNFC\",\"nfRole\":\"vPG\",\"naming-recipe\":\"VNF_NAME|DELIMITER|NFC_NAMING_CODE|DELIMITER|SEQUENCE\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"},{\"property-name\":\"VF_MODULE_LABEL\"},{\"property-name\":\"VF_MODULE_TYPE\"},{\"property-name\":\"SEQUENCE\",\"increment-sequence\":{\"max\":\"zzz\",\"scope\":\"PRECEEDING\",\"start-value\":\"01\",\"length\":\"3\",\"increment\":\"1\",\"sequence-type\":\"alpha-numeric\"}}],\"naming-type\":\"VF-MODULE\",\"nfRole\":\"vPG\",\"naming-recipe\":\"VNF_NAME|DELIMITER|VF_MODULE_LABEL|DELIMITER|VF_MODULE_TYPE|DELIMITER|SEQUENCE\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"}],\"naming-type\":\"KEY\",\"nfRole\":\"vPG\",\"naming-recipe\":\"VNF_NAME\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"protected\",\"property-name\":\"CONSTANT\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"protected_private_net_id\",\"nfRole\":\"vPG\",\"naming-recipe\":\"VNF_NAME|DELIMITER|CONSTANT\"},{\"naming-properties\":[{\"property-name\":\"VNF_NAME\"},{\"property-value\":\"unprotected\",\"property-name\":\"CONSTANT\"},{\"property-value\":\"_\",\"property-name\":\"DELIMITER\"}],\"naming-type\":\"unprotected_private_net_id\",\"nfRole\":\"vPG\",\"naming-recipe\":\"VNF_NAME|DELIMITER|CONSTANT\"}]}}",
     "policyName": "SDNC_Policy.ONAP_VPG_NAMING_TIMESTAMP",
     "policyConfigType": "MicroService",
@@ -247,42 +247,107 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "configBodyType": "JSON"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
-#########################################Creating Decision Guard policy######################################### 
+#########################################Creating Decision Guard policies#########################################
 
 sleep 2
 
 echo "Creating Decision Guard policy"
-curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{ 
-	"policyClass": "Decision", 
-	"policyName": "com.AllPermitGuard", 
-	"policyDescription": "Testing all Permit YAML Guard Policy", 
-	"ecompName": "PDPD", 
-	"ruleProvider": "GUARD_YAML", 
-	"attributes": { 
-		"MATCHING": { 
-			"actor": ".*", 
-			"recipe": ".*", 
-			"targets": ".*", 
-			"clname": ".*", 
-			"limit": "10", 
-			"timeWindow": "1", 
-			"timeUnits": "minute", 
-			"guardActiveStart": "00:00:01-05:00", 
-			"guardActiveEnd": "00:00:00-05:00" 
-		} 
-	} 
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+    "policyClass": "Decision",
+    "policyName": "com.AllPermitGuard",
+    "policyDescription": "Testing all Permit YAML Guard Policy",
+    "ecompName": "PDPD",
+    "ruleProvider": "GUARD_YAML",
+    "attributes": {
+        "MATCHING": {
+            "actor": ".*",
+            "recipe": ".*",
+            "targets": ".*",
+            "clname": ".*",
+            "limit": "10",
+            "timeWindow": "1",
+            "timeUnits": "minute",
+            "guardActiveStart": "00:00:01-05:00",
+            "guardActiveEnd": "00:00:00-05:00"
+        }
+    }
+}' 'https://pdp:8081/pdp/api/createPolicy'
+
+sleep 2
+
+echo "Creating Decision vDNS Guard - Frequency Limiter policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+    "policyClass": "Decision",
+    "policyName": "com.vDNS_Frequency",
+    "policyDescription": "Limit vDNS Scale Up over time period",
+    "ecompName": "PDPD",
+    "ruleProvider": "GUARD_YAML",
+    "attributes": {
+        "MATCHING": {
+            "actor": "SO",
+            "recipe": "scaleOut",
+            "targets": ".*",
+            "clname": "ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3",
+            "limit": "1",
+            "timeWindow": "10",
+            "timeUnits": "minute",
+            "guardActiveStart": "00:00:01-05:00",
+            "guardActiveEnd": "00:00:00-05:00"
+        }
+    }
+}' 'https://pdp:8081/pdp/api/createPolicy'
+
+sleep 2
+
+echo "Creating Decision vDNS Guard - Min/Max policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+    "policyClass": "Decision",
+    "policyName": "com.vDNS_MinMax",
+    "policyDescription": "Ensure number of instances within a range",
+    "ecompName": "PDPD",
+    "ruleProvider": "GUARD_MIN_MAX",
+    "attributes": {
+        "MATCHING": {
+            "actor": "SO",
+            "recipe": "scaleOut",
+            "targets": ".*",
+            "clname": "ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3",
+            "min": "1",
+            "max": "5",
+            "guardActiveStart": "00:00:01-05:00",
+            "guardActiveEnd": "00:00:00-05:00"
+        }
+    }
+}' 'https://pdp:8081/pdp/api/createPolicy'
 
 #########################################Push Decision policy#########################################
 
 sleep 2
 
-echo "Push Decision policy" 
-curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{ 
-  "pdpGroup": "default", 
-  "policyName": "com.AllPermitGuard", 
-  "policyType": "DECISION" 
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
+echo "Push Decision policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.AllPermitGuard",
+  "policyType": "DECISION"
+}' 'https://pdp:8081/pdp/api/pushPolicy'
+
+sleep 2
+
+echo "Push Decision policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.vDNS_Frequency",
+  "policyType": "DECISION"
+}' 'https://pdp:8081/pdp/api/pushPolicy'
+
+sleep 2
+
+echo "Push Decision policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.vDNS_MinMax",
+  "policyType": "DECISION"
+}' 'https://pdp:8081/pdp/api/pushPolicy'
 
 #########################################Pushing BRMS Param policies##########################################
 
@@ -353,7 +418,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "com.MicroServicevDNS",
   "policyType": "MicroService"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 10
 
@@ -362,7 +427,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "com.MicroServicevCPE",
   "policyType": "MicroService"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 #########################################Pushing SDNC Naming Policies##########################################
 echo "Pushing SDNC Naming Policies"
@@ -374,7 +439,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "SDNC_Policy.ONAP_VFW_NAMING_TIMESTAMP",
   "policyType": "MicroService"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 10
 
@@ -383,7 +448,8 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "SDNC_Policy.ONAP_VPG_NAMING_TIMESTAMP",
   "policyType": "MicroService"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+<<<<<<< HEAD
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 #########################################Pushing OOF PCI Policies##########################################
 sleep 10
@@ -393,7 +459,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "com.MicroServicevPCI",
   "policyType": "MicroService"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 10
 
@@ -402,7 +468,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "com.PCIMS_CONFIG_POLICY",
   "policyType": "Base"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
 sleep 10
 
@@ -411,4 +477,4 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
   "pdpGroup": "default",
   "policyName": "com.OOF_PCI_CONFIG_POLICY",
   "policyType": "Base"
-}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy' 
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
