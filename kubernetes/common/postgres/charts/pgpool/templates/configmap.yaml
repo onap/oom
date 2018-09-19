@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, AT&T, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: pgpool
-container:
-  port: 5432
-  name:
-    primary: pgset-primary
-    replica: pgset-replica
-credentials:
-  pgusername: testuser
-  pgpassword: password
-serviceType: ClusterIP
-image:
-  repository: crunchydata
-  container: crunchy-pgpool
-  tag: centos7-10.4-2.0.0
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-pgpool-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "configs/*").AsConfig . | indent 2 }}
