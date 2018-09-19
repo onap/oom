@@ -49,6 +49,8 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.loggingRepository| default .Values.loggingRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          resources:
+{{ toYaml (pluck .Values.flavor .Values.resources| first) | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
@@ -77,16 +79,6 @@ spec:
             name: {{ include "common.fullname" . }}-config
           - mountPath: /usr/share/logstash/pipeline/
             name: {{ include "common.fullname" . }}-pipeline
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
-        {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
-        {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
-        {{- end }}
       volumes:
         - name: localtime
           hostPath:
