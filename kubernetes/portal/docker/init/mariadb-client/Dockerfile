@@ -14,14 +14,14 @@
 
 FROM boxfuse/flyway:5.0.7-alpine
 
-ARG branch=release-2.3.0
+ARG branch=master
 ENV no_proxy "localhost,127.0.0.1,.cluster.local,$KUBERNETES_SERVICE_HOST"
 # Setup Corporate proxy
 ENV https_proxy ${HTTP_PROXY}
 ENV http_proxy ${HTTPS_PROXY}
 
 RUN apk add --update \
-    mariadb-client=10.1.28-r1 \
+    mariadb-client=10.1.32-r0 \
     git \
   && rm -rf /var/cache/apk/*
 
