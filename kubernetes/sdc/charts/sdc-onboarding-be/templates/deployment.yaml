@@ -66,6 +66,8 @@ spec:
               - "/var/lib/ready-probe.sh"
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources:
+{{ toYaml (pluck .Values.flavor .Values.resources| first) | indent 12 }}
           env:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
@@ -100,17 +102,6 @@ spec:
             postStart:
               exec:
                 command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/onboarding-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
-        {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
-        {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
-        {{- end }}
-
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
