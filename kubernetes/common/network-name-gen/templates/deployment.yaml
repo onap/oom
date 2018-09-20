@@ -1,0 +1,77 @@
+# Copyright (C) 2018  AT&T Intellectual Property.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: SPRING_PROFILE
+          value: "{{ .Values.config.springProfile }}"
+        - name: NENG_DB_USER
+          value: {{ index .Values "mariadb-galera" "config" "userName" }}
+        - name: NENG_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-root-password
+        - name: NENG_DB_URL
+          value: {{ .Values.config.dbUrl }}
+        - name: POL_CLIENT_AUTH
+          value: "{{ .Values.config.polClientAuth }}"
+        - name: POL_BASIC_AUTH
+          value: "{{ .Values.config.polBasicAuth }}"
+        - name: POL_URL
+          value: "{{ .Values.config.polUrl }}"
+        - name: POL_ENV
+          value: "{{ .Values.config.polEnv }}"
+        - name: POL_REQ_ID
+          value: "{{ .Values.config.polReqId }}"
+        - name: AAI_CERT_PASS
+          value: "{{ .Values.config.aaiCertPass }}"
+        - name: AAI_CERT_PATH
+          value: "{{ .Values.config.aaiCertPath }}"
+        - name: AAI_URI
+          value: "{{ .Values.config.aaiUri }}"
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
