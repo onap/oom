@@ -48,7 +48,7 @@ spec:
         name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.loggingRepository| default .Values.loggingRepository }}/{{ .Values.image }}"
+          image: "{{ .Values.global.imageRepository| default .Values.imageRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
           - name: dmaap_consumer_group
@@ -92,6 +92,8 @@ spec:
           - mountPath: /usr/share/logstash/pipeline/logstash.conf
             name: {{ include "common.fullname" . }}
             subPath: pipeline.conf
+          - name: {{ include "common.fullname" . }}-aaf-certs
+            mountPath: /certs.d/
           resources:
 {{ toYaml .Values.resources | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -114,5 +116,9 @@ spec:
               path: logstash.yml
             - key: pipeline.conf
               path: pipeline.conf
+        - name: {{ include "common.fullname" . }}-aaf-certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-aaf-keys
+
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
