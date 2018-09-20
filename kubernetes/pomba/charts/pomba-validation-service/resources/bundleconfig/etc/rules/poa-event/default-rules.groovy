@@ -213,14 +213,19 @@ rule {
         java.util.Map ndcb = getAttributes(slurper.parseText(ndcbItems.toString()))
         java.util.Map aai = getAttributes(slurper.parseText(aaiItems.toString()))
 
-        ndcb.each{ ndcbKey, ndcbValueList ->
+        boolean result = true
+        ndcb.any{ ndcbKey, ndcbValueList ->
           def aaiValueList = aai.get("$ndcbKey")
           aaiValueList.each{ aaiValue ->
             if(!ndcbValueList.any{ it == "$aaiValue" }) {
-              return false
+              result = false
             }
           }
+          if(result == false) {
+            // break out of 'any' loop
+            return true
+          }
         }
-        return true
+        return result
         '''
 }
