@@ -32,6 +32,9 @@ GLOBAL_INJECTED_EXTERNAL_DNS = "N/A"
 GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR = "log-es.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = "log-kibana.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "log-ls-http.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR = "pomba-aaictxbuilder-http.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR = "pomba-sdcctxbuilder-http.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR = "pomba-networkdiscovery-http.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
@@ -98,6 +101,9 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR" : "log-kibana.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR" : "log-ls.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MR_IP_ADDR" : "message-router.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR" = "pomba-aaictxbuilder-http.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR" = "pomba-sdcctxbuilder-http.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR" = "pomba-networkdiscovery-http.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NETWORK" : "{{ .Values.openStackPrivateNetId }}",
@@ -140,4 +146,5 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_VID_IP_ADDR" : "vid.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_VM_FLAVOR" : "{{ .Values.openStackFlavourMedium }}",
     "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : "refrepo.{{include "common.namespace" .}}"
+
 }
