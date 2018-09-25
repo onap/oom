@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Amdocs, Bell Canada
+# Copyright (c) 2018 Amdocs, Bell Canada, and others
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,12 +24,10 @@ GLOBAL_AAI_PASSWORD = "AAI"
 # appc info - everything is from the private oam network (also called onap private network)
 GLOBAL_APPC_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_SERVER_PORT = "8282"
-GLOBAL_APPC_SERVER = "http://appc.{{include "common.namespace" .}}:"
 GLOBAL_APPC_USERNAME = "admin"
 GLOBAL_APPC_PASSWORD = "Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U"
 GLOBAL_APPC_CDT_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_CDT_SERVER_PORT = "80"
-GLOBAL_APPC_CDT_SERVER = "http://appc-cdt.{{include "common.namespace" .}}:"
 GLOBAL_APPC_CDT_USERNAME = "demo"
 # sdc info - everything is from the private oam network (also called onap private network)
 GLOBAL_ASDC_SERVER_PROTOCOL = "http"
@@ -61,12 +59,12 @@ GLOBAL_DMAAP_DR_NODE_SERVER_PORT = "8080"
 GLOBAL_DROOLS_SERVER_PORT = "9696"
 GLOBAL_DROOLS_USERNAME = "@1b3rt"
 GLOBAL_DROOLS_PASSWORD = "31nst31n"
-# Log info
+# log server config - NOTE: no log server is run in HEAT; only on OOM
 GLOBAL_LOG_SERVER_PROTOCOL = "http"
 GLOBAL_LOG_ELASTICSEARCH_PORT = "9200"
 GLOBAL_LOG_LOGSTASH_PORT = "9600"
 GLOBAL_LOG_KIBANA_PORT = "5601"
-# pomba info
+# pomba info - NOTE: no pomba is run in HEAT; only on OOM
 GLOBAL_POMBA_SERVER_PROTOCOL = "http"
 GLOBAL_POMBA_AAICONTEXTBUILDER_PORT = "9530"
 GLOBAL_POMBA_SDCCONTEXTBUILDER_PORT = "9530"
@@ -80,7 +78,7 @@ GLOBAL_MR_SERVER_PORT = "3904"
 # mso info - everything is from the private oam network (also called onap private network)
 GLOBAL_MSO_SERVER_PROTOCOL = "http"
 GLOBAL_MSO_SERVER_PORT = "8080"
-
+# SO containers
 GLOBAL_MSO_APIHAND_SERVER_PORT = "8080"
 GLOBAL_MSO_ASDCHAND_SERVER_PORT = "8085"
 GLOBAL_MSO_BPMN_SERVER_PORT = "8081"
