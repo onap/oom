@@ -19,8 +19,8 @@ GLOBAL_AAF_PASSWORD = "demo123456!"
 # aai info - everything is from the private oam network (also called onap private network)
 GLOBAL_AAI_SERVER_PROTOCOL = "https"
 GLOBAL_AAI_SERVER_PORT = "8443"
-GLOBAL_AAI_USERNAME = "AAI"
-GLOBAL_AAI_PASSWORD = "AAI"
+GLOBAL_AAI_USERNAME = "aai@aai.onap.org"
+GLOBAL_AAI_PASSWORD = "demo123456!"
 # appc info - everything is from the private oam network (also called onap private network)
 GLOBAL_APPC_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_SERVER_PORT = "8282"
