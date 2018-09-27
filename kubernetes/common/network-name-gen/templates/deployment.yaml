@@ -77,6 +77,13 @@ spec:
           value: "{{ .Values.config.aaiCertPath }}"
         - name: AAI_URI
           value: "{{ .Values.config.aaiUri }}"
+        - name: AAI_BASIC_AUTH
+          value: "{{ .Values.config.aaiBasicAuth }}"
+        volumeMounts:
+        - name: certs
+          mountPath: /opt/etc/config/aai_keystore
+          subPath: aai_keystore
+          readOnly: true
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -87,6 +94,9 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
+      volumes:
+      - name: certs
+        secret:
+            secretName: {{ .Release.Name}}-aai-keystore
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
