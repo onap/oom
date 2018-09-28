@@ -52,6 +52,9 @@ GLOBAL_INJECTED_OPENSTACK_API_KEY = "{{ .Values.config.openStackEncryptedPasswor
 GLOBAL_INJECTED_OPENSTACK_PASSWORD = "{{ .Values.openStackPassword }}"
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID = "{{ .Values.openStackTenantId }}"
 GLOBAL_INJECTED_OPENSTACK_USERNAME = "{{ .Values.openStackUserName }}"
+GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME = "{{ .Values.openStackProjectName }}"
+GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID = "{{ .Values.openStackDomainId }}"
+GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION = "{{ .Values.openStackKeystoneAPIVersion }}"
 GLOBAL_INJECTED_POLICY_IP_ADDR = "pdp.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = "drools.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_PORTAL_IP_ADDR = "portal-app.{{include "common.namespace" .}}"
@@ -119,6 +122,9 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD" : "{{ .Values.openStackPassword }}",
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID" : "{{ .Values.openStackTenantId }}",
     "GLOBAL_INJECTED_OPENSTACK_USERNAME" : "{{ .Values.openStackUserName }}",
+    "GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME" : "{{ .Values.openStackProjectName }}",
+    "GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID" : "{{ .Values.openStackDomainId }}",
+    "GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION" : "{{ .Values.openStackKeystoneAPIVersion }}",
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : "pdp.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : "drools.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_PORTAL_IP_ADDR" : "portal-app.{{include "common.namespace" .}}",
