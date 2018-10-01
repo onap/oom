@@ -55,10 +55,20 @@ spec:
           - ""
           - -n
           - ""
+        env:
+          - name: javax.net.ssl.keyStore
+            value: {{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}} 
+          - name: javax.net.ssl.keyStorePassword
+            value: {{ .Values.global.keypass }}
+          - name: javax.net.ssl.trustStore
+            value: {{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}
+          - name: javax.net.ssl.trustStorePassword
+            value: {{ .Values.global.keypass }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
         - containerPort: {{ .Values.service.internalPort3 }}
+        - containerPort: {{ .Values.service.internalPort4 }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -93,8 +103,15 @@ spec:
         - name: properties-onapportal
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/logback.xml"
           subPath: logback.xml
-        - name: portal-tomcat-logs
-          mountPath: "{{ .Values.global.env.tomcatDir }}/logs"
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/conf/server.xml"
+          subPath: server.xml
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/{{ .Values.global.keystoreFile}}"
+          subPath: {{ .Values.global.keystoreFile}}
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}"
+          subPath: {{ .Values.global.truststoreFile}}          
         - name: var-log-onap
           mountPath: /var/log/onap
         resources:
