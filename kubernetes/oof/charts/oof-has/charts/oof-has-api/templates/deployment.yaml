@@ -36,7 +36,9 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - oof-has-music
+        - music-tomcat
+        - --container-name
+        - aaf-service
         env:
         - name: NAMESPACE
           valueFrom:
@@ -46,6 +48,38 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - /root/job_complete.py
+        args:
+        - -j
+        - "{{ .Release.Name }}-oof-has-onboard"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-onboard-readiness
+      - command:
+        - sh
+        - -c
+        - resp="FAILURE";
+          until [ $resp = "200" ]; do
+          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms:10443/v1/sms/domain/has/secret);
+          echo $resp;
+          sleep 2;
+          done
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-has-sms-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
@@ -84,6 +118,9 @@ spec:
           - mountPath: /usr/local/bin/log.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: log.conf
+          - mountPath: /usr/local/bin/AAF_RootCA.cer
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: AAF_RootCA.cer
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -106,5 +143,7 @@ spec:
               path: conductor.conf
             - key: log.conf
               path: log.conf
+            - key: AAF_RootCA.cer
+              path: AAF_RootCA.cer
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
