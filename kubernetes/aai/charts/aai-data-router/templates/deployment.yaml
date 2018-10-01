@@ -94,7 +94,10 @@ spec:
         - mountPath: /opt/app/data-router/dynamic/conf/entity-event-policy.xml
           subPath: entity-event-policy.xml
           name: {{ include "common.fullname" . }}-dynamic-policy
-        - mountPath: /logs/
+        - mountPath: /opt/app/data-router/bundleconfig/etc/logback.xml
+          name: {{ include "common.fullname" . }}-logback-config
+          subPath: logback.xml
+        - mountPath: /var/log/onap
           name: {{ include "common.fullname" . }}-logs
         ports:
         - containerPort: {{ .Values.service.internalPort }}
@@ -112,10 +115,28 @@ spec:
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /usr/share/filebeat/data
+          name: aai-filebeat
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: aai-filebeat
+      - name: aai-filebeat
+        emptyDir: {}
       - name: {{ include "common.fullname" . }}-auth
         secret:
           secretName: {{ include "common.fullname" . }}
@@ -134,8 +155,13 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-dynamic
       - name: {{ include "common.fullname" . }}-logs
-        hostPath:
-          path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-logback-config
+        configMap:
+          name: {{ include "common.fullname" . }}-log-configmap
+          items:
+          - key: logback.xml
+            path: logback.xml
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
