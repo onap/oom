@@ -162,7 +162,7 @@ def create(private_ip,
     if not ctx.instance.runtime_properties.get('plugins_uploaded'):
         try:
             run(
-                "cfy plugins upload https://nexus.onap.org/content/sites/raw/org.onap.ccsdk.platform.plugins/plugins/helm-3.0.0-py27-none-linux_x86_64.wgn -y https://nexus.onap.org/content/sites/raw/org.onap.ccsdk.platform.plugins/type_files/helm/1.1.0/helm-type.yaml")
+                "cfy plugins upload https://nexus.onap.org/content/sites/raw/org.onap.ccsdk.platform.plugins/plugins/helm-3.0.0-py27-none-linux_x86_64.wgn -y https://nexus.onap.org/content/sites/raw/org.onap.ccsdk.platform.plugins/type_files/helm/3.0.0/helm-type.yaml")
         except Exception as e:
             raise NonRecoverableError(str(e))
         ctx.instance.runtime_properties['plugins_uploaded'] = plugins_upload()
