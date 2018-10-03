@@ -87,7 +87,7 @@ entity {
 
 rule {
   name        'SDC-AAI-vnfc-type'
-  category    'INVALID_VALUE'
+  category    'VNFC Consistency'
   description 'Validate that each VNFC instance in AAI conforms to a VNFC type defined in SDC model'
   errorText   'AAI VNFC instance includes non-specified type in design SDC model'
   severity    'ERROR'
@@ -102,13 +102,13 @@ rule {
         def aaiTypes = getVnfcTypes(slurper.parseText(aaiList.toString()))
 
         // each type in AAI must exist in SDC
-        return aaiTypes.containsAll(sdcTypes)
+        return sdcTypes.containsAll(aaiTypes)
                 '''
 }
 
 rule {
   name        'SDC-AAI-vnfc-node-count'
-  category    'INVALID_VALUE'
+  category    'VNFC Consistency'
   description 'Validate that for each VNFC node defined in SDC model, there is at least one VNFC instance in AAI'
   errorText   'Design has specified types but not all of them exist in AAI'
   severity    'WARNING'
@@ -132,7 +132,7 @@ rule {
 
 rule {
   name        'SDC-AAI-vf-module-instance-check'
-  category    'INVALID_VALUE'
+  category    'VF Consistency'
   description 'Validate that each VF module instance in AAI conforms to a VF module defined in SDC service model'
   errorText   'One or more AAI VF module instance(s) not defined in SDC model'
   severity    'CRITICAL'
@@ -153,7 +153,7 @@ rule {
 
 rule {
   name        'NDCB-AAI-attribute-comparison'
-  category    'INVALID_VALUE'
+  category    'Attribute Mismatch'
   description 'Verify that all attributes in Network-Discovery are the same as in AAI'
   errorText   'Error found with attribute "{0}"; value "{1}" does not exist in Network-Discovery'
   severity    'ERROR'
