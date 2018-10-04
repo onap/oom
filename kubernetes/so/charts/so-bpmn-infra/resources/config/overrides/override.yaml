@@ -37,11 +37,11 @@ mso:
     max-pool-size: 50
     queue-capacity: 500
   adapters:
-    requestDb:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
-      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
     completemsoprocess:
       endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/CompleteMsoProcess
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: Basic YnBlbDpwYXNzd29yZDEk
     db:
       auth: 33293332AEC4930F655D8E2E8BB08937
       password: wLg4sjrAFUS8rfVfdvTXeQ==
@@ -120,11 +120,32 @@ mso:
           uri: /aai/v6/cloud-infrastructure/volume-groups/volume-group
     default:
       aai:
-        version: '8'
+        version: '14'
         cloud-region:
-          version: '9'
+          version: '14'
         generic-vnf:
-          version: '9'
+          version: '14'
+        v14:
+          customer:
+            uri: /aai/v14/business/customers/customer
+          generic-query:
+            uri: /aai/v14/search/generic-query
+          generic-vnf:
+            uri: /aai/v14/network/generic-vnfs/generic-vnf
+          l3-network:
+            uri: /aai/v14/network/l3-networks/l3-network
+          network-policy:
+            uri: /aai/v14/network/network-policies/network-policy
+          nodes-query:
+            uri: /aai/v14/search/nodes-query
+          route-table-reference:
+            uri: /aai/v14/network/route-table-references/route-table-reference
+          tenant:
+            uri: /aai/v14/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
+          vce:
+            uri: /aai/v14/network/vces/vce
+          vpn-binding:
+            uri: /aai/v14/network/vpn-bindings/vpn-binding
         v11:
           customer:
             uri: /aai/v11/business/customers/customer
@@ -141,7 +162,7 @@ mso:
           route-table-reference:
             uri: /aai/v11/network/route-table-references/route-table-reference
           tenant:
-            uri: /aai/v11/cloud-infrastructure/cloud-regions/cloud-region/att-aic/AAIAIC25/tenants/tenant
+            uri: /aai/v11/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
           vce:
             uri: /aai/v11/network/vces/vce
           vpn-binding:
@@ -162,14 +183,14 @@ mso:
           route-table-reference:
             uri: /aai/v8/network/route-table-references/route-table-reference
           tenant:
-            uri: /aai/v8/cloud-infrastructure/cloud-regions/cloud-region/att-aic/AAIAIC25/tenants/tenant
+            uri: /aai/v8/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
           vce:
             uri: /aai/v8/network/vces/vce
           vpn-binding:
             uri: /aai/v8/network/vpn-bindings/vpn-binding
         v9:
           cloud-region:
-            uri: /aai/v9/cloud-infrastructure/cloud-regions/cloud-region/att-aic
+            uri: /aai/v9/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner
           generic-vnf:
             uri: /aai/v9/network/generic-vnfs/generic-vnf
       retry:
@@ -182,6 +203,7 @@ mso:
       default:
         aai:
           namespace: http://org.onap.aai.inventory/
+          version: 14
     message:
       endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
     notification:
@@ -214,6 +236,9 @@ sdnc:
   auth: Basic YWRtaW46S3A4Yko0U1hzek0wV1hsaGFrM2VIbGNzZTJnQXc4NHZhb0dHbUp2VXkyVQ==
   host: http://sdnc.{{ include "common.namespace" . }}:8282
   path: /restconf/operations/GENERIC-RESOURCE-API
+  si:
+    svc:
+      types: PORT-MIRROR,PPROBE
 appc:
   client:
     topic:
@@ -236,6 +261,16 @@ server:
   tomcat:
     max-threads: 50
 spring:
+  datasource:
+     driver-class-name: org.mariadb.jdbc.Driver
+     url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/camundabpmn
+     username: ${DB_USERNAME}
+     password: ${DB_PASSWORD}
+     dbcp2:
+      initial-size: 5
+      max-total: 20
+      validation-query: select 1
+      test-on-borrow: true
   security:
     usercredentials:
     -

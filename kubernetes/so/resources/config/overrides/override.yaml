@@ -4,21 +4,21 @@ server:
         max-threads: 50
 ssl-enable: false
 mso:
-  msoKey: "07a7159d3bf51a0e53be7a8f89699be7"
+  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
   logPath: logs
   site-name: onapheat
+  adapters:
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: Basic YnBlbDpwYXNzd29yZDEk
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
     auth: Basic YnBlbDpwYXNzd29yZDEk
-  adapters:
-    requestDb:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
-      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-    config:
-      path: /src/main/resources/
+  config:
+    path: /src/main/resources/
   infra:
     default:
       alacarte:
@@ -29,11 +29,6 @@ mso:
         macro:
           default:
             testApi: GR_API
-  apih:
-    homing:
-      sdna:
-        url: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/
-        password: 4112B789E942B161228F7D5AFC654C0F
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
   camundaAuth: 1D9003AB8BAFFA0D2104B67FA89040AD70B5B495B2A5DF931DE236484EBC1681
   async:
@@ -63,6 +58,23 @@ mso:
       publisher:
         topic: com.att.ecomp.mso.operationalEnvironmentEvent
 spring:
+  datasource:
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    dbcp2:
+      initial-size: 5
+      max-total: 20
+      validation-query: select 1
+      test-on-borrow: true
+  jpa:
+      show-sql: true
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+        ddl-auto: validate
+        naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
+        enable-lazy-load-no-trans: true
   jersey:
     type: filter
   security:
@@ -91,3 +103,14 @@ spring:
       username: mso_admin
       password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
       role: ACTUATOR
+request:
+  datasource:
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/requestdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    dbcp2:
+      initial-size: 5
+      max-total: 20
+      validation-query: select 1
+      test-on-borrow: true
