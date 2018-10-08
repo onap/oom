@@ -19,8 +19,11 @@ GLOBAL_AAF_PASSWORD = "demo123456!"
 # aai info - everything is from the private oam network (also called onap private network)
 GLOBAL_AAI_SERVER_PROTOCOL = "https"
 GLOBAL_AAI_SERVER_PORT = "8443"
-GLOBAL_AAI_USERNAME = "aai@aai.onap.org"
-GLOBAL_AAI_PASSWORD = "demo123456!"
+# Use old credentials until AAI updates to AAF/CADI
+#GLOBAL_AAI_USERNAME = "aai@aai.onap.org"
+#GLOBAL_AAI_PASSWORD = "demo123456!"
+GLOBAL_AAI_USERNAME = "AAI"
+GLOBAL_AAI_PASSWORD = "AAI"
 # appc info - everything is from the private oam network (also called onap private network)
 GLOBAL_APPC_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_SERVER_PORT = "8282"
@@ -131,8 +134,8 @@ GLOBAL_SMS_SERVER_PROTOCOL = "https"
 GLOBAL_SMS_SERVER_NAME = "aaf-sms.{{include "common.namespace" .}}"
 GLOBAL_SMS_SERVER_PORT = "10443"
 # vid info - everything is from the private oam network (also called onap private network)
-GLOBAL_VID_SERVER_PROTOCOL = "https"
-GLOBAL_VID_SERVER_PORT = "8443"
+GLOBAL_VID_SERVER_PROTOCOL = "{{ .Values.vidServerProtocol }}",
+GLOBAL_VID_SERVER_PORT = "{{ .Values.vidServerPort }}",
 GLOBAL_VID_USERNAME = "demo"
 GLOBAL_VID_PASSWORD = "Kp8bJ4SXszM0WX"
 GLOBAL_VID_HEALTH_USERNAME = "Default"
