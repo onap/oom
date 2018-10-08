@@ -1,0 +1,92 @@
+{{/*
+# Copyright 2018 Intel Corporation, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-preload
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - image:  "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - "aaf-sms"
+        - --container-name
+        - "aaf-sms-quorumclient"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-preload
+        command:
+          - "/sms/bin/preload"
+          - "-cacert"
+          - "/sms/certs/aaf_root_ca.cer"
+          - "-jsondir"
+          - "/preload/config"
+          - "-serviceport"
+          - "{{ .Values.service.internalPort }}"
+          - "-serviceurl"
+          - "https://aaf-sms.{{ include "common.namespace" . }}"
+        workingDir: /sms
+        volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /preload/config
+            name: {{ include "common.name" . }}-preload
+        resources:
+{{ include "common.resources" . | indent 10 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name : {{ include "common.name" . }}-preload
+        configMap:
+          name: {{ include "common.fullname" . }}-preload
+      restartPolicy: OnFailure
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
