@@ -24,11 +24,8 @@ flavor: small
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: library/cassandra:3.11
+image: onap/aaf/aaf_cass:2.1.2-SNAPSHOT
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
 
 # application configuration
 config: {}
@@ -42,14 +39,14 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 180
+  initialDelaySeconds: 300
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 180
+  initialDelaySeconds: 120
   periodSeconds: 10
 
 service:
@@ -88,3 +85,13 @@ resources:
       cpu: 40m
       memory: 9000Mi
   unlimited: {}
+
+persistence:
+  enabled: true
+  #existingClaim:
+  mountPath: /dockerdata-nfs
+  mountSubPath: "cass"
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  storageClass: "manual"

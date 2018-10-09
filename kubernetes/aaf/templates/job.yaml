@@ -15,7 +15,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-create-config
+  name: {{ .Release.Name }}-create-config
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -29,79 +29,28 @@ spec:
         app: aaf-init-job
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - name: {{ include "common.name" . }}-inject-config
-        command:
-        - /bin/bash
-        - -c
-        - >
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
-          echo "Clone complete. Copying from /tmp/gerrit/ to /public";
-          cp -rf /tmp/gerrit/auth/sample/public/* /public;
-          echo "Done.";
-        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.global.ubuntuInitImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: aaf-public
-          mountPath: "/public"
       containers:
-      - command: ["/bin/bash","-c","if [ ! -d /data/backup ]; then mkdir /data/data && cp -Ra /data1/data/..data/* /data/data/ && mkdir /data/etc && cp -Ra /data1/etc/..data/* data/etc/ && mkdir /data/backup && cp -Ra /data1/backup/..data/* /data/backup/ && cp -Ra /data1/public /data/ && cp -Ra /data1/local /data && mkdir -p /data/logs/oauth && mkdir -p /data/logs/hello && mkdir -p /data/logs/fs && mkdir -p /data/logs/gui && mkdir -p /data/logs/locate && mkdir -p /data/logs/cm && mkdir -p /data/logs/service; fi; exit 0"]
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+      - name: {{ include "common.name" . }}-config-container
+        image: "{{ include "common.repository" . }}/{{ .Values.aaf_config.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: aaf-init-job
         volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
-        - mountPath: /data
-          name: aaf-persistent-data
-        - mountPath: /data1/etc
-          name: aaf-etc
-        - mountPath: /data1/data
-          name: aaf-data
-        - mountPath: /data1/public/iframe_denied_test.html
-          name: aaf-public
-          subPath: iframe_denied_test.html
-        - mountPath: /data1/public/aaf_2_0.xsd
-          name: aaf-public
-          subPath: aaf_2_0.xsd
-        - mountPath: /data1/public/truststoreONAP.p12
-          name: aaf-public
-          subPath: truststoreONAP.p12
-        - mountPath: /data1/public/AAF_RootCA.cer
-          name: aaf-public
-          subPath: AAF_RootCA.cer
-        - mountPath: /data1/public/truststoreONAPall.jks
-          name: aaf-public
-          subPath: truststoreONAPall.jks
-        - mountPath: /data1/local/org.osaaf.location.props
-          name: aaf-local
-          subPath: org.osaaf.location.props
-        - mountPath: /data1/local/org.osaaf.cm.ca.props
-          name: aaf-local
-          subPath: org.osaaf.cm.ca.props
-        - mountPath: /data1/local/org.osaaf.cassandra.props
-          name: aaf-local
-          subPath: org.osaaf.cassandra.props
-        - mountPath: /data1/local/org.osaaf.aaf.props
-          name: aaf-local
-          subPath: org.osaaf.aaf.props
-        - mountPath: /data1/local/org.osaaf.aaf.trust.p12
-          name: aaf-local-secret
-          subPath: org.osaaf.aaf.trust.p12
-        - mountPath: /data1/local/org.osaaf.aaf.p12
-          name: aaf-local-secret
-          subPath: org.osaaf.aaf.p12
-        - mountPath: /data1/local/org.osaaf.aaf.keyfile
-          name: aaf-local-secret
-          subPath: org.osaaf.aaf.keyfile
-        - mountPath: /data1/local/org.osaaf.aaf.cm.p12
-          name: aaf-local-secret
-          subPath: org.osaaf.aaf.cm.p12
-        - mountPath: /data1/backup
-          name: aaf-backup
-        - mountPath: /share
-          name: aaf-public
+        - mountPath: "/opt/app/osaaf"
+          name: {{ include "common.name" . }}-config-vol
+        env:
+          - name: HOSTNAME
+            value: "{{ .Values.global.cadi.hostname }}"
+          - name: AAF_ENV
+            value: "{{ .Values.global.cadi.aaf_env }}"
+          - name: AAF_REGISTER_AS
+            value: "{{ .Values.global.cadi.aaf_register_as }}"
+          - name: LATITUDE
+            value: "{{ .Values.global.cadi.cadi_latitude }}"
+          - name: LONGITUDE
+            value: "{{ .Values.global.cadi.cadi_longitude }}"
+          - name: CASS_HOST
+            value: "{{ .Values.global.cassandraServiceName }}"
+          - name: AAF_LOCATOR_AS
+            value: "{{ .Values.global.locateServiceName }}"
         resources:
 {{ include "common.resources" . | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -113,33 +62,13 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-      - name: aaf-local-secret
-        secret:
-          secretName: {{ .Release.Name }}-aaf-local-secret
-      - name: aaf-etc
-        configMap:
-          name: {{ .Release.Name }}-aaf-etc
-      - name: aaf-local
-        configMap:
-          name: {{ .Release.Name }}-aaf-local
-      - name: aaf-backup
-        configMap:
-          name: {{ .Release.Name }}-aaf-backup
-      - name: aaf-data
-        configMap:
-          name: {{ .Release.Name }}-aaf-data
-      - name: aaf-persistent-data
+      - name: {{ include "common.name" . }}-config-vol
       {{- if .Values.global.persistence.enabled }}
         persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-aaf-pvc
+          claimName: {{ .Release.Name }}-config
       {{- else }}
         emptyDir: {}
       {{- end }}
-      - name: aaf-public
-        emptyDir: {}
       restartPolicy: OnFailure
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
