@@ -14,24 +14,60 @@
 # limitations under the License.
 */}}
 
-{{- if and .Values.global.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if and .Values.global.persistence.enabled (not .Values.persistence.config.existingClaim) }}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ .Release.Name }}-config
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}
+    app: {{ include "common.name" . }}-config
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
     name: {{ include "common.fullname" . }}
 spec:
   capacity:
-    storage: {{ .Values.persistence.size}}
+    storage: {{ .Values.persistence.config.size}}
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+    - {{ .Values.persistence.config.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.config.volumeReclaimPolicy }}
   hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
-{{- end -}}
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.config.mountSubPath }}
+{{- if .Values.persistence.config.storageClass }}
+{{- if (eq "-" .Values.persistence.config.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.persistence.config.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}
+---
+{{- if and .Values.global.persistence.enabled (not .Values.persistence.logs.existingClaim) }}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-logs
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-logs
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    name: {{ include "common.fullname" . }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.logs.size}}
+  accessModes:
+    - {{ .Values.persistence.logs.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.logs.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.logs.mountSubPath }}
+{{- if .Values.persistence.logs.storageClass }}
+{{- if (eq "-" .Values.persistence.logs.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.persistence.logs.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}
