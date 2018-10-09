@@ -31,11 +31,12 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-job-complete
+        command:
         - /root/job_complete.py
         args:
-        - -j
-        - {{ .Release.Name }}-aaf-create-config
+        - --job-name
+        - {{ .Release.Name }}-create-config
         env:
         - name: NAMESPACE
           valueFrom:
@@ -44,14 +45,12 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-job-complete
-      - command:
+      - name: {{ include "common.name" . }}-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
-        - aaf-cs
-        - --container-name
-        - aaf-locate
+        - aaf-cm
         env:
         - name: NAMESPACE
           valueFrom:
@@ -60,23 +59,17 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       containers:
-      - env:
-        - name: CASSANDRA_CLUSTER
-          value: cassandra_container
-        name: {{ include "common.name" . }}
+      - name: {{ include "common.name" . }}
+        command: ["/bin/bash","/opt/app/aaf/bin/gui"]
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["/bin/bash","-c"," ln -s /opt/app/osaaf/data /data;/opt/app/aaf/gui/bin/gui "]
         volumeMounts:
-        - mountPath: /opt/app/osaaf
-          name: aaf-persistent-vol
+        - mountPath: "/opt/app/osaaf"
+          name: shared-config-volume
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -103,10 +96,10 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aaf-persistent-vol
+      - name: shared-config-volume
       {{- if .Values.global.persistence.enabled }}
         persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-aaf-pvc
+          claimName: {{ .Release.Name }}-config
       {{- else }}
         emptyDir: {}
       {{- end }}
