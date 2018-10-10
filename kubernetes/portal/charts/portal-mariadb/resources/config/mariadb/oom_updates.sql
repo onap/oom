@@ -30,7 +30,7 @@ update fn_app set app_url = 'http://{{.Values.config.dmaapBcHostName}}:{{.Values
 --sdc-fe => 8181:30206, 9443:30207
 update fn_app set app_url = 'http://{{.Values.config.sdcFeHostName}}:{{.Values.config.sdcFePort}}/sdc1/portal', app_rest_endpoint = 'http://sdc-be:8080/api/v2' where app_name = 'SDC';
 --pap => 8443:30219
-update fn_app set app_url = 'http://{{.Values.config.papHostName}}:{{.Values.config.papPort}}/onap/policy', app_rest_endpoint = 'http://pap:8443/onap/api/v2' where app_name = 'Policy';
+update fn_app set app_url = 'https://{{.Values.config.papHostName}}:{{.Values.config.papPort}}/onap/policy', app_rest_endpoint = 'https://pap:8443/onap/api/v2' where app_name = 'Policy';
 --vid => 8080:30200
 update fn_app set app_url = 'https://{{.Values.config.vidHostName}}:{{.Values.config.vidPort}}/vid/welcome.htm', app_rest_endpoint = 'https://vid:8443/vid/api/v2' where app_name = 'Virtual Infrastructure Deployment';
 --sparky => TODO: sparky doesn't open a node port yet
