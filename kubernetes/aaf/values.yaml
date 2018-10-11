@@ -23,21 +23,22 @@ global:
   ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
   persistence:
     enabled: true
+
+  cadi:
+    hostname: "aaf.onap"
+    cadi_latitude: "38.0"
+    cadi_longitude: "-72.0"
+    aaf_env: "DEV"
+    aaf_register_as: "aaf.onap"
+  cassandraServiceName: aaf-cass
+  locateServiceName: aaf-locate
+
 #################################################################
 # Application configuration defaults.
 #################################################################
-config:
-  serviceServiceName: aaf-service
-  locateServiceName: aaf-locate
-  cmServiceName: aaf-cm
-  fsServiceName: aaf-fs
-  guiServiceName: aaf-gui
-  helloServiceName: aaf-hello
-  oauthServiceName: aaf-oauth
-  csServiceName: aaf-cass
-  # gerrit branch where the latest aaf/auth/sample/public code exists
-  gerritProject: http://gerrit.onap.org/r/aaf/authz.git
-  gerritBranch: 2.0.0-ONAP
+repository: nexus3.onap.org:10001
+aaf_config:
+  image: onap/aaf/aaf_config:2.1.2-SNAPSHOT
 
 flavor: small
 # default number of instances
@@ -64,39 +65,31 @@ ingress:
 
 ## Persist data to a persitent volume
 persistence:
-  ## A manually managed Persistent Volume and Claim
-  ## Requires persistence.enabled: true
-  ## If defined, PVC must be created manually before volume will be bound
-  # existingClaim:
-  volumeReclaimPolicy: Retain
+  mountPath: "/mnt/data/aaf"
+  enabled: true
+  config:
+    #existingClaim:
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteMany
+    size: 2Gi
+    mountSubPath: "config"
+    storageClass: "manual"
+  logs:
+    #existingClaim:
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteMany
+    size: 2Gi
+    mountSubPath: "logs"
+    storageClass: "manual"
 
-  ## database data Persistent Volume Storage Class
-  ## If defined, storageClassName: <storageClass>
-  ## If set to "-", storageClassName: "", which disables dynamic provisioning
-  ## If undefined (the default) or set to null, no storageClassName spec is
-  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-  ##   GKE, AWS & OpenStack)
-  ##
-  # storageClass: "-"
-  accessMode: ReadWriteMany
-  size: 2Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: aaf/data
+aaf-cs:
+  persistence:
+    #existingClaim:
+    mountPath: /dockerdata-nfs
+    mountSubPath: "cass"
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    storageClass: "manual"
 
-# Configure resource requests and limits
-resources:
-  small:
-    limits:
-      cpu: 2
-      memory: 3Gi
-    requests:
-      cpu: 2
-      memory: 3Gi
-  large:
-    limits:
-      cpu: 4
-      memory: 6Gi
-    requests:
-      cpu: 4
-      memory: 6Gi
-  unlimited: {}
+resources: {}

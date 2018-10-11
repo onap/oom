@@ -30,25 +30,31 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{ include "common.name" . }}
       containers:
-      - args:
+      - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}
+        command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","onap"]
         ports:
         - containerPort: {{ .Values.service.externalPort }}
         - containerPort: {{ .Values.service.externalPort2 }}
         - containerPort: {{ .Values.service.externalPort3 }}
         - containerPort: {{ .Values.service.externalPort4 }}
+        env:
+        - name: CASSANDRA_CLUSTER_NAME
+          value: "osaaf"
+        - name: CASSANDRA_DC
+          value: "dc1"
+        - name: HEAP_NEWSIZE
+          value: "512M"
+        - name: MAX_HEAP_SIZE
+          value: "1024M"
         volumeMounts:
-        - mountPath: /data
-          name: aaf-cs-data
+        - mountPath: /var/lib/cassandra
+          name: cassandra-storage
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -57,25 +63,12 @@ spec:
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort3 }}
+          exec:
+            command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","wait"]
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        lifecycle:
-          postStart:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - >
-                /bin/sleep {{ .Values.readiness.initialDelaySeconds }};
-                cd /data/;
-                cqlsh -u root -p root -f keyspace.cql ;
-                cqlsh -u root -p root -f init.cql ;
-                cqlsh -u root -p root -f osaaf.cql ;
-                cqlsh -u root -p root -f temp_identity.cql
         resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . | indent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -85,11 +78,15 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: aaf-cs-data
-          secret:
-            secretName: {{ include "common.fullname" . }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: cassandra-storage
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
