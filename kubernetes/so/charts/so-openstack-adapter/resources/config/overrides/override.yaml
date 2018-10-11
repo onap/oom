@@ -16,8 +16,8 @@ server:
 spring:
   datasource:
     url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_ADMIN_USERNAME}
+    password: ${DB_ADMIN_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
     dbcp2:
       initial-size: 5
@@ -112,11 +112,20 @@ cloud_config:
       identity_url: "https://identity.api.rackspacecloud.com/v2.0"
       mso_id: "RACKSPACE_ACCOUNT_ID"
       mso_pass: "RACKSPACE_ACCOUNT_APIKEY"
-      admin_tenant: "service"
+      admin_tenant: "{{ .Values.config.openStackServiceTenantName }}"
       member_role: "admin"
       tenant_metadata: true
       identity_server_type: "KEYSTONE"
       identity_authentication_type: "RACKSPACE_APIKEY"
+    DEFAULT_KEYSTONE:
+      identity_url: "{{ .Values.config.openStackKeyStoneUrl }}/v2.0"
+      mso_id: "{{ .Values.config.openStackUserName }}"
+      mso_pass: "{{ .Values.config.openStackEncryptedPasswordHere }}"
+      admin_tenant: "{{ .Values.config.openStackServiceTenantName }}"
+      member_role: "admin"
+      tenant_metadata: true
+      identity_server_type: "KEYSTONE"
+      identity_authentication_type: "USERNAME_PASSWORD"
   cloud_sites:
     Dallas:
       region_id: "DFW"
@@ -133,8 +142,13 @@ cloud_config:
       clli: "ORD"
       aic_version: "2.5"
       identity_service_id: "RAX_KEYSTONE"
-    DEFAULT:
-      region_id: "DFW"
-      clli: "DFW"
+    RegionOne:
+      region_id: "RegionOne"
+      clli: "RegionOne"
       aic_version: "2.5"
-      identity_service_id: "RAX_KEYSTONE"
+      identity_service_id: "DEFAULT_KEYSTONE"
+    DEFAULT:
+      region_id: "{{ .Values.config.openStackRegion }}"
+      clli: "{{ .Values.config.openStackRegion }}"
+      aic_version: "2.5"
+      identity_service_id: "DEFAULT_KEYSTONE"
