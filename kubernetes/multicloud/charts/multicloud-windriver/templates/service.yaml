@@ -18,7 +18,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.service.name }}
+  name: {{ include "common.servicename" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -32,7 +32,7 @@ metadata:
       "version": "v0",
       "url": "/api/multicloud-titanium_cloud/v0",
       "protocol": "REST",
-      "port": "{{ .Values.service.internalPort }}",
+      "port": "{{ .Values.service.externalPort }}",
       "visualRange": "1"
     },
     {
@@ -40,7 +40,7 @@ metadata:
       "version": "v0",
       "url": "/api/multicloud-titaniumcloud/v0",
       "protocol": "REST",
-      "port": "{{ .Values.service.internalPort }}",
+      "port": "{{ .Values.service.externalPort }}",
       "visualRange": "1"
     },
     {
@@ -48,7 +48,7 @@ metadata:
       "version": "v1",
       "url": "/api/multicloud-titaniumcloud/v1",
       "protocol": "REST",
-      "port": "{{ .Values.service.internalPort }}",
+      "port": "{{ .Values.service.externalPort }}",
       "visualRange": "1"
     }
     ]'
@@ -56,13 +56,13 @@ metadata:
 spec:
   ports:
   {{ if eq .Values.service.type "NodePort" }}
-  - name: http-{{ .Values.service.name }}
-    port: {{ .Values.service.externalPort }}
+  - port: {{ .Values.service.externalPort }}
     nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+    name: {{ .Values.service.portName }}
   {{ else }}
   - port: {{ .Values.service.externalPort }}
     targetPort: {{ .Values.service.internalPort }}
-    name: http-{{ .Values.service.name }}
+    name: {{ .Values.service.portName }}
   {{ end }}
   selector:
     app: {{ include "common.name" . }}
