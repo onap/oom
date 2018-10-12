@@ -37,8 +37,8 @@ GLOBAL_ASDC_BE_ONBOARD_PORT = "8081"
 GLOBAL_ASDC_BE_USERNAME = "beep"
 GLOBAL_ASDC_BE_PASSWORD = "boop"
 # clamp info - everything is from the private oam network (also called onap private network)
-GLOBAL_CLAMP_SERVER_PROTOCOL = "http"
-GLOBAL_CLAMP_SERVER_PORT = "8080"
+GLOBAL_CLAMP_SERVER_PROTOCOL = "https"
+GLOBAL_CLAMP_SERVER_PORT = "8443"
 # nbi info - everything is from the private oam network (also called onap private network)
 GLOBAL_NBI_SERVER_PROTOCOL = "http"
 GLOBAL_NBI_SERVER_PORT = "8080"
@@ -147,4 +147,3 @@ GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""
 GLOBAL_DNS_TRAFFIC_DURATION = "600"
 # location where heat templates are loaded from
 GLOBAL_HEAT_TEMPLATES_FOLDER = "/var/opt/OpenECOMP_ETE/demo/heat"
-
