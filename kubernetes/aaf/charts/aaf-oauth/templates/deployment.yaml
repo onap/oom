@@ -31,6 +31,25 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
+      - name: {{ .Chart.Name }}-config-container
+        image: "{{ include "common.repository" . }}/{{ .Values.image_config }}"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: "/opt/app/osaaf"
+            name: {{ .Chart.Name }}-config-vol
+        env:
+          - name: AAF_ENV
+            value: "{{ .Values.aaf_env }}"
+          - name: AAF_REGISTER_AS
+            value: "{{ .Chart.Name }}.onap"
+          - name: AAF_LOCATOR_AS
+            value: "{{ .Values.aaf_locator_as }}"
+          - name: LATITUDE
+            value: "{{ .Values.cadi_latitude }}"
+          - name: LONGITUDE
+            value: "{{ .Values.cadi_longitude }}"
+          - name: CASS_HOST
+            value: "{{ .Values.aaf_cass_host }}"
       - name: {{ include "common.name" . }}-job-complete
         command:
         - /root/job_complete.py
@@ -47,7 +66,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - name: {{ include "common.name" . }}-readiness
         command:
-          - /root/ready.py
+        - /root/ready.py
         args:
         - --container-name
         - aaf-locate
@@ -66,7 +85,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: "/opt/app/osaaf"
-          name: shared-config-volume
+          name: {{ .Chart.Name }}-config-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -96,6 +115,8 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: {{ .Chart.Name }}-config-vol
+        emptyDir: {}
       - name: shared-config-volume
       {{- if .Values.global.persistence.enabled }}
         persistentVolumeClaim:
