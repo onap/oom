@@ -38,6 +38,7 @@ Flags:
       --set stringArray          set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)
       --set-string stringArray   set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)
   -f, --values valueFiles        specify values in a YAML file or a URL(can specify multiple) (default [])
+      --verbose                  enables full helm install/upgrade output during deploy
 EOF
 }
 
@@ -77,7 +78,34 @@ generate_overrides() {
   done
 }
 
+resolve_deploy_flags() {
+  DEPLOY_FLAGS=$1
+  for flag in -f --values --set --set-string
+  do
+    while true ; do
+      # extract value of flag
+      length=${#flag}
+      length=$((length+1))
+      FLAG_VALUE="$(echo $DEPLOY_FLAGS | sed -n 's/.*\('$flag'\).\s*/\1/p' | cut -c$length- | cut -d' ' -f1)"
+
+      # purge flag and value from
+      DEPLOY_FLAGS="${DEPLOY_FLAGS//$flag $FLAG_VALUE/}"
+      DEPLOY_FLAGS=$(echo $DEPLOY_FLAGS | awk '{$1=$1};1')
+      if [ -z "$FLAG_VALUE" ] ; then
+        break
+      fi
+    done
+  done
+  echo "$DEPLOY_FLAGS"
+}
+
 deploy() {
+  # validate params
+  if [[ -z "$1" || -z "$2" ]]; then
+    usage
+    exit 0
+  fi
+
   RELEASE=$1
   CHART_URL=$2
   FLAGS=${@:3}
@@ -86,23 +114,50 @@ deploy() {
   CACHE_DIR=~/.helm/plugins/deploy/cache
   CHART_DIR=$CACHE_DIR/$CHART_NAME
   CACHE_SUBCHART_DIR=$CHART_DIR-subcharts
+  LOG_DIR=$CHART_DIR/logs
+
+  # determine if verbose output is enabled
+  VERBOSE="false"
+  if [[ $FLAGS = *"--verbose"* ]]; then
+    FLAGS="$(echo $FLAGS| sed -n 's/--verbose//p')"
+    VERBOSE="true"
+  fi
+
   # should pass all flags instead
-  NAMESPACE="$(echo $FLAGS | sed -n 's/.*\(namespace\).\s*/\1/p' | cut -c10-)"
- 
+  NAMESPACE="$(echo $FLAGS | sed -n 's/.*\(namespace\).\s*/\1/p' | cut -c10- | cut -d' ' -f1)"
+
+  # Remove all override values passed in as arguments. These will be used during dry run
+  # to resolve computed override values. Remaining flags will be passed on during
+  # actual upgrade/install of parent and subcharts.
+  DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
+
+  # determine if upgrading individual subchart or entire parent + subcharts
+  SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
+  if [[ ! -d "$CACHE_SUBCHART_DIR/$SUBCHART_RELEASE" ]]; then
+    SUBCHART_RELEASE=
+  else
+    # update specified subchart without parent
+    RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
+  fi
+
   # clear previously cached charts
   rm -rf $CACHE_DIR
+
+  # create log driectory
+  mkdir -p $LOG_DIR
 
   # fetch umbrella chart (parent chart containing subcharts)
   if [[ -d "$CHART_URL" ]]; then
     mkdir -p $CHART_DIR
     cp -R $CHART_URL/* $CHART_DIR/
 
-    cd $CHART_DIR/charts/
-    for subchart in * ; do
-      tar xzf ${subchart}
+    charts=$CHART_DIR/charts/*
+    for subchart in $charts ; do
+      tar xzf ${subchart} -C $CHART_DIR/charts/
     done
-    rm -rf *.tgz
+    rm -rf $CHART_DIR/charts/*.tgz
   else
+    echo "fetching $CHART_URL"
     helm fetch $CHART_URL --untar --untardir $CACHE_DIR
   fi
 
@@ -126,29 +181,57 @@ deploy() {
   generate_overrides $COMPUTED_OVERRIDES $GLOBAL_OVERRIDES
 
   # upgrade/install parent chart first
-  helm upgrade -i $RELEASE $CHART_DIR --namespace $NAMESPACE -f $COMPUTED_OVERRIDES
+  if [[ -z "$SUBCHART_RELEASE" ]]; then
+    LOG_FILE=$LOG_DIR/${RELEASE}.log
+    :> $LOG_FILE
+
+    helm upgrade -i $RELEASE $CHART_DIR $DEPLOY_FLAGS -f $COMPUTED_OVERRIDES \
+     > $LOG_FILE.log 2>&1
+
+    echo "release $RELEASE deployed"
+
+    if [[ $VERBOSE == "true" ]]; then
+      cat $LOG_FILE
+    fi
+  fi
 
   # parse computed overrides - will use to determine if a subchart is "enabled"
   eval $(parse_yaml $COMPUTED_OVERRIDES "computed_")
 
   # upgrade/install each "enabled" subchart
-  cd $CACHE_SUBCHART_DIR
+  cd $CACHE_SUBCHART_DIR/
   for subchart in * ; do
     VAR="computed_${subchart}_enabled"
     COMMAND="$"$VAR
     eval "SUBCHART_ENABLED=$COMMAND"
     if [[ $SUBCHART_ENABLED == "true" ]]; then
-      SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
-      helm upgrade -i "${RELEASE}-${subchart}" $CACHE_SUBCHART_DIR/$subchart \
-       --namespace $NAMESPACE -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES
+      if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE == "$subchart" ]]; then
+        LOG_FILE=$LOG_DIR/"${RELEASE}-${subchart}".log
+        :> $LOG_FILE
+
+        SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
+        helm upgrade -i "${RELEASE}-${subchart}" $CACHE_SUBCHART_DIR/$subchart \
+         $DEPLOY_FLAGS -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES \
+         > $LOG_FILE 2>&1
+
+        echo "release ${RELEASE}-${subchart} deployed"
+
+        if [[ $VERBOSE == "true" ]]; then
+          cat $LOG_FILE
+        fi
+      fi
+    else
+      array=($(helm ls -q | grep "${RELEASE}-${subchart}"))
+      n=${#array[*]}
+      for (( i = n-1; i >= 0; i-- )); do
+        helm del "${array[i]}" --purge
+      done
     fi
   done
-}
 
-if [[ $# < 2 ]]; then
-  usage
-  exit 0
-fi
+  # report on success/failures of installs/upgrades
+  helm ls | grep FAILED | grep $RELEASE
+}
 
 case "${1:-"help"}" in
   "help")
