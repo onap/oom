@@ -31,23 +31,30 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-job-complete
-        command:
-        - /root/job_complete.py
-        args:
-        - --job-name
-        - {{ .Release.Name }}-create-config
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+      - name: {{ include "common.name" . }}-config-container
+        image: "{{ include "common.repository" . }}/{{ .Values.global.configImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: "/opt/app/osaaf"
+            name: {{ include "common.name" . }}-config-vol
+        env:
+          - name: HOSTNAME
+            value: "{{ .Values.global.cadi.hostname }}"
+          - name: AAF_ENV
+            value: "{{ .Values.global.cadi.aaf_env }}"
+          - name: AAF_REGISTER_AS
+            value: "{{ .Values.aaf_register_as }}"
+          - name: LATITUDE
+            value: "{{ .Values.global.cadi.cadi_latitude }}"
+          - name: LONGITUDE
+            value: "{{ .Values.global.cadi.cadi_longitude }}"
+          - name: CASS_HOST
+            value: "{{ .Values.global.cadi.cass_host }}"
+          - name: AAF_LOCATOR_AS
+            value: "{{ .Values.global.cadi.cadi_locator_as }}"
       - name: {{ include "common.name" . }}-readiness
         command:
-          - /root/ready.py
+        - /root/ready.py
         args:
         - --container-name
         - aaf-locate
@@ -66,7 +73,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: "/opt/app/osaaf"
-          name: shared-config-volume
+          name: {{ include "common.name" . }}-config-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -96,12 +103,7 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: shared-config-volume
-      {{- if .Values.global.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-config
-      {{- else }}
+      - name: {{ include "common.name" . }}-config-vol
         emptyDir: {}
-      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
