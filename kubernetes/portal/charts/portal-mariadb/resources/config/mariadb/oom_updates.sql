@@ -37,5 +37,5 @@ update fn_app set app_url = 'https://{{.Values.config.vidHostName}}:{{.Values.co
 update fn_app set app_url = 'http://{{.Values.config.aaiSparkyHostName}}:{{.Values.config.aaiSparkyPort}}/services/aai/webapp/index.html#/viewInspect', app_rest_endpoint = 'http://aai-sparky-be.{{.Release.Namespace}}:9517/api/v2' where app_name = 'A&AI UI';
 --cli => 8080:30260
 update fn_app set app_url = 'http://{{.Values.config.cliHostName}}:{{.Values.config.cliPort}}/', app_type = 1 where app_name = 'CLI';
---msb-discovery => 10081:30281  this is clearly incorrect
-update fn_app set app_url = 'http://{{.Values.config.msbDiscoveryHostName}}:{{.Values.config.msbDiscoveryPort}}/iui/microservices/default.html' where app_name = 'MSB';
+--msb-iag => 80:30280
+update fn_app set app_url = 'http://{{.Values.config.msbHostName}}:{{.Values.config.msbPort}}/iui/microservices/default.html' where app_name = 'MSB';
