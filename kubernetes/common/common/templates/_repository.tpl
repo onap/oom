@@ -41,6 +41,7 @@
 */}}
 {{- define "common.repository.secret" -}}
   {{- $repo := include "common.repository" . }}
+  {{- $repo := default "nexus3.onap.org:10001" $repo }}
   {{- $cred := .Values.global.repositoryCred }}
   {{- $mail := default "@" $cred.mail }}
   {{- $auth := printf "%s:%s" $cred.user $cred.password | b64enc }}
