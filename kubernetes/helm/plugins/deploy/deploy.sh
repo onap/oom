@@ -67,11 +67,11 @@ generate_overrides() {
     if [[ $START == "global:" ]]; then
       echo "global:" > $GLOBAL_OVERRIDES
       cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
-        | sed -n '/'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES  
+        | sed -n '/'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
     else
       SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(cut -d':' -f1 <<<"$START")"
       if [[ -d "$SUBCHART_DIR" ]]; then
-        cat $COMPUTED_OVERRIDES | sed -n '/'"$START"'/,/'"$END"'/p' \
+        cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
           | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
       fi
     fi
@@ -121,6 +121,10 @@ deploy() {
   if [[ $FLAGS = *"--verbose"* ]]; then
     FLAGS="$(echo $FLAGS| sed -n 's/--verbose//p')"
     VERBOSE="true"
+  fi
+  if [[ $FLAGS = *"--dry-run"* ]]; then
+    VERBOSE="true"
+    FLAGS="$FLAGS --debug"
   fi
 
   # should pass all flags instead
@@ -188,10 +192,10 @@ deploy() {
     helm upgrade -i $RELEASE $CHART_DIR $DEPLOY_FLAGS -f $COMPUTED_OVERRIDES \
      > $LOG_FILE.log 2>&1
 
-    echo "release $RELEASE deployed"
-
     if [[ $VERBOSE == "true" ]]; then
       cat $LOG_FILE
+    else
+      echo "release $RELEASE deployed"
     fi
   fi
 
@@ -214,10 +218,10 @@ deploy() {
          $DEPLOY_FLAGS -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES \
          > $LOG_FILE 2>&1
 
-        echo "release ${RELEASE}-${subchart} deployed"
-
         if [[ $VERBOSE == "true" ]]; then
           cat $LOG_FILE
+        else
+          echo "release ${RELEASE}-${subchart} deployed"
         fi
       fi
     else
