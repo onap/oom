@@ -50,9 +50,6 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          envFrom:
-          - configMapRef:
-              name: {{ include "common.fullname" . }}-config
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
@@ -62,7 +59,7 @@ spec:
               port: {{ .Values.service.internalPort }}
               path: /webapi/info
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}          
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
           readinessProbe:
             httpGet:
               port: {{ .Values.service.internalPort }}
@@ -74,11 +71,13 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - name: {{ include "common.name" . }}-config
-            mountPath: /opt/app/config/conf
-            subPath: buscontroller.env
 
-# NOTE: the basename of the subdirectory specified in mountPath is important - it matches the DBCL API URI
+# NOTE: on the following several configMaps, careful to include / at end
+#       since there may be more than one file in each mountPath
+          - name: {{ include "common.name" . }}-config
+            mountPath: /opt/app/config/conf/
+
+# NOTE: the basename of the subdirectory is important - it matches the DBCL API URI
           - name: {{ include "common.name" . }}-dmaap
             mountPath: /opt/app/config/dmaap/
           - name: {{ include "common.name" . }}-dcaelocations
