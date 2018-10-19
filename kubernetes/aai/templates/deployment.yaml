@@ -39,7 +39,11 @@ spec:
         - /root/ready.py
         args:
         - --container-name
+        - aai-resources
+        - --container-name
         - aai-traversal
+        - --container-name
+        - aai-graphadmin
         env:
         - name: NAMESPACE
           valueFrom:
@@ -75,8 +79,17 @@ spec:
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /aai/util/echo
             port: {{ .Values.service.internalPort2 }}
+            scheme: HTTPS
+            httpHeaders:
+            - name: X-FromAppId
+              value: OOM_ReadinessCheck
+            - name: X-TransactionId
+              value: {{ uuidv4 }}
+            - name: Accept
+              value: application/json
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources:
