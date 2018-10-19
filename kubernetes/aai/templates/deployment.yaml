@@ -49,6 +49,34 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aai-resources
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aai-graphadmin
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ .Values.global.dockerhubRepository | default .Values.dockerhubRepository }}/{{ .Values.image }}"
@@ -75,8 +103,17 @@ spec:
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /aai/util/echo
             port: {{ .Values.service.internalPort2 }}
+            scheme: HTTPS
+            httpHeaders:
+            - name: X-FromAppId
+              value: OOM_ReadinessCheck
+            - name: X-TransactionId
+              value: {{ uuidv4 }}
+            - name: Accept
+              value: application/json
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources:
