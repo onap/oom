@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-confd
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 data:
-{{ tpl (.Files.Glob "resources/config/mariadb/conf.d/*").AsConfig . | indent 2 }}
----
-{{- if .Values.externalConfig }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-external-config
-  namespace: {{ include "common.namespace" . }}
-data:
-  my_extra.cnf: |
-{{ .Values.externalConfig | indent 4 }}
-{{- end -}}
+{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
