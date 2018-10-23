@@ -15,21 +15,21 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: vid-config-galera
+  name: {{ include "common.fullname" . }}-galera-config
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: vid-config-galera
+    app: {{ include "common.name" . }}-job
     release: {{ .Release.Name }}
 spec:
   template:
     metadata:
       labels:
+        app: {{ include "common.name" . }}-job
         release: {{ .Release.Name }}
-      name: vid-galera-init
     spec:
       initContainers:
 #This container checks that all galera instances are up before initializing it.
-      - name: vid-init-galera-readiness
+      - name: {{ include "common.name" . }}-readiness
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
@@ -46,7 +46,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       containers:
-      - name: vid-config-galeradb
+      - name: {{ include "common.name" . }}-job
         image: {{ .Values.mariadb_image }}
         imagePullPolicy: "{{ .Values.pullPolicy }}"
         volumeMounts:
