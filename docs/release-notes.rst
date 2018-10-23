@@ -425,7 +425,7 @@ The Amsterdam release is the first release of the ONAP Operations Manager (OOM).
 
 The main goal of the Amsterdam release was to:
 
-    - Support Flexible Platform Deployment via Kubernetes of fully containerized OMAP components - on any type of environment.
+    - Support Flexible Platform Deployment via Kubernetes of fully containerized ONAP components - on any type of environment.
     - Support State Management of ONAP platform components.
     - Support full production ONAP deployment and any variation of component level deployment for development.
     - Platform Operations Orchestration / Control Loop Actions.
