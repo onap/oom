@@ -1,0 +1,134 @@
+#################################################################
+# Global configuration defaults.
+#################################################################
+global: # global defaults
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+
+subChartsOnly:
+  enabled: true
+
+# application image
+repository: nexus3.onap.org:10001
+image: onap/optf-cmso-service:latest
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+config:
+  mysqlPassword: beer
+  dataRootDir: /dockerdata-nfs
+
+# subchart configuration
+mariadb:
+  nameOverride: cmso
+
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+
+service:
+  type: NodePort
+  name: cmso
+  portName: cmso
+  internalPort: 8080
+  nodePort: 23
+  # as of 20181022 port 23 is reserved for cmso 
+  # see https://wiki.onap.org/display/DW/OOM+NodePort+List
+
+
+ingress:
+  enabled: false
+
+#resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+resources:
+  limits:
+    cpu: 1
+    memory: 1.2Gi
+  requests:
+    cpu: 10m
+    memory: 800Mi
+
+---
+cmsoconfig:
+  cmso_properties:
+    cmso_aaf_enabled: "false"
+    cmso_cm_dispatch_immediate_enabled: "true"
+    cmso_cm_dispatch_lead_time_ms: "1000"
+    cmso_cm_dispatcher_lead_time_ms: "5000"
+    cmso_cm_polling_job_interval_ms: "10000"
+    cmso_cm_polling_job_lookahead_intervals: "5"
+    cmso_database_password: "beer"
+    cmso_dispatch_url: "http://localhost:8089"
+    cmso_optimizer_job_interval_ms: "10000"
+    cmso_status_job_interval_ms: "60000"
+    cmso_swagger_enabled: "true"
+    hibernate_id_new_generator_mappings: "false"
+    logging_level_org_hibernate: "TRACE"
+    logging_level_org_hibernate_SQL: "TRACE"
+    loopback_mso_requestId: "dummy123"
+    mechid_pass: "enc:bfodXf8qRfCqMvlxVBYNWQ"
+    mechid_user: "cmso@onap.org"
+    org_quartz_jobStore_class: "org.quartz.simpl.RAMJobStore"
+    so_pass: "enc:bfodXf8qRfCqMvlxVBYNWQ"
+    so_polling_interval_ms: "10000"
+    so_url: "http://localhost:8080/cmso/v1/loopbacktest/onap/so/infra/orchestrationRequests/v7"
+    so_user: "cmso@onap.org"
+    spring_datasource_driver_class_name: "org.mariadb.jdbc.Driver"
+    spring_datasource_initialize: "false"
+    spring_datasource_password: "beer"
+    spring_datasource_tomcat_initialSize: "5"
+    spring_datasource_tomcat_max_active: "25"
+    spring_datasource_tomcat_max_wait: "10000"
+    spring_datasource_tomcat_test_on_borrow: "true"
+    spring_datasource_url: "jdbc:mariadb://localhost:3306/cmso"
+    spring_datasource_username: "root"
+    spring_jpa_database_platform: "org.hibernate.dialect.MySQL5InnoDBDialect"
+    spring_jpa_hibernate_ddl_auto: "none"
+    spring_jpa_hibernate_id_new_generator_mappings: "false"
+    spring_jpa_hibernate_naming_physical_strategy: "org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl"
+    spring_jpa_hibernate_naming_strategy: "org.hibernate.cfg.EJB3NamingStrategy"
+    spring_jpa_show_sql: "true"
+  optimizer_properties:
+    cmso_optimizer_callbackurl: "http://localhost:8080/cmso/v1/optimizerCallback"
+    cmso_optimizer_url: "http://localhost:8080/cmso/v1/loopbacktest/optimizer"
+  ticketmgt_properties:
+    tm_approvalStatus: "Approved|Scheduled,Approved|Assigned"
+    tm_closePath: "http://localhost:8080/cmso/v1/tm/closeCancelChangeRecord"
+    tm_createPath: "http://localhost:8080/cmso/v1/tm/createChangeRecord"
+    tm_getPath: "http://localhost:8080/cmso/v1/tm/getChangeRecord"
+    tm_template_folder: "data/templates/tm"
+    tm_updatePath: "http://localhost:8080/cmso/v1/tm/updateChangeRecord"
+    tm_vnfs_per_ticket: "1"
