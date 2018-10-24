@@ -42,22 +42,6 @@ Flags:
 EOF
 }
 
-parse_yaml() {
-  local prefix=$2
-  local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-  sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
-       -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-  awk -F$fs '{
-     indent = length($1)/2;
-     vname[indent] = $2;
-     for (i in vname) {if (i > indent) {delete vname[i]}}
-     if (length($3) > 0) {
-        vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-        printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-     }
-  }'
-}
-
 generate_overrides() {
   SUBCHART_NAMES=($(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'))
 
@@ -79,22 +63,19 @@ generate_overrides() {
 }
 
 resolve_deploy_flags() {
-  DEPLOY_FLAGS=$1
-  for flag in -f --values --set --set-string
-  do
-    while true ; do
-      # extract value of flag
-      length=${#flag}
-      length=$((length+1))
-      FLAG_VALUE="$(echo $DEPLOY_FLAGS | sed -n 's/.*\('$flag'\).\s*/\1/p' | cut -c$length- | cut -d' ' -f1)"
-
-      # purge flag and value from
-      DEPLOY_FLAGS="${DEPLOY_FLAGS//$flag $FLAG_VALUE/}"
-      DEPLOY_FLAGS=$(echo $DEPLOY_FLAGS | awk '{$1=$1};1')
-      if [ -z "$FLAG_VALUE" ] ; then
-        break
-      fi
-    done
+  flags=($1)
+  n=${#flags[*]}
+  for (( i = 0; i < n; i++ )); do
+    PARAM=${flags[i]}
+    if [[ $PARAM == "-f" || \
+          $PARAM == "--values" || \
+          $PARAM == "--set" || \
+          $PARAM == "--set-string" ]]; then
+       # skip param and its value
+       i=$((i + 1))
+    else
+      DEPLOY_FLAGS="$DEPLOY_FLAGS $PARAM"
+    fi
   done
   echo "$DEPLOY_FLAGS"
 }
@@ -195,25 +176,25 @@ deploy() {
     if [[ $VERBOSE == "true" ]]; then
       cat $LOG_FILE
     else
-      echo "release $RELEASE deployed"
+      echo "release \"$RELEASE\" deployed"
     fi
   fi
-
-  # parse computed overrides - will use to determine if a subchart is "enabled"
-  eval $(parse_yaml $COMPUTED_OVERRIDES "computed_")
 
   # upgrade/install each "enabled" subchart
   cd $CACHE_SUBCHART_DIR/
   for subchart in * ; do
-    VAR="computed_${subchart}_enabled"
-    COMMAND="$"$VAR
-    eval "SUBCHART_ENABLED=$COMMAND"
-    if [[ $SUBCHART_ENABLED == "true" ]]; then
+    SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
+
+    SUBCHART_ENABLED=0
+    if [[ -f $SUBCHART_OVERRIDES ]]; then
+      SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+    fi
+
+    if [[ $SUBCHART_ENABLED -eq 1 ]]; then
       if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE == "$subchart" ]]; then
         LOG_FILE=$LOG_DIR/"${RELEASE}-${subchart}".log
         :> $LOG_FILE
 
-        SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
         helm upgrade -i "${RELEASE}-${subchart}" $CACHE_SUBCHART_DIR/$subchart \
          $DEPLOY_FLAGS -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES \
          > $LOG_FILE 2>&1
@@ -221,7 +202,7 @@ deploy() {
         if [[ $VERBOSE == "true" ]]; then
           cat $LOG_FILE
         else
-          echo "release ${RELEASE}-${subchart} deployed"
+          echo "release \"${RELEASE}-${subchart}\" deployed"
         fi
       fi
     else
