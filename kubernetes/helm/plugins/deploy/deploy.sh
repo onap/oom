@@ -55,8 +55,13 @@ generate_overrides() {
     else
       SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(cut -d':' -f1 <<<"$START")"
       if [[ -d "$SUBCHART_DIR" ]]; then
-        cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
-          | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+        if [[ -z "$END" ]]; then
+          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
+            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+        else
+          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
+            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+        fi
       fi
     fi
   done
