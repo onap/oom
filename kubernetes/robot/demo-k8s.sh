@@ -160,6 +160,10 @@ do
 			VARIABLES="$VARIABLES -v HB_SERVICE:$1"
 			shift
 			;;
+    	cds)
+			TAG="cds"
+			shift
+			;;
     	*)
 			usage
 			exit
