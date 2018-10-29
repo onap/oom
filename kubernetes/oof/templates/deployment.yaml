@@ -37,12 +37,6 @@ spec:
         args:
         - --container-name
         - pdp
-        - --container-name
-        - aaf-service
-        - --container-name
-        - aaf-sms
-        - --container-name
-        - oof-has-api
         env:
         - name: NAMESPACE
           valueFrom:
@@ -52,6 +46,24 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - sh
+        - -c
+        - resp="FAILURE";
+          until [ $resp = "200" ]; do
+          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/osdf/secret);
+          echo $resp;
+          sleep 2;
+          done
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-osdf-sms-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
