@@ -45,7 +45,7 @@ function usage
 	echo "       demo.sh <namespace> deleteVNF <module_name from instantiateVFW>"
     echo "               - Delete the module created by instantiateVFW"
 	echo " "
-	echo "       demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service>"
+	echo "       demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
     echo "               - Run heatbridge against the stack for the given service instance and service"
 }
 
@@ -149,8 +149,8 @@ do
     	heatbridge)
 			TAG="heatbridge"
 			shift
-			if [ $# -ne 3 ];then
-				echo "Usage: demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service>"
+			if [ $# -ne 4 ];then
+				echo "Usage: demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
 				exit
 			fi
 			VARIABLES="$VARIABLES -v HB_STACK:$1"
@@ -158,6 +158,8 @@ do
 			VARIABLES="$VARIABLES -v HB_SERVICE_INSTANCE_ID:$1"
 			shift
 			VARIABLES="$VARIABLES -v HB_SERVICE:$1"
+			shift
+			VARIABLES="$VARIABLES -v HB_IPV4_OAM_ADDRESS:$1"
 			shift
 			;;
     	cds)
