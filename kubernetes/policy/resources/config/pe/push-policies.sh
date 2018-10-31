@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
+# Modifications Copyright © 2018 AT&T. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +74,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
         "RULE": {
             "templateName": "ClosedLoopControlName",
             "closedLoopControlName": "ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3",
-            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3%0D%0A++trigger_policy%3A+unique-policy-id-1-scale-up%0D%0A++timeout%3A+1200%0D%0A++abatement%3A+false%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-1-scale-up%0D%0A++++name%3A+Create+a+new+VF+Module%0D%0A++++description%3A%0D%0A++++actor%3A+SO%0D%0A++++recipe%3A+VF+Module+Create%0D%0A++++target%3A%0D%0A++++++type%3A+VNF%0D%0A++++retry%3A+0%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+            "controlLoopYaml": "controlLoop%3A%0A++version%3A+2.0.0%0A++controlLoopName%3A+ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3%0A++trigger_policy%3A+unique-policy-id-1-scale-up%0A++timeout%3A+1200%0A++abatement%3A+false%0Apolicies%3A%0A++-+id%3A+unique-policy-id-1-scale-up%0A++++name%3A+Create+a+new+VF+Module%0A++++description%3A%0A++++actor%3A+SO%0A++++recipe%3A+VF+Module+Create%0A++++target%3A%0A++++++type%3A+VNF%0A++++payload%3A%0A++++++configurationParameters%3A+'%5B%7B%22ip-addr%22%3A%22%24.vf-module-topology.vf-module-parameters.param%5B9%5D%22%2C%22oam-ip-addr%22%3A%22%24.vf-module-topology.vf-module-parameters.param%5B16%5D%22%2C%22enabled%22%3A%22%24.vf-module-topology.vf-module-parameters.param%5B23%5D%22%7D%5D'%0A++++retry%3A+0%0A++++timeout%3A+1200%0A++++success%3A+final_success%0A++++failure%3A+final_failure%0A++++failure_timeout%3A+final_failure_timeout%0A++++failure_retries%3A+final_failure_retries%0A++++failure_exception%3A+final_failure_exception%0A++++failure_guard%3A+final_failure_guard"
         }
     }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
