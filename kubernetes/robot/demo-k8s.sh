@@ -166,6 +166,10 @@ do
 			TAG="cds"
 			shift
 			;;
+        distributeVFWNG)
+                        TAG="distributeVFWNG"
+                        shift
+                        ;;
     	*)
 			usage
 			exit
