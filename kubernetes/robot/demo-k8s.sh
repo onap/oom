@@ -1,4 +1,5 @@
-# Copyright © 2018 Amdocs, Bell Canada
+#!/bin/bash
+# Copyright (C) 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-#!/bin/bash
-
 #
 # Execute tags built to support the hands on demo,
 #
@@ -47,6 +45,11 @@ function usage
 	echo " "
 	echo "       demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
     echo "               - Run heatbridge against the stack for the given service instance and service"
+	echo " "
+	echo "       demo.sh <namespace> vfwclosedloop <pgn-ip-address>"
+        echo "           - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
+        echo "             kicks in to modulate the rates back to medium"
+	echo " "
 }
 
 # Set the defaults
@@ -168,6 +171,12 @@ do
 			;;
         distributeVFWNG)
                         TAG="distributeVFWNG"
+                        shift
+                        ;;
+        vfwclosedloop)
+                        TAG="vfwclosedloop"
+                        shift
+                        VARIABLES="$VARIABLES -v pkg_host:$1"
                         shift
                         ;;
     	*)
