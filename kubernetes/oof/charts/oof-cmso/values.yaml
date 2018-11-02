@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-confd
-  namespace: {{ include "common.namespace" . }}
-data:
-{{ tpl (.Files.Glob "resources/config/mariadb/conf.d/*").AsConfig . | indent 2 }}
----
-{{- if .Values.externalConfig }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-external-config
-  namespace: {{ include "common.namespace" . }}
-data:
-  my_extra.cnf: |
-{{ .Values.externalConfig | indent 4 }}
-{{- end -}}
+mariadb-galera:
+  replicaCount: 1
+  nameOverride: cmso-db
+  service:
+    type: ClusterIP
+    name: oof-cmso-dbhost
+    portName: cmso-dbhost
+  nfsprovisionerPrefix: cmso
+  sdnctlPrefix: cmso
+  persistence:
+    mountSubPath: cmso/data
+    enabled: true
+  disableNfsProvisioner: true
+  config:
+    mariadbRootPassword: beer
+    userName: cmso-admin
+    userPassword: nimda-osmc
+    mysqlDatabase: cmso
+  externalConfig: |
+    [mysqld]
+    lower_case_table_names = 1

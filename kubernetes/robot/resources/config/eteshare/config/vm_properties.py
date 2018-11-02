@@ -47,6 +47,7 @@ GLOBAL_INJECTED_NEXUS_USERNAME = "docker"
 GLOBAL_INJECTED_OOF_IP_ADDR = "N/A"
 GLOBAL_INJECTED_OOF_HOMING_IP_ADDR = "oof-has-api.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_OOF_SNIRO_IP_ADDR = "oof-osdf.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_OOF_CMSO_IP_ADDR = "oof-cmso.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MSB_IP_ADDR = "msb-iag.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_OPENSTACK_API_KEY = "{{ .Values.config.openStackEncryptedPasswordHere}}"
 GLOBAL_INJECTED_OPENSTACK_PASSWORD = "{{ .Values.openStackPassword }}"
@@ -117,6 +118,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OOF_IP_ADDR" : "N/A",
     "GLOBAL_INJECTED_OOF_HOMING_IP_ADDR" : "oof-has-api.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_OOF_SNIRO_IP_ADDR" : "oof-osdf.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_OOF_CMSO_IP_ADDR" : "oof-cmso.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MSB_IP_ADDR" : "msb-iag.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_OPENSTACK_API_KEY" : "{{ .Values.config.openStackEncryptedPasswordHere}}",
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD" : "{{ .Values.openStackPassword }}",
