@@ -50,7 +50,6 @@ function enable_odl_cluster(){
 }
 
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
-ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-admin}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 SLEEP_TIME=${SLEEP_TIME:-120}
