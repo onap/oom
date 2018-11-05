@@ -46,3 +46,9 @@ DROP TABLE template_doc;
 DROP TABLE template_image;
 DROP TABLE template_bpmn;
 DROP TABLE template;
+
+DROP TABLE dictionary_elements;
+DROP TABLE dictionary;
+DROP TABLE tosca_model_revision;
+DROP TABLE tosca_model;
+

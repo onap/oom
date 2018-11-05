@@ -129,6 +129,53 @@ CREATE TABLE clds_service_cache (
   PRIMARY KEY (invariant_service_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
+CREATE TABLE IF NOT EXISTS tosca_model (
+  tosca_model_id VARCHAR(36) NOT NULL,
+  tosca_model_name VARCHAR(80) NOT NULL,
+  policy_type VARCHAR(80) NULL,
+  user_id VARCHAR(80),
+  timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (tosca_model_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
+CREATE TABLE IF NOT EXISTS tosca_model_revision (
+  tosca_model_revision_id VARCHAR(36) NOT NULL,
+  tosca_model_id VARCHAR(36) NOT NULL,
+  version DOUBLE NOT NULL DEFAULT 1,
+  tosca_model_yaml MEDIUMTEXT NULL,
+  tosca_model_json MEDIUMTEXT NULL,
+  user_id VARCHAR(80),
+  createdTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastUpdatedTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (tosca_model_revision_id),
+  CONSTRAINT tosca_model_revision_ukey UNIQUE KEY (tosca_model_id, version),
+  CONSTRAINT tosca_model_revision_fkey01 FOREIGN KEY (tosca_model_id) REFERENCES tosca_model (tosca_model_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
+CREATE TABLE IF NOT EXISTS dictionary (
+  dictionary_id VARCHAR(36) NOT NULL,
+  dictionary_name VARCHAR(80) NOT NULL,
+  created_by VARCHAR(80),
+  modified_by VARCHAR(80),
+  timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (dictionary_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
+CREATE TABLE IF NOT EXISTS dictionary_elements (
+  dict_element_id VARCHAR(36) NOT NULL,
+  dictionary_id VARCHAR(36) NOT NULL,
+  dict_element_name VARCHAR(250) NOT NULL,
+  dict_element_short_name VARCHAR(80) NOT NULL,
+  dict_element_description VARCHAR(250),
+  dict_element_type VARCHAR(80) NOT NULL,
+  created_by VARCHAR(80),
+  modified_by VARCHAR(80),
+  timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (dict_element_id),
+  CONSTRAINT dictionary_elements_ukey UNIQUE KEY (dict_element_name, dict_element_short_name),
+  CONSTRAINT dictionary_elements_ukey_fkey01 FOREIGN KEY (dictionary_id) REFERENCES dictionary (dictionary_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
 ALTER TABLE template
     ADD CONSTRAINT template_bpmn_id_fkey01
     FOREIGN KEY (template_bpmn_id)
