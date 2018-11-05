@@ -30,6 +30,21 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - message-router
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -63,6 +78,10 @@ spec:
           - mountPath: /opt/app/config/builders
             name: {{ include "common.fullname" . }}-config-builders
             readOnly: true
+          - mountPath: /opt/app/bin/pre_start.sh
+            name: {{ include "common.fullname" . }}-pre-start
+            subPath: pre_start.sh
+            readOnly: false
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -83,5 +102,9 @@ spec:
         - name: {{ include "common.fullname" . }}-config-builders
           configMap:
             name: {{ include "common.fullname" . }}-configmap-builders
+        - name: {{ include "common.fullname" . }}-pre-start
+          configMap:
+            name: {{ include "common.fullname" . }}-pre-start-configmap
+            defaultMode: 0777
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
