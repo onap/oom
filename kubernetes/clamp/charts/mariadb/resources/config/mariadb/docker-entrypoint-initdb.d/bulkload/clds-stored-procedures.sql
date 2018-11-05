@@ -29,6 +29,11 @@ DROP PROCEDURE IF EXISTS get_model;
 DROP PROCEDURE IF EXISTS get_model_template;
 DROP PROCEDURE IF EXISTS set_template;
 DROP PROCEDURE IF EXISTS get_template;
+DROP PROCEDURE IF EXISTS del_model;
+DROP PROCEDURE IF EXISTS set_new_tosca_model_version;
+DROP PROCEDURE IF EXISTS set_tosca_model;
+DROP PROCEDURE IF EXISTS set_dictionary;
+DROP PROCEDURE IF EXISTS set_dictionary_elements;
 DELIMITER //
 CREATE PROCEDURE get_template
   (IN v_template_name VARCHAR(80),
@@ -459,6 +464,77 @@ BEGIN
   UPDATE event
 	SET process_instance_id = v_process_instance_id
 	WHERE event_id = v_event_id;
-END
+END;
+CREATE PROCEDURE del_model
+(IN v_model_name VARCHAR(80))
+BEGIN
+    DECLARE v_model_id VARCHAR(36);
+    SELECT model_id INTO v_model_id from model where model_name = v_model_name;
+    UPDATE model set event_id = null, model_blueprint_id = null, model_prop_id = null where model_id = v_model_id;
+	DELETE from event where model_id = v_model_id;
+	DELETE from model_blueprint where model_id = v_model_id;
+	DELETE from model_properties where model_id = v_model_id;
+    DELETE from model where model_id = v_model_id;
+END;
+
+CREATE PROCEDURE set_new_tosca_model_version
+  (IN v_tosca_model_id VARCHAR(36),
+   IN v_version DOUBLE,
+   IN v_tosca_model_yaml MEDIUMTEXT,
+   IN v_tosca_model_json MEDIUMTEXT,
+   IN v_user_id VARCHAR(80),
+   OUT v_revision_id VARCHAR(36))
+BEGIN
+  SET v_revision_id = UUID();
+  INSERT INTO tosca_model_revision
+    (tosca_model_revision_id, tosca_model_id, version, tosca_model_yaml, tosca_model_json, user_id)
+    VALUES (v_revision_id, v_tosca_model_id, v_version, v_tosca_model_yaml, v_tosca_model_json, v_user_id);
+END;
+
+CREATE PROCEDURE set_tosca_model
+  (IN v_tosca_model_name VARCHAR(80),
+   IN v_policy_type VARCHAR(80),
+   IN v_user_id VARCHAR(80),
+   IN v_tosca_model_yaml MEDIUMTEXT,
+   IN v_tosca_model_json MEDIUMTEXT,
+   IN v_version DOUBLE,
+   OUT v_tosca_model_id VARCHAR(36),
+   OUT v_revision_id VARCHAR(36))
+BEGIN
+  SET v_tosca_model_id = UUID();
+  INSERT INTO tosca_model
+    (tosca_model_id, tosca_model_name, policy_type, user_id)
+    VALUES (v_tosca_model_id, v_tosca_model_name, v_policy_type, v_user_id);
+  SET v_revision_id = UUID();
+  INSERT INTO tosca_model_revision
+    (tosca_model_revision_id, tosca_model_id, version, tosca_model_yaml, tosca_model_json, user_id)
+    VALUES (v_revision_id, v_tosca_model_id, v_version, v_tosca_model_yaml, v_tosca_model_json, v_user_id);
+END;
+
+CREATE PROCEDURE set_dictionary
+  (IN v_dictionary_name VARCHAR(80),
+   IN v_user_id VARCHAR(80),
+   OUT v_dictionary_id VARCHAR(36))
+BEGIN
+  SET v_dictionary_id = UUID();
+  INSERT INTO dictionary
+    (dictionary_id, dictionary_name, created_by, modified_by)
+    VALUES (v_dictionary_id, v_dictionary_name, v_user_id, v_user_id);
+END;
+
+CREATE PROCEDURE set_dictionary_elements
+  (IN v_dictionary_id VARCHAR(36),
+   IN v_dict_element_name VARCHAR(250),
+   IN v_dict_element_short_name VARCHAR(80),
+   IN v_dict_element_description VARCHAR(250),
+   IN v_dict_element_type VARCHAR(80),
+   IN v_user_id VARCHAR(80),
+   OUT v_dict_element_id VARCHAR(36))
+BEGIN
+  SET v_dict_element_id = UUID();
+  INSERT INTO dictionary_elements
+    (dict_element_id, dictionary_id, dict_element_name, dict_element_short_name, dict_element_description, dict_element_type, created_by, modified_by)
+    VALUES (v_dict_element_id, v_dictionary_id, v_dict_element_name, v_dict_element_short_name, v_dict_element_description, v_dict_element_type, v_user_id, v_user_id);
+END;
 //
 DELIMITER ;
