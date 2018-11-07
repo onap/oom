@@ -18,7 +18,7 @@ do
   else
       # code if not found
       echo "$i_topic NOT found."
-      curl -X POST -H "content-type: application/json" --data "Empty post to create topic" http://$dmaap_mr_host:$dmaap_mr_port/events/$i_topic
+      curl -X POST -H "content-type: application/json" --data '{"event":"create topic"}' http://$dmaap_mr_host:$dmaap_mr_port/events/$i_topic
   fi
 done
 
