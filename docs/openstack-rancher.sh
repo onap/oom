@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DOCKER_VERSION=17.03
-RANCHER_VERSION=1.6.18
-KUBECTL_VERSION=1.8.10
+RANCHER_VERSION=1.6.22
+KUBECTL_VERSION=1.11.2
 HELM_VERSION=2.9.1
 
 # setup root access - default login: oom/oom - comment out to restrict access too ssh key only
