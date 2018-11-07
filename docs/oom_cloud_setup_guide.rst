@@ -45,34 +45,33 @@ The versions of Kubernetes that are supported by OOM are as follows:
 
 .. table:: OOM Software Requirements
 
-  ==============     ==========  =====  =======  ========
-  Release            Kubernetes  Helm   kubectl  Docker
-  ==============     ==========  =====  =======  ========
-  amsterdam          1.7.x       2.3.x  1.7.x    1.12.x
-  beijing            1.8.10      2.8.2  1.8.10   17.03.x
-  casablanca/master  1.8.10      2.9.1  1.8.10   17.03.x
-  ==============     ==========  =====  =======  ========
+  ==============     ===========  =====  ========  ========
+  Release            Kubernetes   Helm   kubectl   Docker
+  ==============     ===========  =====  ========  ========
+  amsterdam          1.7.x        2.3.x  1.7.x     1.12.x
+  beijing            1.8.10       2.8.2  1.8.10    17.03.x
+  casablanca         1.11.2       2.9.1  1.11.2    17.03.x
+  ==============     ===========  =====  ========  ========
 
 Minimum Hardware Configuration
 ==============================
 
-The minimum hardware requirements are provided below.  Note that although ONAP
-may operate on a single node as described production deployments will need at
-least three if not six nodes to ensure there is no single point of failure.
+The hardware requirements are provided below. Note that this is for a
+full ONAP deployment (all components). Customizing ONAP to deploy only
+components that are needed will drastically reduce the requirements.
 
 .. table:: OOM Hardware Requirements
 
   =====  =====  ======  ====================
   RAM    HD     vCores  Ports
   =====  =====  ======  ====================
-  128GB  160GB  32      0.0.0.0/0 (all open)
+  224GB  160GB  112     0.0.0.0/0 (all open)
   =====  =====  ======  ====================
 
 .. note::
-  Kubernetes supports a maximum of 110 pods per node which forces one to use at
-  least two nodes to deploy all of ONAP although at least three are recommended
-  (for example 4x32GB - 8 vCores each). Subsets of ONAP may still be deployed
-  on a single node.
+  Kubernetes supports a maximum of 110 pods per node. The use of many small
+  nodes is preferred over a few larger nodes (for example 14x16GB - 8 vCores each).
+  Subsets of ONAP may still be deployed on a single node.
 
 Cloud Installation
 ==================

@@ -8,6 +8,226 @@
 Release Notes
 =============
 
+Version 3.0.0 Casablanca Release
+--------------------------------
+
+:Release Date: 2018-11-30
+
+Epic
+****
+
+* [` OOM-1402 <https://jira.onap.org/browse/OOM-1402>`_] - OOF PCI optimization use case related implementation in OOM
+* [` OOM-1267 <https://jira.onap.org/browse/OOM-1267>`_] - Integrate with AAF to manage ONAP certificates
+* [` OOM-1237 <https://jira.onap.org/browse/OOM-1237>`_] - Source Helm Charts from ONAP Repo
+* [` OOM-1227 <https://jira.onap.org/browse/OOM-1227>`_] - Enhance ONAP Storage Architecture
+* [` OOM-1172 <https://jira.onap.org/browse/OOM-1172>`_] - Align Software Versions for ONAP Release
+* [` OOM-346 <https://jira.onap.org/browse/OOM-346>`_] - Platform Resiliency (including Recoverability, High-Availability, Backup/Restore, Geo-Redundancy)
+* [` OOM-46 <https://jira.onap.org/browse/OOM-46>`_] - Platform infrastructure deployment with TOSCA
+* [` OOM-10 <https://jira.onap.org/browse/OOM-10>`_] - Platform configuration management
+* [` OOM-7 <https://jira.onap.org/browse/OOM-7>`_] - Platform monitoring and auto-healing
+
+Story
+*****
+
+* [` OOM-1403 <https://jira.onap.org/browse/OOM-1403>`_] - Configuration/policies for OOF PCI use case
+* [` OOM-1379 <https://jira.onap.org/browse/OOM-1379>`_] - Free up SDNC GEO node ports
+* [` OOM-1363 <https://jira.onap.org/browse/OOM-1363>`_] - Introduce ConfigMaps for apps to create new topics/feeds
+* [` OOM-1354 <https://jira.onap.org/browse/OOM-1354>`_] - Update version for all Helm Charts to 3.0.0
+* [` OOM-1350 <https://jira.onap.org/browse/OOM-1350>`_] - Bootstrap community Cloudify manager
+* [` OOM-1349 <https://jira.onap.org/browse/OOM-1349>`_] - DMaap Data Router Integration
+* [` OOM-1320 <https://jira.onap.org/browse/OOM-1320>`_] - POMBA: Network Discovery Context Builder OOM Deployment
+* [` OOM-1312 <https://jira.onap.org/browse/OOM-1312>`_] - SDC Workflow designer addition in OOM
+* [` OOM-1299 <https://jira.onap.org/browse/OOM-1299>`_] - SPIKE: Determine versions of Kubernetes and Helm to use in Casablanca
+* [` OOM-1297 <https://jira.onap.org/browse/OOM-1297>`_] - Removal of proprietary name from OOM repo
+* [` OOM-1293 <https://jira.onap.org/browse/OOM-1293>`_] - SPIKE: Determine the level of integration with AAF
+* [` OOM-1238 <https://jira.onap.org/browse/OOM-1238>`_] - Helm repo Jenkins Job
+* [` OOM-1232 <https://jira.onap.org/browse/OOM-1232>`_] - Provide a Backup and Restore Solution
+* [` OOM-1231 <https://jira.onap.org/browse/OOM-1231>`_] - 	Enable (Anti)Affinity Rules
+* [` OOM-1229 <https://jira.onap.org/browse/OOM-1229>`_] - Add nodeSelectors to Helm charts
+* [` OOM-1228 <https://jira.onap.org/browse/OOM-1228>`_] - GlusterFS configuration for ONAP
+* [` OOM-1195 <https://jira.onap.org/browse/OOM-1195>`_] - Create Shared Instance of Redis
+* [` OOM-1179 <https://jira.onap.org/browse/OOM-1179>`_] - Create Charts for common Redis
+* [` OOM-1178 <https://jira.onap.org/browse/OOM-1178>`_] - Create Charts for common Postres Cluster
+* [` OOM-1176 <https://jira.onap.org/browse/OOM-1176>`_] - Create Charts for common MariaDB-Galera
+* [` OOM-1164 <https://jira.onap.org/browse/OOM-1164>`_] - Create common mariadb
+* [` OOM-1145 <https://jira.onap.org/browse/OOM-1145>`_] - Add Resource Limits to Helm Charts
+* [` OOM-1123 <https://jira.onap.org/browse/OOM-1123>`_] - Update all source code files with the Apache 2 License header - Casablanca
+* [` OOM-1112 <https://jira.onap.org/browse/OOM-1112>`_] - Update Documentation for the Casablanca Release
+* [` OOM-998 <https://jira.onap.org/browse/OOM-998>`_] - DevOps for multi-node Kubernetes cluster because of the 110 pod limit per host
+* [` OOM-934 <https://jira.onap.org/browse/OOM-934>`_] - Consul health checks for SDNC
+* [` OOM-787 <https://jira.onap.org/browse/OOM-787>`_] - Abstract PVs for optimal usage
+* [` OOM-760 <https://jira.onap.org/browse/OOM-760>`_] - Add centralized configuration of service account(s), cluster role bindings and secrets
+* [` OOM-759 <https://jira.onap.org/browse/OOM-759>`_] - Support centralized configuration of Persistent Volumes
+* [` OOM-752 <https://jira.onap.org/browse/OOM-752>`_] - LF support for Helm build job and repository
+* [` OOM-745 <https://jira.onap.org/browse/OOM-745>`_] - Add Standardized Configuration to POLICY
+* [` OOM-741 <https://jira.onap.org/browse/OOM-741>`_] - Add Standardized Configuration to MOCK
+* [` OOM-656 <https://jira.onap.org/browse/OOM-656>`_] - Framework for reserving nodeports 302nn - need a policy
+* [` OOM-631 <https://jira.onap.org/browse/OOM-631>`_] - Centralized config to reserve unused 0-99 range in nodePortPrefix-ed nodePorts
+* [` OOM-568 <https://jira.onap.org/browse/OOM-568>`_] - Investigate applications using OOM's Consul Cluster as key/value store
+* [` OOM-373 <https://jira.onap.org/browse/OOM-373>`_] - Deploy SDC/Sanity container from OOM/K8S
+* [` OOM-370 <https://jira.onap.org/browse/OOM-370>`_] - onap on vagrant/k8s
+* [` OOM-328 <https://jira.onap.org/browse/OOM-328>`_] - Preload docker images to allow 7 min startup
+* [` OOM-286 <https://jira.onap.org/browse/OOM-286>`_] - Independent Versioning and Release Process
+* [` OOM-261 <https://jira.onap.org/browse/OOM-261>`_] - ONAP Memory Profile to optimize projected 64G under current 47G for 44 containers (no DCAE yet)
+* [` OOM-230 <https://jira.onap.org/browse/OOM-230>`_] - Service endpoint annotation for CLAMP
+* [` OOM-148 <https://jira.onap.org/browse/OOM-148>`_] - [Upload] Gremlin Server image in ONAP Nexus repository
+* [` OOM-84 <https://jira.onap.org/browse/OOM-84>`_] - Using TOSCA based approach run use case demo
+* [` OOM-83 <https://jira.onap.org/browse/OOM-83>`_] - Deploy VID on Openstack VMs by TOSCA description
+* [` OOM-82 <https://jira.onap.org/browse/OOM-82>`_] - Deploy SDNC on Openstack VMs by TOSCA description
+* [` OOM-81 <https://jira.onap.org/browse/OOM-81>`_] - Deploy SDC on Openstack VMs by TOSCA description
+* [` OOM-80 <https://jira.onap.org/browse/OOM-80>`_] - Deploy Policy on Openstack VMs by TOSCA description
+* [` OOM-79 <https://jira.onap.org/browse/OOM-79>`_] - Deploy MSO on Openstack VMs by TOSCA description
+* [` OOM-78 <https://jira.onap.org/browse/OOM-78>`_] - Deploy APPC on Openstack VMs by TOSCA description
+* [` OOM-77 <https://jira.onap.org/browse/OOM-77>`_] - Deploy AAI on Openstack VMs by TOSCA description
+* [` OOM-76 <https://jira.onap.org/browse/OOM-76>`_] - Deploy DCAE on Openstack VMs by TOSCA description
+* [` OOM-75 <https://jira.onap.org/browse/OOM-75>`_] - Deploy Multi-VIM on Openstack VMs by TOSCA description
+* [` OOM-74 <https://jira.onap.org/browse/OOM-74>`_] - Deploy VF-C on Openstack VMs by TOSCA description
+* [` OOM-73 <https://jira.onap.org/browse/OOM-73>`_] - Deploy AAF on Openstack VMs by TOSCA description
+* [` OOM-72 <https://jira.onap.org/browse/OOM-72>`_] - Deploy MSB on Openstack VMs by TOSCA description
+* [` OOM-71 <https://jira.onap.org/browse/OOM-71>`_] - Deploy DMAAP on Openstack VMs by TOSCA description
+* [` OOM-70 <https://jira.onap.org/browse/OOM-70>`_] - Deploy CLAMP on Openstack VMs by TOSCA description
+* [` OOM-69 <https://jira.onap.org/browse/OOM-69>`_] - Deploy Holmes on Openstack VMs by TOSCA description
+* [` OOM-68 <https://jira.onap.org/browse/OOM-68>`_] - OOM exposes APIs that allow use of consul by deployed components
+* [` OOM-30 <https://jira.onap.org/browse/OOM-30>`_] - State Monitoring: Policy
+* [` OOM-26 <https://jira.onap.org/browse/OOM-26>`_] - State Monitoring: SDC
+* [` OOM-16 <https://jira.onap.org/browse/OOM-16>`_] - Add Holmes containers to ONAP Kubernetes
+
+Task
+****
+
+* [` OOM-1462 <https://jira.onap.org/browse/OOM-1462>`_] - Update aaiclient property credential for OOM env
+* [` OOM-1461 <https://jira.onap.org/browse/OOM-1461>`_] - MultiCloud components updates new version of service endpoints to MSB
+* [` OOM-1455 <https://jira.onap.org/browse/OOM-1455>`_] - new node port for Portal‚Äôs HTTPS port
+* [` OOM-1454 <https://jira.onap.org/browse/OOM-1454>`_] - Update Helm plugin type file artifact path
+* [` OOM-1422 <https://jira.onap.org/browse/OOM-1422>`_] - Sync values from docker-manifest
+* [` OOM-1345 <https://jira.onap.org/browse/OOM-1345>`_] - Upgrade helm chart related to APPC
+* [` OOM-1327 <https://jira.onap.org/browse/OOM-1327>`_] - Timeout changes to deploy ONAP on public cloud
+* [` OOM-1271 <https://jira.onap.org/browse/OOM-1271>`_] - Remove Juju ratelimit dependency of kube2msb
+* [` OOM-1174 <https://jira.onap.org/browse/OOM-1174>`_] - Integrate AAF to Clamp
+* [` OOM-1117 <https://jira.onap.org/browse/OOM-1117>`_] - Expose portal sdk (demo app) internal port 8990 as 30xxx port in OOM deployment
+* [` OOM-843 <https://jira.onap.org/browse/OOM-843>`_] - Verification of licensing in all files
+* [` OOM-814 <https://jira.onap.org/browse/OOM-814>`_] - Portal values.yaml docker changes to shadow PORTAL-217
+* [` OOM-793 <https://jira.onap.org/browse/OOM-793>`_] - Document OOM-722 health/ete script changes for onap-discuss/wiki/rtd/integration team
+* [` OOM-792 <https://jira.onap.org/browse/OOM-792>`_] - ONAP has crossed the 64G barrier - adjust templates and documentation
+* [` OOM-591 <https://jira.onap.org/browse/OOM-591>`_] - AAI needs persistent volumes configured, need help with OS in lab
+* [` OOM-547 <https://jira.onap.org/browse/OOM-547>`_] - Document new ./deleteAll.bash -n onap -y override for OOM-528
+* [` OOM-492 <https://jira.onap.org/browse/OOM-492>`_] - Add SDC optional sdc-sanity container
+* [` OOM-350 <https://jira.onap.org/browse/OOM-350>`_] - Better missing config handler starting onap-config without onap-parameters.yaml set
+* [` OOM-347 <https://jira.onap.org/browse/OOM-347>`_] - Expose AAI sparky-be view&Inspect UI 9517 port as nodePort: {{ .Values.nodePortPrefix }}20
+* [` OOM-327 <https://jira.onap.org/browse/OOM-327>`_] - Jenkins job needed to build and publish the One-Click configuration Docker image.
+
+Bug
+***
+
+* [` OOM-1513 <https://jira.onap.org/browse/OOM-1513>`_] - AAF artifact version no longer available
+* [` OOM-1510 <https://jira.onap.org/browse/OOM-1510>`_] - Update ODL credentials for AAF
+* [` OOM-1489 <https://jira.onap.org/browse/OOM-1489>`_] - Add cadi.properties for AAF OOM support
+* [` OOM-1488 <https://jira.onap.org/browse/OOM-1488>`_] - Update AAA shiro configuration for CAS AAF
+* [` OOM-1483 <https://jira.onap.org/browse/OOM-1483>`_] - oomk8s/mariadb-client-init is out of sync requires new docker image in the public repo
+* [` OOM-1472 <https://jira.onap.org/browse/OOM-1472>`_] - SO charts are missing startup dependencies on mariadb pod
+* [` OOM-1471 <https://jira.onap.org/browse/OOM-1471>`_] - Spelling Mistake
+* [` OOM-1470 <https://jira.onap.org/browse/OOM-1470>`_] - SO-Monitoring Helm Charts - Configmap Renaming, Secrets Removing
+* [` OOM-1469 <https://jira.onap.org/browse/OOM-1469>`_] - OOM AAI deployment fails due to typo in aai-sparky-be
+* [` OOM-1468 <https://jira.onap.org/browse/OOM-1468>`_] - multicloud-pike deployment failing in OOM
+* [` OOM-1467 <https://jira.onap.org/browse/OOM-1467>`_] - Three ONAP projects failed in deployment
+* [` OOM-1465 <https://jira.onap.org/browse/OOM-1465>`_] - POMBA charts missing resource limits
+* [` OOM-1458 <https://jira.onap.org/browse/OOM-1458>`_] - dev.yaml references dockerdata not dockerdata-nfs - disable clamp/so, start replicaSet: 1 config
+* [` OOM-1451 <https://jira.onap.org/browse/OOM-1451>`_] - contrib pod for netbox containers needs to be re-disabled in disable-allcharts.yaml
+* [` OOM-1448 <https://jira.onap.org/browse/OOM-1448>`_] - Missing neng values definition + support for AAI Auth
+* [` OOM-1447 <https://jira.onap.org/browse/OOM-1447>`_] - OOM: DMAAP: onap/dmaap/buscontroller image points to a non-existing version
+* [` OOM-1445 <https://jira.onap.org/browse/OOM-1445>`_] - Add AAI credentials to POMBA SD
+* [` OOM-1440 <https://jira.onap.org/browse/OOM-1440>`_] - Mutlicloud-azure deployment chart is not available
+* [` OOM-1438 <https://jira.onap.org/browse/OOM-1438>`_] - POMBA parameters breaking robot vm_properties.vm
+* [` OOM-1432 <https://jira.onap.org/browse/OOM-1432>`_] - Special character in OOF config file causing issues
+* [` OOM-1421 <https://jira.onap.org/browse/OOM-1421>`_] - 20180919:1100 deploy has resource limits warning for a particular pod
+* [` OOM-1420 <https://jira.onap.org/browse/OOM-1420>`_] - [OOM] Charts for Network Discovery and Service Decomposition include sensitive credential details
+* [` OOM-1382 <https://jira.onap.org/browse/OOM-1382>`_] - VID - port 8080 is closed and use wrong logback.xml
+* [` OOM-1376 <https://jira.onap.org/browse/OOM-1376>`_] - Topic name for pnf registration named incorrectly in dmaap bus controller resources
+* [` OOM-1375 <https://jira.onap.org/browse/OOM-1375>`_] - ONAP OOM deployment fails due to duplicate port problem 30258
+* [` OOM-1372 <https://jira.onap.org/browse/OOM-1372>`_] - pomba network discovery pods are not starting cleanly
+* [` OOM-1370 <https://jira.onap.org/browse/OOM-1370>`_] - NodePort 34 of clamp and Pomba are conflicting
+* [` OOM-1366 <https://jira.onap.org/browse/OOM-1366>`_] - NodePort conflict between Clamp and Pomba
+* [` OOM-1364 <https://jira.onap.org/browse/OOM-1364>`_] - CLAMP uses already reserved pomba-kibana nodePort 30234 - causing helm install failure
+* [` OOM-1357 <https://jira.onap.org/browse/OOM-1357>`_] - helm 2.9.1 del --purge problem
+* [` OOM-1346 <https://jira.onap.org/browse/OOM-1346>`_] - Create APPC ansible server container
+* [` OOM-1344 <https://jira.onap.org/browse/OOM-1344>`_] - OOM ONAP deployment fails when deploying all components
+* [` OOM-1310 <https://jira.onap.org/browse/OOM-1310>`_] - SDNC pod fails on startup
+* [` OOM-1298 <https://jira.onap.org/browse/OOM-1298>`_] - Update APPC OOM chart to use master snapshot image
+* [` OOM-1284 <https://jira.onap.org/browse/OOM-1284>`_] - Portal SDK and DCAE VES nodeport conflict
+* [` OOM-1280 <https://jira.onap.org/browse/OOM-1280>`_] - apiVersion is missing in consul service.yaml
+* [` OOM-1273 <https://jira.onap.org/browse/OOM-1273>`_] - DOC: remove broken link to cd.onap.info in docs/oom_setup_kubernetes_rancher.rst
+* [` OOM-1141 <https://jira.onap.org/browse/OOM-1141>`_] - Rancher 1.6.14 cluster ipsec is unstable as of 20180614 deploys - check 1.6.18
+* [` OOM-1124 <https://jira.onap.org/browse/OOM-1124>`_] - Update OOM APPC chart to enhance AAF support
+* [` OOM-1109 <https://jira.onap.org/browse/OOM-1109>`_] - Netconf mount does not persist in a 3-node cluster after deleting pod
+* [` OOM-1061 <https://jira.onap.org/browse/OOM-1061>`_] - ConfigMap size limit exceeded
+* [` OOM-1044 <https://jira.onap.org/browse/OOM-1044>`_] - Fix image/table warning during deploy - since helm install switch a month ago - non-affecting - but check the yaml
+* [` OOM-1035 <https://jira.onap.org/browse/OOM-1035>`_] - Adding license to OOM TOSCA blueprints and scripts
+* [` OOM-955 <https://jira.onap.org/browse/OOM-955>`_] - AAI gizmo image in quotes - an outlier
+* [` OOM-813 <https://jira.onap.org/browse/OOM-813>`_] - ConfigMap issues with regression in new K8S 1.8.9 in Rancher 1.6.14 up from 1.8.5 since 20180317 1.6.15 release - revert to 1.6.12 with 1.8.3
+* [` OOM-805 <https://jira.onap.org/browse/OOM-805>`_] - createAll.bash on single component on clean k8s cluster fails to pull nexus3 images -a option does not work
+* [` OOM-803 <https://jira.onap.org/browse/OOM-803>`_] - VNFSDK container failure on docker image pull
+* [` OOM-781 <https://jira.onap.org/browse/OOM-781>`_] - Helm 2.8 issues running 20180302 single namespace OOM-722 change - stick to 2.6.1
+* [` OOM-618 <https://jira.onap.org/browse/OOM-618>`_] - Problem with the chrome driver with Robot
+* [` OOM-544 <https://jira.onap.org/browse/OOM-544>`_] - Long docker pulls cause timeouts on pod startup - make crashLoopRestart policy configurable/extended
+* [` OOM-541 <https://jira.onap.org/browse/OOM-541>`_] - sparky-be startup failure - UI_HTTP_PORT or UI_HTTPS_PORT
+* [` OOM-513 <https://jira.onap.org/browse/OOM-513>`_] - Robot scripts don't support keystone v3 api
+* [` OOM-485 <https://jira.onap.org/browse/OOM-485>`_] - Address sdnc values.yaml todo - continuation of OOM-432
+* [` OOM-425 <https://jira.onap.org/browse/OOM-425>`_] - aai data-router startup error
+* [` OOM-324 <https://jira.onap.org/browse/OOM-324>`_] - AAF Service Container logging error
+* [` OOM-236 <https://jira.onap.org/browse/OOM-236>`_] - Rancher DNS pod non-functional after system reboot - only in cluster mode
+
+Sub-task
+********
+
+* [` OOM-1393 <https://jira.onap.org/browse/OOM-1393>`_] - Backup Task- ESR ConfigMap Labelling
+* [` OOM-1392 <https://jira.onap.org/browse/OOM-1392>`_] - Backup Task- Multicloud ConfigMap Labelling
+* [` OOM-1391 <https://jira.onap.org/browse/OOM-1391>`_] - Backup Task- OOF ConfigMap Labelling
+* [` OOM-1387 <https://jira.onap.org/browse/OOM-1387>`_] - Enable (Anti)Affinity Rules - VNFSDK
+* [` OOM-1385 <https://jira.onap.org/browse/OOM-1385>`_] - Backup Task- ConfigMap Labelling for Log
+* [` OOM-1374 <https://jira.onap.org/browse/OOM-1374>`_] - Backup Task: APPC Config Map Labelling
+* [` OOM-1369 <https://jira.onap.org/browse/OOM-1369>`_] - Apache 2 license addition for clamp
+* [` OOM-1365 <https://jira.onap.org/browse/OOM-1365>`_] - Apache 2 license addition for log
+* [` OOM-1361 <https://jira.onap.org/browse/OOM-1361>`_] - update Logging helm chart versions from 2.0 to 3.0
+* [` OOM-1360 <https://jira.onap.org/browse/OOM-1360>`_] - update POMBA helm chart versions from 2.0 to 3.0
+* [` OOM-1356 <https://jira.onap.org/browse/OOM-1356>`_] - Apache 2 License updation for common/helm/robot/so/
+* [` OOM-1343 <https://jira.onap.org/browse/OOM-1343>`_] - Add global storage class configuration
+* [` OOM-1322 <https://jira.onap.org/browse/OOM-1322>`_] - Flavor Segregation for Resource Limit
+* [` OOM-1308 <https://jira.onap.org/browse/OOM-1308>`_] - Apache 2 license addition for consul, appc
+* [` OOM-1307 <https://jira.onap.org/browse/OOM-1307>`_] - Apache 2 License addition for esr, multicloud, oof
+* [` OOM-1306 <https://jira.onap.org/browse/OOM-1306>`_] - Apache2 License addition for sdc, portal, sdnc, aai
+* [` OOM-1305 <https://jira.onap.org/browse/OOM-1305>`_] - Apache 2 License addition for dmaap,dcaegen2,policy
+* [` OOM-1304 <https://jira.onap.org/browse/OOM-1304>`_] - Apache 2 license addition for sniro-emulator,vid,cli,aaf
+* [` OOM-1303 <https://jira.onap.org/browse/OOM-1303>`_] - Apache2 license addition for NBI,MSB,VNFSDK,UUI
+* [` OOM-1266 <https://jira.onap.org/browse/OOM-1266>`_] - Investigate a node labelling process
+* [` OOM-1236 <https://jira.onap.org/browse/OOM-1236>`_] - Create Helm charts of Backup and Restore Tool
+* [` OOM-1235 <https://jira.onap.org/browse/OOM-1235>`_] - Document Backup and Restore with a Gluster Backend
+* [` OOM-1234 <https://jira.onap.org/browse/OOM-1234>`_] - Document Backup and Restore with a NFS Backend
+* [` OOM-1233 <https://jira.onap.org/browse/OOM-1233>`_] - Select a Backup and Restore Tool(s)
+* [` OOM-1205 <https://jira.onap.org/browse/OOM-1205>`_] - Upgrade APPC to use common mariadb galera charts
+* [` OOM-1197 <https://jira.onap.org/browse/OOM-1197>`_] - Upgrade DCAE to use common Redis instance
+* [` OOM-1196 <https://jira.onap.org/browse/OOM-1196>`_] - Instantiate common redis cluster
+* [` OOM-1185 <https://jira.onap.org/browse/OOM-1185>`_] - Upgrade VNFSDK to use common Postgres charts
+* [` OOM-1182 <https://jira.onap.org/browse/OOM-1182>`_] - Implement Postgres Cluster
+* [` OOM-1153 <https://jira.onap.org/browse/OOM-1153>`_] - Resource Limits for log
+* [` OOM-833 <https://jira.onap.org/browse/OOM-833>`_] - Apache 2 license addition for all configuration
+* [` OOM-629 <https://jira.onap.org/browse/OOM-629>`_] - Cover off CI/CD system
+* [` OOM-628 <https://jira.onap.org/browse/OOM-628>`_] - Segregation of configuration for logging-demo component - LOG-118
+* [` OOM-595 <https://jira.onap.org/browse/OOM-595>`_] - security permissions review for AAI, appc, sdnc
+* [` OOM-593 <https://jira.onap.org/browse/OOM-593>`_] - Review removal of createConfig.sh
+* [` OOM-556 <https://jira.onap.org/browse/OOM-556>`_] - Segregation of configuration for message-router component
+* [` OOM-386 <https://jira.onap.org/browse/OOM-386>`_] - Fix Docker login step
+* [` OOM-385 <https://jira.onap.org/browse/OOM-385>`_] - Fix minor issues with the docker image build step.
+
+
+**Security Notes**
+
+OOM code has been formally scanned during build time using NexusIQ and no Critical vulnerability was found.
+
+Quick Links:
+	- `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+
+	- `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
+
 Version 2.0.0 Beijing Release
 -----------------------------
 
