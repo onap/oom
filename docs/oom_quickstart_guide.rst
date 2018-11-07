@@ -16,11 +16,13 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone -b beijing http://gerrit.onap.org/r/oom
+  > git clone -b casablanca http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
+**Step 2.** Install Helm Plugins required to deploy the ONAP Casablanca release::
+  sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
 
-**Step 2.** Customize the onap/values.yaml file to suit your deployment. You
+**Step 3.** Customize the onap/values.yaml file to suit your deployment. You
 may want to selectively enable or disable ONAP components by changing the
 `enabled: true/false` flags as shown below:
 
@@ -154,18 +156,18 @@ follows::
 
 **Step 5.** Build a local Helm repository (from the kubernetes directory)::
 
-  > make all
+  > make all; make onap
 
 **Step 6.** Display the charts that available to be deployed::
 
   > helm search -l
   NAME                    VERSION    DESCRIPTION
-  local/appc              2.0.0      Application Controller
-  local/clamp             2.0.0      ONAP Clamp
-  local/common            2.0.0      Common templates for inclusion in other charts
-  local/onap              2.0.0      Open Network Automation Platform (ONAP)
-  local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                2.0.0      ONAP Service Orchestrator
+  local/appc              3.0.0      Application Controller
+  local/clamp             3.0.0      ONAP Clamp
+  local/common            3.0.0      Common templates for inclusion in other charts
+  local/onap              3.0.0      Open Network Automation Platform (ONAP)
+  local/robot             3.0.0      A helm Chart for kubernetes-ONAP Robot
+  local/so                3.0.0      ONAP Service Orchestrator
 
 .. note::
   The setup of the Helm repository is a one time activity. If you make changes to your deployment charts or values be sure to use `make` to update your local Helm repository.
@@ -173,11 +175,15 @@ follows::
 **Step 7.** Once the repo is setup, installation of ONAP can be done with a
 single command::
 
-  > helm install local/onap -n dev --namespace onap
+  > helm deploy dev local/onap --namespace onap
 
-.. note::
-  The requirement for the use of the `onap` namespace will be lifted once the OOM team completes their Beijing deveivers.
 
 Use the following to monitor your deployment and determine when ONAP is ready for use::
 
   > kubectl get pods --all-namespaces -o=wide
+
+Undeploying onap can be done using the following command::
+  > helm undeploy dev --purge
+
+
+More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins

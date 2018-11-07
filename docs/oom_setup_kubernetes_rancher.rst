@@ -48,7 +48,7 @@ Select "No" on "Create New Volume"
 Select Flavor
 -------------
 Known issues exist if flavor is too small for Rancher. Please select a flavor
-with at least 4 vCPU and 8GB ram.
+with at least 4 vCPU and 8GB ram. A size of 8 vCPU and 16GB ram is recommended.
 
 .. image:: Rancher-Select_Flavor.jpeg
 
@@ -88,7 +88,7 @@ This customization script will:
 * install nfs server
 
 .. note::
-  The Beijing release of OOM only supports Helm 2.8.2 not the 2.7.2 shown in
+  The Casablanca release of OOM only supports Helm 2.9.1 not the 2.7.2 shown in
   the screen capture below. The supported versions of all the software components
   are listed in the :ref:`cloud-setup-guide-label`.
 
@@ -133,8 +133,9 @@ Select Flavor
 The size of a Kubernetes host depends on the size of the ONAP deployment that
 will be installed.
 
-As of the Beijing release a minimum of 3 x 32GB hosts will be needed to run a
-full ONAP deployment (all components).
+As of the Casablanca release a minimum of 4 x 64GB hosts will be needed to run a
+full ONAP deployment (all components). It is recommended that more hosts are used
+with fewer resources instead of large hosts. For example 12-13 16GB hosts.
 
 If a small subset of ONAP components are being deployed for testing purposes,
 then a single 16GB or 32GB host should suffice.
