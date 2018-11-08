@@ -63,7 +63,7 @@ Enter the following to install kubectl (on Ubuntu, there are slight differences 
   > sudo mv ./kubectl /usr/local/bin/kubectl
   > mkdir ~/.kube
 
-Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for alternative Kubenetes environment setups) into the `~/.kube/config` file.
+Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for alternative Kubernetes environment setups) into the `~/.kube/config` file.
 
 Verify that the Kubernetes config is correct::
 
@@ -423,7 +423,7 @@ Monitor
 All highly available systems include at least one facility to monitor the
 health of components within the system.  Such health monitors are often used as
 inputs to distributed coordination systems (such as etcd, zookeeper, or consul)
-and monitoring systems (such as nagios or zabbix). OOM provides two mechanims
+and monitoring systems (such as nagios or zabbix). OOM provides two mechanisms
 to monitor the real-time health of an ONAP deployment:
 
 - a Consul GUI for a human operator or downstream monitoring systems and
