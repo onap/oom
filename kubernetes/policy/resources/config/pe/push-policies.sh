@@ -221,7 +221,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
     "riskType": "test",
     "guard": "false",
     "priority": "4",
-    "description": "ONAP_vSN_NAMING_TIMESTAMP"
+    "description": "ONAP_VSN_NAMING_TIMESTAMP"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
 #########################################Creating OOF PCI Policies##########################################
@@ -471,7 +471,7 @@ sleep 10
 echo "pushPolicy : PUT : SDNC_Policy.ONAP_vSN_NAMING_TIMESTAMP"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
   "pdpGroup": "default",
-  "policyName": "SDNC_Policy.ONAP_vSN_NAMING_TIMESTAMP",
+  "policyName": "SDNC_Policy.ONAP_VSN_NAMING_TIMESTAMP",
   "policyType": "MicroService"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
