@@ -51,7 +51,9 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'vofwl01fwl${hostid}',
             'vpg_name_0':'vofwl01pgn${hostid}',
             "vfw_image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "vfw_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
             'vsn_name_0':'vofwl01snk${hostid}'
         },
         "vfwsnk_preload.template": {
@@ -71,7 +73,8 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'vofwl01fwl${hostid}',
             'vsn_name_0':'vofwl01snk${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vpkg_preload.template": {
             "unprotected_private_net_id" : "vofwlsnk_unprotected${hostid}",
@@ -85,7 +88,7 @@ GLOBAL_PRELOAD_PARAMETERS = {
             "sec_group" : "{{ .Values.openStackSecurityGroup }}",
             'vpg_name_0':'vofwl01pgn${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vlb_preload.template" : {
             "vlb_image_name" : "${GLOBAL_INJECTED_UBUNTU_1604_IMAGE}",
@@ -165,7 +168,9 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'clfwl01fwl${hostid}',
             'vpg_name_0':'clfwl01pgn${hostid}',
             "vfw_image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "vfw_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
             'vsn_name_0':'clfwl01snk${hostid}'
         },
         "vfwsnk_preload.template": {
@@ -185,7 +190,8 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'clfwl01fwl${hostid}',
             'vsn_name_0':'clfwl01snk${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vpkg_preload.template": {
             "unprotected_private_net_id" : "clfwlsnk_unprotected${hostid}",
@@ -199,7 +205,7 @@ GLOBAL_PRELOAD_PARAMETERS = {
             "sec_group" : "{{ .Values.openStackSecurityGroup }}",
             'vpg_name_0':'clfwl01pgn${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vlb_preload.template" : {
             "vlb_image_name" : "${GLOBAL_INJECTED_UBUNTU_1604_IMAGE}",
@@ -277,7 +283,9 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'demofwl01fwl',
             'vpg_name_0':'demofwl01pgn',
             "vfw_image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "vfw_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
             'vsn_name_0':'demofwl01snk'
         },
         "vfwsnk_preload.template": {
@@ -297,7 +305,8 @@ GLOBAL_PRELOAD_PARAMETERS = {
             'vfw_name_0':'${generic_vnf_name}',
             'vsn_name_0':'demofwl01snk${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "firewall_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
+            "sink_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vpkg_preload.template": {
             "unprotected_private_net_id" : "demofwlsnk_unprotected${hostid}",
@@ -311,7 +320,7 @@ GLOBAL_PRELOAD_PARAMETERS = {
             "sec_group" : "{{ .Values.openStackSecurityGroup }}",
             'vpg_name_0':'demofwl01pgn${hostid}',
             "image_name" : "${GLOBAL_INJECTED_UBUNTU_1404_IMAGE}",
-            "flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}"
+            "packetgen_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}"
         },
         "vlb_preload.template" : {
             "vlb_image_name" : "${GLOBAL_INJECTED_UBUNTU_1604_IMAGE}",
