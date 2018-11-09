@@ -74,6 +74,7 @@ CREATE TABLE model (
   control_name_uuid VARCHAR(36) NOT NULL,
   service_type_id VARCHAR(80) NULL,
   deployment_id VARCHAR(80) NULL,
+  deployment_status_url VARCHAR(300) NULL,
   PRIMARY KEY (model_id),
   UNIQUE (model_name),
   UNIQUE (control_name_uuid),
