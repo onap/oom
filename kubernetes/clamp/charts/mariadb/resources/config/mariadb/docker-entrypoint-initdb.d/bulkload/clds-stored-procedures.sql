@@ -149,6 +149,7 @@ CREATE PROCEDURE get_model
    OUT v_model_id VARCHAR(36),
    OUT v_service_type_id VARCHAR(80),
    OUT v_deployment_id VARCHAR(80),
+   OUT v_deployment_status_url VARCHAR(300),
    OUT v_template_name VARCHAR(80),
    OUT v_template_id VARCHAR(36),
    OUT v_model_prop_id VARCHAR(36),
@@ -168,6 +169,7 @@ BEGIN
 		 m.model_id,
 		 m.service_type_id,
 		 m.deployment_id,
+		 m.deployment_status_url,
 		 t.template_name,
 		 m.template_id,
 		 mp.model_prop_id,
@@ -186,6 +188,7 @@ BEGIN
 		 v_model_id,
 		 v_service_type_id,
 		 v_deployment_id,
+		 v_deployment_status_url,
 		 v_template_name,
          v_template_id,
          v_model_prop_id,
@@ -225,6 +228,7 @@ CREATE PROCEDURE get_model_template
    OUT v_model_id VARCHAR(36),
    OUT v_service_type_id VARCHAR(80),
    OUT v_deployment_id VARCHAR(80),
+   OUT v_deployment_status_url VARCHAR(300),
    OUT v_template_name VARCHAR(80),
    OUT v_template_id VARCHAR(36),
    OUT v_model_prop_id VARCHAR(36),
@@ -255,6 +259,7 @@ BEGIN
     v_model_id,
 	v_service_type_id,
 	v_deployment_id,
+	v_deployment_status_url,
     v_template_name,
     v_template_id,
     v_model_prop_id,
@@ -289,6 +294,7 @@ CREATE PROCEDURE set_model
    IN v_model_blueprint_text MEDIUMTEXT,
    IN v_service_type_id VARCHAR(80),
    IN v_deployment_id VARCHAR(80),
+   IN v_deployment_status_url VARCHAR(300),
    INOUT v_control_name_prefix VARCHAR(80),
    INOUT v_control_name_uuid VARCHAR(36),
    OUT v_model_id VARCHAR(36),
@@ -310,6 +316,7 @@ BEGIN
   DECLARE v_old_model_blueprint_text MEDIUMTEXT;
   DECLARE v_old_service_type_id VARCHAR(80);
   DECLARE v_old_deployment_id VARCHAR(80);
+  DECLARE v_old_deployment_status_url VARCHAR(300);
   SET v_model_id = NULL;
   CALL get_model(
     v_model_name,
@@ -318,6 +325,7 @@ BEGIN
     v_model_id,
 	v_old_service_type_id,
 	v_old_deployment_id,
+	v_old_deployment_status_url,
     v_old_template_name,
     v_old_template_id,
     v_model_prop_id,
@@ -340,8 +348,8 @@ BEGIN
 	  END IF;
       SET v_model_id = v_control_name_uuid;
       INSERT INTO model
-	    (model_id, model_name, template_id, control_name_prefix, control_name_uuid, service_type_id, deployment_id)
-	    VALUES (v_model_id, v_model_name, v_template_id, v_control_name_prefix, v_control_name_uuid, v_service_type_id, v_deployment_id);
+	    (model_id, model_name, template_id, control_name_prefix, control_name_uuid, service_type_id, deployment_id, deployment_status_url)
+	    VALUES (v_model_id, v_model_name, v_template_id, v_control_name_prefix, v_control_name_uuid, v_service_type_id, v_deployment_id,v_deployment_status_url);
 	  # since just created model, insert CREATED event as initial default event
 	  SET v_action_cd = 'CREATE';
 	  SET v_action_state_cd = 'COMPLETED';
@@ -383,7 +391,8 @@ BEGIN
 	    model_prop_id = v_model_prop_id,
 	    model_blueprint_id = v_model_blueprint_id,
 	    service_type_id = v_service_type_id,
-	    deployment_id = v_deployment_id
+	    deployment_id = v_deployment_id,
+	    deployment_status_url = v_deployment_status_url
     WHERE model_id = v_model_id;
 END;
 CREATE PROCEDURE ins_model_instance
