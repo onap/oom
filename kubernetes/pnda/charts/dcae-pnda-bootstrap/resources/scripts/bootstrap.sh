@@ -49,17 +49,21 @@ KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 
 for i in 1 2 3 4 5 6 7 8 9
 do
-  MIRROR_IP=$(curl -s $KUBE_API/namespaces/{{ include "common.namespace" . }}/services/dcae-pnda-mirror \
-                 --header "Authorization: Bearer $KUBE_TOKEN" \
-                 --insecure | jq -r '.status.loadBalancer.ingress[0].ip')
+  MIRROR_IP=$(curl -s $KUBE_API/namespaces/{{ include "common.namespace" . }}/pods \
+            --header "Authorization: Bearer $KUBE_TOKEN" \
+            --insecure | jq -r '.items[].status | select(.containerStatuses[].ready and .containerStatuses[].name=="dcae-pnda-mirror") | .hostIP')
+  MIRROR_PORT=$(curl -s $KUBE_API/namespaces/{{ include "common.namespace" . }}/services/dcae-pnda-mirror \
+              --header "Authorization: Bearer $KUBE_TOKEN" \
+              --insecure | jq -r '.spec.ports[] | select(.name=="dcae-pnda-mirror") | .nodePort')
 
-  if [ "$MIRROR_IP" != "null" ]; then
+  if [ "${MIRROR_IP}" != "null" -a "${MIRROR_PORT}" != "null" ]; then
+    PNDA_MIRROR="http://$MIRROR_IP:$MIRROR_PORT"
     break
   fi
   sleep 5
 done
 
-PNDA_MIRROR="http://$MIRROR_IP:80"
+[ -z "${PNDA_MIRROR}" ] && { echo "Unable to get PNDA mirror IP:PORT"; exit 1; }
 
 sed -i -e 's?CLIENT_IP/32?CLIENT_IP?' bootstrap-scripts/package-install.sh
 
