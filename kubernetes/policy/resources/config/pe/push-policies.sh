@@ -284,7 +284,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
             "timeWindow": "1",
             "timeUnits": "minute",
             "guardActiveStart": "00:00:01-05:00",
-            "guardActiveEnd": "00:00:00-05:00"
+            "guardActiveEnd": "23:59:59-05:00"
         }
     }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
@@ -308,7 +308,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
             "timeWindow": "10",
             "timeUnits": "minute",
             "guardActiveStart": "00:00:01-05:00",
-            "guardActiveEnd": "00:00:00-05:00"
+            "guardActiveEnd": "23:59:59-05:00"
         }
     }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
@@ -320,7 +320,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
     "policyClass": "Decision",
     "policyName": "com.vDNS_MinMax",
     "policyDescription": "Ensure number of instances within a range",
-    "ecompName": "PDPD",
+    "ecompName": "SampleDemo",
     "ruleProvider": "GUARD_MIN_MAX",
     "attributes": {
         "MATCHING": {
@@ -331,7 +331,7 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
             "min": "1",
             "max": "5",
             "guardActiveStart": "00:00:01-05:00",
-            "guardActiveEnd": "00:00:00-05:00"
+            "guardActiveEnd": "23:59:59-05:00"
         }
     }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
