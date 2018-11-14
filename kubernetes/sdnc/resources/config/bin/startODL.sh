@@ -86,6 +86,7 @@ MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
+INSTALLED_DIR=${INSTALLED_FILE:-/opt/opendaylight/current/daexim}
 
 #
 # Wait for database to init properly
@@ -98,7 +99,12 @@ do
 done
 echo -e "\nmysql ready"
 
-if [ ! -f ${SDNC_HOME}/.installed ]
+if [ ! -d ${INSTALLED_DIR} ]
+then
+    mkdir -p ${INSTALLED_DIR}
+fi
+
+if [ ! -f ${INSTALLED_DIR}/.installed ]
 then
         echo "Installing SDNC database"
         ${SDNC_HOME}/bin/installSdncDb.sh
@@ -116,7 +122,7 @@ then
 
         if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
 
-        echo "Installed at `date`" > ${SDNC_HOME}/.installed
+        echo "Installed at `date`" > ${INSTALLED_DIR}/.installed
 fi
 
 exec ${ODL_HOME}/bin/karaf server
