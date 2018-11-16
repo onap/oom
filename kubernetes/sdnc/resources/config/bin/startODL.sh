@@ -86,7 +86,7 @@ MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
-INSTALLED_DIR=${INSTALLED_FILE:-/opt/opendaylight/current/daexim}
+DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 
 #
 # Wait for database to init properly
@@ -99,20 +99,15 @@ do
 done
 echo -e "\nmysql ready"
 
-if [ ! -d ${INSTALLED_DIR} ]
+if [ ! -d ${DBINIT_DIR} ]
 then
-    mkdir -p ${INSTALLED_DIR}
+    mkdir -p ${DBINIT_DIR}
 fi
 
-if [ ! -f ${INSTALLED_DIR}/.installed ]
+if [ ! -f ${DBINIT_DIR}/.installed ]
 then
         echo "Installing SDNC database"
         ${SDNC_HOME}/bin/installSdncDb.sh
-        echo "Installing SDN-C keyStore"
-        ${SDNC_HOME}/bin/addSdncKeyStore.sh
-
-	# No longer needed (this was a workaround for bug in Nitrogen)
-        #${CCSDK_HOME}/bin/installOdlHostKey.sh
 
         if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
         then
@@ -120,9 +115,20 @@ then
                 ${SDNC_HOME}/svclogic/bin/install.sh
         fi
 
-        if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
-
         echo "Installed at `date`" > ${INSTALLED_DIR}/.installed
+fi
+
+if [ ! -f ${SDNC_HOME}/.installed ]
+then
+	echo "Installing SDN-C keyStore"
+	${SDNC_HOME}/bin/addSdncKeyStore.sh
+
+	# No longer needed (this was a workaround for bug in Nitrogen)
+	#${CCSDK_HOME}/bin/installOdlHostKey.sh
+
+	if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
+
+        echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
 exec ${ODL_HOME}/bin/karaf server
