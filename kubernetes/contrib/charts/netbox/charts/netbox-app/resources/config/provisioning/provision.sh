@@ -103,3 +103,34 @@ curl --silent -X POST \
   "description": "IP Pool for ONAP - general purpose"
 }'
 
+# Reserve ports, gateway and dhcp, for each protected and unprotected networks.
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/1/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/1/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/2/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/2/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/3/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
+
+curl --silent -X  POST \
+  http://{{ .Values.service.name }}:{{ .Values.service.internalPort }}/api/ipam/prefixes/3/available-ips/ \
+  -H 'Authorization: Token onceuponatimeiplayedwithnetbox20180814' \
+  -H 'Content-Type: application/json'
