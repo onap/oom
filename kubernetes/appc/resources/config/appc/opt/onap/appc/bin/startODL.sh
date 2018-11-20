@@ -56,26 +56,9 @@ SLEEP_TIME=${SLEEP_TIME:-120}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 ENABLE_AAF=${ENABLE_AAF:-true}
+DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 
 appcInstallStartTime=$(date +%s)
-
-#
-# Adding the DMAAP_TOPIC_ENV variable into APPC-ASDC-LISTENER properties
-#
-DMAAP_TOPIC_ENV=${DMAAP_TOPIC_ENV}
-
-if [ -z "$DMAAP_TOPIC_ENV" ]
-        then
-        echo "DMAAP_TOPIC_ENV shell variable is empty. Adding default value OS-ETE-DFW"
-                DMAAP_TOPIC_ENV="OS-ETE-DFW"
-        else
-                echo "DMAAP_TOPIC_ENV shell variable exists and it's $DMAAP_TOPIC_ENV"
-fi
-
-echo "Adding a value to property appc.asdc.env in appc.properties for appc-asdc-listener feature"
-echo "" >> $APPC_HOME/data/properties/appc.properties
-echo "appc.asdc.env=$DMAAP_TOPIC_ENV" >> $APPC_HOME/data/properties/appc.properties
-echo "" >> $APPC_HOME/data/properties/appc.properties
 
 #
 # Wait for database to init properly
@@ -88,14 +71,39 @@ do
 done
 echo -e "\nmariadbgalera ready"
 
+if [ ! -d ${DBINIT_DIR} ]
+then
+    mkdir -p ${DBINIT_DIR}
+fi
+
+if [ ! -f ${DBINIT_DIR}/.installed ]
+then
+        sdnc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql <<-END
+show databases like 'sdnctl';
+END
+)
+        if [ "x${sdnc_db_exists}" == "x" ]
+        then
+            echo "Installing SDNC database"
+            ${SDNC_HOME}/bin/installSdncDb.sh
+        fi
+
+        appc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql <<-END
+show databases like 'appcctl';
+END
+)
+        if [ "x${appc_db_exists}" == "x" ]
+        then
+            echo "Installing APPC database"
+            ${APPC_HOME}/bin/installAppcDb.sh
+        fi
+
+        echo "Installed at `date`" > ${DBINIT_DIR}/.installed
+fi
+
+
 if [ ! -f ${SDNC_HOME}/.installed ]
 then
-        echo "Installing SDNC database"
-        ${SDNC_HOME}/bin/installSdncDb.sh
-
-        echo "Installing APPC database"
-        ${APPC_HOME}/bin/installAppcDb.sh
-
         echo "Installing ODL Host Key"
         ${SDNC_HOME}/bin/installOdlHostKey.sh
 
