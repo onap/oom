@@ -18,7 +18,7 @@ GLOBAL_PRELOAD_PARAMETERS = {
          'key_name' : 'vfw_key${uuid}',
          "pub_key" : "{{ .Values.vnfPubKey }}",
          "repo_url_blob" : "https://nexus.onap.org/content/repositories/raw",
-         "repo_url_artifacts" : "https://nexus.onap.org/content/groups/staging",
+         "repo_url_artifacts" : "{{ .Values.demoArtifactsRepoUrl }}",
          "demo_artifacts_version" : "${GLOBAL_INJECTED_ARTIFACTS_VERSION}",
          "onap_private_net_id" : "${GLOBAL_INJECTED_NETWORK}",
          "onap_private_subnet_id" : "{{ .Values.openStackPrivateSubnetId }}",
