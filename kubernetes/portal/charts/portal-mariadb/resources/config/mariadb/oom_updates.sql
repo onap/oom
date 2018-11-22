@@ -42,6 +42,23 @@ update fn_app set app_url = 'http://{{.Values.config.msbHostName}}:{{.Values.con
 
 
 /*
+Create SO-Monitoring App
+*/
+INSERT IGNORE INTO `fn_app` (`app_id`, `app_name`, `app_image_url`, `app_description`, `app_notes`, `app_url`, `app_alternate_url`, `app_rest_endpoint`, `ml_app_name`, `ml_app_admin_id`, `mots_id`, `app_password`, `open`, `enabled`, `thumbnail`, `app_username`, `ueb_key`, `ueb_secret`, `ueb_topic_name`, `app_type`,`auth_central`,`auth_namespace`) VALUES
+(10, 'SO-Monitoring', 'images/cache/portal-345993588_92550.png', NULL, NULL, 'http://{{.Values.config.soMonitoringHostName}}:{{.Values.soMonitoringPort}}', NULL, 'http://so-monitoring:30224', '', '', NULL, 'password', 'Y', 'Y', NULL, 'user', '', '', '', 1,'N','SO-Monitoring');
+
+/*
+Add SO Monitoring to Default apps
+*/
+INSERT IGNORE INTO `fn_pers_user_app_sel` VALUES (10,1,10,'S');
+
+/*
+Add Contact information for SO Monitoring
+*/
+INSERT IGNORE INTO `fn_app_contact_us` (app_id, contact_name, contact_email, url, active_yn, description) VALUES ( 10,"SO Team","so@lists.onap.org","https://wiki.onap.org/display/DW/Approved+Projects",NULL, "Service Orchestration (SO).");
+
+
+/*
 Additionally, some more update statments; these should be refactored to another SQL file in future releases 
 */
 
@@ -57,6 +74,3 @@ update fn_app set app_username='Default', app_password='2VxipM8Z3SETg32m3Gp0FvKS
 update fn_app set app_username='Default', app_password='2VxipM8Z3SETg32m3Gp0FvKS6zZ2uCbCw46WDyK6T5E=', ueb_key='2Re7Pvdkgw5aeAUD', auth_central = 'Y' , auth_namespace = 'org.onap.vid' where app_id = 6;
 -- aai sparky
 update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7MLhzo03aoOx7dTvdjKQ=', ueb_key='ueb_key' where app_id = 7;
-
-
-
