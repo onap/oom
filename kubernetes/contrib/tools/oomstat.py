@@ -26,12 +26,16 @@ import getopt
 from fnmatch import fnmatch as match
 import yaml
 
+def info(thing):
+    if thing:
+        sys.stderr.write("{}\n".format(thing))
+
 try:
     from tabulate import tabulate
 except ImportError as e:
-    message = "Warning: cannot import tabulate module (): {}\n".format(str(e))
-    sys.stderr.write(message)
+    info("Warning: cannot import tabulate module (): {}".format(str(e)))
     def tabulate(lines, headers, tablefmt=None):
+        ''' basic tabulate function '''
         fmt = ""
         nbco = len(headers)
         lenco = map(len, headers)
@@ -168,11 +172,11 @@ def usage(status=None):
         "                     You may use wildcard patterns, eg small.*. Implicit\n"
         "                     value is *, ie all available fields will be used\n"
         "Examples:\n"
-        "    # oomstat /opt/oom/kubernetes\n"
-        "    # oomstat -f small.\\* /opt/oom/kubernetes\n"
-        "    # oomstat -f '*requests.*' -t fancy_grid /opt/oom/kubernetes\n"
-        "    # oomstat -f small.requests.cpu,small.requests.memory /opt/oom/kubernetes\n"
-    ))
+        "    # {0} /opt/oom/kubernetes\n"
+        "    # {0} -f small.\\* /opt/oom/kubernetes\n"
+        "    # {0} -f '*requests.*' -t fancy_grid /opt/oom/kubernetes\n"
+        "    # {0} -f small.requests.cpu,small.requests.memory /opt/oom/kubernetes\n"
+    ).format(arg0))
     if status is not None:
         sys.exit(status)
 
@@ -209,10 +213,17 @@ def main():
         print("Error: {}".format(e))
         usage(1)
 
+    if not os.path.isdir(root):
+        info("Cannot open {}: Not a directory".format(root))
+        return
+
     # find projects
     projects = []
     for dirname, filename in values(root):
         projects.append(Project(dirname, filename))
+    if not projects:
+        info("No projects found in {} directory".format(root))
+        return
 
     # check if we want to use pattern matching (wildcard only)
     if fields and reduce(lambda x, y: x or y,
