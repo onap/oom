@@ -25,7 +25,7 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PA
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
+all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) plugins
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -53,6 +53,10 @@ clean:
 	@rm -f */requirements.lock
 	@find . -type f -name '*.tgz' -delete
 	@rm -rf $(PACKAGE_DIR)/*
+
+#
+plugins:
+	@cp -R helm $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
 repo:
