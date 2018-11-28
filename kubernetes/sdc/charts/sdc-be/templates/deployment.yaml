@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##################################
+#      sdc-be-deployment         #
+##################################
+
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -27,116 +31,155 @@ spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
+      # checksum of the config map in case of changes in the content
+      # in upgrade k8s will restart the pod automatically
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      ##################################
+      #         initContainers         #
+      ##################################
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - "sdc-onboarding-be"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      - name: {{ include "common.name" . }}-job-completion
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
-        command:
-        - /root/job_complete.py
-        args:
-        - --job-name
-        - {{ .Release.Name }}-sdc-onboarding-be-cassandra-init
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+        - name: {{ include "common.name" . }}-readiness
+          command:
+            - /root/ready.py
+          args:
+            - --container-name
+            - "sdc-onboarding-be"
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        - name: {{ include "common.name" . }}-job-completion
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+          command:
+          - /root/job_complete.py
+          args:
+          - --job-name
+          - {{ .Release.Name }}-sdc-onboarding-be-cassandra-init
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+      ##################################
+      #           containers           #
+      ##################################
       containers:
         - name: {{ include "common.name" . }}
+{{ if or .Values.master5000.loadFromMaster5000 .Values.global.allFromMaster5000 }}
+          image: "master:5000/{{ .Values.master5000.master5000Image }}"
+{{ else }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+{{ end }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          #########
+          # ports #
+          #########
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
-          {{ if eq .Values.liveness.enabled true }}
+            - containerPort: {{ .Values.service.internalPort }}
+            - containerPort: {{ .Values.service.internalPort2 }}
+{{ if .Values.debugEnabled .Values.global.developMod }}
+            - containerPort: {{ .Values.service.internalDibugPort }}
+{{ end }}
+          #################
+          # livenessProbe #
+          #################
+{{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end }}
+{{ end }}
+          ##################
+          # readinessProbe #
+          ##################
           readinessProbe:
             exec:
               command:
-              - "/var/lib/ready-probe.sh"
+                - "/var/lib/ready-probe.sh"
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           resources:
 {{ include "common.resources" . | indent 12 }}
+          #########################
+          # environment variables #
+          #########################
           env:
-          - name: ENVNAME
-            value: {{ .Values.global.env.name }}
-          - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
-          - name: cassandra_ssl_enabled
-            value: {{ .Values.config.cassandraSslEnabled | quote }}
-          - name: HOST_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
+            - name: ENVNAME
+              value: {{ .Values.global.env.name }}
+            - name: JAVA_OPTIONS
+{{ if or .Values.debugEnabled .Values.global.developMod }}
+              value: {{ .Values.config.javaOptionsDebug }}
+{{ else }}
+              value: {{ .Values.config.javaOptions }}
+{{ end }}
+            - name: cassandra_ssl_enabled
+              value: {{ .Values.config.cassandraSslEnabled | quote }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          #########################
+          #      volumeMounts     #
+          #########################
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-environments
-            mountPath: /root/chef-solo/environments/
-          - name: {{ include "common.fullname" . }}-localtime
-            mountPath: /etc/localtime
-            readOnly: true
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-logback
-            mountPath: /tmp/logback.xml
-            subPath: logback.xml
+            - name: {{ include "common.fullname" . }}-environments
+              mountPath: /root/chef-solo/environments/
+            - name: {{ include "common.fullname" . }}-localtime
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: {{ include "common.fullname" . }}-logs
+              mountPath: /var/log/onap
+            - name: {{ include "common.fullname" . }}-logback
+              mountPath: /tmp/logback.xml
+              subPath: logback.xml
           lifecycle:
             postStart:
               exec:
                 command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
-        # side car containers
-        - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
+          # side car containers
+          - name: {{ include "common.name" . }}-filebeat-onap
+            image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+            volumeMounts:
+              - name: {{ include "common.fullname" . }}-filebeat-conf
+                mountPath: /usr/share/filebeat/filebeat.yml
+                subPath: filebeat.yml
+              - name: {{ include "common.fullname" . }}-logs
+                mountPath: /var/log/onap
+              - name: {{ include "common.fullname" . }}-data-filebeat
+                mountPath: /usr/share/filebeat/data
+      #########################
+      #        volumes        #
+      #########################
       volumes:
-      - name: {{ include "common.fullname" . }}-localtime
-        hostPath:
-          path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ .Release.Name }}-sdc-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
-      - name: {{ include "common.fullname" . }}-logback
-        configMap:
-          name : {{ include "common.fullname" . }}-logging-configmap
-      - name: {{ include "common.fullname" . }}-environments
-        configMap:
-          name: {{ .Release.Name }}-sdc-environments-configmap
-          defaultMode: 0755
-      - name:  {{ include "common.fullname" . }}-logs
-        emptyDir: {}
+        - name: {{ include "common.fullname" . }}-localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-sdc-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name: {{ include "common.fullname" . }}-logback
+          configMap:
+            name : {{ include "common.fullname" . }}-logging-configmap
+        - name: {{ include "common.fullname" . }}-environments
+          configMap:
+            name: {{ .Release.Name }}-sdc-environments-configmap
+            defaultMode: 0755
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
