@@ -17,17 +17,17 @@ Summary
 =======
 
 The focus of this release was on incremental improvements in the following areas:
-- Pluggable persistent storage with support for GlusterFS as the first storage class provisioner
-- CPU and Memory limits in Helm Charts to improve Pod placement based on resource availablity in Kubernetes Cluster
-- Support of Node Selectors for Pod placement
-- Common "shared" Helm Charts referencing common images
-  - mariadb-galera cluster
-  - postgres cluster
+* Pluggable persistent storage with support for GlusterFS as the first storage class provisioner
+* CPU and Memory limits in Helm Charts to improve Pod placement based on resource availablity in Kubernetes Cluster
+* Support of Node Selectors for Pod placement
+* Common "shared" Helm Charts referencing common images
+  - mariadb-galera
+  - postgres
   - cassandra
   - mysql
-  - mongodb
-- Integration of ARK Backup and Restore solution
-- Introduction of Helm deploy and undeploy plugins to better manage ONAP deployments
+  - mongo
+* Integration of ARK Backup and Restore solution
+* Introduction of Helm deploy and undeploy plugins to better manage ONAP deployments
 
 
 **Security Notes**
