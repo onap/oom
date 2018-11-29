@@ -39,6 +39,15 @@ Quick Links:
 
 	- `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
 
+
+**Known Issues**
+
+Problem:        kubectl connections to pods (kubectl exec|logs) will fail after a while due to a known bug in Kubernetes
+Workaround:     Restart of the kubelet daemons on the k8s hosts
+Fix:            Will be delivered in the next release via a new Kubernetes version
+- `OOM-1532 <https://jira.onap.org/browse/OOM-1532>`_
+
+
 Version 2.0.0 Beijing Release
 -----------------------------
 
