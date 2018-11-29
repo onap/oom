@@ -42,10 +42,13 @@ Quick Links:
 
 **Known Issues**
 
-Problem:        kubectl connections to pods (kubectl exec|logs) will fail after a while due to a known bug in Kubernetes
+Problem:        kubectl connections to pods (kubectl exec|logs) will fail after a while due to a known bug in Kubernetes (1.11.2)
 Workaround:     Restart of the kubelet daemons on the k8s hosts
-Fix:            Will be delivered in the next release via a new Kubernetes version
+Fix:            Will be delivered in the next release via a new Kubernetes version (1.12)
+- `K8S Bug Report <https://github.com/kubernetes/kubernetes/issues/67659>`_
 - `OOM-1532 <https://jira.onap.org/browse/OOM-1532>`_
+- `OOM-1516 <https://jira.onap.org/browse/OOM-1516>`_
+- `OOM-1520 <https://jira.onap.org/browse/OOM-1520>`_
 
 
 Version 2.0.0 Beijing Release
