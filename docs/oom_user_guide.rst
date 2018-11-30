@@ -381,16 +381,31 @@ below::
   10.12.6.155 portal.api.simpledemo.onap.org
   10.12.6.155 vid.api.simpledemo.onap.org
   10.12.6.155 sdc.api.fe.simpledemo.onap.org
+  10.12.6.155 sdc.workflow.plugin.simpledemo.onap.org
+  10.12.6.155 sdc.dcae.plugin.simpledemo.onap.org
   10.12.6.155 portal-sdk.simpledemo.onap.org
   10.12.6.155 policy.api.simpledemo.onap.org
   10.12.6.155 aai.api.sparky.simpledemo.onap.org
   10.12.6.155 cli.api.simpledemo.onap.org
   10.12.6.155 msb.api.discovery.simpledemo.onap.org
+  10.12.6.155 msb.api.simpledemo.onap.org
+  10.12.6.155 clamp.api.simpledemo.onap.org
+  10.12.6.155 so.api.simpledemo.onap.org
 
 Ensure you've disabled any proxy settings the browser you are using to access
-the portal and then simply access the familiar URL:
-http://portal.api.simpledemo.onap.org:8989/ONAPPORTAL/login.htm
+the portal and then simply access now the new ssl-encrypted URL:
+https://portal.api.simpledemo.onap.org:30225/ONAPPORTAL/login.htm
 
+.. note::
+  Using the HTTPS based Portal URL the Browser needs to be configured to accept
+  unsecure credentials.
+  Additionally when opening an Application inside the Portal, the Browser
+  might block the content, which requires to disable the blocking and reloading
+  of the page
+
+.. note::
+  Besides the ONAP Portal the Components can deliver additional user interfaces, 
+  please check the Component specific documentation.
 
 .. note::     
 
