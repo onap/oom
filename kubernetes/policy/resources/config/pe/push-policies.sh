@@ -139,6 +139,26 @@ curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'A
     }
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
 
+sleep 2
+
+echo "Create BRMSParamCCVPN Policy"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/html' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+    "policyConfigType": "BRMS_PARAM",
+    "policyName": "com.BRMSParamCCVPN",
+    "policyDescription": "BRMS Param CCVPN policy",
+    "policyScope": "com",
+    "attributes": {
+        "MATCHING": {
+            "controller" : "amsterdam"
+        },
+        "RULE": {
+            "templateName": "ClosedLoopControlName",
+            "closedLoopControlName": "ControlLoop-CCVPN-2179b738-fd36-4843-a71a-a8c24c70c66b",
+            "controlLoopYaml": "controlLoop%3A%0D%0A++version%3A+2.0.0%0D%0A++controlLoopName%3A+ControlLoop-CCVPN-2179b738-fd36-4843-a71a-a8c24c70c66b%0D%0A++trigger_policy%3A+unique-policy-id-16-Reroute%0D%0A++timeout%3A+3600%0D%0A++abatement%3A+false%0D%0A+%0D%0Apolicies%3A%0D%0A++-+id%3A+unique-policy-id-16-Reroute%0D%0A++++name%3A+Connectivity Reroute%0D%0A++++description%3A%0D%0A++++actor%3A+SDNC%0D%0A++++recipe%3A+Reroute%0D%0A++++target%3A%0D%0A++++++type%3A+VM%0D%0A++++retry%3A+3%0D%0A++++timeout%3A+1200%0D%0A++++success%3A+final_success%0D%0A++++failure%3A+final_failure%0D%0A++++failure_timeout%3A+final_failure_timeout%0D%0A++++failure_retries%3A+final_failure_retries%0D%0A++++failure_exception%3A+final_failure_exception%0D%0A++++failure_guard%3A+final_failure_guard"
+        }
+    }
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/createPolicy'
+
 #########################################Create Micro Service Config policies##########################################
 
 echo "Create MicroService Config Policies"
@@ -411,6 +431,15 @@ echo "pushPolicy : PUT : com.BRMSParamvPCI"
 curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
   "pdpGroup": "default",
   "policyName": "com.BRMSParamvPCI",
+  "policyType": "BRMS_Param"
+}' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
+
+sleep 2
+
+echo "pushPolicy : PUT : com.BRMSParamCCVPN"
+curl -k -v --silent -X PUT --header 'Content-Type: application/json' --header 'Accept: text/plain' --header 'ClientAuth: cHl0aG9uOnRlc3Q=' --header 'Authorization: Basic dGVzdHBkcDphbHBoYTEyMw==' --header 'Environment: TEST' -d '{
+  "pdpGroup": "default",
+  "policyName": "com.BRMSParamCCVPN",
   "policyType": "BRMS_Param"
 }' 'https://{{.Values.global.pdp.nameOverride}}:{{.Values.config.pdpPort}}/pdp/api/pushPolicy'
 
