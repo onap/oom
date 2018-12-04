@@ -70,18 +70,10 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: /cfy-persist
+            name: cm-persistent
           securityContext:
             privileged: True
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                - bash
-                - "-c"
-                - |
-                  set -ex
-                  mkdir -p /var/run/secrets/kubernetes.io/
-                  ln -s /secret /var/run/secrets/kubernetes.io/serviceaccount
       volumes:
         - name: {{ include "common.fullname" . }}-config
           configMap:
@@ -95,5 +87,8 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: cm-persistent
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-data
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
