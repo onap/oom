@@ -108,7 +108,7 @@ stable which should be removed to avoid confusion::
 
 To prepare your system for an installation of ONAP, you'll need to::
 
-  > git clone -b beijing http://gerrit.onap.org/r/oom
+  > git clone -b casablanca http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 
@@ -282,7 +282,7 @@ value for the vnfDeployment/openstack/oam_network_cidr key as shown below.
 
 To deploy ONAP with this environment file, enter::
 
-  > helm install local/onap -n beijing -f environments/onap-production.yaml
+  > helm deploy local/onap -n casablanca -f environments/onap-production.yaml
 
 .. include:: environments_onap_demo.yaml
    :code: yaml
@@ -381,16 +381,31 @@ below::
   10.12.6.155 portal.api.simpledemo.onap.org
   10.12.6.155 vid.api.simpledemo.onap.org
   10.12.6.155 sdc.api.fe.simpledemo.onap.org
+  10.12.6.155 sdc.workflow.plugin.simpledemo.onap.org
+  10.12.6.155 sdc.dcae.plugin.simpledemo.onap.org
   10.12.6.155 portal-sdk.simpledemo.onap.org
   10.12.6.155 policy.api.simpledemo.onap.org
   10.12.6.155 aai.api.sparky.simpledemo.onap.org
   10.12.6.155 cli.api.simpledemo.onap.org
   10.12.6.155 msb.api.discovery.simpledemo.onap.org
+  10.12.6.155 msb.api.simpledemo.onap.org
+  10.12.6.155 clamp.api.simpledemo.onap.org
+  10.12.6.155 so.api.simpledemo.onap.org
 
 Ensure you've disabled any proxy settings the browser you are using to access
-the portal and then simply access the familiar URL:
-http://portal.api.simpledemo.onap.org:8989/ONAPPORTAL/login.htm
+the portal and then simply access now the new ssl-encrypted URL:
+https://portal.api.simpledemo.onap.org:30225/ONAPPORTAL/login.htm
 
+.. note::
+  Using the HTTPS based Portal URL the Browser needs to be configured to accept
+  unsecure credentials.
+  Additionally when opening an Application inside the Portal, the Browser
+  might block the content, which requires to disable the blocking and reloading
+  of the page
+
+.. note::
+  Besides the ONAP Portal the Components can deliver additional user interfaces, 
+  please check the Component specific documentation.
 
 .. note::     
 
@@ -572,14 +587,14 @@ sequence of events described in the previous paragraph would be initiated.
 For example, to upgrade a container by changing configuration, specifically an
 environment value::
 
-  > helm upgrade beijing onap/so --version 2.0.1 --set enableDebug=true
+  > helm deploy casablanca onap/so --version 2.0.1 --set enableDebug=true
 
 Issuing this command will result in the appropriate container being stopped by
 Kubernetes and replaced with a new container with the new environment value.
 
 To upgrade a component to a new version with a new configuration file enter::
 
-  > helm upgrade beijing onap/so --version 2.0.2 -f environments/demo.yaml
+  > helm deploy casablanca onap/so --version 2.0.2 -f environments/demo.yaml
 
 To fetch release history enter::
 
@@ -672,18 +687,18 @@ from a running deployment the operator perform a 'dry-run' to display exactly
 what will happen with a given command prior to actually deleting anything.  For
 example::
 
-  > helm delete --dry-run beijing
+  > helm undeploy casablanca --dry-run
 
-will display the outcome of deleting the 'beijing' release from the deployment.
+will display the outcome of deleting the 'casablanca' release from the deployment.
 To completely delete a release and remove it from the internal store enter::
 
-  > helm delete --purge beijing
+  > helm undeploy casablanca --purge
 
 One can also remove individual components from a deployment by changing the
 ONAP configuration values.  For example, to remove `so` from a running
 deployment enter::
 
-  > helm upgrade beijing osn/onap --set so.enabled=false
+  > helm undeploy casablanca-so --purge
 
 will remove `so` as the configuration indicates it's no longer part of the
 deployment. This might be useful if a one wanted to replace just `so` by
