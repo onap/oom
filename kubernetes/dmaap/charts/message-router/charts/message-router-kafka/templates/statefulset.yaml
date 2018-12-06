@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -24,32 +24,30 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  serviceName: {{ .Values.service.name }}
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
   template:
     metadata:
       labels:
         app:  {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      podAntiAffinity:
+         preferredDuringSchedulingIgnoredDuringExecution:
+         - weight: 1
+           podAffinityTerm:
+             labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - {{ include "common.name" . }}
+             topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: {{ include "common.name" . }}-seed-kafka-topics
-        command:
-        - /bin/bash
-        - -c
-        - >
-          if [ -d /tmp/topics/ECOMP-PORTAL-INBOX-0 ]; then
-          echo "nothing to do";
-          else
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
-          echo "Clone complete. Copying from /tmp/gerrit/oom-projects/data-kafka/kafka-logs/* to /tmp/topics";
-          cp -var /tmp/gerrit/oom-topics/data-kafka/kafka-logs/* /tmp/topics;
-          echo "Done.";
-          fi
+      - name: {{ include "common.name" . }}-initcontainer
         image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /tmp/topics
-          name: kafka-data
       - command:
         - /root/ready.py
         args:
@@ -72,7 +70,7 @@ spec:
 {{ include "common.resources" . | indent 12 }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
-        {{ if eq .Values.liveness.enabled true }}
+       {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -85,18 +83,36 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         env:
+        - name: HOST_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: HOST_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: "{{.Values.zookeeper.name}}:{{.Values.zookeeper.port}}"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: "INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT"
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: "INTERNAL_PLAINTEXT://{{ include "common.servicename" .  }}:{{.Values.service.internalPort}}"
+          value: "INTERNAL_PLAINTEXT://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.internalPort}}"
         - name: KAFKA_LISTENERS
           value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}"
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: "INTERNAL_PLAINTEXT"
         - name: KAFKA_LOG_DIRS
-          value: "/kafka/logs"
+          value: "kafka/logs"
+        - name: BROKER_ID_COMMAND
+          value: "hostname | awk -F '-' '{print $NF}'"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "{{ .Values.replicaCount }}"
+        - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+          value: "{{ .Values.replicaCount }}"
+        - name: KAFKA_NUM_PARTITIONS
+          value: "{{ .Values.defaultpartitions }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -112,8 +128,25 @@ spec:
       - name: docker-socket
         hostPath:
           path: /var/run/docker.sock
-      - name: kafka-data
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+        labels:
+          app: {{ include "common.fullname" . }}
+          chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+          release: "{{ .Release.Name }}"
+          heritage: "{{ .Release.Service }}"
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        selector:
+          matchLabels:
+            release: "{{ .Release.Name }}"
+            app: {{ .Values.service.name }}
+            chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+            heritage: "{{ .Release.Service }}"
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
