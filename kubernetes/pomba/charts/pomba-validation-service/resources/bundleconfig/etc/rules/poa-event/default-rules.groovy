@@ -65,6 +65,90 @@ entity {
       attributes 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vfList[*].vfModuleList[*].networkList[*]'
     }
 
+    // SDNC-AAI comparison: Context level
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc', 'context-list.aai'
+    }
+
+    // SDNC-AAI comparison: Service entity
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.service', 'context-list.aai.service'
+    }
+
+    // SDNC-AAI comparison: VF list
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*]', 'context-list.aai.vfList[*]'
+    }
+
+    // SDNC-AAI comparison: VF-Module list
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*]', 'context-list.aai.vfList[*].vfModuleList[*]'
+    }
+
+    // SDNC-AAI comparison: VNFC list
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vnfcList[*]', 'context-list.aai.vfList[*].vnfcList[*]'
+    }
+
+    // SDNC-AAI comparison: VM list
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vfList[*].vfModuleList[*].vmList[*]'
+    }
+
+    // SDNC-AAI comparison: Network list
+    useRule {
+      name 'SDNC-AAI-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vfList[*].vfModuleList[*].networkList[*]'
+    }
+
+    // SDNC-NDCB comparison: Context level
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc', 'context-list.ndcb'
+    }
+
+    // SDNC-NDCB comparison: Service entity
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.service', 'context-list.ndcb.service'
+    }
+
+    // SDNC-NDCB comparison: VF list
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*]', 'context-list.ndcb.vfList[*]'
+    }
+
+    // SDNC-NDCB comparison: VF-Module list
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*]'
+    }
+
+    // SDNC-NDCB comparison: VNFC list
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vnfcList[*]', 'context-list.ndcb.vfList[*].vnfcList[*]'
+    }
+
+    // SDNC-NDCB comparison: VM list
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].vmList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*].vmList[*]'
+    }
+
+    // SDNC-NDCB comparison: Network list
+    useRule {
+      name 'SDNC-NDCB-attribute-comparison'
+      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].networkList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*]'
+    }
+
     // SDC-AAI VNFC type
     useRule {
       name 'SDC-AAI-vnfc-type'
@@ -155,7 +239,7 @@ rule {
   name        'NDCB-AAI-attribute-comparison'
   category    'Attribute Mismatch'
   description 'Verify that all attributes in Network-Discovery are the same as in AAI'
-  errorText   'Error found with attribute "{0}"; value "{1}" does not exist in Network-Discovery'
+  errorText   'Error found with attribute "{0}"; Network-Discovery value does not match AAI value "{1}"'
   severity    'ERROR'
   attributes  'ndcbItems', 'aaiItems'
   validate    '''
@@ -222,6 +306,171 @@ rule {
               result = false
               details.add("$ndcbKey")
               details.add("$aaiValue")
+            }
+          }
+          if(result == false) {
+            // break out of 'any' loop
+            return true
+          }
+        }
+        return new Tuple2(result, details)
+        '''
+}
+
+rule {
+  name        'SDNC-AAI-attribute-comparison'
+  category    'Attribute Mismatch'
+  description 'Verify that all attributes in SDN-C are the same as in AAI'
+  errorText   'Error found with attribute "{0}"; SDN-C value does not match AAI value "{1}"'
+  severity    'ERROR'
+  attributes  'sdncItems', 'aaiItems'
+  validate    '''
+        Closure<java.util.Map> getAttributes = { parsedData ->
+          java.util.Map attributeMap = new java.util.HashMap()
+
+          def isAttributeDataQualityOk = { attribute ->
+            attribute.findResult{ k, v -> if(k.equals("dataQuality") ) {return v.get("status")}}.equals("ok")
+          }
+
+          def addToMap = { attrKey, attrValue ->
+            java.util.Set values = attributeMap.get("$attrKey")
+            if(values == null) {
+              values = new java.util.HashSet()
+              attributeMap.put("$attrKey", values)
+            }
+            values.add("$attrValue")
+          }
+
+          def addAttributeToMap = { attribute ->
+            if(isAttributeDataQualityOk(attribute)) {
+              String key, value
+              attribute.each { k, v ->
+                if(k.equals("name")) {key = "$v"}
+                if(k.equals("value")) {value = "$v"}
+              }
+              addToMap("$key", "$value")
+            }
+          }
+
+          def processKeyValue = { key, value ->
+            if(value instanceof java.util.ArrayList) {
+              if(key.equals("attributeList")) {
+                value.each {
+                  addAttributeToMap(it)
+                }
+              }
+            } else if(!(value instanceof groovy.json.internal.LazyMap)) {
+              // only add key-value attributes, skip the rest
+              addToMap("$key", "$value")
+            }
+          }
+
+          if(parsedData instanceof java.util.ArrayList) {
+            parsedData.each {
+              it.each { key, value -> processKeyValue(key, value) }
+            }
+          } else {
+            parsedData.each { key, value -> processKeyValue(key, value) }
+          }
+          return attributeMap
+        }
+
+        def slurper = new groovy.json.JsonSlurper()
+        java.util.Map sdnc = getAttributes(slurper.parseText(sdncItems.toString()))
+        java.util.Map aai = getAttributes(slurper.parseText(aaiItems.toString()))
+
+        boolean result = true
+        List<String> details = new ArrayList<>();
+        sdnc.any{ sdncKey, sdncValueList ->
+          def aaiValueList = aai.get("$sdncKey")
+          aaiValueList.each{ aaiValue ->
+            if(!sdncValueList.any{ it == "$aaiValue" }) {
+              result = false
+              details.add("$sdncKey")
+              details.add("$aaiValue")
+            }
+          }
+          if(result == false) {
+            // break out of 'any' loop
+            return true
+          }
+        }
+        return new Tuple2(result, details)
+        '''
+}
+
+
+rule {
+  name        'SDNC-NDCB-attribute-comparison'
+  category    'Attribute Mismatch'
+  description 'Verify that all attributes in SDN-C are the same as in Network Discovery'
+  errorText   'Error found with attribute "{0}"; SDN-C value does not match Network-Discovery value "{1}"'
+  severity    'ERROR'
+  attributes  'sdncItems', 'ndcbItems'
+  validate    '''
+        Closure<java.util.Map> getAttributes = { parsedData ->
+          java.util.Map attributeMap = new java.util.HashMap()
+
+          def isAttributeDataQualityOk = { attribute ->
+            attribute.findResult{ k, v -> if(k.equals("dataQuality") ) {return v.get("status")}}.equals("ok")
+          }
+
+          def addToMap = { attrKey, attrValue ->
+            java.util.Set values = attributeMap.get("$attrKey")
+            if(values == null) {
+              values = new java.util.HashSet()
+              attributeMap.put("$attrKey", values)
+            }
+            values.add("$attrValue")
+          }
+
+          def addAttributeToMap = { attribute ->
+            if(isAttributeDataQualityOk(attribute)) {
+              String key, value
+              attribute.each { k, v ->
+                if(k.equals("name")) {key = "$v"}
+                if(k.equals("value")) {value = "$v"}
+              }
+              addToMap("$key", "$value")
+            }
+          }
+
+          def processKeyValue = { key, value ->
+            if(value instanceof java.util.ArrayList) {
+              if(key.equals("attributeList")) {
+                value.each {
+                  addAttributeToMap(it)
+                }
+              }
+            } else if(!(value instanceof groovy.json.internal.LazyMap)) {
+              // only add key-value attributes, skip the rest
+              addToMap("$key", "$value")
+            }
+          }
+
+          if(parsedData instanceof java.util.ArrayList) {
+            parsedData.each {
+              it.each { key, value -> processKeyValue(key, value) }
+            }
+          } else {
+            parsedData.each { key, value -> processKeyValue(key, value) }
+          }
+          return attributeMap
+        }
+
+        def slurper = new groovy.json.JsonSlurper()
+        java.util.Map sdnc = getAttributes(slurper.parseText(sdncItems.toString()))
+        java.util.Map ndcb = getAttributes(slurper.parseText(ndcbItems.toString()))
+
+        boolean result = true
+        List<String> details = new ArrayList<>();
+        sdnc.any{ sdncKey, sdncValueList ->
+          def ndcbValueList = ndcb.get("$sdncKey")
+          ndcbValueList.each{ ndcbValue ->
+            if(!sdncValueList.any{ it == "$ndcbValue" }) {
+              result = false
+              details.add("$sdncKey")
+              details.add("$ndcbValue")
             }
           }
           if(result == false) {
