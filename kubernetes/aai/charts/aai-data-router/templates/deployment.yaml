@@ -35,6 +35,14 @@ spec:
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
     spec:
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
       initContainers:
       - command:
         - /bin/sh
@@ -120,7 +128,7 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
 
       # side car containers
       - name: filebeat-onap
@@ -136,6 +144,8 @@ spec:
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /usr/share/filebeat/data
           name: aai-filebeat
+        resources:
+{{ include "common.resources" . }}
       volumes:
       - name: localtime
         hostPath:
