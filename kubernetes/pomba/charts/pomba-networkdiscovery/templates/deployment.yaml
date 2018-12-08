@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs
+﻿# Copyright © 2018 Amdocs
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,8 @@ spec:
             name: localtime
             readOnly: true
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
+            mountPath: /opt/app/logs
+            readOnly: false
           - mountPath: /opt/app/config/logback.xml
             name: {{ include "common.fullname" . }}-log-conf
             subPath: logback.xml
@@ -72,6 +73,9 @@ spec:
             name: {{ include "common.fullname" . }}-auth-secret
             subPath: tomcat_keystore
             readOnly: true
+          - name: {{ include "common.fullname" . }}-logs-eelf
+            mountPath: /opt/app/logs/EELF
+            readOnly: false
 
           resources:
 {{ include "common.resources" . | indent 12 }}
@@ -95,7 +99,7 @@ spec:
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
+            mountPath: /opt/app/logs
 
       volumes:
         - name: localtime
@@ -116,6 +120,8 @@ spec:
           configMap:
             name: {{ .Release.Name }}-pomba-filebeat-configmap
         - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs-eelf
           emptyDir: {}
 
       imagePullSecrets:
