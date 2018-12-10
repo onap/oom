@@ -131,5 +131,29 @@ then
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
+
+# Move journal and snapshots directory to persistent storage
+
+hostdir=${ODL_HOME}/daexim/$(hostname -s)
+if [ ! -d $hostdir ]
+then
+    mkdir -p $hostdir
+    if [ -d ${ODL_HOME}/journal ]
+    then
+        mv ${ODL_HOME}/journal ${hostdir}
+    else
+        mkdir ${hostdir}/journal
+    fi
+    if [ -d ${ODL_HOME}/snapshots ]
+    then
+        mv ${ODL_HOME}/snapshots ${hostdir}
+    else
+        mkdir ${hostdir}/snapshots
+    fi
+fi
+
+ln -s ${hostdir}/journal ${ODL_HOME}/journal
+ln -s ${hostdir}/snapshots ${ODL_HOME}/snapshots
+
 exec ${ODL_HOME}/bin/karaf server
 
