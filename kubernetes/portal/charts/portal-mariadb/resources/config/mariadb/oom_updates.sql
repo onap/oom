@@ -34,7 +34,7 @@ update fn_app set app_url = 'https://{{.Values.config.papHostName}}:{{.Values.co
 --vid => 8080:30200
 update fn_app set app_url = 'https://{{.Values.config.vidHostName}}:{{.Values.config.vidPort}}/vid/welcome.htm', app_rest_endpoint = 'https://vid:8443/vid/api/v3' where app_name = 'Virtual Infrastructure Deployment';
 --sparky => TODO: sparky doesn't open a node port yet
-update fn_app set app_url = 'http://{{.Values.config.aaiSparkyHostName}}:{{.Values.config.aaiSparkyPort}}/services/aai/webapp/index.html#/viewInspect', app_rest_endpoint = 'http://aai-sparky-be.{{.Release.Namespace}}:9517/api/v2' where app_name = 'A&AI UI';
+update fn_app set app_url = 'https://{{.Values.config.aaiSparkyHostName}}:{{.Values.config.aaiSparkyPort}}/services/aai/webapp/index.html#/viewInspect', app_rest_endpoint = 'https://aai-sparky-be.{{.Release.Namespace}}:8000/api/v2' where app_name = 'A&AI UI';
 --cli => 8080:30260
 update fn_app set app_url = 'http://{{.Values.config.cliHostName}}:{{.Values.config.cliPort}}/', app_type = 1 where app_name = 'CLI';
 --msb-iag => 80:30280
