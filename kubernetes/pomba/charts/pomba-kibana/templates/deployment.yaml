@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+﻿# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,6 +117,8 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "/opt/app/bin/kibana_start.sh"]
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
@@ -143,8 +145,14 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/kibana/config/
+          - mountPath: /opt/app/auth
             name: {{ include "common.fullname" . }}
+          - mountPath: /opt/app/auth/client-cert-onap.p12
+            name: {{ include "common.fullname" . }}-client-cert
+          - mountPath: /opt/app/auth/tomcat_keystore
+            name: {{ include "common.fullname" . }}-tomcat-keystore
+          - mountPath: /opt/app/bin/
+            name: {{ include "common.fullname" . }}-bin
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -172,6 +180,22 @@ spec:
             - key: violationsDump.json
               path: violationsDump.json
             - key: default-mapping.json
-              path: default-mapping.json                                                                                                       
+              path: default-mapping.json
+        - name: {{ include "common.fullname" . }}-client-cert
+          configMap:
+            name: {{ include "common.fullname" . }}-client-cert
+            items:
+            - key: client-cert-onap.p12
+              path: client-cert-onap.p12
+        - name: {{ include "common.fullname" . }}-tomcat-keystore
+          configMap:
+            name: {{ include "common.fullname" . }}-tomcat-keystore
+            items:
+            - key: tomcat_keystore
+              path: tomcat_keystore
+        - name: {{ include "common.fullname" . }}-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-bin
+            defaultMode: 0777
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
