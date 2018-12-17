@@ -45,7 +45,7 @@ update fn_app set app_url = 'http://{{.Values.config.msbHostName}}:{{.Values.con
 Create SO-Monitoring App
 */
 INSERT IGNORE INTO `fn_app` (`app_id`, `app_name`, `app_image_url`, `app_description`, `app_notes`, `app_url`, `app_alternate_url`, `app_rest_endpoint`, `ml_app_name`, `ml_app_admin_id`, `mots_id`, `app_password`, `open`, `enabled`, `thumbnail`, `app_username`, `ueb_key`, `ueb_secret`, `ueb_topic_name`, `app_type`,`auth_central`,`auth_namespace`) VALUES
-(10, 'SO-Monitoring', 'images/cache/portal-345993588_92550.png', NULL, NULL, 'http://{{.Values.config.soMonitoringHostName}}:{{.Values.soMonitoringPort}}', NULL, 'http://so-monitoring:30224', '', '', NULL, 'password', 'Y', 'Y', NULL, 'user', '', '', '', 1,'N','SO-Monitoring');
+(10, 'SO-Monitoring', 'images/cache/portal-345993588_92550.png', NULL, NULL, 'http://{{.Values.config.soMonitoringHostName}}:{{.Values.config.soMonitoringPort}}', NULL, 'http://so-monitoring:30224', '', '', NULL, 'password', 'Y', 'Y', NULL, 'user', '', '', '', 1,'N','SO-Monitoring');
 
 /*
 Add SO Monitoring to Default apps
