@@ -29,8 +29,8 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-repository: docker.io
-image: wurstmeister/zookeeper:latest
+repository: nexus3.onap.org:10001
+image: onap/dmaap/zookeeper:1.0.0
 pullPolicy: Always
 ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 
@@ -40,12 +40,12 @@ debugEnabled: false
 # application configuration
 config:
   # gerrit branch where the latest code is checked in
-  gerritBranch: 3.0.0-ONAP
+  gerritBranch: master
   # gerrit project where the latest code is checked in
   gerritProject: http://gerrit.onap.org/r/dmaap/messagerouter/messageservice.git
 
 # default number of instances
-replicaCount: 1
+replicaCount: 3
 
 nodeSelector: {}
 
@@ -62,6 +62,11 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+
+#Zookeeper properties
+zk:
+ initLimit: 5
+ syncLimit: 2
 
 ## Persist data to a persitent volume
 persistence:
@@ -84,13 +89,21 @@ persistence:
   accessMode: ReadWriteMany
   size: 2Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: message-router/data-zookeeper/
+  mountSubPath: message-router/data-zookeeper
 
+
+rollingUpdate:
+  maxUnavailable: 1
 service:
-  type: NodePort
+  type: ClusterIP
   name: message-router-zookeeper
   portName: message-router-zookeeper
-  internalPort: 2181
+  clientPortName: client
+  clientPort: 2181
+  serverPortName: server
+  serverPort: 2888
+  leaderElectionPortName: leader-election
+  leaderElectionPort: 3888
 
 ingress:
   enabled: false
