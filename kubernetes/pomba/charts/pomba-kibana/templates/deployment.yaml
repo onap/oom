@@ -117,12 +117,15 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "/opt/app/bin/kibana_start.sh"]
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
           readinessProbe:
             httpGet:
               path: "/"
+              scheme: "HTTPS"
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
@@ -133,6 +136,7 @@ spec:
           livenessProbe:
             httpGet:
               path: "/"
+              scheme: "HTTPS"
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
@@ -143,8 +147,12 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/kibana/config/
+          - mountPath: /usr/share/kibana/config
             name: {{ include "common.fullname" . }}
+          - mountPath: /opt/app/auth
+            name: {{ include "common.fullname" . }}-auth
+          - mountPath: /opt/app/bin
+            name: {{ include "common.fullname" . }}-bin
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -166,12 +174,20 @@ spec:
             - key: kibana.yml
               path: kibana.yml
             - key: default.json
-              path: default.json                    
+              path: default.json
             - key: validationsDump.json
               path: validationsDump.json
             - key: violationsDump.json
               path: violationsDump.json
             - key: default-mapping.json
-              path: default-mapping.json                                                                                                       
+              path: default-mapping.json
+        - name: {{ include "common.fullname" . }}-auth
+          configMap:
+            name: {{ include "common.fullname" . }}-auth
+            defaultMode: 0777
+        - name: {{ include "common.fullname" . }}-bin
+          configMap:
+            name: {{ include "common.fullname" . }}-bin
+            defaultMode: 0777
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
