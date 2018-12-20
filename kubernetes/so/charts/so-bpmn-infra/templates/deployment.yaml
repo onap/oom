@@ -85,6 +85,10 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name}}-so-db-secrets
               key: mariadb.admin.password
+        - name: JVM_ARGS
+        {{- if .Values.debugEnabled }}
+          value: -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address={{ .Values.service.internalPort2 }}
+        {{ end }}
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
@@ -109,6 +113,11 @@ spec:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
           protocol: TCP
+        {{- if .Values.debugEnabled }}
+        - containerPort: {{ index .Values.service.internalPort2 }}
+          name: {{ .Values.service.portName2 }}
+          protocol: TCP
+        {{ end }}
       volumes:
       - name: logs
         emptyDir: {}
