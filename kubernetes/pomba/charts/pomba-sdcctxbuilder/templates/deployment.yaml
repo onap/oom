@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+﻿# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,6 +59,15 @@ spec:
             name: {{ include "common.fullname" . }}-config
             subPath: application.properties
             readOnly: true
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /opt/app/logs
+            readOnly: false
+          - mountPath: /opt/app/config/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
+          - name: {{ include "common.fullname" . }}-logs-eelf
+            mountPath: /opt/app/logs/EELF
+            readOnly: false
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -77,5 +86,12 @@ spec:
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+        - name: {{ include "common.fullname" . }}-log-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-log
+        - name:  {{ include "common.fullname" . }}-logs-eelf
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
