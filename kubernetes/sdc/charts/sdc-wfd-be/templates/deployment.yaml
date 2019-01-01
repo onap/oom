@@ -52,6 +52,9 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          {{- if or .Values.debugEnabled }}
+          - containerPort: {{ .Values.service.internalDebugPort }}
+          {{ end }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
@@ -68,7 +71,11 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
+          {{- if .Values.debugEnabled }}
+            value: {{ .Values.config.javaOptionsDebug }}
+          {{ else }}
+            value: {{ .Values.config.javaOptions}}
+          {{ end }}
           - name: CS_HOSTS
             value: "{{ .Values.config.cassandraHosts }}"
           - name: CS_PORT

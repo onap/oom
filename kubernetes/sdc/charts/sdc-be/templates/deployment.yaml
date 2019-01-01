@@ -67,6 +67,9 @@ spec:
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
+          {{- if or .Values.debugEnabled }}
+          - containerPort: {{ .Values.service.internalDebugPort }}
+          {{ end }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
@@ -86,7 +89,11 @@ spec:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
           - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
+          {{- if .Values.debugEnabled }}
+            value: {{ .Values.config.javaOptionsDebug }}
+          {{ else }}
+            value: {{ .Values.config.javaOptions}}
+          {{ end }}
           - name: cassandra_ssl_enabled
             value: {{ .Values.config.cassandraSslEnabled | quote }}
           - name: HOST_IP
