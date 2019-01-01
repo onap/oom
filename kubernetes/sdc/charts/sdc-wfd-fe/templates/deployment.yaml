@@ -51,6 +51,9 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          {{- if .Values.debugEnabled }}
+          - containerPort: {{ .Values.service.internalDebugPort }}
+          {{ end }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
@@ -67,7 +70,11 @@ spec:
           - name: ENVNAME
             value: {{ .Values.global.env.name }}
           - name: JAVA_OPTIONS
+          {{- if .Values.debugEnabled }}
+            value: {{ .Values.config.javaOptionsDebug }}
+          {{ else }}
             value: {{ .Values.config.javaOptions }}
+          {{ end }}
           - name: BACKEND
             value: {{ .Values.config.backendServerURL }}
           volumeMounts:
