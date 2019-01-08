@@ -77,6 +77,8 @@ spec:
           - mountPath: /opt/app/datartr/etc/node.properties
             subPath: node.properties
             name: node-props
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: {{ .Values.global.loggingDirectory }}
           lifecycle:
             postStart:
               exec:
@@ -92,6 +94,19 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+
+        # Filebeat sidecar container
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap/datarouter-node
       volumes:
       - name: localtime
         hostPath:
@@ -110,5 +125,15 @@ spec:
       {{- else }}
         emptyDir: {}
       {{- end }}
+      - name: {{ include "common.fullname" . }}-log-conf
+        configMap:
+          name: {{ include "common.fullname" . }}-log
+      - name: {{ include "common.fullname" . }}-filebeat-conf
+        configMap:
+          name: {{ .Release.Name }}-dmaap-filebeat-configmap
+      - name: {{ include "common.fullname" . }}-data-filebeat
+        emptyDir: {}
+      - name:  {{ include "common.fullname" . }}-logs
+        emptyDir: {}
     imagePullSecrets:
     - name: "{{ include "common.namespace" . }}-docker-registry-key"
