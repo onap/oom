@@ -1,18 +1,18 @@
 .. This work is licensed under a Creative Commons Attribution 4.0
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2019 Amdocs, Bell Canada
 
 .. Links
-.. _Microsoft Azure: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Microsoft+Azure
-.. _Amazon AWS: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Amazon+EC2
-.. _Google GCE: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Google+Compute+Engine
+.. _Microsoft Azure: https://wiki.onap.org/display/DW/Cloud+Native+Deployment#CloudNativeDeployment-MicrosoftAzure
+.. _Amazon AWS: https://wiki.onap.org/display/DW/Cloud+Native+Deployment#CloudNativeDeployment-AmazonAWS
+.. _Google GCE: https://wiki.onap.org/display/DW/Cloud+Native+Deployment#CloudNativeDeployment-GoogleGCE
 .. _VMware VIO: https://wiki.onap.org/display/DW/ONAP+on+VMware+Integrated+OpenStack+-+Container+Orchestration
 .. _OpenStack: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+OpenStack?src=contextnavpagetreemode
-.. _Setting Up Kubernetes with Rancher: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Rancher
+.. _Setting Up Kubernetes with Rancher: https://wiki.onap.org/display/DW/Cloud+Native+Deployment
 .. _Setting Up Kubernetes with Kubeadm: https://wiki.onap.org/display/DW/Deploying+Kubernetes+Cluster+with+kubeadm
-.. _Setting Up Kubernetes with Cloudify: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes+on+Cloudify
-.. _ONAP on Kubernetes Wiki: https://wiki.onap.org/display/DW/ONAP+on+Kubernetes
+.. _Cloud Native Deployment Wiki: https://wiki.onap.org/display/DW/Cloud+Native+Deployment
+.. _ONAP Development - 110 pod limit Wiki: https://wiki.onap.org/display/DW/ONAP+Development#ONAPDevelopment-Changemax-podsfromdefault110podlimit
 
 .. figure:: oomLogoV2-medium.png
    :align: right
@@ -50,7 +50,7 @@ The versions of Kubernetes that are supported by OOM are as follows:
   ==============     ===========  =====  ========  ========
   amsterdam          1.7.x        2.3.x  1.7.x     1.12.x
   beijing            1.8.10       2.8.2  1.8.10    17.03.x
-  casablanca         1.11.2       2.9.1  1.11.2    17.03.x
+  casablanca         1.11.5       2.9.1  1.11.5    17.03.x
   ==============     ===========  =====  ========  ========
 
 Minimum Hardware Configuration
@@ -69,7 +69,9 @@ components that are needed will drastically reduce the requirements.
   =====  =====  ======  ====================
 
 .. note::
-  Kubernetes supports a maximum of 110 pods per node. The use of many small
+  Kubernetes supports a maximum of 110 pods per node - configurable in the --max-pods=n setting off the
+  "additional kubelet flags" box in the kubernetes template window described in 'ONAP Development - 110 pod limit Wiki'
+  - this limit does not need to be modified . The use of many small
   nodes is preferred over a few larger nodes (for example 14x16GB - 8 vCores each).
   Subsets of ONAP may still be deployed on a single node.
 
@@ -98,4 +100,4 @@ OOM can be deployed on a private set of physical hosts or VMs (or even a
 combination of the two). The following guide describe the recommended method to
 setup a Kubernetes cluster: :ref:`onap-on-kubernetes-with-rancher`.
 
-There are alternative deployment methods described on the `ONAP on Kubernetes Wiki`_
+There are alternative deployment methods described on the `Cloud Native Deployment Wiki`_
