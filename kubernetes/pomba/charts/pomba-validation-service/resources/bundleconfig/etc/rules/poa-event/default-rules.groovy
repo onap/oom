@@ -38,31 +38,31 @@ entity {
     // NDCB-AAI comparison: VF list
     useRule {
       name 'NDCB-AAI-attribute-comparison'
-      attributes 'context-list.ndcb.vfList[*]', 'context-list.aai.vfList[*]'
+      attributes 'context-list.ndcb.vnfList[*]', 'context-list.aai.vnfList[*]'
     }
 
     // NDCB-AAI comparison: VF-Module list
     useRule {
       name 'NDCB-AAI-attribute-comparison'
-      attributes 'context-list.ndcb.vfList[*].vfModuleList[*]', 'context-list.aai.vfList[*].vfModuleList[*]'
+      attributes 'context-list.ndcb.vnfList[*].vfModuleList[*]', 'context-list.aai.vnfList[*].vfModuleList[*]'
     }
 
     // NDCB-AAI comparison: VNFC list
     useRule {
       name 'NDCB-AAI-attribute-comparison'
-      attributes 'context-list.ndcb.vfList[*].vnfcList[*]', 'context-list.aai.vfList[*].vnfcList[*]'
+      attributes 'context-list.ndcb.vnfList[*].vnfcList[*]', 'context-list.aai.vnfList[*].vnfcList[*]'
     }
 
     // NDCB-AAI comparison: VM list
     useRule {
       name 'NDCB-AAI-attribute-comparison'
-      attributes 'context-list.ndcb.vfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vfList[*].vfModuleList[*].vmList[*]'
+      attributes 'context-list.ndcb.vnfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].vmList[*]'
     }
 
     // NDCB-AAI comparison: Network list
     useRule {
       name 'NDCB-AAI-attribute-comparison'
-      attributes 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vfList[*].vfModuleList[*].networkList[*]'
+      attributes 'context-list.ndcb.vnfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].networkList[*]'
     }
 
     // SDNC-AAI comparison: Context level
@@ -80,31 +80,31 @@ entity {
     // SDNC-AAI comparison: VF list
     useRule {
       name 'SDNC-AAI-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*]', 'context-list.aai.vfList[*]'
+      attributes 'context-list.sdnc.vnfList[*]', 'context-list.aai.vnfList[*]'
     }
 
     // SDNC-AAI comparison: VF-Module list
     useRule {
       name 'SDNC-AAI-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*]', 'context-list.aai.vfList[*].vfModuleList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*]', 'context-list.aai.vnfList[*].vfModuleList[*]'
     }
 
     // SDNC-AAI comparison: VNFC list
     useRule {
       name 'SDNC-AAI-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vnfcList[*]', 'context-list.aai.vfList[*].vnfcList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vnfcList[*]', 'context-list.aai.vnfList[*].vnfcList[*]'
     }
 
     // SDNC-AAI comparison: VM list
     useRule {
       name 'SDNC-AAI-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vfList[*].vfModuleList[*].vmList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].vmList[*]'
     }
 
     // SDNC-AAI comparison: Network list
     useRule {
       name 'SDNC-AAI-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vfList[*].vfModuleList[*].networkList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*].networkList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].networkList[*]'
     }
 
     // SDNC-NDCB comparison: Context level
@@ -122,49 +122,49 @@ entity {
     // SDNC-NDCB comparison: VF list
     useRule {
       name 'SDNC-NDCB-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*]', 'context-list.ndcb.vfList[*]'
+      attributes 'context-list.sdnc.vnfList[*]', 'context-list.ndcb.vnfList[*]'
     }
 
     // SDNC-NDCB comparison: VF-Module list
     useRule {
       name 'SDNC-NDCB-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*]', 'context-list.ndcb.vnfList[*].vfModuleList[*]'
     }
 
     // SDNC-NDCB comparison: VNFC list
     useRule {
       name 'SDNC-NDCB-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vnfcList[*]', 'context-list.ndcb.vfList[*].vnfcList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vnfcList[*]', 'context-list.ndcb.vnfList[*].vnfcList[*]'
     }
 
     // SDNC-NDCB comparison: VM list
     useRule {
       name 'SDNC-NDCB-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].vmList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*].vmList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*].vmList[*]', 'context-list.ndcb.vnfList[*].vfModuleList[*].vmList[*]'
     }
 
     // SDNC-NDCB comparison: Network list
     useRule {
       name 'SDNC-NDCB-attribute-comparison'
-      attributes 'context-list.sdnc.vfList[*].vfModuleList[*].networkList[*]', 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*]'
+      attributes 'context-list.sdnc.vnfList[*].vfModuleList[*].networkList[*]', 'context-list.ndcb.vnfList[*].vfModuleList[*].networkList[*]'
     }
 
     // SDC-AAI VNFC type
     useRule {
       name 'SDC-AAI-vnfc-type'
-      attributes 'context-list.sdc.vfList[*].vnfcList[*]', 'context-list.aai.vfList[*].vnfcList[*]'
+      attributes 'context-list.sdc.vnfList[*].vnfcList[*]', 'context-list.aai.vnfList[*].vnfcList[*]'
     }
 
     // SDC-AAI VNFC node count
     useRule {
       name 'SDC-AAI-vnfc-node-count'
-      attributes 'context-list.sdc.vfList[*].vnfcList[*]', 'context-list.aai.vfList[*].vnfcList[*]'
+      attributes 'context-list.sdc.vnfList[*].vnfcList[*]', 'context-list.aai.vnfList[*].vnfcList[*]'
     }
 
     // SDC-AAI VF-Module instance
     useRule {
       name 'SDC-AAI-vf-module-instance-check'
-      attributes 'context-list.ndcb.vfList[*].vfModuleList[*]', 'context-list.aai.vfList[*].vfModuleList[*]'
+      attributes 'context-list.ndcb.vnfList[*].vfModuleList[*]', 'context-list.aai.vnfList[*].vfModuleList[*]'
     }
   }
 }
@@ -486,7 +486,7 @@ rule {
  * The data-dictionary rule below can be used with this useRule clause:
  *   useRule {
  *     name 'Data-Dictionary validate VF type'
- *     attributes 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*].type'
+ *     attributes 'context-list.ndcb.vnfList[*].vfModuleList[*].networkList[*].type'
  *   }
  */
 rule {
