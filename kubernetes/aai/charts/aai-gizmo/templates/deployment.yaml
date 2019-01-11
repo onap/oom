@@ -32,11 +32,6 @@ spec:
         release: {{ .Release.Name }}
     spec:
     {{ if .Values.global.installSidecarSecurity }}
-      hostAliases:
-      - ip: {{ .Values.global.aaf.serverIp }}
-        hostnames:
-        - {{ .Values.global.aaf.serverHostname }}
-
       initContainers:
         - name: {{ .Values.global.tproxyConfig.name }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.tproxyConfig.image }}"
@@ -181,6 +176,8 @@ spec:
             value: "/opt/app/fproxy/config"
           - name: KEY_STORE_PASSWORD
             value: {{ .Values.config.keyStorePassword }}
+          - name: TRUST_STORE_PASSWORD
+            value: {{ .Values.config.trustStorePassword }}
           - name: spring_profiles_active
             value: {{ .Values.global.fproxy.activeSpringProfiles }}
           volumeMounts:
@@ -193,6 +190,9 @@ spec:
           - name: {{ include "common.fullname" . }}-fproxy-auth-config
             mountPath: /opt/app/fproxy/config/auth/tomcat_keystore
             subPath: tomcat_keystore
+          - name: {{ include "common.fullname" . }}-fproxy-auth-config
+            mountPath: /opt/app/fproxy/config/auth/fproxy_truststore
+            subPath: fproxy_truststore
           - name: {{ include "common.fullname" . }}-fproxy-auth-config
             mountPath: /opt/app/fproxy/config/auth/client-cert.p12
             subPath: client-cert.p12
