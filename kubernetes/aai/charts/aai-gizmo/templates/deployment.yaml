@@ -32,11 +32,6 @@ spec:
         release: {{ .Release.Name }}
     spec:
     {{ if .Values.global.installSidecarSecurity }}
-      hostAliases:
-      - ip: {{ .Values.global.aaf.serverIp }}
-        hostnames:
-        - {{ .Values.global.aaf.serverHostname }}
-
       initContainers:
         - name: {{ .Values.global.tproxyConfig.name }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.tproxyConfig.image }}"
@@ -154,18 +149,18 @@ spec:
           - name: {{ include "common.fullname" . }}-rproxy-log-config
             mountPath: /opt/app/rproxy/config/logback-spring.xml
             subPath: logback-spring.xml
-          - name: {{ include "common.fullname" . }}-rproxy-auth-config
+          - name: {{ include "common.fullname" . }}-rproxy-auth-certs
             mountPath: /opt/app/rproxy/config/auth/tomcat_keystore
             subPath: tomcat_keystore
-          - name: {{ include "common.fullname" . }}-rproxy-auth-config
+          - name: {{ include "common.fullname" . }}-rproxy-auth-certs
             mountPath: /opt/app/rproxy/config/auth/client-cert.p12
             subPath: client-cert.p12
+          - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+            mountPath: /opt/app/rproxy/config/auth/org.onap.aai.p12
+            subPath: org.onap.aai.p12
           - name: {{ include "common.fullname" . }}-rproxy-auth-config
             mountPath: /opt/app/rproxy/config/auth/uri-authorization.json
             subPath: uri-authorization.json
-          - name: {{ include "common.fullname" . }}-rproxy-auth-config
-            mountPath: /opt/app/rproxy/config/auth/aaf_truststore.jks
-            subPath: aaf_truststore.jks
           - name: {{ include "common.fullname" . }}-rproxy-security-config
             mountPath: /opt/app/rproxy/config/security/keyfile
             subPath: keyfile
@@ -181,6 +176,8 @@ spec:
             value: "/opt/app/fproxy/config"
           - name: KEY_STORE_PASSWORD
             value: {{ .Values.config.keyStorePassword }}
+          - name: TRUST_STORE_PASSWORD
+            value: {{ .Values.config.trustStorePassword }}
           - name: spring_profiles_active
             value: {{ .Values.global.fproxy.activeSpringProfiles }}
           volumeMounts:
@@ -190,10 +187,13 @@ spec:
           - name: {{ include "common.fullname" . }}-fproxy-log-config
             mountPath: /opt/app/fproxy/config/logback-spring.xml
             subPath: logback-spring.xml
-          - name: {{ include "common.fullname" . }}-fproxy-auth-config
+          - name: {{ include "common.fullname" . }}-fproxy-auth-certs
             mountPath: /opt/app/fproxy/config/auth/tomcat_keystore
             subPath: tomcat_keystore
-          - name: {{ include "common.fullname" . }}-fproxy-auth-config
+          - name: {{ include "common.fullname" . }}-fproxy-auth-certs
+            mountPath: /opt/app/fproxy/config/auth/fproxy_truststore
+            subPath: fproxy_truststore
+          - name: {{ include "common.fullname" . }}-fproxy-auth-certs
             mountPath: /opt/app/fproxy/config/auth/client-cert.p12
             subPath: client-cert.p12
           ports:
@@ -245,18 +245,21 @@ spec:
         - name: {{ include "common.fullname" . }}-rproxy-auth-config
           secret:
             secretName: {{ include "common.fullname" . }}-rproxy-auth-config
+        - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+          secret:
+            secretName: aai-rproxy-auth-certs
         - name: {{ include "common.fullname" . }}-rproxy-security-config
           secret:
-            secretName: {{ include "common.fullname" . }}-rproxy-security-config
+            secretName: aai-rproxy-security-config
         - name: {{ include "common.fullname" . }}-fproxy-config
           configMap:
             name: {{ include "common.fullname" . }}-fproxy-config
         - name: {{ include "common.fullname" . }}-fproxy-log-config
           configMap:
             name: {{ include "common.fullname" . }}-fproxy-log-config
-        - name: {{ include "common.fullname" . }}-fproxy-auth-config
+        - name: {{ include "common.fullname" . }}-fproxy-auth-certs
           secret:
-            secretName: {{ include "common.fullname" . }}-fproxy-auth-config
+            secretName: aai-fproxy-auth-certs
     {{ end }}
 
       imagePullSecrets:
