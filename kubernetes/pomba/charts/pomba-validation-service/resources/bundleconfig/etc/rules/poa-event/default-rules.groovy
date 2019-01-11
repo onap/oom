@@ -481,3 +481,36 @@ rule {
         return new Tuple2(result, details)
         '''
 }
+
+/*
+ * The data-dictionary rule below can be used with this useRule clause:
+ *   useRule {
+ *     name 'Data-Dictionary validate VF type'
+ *     attributes 'context-list.ndcb.vfList[*].vfModuleList[*].networkList[*].type'
+ *   }
+ */
+rule {
+    name        'Data-Dictionary validate VF type'
+    category    'INVALID_VALUE'
+    description 'Validate all VF type values against data-dictionary'
+    errorText   'VF type [{0}] failed data-dictionary validation: {1}'
+    severity    'ERROR'
+    attributes  'typeList'
+    validate    '''
+        boolean success = true
+        List<String> details = new ArrayList<>()
+        typeList.any {
+            if(!success) {
+                // break out of 'any' loop
+                return false
+            }
+            def result = org.onap.aai.validation.ruledriven.rule.builtin.DataDictionary.validate("instance", "vfModuleNetworkType", "type", "$it")
+            if(!result.isEmpty()) {
+                success = false
+                details.add("$it")
+                details.add("$result")
+            }
+        }
+        return new Tuple2(success, details)
+        '''
+}
