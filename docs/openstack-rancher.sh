@@ -2,7 +2,7 @@
 
 DOCKER_VERSION=17.03
 RANCHER_VERSION=1.6.22
-KUBECTL_VERSION=1.11.2
+KUBECTL_VERSION=1.11.5
 HELM_VERSION=2.9.1
 
 # setup root access - default login: oom/oom - comment out to restrict access too ssh key only
