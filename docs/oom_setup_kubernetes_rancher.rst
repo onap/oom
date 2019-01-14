@@ -415,10 +415,6 @@ procedure would remain the same.
     - name: "SB4"
       user:
         token: "QmFzaWMgTlRBd01qZzBOemc)TkRrMk1UWkNOMFpDTlVFNlExcHdSa1JhVZreE5XSm1TRGhWU2t0Vk1sQjVhalZaY0dWaFVtZGFVMHQzWW1WWVJtVmpSQT09"
-    ~
-    ~
-    ~
-    - INSERT --
 
 5. Validate that kubectl is able to connect to the kubernetes cluster::
 
