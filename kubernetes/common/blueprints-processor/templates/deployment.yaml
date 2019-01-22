@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Amdocs, Bell Canada
+# Copyright (c) 2019 IBM, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,54 +50,26 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.http.internalPort }}
+          {{ if .Values.config.grpcEnabled }}
+          - containerPort: {{ .Values.service.grpc.internalPort }}
+          {{ end }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            httpGet:
+              path: /api/v1/execution-service/ping
+              port: {{ .Values.service.http.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
-            - name: APPLICATIONNAME
-              value: {{ .Values.config.applicationName }}
-            - name: BUNDLEVERSION
-              value: {{ .Values.config.bundleVersion }}
-            - name: APP_CONFIG_HOME
-              value: {{ .Values.config.appConfigDir }}
-            - name: DB_URL
-              value: {{ .Values.config.dbUrl }}
-            - name: DB_USER
-              value: {{ index .Values "mariadb-galera" "config" "userName" }}
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: db-root-password
-            - name: MS_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: restUser
-            - name: MS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: restPassword
-            - name: INIT_DATA_LOAD
-              value: {{ .Values.config.initDataLoad | quote }}
-            - name: STICKYSELECTORKEY
-              value: {{ .Values.config.stickySelectorKey | quote }}
-            - name: ENVCONTEXT
-              value: {{ .Values.config.envContext }}
+            httpGet:
+              path: /api/v1/execution-service/ping
+              port: {{ .Values.service.http.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
@@ -118,7 +90,6 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
       volumes:
         - name: localtime
           hostPath:
