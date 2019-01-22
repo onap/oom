@@ -1,6 +1,4 @@
-# Copyright (c) 2018 Amdocs, Bell Canada
-#
-# Modifications Copyright © 2019 IBM, Bell Canada.
+# Copyright (c) 2019 IBM, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +38,7 @@ global:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/ccsdk-controllerblueprints:0.3.2
+image: onap/ccsdk-blueprintsprocessor:0.4.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -48,15 +46,25 @@ debugEnabled: false
 
 # application configuration
 config:
-  applicationName: ControllerBluePrints
+  applicationName: BlueprintsProcessor
+  msName: org.onap.ccsdk.apps.blueprintsprocessor
   bundleVersion: 1.0.0
   appConfigDir: /opt/app/onap/config
-  dbUrl: jdbc:mysql://controller-blueprints-db:3306/sdnctl
-  initDataLoad: true
+  dbUrl: jdbc:mysql://blueprints-processor-db:3306/sdnctl
+  dbUsername: sdnctl
+  dbPassword: sdnctl
+  dbDriverClassName: org.mariadb.jdbc.Driver
+  dbHibernateNamingStrategy: org.hibernate.cfg.ImprovedNamingStrategy
+  dbHibernateDialect: org.hibernate.dialect.MySQL5InnoDBDialect
+  dbHibernateHbm2ddlAuto: validate
+  dbHibernateDDLAuto: none
+  blueprintDeployPath: /opt/app/onap/blueprints/deploy
+  blueprintArchivePath: /opt/app/onap/blueprints/archive
   stickySelectorKey:
   envContext: DEV
-  restUser: ccsdkapps
-  restPassword: ccsdkapps
+
+gprc:
+  enabled: false
 
 mariadb-galera:
   config:
@@ -64,14 +72,14 @@ mariadb-galera:
       userPassword: sdnctl
       mariadbRootPassword: sdnctl
       mysqlDatabase: sdnctl
-  nameOverride: controller-blueprints-db
+  nameOverride: blueprints-processor-db
   service:
-    name: controller-blueprints-db
-    portName: cb-db
+    name: blueprints-processor-db
+    portName: bp-db
   replicaCount: 1
   persistence:
     enabled: true
-    mountSubPath: controller-blueprints/data
+    mountSubPath: blueprints-processor/data
 
 # default number of instances
 replicaCount: 1
@@ -94,9 +102,11 @@ readiness:
 
 service:
   type: ClusterIP
-  portName: controller-blueprints
-  internalPort: 8080
-  externalPort: 8080
+  portName: blueprints-processor
+  internalHttpPort: 8080
+  externalHttpPort: 8000
+  internalGrpcPort: 9111
+  externalGrpcPort: 9111
 
 persistence:
   enabled: true
