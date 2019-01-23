@@ -20,7 +20,8 @@ available), follow the following instructions to deploy ONAP.
   > cd oom/kubernetes
 
 **Step 2.** Install Helm Plugins required to deploy the ONAP Casablanca release::
-  sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
+
+  > sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
 
 **Step 3.** Customize the onap/values.yaml file to suit your deployment. You
 may want to selectively enable or disable ONAP components by changing the
@@ -74,6 +75,7 @@ Use the following to monitor your deployment and determine when ONAP is ready fo
   > kubectl get pods --all-namespaces -o=wide
 
 Undeploying onap can be done using the following command::
+
   > helm undeploy dev --purge
 
 
