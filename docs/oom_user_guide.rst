@@ -145,15 +145,19 @@ system, and looks for matches::
 
 In any case, setup of the Helm repository is a one time activity.
 
+Next, install Helm Plugins required to deploy the ONAP Casablanca release::
+
+  > cp -R helm/plugins/ ~/.helm
+
 Once the repo is setup, installation of ONAP can be done with a single command::
 
-  > helm install local/onap --name development
+  > helm deploy development local/onap --namespace onap
 
 This will install ONAP from a local repository in a 'development' Helm release.
 As described below, to override the default configuration values provided by
 OOM, an environment file can be provided on the command line as follows::
 
-  > helm install local/onap --name development -f onap-development.yaml
+  > helm deploy development local/onap --namespace onap -f overrides.yaml
 
 To get a summary of the status of all of the pods (containers) running in your
 deployment::
@@ -174,9 +178,9 @@ deployment::
 
 
 To install a specific version of a single ONAP component (`so` in this example)
-with the given name enter::
+with the given release name enter::
 
-  > helm install onap/so --version 2.0.1 -n so
+  > helm deploy so onap/so --version 3.0.1
 
 To display details of a specific resource or group of resources type::
 
