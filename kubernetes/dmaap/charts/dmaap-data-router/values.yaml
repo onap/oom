@@ -16,24 +16,12 @@
 # DMaap Data Router Global config defaults.
 #################################################################
 global:
-  persistence: {}
   env:
     name: AUTO
   ubuntuInitRepository: oomk8s
   ubuntuInitImage: ubuntu-init:1.0.0
 
   config:
-# dr db configuration
-    mariadb:
-      servicetype: ClusterIP
-      name: dmaap-dr-db
-      portName: dr-db-port
-      internalPort: 3306
-      externalPort: 3306
-      mariadbRootPassword: datarouter
-      userName: datarouter
-      userPassword: datarouter
-      mysqlDatabase: datarouter
 # dr provisioning server configuration
     dmaapDrProv:
       servicetype: NodePort
@@ -51,8 +39,32 @@ global:
       servicetype: ClusterIP
       name: dmaap-dr-node
       externalPort: 8080
-      internalPort: 8080
       externalPort2: 8443
+      internalPort: 8080
       internalPort2: 8443
       portName: dr-node-port
       portName2: dr-node-port2
+# dr-prov db configuration
+    dmaapDrDb:
+      mariadbServiceName: dmaap-dr-db-svc
+      mariadbServicePort: 3306
+      mariadbContName: dmaap-dr-db
+
+# mariadb-galera configuration
+mariadb:
+  name: dmaap-dr-db
+  nameOverride: dmaap-dr-db
+  replicaCount: 2
+  config:
+    mariadbRootPassword: datarouter
+    userName: datarouter
+    userPassword: datarouter
+    mysqlDatabase: datarouter
+  service:
+    name: dmaap-dr-db-svc
+    portName: dmaap-dr-db-svc
+  nfsprovisionerPrefix: dmaap-dr-db
+  persistence:
+    size: 1Gi
+    mountSubPath: data-router/dr-db-data
+  disableNfsProvisioner: true
