@@ -1,5 +1,7 @@
 # Copyright (c) 2018 Amdocs, Bell Canada
 #
+# Modifications Copyright (c) 2019 IBM, Bell Canada
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -37,16 +39,12 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName | default "http" }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName | default "http" }}
+  - port: {{ .Values.service.externalPort }}
+    targetPort: {{ .Values.service.internalPort }}
+    {{- if eq .Values.service.type "NodePort"}}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
     {{- end}}
+    name: {{ .Values.service.portName | default "http" }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
