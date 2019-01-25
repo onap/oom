@@ -1,7 +1,6 @@
 #============LICENSE_START========================================================
-#=================================================================================
-# Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
-# Modifications Copyright © 2018 Amdocs, Bell Canada
+# ================================================================================
+# Copyright (c) 2019 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +24,29 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  repositoryCred:
+    user: docker
+    password: docker
 
-service:
-  name: dcae-healthcheck
-  internalPort: 80
-  externalPort: 80
-  type: ClusterIP
+config:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+  # Addresses of other ONAP entities
+  address:
+    consul:
+      host: consul-server
+      port: 8500
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/org.onap.dcaegen2.platform.inventory-api
+# need the version to be separate because it's used in 2 places
+image_version: 3.0.1
+
+pullPolicy: Always
 
 # probe configuration parameters
 liveness:
@@ -38,14 +54,51 @@ liveness:
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+  # liveness not desirable for Cloudify Manager container
+  enabled: false
 
 readiness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-# application image
-repository: nexus3.onap.org:10001
-image: onap/org.onap.dcaegen2.deployments.healthcheck-container:1.2.3
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  path: /dcae-service-types
+
+service:
+  type: ClusterIP
+  name: inventory
+  externalPort: 8080
+  internalPort: 8080
+
+# application configuration override for postgres
+postgres:
+  nameOverride: dcae-inv-pg
+  service:
+    name: dcae-inv-postgres
+    name2: dcae-inv-pg-primary
+    name3: dcae-inv-pg-replica
+  container:
+    name:
+      primary: dcae-inv-pg-primary
+      replica: dcae-inv-pg-replica
+  config:
+    pgUserName: dcae_inv
+    pgDatabase: dcae_inventory
+    pgPrimaryPassword: onapdemodb
+    pgUserPassword: onapdemodb
+    pgRootPassword: onapdemodb
+  persistence:
+    mountSubPath: dcae-inv/data
+    mountInitPath: dcae-inv
+  pgpool:
+    nameOverride: dcae-inv-pgpool
+    service:
+      name: dcae-inv-pgpool
+    credentials:
+      pgusername: ddcae_inv
+      pgpassword: onapdemodb
+    container:
+      name:
+        primary: dcae-inv-pgpool-primary
+        replica: dcae-inv-pgpool-replica
 
 # Resource Limit flavor -By Default using small
 flavor: small
@@ -68,5 +121,4 @@ resources:
   unlimited: {}
 # Kubernetes namespace for components deployed via Cloudify manager
 # If empty, use the common namespace
-# dcae_ns: "onap"
-
+# dcae_ns: "dcae"
