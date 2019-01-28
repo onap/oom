@@ -4,7 +4,7 @@
 # ============LICENSE_START=======================================================
 # APPC
 # ================================================================================
-# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
+# Copyright (C) 2017-2019 AT&T Intellectual Property. All rights reserved.
 # Modifications Copyright © 2018 Amdocs,Bell Canada
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@
 # This script takes care of installing the SDNC & APPC platform components
 #  if not already installed, and starts the APPC Docker Container
 #
+set -x
 
 function enable_odl_cluster(){
   if [ -z $APPC_REPLICAS ]; then
@@ -58,8 +59,6 @@ ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 ENABLE_AAF=${ENABLE_AAF:-true}
 DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 
-appcInstallStartTime=$(date +%s)
-
 #
 # Wait for database to init properly
 #
@@ -86,16 +85,18 @@ END
         then
             echo "Installing SDNC database"
             ${SDNC_HOME}/bin/installSdncDb.sh
-        fi
 
-        appc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql <<-END
+            appc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p{{.Values.config.mariadbRootPassword}} mysql <<-END
 show databases like 'appcctl';
 END
 )
-        if [ "x${appc_db_exists}" == "x" ]
-        then
-            echo "Installing APPC database"
-            ${APPC_HOME}/bin/installAppcDb.sh
+            if [ "x${appc_db_exists}" == "x" ]
+            then
+              echo "Installing APPC database"
+              ${APPC_HOME}/bin/installAppcDb.sh
+            fi
+        else
+            sleep 30
         fi
 
         echo "Installed at `date`" > ${DBINIT_DIR}/.installed
@@ -107,35 +108,20 @@ then
         echo "Installing ODL Host Key"
         ${SDNC_HOME}/bin/installOdlHostKey.sh
 
+#        echo "Copying a working version of the logging configuration into the opendaylight etc folder"
+#        cp ${APPC_HOME}/data/org.ops4j.pax.logging.cfg ${ODL_HOME}/etc/org.ops4j.pax.logging.cfg
+
         echo "Starting OpenDaylight"
         ${ODL_HOME}/bin/start
 
         echo "Waiting ${SLEEP_TIME} seconds for OpenDaylight to initialize"
         sleep ${SLEEP_TIME}
 
-        echo "Copying a working version of the logging configuration into the opendaylight etc folder"
-        cp ${APPC_HOME}/data/org.ops4j.pax.logging.cfg ${ODL_HOME}/etc/org.ops4j.pax.logging.cfg
-        echo "Copying a new version of aaf cadi shiro into the opendaylight deploy folder"
-        cp ${APPC_HOME}/data/aaf-shiro-aafrealm-osgi-bundle.jar ${ODL_HOME}/deploy/aaf-shiro-aafrealm-osgi-bundle.jar
-
-        echo "Installing SDNC platform features"
-        ${SDNC_HOME}/bin/installFeatures.sh
 
         if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
         then
                 echo "Installing directed graphs"
                 ${SDNC_HOME}/svclogic/bin/install.sh
-        fi
-
-        if $ENABLE_ODL_CLUSTER ; then echo "Installing Opendaylight cluster features" ; ${ODL_HOME}/bin/client feature:install odl-mdsal-clustering ; ${ODL_HOME}/bin/client feature:install odl-jolokia ; fi
-
-        echo "Installing APPC platform features"
-        ${APPC_HOME}/bin/installFeatures.sh
-
-        if [ -x ${APPC_HOME}/svclogic/bin/install.sh ]
-        then
-                echo "Installing APPC DGs using platform-logic"
-                ${APPC_HOME}/svclogic/bin/install.sh
         fi
 
         if [ -x ${APPC_HOME}/svclogic/bin/install-converted-dgs.sh ]
@@ -144,12 +130,12 @@ then
                 ${APPC_HOME}/svclogic/bin/install-converted-dgs.sh
         fi
 
-        if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
-
-        echo "Adding a property system.properties for AAF cadi.properties location"
-        echo "" >> ${ODL_HOME}/etc/system.properties
-        echo "cadi_prop_files=${APPC_HOME}/data/properties/cadi.properties" >> ${ODL_HOME}/etc/system.properties
-        echo "" >> ${ODL_HOME}/etc/system.properties
+        if $ENABLE_ODL_CLUSTER
+        then
+                echo "Installing Opendaylight cluster features"
+                ${ODL_HOME}/bin/client feature:install odl-mdsal-clustering
+                enable_odl_cluster
+        fi
 
         echo "Copying the aaa shiro configuration into opendaylight"
         if $ENABLE_AAF
@@ -180,11 +166,32 @@ then
         done
         echo "Karaf process has stopped"
         sleep 10s
+
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
-        appcInstallEndTime=$(date +%s)
-        echo "Total Appc install took $(expr $appcInstallEndTime - $appcInstallStartTime) seconds"
+# Move journal and snapshots directory to persistent storage
+
+hostdir=${ODL_HOME}/daexim/$(hostname -s)
+if [ ! -d $hostdir ]
+then
+    mkdir -p $hostdir
+    if [ -d ${ODL_HOME}/journal ]
+    then
+        mv ${ODL_HOME}/journal ${hostdir}
+    else
+        mkdir ${hostdir}/journal
+    fi
+    if [ -d ${ODL_HOME}/snapshots ]
+    then
+        mv ${ODL_HOME}/snapshots ${hostdir}
+    else
+        mkdir ${hostdir}/snapshots
+    fi
+fi
+
+ln -s ${hostdir}/journal ${ODL_HOME}/journal
+ln -s ${hostdir}/snapshots ${ODL_HOME}/snapshots
 
 echo "Starting cdt-proxy-service jar, logging to ${APPC_HOME}/cdt-proxy-service/jar.log"
 java -jar ${APPC_HOME}/cdt-proxy-service/cdt-proxy-service.jar > ${APPC_HOME}/cdt-proxy-service/jar.log &
