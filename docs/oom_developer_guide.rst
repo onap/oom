@@ -127,8 +127,9 @@ deployment by using the `-f` Helm option as follows::
   > helm install local/onap -name development -f dev.yaml
 
 Note that there are one or more example deployment files in the
-`onap/resources/environments/` directory. It is best practice to create a unique
-deployment file for each environment used to ensure consistent behaviour.
+`onap/resources/environments/` directory. It is best practice to create a
+unique deployment file for each environment used to ensure consistent
+behaviour.
 
 To aid in the long term supportability of ONAP, a set of common charts have
 been created (and will be expanded in subsequent releases of ONAP) that can be
@@ -185,11 +186,11 @@ used by any of the ONAP components by including the common component in its
 
 The common section of charts consists of a set of templates that assist with
 parameter substitution (`_name.tpl` and `_namespace.tpl`) and a set of charts
-for components used throughout ONAP. Initially `mysql` is in the common area but
-this will expand to include other databases like `mariadb-galera`, `postgres`,
-and `cassandra`. Other candidates for common components include `redis` and
-`kafka`.  When the common components are used by other charts they are
-instantiated each time. In subsequent ONAP releases some of the common
+for components used throughout ONAP. Initially `mysql` is in the common area
+but this will expand to include other databases like `mariadb-galera`,
+`postgres`, and `cassandra`. Other candidates for common components include
+`redis` and`kafka`.  When the common components are used by other charts they
+are instantiated each time. In subsequent ONAP releases some of the common
 components could be a setup as services that are used by multiple ONAP
 components thus minimizing the deployment and operational costs.
 
@@ -239,8 +240,8 @@ configuration files stored in the `config` directory.  It is the responsibility
 of each ONAP component team to update these configuration files when changes
 are made to the project containers that impact configuration.
 
-The following section describes how the hierarchical ONAP configuration system is
-key to management of such a large system.  
+The following section describes how the hierarchical ONAP configuration system
+is key to management of such a large system.
 
 Configuration Management
 ========================
@@ -461,7 +462,8 @@ describe the configuration and desired state of the ONAP components.
 
 Name Spaces
 -----------
-Within the namespaces are Kubernetes services that provide external connectivity to pods that host Docker containers.
+Within the namespaces are Kubernetes services that provide external
+connectivity to pods that host Docker containers.
 
 ONAP Components to Kubernetes Object Relationships
 --------------------------------------------------
@@ -639,7 +641,8 @@ OOM Networking with Kubernetes
 ------------------------------
 
 - DNS
-- Ports - Flattening the containers also expose port conflicts between the containers which need to be resolved.
+- Ports - Flattening the containers also expose port conflicts between the
+  containers which need to be resolved.
 
 Node Ports
 ~~~~~~~~~~
@@ -937,14 +940,15 @@ More details can be found here `MSB installation <http://onap.readthedocs.io/en/
 .. MISC
 .. ====
 .. Note that although OOM uses Kubernetes facilities to minimize the effort
-.. required of the ONAP component owners to implement a successful rolling upgrade
-.. strategy there are other considerations that must be taken into consideration.
+.. required of the ONAP component owners to implement a successful rolling
+.. upgrade strategy there are other considerations that must be taken into
+.. consideration.
 .. For example, external APIs - both internal and external to ONAP - should be
-.. designed to gracefully accept transactions from a peer at a different software
-.. version to avoid deadlock situations. Embedded version codes in messages may
-.. facilitate such capabilities.
+.. designed to gracefully accept transactions from a peer at a different
+.. software version to avoid deadlock situations. Embedded version codes in
+.. messages may facilitate such capabilities.
 ..
-.. Within each of the projects a new configuration repository contains all of the
-.. project specific configuration artifacts.  As changes are made within the
-.. project, it's the responsibility of the project team to make appropriate
+.. Within each of the projects a new configuration repository contains all of
+.. the project specific configuration artifacts.  As changes are made within
+.. the project, it's the responsibility of the project team to make appropriate
 .. changes to the configuration data.
