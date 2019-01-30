@@ -52,18 +52,22 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have both the Kubernetes `kubectl` and Helm setup as a one time activity.
+Your environment must have both the Kubernetes `kubectl` and Helm setup as a
+one time activity.
 
 Install Kubectl
 ~~~~~~~~~~~~~~~
-Enter the following to install kubectl (on Ubuntu, there are slight differences on other O/Ss), the Kubernetes command line interface used to manage a Kubernetes cluster::
+Enter the following to install kubectl (on Ubuntu, there are slight differences
+on other O/Ss), the Kubernetes command line interface used to manage a
+Kubernetes cluster::
 
   > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.8.10/bin/linux/amd64/kubectl
   > chmod +x ./kubectl
   > sudo mv ./kubectl /usr/local/bin/kubectl
   > mkdir ~/.kube
 
-Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for alternative Kubernetes environment setups) into the `~/.kube/config` file.
+Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for
+alternative Kubernetes environment setups) into the `~/.kube/config` file.
 
 Verify that the Kubernetes config is correct::
 
@@ -73,7 +77,8 @@ At this point you should see six Kubernetes pods running.
 
 Install Helm
 ~~~~~~~~~~~~
-Helm is used by OOM for package and configuration management. To install Helm, enter the following::
+Helm is used by OOM for package and configuration management. To install Helm,
+enter the following::
 
   > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-linux-amd64.tar.gz
   > tar -zxvf helm-v2.9.1-linux-amd64.tar.gz
@@ -89,7 +94,8 @@ Install the Helm Tiller application and initialize with::
 
 Install the Helm Repo
 ---------------------
-Once kubectl and Helm are setup, one needs to setup a local Helm server to server up the ONAP charts::
+Once kubectl and Helm are setup, one needs to setup a local Helm server to
+server up the ONAP charts::
 
   > helm install osn/onap
 
@@ -117,7 +123,8 @@ To setup a local Helm server to server up the ONAP charts::
   > helm init
   > helm serve &
 
-Note the port number that is listed and use it in the Helm repo add as follows::
+Note the port number that is listed and use it in the Helm repo add as
+follows::
 
   > helm repo add local http://127.0.0.1:8879
 
@@ -149,7 +156,8 @@ Next, install Helm Plugins required to deploy the ONAP Casablanca release::
 
   > cp -R helm/plugins/ ~/.helm
 
-Once the repo is setup, installation of ONAP can be done with a single command::
+Once the repo is setup, installation of ONAP can be done with a single
+command::
 
   > helm deploy development local/onap --namespace onap
 
@@ -361,8 +369,8 @@ blocks access to the ONAP Portal. To enable direct access to this Portal from a
 user's own environment (a laptop etc.) the portal application's port 8989 is
 exposed through a `Kubernetes LoadBalancer`_ object.
 
-Typically, to be able to access the Kubernetes nodes publicly a public address is
-assigned.  In Openstack this is a floating IP address.
+Typically, to be able to access the Kubernetes nodes publicly a public address
+is assigned. In Openstack this is a floating IP address.
 
 When the `portal-app` chart is deployed a Kubernetes service is created that
 instantiates a load balancer.  The LB chooses the private interface of one of
@@ -408,10 +416,10 @@ https://portal.api.simpledemo.onap.org:30225/ONAPPORTAL/login.htm
   of the page
 
 .. note::
-  Besides the ONAP Portal the Components can deliver additional user interfaces, 
+  Besides the ONAP Portal the Components can deliver additional user interfaces,
   please check the Component specific documentation.
 
-.. note::     
+.. note::
 
    | Alternatives Considered:
 
@@ -451,7 +459,8 @@ to monitor the real-time health of an ONAP deployment:
 - a set of liveness probes which feed into the Kubernetes manager which
   are described in the Heal section.
 
-Within ONAP, Consul is the monitoring system of choice and deployed by OOM in two parts:
+Within ONAP, Consul is the monitoring system of choice and deployed by OOM in
+two parts:
 
 - a three-way, centralized Consul server cluster is deployed as a highly
   available monitor of all of the ONAP components, and
@@ -693,7 +702,8 @@ example::
 
   > helm undeploy casablanca --dry-run
 
-will display the outcome of deleting the 'casablanca' release from the deployment.
+will display the outcome of deleting the 'casablanca' release from the
+deployment.
 To completely delete a release and remove it from the internal store enter::
 
   > helm undeploy casablanca --purge
@@ -706,4 +716,4 @@ deployment enter::
 
 will remove `so` as the configuration indicates it's no longer part of the
 deployment. This might be useful if a one wanted to replace just `so` by
-installing a custom version.  
+installing a custom version.
