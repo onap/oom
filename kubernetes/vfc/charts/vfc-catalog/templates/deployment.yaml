@@ -73,6 +73,8 @@ spec:
             - name: MYSQL_ADDR
               value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
           volumeMounts:
+          - name: {{ include "common.fullname" . }}-catalog
+            mountPath: /service/vfc/nfvo/catalog/static
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -106,6 +108,13 @@ spec:
             mountPath: /usr/share/filebeat/data
 
       volumes:
+        - name: {{ include "common.fullname" . }}-catalog
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
         - name: {{ include "common.fullname" . }}-localtime
           hostPath:
             path: /etc/localtime
