@@ -72,7 +72,8 @@ new one to assign.
 Apply customization script for the Rancher VM
 ---------------------------------------------
 
-Click :download:`openstack-rancher.sh <openstack-rancher.sh>` to download the script.
+Click :download:`openstack-rancher.sh <openstack-rancher.sh>` to download the
+script.
 
 .. literalinclude:: openstack-rancher.sh
    :language: bash
@@ -134,8 +135,9 @@ The size of a Kubernetes host depends on the size of the ONAP deployment that
 will be installed.
 
 As of the Casablanca release a minimum 224GB will be needed to run a
-full ONAP deployment (all components). It is recommended that more hosts are used
-with fewer resources instead of only a few large hosts. For example 14 x 16GB hosts.
+full ONAP deployment (all components). It is recommended that more hosts are
+used with fewer resources instead of only a few large hosts. For example 14 x
+16GB hosts.
 
 If a small subset of ONAP components are being deployed for testing purposes,
 then a single 16GB or 32GB host should suffice.
@@ -216,7 +218,8 @@ node plays the role of NFS Master (indicated by the crown symbol). To properly
 set up an NFS share on Master and Slave nodes, the user can run the scripts
 below.
 
-Click :download:`master_nfs_node.sh <master_nfs_node.sh>` to download the script.
+Click :download:`master_nfs_node.sh <master_nfs_node.sh>` to download the
+script.
 
 .. literalinclude:: master_nfs_node.sh
    :language: bash
@@ -264,7 +267,8 @@ Add Kubernetes Environment to Rancher
 
 .. image:: Click_create.jpeg
 
-6. Select the new named environment (ie. SB4) from the dropdown list (top left).
+6. Select the new named environment (ie. SB4) from the dropdown list (top
+   left).
 
 Rancher is now waiting for a Kubernetes Host to be added.
 
@@ -273,7 +277,8 @@ Rancher is now waiting for a Kubernetes Host to be added.
 Add Kubernetes Host
 -------------------
 
-1.  If this is the first (or only) host being added - click on the "Add a host" link
+1.  If this is the first (or only) host being added - click on the "Add a host"
+    link
 
 .. image:: K8s-Assign_Floating_IP_for_external_access.jpeg
 
@@ -285,7 +290,8 @@ otherwise select INFRASTRUCTURE→ Hosts and click on "Add Host"
 
 .. image:: otherwise_select_INFRASTRUCTURE_Hosts_and_click_on_Add_Host.jpg
 
-2. Enter the management IP for the k8s VM (e.g. 10.0.0.4) that was just created.
+2. Enter the management IP for the k8s VM (e.g. 10.0.0.4) that was just
+   created.
 
 3. Click on “Copy to Clipboard” button
 
@@ -469,5 +475,3 @@ documentation to get started:
 
 - :ref:`quick-start-label` - deploy ONAP on an existing cloud
 - :ref:`user-guide-label` - a guide for operators of an ONAP instance
-
-
