@@ -66,7 +66,6 @@ generate_overrides() {
     fi
   done
 }
-
 resolve_deploy_flags() {
   flags=($1)
   n=${#flags[*]}
@@ -75,7 +74,8 @@ resolve_deploy_flags() {
     if [[ $PARAM == "-f" || \
           $PARAM == "--values" || \
           $PARAM == "--set" || \
-          $PARAM == "--set-string" ]]; then
+          $PARAM == "--set-string" || \
+          $PARAM == "--version" ]]; then
        # skip param and its value
        i=$((i + 1))
     else
@@ -116,12 +116,18 @@ deploy() {
   # should pass all flags instead
   NAMESPACE="$(echo $FLAGS | sed -n 's/.*\(namespace\).\s*/\1/p' | cut -c10- | cut -d' ' -f1)"
 
+  VERSION="$(echo $FLAGS | sed -n 's/.*\(version\).\s*/\1/p' | cut -c8- | cut -d' ' -f1)"
+  
+  if [ ! -z $VERSION ]; then
+     VERSION="--version $VERSION"
+  fi
+
   # Remove all override values passed in as arguments. These will be used during dry run
   # to resolve computed override values. Remaining flags will be passed on during
   # actual upgrade/install of parent and subcharts.
   DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
 
-  # determine if upgrading individual subchart or entire parent + subcharts
+ # determine if upgrading individual subchart or entire parent + subcharts
   SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
   if [[ ! -d "$CACHE_SUBCHART_DIR/$SUBCHART_RELEASE" ]]; then
     SUBCHART_RELEASE=
@@ -148,7 +154,7 @@ deploy() {
     rm -rf $CHART_DIR/charts/*.tgz
   else
     echo "fetching $CHART_URL"
-    helm fetch $CHART_URL --untar --untardir $CACHE_DIR
+    helm fetch $CHART_URL --untar --untardir $CACHE_DIR $VERSION
   fi
 
   # move out subcharts to process separately
