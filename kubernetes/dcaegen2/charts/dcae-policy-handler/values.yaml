@@ -1,7 +1,6 @@
 #============LICENSE_START========================================================
 # ================================================================================
-# Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
-# Modifications Copyright © 2018 Amdocs, Bell Canada
+# Copyright (c) 2019 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +20,14 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  persistence: {}
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  tlsRepository: nexus3.onap.org:10001
+  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:1.0.0
+  consulLoaderRepository: nexus3.onap.org:10001
+  consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.0.0
   repositoryCred:
     user: docker
     password: docker
@@ -44,7 +46,7 @@ config:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/org.onap.dcaegen2.deployments.cm-container:1.5.1
+image: onap/org.onap.dcaegen2.platform.policy-handler:4.6.0
 pullPolicy: Always
 
 # probe configuration parameters
@@ -58,13 +60,16 @@ liveness:
 
 readiness:
   initialDelaySeconds: 60
-  periodSeconds: 10
+  periodSeconds: 300
+  path: /healthcheck
+  scheme: HTTP
 
 service:
   type: ClusterIP
-  name: dcae-cloudify-manager
-  externalPort: 80
-  internalPort: 80
+  name: policy-handler
+  externalPort: 25577
+  internalPort: 25577
+
 
 # Resource Limit flavor -By Default using small
 flavor: small
@@ -88,11 +93,3 @@ resources:
 # Kubernetes namespace for components deployed via Cloudify manager
 # If empty, use the common namespace
 # dcae_ns: "dcae"
-
-# Parameters for persistent storage
-persistence:
-  enabled: true
-  accessMode: ReadWriteOnce
-  size: 4Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: dcae-cm/data
