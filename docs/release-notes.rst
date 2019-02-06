@@ -8,6 +8,36 @@
 Release Notes
 =============
 
+Version 3.0.1 Casablanca Release
+--------------------------------
+
+:Release Date: 2019-02-08
+
+**New Features**
+
+None.
+
+**Bug Fixes**
+
+* `OOM-1053 <https://jira.onap.org/browse/OOM-1053>`_ Sync docker image images with docker-manifest.csv
+* `OOM-1530 <https://jira.onap.org/browse/OOM-1530>`_ Incomplete and ambiguous sentence
+* `OOM-1516 <https://jira.onap.org/browse/OOM-1516>`_ ONAP health check fails and not recovered after a k8s cluster node failure
+* `OOM-1538 <https://jira.onap.org/browse/OOM-1538>`_ openStackEncryptedPassword value is not encrypted
+* `OOM-1539 <https://jira.onap.org/browse/OOM-1539>`_ CVE-2018-1002105: proxy request handling in kube-apiserver can leave vulnerable TCP connections
+* `OOM-1564 <https://jira.onap.org/browse/OOM-1564>`_ AAF Charts - missing external-ports in oom values.yaml but are referenced in deployments
+* `OOM-1565 <https://jira.onap.org/browse/OOM-1565>`_ AAI volumes chart is not taking global Persistent Mount into consideration
+* `OOM-1566 <https://jira.onap.org/browse/OOM-1566>`_ SDC: External-ports were missing in values.yaml but are referenced in deployments
+* `OOM-1604 <https://jira.onap.org/browse/OOM-1604>`_ Replace Helm "install" commands for Casablanca deployment
+
+**Security Notes**
+
+OOM code has been formally scanned during build time using NexusIQ and no Critical vulnerability was found.
+
+**Known Issues**
+
+None.
+
+
 Version 3.0.0 Casablanca Release
 --------------------------------
 
