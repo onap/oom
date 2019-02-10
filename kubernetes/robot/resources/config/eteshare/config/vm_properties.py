@@ -35,16 +35,6 @@ GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "log-ls-http.{{include "common.namespace"
 GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR = "pomba-aaictxbuilder.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR = "pomba-sdcctxbuilder.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR = "pomba-networkdiscoveryctxbuilder.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_CI_UWSGI_IP_ADDR = "vvp-ci-uwsgi.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_CMS_UWSGI_IP_ADDR = "vvp-cms-uwsgi.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_EM_UWSGI_IP_ADDR = "vvp-em-uwsgi.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_EXT_HAPROXY_IP_ADDR = "vvp-ext-haproxy.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_GITLAB_IP_ADDR = "vvp-gitlab.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_IMAGESCANNER_IP_ADDR = "vvp-imagescanner.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_INT_HAPROXY_IP_ADDR  = "vvp-int-haproxy.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_JENKINS_IP_ADDR = "vvp-jenkins.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_POSTGRES_IP_ADDR = "vvp-postgres.{{include "common.namespace" .}}"
-GLOBAL_INJECTED_VVP_REDIS_IP_ADDR = "vvp-redis.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
@@ -118,16 +108,6 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR" : "pomba-aaictxbuilder.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR" : "pomba-sdcctxbuilder.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR" : "pomba-networkdiscovery.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_CI_UWSGI_IP_ADDR" : "vvp-ci-uwsgi.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_CMS_UWSGI_IP_ADDR" : "vvp-cms-uwsgi.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_EM_UWSGI_IP_ADDR" : "vvp-em-uwsgi.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_EXT_HAPROXY_IP_ADDR" : "vvp-ext-haproxy.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_GITLAB_IP_ADDR" : "vvp-gitlab.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_IMAGESCANNER_IP_ADDR" : "vvp-imagescanner.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_INT_HAPROXY_IP_ADDR"  : "vvp-int-haproxy.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_JENKINS_IP_ADDR" : "vvp-jenkins.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_POSTGRES_IP_ADDR" : "vvp-postgres.{{include "common.namespace" .}}",
-    "GLOBAL_INJECTED_VVP_REDIS_IP_ADDR" : "vvp-redis.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NETWORK" : "{{ .Values.openStackPrivateNetId }}",
