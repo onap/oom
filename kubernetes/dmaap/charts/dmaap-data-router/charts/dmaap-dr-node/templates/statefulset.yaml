@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -23,13 +23,13 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  serviceName: {{ .Values.global.config.dmaapDrNode.name }}
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{.Values.global.config.dmaapDrNode.name}}
       initContainers:
         - name: {{ include "common.name" . }}-readiness
           image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -65,6 +65,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+          - mountPath: {{ .Values.persistence.spoolPath }}
+            name: {{ include "common.fullname" . }}-spool-data-pvc
+          - mountPath: {{ .Values.persistence.eventLogsPath }}
+            name: {{ include "common.fullname" . }}-event-logs-pvc
           - mountPath: /etc/localtime
             name: localtime
             readOnly: false
@@ -81,7 +85,7 @@ spec:
             postStart:
               exec:
                 command:
-                - /opt/app/datartr/etc/createFeed.sh
+                  - /opt/app/datartr/etc/createFeed.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -92,6 +96,8 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       volumes:
       - name: localtime
         hostPath:
@@ -103,12 +109,30 @@ spec:
       - name: node-props
         configMap:
           name: {{ include "common.fullname" . }}-node-props-configmap
-      - name: dr-node-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
-    imagePullSecrets:
-    - name: "{{ include "common.namespace" . }}-docker-registry-key"
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "common.fullname" . }}-spool-data-pvc
+        labels:
+          name: {{ include "common.fullname" . }}
+      spec:
+        accessModes: [ {{ .Values.persistence.accessMode }} ]
+        storageClassName: {{ include "common.fullname" . }}-spool-data-stcl
+        resources:
+          requests:
+            storage: {{ .Values.persistence.spoolSize }}
+        selector:
+          matchLabels:
+            name: {{ include "common.fullname" . }}-spool-data-pv
+    - metadata:
+        name: {{ include "common.fullname" . }}-event-logs-pvc
+        labels:
+          name: {{ include "common.fullname" . }}
+      spec:
+        accessModes: [ {{ .Values.persistence.accessMode }} ]
+        storageClassName: {{ include "common.fullname" . }}-event-logs-stcl
+        resources:
+          requests:
+            storage: {{ .Values.persistence.eventLogSize }}
+        selector:
+          matchLabels:
+            name: {{ include "common.fullname" . }}-event-logs-pv
