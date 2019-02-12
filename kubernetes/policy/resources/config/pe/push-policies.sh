@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
-# Modifications Copyright © 2018 AT&T. All rights reserved.
+# Modifications Copyright © 2018-2019 AT&T. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ echo "Upload BRMS Param Template"
 
 sleep 2
 
-wget -O cl-amsterdam-template.drl https://git.onap.org/policy/drools-applications/plain/controlloop/templates/archetype-cl-amsterdam/src/main/resources/archetype-resources/src/main/resources/__closedLoopControlName__.drl?h=casablanca
+wget -O cl-amsterdam-template.drl https://git.onap.org/policy/drools-applications/plain/controlloop/templates/archetype-cl-amsterdam/src/main/resources/archetype-resources/src/main/resources/__closedLoopControlName__.drl
 
 sleep 2
 
