@@ -52,13 +52,15 @@ spec:
                 fieldPath: metadata.namespace
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}:{{ .Values.image_version }}"
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ["java"]
+          # Assumes that the Docker image is built with ENTRYPOINT set to
+          # ["java", "-jar", "/opt/inventory-api-x.y.z.jar", "server"]
+          # where "x.y.z" is the version number (matches the Docker image version number)
+          # The arg below adds a parameter, the path to a config file.
+          # This tells the inventory-api app to get its configuration from the file
+          # rather than querying Consul.
           args:
-            - "-jar"
-            - "/opt/inventory-api-{{ .Values.image_version }}.jar"
-            - "server"
             - "/opt/config.json"
           resources:
 {{ include "common.resources" . | indent 12 }}
