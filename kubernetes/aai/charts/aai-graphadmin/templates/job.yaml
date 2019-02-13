@@ -49,8 +49,6 @@ spec:
         app: {{ include "common.name" . }}-job
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
       - command:
@@ -58,6 +56,8 @@ spec:
         args:
         - --container-name
         - aai-cassandra
+        - --container-name
+        - aai-schema-service
         env:
         - name: NAMESPACE
           valueFrom:
@@ -154,7 +154,7 @@ spec:
          name: {{ include "common.fullname" . }}-realm-configmap
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-auth-truststore-secret
+         secretName: aai-common-truststore
          items:
           {{ range $job := .Values.global.config.auth.files }}
            - key: {{ . }}
