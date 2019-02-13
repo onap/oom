@@ -33,7 +33,7 @@ POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
 
 TAGS="-i $2"
 
-ETEHOME=/var/opt/OpenECOMP_ETE
+ETEHOME=/var/opt/ONAP
 export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_ete_$2
 DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
