@@ -173,6 +173,14 @@ do
                         TAG="distributeVFWNG"
                         shift
                         ;;
+        distributeDemoVFWDT)
+                        TAG="DistributeDemoVFWDT"
+                        shift
+                        ;;
+        instantiateDemoVFWDT)
+                        TAG="instantiateVFWDT"
+                        shift
+                        ;;
         vfwclosedloop)
                         TAG="vfwclosedloop"
                         shift
