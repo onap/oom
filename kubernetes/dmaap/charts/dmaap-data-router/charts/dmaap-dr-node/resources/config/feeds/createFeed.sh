@@ -1,8 +1,8 @@
 #!/bin/sh
 
 dr_prov_url="{{.Values.global.config.dmaapDrProv.name}}:{{.Values.global.config.dmaapDrProv.internalPort2}}"
-ct_header="Content-Type:application/vnd.att-dr.feed"
-obo_header="X-ATT-DR-ON-BEHALF-OF:dradmin"
+ct_header="Content-Type:application/vnd.dmaap-dr.feed"
+obo_header="X-DMAAP-DR-ON-BEHALF-OF:dradmin"
 feed_payload=/opt/app/datartr/etc/dedicatedFeed.json
 
 sleep 20
