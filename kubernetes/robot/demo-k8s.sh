@@ -173,6 +173,14 @@ do
                         TAG="distributeVFWNG"
                         shift
                         ;;
+        distributeDemoVFWDT)
+                        TAG="DistributeDemoVFWDT"
+                        shift
+                        ;;
+        instantiateDemoVFWDT)
+                        TAG="instantiateVFWDT"
+                        shift
+                        ;;
         vfwclosedloop)
                         TAG="vfwclosedloop"
                         shift
@@ -189,7 +197,7 @@ set -x
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
 
-ETEHOME=/var/opt/OpenECOMP_ETE
+ETEHOME=/var/opt/ONAP
 
 export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_demo_$key
