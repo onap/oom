@@ -23,6 +23,10 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  selector:
+    matchLabels:
+      app: {{ include  "common.name" . }}
+      release: {{ .Release.Name }}
   serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
@@ -35,24 +39,26 @@ spec:
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
     spec:
+      hostNetwork: {{ .Values.hostNetwork }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.internalPort2 }}
-        - containerPort: {{ .Values.service.internalPort3 }}
-        - containerPort: {{ .Values.service.internalPort4 }}
-        - containerPort: {{ .Values.service.internalPort5 }}
+        {{- range $index, $ports := .Values.service.ports }}
+        - containerPort: {{ $ports.port }}
+        {{- end }}
         volumeMounts:
-          - name: {{ .Values.service.name }}
+          - name: cassandra-data
             mountPath: /var/lib/cassandra
-          {{ if eq .Values.configmapping true }}
-          - name: {{ .Values.service.name }}-docker-entry-initd
-            mountPath: /{{ .Values.service.name }}-docker-entrypoint-initdb.d/cassandra.cql
-            subPath: cassandra.cql
-          {{ end }}
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          {{- range $key, $value := .Values.configOverrides }}
+          - name: cassandra-config-{{ $key | replace "." "-" }}
+            mountPath: /etc/cassandra/{{ $key }}
+            subPath: {{ $key }}
+          {{- end }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           exec:
@@ -62,6 +68,9 @@ spec:
             - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
         {{ end -}}
         readinessProbe:
           exec:
@@ -70,10 +79,19 @@ spec:
             - -c
             - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          timeoutSeconds: {{ .Values.liveness.periodSeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.readiness.successThreshold }}
+          failureThreshold: {{ .Values.readiness.failureThreshold }}
         env:
-        {{- $seed_size := default 1 .Values.replicaCount | int -}}
-        {{- $global := . }}
+          {{- $seed_size := default 1 .Values.replicaCount | int -}}
+          {{- $global := . }}
+          - name: CASSANDRA_SEEDS
+          {{- if .Values.hostNetwork }}
+            value: {{ required "You must fill \".Values.config.seeds\" with list of Cassandra seeds when hostNetwork is set to true" .Values.config.seeds | quote }}
+          {{- else }}
+            value: "{{- range $i, $e := until $seed_size }}{{ template "common.fullname" $global }}-{{ $i }}.{{ template "common.servicename" $global }}.{{ $global.Release.Namespace }}.svc.{{ $global.Values.config.cluster_domain }}{{- if (lt ( add1 $i ) $seed_size ) }},{{- end }}{{- end }}"
+          {{- end }}
           - name: MAX_HEAP_SIZE
             value: {{ .Values.config.heap.max }}
           - name: HEAP_NEWSIZE
@@ -88,22 +106,22 @@ spec:
             value: {{ .Values.config.rackName | quote }}
           - name: CASSANDRA_AUTO_BOOTSTRAP
             value: {{ .Values.config.autoBootstrap | quote }}
+          - name: CASSANDRA_START_RPC
+            value: {{ default "true" .Values.config.start_rpc | quote }}
+          - name: CASSANDRA_ENDPOINT_SNITCH
+            value: {{ default "SimpleSnitch" .Values.config.endpoint_snitch | quote }}
           - name: POD_IP
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-        {{ if eq .Values.configmapping true }}
         lifecycle:
-          postStart:
+          preStop:
             exec:
-              command:
-              - /bin/sh
-              - -c
-              - >
-                /bin/sleep {{ .Values.readiness.initialDelaySeconds }};
-                cd /{{ .Values.service.name }}-docker-entrypoint-initdb.d;
-                cqlsh -u root -p root -f cassandra.cql
-        {{ end }}
+        {{- if not .Values.persistence.enabled }}
+              command: ["/bin/sh", "-c", "exec nodetool decommission"]
+        {{- else }}
+              command: ["/bin/sh", "-c", "PID=$(pidof java) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
+        {{- end }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}
       {{- if .Values.nodeSelector }}
@@ -118,21 +136,20 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      {{ if eq .Values.configmapping true }}
-      - name: {{ .Values.service.name }}-docker-entry-initd
+      {{- range $key, $value := .Values.configOverrides }}
+      - name: cassandra-config-{{ $key | replace "." "-" }}
         configMap:
-          name: {{ .Values.service.name }}-docker-entry-initd
-      {{ end }}
+          name: {{ include "common.fullname" . }}-configOverrides
+      {{- end }}
   {{- if not .Values.persistence.enabled }}
-      - name: {{ .Values.service.name }}
+      - name: cassandra-data
         emptyDir: {}
   {{- else }}
   volumeClaimTemplates:
     - metadata:
-        name: {{ .Values.service.name }}
+        name: cassandra-data
         labels:
           app: {{ template "common.fullname" . }}
-          chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
           release: "{{ .Release.Name }}"
           heritage: "{{ .Release.Service }}"
       annotations:
