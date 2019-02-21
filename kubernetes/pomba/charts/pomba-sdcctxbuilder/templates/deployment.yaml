@@ -79,6 +79,19 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
 
+        # Filebeat sidecar container
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /opt/app/logs
+
       volumes:
         - name: localtime
           hostPath:
@@ -91,6 +104,11 @@ spec:
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-pomba-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs-eelf
           emptyDir: {}
       imagePullSecrets:
