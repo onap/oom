@@ -132,6 +132,11 @@ entity {
       attributes 'context-list.sdnc.vnfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].vmList[*]'
     }
 
+    // AAI-SDNC PNF name validation
+    useRule {
+      name 'AAI-SDNC-pnf-name-check'
+      attributes 'context-list.aai.pnfList', 'context-list.sdnc.pnfList'
+    }
 	
 	
     // SDNC-NDCB comparison: Context level
@@ -431,4 +436,68 @@ rule {
         }
         return new Tuple2(success, details)
         '''
+}
+
+rule {
+  name        'AAI-SDNC-pnf-name-check'
+  category    'PNF Consistency'
+  description 'Validate that each PNF name in AAI matches a PNF name in the SDNC model'
+  errorText   'AAI PNF names do not match SDNC - {0}'
+  severity    'ERROR'
+  attributes  'aaiItems', 'sdncItems'
+  validate    '''
+        def extractPnfName = { values, key, value ->
+            if (key.equals("name")) {
+                values.add("$value")
+            }
+        }
+
+        def slurper = new groovy.json.JsonSlurper()
+        Object aaiSlurp = slurper.parseText(aaiItems.toString())
+        Object sdncSlurp = slurper.parseText(sdncItems.toString())
+        List<String> errorReasons = new ArrayList();
+
+        List aaiPnfList = new ArrayList()
+        if(aaiSlurp instanceof List) {
+            aaiPnfList = (List)aaiSlurp
+        }
+
+        List sdncPnfList = new ArrayList()
+        if(sdncSlurp instanceof List) {
+            sdncPnfList = (List)sdncSlurp
+        }
+
+        if (aaiPnfList.size() != sdncPnfList.size()) {
+            errorReasons.add("Number of PNFs don't match; aai has ${aaiPnfList.size()}, sdnc has ${sdncPnfList.size()}")
+            return new Tuple2(false, errorReasons)
+        }
+
+        // collect all the "name" values from AAI and SDNC into two Sets.
+        Set aaiNameSet = new java.util.HashSet()
+        aaiPnfList.each {
+            it.each  { aKey, aValue -> extractPnfName(aaiNameSet, aKey, aValue) }
+        }
+
+        Set sdncNameSet = new java.util.HashSet()
+        sdncPnfList.each {
+            it.each  { aKey, aValue -> extractPnfName(sdncNameSet, aKey, aValue) }
+        }
+
+        // Validate that the names match by comparing the size of the two Sets.
+        if (aaiNameSet.size() != sdncNameSet.size()) {
+            errorReasons.add("Number of distinct PNF names don't match; aai: ${aaiNameSet}, sdnc: ${sdncNameSet}")
+            return new Tuple2(false, errorReasons)
+        }
+
+        Set combinedSet = new HashSet();
+        combinedSet.addAll(aaiNameSet);
+        combinedSet.addAll(sdncNameSet);
+        if (combinedSet.size() != aaiNameSet.size()) {
+            errorReasons.add("PNF names don't match; aai names: ${aaiNameSet}, sdnc names: ${sdncNameSet}")
+            return new Tuple2(false, errorReasons)
+        }
+
+        return true
+
+                '''
 }
