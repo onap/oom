@@ -1,0 +1,923 @@
+##########################################################################
+#
+#==================LICENSE_START==========================================
+# 
+#
+# Copyright (c) 2018 Amdocs Intellectual Property. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#==================LICENSE_END============================================
+#
+# LOG-314 michaelobrien 20181216
+#
+##########################################################################
+
+heat_template_version: 2015-10-15
+
+description: Heat template to install OOM components
+
+##############
+#            #
+# PARAMETERS #
+#            #
+##############
+
+parameters:
+
+  ##############################################
+  #                                            #
+  # Parameters used across all ONAP components #
+  #                                            #
+  ##############################################
+  
+  public_net_id:
+    type: string
+    description: The ID of the Public network for floating IP address allocation
+
+  public_net_name:
+    type: string
+    description: The name of the Public network referred by public_net_id
+
+  ubuntu_1604_image:
+    type: string
+    description: Name of the Ubuntu 16.04 image
+
+  flavor_small:
+    type: string
+    description: Name of the Small Flavor supported by the cloud provider
+
+  flavor_medium:
+    type: string
+    description: Name of the Medium Flavor supported by the cloud provider
+
+  flavor_large:
+    type: string
+    description: Name of the Large Flavor supported by the cloud provider
+
+  flavor_xlarge:
+    type: string
+    description: Name of the Extra Large Flavor supported by the cloud provider
+
+  flavor_xxlarge:
+    type: string
+    description: Name of the Extra Extra Large Flavor supported by the cloud provider
+
+  flavor_m2xlarge:
+    type: string
+    description: Name of the Extra Extra Large Flavor supported by the cloud provider
+
+  vm_base_name:
+    type: string
+    description: Base name of ONAP VMs
+
+  key_name:
+    type: string
+    description: Public/Private key pair name
+
+  pub_key:
+    type: string
+    description: Public key to be installed on the compute instance
+
+  nexus_repo:
+    type: string
+    description: Complete URL for the Nexus repository.
+
+  nexus_docker_repo:
+    type: string
+    description: Complete URL for the Nexus repository for docker images.
+
+  nexus_username:
+    type: string
+    description: Nexus Repository username
+
+  nexus_password:
+    type: string
+    description: Nexus Repository Password
+
+  artifacts_version:
+    type: string
+    description: Artifacts version of ONAP components
+
+  openstack_tenant_id:
+    type: string
+    description: OpenStack tenant ID
+
+  openstack_tenant_name:
+    type: string
+    description: OpenStack tenant name (matching with the openstack_tenant_id) 
+
+  openstack_username:
+    type: string
+    description: OpenStack username
+
+  openstack_auth_method:
+    type: string
+    description: OpenStack authentication method (password VS. api-key)
+
+#openstack_api_key:
+#    type: string
+#    description: OpenStack password or API Key
+
+  horizon_url:
+    type: string
+    description: URL of OpenStack Horizon
+
+  keystone_url:
+    type: string
+    description: URL of OpenStack Keystone
+
+  cloud_env:
+    type: string
+    description: Cloud Provider Name in lower case
+
+  openstack_region:
+    type: string
+    description: Region where the DCAE controller will spin the VMs
+
+  ######################
+  #                    #
+  # Network parameters #
+  #                    #
+  ######################
+
+  dns_list:
+    type: comma_delimited_list
+    description: List of External DNS for OAM ONAP network
+
+  external_dns:
+    type: string
+    description: Public IP of the external DNS for ONAP network
+
+  dns_forwarder:
+    type: string
+    description: the forwarder address for setting up ONAP's private DNS server
+
+  oam_network_cidr:
+    type: string
+    description: CIDR of the OAM ONAP network
+
+  ### Private IP addresses ###
+  oom_ip_addr:
+    type: string
+
+
+
+  #####################
+  #                   #
+  # ONAP repositories #
+  #                   #
+  #####################
+
+  oom_repo:
+    type: string
+
+#############
+#           #
+# RESOURCES #
+#           #
+#############
+
+resources:
+  random-str:
+    type: OS::Heat::RandomString
+    properties:
+      length: 4
+
+  # Public key used to access ONAP components
+  vm_key:
+    type: OS::Nova::KeyPair
+    properties:
+      name:
+        str_replace:
+          template: base_rand
+          params:
+            base: { get_param: key_name }
+            rand: { get_resource: random-str }
+      public_key: { get_param: pub_key }
+      save_private_key: false
+
+
+  # ONAP security group
+  onap_sg:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name:
+        str_replace:
+          template: base_rand
+          params:
+            base: onap_sg
+            rand: { get_resource: random-str }
+      description: security group used by ONAP
+      rules:
+        # All egress traffic
+        - direction: egress
+          ethertype: IPv4
+        - direction: egress
+          ethertype: IPv6
+        # ingress traffic
+        # ICMP
+        - protocol: icmp
+        - protocol: udp
+          port_range_min: 1
+          port_range_max: 65535
+        - protocol: tcp
+          port_range_min: 1
+          port_range_max: 65535
+        # https://git.onap.org/integration/tree/deployment/heat/onap-oom/onap-oom.yaml#n68
+        # Protocols used for vLB/vDNS use case
+        - protocol: 47
+        - protocol: 53
+        - protocol: 132
+
+
+ 
+
+  # ONAP management private network
+  oam_onap:
+    type: OS::Neutron::Net
+    properties:
+      name:
+        str_replace:
+          template: oam_onap_rand
+          params:
+            rand: { get_resource: random-str }
+
+  oam_onap_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name:
+        str_replace:
+          template: oam_onap_rand
+          params:
+            rand: { get_resource: random-str }
+      network_id: { get_resource: oam_onap }
+      cidr: { get_param: oam_network_cidr }
+      dns_nameservers: { get_param: dns_list }
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: { get_param: public_net_id }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: oam_onap_subnet }
+
+
+            
+  # OOM VM instantiation
+  oom_private_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }, "ip_address": { get_param: oom_ip_addr }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port }
+
+  oom_vm:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e0
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+
+            # Create configuration files
+            mkdir -p /opt/config
+            echo "__nexus_repo__" > /opt/config/nexus_repo.txt
+            echo "__nexus_docker_repo__" > /opt/config/nexus_docker_repo.txt
+            echo "__nexus_username__" > /opt/config/nexus_username.txt
+            echo "__nexus_password__" > /opt/config/nexus_password.txt
+            echo "__cloud_env__" > /opt/config/cloud_env.txt
+            echo "__artifacts_version__" > /opt/config/artifacts_version.txt
+            echo "__oam_network_cidr__" > /opt/config/oam_network_cidr.txt
+            echo "__external_dns__" > /opt/config/external_dns.txt
+            echo "export OOM_IP=__oom_ip_addr__" >> /opt/config/onap_ips.txt
+
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e0 >> /etc/hosts
+            #sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            #sudo usermod -aG docker ubuntu
+
+  oom_private_port1:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip1:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port1 }
+
+  oom_vm1:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e1
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port1 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e1 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port2:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip2:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port2 }
+
+  oom_vm2:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e2
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port2 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e2 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port3:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip3:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port3 }
+
+  oom_vm3:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e3
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port3 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e3 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port4:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip4:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port4 }
+
+  oom_vm4:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e4
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port4 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e4 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port5:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip5:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port5 }
+
+  oom_vm5:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e5
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port5 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e5 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port6:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip6:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port6 }
+
+  oom_vm6:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e6
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port6 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e6 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port7:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip7:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port7 }
+
+  oom_vm7:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e7
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port7 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e7 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port8:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip8:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port8 }
+
+  oom_vm8:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e8
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port8 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e8 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port9:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip9:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port9 }
+
+  oom_vm9:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e9
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port9 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e9 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port10:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip10:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port10 }
+
+  oom_vm10:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e10
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port10 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e10 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port11:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip11:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port11 }
+
+  oom_vm11:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e11
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port11 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e11 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port12:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip12:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port12 }
+
+  oom_vm12:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e12
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port12 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e12 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
+
+  oom_private_port13:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: oam_onap }
+      fixed_ips: [{"subnet": { get_resource: oam_onap_subnet }}]
+      security_groups:
+      - { get_resource: onap_sg }
+  oom_floating_ip13:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: oom_private_port13 }
+
+  oom_vm13:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: ubuntu_1604_image }
+      #flavor: { get_param: flavor_m2xlarge }
+      flavor: { get_param: flavor_xlarge }
+      name:
+        str_replace:
+          template: base-oom-obrien-rancher-e13
+          params:
+            base: { get_param: vm_base_name }
+      key_name: { get_resource: vm_key }
+      networks:
+        - port: { get_resource: oom_private_port13 }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            __nexus_repo__: { get_param: nexus_repo }
+            __nexus_docker_repo__: { get_param: nexus_docker_repo }
+            __nexus_username__: { get_param: nexus_username }
+            __nexus_password__: { get_param: nexus_password }
+            __artifacts_version__: { get_param: artifacts_version }
+#__dns_ip_addr__: { get_param: dns_ip_addr }
+            __oam_network_cidr__: { get_param: oam_network_cidr }
+          template: |
+            #!/bin/bash
+            # Download and run install script
+            sudo echo 127.0.0.1 onap-oom-obrien-rancher-e13 >> /etc/hosts
+            sudo curl https://releases.rancher.com/install-docker/17.03.sh | sh
+            sudo usermod -aG docker ubuntu
