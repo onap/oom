@@ -76,6 +76,12 @@ entity {
       name 'Attribute-comparison'
       attributes 'context-list.ndcb.vnfList[*].vfModuleList[*].vmList[*]', 'context-list.aai.vnfList[*].vfModuleList[*].vmList[*]'
     }
+
+    // NDCB-AAI comparison: P-Interface list
+    useRule {
+      name 'Attribute-comparison'
+      attributes 'context-list.ndcb.pnfList[*].pInterfaceList[*]', 'context-list.aai.pnfList[*].pInterfaceList[*]'
+    }
 	
 	
     // SDNC-AAI comparison: Context level
