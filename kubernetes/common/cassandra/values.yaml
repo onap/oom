@@ -27,14 +27,9 @@ pullPolicy: Always
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# configmapping detail whether it exist locally or not
-# by default it is false, if you wanna configure it then mention
-# locally TRUE value in local values.yaml.
-
-configmapping: false
-
 # application configuration
 config:
+  cluster_domain: cluster.local
   heap:
     max: 512M
     min: 100M
@@ -43,11 +38,13 @@ config:
   dataCenter: Pod
   rackName: Rack
   autoBootstrap: true
-  cassandraUsername: root
-  cassandraPassword: root
+  # If hostNetwork is true then provide the comma separated list of seeds.
+  #seeds:seed1,seed2
 
 # default number of instances
-replicaCount: 1
+replicaCount: 3
+
+hostNetwork: false
 
 nodeSelector: {}
 
@@ -57,6 +54,9 @@ affinity: {}
 liveness:
   initialDelaySeconds: 60
   periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
@@ -64,25 +64,30 @@ liveness:
 readiness:
   initialDelaySeconds: 60
   periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
 
 service:
   type: ClusterIP
   name: cassandra
-  portName: cassandra
-  externalPort: 9160
-  internalPort: 9160
-  externalPort2: 7000
-  internalPort2: 7000
-  externalPort3: 7001
-  internalPort3: 7001
-  externalPort4: 7199
-  internalPort4: 7199
-  externalPort5: 9042
-  internalPort5: 9042
+  ports:
+  - name: intra
+    port: 7000
+  - name: tls
+    port: 7001
+  - name: jmx
+    port: 7199
+  - name: cql
+    port: 9042
+  - name: thrift
+    port: 9160
+  - name: agent
+    port: 61621
 
 podManagementPolicy: OrderedReady
 updateStrategy:
-  type: OnDelete
+  type: RollingUpdate
 
 ingress:
   enabled: false
@@ -111,6 +116,7 @@ persistence:
   storageType: local
   storageClass: ""
 
+configOverrides: {}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
