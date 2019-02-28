@@ -21,6 +21,7 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  loggingDirectory: /opt/app/datartr/logs
 
 #################################################################
 # Application configuration defaults.
@@ -80,3 +81,41 @@ resources:
       cpu: 1000m
       memory: 2Gi
   unlimited: {}
+
+config:
+  # dr provisioning server configuration
+  dmaapDrProv:
+    servicetype: NodePort
+    name: dmaap-dr-prov
+    externalPort: 8080
+    externalPort2: 8443
+    internalPort: 8080
+    internalPort2: 8443
+    portName: dr-prov-port
+    portName2: dr-prov-port2
+    nodePort: 59
+    nodePort2: 69
+  # dr-prov db configuration
+  dmaapDrDb:
+    mariadbServiceName: dmaap-dr-db-svc
+    mariadbServicePort: 3306
+    mariadbContName: dmaap-dr-db
+
+# mariadb-galera configuration
+mariadb:
+  name: dmaap-dr-db
+  nameOverride: dmaap-dr-db
+  replicaCount: 2
+  config:
+    mariadbRootPassword: datarouter
+    userName: datarouter
+    userPassword: datarouter
+    mysqlDatabase: datarouter
+  service:
+    name: dmaap-dr-db-svc
+    portName: dmaap-dr-db-svc
+  nfsprovisionerPrefix: dmaap-dr-db
+  persistence:
+    size: 1Gi
+    mountSubPath: data-router/dr-db-data
+  disableNfsProvisioner: true

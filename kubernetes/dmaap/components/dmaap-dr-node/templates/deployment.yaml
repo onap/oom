@@ -29,50 +29,61 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{.Values.global.config.dmaapDrProv.name}}
+      hostname: {{.Values.config.dmaapDrNode.name}}
       initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - {{.Values.global.config.dmaapDrDb.mariadbContName}}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        - name: {{ include "common.name" . }}-readiness
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /root/ready.py
+          args:
+          - --container-name
+          - dmaap-dr-prov
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{.Values.global.config.dmaapDrProv.externalPort}}
-          - containerPort: {{.Values.global.config.dmaapDrProv.externalPort2}}
+          - containerPort: {{.Values.config.dmaapDrNode.externalPort}}
+          - containerPort: {{.Values.config.dmaapDrNode.externalPort2}}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{.Values.global.config.dmaapDrProv.externalPort}}
+              port: {{.Values.config.dmaapDrNode.internalPort}}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{.Values.global.config.dmaapDrProv.externalPort}}
+              port: {{.Values.config.dmaapDrNode.internalPort}}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: false
-          - mountPath: /opt/app/datartr/etc/provserver.properties
-            subPath: provserver.properties
-            name: prov-props
+          - mountPath: /opt/app/datartr/etc/dedicatedFeed.json
+            subPath: dedicatedFeed.json
+            name: create-feed
+          - mountPath: /opt/app/datartr/etc/createFeed.sh
+            subPath: createFeed.sh
+            name: create-feed
+          - mountPath: /opt/app/datartr/etc/node.properties
+            subPath: node.properties
+            name: node-props
           - name: {{ include "common.fullname" . }}-logs
             mountPath: {{ .Values.global.loggingDirectory }}
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                - /opt/app/datartr/etc/createFeed.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -95,15 +106,19 @@ spec:
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap/datarouter-prov
+            mountPath: /var/log/onap/datarouter-node
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: prov-props
+      - name: create-feed
         configMap:
-          name: {{ include "common.fullname" . }}-prov-props-configmap
-      - name: dr-prov-data
+          name: {{ include "common.fullname" . }}-create-feed-configmap
+          defaultMode: 0755
+      - name: node-props
+        configMap:
+          name: {{ include "common.fullname" . }}-node-props-configmap
+      - name: dr-node-data
       {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}
