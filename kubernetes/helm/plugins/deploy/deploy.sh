@@ -117,7 +117,7 @@ deploy() {
   NAMESPACE="$(echo $FLAGS | sed -n 's/.*\(namespace\).\s*/\1/p' | cut -c10- | cut -d' ' -f1)"
 
   VERSION="$(echo $FLAGS | sed -n 's/.*\(version\).\s*/\1/p' | cut -c8- | cut -d' ' -f1)"
-
+  
   if [ ! -z $VERSION ]; then
      VERSION="--version $VERSION"
   fi
@@ -194,6 +194,7 @@ deploy() {
   # upgrade/install each "enabled" subchart
   cd $CACHE_SUBCHART_DIR/
   for subchart in * ; do
+    
     SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
     SUBCHART_ENABLED=0
@@ -202,6 +203,7 @@ deploy() {
     fi
 
     if [[ $SUBCHART_ENABLED -eq 1 ]]; then
+      {
       if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE == "$subchart" ]]; then
         LOG_FILE=$LOG_DIR/"${RELEASE}-${subchart}".log
         :> $LOG_FILE
@@ -216,6 +218,7 @@ deploy() {
           echo "release \"${RELEASE}-${subchart}\" deployed"
         fi
       fi
+      } &
     else
       array=($(helm ls -q | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
@@ -223,7 +226,9 @@ deploy() {
         helm del "${array[i]}" --purge
       done
     fi
+    
   done
+  wait
 
   # report on success/failures of installs/upgrades
   helm ls | grep FAILED | grep $RELEASE
