@@ -135,6 +135,8 @@ spec:
             name: {{ include "common.fullname" . }}-mdsal
           - mountPath: /var/log/onap
             name: logs
+          - mountPath: {{ .Values.persistence.certPath }}
+            name: odl-cert-persistence
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -185,8 +187,15 @@ spec:
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-mdsal
           emptyDir: {}
-  {{ else }}
+  {{ end }}
+  {{ if not .Values.persistence.extCertEnabled }}
+        - name: odl-cert-persistence
+          emptyDir: {}
+  {{ end }}
+  {{- if or ( .Values.perisitence.enabled ) ( .Values.persistence.extCertEnabled ) }}
   volumeClaimTemplates:
+  {{ end }}        
+  {{ if .Values.persistence.enabled }}
   - metadata:
       name: {{ include "common.fullname" . }}-mdsal
       labels:
@@ -197,6 +206,21 @@ spec:
       resources:
         requests:
           storage: {{ .Values.persistence.size }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}
+  {{ end }}
+  {{ if .Values.persistence.extCertEnabled }}
+  - metadata:
+      name: odl-cert-persistence
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: odl-cert-persistence
+      resources:
+        requests:
+          storage: {{ .Values.persistence.certsize }}
       selector:
         matchLabels:
           name: {{ include "common.fullname" . }}
