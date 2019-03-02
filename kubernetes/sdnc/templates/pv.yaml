@@ -82,3 +82,35 @@ spec:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}2
 {{ end }}
 {{- end -}}
+{{ if .Values.certpersistence.enabled }}
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-pv-certs
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-pv-certs
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    name: {{ include "common.fullname" . }}-certs
+spec:
+  capacity:
+    storage: {{ .Values.certpersistence.size }}
+  accessModes:
+    - {{ .Values.certpersistence.accessMode }}
+{{- if .Values.certpersistence.storageClass }}
+{{- if (eq "-" .Values.certpersistence.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.certpersistence.storageClass }}"
+{{- end }}
+{{- end }}
+  persistentVolumeReclaimPolicy: {{ .Values.certpersistence.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.certpersistence.mountPath }}/{{ .Values.certpersistence.mountSubPath }}
+{{ end }}
+
+
+

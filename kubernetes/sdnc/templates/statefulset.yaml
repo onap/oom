@@ -135,6 +135,8 @@ spec:
             name: {{ include "common.fullname" . }}-mdsal
           - mountPath: /var/log/onap
             name: logs
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -182,6 +184,13 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-properties
             defaultMode: 0644
+        - name: {{ include "common.fullname" . }}-certs
+  {{ if .Values.certpersistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-pvc-certs
+  {{ else }}
+          emptyDir: {}
+  {{ end }}
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-mdsal
           emptyDir: {}
