@@ -1,0 +1,32 @@
+{{- if and .Values.certpersistence.enabled (not .Values.certpersistence.existingClaim) -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" .}}-pvc-certs
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-pvc-certs
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+{{- if .Values.certpersistence.annotations }}
+  annotations:
+{{ toYaml .Values.certpersistence.annotations | indent 4 }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}-pv-certs
+  accessModes:
+    - {{ .Values.certpersistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.certpersistence.size }}
+{{- if .Values.certpersistence.storageClass }}
+{{- if (eq "-" .Values.certpersistence.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.certpersistence.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end -}}
