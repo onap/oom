@@ -135,6 +135,8 @@ spec:
             name: {{ include "common.fullname" . }}-mdsal
           - mountPath: /var/log/onap
             name: logs
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" .}}-certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -185,8 +187,15 @@ spec:
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-mdsal
           emptyDir: {}
-  {{ else }}
+  {{ end }}
+  {{ if not .Values.certpersistence.enabled }}
+        - name: {{ include "common.fullname" . }}-certs
+          emptyDir: {}
+  {{ end }}
+  {{ if or ( .Values.persistence.enabled ) ( .Values.certpersistence.enabled ) }}
   volumeClaimTemplates:
+  {{ end }}
+  {{ if .Values.persistence.enabled }}
   - metadata:
       name: {{ include "common.fullname" . }}-mdsal
       labels:
@@ -201,3 +210,19 @@ spec:
         matchLabels:
           name: {{ include "common.fullname" . }}
   {{ end }}
+  {{ if .Values.certpersistence.enabled }}
+  - metadata:
+      name: {{ include "common.fullname" . }}-certs
+      labels:
+        name: {{ include "common.fullname" . }}-certs
+    spec:
+      accessModes: [ {{ .Values.certpersistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-certs
+      resources:
+        requests:
+          storage: {{ .Values.certpersistence.size }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}-certs
+  {{ end }}
+
