@@ -27,7 +27,7 @@ GLOBAL_APPC_SERVER_PORT = "8282"
 GLOBAL_APPC_USERNAME = "{{ .Values.appcUsername }}"
 GLOBAL_APPC_PASSWORD = "{{ .Values.appcPassword }}"
 GLOBAL_APPC_CDT_SERVER_PROTOCOL = "http"
-GLOBAL_APPC_CDT_SERVER_PORT = "80"
+GLOBAL_APPC_CDT_SERVER_PORT = "18080"
 GLOBAL_APPC_CDT_USERNAME = "demo"
 # sdc info - everything is from the private oam network (also called onap private network)
 GLOBAL_ASDC_SERVER_PROTOCOL = "http"
