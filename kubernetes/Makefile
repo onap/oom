@@ -21,11 +21,11 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.)))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) plugins
+all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) $(PARENT_CHART)
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -34,6 +34,11 @@ $(COMMON_CHARTS):
 $(HELM_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
+
+$(PARENT_CHART):
+	@echo "\n[$@]"
+	@make package-$@
+	@helm repo index $(PACKAGE_DIR)
 
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
