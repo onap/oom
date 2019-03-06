@@ -1,5 +1,4 @@
 # Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
-# Modifications Copyright © 2018 Amdocs,Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make-dmaap: make-bus-controller make-message-router make-dmaap-data-router
+make-dmaap: make-bus-controller make-message-router make-dmaap-dr-node make-dmaap-dr-prov
 
 make-bus-controller:
-	cd charts && helm dep up dmaap-bus-controller && helm lint dmaap-bus-controller
+	cd components && helm dep up dmaap-bus-controller && helm lint dmaap-bus-controller
 
 make-message-router:
-	cd charts && helm dep up message-router && helm lint message-router
+	cd components && helm dep up message-router && helm lint message-router
 
-make-dmaap-data-router:
-	cd charts && helm dep up dmaap-data-router && helm lint dmaap-data-router
+make-dmaap-dr-node:
+	cd components && helm dep up dmaap-dr-node && helm lint dmaap-dr-node
+
+make-dmaap-dr-prov:
+	cd components && helm dep up dmaap-dr-prov && helm lint dmaap-dr-prov
 
 clean:
 	@find . -type f -name '*.tgz' -delete
