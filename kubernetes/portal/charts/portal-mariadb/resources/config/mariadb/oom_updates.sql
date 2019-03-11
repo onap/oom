@@ -72,4 +72,4 @@ update fn_app set app_username='Default', app_password='2VxipM8Z3SETg32m3Gp0FvKS
 -- vid
 update fn_app set app_username='Default', app_password='2VxipM8Z3SETg32m3Gp0FvKS6zZ2uCbCw46WDyK6T5E=', ueb_key='2Re7Pvdkgw5aeAUD', auth_central = 'Y' , auth_namespace = 'org.onap.vid' where app_id = 6;
 -- aai sparky
-update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7MLhzo03aoOx7dTvdjKQ=', ueb_key='ueb_key' where app_id = 7;
+update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7MLhzo03aoOx7dTvdjKQ=', ueb_key='ueb_key_7' where app_id = 7;
