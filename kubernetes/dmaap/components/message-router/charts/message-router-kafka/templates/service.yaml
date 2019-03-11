@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# headLess service, Mandatory for kafka broker to works.
 apiVersion: v1
 kind: Service
 metadata:
@@ -34,3 +35,39 @@ spec:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
 
+# Nodeport service
+{{- if .Values.exposeService.enabled }}
+  {{- $servicename := .Values.exposeService.name }}
+  {{- $servicetype := .Values.exposeService.type }}
+  {{- $namespace := .Release.Namespace }}
+  {{- $fullName := include "common.fullname" . }}
+  {{- $name := include "common.name" . }}
+  {{- $brokers := .Values.replicaCount | int }}
+  {{- $internalPort := .Values.exposeService.internalPort }}
+  {{- $externalPort := .Values.exposeService.externalPort }}
+  {{- $root := . }}
+  {{- range $i, $e := until $brokers }}
+    {{- $externalListenerPort := add $root.Values.exposeService.firstListenerPort $i }}
+    {{- $responsiblePod := printf "%s-%d" (printf "%s" $fullName) $i }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $servicename }}-{{ $i }}
+  namespace: {{ $namespace }}
+  labels:
+    app: {{ $name }}
+spec:
+  type: {{ $servicetype }}
+  ports:
+  - port: {{ $externalPort }}
+    targetPort: {{ $internalPort }}
+    nodePort: {{ $externalListenerPort }}
+    protocol: TCP
+  selector:
+    app: {{ $name }}
+    statefulset.kubernetes.io/pod-name: {{ $responsiblePod | quote }}
+  {{- end }}
+{{- end }}
+
+# TODO loadbalancer service

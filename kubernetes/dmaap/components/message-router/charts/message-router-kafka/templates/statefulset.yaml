@@ -93,26 +93,38 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        - name: BROKER_ID_COMMAND
+          value: "hostname | awk -F '-' '{print $NF}'"
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: "{{.Values.zookeeper.name}}:{{.Values.zookeeper.port}}"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: "INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: "INTERNAL_PLAINTEXT://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.internalPort}}"
-        - name: KAFKA_LISTENERS
-          value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}"
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: "INTERNAL_PLAINTEXT"
         - name: KAFKA_LOG_DIRS
           value: "kafka/logs"
-        - name: BROKER_ID_COMMAND
-          value: "hostname | awk -F '-' '{print $NF}'"
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "{{ .Values.replicaCount }}"
         - name: KAFKA_DEFAULT_REPLICATION_FACTOR
           value: "{{ .Values.replicaCount }}"
         - name: KAFKA_NUM_PARTITIONS
           value: "{{ .Values.defaultpartitions }}"
+{{ if not .Values.exposeService.enabled }}
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "INTERNAL_PLAINTEXT://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.externalPort}}"
+        - name: KAFKA_LISTENERS
+          value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}"
+{{ else }}
+# Improvement: move start-kafka.sh to a config map to improving maintainability.
+        - name: KAFKA_LISTENERS
+          value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}, EXTERNAL_PLAINTEXT://0.0.0.0:{{.Values.exposeService.internalPort}}"
+        command:
+        - "bash"
+        - "-c"
+        - |
+          export KAFKA_ADVERTISED_LISTENERS=INTERNAL_PLAINTEXT://$HOST_NAME.{{ .Values.service.name }}.$HOST_NAMESPACE.svc.cluster.local:{{ .Values.service.externalPort}},EXTERNAL_PLAINTEXT://{{ .Values.exposeService.externalUrl}}:$(({{ .Values.exposeService.firstListenerPort }} + $(eval $BROKER_ID_COMMAND)));
+          start-kafka.sh;
+{{ end }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
