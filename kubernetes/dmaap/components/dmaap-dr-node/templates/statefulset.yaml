@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -23,13 +23,13 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  serviceName: {{ .Values.config.dmaapDrNode.name }}
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{.Values.config.dmaapDrNode.name}}
       initContainers:
         - name: {{ include "common.name" . }}-readiness
           image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -65,6 +65,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+          - mountPath: {{ .Values.persistence.spoolPath }}
+            name: {{ include "common.fullname" . }}-spool-data-pvc
+          - mountPath: {{ .Values.persistence.eventLogsPath }}
+            name: {{ include "common.fullname" . }}-event-logs-pvc
           - mountPath: /etc/localtime
             name: localtime
             readOnly: false
@@ -77,13 +81,11 @@ spec:
           - mountPath: /opt/app/datartr/etc/node.properties
             subPath: node.properties
             name: node-props
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: {{ .Values.global.loggingDirectory }}
           lifecycle:
             postStart:
               exec:
                 command:
-                - /opt/app/datartr/etc/createFeed.sh
+                  - /opt/app/datartr/etc/createFeed.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -94,7 +96,6 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
         # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
@@ -105,35 +106,55 @@ spec:
             subPath: filebeat.yml
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
-          - name: {{ include "common.fullname" . }}-logs
+          - name: {{ include "common.fullname" . }}-event-logs-pvc
             mountPath: /var/log/onap/datarouter-node
-      volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-      - name: create-feed
-        configMap:
-          name: {{ include "common.fullname" . }}-create-feed-configmap
-          defaultMode: 0755
-      - name: node-props
-        configMap:
-          name: {{ include "common.fullname" . }}-node-props-configmap
-      - name: dr-node-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
-      - name: {{ include "common.fullname" . }}-log-conf
-        configMap:
-          name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ .Release.Name }}-dmaap-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
-      - name:  {{ include "common.fullname" . }}-logs
-        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: create-feed
+          configMap:
+            name: {{ include "common.fullname" . }}-create-feed-configmap
+            defaultMode: 0755
+        - name: node-props
+          configMap:
+            name: {{ include "common.fullname" . }}-node-props-configmap
+        - name: {{ include "common.fullname" . }}-log-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-log
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-dmaap-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-event-logs-pvc
+          emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-spool-data-pvc
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-spool-data-stcl
+      resources:
+        requests:
+          storage: {{ .Values.persistence.spoolSize }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}-spool-data-pv
+  - metadata:
+      name: {{ include "common.fullname" . }}-event-logs-pvc
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-event-logs-stcl
+      resources:
+        requests:
+          storage: {{ .Values.persistence.eventLogSize }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}-event-logs-pv
