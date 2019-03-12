@@ -83,9 +83,8 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
         # Filebeat sidecar container
-        - name: {{ include "common.name" . }}-filebeat-onap
+        - name: {{ include "common.fullname" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
@@ -103,19 +102,12 @@ spec:
       - name: prov-props
         configMap:
           name: {{ include "common.fullname" . }}-prov-props-configmap
-      - name: dr-prov-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
       - name: {{ include "common.fullname" . }}-filebeat-conf
         configMap:
-          name: {{ .Release.Name }}-dmaap-filebeat-configmap
+          name: {{ include "common.fullname" . }}-dmaap-filebeat-configmap
       - name: {{ include "common.fullname" . }}-data-filebeat
         emptyDir: {}
       - name:  {{ include "common.fullname" . }}-logs
