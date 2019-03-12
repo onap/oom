@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{.Release.Name}}-{{.Chart.Name}}"
+  labels:
+    app.kubernetes.io/managed-by: {{.Release.Service | quote }}
+    app.kubernetes.io/instance: {{.Release.Name | quote }}
+    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{.Release.Name}}"
+      labels:
+        app.kubernetes.io/managed-by: {{.Release.Service | quote }}
+        app.kubernetes.io/instance: {{.Release.Name | quote }}
+        helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-job
+        image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
+        env:
+        - name: DELAY
+          value: "60"
+        - name: REQUESTID
+          value: "{{.Chart.Name}}-post-install"
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+
+# NOTE: on the following several configMaps, careful to include / at end
+#       since there may be more than one file in each mountPath
+#        - name: {{ include "common.name" . }}-config
+#          mountPath: /opt/app/config/conf/
+
+# NOTE: the basename of the subdirectory of mountPath is important - it matches the DBCL API URI
+        - name: "{{.Release.Name}}-dbc-mrclusters"
+          mountPath: /opt/app/config/mr_clusters/
+        - name: "{{.Release.Name}}-dbc-topics"
+          mountPath: /opt/app/config/topics/
+        resources:
+{{ include "common.resources" . | indent 10 }}
+        {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: "{{ .Release.Name }}-dbc-mrclusters"
+          configMap:
+            name: "{{ .Release.Name }}-dbc-mrclusters"
+        - name: "{{ .Release.Name }}-dbc-topics"
+          configMap:
+            name: "{{ .Release.Name }}-dbc-topics"
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
