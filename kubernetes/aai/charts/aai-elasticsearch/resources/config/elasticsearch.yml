@@ -192,7 +192,7 @@ network.bind_host: 0.0.0.0
 
 
 # Set a custom port for the node to node communication (9300 by default):
-transport.tcp.port: {{ .Values.config.tcpPort }}
+transport.tcp.port: {{ .Values.service.internalPort2 }}
 
 # Enable compression for all communication between nodes (disabled by default):
 transport.tcp.compress: false
@@ -368,77 +368,29 @@ discovery.zen.ping.unicast.hosts: ["0.0.0.0"]
 ###                                     SEARCH GUARD SSL                                      #
 ###                                       Configuration                                       #
 ###############################################################################################
-##  Uncomment all lines below prefixed with #X#  (globally remove #X#) for searchguard
-##
-###############################################################################################
-### Transport layer SSL                                                                       #
-###                                                                                           #
-###############################################################################################
-### Enable or disable node-to-node ssl encryption (default: true)
-#X#searchguard.ssl.transport.enable_openssl_if_available: true
-#X#searchguard.ssl.transport.enabled: true
-### JKS or PKCS12 (default: JKS)
-#X#searchguard.ssl.transport.keystore_type: JKS
-### Relative path to the keystore file (mandatory, this stores the server certificates), must be placed under the config/ dir
-#X#searchguard.ssl.transport.keystore_filepath: /some/path 
-### Alias name (default: first alias which could be found)
-###searchguard.ssl.transport.keystore_alias: localhost
-### Keystore password (default: changeit)
-#X#searchguard.ssl.transport.keystore_password: changeit
-##
-### JKS or PKCS12 (default: JKS)
-#X#searchguard.ssl.transport.truststore_type: JKS
-### Relative path to the truststore file (mandatory, this stores the client/root certificates), must be placed under the config/ dir
-#X#searchguard.ssl.transport.truststore_filepath: truststore.jks
-### Alias name (default: first alias which could be found)
-###searchguard.ssl.transport.truststore_alias: my_alias
-### Truststore password (default: changeit)
-#X#searchguard.ssl.transport.truststore_password: changeit
-### Enforce hostname verification (default: true)
-###searchguard.ssl.transport.enforce_hostname_verification: true
-### If hostname verification specify if hostname should be resolved (default: true)
-###searchguard.ssl.transport.resolve_hostname: true
-### Use native Open SSL instead of JDK SSL if available (default: true)
-###searchguard.ssl.transport.enable_openssl_if_available: false
-##
-###############################################################################################
-### HTTP/REST layer SSL                                                                       #
-###                                                                                           #
-###############################################################################################
-### Enable or disable rest layer security - https, (default: false)
-#X#searchguard.ssl.http.enable_openssl_if_available: true
-#X#searchguard.ssl.http.enabled: true
-### JKS or PKCS12 (default: JKS)
-#X#searchguard.ssl.http.keystore_type: JKS
-### Relative path to the keystore file (this stores the server certificates), must be placed under the config/ dir
-#X#searchguard.ssl.http.keystore_filepath: /keystore/path
-### Alias name (default: first alias which could be found)
-###searchguard.ssl.http.keystore_alias: my_alias
-### Keystore password (default: changeit)
-#X#searchguard.ssl.http.keystore_password: changeit
-### Do the clients (typically the browser or the proxy) have to authenticate themself to the http server, default is OPTIONAL
-### To enforce authentication use REQUIRE, to completely disable client certificates use NONE
-###searchguard.ssl.http.clientauth_mode: REQUIRE
-### JKS or PKCS12 (default: JKS)
-#X#searchguard.ssl.http.truststore_type: JKS
-### Relative path to the truststore file (this stores the client certificates), must be placed under the config/ dir
-#X#searchguard.ssl.http.truststore_filepath: truststore.jks
-### Alias name (default: first alias which could be found)
-###searchguard.ssl.http.truststore_alias: my_alias
-### Truststore password (default: changeit)
-#X#searchguard.ssl.http.truststore_password: changeit
-### Use native Open SSL instead of JDK SSL if available (default: true)
-###searchguard.ssl.http.enable_openssl_if_available: false
+######## Start Search Guard Demo Configuration ########
 
-#####################################################
-##### Security manager - Searchguard Configuration
-#####################################################
-#X#security.manager.enabled: false
-#X#searchguard.authcz.admin_dn:
+searchguard.enterprise_modules_enabled: false
 
-#####################################################
-##### X-Pack Configuration
-#####################################################
+searchguard.ssl.transport.keystore_filepath: sg/auth/{{ .Values.config.nodeKeyStore }}
+searchguard.ssl.transport.keystore_password: {{ .Values.config.nodeKeyStorePassword }}
+searchguard.ssl.transport.truststore_filepath: sg/auth/{{ .Values.config.trustStore }}
+searchguard.ssl.transport.truststore_password: {{ .Values.config.trustStorePassword }}
+searchguard.ssl.transport.enforce_hostname_verification: false
+
+searchguard.ssl.http.enabled: true
+searchguard.ssl.http.keystore_filepath: sg/auth/{{ .Values.config.nodeKeyStore }}
+searchguard.ssl.http.keystore_password: {{ .Values.config.nodeKeyStorePassword }}
+searchguard.ssl.http.truststore_filepath: sg/auth/{{ .Values.config.trustStore }}
+searchguard.ssl.http.truststore_password: {{ .Values.config.trustStorePassword }}
+
+searchguard.nodes_dn:
+  - CN=esaai
+
+searchguard.authcz.admin_dn:
+  - CN=sgadmin
+
+# x-pack security conflicts with searchguard
 xpack.security.enabled: false
 xpack.ml.enabled: false
 xpack.monitoring.enabled: false
