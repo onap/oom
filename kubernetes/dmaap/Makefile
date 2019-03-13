@@ -28,3 +28,4 @@ make-dmaap-dr-prov:
 
 clean:
 	@find . -type f -name '*.tgz' -delete
+	@find . -type f -name '*.lock' -delete
