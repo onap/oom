@@ -1,0 +1,66 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      annotations:
+        checksum.helm.kubernetes.io/configmap: {{ include (print $.Chart.Name "/templates/configmap.yaml") . | sha256sum }}
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "common.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.deployerVolumePath }}/resources
+          name: initial-resources
+        - mountPath: {{ .Values.deployerVolumePath  }}/k8s
+          name: k8s-api-secret
+          readOnly: true
+        - mountPath: /var/log/aee/portal
+          name: {{ include "common.fullname" . }}-pvc-log
+        - mountPath: /var/AEE/hde
+          name: {{ include "common.fullname" . }}-pvc
+        ports:
+        - containerPort: {{ .Values.service.httpInternalPort }}
+        - containerPort: {{ .Values.service.debugInternalPort }}
+        - containerPort: {{ .Values.service.dbInternalPort }}
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.httpInternalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.httpInternalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+      volumes:
+      - name: k8s-api-secret
+        secret:
+          secretName: k8s-api-secret
+      - name: initial-resources
+        configMap:
+          name: {{ include "common.fullname" . }}-configmap
+      - name: {{ include "common.fullname" . }}-pvc-log
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-log
+      - name: {{ include "common.fullname" . }}-pvc
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.volumeMountName }}
+      restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-ss-docker-registry-key"
