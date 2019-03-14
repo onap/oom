@@ -1,0 +1,135 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefixExt: 30
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+  selfserviceRepository: oomk8s
+  restartPolicy: Always
+  persistence:
+    mountPath: /dockerdata-nfs
+
+  # ONAP Repository
+  # Uncomment the following to enable the use of a single docker
+  # repository but ONLY if your repository mirrors all ONAP
+  # docker images. This includes all images from dockerhub and
+  # any other repository that hosts images for ONAP components.
+  repository: nexus3:10001
+  repositoryCred:
+    user: docker
+    password: docker
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+deployerVolumePath: /etc/ONAP/deployer
+k8sAccessProps: Cg==
+repository: nexus3:10001
+image: oomk8/selfservice-docker:1.2.0
+pullPolicy: Always
+
+# default number of instances
+replicaCount: 1
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  httpPortName: sshttp
+  httpInternalPort: 8080
+  httpExternalPort: 8080
+  httpNodePort: 31
+  dbPortName: ssdb
+  dbInternalPort: 1527
+  dbExternalPort: 1527
+  dbNodePort: 32
+  debugPortName: ssdebug
+  debugInternalPort: 9999
+  debugExternalPort: 9999
+  debugNodePort: 33
+
+helmrepo:
+  local: 127.0.0.1
+
+
+persistence:
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: selfservice
+  mountSubPathLog: logs
+  volumeName: selfservice-pv
+  volumeMountName: selfservice-pvc
+
+config:
+  openStackType: "{{ .Values.config.openStackType }}"
+  openStackName: "{{ .Values.config.openStackName }}"
+  openStackEncryptedPassword: "{{ .Values.config.openStackEncryptedPasswordHere }}"
+  openStackDomain: "{{ .Values.config.openStackDomain }}"
+  openStackKeyStoneUrl: "{{ .Values.config.openStackKeyStoneUrl }}/v2.0"
+  openStackServiceTenantName: "{{ .Values.config.openStackServiceTenantName }}"
+  openStackUserName: "{{ .Values.config.openStackUserName }}"
+  openStackRegion: "{{ .Values.config.openStackRegion }}"
+  openStackVNFTenantId: "{{ .Values.config.openStackVNFTenantId }}"
+  openStackEncryptedPasswordHere: "{{ .Values.config.openStackEncryptedPasswordHere }}"
+
+##################
+#  Robot Values  #
+##################
+demoArtifactsVersion: "{{ .Values.demoArtifactsVersion }}"
+openStackFlavourMedium: "{{ .Values.openStackFlavourMedium }}"
+openStackKeyStoneUrl: "{{ .Values.openStackKeyStoneUrl }}"
+openStackPublicNetId: "{{ .Values.openStackPublicNetId }}"
+openStackPassword: "{{ .Values.openStackPassword }}"
+openStackRegion: "{{ .Values.openStackRegion }}"
+openStackTenantId: "{{ .Values.openStackTenantId }}"
+openStackUserName: "{{ .Values.openStackUserName }}"
+ubuntu14Image: "{{ .Values.ubuntu14Image }}"
+ubuntu16Image: "{{ .Values.ubuntu16Image }}"
+scriptVersion: "{{ .Values.scriptVersion }}"
+openStackPrivateNetId: "{{ .Values.openStackPrivateNetId }}"
+openStackPrivateSubnetId: "{{ .Values.openStackPrivateSubnetId }}"
+openStackPrivateNetCidr: "{{ .Values.openStackPrivateNetCidr }}"
+openStackOamNetworkCidrPrefix: "{{ .Values.openStackOamNetworkCidrPrefix }}"
+vnfPubKey: "{{ .Values.vnfPubKey }}"
+dcaeCollectorIp: "{{ .Values.dcaeCollectorIp }}"

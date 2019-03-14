@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{if eq .Values.service.type "NodePort" -}}
+    - name: {{ .Values.service.httpPortName }}
+      port: {{ .Values.service.httpExternalPort }}
+      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.httpNodePort }}
+    - name: {{ .Values.service.debugPortName }}
+      port: {{ .Values.service.debugExternalPort }}
+      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.debugNodePort }}
+    - name: {{ .Values.service.dbPortName }}
+      port: {{ .Values.service.dbExternalPort }}
+      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.dbNodePort }}
+    {{- else -}}
+    - name: {{ .Values.service.httpPortName }}
+      port: {{ .Values.service.httpExternalPort }}
+      targetPort: {{ .Values.service.httpInternalPort }}
+    - name: {{ .Values.service.debugPortName }}
+      port: {{ .Values.service.debugExternalPort }}
+      targetPort: {{ .Values.service.debugInternalPort }}
+    - name: {{ .Values.service.dbPortName }}
+      port: {{ .Values.service.dbExternalPort }}
+      targetPort: {{ .Values.service.dbInternalPort }}
+    {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+
