@@ -39,6 +39,7 @@ Flags:
       --set-string stringArray   set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)
   -f, --values valueFiles        specify values in a YAML file or a URL(can specify multiple) (default [])
       --verbose                  enables full helm install/upgrade output during deploy
+      --set-last-applied         set the last-applied-configuration annotation on all objects.This annotation is required to restore services using Ark/Veloro backup restore.
 EOF
 }
 
@@ -107,6 +108,12 @@ deploy() {
   if [[ $FLAGS = *"--verbose"* ]]; then
     FLAGS="$(echo $FLAGS| sed -n 's/--verbose//p')"
     VERBOSE="true"
+  fi
+  # determine if set-last-applied flag is enabled
+  SET_LAST_APPLIED="false"
+  if [[ $FLAGS = *"--set-last-applied"* ]]; then
+    FLAGS="$(echo $FLAGS| sed -n 's/--set-last-applied//p')"
+    SET_LAST_APPLIED="true"
   fi
   if [[ $FLAGS = *"--dry-run"* ]]; then
     VERBOSE="true"
@@ -189,6 +196,12 @@ deploy() {
     else
       echo "release \"$RELEASE\" deployed"
     fi
+    # Add annotation last-applied-configuration if set-last-applied flag is set
+    if [[ $SET_LAST_APPLIED == "true" ]]; then
+      helm get manifest ${RELEASE} \
+      | kubectl apply set-last-applied --create-annotation -n onap -f - \
+      > $LOG_FILE.log 2>&1
+    fi
   fi
 
   # upgrade/install each "enabled" subchart
@@ -214,6 +227,12 @@ deploy() {
           cat $LOG_FILE
         else
           echo "release \"${RELEASE}-${subchart}\" deployed"
+        fi
+	# Add annotation last-applied-configuration if set-last-applied flag is set
+        if [[ $SET_LAST_APPLIED == "true" ]]; then
+          helm get manifest "${RELEASE}-${subchart}" \
+          | kubectl apply set-last-applied --create-annotation -n onap -f - \
+	      > $LOG_FILE.log 2>&1
         fi
       fi
     else
