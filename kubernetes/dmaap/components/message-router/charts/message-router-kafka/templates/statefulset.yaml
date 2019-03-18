@@ -48,6 +48,29 @@ spec:
       - name: {{ include "common.name" . }}-initcontainer
         image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: HOST_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: HOST_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        command:
+        - "bash"
+        - "-c"
+        - |
+          /etc/kafka-configmap/scripts/init.sh -al PLAINTEXT://$HOST_NAME.{{ .Values.service.name }}.$HOST_NAMESPACE.svc.cluster.local:{{ .Values.service.internalPort}}
+        volumeMounts:
+        - mountPath: /etc/kafka-configmap/files
+          name: configmap-files
+        - mountPath: /etc/kafka-configmap/scripts
+          name: configmap-scripts
+        - mountPath: /etc/kafka
+          name: config
       - command:
         - /root/ready.py
         args:
@@ -82,37 +105,9 @@ spec:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        env:
-        - name: HOST_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: HOST_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: KAFKA_ZOOKEEPER_CONNECT
-          value: "{{.Values.zookeeper.name}}:{{.Values.zookeeper.port}}"
-        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: "INTERNAL_PLAINTEXT://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.internalPort}}"
-        - name: KAFKA_LISTENERS
-          value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}"
-        - name: KAFKA_INTER_BROKER_LISTENER_NAME
-          value: "INTERNAL_PLAINTEXT"
-        - name: KAFKA_LOG_DIRS
-          value: "kafka/logs"
-        - name: BROKER_ID_COMMAND
-          value: "hostname | awk -F '-' '{print $NF}'"
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: "{{ .Values.replicaCount }}"
-        - name: KAFKA_DEFAULT_REPLICATION_FACTOR
-          value: "{{ .Values.replicaCount }}"
-        - name: KAFKA_NUM_PARTITIONS
-          value: "{{ .Values.defaultpartitions }}"
+        command:
+        - /opt/kafka/bin/kafka-server-start.sh
+        - /etc/kafka/server.properties
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -121,11 +116,22 @@ spec:
           name: docker-socket
         - mountPath: /kafka
           name: kafka-data
+        - mountPath: /etc/kafka
+          name: config
       {{- if .Values.tolerations }}
       tolerations:
         {{ toYaml .Values.tolerations | indent 10 }}
       {{- end }}
       volumes:
+      - name: configmap-files
+        configMap:
+          name: {{ include "common.fullname" . }}-config-files
+      - name: configmap-scripts
+        configMap:
+          name: {{ include "common.fullname" . }}-config-files
+          defaultMode: 0777
+      - name: config
+        emptyDir: {}
       - name: localtime
         hostPath:
           path: /etc/localtime
