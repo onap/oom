@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make-dmaap: make-dbc make-message-router make-dmaap-dr-node make-dmaap-dr-prov
+make-dmaap: make-dmaap-bc make-message-router make-dmaap-dr-node make-dmaap-dr-prov
 
-make-dbc:
-	cd components && helm dep up dbc && helm lint dbc
+make-dmaap-bc:
+	cd components && helm dep up dmaap-bc && helm lint dmaap-bc
 
 make-message-router:
 	cd components && helm dep up message-router && helm lint message-router
