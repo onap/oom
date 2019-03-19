@@ -35,6 +35,8 @@ GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = "log-ls-http.{{include "common.namespace"
 GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR = "pomba-aaictxbuilder.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR = "pomba-sdcctxbuilder.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR = "pomba-networkdiscoveryctxbuilder.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_SERVICE_DECOMPOSITION_IP_ADDR = "pomba-servicedecomposition.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_SDNC_CTX_BUILDER_IP_ADDR = "pomba-sdncctxbuilder.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
@@ -108,6 +110,8 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POMBA_AAI_CONTEXT_BUILDER_IP_ADDR" : "pomba-aaictxbuilder.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_SDC_CONTEXT_BUILDER_IP_ADDR" : "pomba-sdcctxbuilder.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR" : "pomba-networkdiscovery.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_SERVICE_DECOMPOSITION_IP_ADDR" : "pomba-servicedecomposition.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_SDNC_CTX_BUILDER_IP_ADDR" : "pomba-sdncctxbuilder.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NETWORK" : "{{ .Values.openStackPrivateNetId }}",
