@@ -34,6 +34,16 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-multisite-init
+        image: {{ include "common.repository" . }}/{{ .Values.multisiteInitImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        args:
+          - --namespace
+          - {{ include "common.namespace" . }}
+          - --configmap
+          - {{ .Values.multisiteConfigMapName }}
+        restartPolicy: Never
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -50,16 +60,20 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+              - /scripts/readiness-check.sh
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
           - mountPath: /opt/onap/config.txt
             subPath: config.txt
             name: {{ include "common.fullname" .}}-config
+            readOnly: true
+          - mountPath: /opt/onap/kube
+            name: {{ include "common.fullname" .}}-kubeconfig
             readOnly: true
           - mountPath: /secret
             name: dcae-token
@@ -78,6 +92,9 @@ spec:
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
+        - name: {{ include "common.fullname" .}}-kubeconfig
+          configMap:
+            name: {{ .Values.multisiteConfigMapName }}
         - name: dcae-token
           secret:
             secretName: dcae-token
