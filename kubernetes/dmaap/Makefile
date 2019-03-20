@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make-dmaap: make-bus-controller make-message-router make-dmaap-dr-node make-dmaap-dr-prov
+make-dmaap: make-dbc make-message-router make-dmaap-dr-node make-dmaap-dr-prov
 
-make-bus-controller:
-	cd components && helm dep up dmaap-bus-controller && helm lint dmaap-bus-controller
+make-dbc:
+	cd components && helm dep up dbc && helm lint dbc
 
 make-message-router:
 	cd components && helm dep up message-router && helm lint message-router
@@ -28,3 +28,4 @@ make-dmaap-dr-prov:
 
 clean:
 	@find . -type f -name '*.tgz' -delete
+	@find . -type f -name '*.lock' -delete
