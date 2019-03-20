@@ -69,10 +69,13 @@ spec:
             name: localtime
             readOnly: false
           - mountPath: /opt/app/datartr/etc/provserver.properties
+            name: {{ include "common.fullname" . }}-config
             subPath: provserver.properties
-            name: prov-props
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: {{ .Values.global.loggingDirectory }}
+          - mountPath: /opt/app/datartr/etc/drProvCadi.properties
+            name: {{ include "common.fullname" . }}-config
+            subPath: drProvCadi.properties
+          - mountPath: {{ .Values.global.loggingDirectory }}
+            name: {{ include "common.fullname" . }}-logs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -99,9 +102,14 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: prov-props
+      - name: {{ include "common.fullname" . }}-config
         configMap:
-          name: {{ include "common.fullname" . }}-prov-props-configmap
+          name: {{ include "common.fullname" . }}-configmap
+          items:
+          - key: provserver.properties
+            path: provserver.properties
+          - key: drProvCadi.properties
+            path: drProvCadi.properties
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log

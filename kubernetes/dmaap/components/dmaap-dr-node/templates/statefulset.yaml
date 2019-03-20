@@ -73,14 +73,17 @@ spec:
             name: localtime
             readOnly: false
           - mountPath: /opt/app/datartr/etc/dedicatedFeed.json
+            name: {{ include "common.fullname" . }}-create-feed-config
             subPath: dedicatedFeed.json
-            name: create-feed
           - mountPath: /opt/app/datartr/etc/createFeed.sh
+            name: {{ include "common.fullname" . }}-create-feed-config
             subPath: createFeed.sh
-            name: create-feed
           - mountPath: /opt/app/datartr/etc/node.properties
+            name: {{ include "common.fullname" . }}-config
             subPath: node.properties
-            name: node-props
+          - mountPath: /opt/app/datartr/etc/drNodeCadi.properties
+            name: {{ include "common.fullname" . }}-config
+            subPath: drNodeCadi.properties
           lifecycle:
             postStart:
               exec:
@@ -114,13 +117,23 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: create-feed
+        - name: {{ include "common.fullname" . }}-create-feed-config
           configMap:
             name: {{ include "common.fullname" . }}-create-feed-configmap
             defaultMode: 0755
-        - name: node-props
+            items:
+            - key: createFeed.sh
+              path: createFeed.sh
+            - key: dedicatedFeed.json
+              path: dedicatedFeed.json
+        - name: {{ include "common.fullname" . }}-config
           configMap:
-            name: {{ include "common.fullname" . }}-node-props-configmap
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+            - key: node.properties
+              path: node.properties
+            - key: drNodeCadi.properties
+              path: drNodeCadi.properties
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
