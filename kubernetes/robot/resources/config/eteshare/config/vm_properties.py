@@ -77,6 +77,7 @@ GLOBAL_INJECTED_SO_OPENSTACK_IP_ADDR = "so-openstack-adapter.{{include "common.n
 GLOBAL_INJECTED_SO_REQDB_IP_ADDR = "so-request-db-adapter.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_SO_SDNC_IP_ADDR = "so-sdnc-adapter.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_SO_VFC_IP_ADDR = "so-vfc-adapter.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_SO_VNFM_IP_ADDR = "so-vnfm-adapter.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_UBUNTU_1404_IMAGE = "{{ .Values.ubuntu14Image }}"
 GLOBAL_INJECTED_UBUNTU_1604_IMAGE = "{{ .Values.ubuntu16Image }}"
 GLOBAL_INJECTED_VM_IMAGE_NAME = "{{ .Values.ubuntu14Image }}"
@@ -148,6 +149,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_SO_REQDB_IP_ADDR" : "so-request-db-adapter.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_SO_SDNC_IP_ADDR" : "so-sdnc-adapter.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_SO_VFC_IP_ADDR" : "so-vfc-adapter.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_SO_VNFM_IP_ADDR" : "so-vnfm-adapter.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_UBUNTU_1404_IMAGE" : "{{.Values.ubuntu14Image}}",
     "GLOBAL_INJECTED_UBUNTU_1604_IMAGE" : "{{.Values.ubuntu16Image}}",
     "GLOBAL_INJECTED_VM_IMAGE_NAME" : "{{ .Values.ubuntu14Image }}",
