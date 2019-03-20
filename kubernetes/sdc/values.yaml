@@ -20,10 +20,21 @@ global:
   secrets:
     sdc_user: YXNkY191c2Vy
     sdc_password: QWExMjM0JV4h
-    cs_password: b25hcDEyMyNAIQ==
+    #Should be the password of shared cassandra instance/chart
+    cs_password: Y2Fzc2FuZHJh
   ubuntuInitRepository: oomk8s
   ubuntuInitImage: ubuntu-init:1.0.0
-
+  cassandra:
+   #This flag allows SDC to instantiate its own cluster, serviceName 
+   #should be sdc-cs if this flag is enabled
+   localCluster: false
+   #The cassandra service name to connect to (default: shared cassandra service)
+   serviceName: cassandra
+   #Shared cassandra cluster replicaCount, should be changed if localCluster is enabled
+   #to match with its own cluster replica
+   replicaCount: 3
+   clusterName: cassandra
+   dataCenter: Pod
 
 config:
   logstashServiceName: log-ls
@@ -32,7 +43,16 @@ config:
     workflowUrl: 10.0.2.15
     vnfRepoPort: 8702
 
-
 sdc-es:
   service:
     name: sdc-es
+
+#Used only if localCluster is enabled. Instantiates SDC's own cassandra cluster
+cassandra:
+  nameOverride: sdc-cs
+  replicaCount: 1
+  service:
+    name: sdc-cs
+  persistence:
+    mountSubPath: sdc/sdc-cs/CS
+    enabled: true
