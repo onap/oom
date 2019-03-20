@@ -25,6 +25,12 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+{{ if .Values.global.jobs.migration.enabled }}
+  annotations:
+    "helm.sh/hook": post-upgrade,post-rollback,post-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+{{ end }}
 spec:
   template:
     metadata:
@@ -74,24 +80,24 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-db-real-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-db-cached-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-aaiconfig-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-GQ/
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /opt/app/aai-traversal/resources/logback.xml
-          name: {{ include "common.fullname" . }}-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: logback.xml
         - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-localhost-access-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-traversal/resources/application.properties
-          name: {{ include "common.fullname" . }}-springapp-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
@@ -113,27 +119,9 @@ spec:
           path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}-update-query
       - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-log-conf
+      - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-localhost-access-log-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-localhost-access-log-configmap
-      - name: {{ include "common.fullname" . }}-db-real-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-real-configmap
-      - name: {{ include "common.fullname" . }}-db-cached-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-cached-configmap
-      - name: {{ include "common.fullname" . }}-aaiconfig-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-aaiconfig-configmap
-      - name: {{ include "common.fullname" . }}-springapp-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-springapp-configmap
-      - name: {{ include "common.fullname" . }}-realm-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-realm-configmap
+         name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
          secretName: aai-common-truststore

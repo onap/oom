@@ -29,8 +29,7 @@
 # If you are using an existing cassandra cluster not coming from oom
 # then it is your job to ensure that there are no connections to the database
 
-{{ if .Values.global.jobs.createSchema.enabled }}
-
+{{- if and ( not .Values.global.jobs.migration.enabled ) ( .Values.global.jobs.createSchema.enabled ) }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -55,7 +54,11 @@ spec:
         - /root/ready.py
         args:
         - --container-name
+        {{- if .Values.global.cassandra.localCluster }}
         - aai-cassandra
+        {{- else }}
+        - cassandra
+        {{- end }}
         - --container-name
         - aai-schema-service
         env:
@@ -85,24 +88,24 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-db-real-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-db-cached-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-aaiconfig-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-GA
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-localhost-access-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-springapp-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
@@ -130,29 +133,9 @@ spec:
       - name: {{ include "common.fullname" . }}-logs
         hostPath:
           path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}-create-db-schema
-      - name: {{ include "common.fullname" . }}-filebeat
-        emptyDir: {}
-      - name: {{ include "common.fullname" . }}-log-conf
+      - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-localhost-access-log-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-localhost-access-log-configmap
-      - name: {{ include "common.fullname" . }}-db-real-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-real-configmap
-      - name: {{ include "common.fullname" . }}-db-cached-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-cached-configmap
-      - name: {{ include "common.fullname" . }}-aaiconfig-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-aaiconfig-configmap
-      - name: {{ include "common.fullname" . }}-springapp-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-springapp-configmap
-      - name: {{ include "common.fullname" . }}-realm-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-realm-configmap
+         name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
          secretName: aai-common-truststore
@@ -165,3 +148,281 @@ spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end }}
+{{- if .Values.global.jobs.migration.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-migration
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-job
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": post-upgrade,post-rollback,post-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        {{- if .Values.global.cassandra.localCluster }}
+        - aai-cassandra
+        {{- else }}
+        - cassandra
+        {{- end }}
+        - --container-name
+        - aai-schema-service
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      - command:
+        - /bin/bash
+        - -c
+        - bash docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
+        env:
+        - name: LOCAL_USER_ID
+          value: {{ .Values.global.config.userId | quote }}
+        - name: LOCAL_GROUP_ID
+          value: {{ .Values.global.config.groupId | quote }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: janusgraph-realtime.properties
+        - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
+          name: {{ include "common.fullname" . }}-snapshots
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: janusgraph-cached.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: aaiconfig.properties
+        - mountPath: /opt/aai/logroot/AAI-GA
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/application.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: application.properties
+          {{ $global := . }}
+          {{ range $job := .Values.global.config.auth.files }}
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
+          name: {{ include "common.fullname" $global }}-auth-truststore-sec
+          subPath: {{ . }}
+          {{ end }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-restore-backup
+      containers:
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-perform-migration
+        command:
+        - /bin/bash
+        - -c
+        - bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
+        env:
+        - name: LOCAL_USER_ID
+          value: {{ .Values.global.config.userId | quote }}
+        - name: LOCAL_GROUP_ID
+          value: {{ .Values.global.config.groupId | quote }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: janusgraph-realtime.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: janusgraph-cached.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: aaiconfig.properties
+        - mountPath: /opt/aai/logroot/AAI-GA
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/application.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: application.properties
+          {{ $global := . }}
+          {{ range $job := .Values.global.config.auth.files }}
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
+          name: {{ include "common.fullname" $global }}-auth-truststore-sec
+          subPath: {{ . }}
+          {{ end }}
+        resources:
+{{ include "common.resources" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: filebeat-conf
+        configMap:
+          name: aai-filebeat
+      - name: {{ include "common.fullname" . }}-logs
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-config
+        configMap:
+         name: {{ include "common.fullname" . }}-configmap
+      - name: {{ include "common.fullname" . }}-snapshots
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      - name: {{ include "common.fullname" . }}-auth-truststore-sec
+        secret:
+         secretName: aai-common-truststore
+         items:
+          {{ range $job := .Values.global.config.auth.files }}
+           - key: {{ . }}
+             path: {{ . }}
+          {{ end }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-db-backup-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-db-backup-job
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-db-backup-job
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
+      initContainers:
+      - command:
+        - /bin/bash
+        - -c
+        - /root/ready.py --container-name aai-cassandra --timeout 1 || /root/ready.py --container-name cassandra
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-db-backup-readiness
+      {{- end }}
+      containers:
+      - name: {{ include "common.name" . }}-db-backup-job
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - docker-entrypoint.sh
+        - dataSnapshot.sh
+        env:
+        - name: LOCAL_USER_ID
+          value: {{ .Values.global.config.userId | quote }}
+        - name: LOCAL_GROUP_ID
+          value: {{ .Values.global.config.groupId | quote }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
+          name: {{ include "common.fullname" . }}-snapshots
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
+          name: {{ include "common.fullname" . }}-migration
+          subPath: janusgraph-migration-real.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
+          name: {{ include "common.fullname" . }}-migration
+          subPath: janusgraph-migration-cached.properties
+        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: aaiconfig.properties
+        - mountPath: /opt/aai/logroot/AAI-RES/
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
+          name: {{ include "common.fullname" . }}-config
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-graphadmin/resources/application.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: application.properties
+        resources:
+{{ include "common.resources" . | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: {{ include "common.fullname" . }}-logs
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-config
+        configMap:
+         name: {{ include "common.fullname" . }}-configmap
+      - name: {{ include "common.fullname" . }}-migration
+        configMap:
+         name: {{ include "common.fullname" . }}-migration-configmap
+      - name: {{ include "common.fullname" . }}-snapshots
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+{{ end }}
+
