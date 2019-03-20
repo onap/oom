@@ -30,6 +30,8 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
       - command:
         - /root/ready.py
@@ -74,6 +76,8 @@ spec:
           - mountPath: {{ .Values.config.configDir }}/RestServer_config
             name: config
             subPath: RestServer_config
+          - mountPath: {{ .Values.persistence.playbookPath }}
+            name: {{ include "common.fullname" . }}-data
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -92,5 +96,19 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}
             defaultMode: 0644
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+{{ if not .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          emptyDir: {}
+{{ else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-data
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+{{ end }}
