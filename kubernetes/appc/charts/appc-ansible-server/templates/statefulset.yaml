@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
@@ -74,6 +74,8 @@ spec:
           - mountPath: {{ .Values.config.configDir }}/RestServer_config
             name: config
             subPath: RestServer_config
+          - mountPath: {{ .Values.persistence.playbookPath }}
+            name: {{ include "common.fullname" . }}-data
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -92,5 +94,21 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}
             defaultMode: 0644
-      imagePullSecrets:
+{{ if not .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          emptyDir: {}
+{{ else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-data
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+{{ end }}
+    imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
