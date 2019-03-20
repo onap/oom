@@ -54,6 +54,7 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort2 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
@@ -75,12 +76,20 @@ spec:
             value: "{{ .Values.config.cassandraHosts }}"
           - name: CS_PORT
             value: "{{ .Values.config.cassandraClientPort }}"
+          - name: CS_AUTHENTICATE
+            value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
           - name: CS_USER
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
           - name: CS_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
+          - name: CS_SSL_ENABLED
+            value: "{{ .Values.config.cassandraSSLEnabled }}"
+          - name: CS_TRUST_STORE_PATH
+            value: "{{ .Values.config.cassandraTrustStorePath }}"
+          - name: CS_TRUST_STORE_PASSWORD
+            value: "{{ .Values.config.cassandraTrustStorePassword }}"
           - name: SDC_PROTOCOL
             value: "{{ .Values.config.sdcProtocol }}"
           - name: SDC_ENDPOINT
@@ -89,5 +98,37 @@ spec:
             value: "{{ .Values.config.sdcExternalUser }}"
           - name: SDC_PASSWORD
             value: "{{ .Values.config.sdcExternalUserPassword }}"
+          - name: SERVER_SSL_ENABLED
+            value: "{{ .Values.config.serverSSLEnabled }}"
+          - name: SERVER_SSL_KEYSTORE_TYPE
+            value: "{{ .Values.config.ser }}"
+          - name: SERVER_SSL_KEYSTORE_PATH
+            value: "{{ .Values.config.serverSSLKeyStorePath }}"
+          - name: SERVER_SSL_KEY_PASSWORD
+            value: "{{ .Values.config.serverSSLKeyPassword }}"
+          volumeMounts:
+          {{ if .Values.config.cassandraSSLEnabled }}
+          - name: {{ include "common.fullname" . }}-cassandra-client-truststore
+            mountPath: /config/cassandra-client-truststore
+            subPath: truststore
+            readOnly: true
+          {{- end }}
+          {{ if .Values.config.serverSSLEnabled }}
+          - name: {{ include "common.fullname" . }}-server-https-keystore
+            mountPath: /config/server-https-keystore
+            subPath: keystore
+            readOnly: true
+          {{- end }}
+      volumes:
+      {{ if .Values.config.cassandraSSLEnabled }}
+      - name: {{ include "common.fullname" . }}-cassandra-client-truststore
+        hostPath:
+          path: /config/cassandra-client-truststore
+      {{- end }}
+      {{ if .Values.config.serverSSLEnabled }}
+      - name: {{ include "common.fullname" . }}-server-https-keystore
+        hostPath:
+          path: /config/server-https-keystore
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
