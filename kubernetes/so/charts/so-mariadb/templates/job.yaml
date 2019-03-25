@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-config-job
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -22,15 +22,29 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  backoffLimit: 20
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}
+        app: {{ include "common.name" . }}-job
         release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
     spec:
-      hostname: mariadb
       initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.global.mariadbGalera.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - name: {{ include "common.name" . }}-inject-testlab-project
         command:
         - /bin/bash
@@ -50,34 +64,34 @@ spec:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        {{ if eq .Values.liveness.enabled true }}
-        livenessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end }}
-        readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        command:
+        - /bin/bash
+        - -c
+        - >
+          mysql() { /usr/bin/mysql  -h $DB_HOST -P $DB_PORT "$@"; };
+          export -f mysql;
+          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 && echo "Database already initialized!!!" && exit 0;
+          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; "${mysql[@]}" < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${mysql[@]}"; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
         env:
-          - name: MYSQL_ROOT_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}
-                key: db-root-password
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.port
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-root-password
         volumeMounts:
-        - mountPath: /var/lib/mysql
-          name: mariadb-data
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /etc/mysql/conf.d
-          name: mariadb-conf
         - name: docker-entrypoint-initdb-d
           mountPath: "/docker-entrypoint-initdb.d"
         resources:
@@ -91,20 +105,11 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
       volumes:
-      - name: mariadb-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
-      - name: mariadb-conf
-        configMap:
-          name: confd-configmap
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: docker-entrypoint-initdb-d
         emptyDir: {}
+      restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
