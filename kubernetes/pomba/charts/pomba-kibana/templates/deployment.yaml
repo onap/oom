@@ -79,40 +79,6 @@ spec:
           - mountPath: /config/default.json
             name: {{ include "common.fullname" . }}
             subPath: default.json
-      - args:
-        - --output=http://{{.Values.config.elasticsearchServiceName}}.{{ include "common.namespace" . }}:{{.Values.config.elasticsearchPort}}/service-validations
-        - --input=/config/validationsDump.json
-        - --type=mapping
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.configRepository }}/{{ .Values.configImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-config-validation
-        volumeMounts:
-          - mountPath: /config/validationsDump.json
-            name: {{ include "common.fullname" . }}
-            subPath: validationsDump.json
-      - args:
-        - --output=http://{{.Values.config.elasticsearchServiceName}}.{{ include "common.namespace" . }}:{{.Values.config.elasticsearchPort}}/service-violations
-        - --input=/config/violationsDump.json
-        - --type=mapping
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.configRepository }}/{{ .Values.configImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-config-violation
-        volumeMounts:
-          - mountPath: /config/violationsDump.json
-            name: {{ include "common.fullname" . }}
-            subPath: violationsDump.json            
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
@@ -175,10 +141,6 @@ spec:
               path: kibana.yml
             - key: default.json
               path: default.json
-            - key: validationsDump.json
-              path: validationsDump.json
-            - key: violationsDump.json
-              path: violationsDump.json
             - key: default-mapping.json
               path: default-mapping.json
         - name: {{ include "common.fullname" . }}-auth
