@@ -59,10 +59,6 @@ spec:
           ports:
           - containerPort: {{ .Values.service.externalPort }}
           - containerPort: {{ .Values.service.externalPort2 }}
-          command:
-          - /bin/bash
-          - -c
-          - ./do-start.sh
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
@@ -91,30 +87,8 @@ spec:
           - mountPath: /tmp/policy-install/config/base.conf
             name: drools-config
             subPath: base.conf
-          - mountPath: /tmp/policy-install/config/policy-management.conf
-            name: drools-config
-            subPath: policy-management.conf
-          - mountPath: /tmp/policy-install/config/drools-tweaks.sh
-            name: drools-config
-            subPath: drools-tweaks.sh
-          - mountPath: /tmp/policy-install/config/apps-install.sh
-            name: drools-config
-            subPath: apps-install.sh
-          - mountPath: /tmp/policy-install/config/drools-preinstall.sh
-            name: drools-config
-            subPath: drools-preinstall.sh
-          - mountPath: /usr/share/maven/conf/settings.xml
-            name: drools-settingsxml
-            subPath: settings.xml
           - mountPath: /var/log/onap
             name: policy-logs
-          - mountPath: /tmp/logback.xml
-            name: policy-logback
-            subPath: logback.xml
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/opt/app/policy/config/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -147,12 +121,6 @@ spec:
           emptyDir: {}
         - name: policy-data-filebeat
           emptyDir: {}
-        - name: policy-logback
-          configMap:
-            name: {{ include "common.fullname" . }}-log-configmap
-        - name: drools-settingsxml
-          configMap:
-            name: {{ include "common.fullname" . }}-settings-configmap
         - name: drools-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
@@ -162,18 +130,6 @@ spec:
               mode: 0755
             - key: feature-pooling-dmaap.conf
               path: feature-pooling-dmaap.conf
-              mode: 0755
-            - key: policy-management.conf
-              path: policy-management.conf
-              mode: 0755
-            - key: drools-tweaks.sh
-              path: drools-tweaks.sh
-              mode: 0755
-            - key: apps-install.sh
-              path: apps-install.sh
-              mode: 0755
-            - key: drools-preinstall.sh
-              path: drools-preinstall.sh
               mode: 0755
         - name: drools-secret
           secret:
