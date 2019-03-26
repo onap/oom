@@ -1,0 +1,97 @@
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+server:
+  port: {{ index .Values.containerPort }}
+  tomcat:
+      max-threads: 50
+spring:
+  datasource:
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
+    username: ${DB_ADMIN_USERNAME}
+    password: ${DB_ADMIN_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    dbcp2:
+      initial-size: 5
+      max-total: 20
+      validation-query: select 1
+      test-on-borrow: true
+  jpa:
+      show-sql: true
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+        ddl-auto: validate
+        naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
+        enable-lazy-load-no-trans: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+  security:
+    usercredentials:
+    -
+      username: sdnc
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SDNC-Client
+    -
+      username: sitecontrol
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SiteControl-Client
+    -
+      username: bpel
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPEL-Client
+    -
+      username: sniro
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SNIRO-Client
+    -
+      username: apih
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: MSO-Client
+    -
+      username: mso_admin
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: ACTUATOR
+mso:
+  logPath: ./logs/multivim
+  site-name: multivimEnv
+  async:
+    core-pool-size: 50
+    max-pool-size: 50
+    queue-capacity: 500
+  db:
+    auth: Basic YnBlbDpwYXNzd29yZDEk
+
+#Actuator
+management: 
+  context-path: /manage
+
+#MultiVim
+org:
+  onap:
+    so:
+      adapters:
+        multivim:
+          csarDirPath: /app/ASDC/
+          msb:
+            endpoint:
+              url: http://msb-iag:80/api/multicloud-azure/v1
+          create:
+            pollInterval: 15
+            pollTimeout: 30
+          bpelauth: A7FC9B308B7AF7A269072BA729A345625E0381E3071DE7EE50603677CB69C515
+          sockettimeout: 30
+          connecttimeout: 30
+          retrycount: 5
+          retryinterval: 15
+          retrylist: 408,429,500,502,503,504,900

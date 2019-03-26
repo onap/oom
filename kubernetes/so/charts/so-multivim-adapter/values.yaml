@@ -26,30 +26,50 @@ global:
 #################################################################
 # Application configuration defaults.
 #################################################################
-repository: oomk8s
-image: sbn-oaz:latest
+image: mva-oaz:latest
 pullPolicy: Always
+repository: oomk8s
 
 replicaCount: 1
 minReadySeconds: 10
-containerPort: 8081
-logPath: ./logs/bpmn/
-app: so-bpmn-infra
+containerPort: 8088
+logPath: ./logs/multivim/
+app: multivim-adapter
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  accessMode: ReadWriteMany
+  size: 2Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: mso/asdc/data
 service:
     type: NodePort
-    internalPort: 8081
-    externalPort: 8081
-    nodePort: "04"
-    portName: so-bpmn-port
+    internalPort: 8088
+    externalPort: 8088
+    nodePort: "06"
+    portName: so-mvim-port
     internalPort2: 5005
-    nodePort2: "05"
-    portName2: so-bpmn-debug
+    nodePort2: "07"
+    portName2: so-mvim-debug
 updateStrategy:
     type: RollingUpdate
     maxUnavailable: 1
     maxSurge: 1
 # Resource Limit flavor -By Default using small
-flavor: large
+flavor: small
 # Segregation for Different environment (Small and Large)
 resources:
   small:
@@ -69,6 +89,7 @@ resources:
   unlimited: {}
 livenessProbe:
     path: /manage/health
+    port: 8088
     scheme: HTTP
     initialDelaySeconds: 600
     periodSeconds: 60

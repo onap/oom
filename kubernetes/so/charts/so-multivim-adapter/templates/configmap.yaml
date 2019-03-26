@@ -12,30 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 apiVersion: v1
-kind: Service
+data:
+  LOG_PATH: {{ index .Values.logPath }}
+  APP: {{ index .Values.app }}
+kind: ConfigMap
 metadata:
-  name: {{ include "common.servicename" . }}
+  name: {{ include "common.fullname" . }}-configmap
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}
-    - port: {{ .Values.service.internalPort2 }}
-      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.nodePort2 }}
-      name: {{ .Values.service.portName2 }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-    {{- end}}
-  selector:
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-app-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels:
     app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/overrides/*").AsConfig . | indent 2 }}
