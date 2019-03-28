@@ -25,6 +25,19 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
+ {{ if .Values.global.installSidecarSecurity }}
+      {{if eq .Values.service.type "NodePort" -}}
+      - port: {{ .Values.service.internalPort }}
+        nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+        targetPort: {{ .Values.global.rproxy.port }}
+        name: {{ .Values.service.portName }}
+      {{- else -}}
+      - port: {{ .Values.service.externalPort }}
+        targetPort: {{ .Values.global.rproxy.port }}
+        name: {{ .Values.service.portName }}
+      {{- end}}
+  {{ else }}
+
   {{if eq .Values.service.type "NodePort" -}}
   - port: {{ .Values.service.internalPort }}
     nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
@@ -33,6 +46,7 @@ spec:
   - port: {{ .Values.service.internalPort }}
     name: {{ .Values.service.portName }}
   {{- end}}
+{{ end }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
