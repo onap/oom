@@ -35,6 +35,14 @@ spec:
         release: {{ .Release.Name }}
       name: {{ include "common.name" . }}
     spec:
+    {{ if .Values.global.installSidecarSecurity }}
+      initContainers:
+        - name: {{ .Values.global.tproxyConfig.name }}
+          image: "{{ include "common.repository" . }}/{{ .Values.global.tproxyConfig.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            privileged: true
+    {{ end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -116,6 +124,84 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: {{ include "common.fullname" . }}-service-filebeat
 
+    {{ if .Values.global.installSidecarSecurity }}
+      - name: {{ .Values.global.rproxy.name }}
+        image: "{{ include "common.repository" . }}/{{ .Values.global.rproxy.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: CONFIG_HOME
+          value: "/opt/app/rproxy/config"
+        - name: KEY_STORE_PASSWORD
+          value: {{ .Values.config.keyStorePassword }}
+        - name: spring_profiles_active
+          value: {{ .Values.global.rproxy.activeSpringProfiles }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-rproxy-config
+          mountPath: /opt/app/rproxy/config/forward-proxy.properties
+          subPath: forward-proxy.properties
+        - name: {{ include "common.fullname" . }}-rproxy-config
+          mountPath: /opt/app/rproxy/config/primary-service.properties
+          subPath: primary-service.properties
+        - name: {{ include "common.fullname" . }}-rproxy-config
+          mountPath: /opt/app/rproxy/config/reverse-proxy.properties
+          subPath: reverse-proxy.properties
+        - name: {{ include "common.fullname" . }}-rproxy-config
+          mountPath: /opt/app/rproxy/config/cadi.properties
+          subPath: cadi.properties
+        - name: {{ include "common.fullname" . }}-rproxy-log-config
+          mountPath: /opt/app/rproxy/config/logback-spring.xml
+          subPath: logback-spring.xml
+        - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+          mountPath: /opt/app/rproxy/config/auth/tomcat_keystore
+          subPath: tomcat_keystore
+        - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+          mountPath: /opt/app/rproxy/config/auth/client-cert.p12
+          subPath: client-cert.p12
+        - name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
+          mountPath: /opt/app/rproxy/config/auth/uri-authorization.json
+          subPath: uri-authorization.json
+        - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+          mountPath: /opt/app/rproxy/config/auth/org.onap.aai.p12
+          subPath: org.onap.aai.p12
+        - name: {{ include "common.fullname" . }}-rproxy-security-config
+          mountPath: /opt/app/rproxy/config/security/keyfile
+          subPath: keyfile
+
+        ports:
+        - containerPort: {{ .Values.global.rproxy.port }}
+
+      - name: {{ .Values.global.fproxy.name }}
+        image: "{{ include "common.repository" . }}/{{ .Values.global.fproxy.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: CONFIG_HOME
+          value: "/opt/app/fproxy/config"
+        - name: KEY_STORE_PASSWORD
+          value: {{ .Values.config.keyStorePassword }}
+        - name: TRUST_STORE_PASSWORD
+          value: {{ .Values.config.trustStorePassword }}
+        - name: spring_profiles_active
+          value: {{ .Values.global.fproxy.activeSpringProfiles }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-fproxy-config
+          mountPath: /opt/app/fproxy/config/fproxy.properties
+          subPath: fproxy.properties
+        - name: {{ include "common.fullname" . }}-fproxy-log-config
+          mountPath: /opt/app/fproxy/config/logback-spring.xml
+          subPath: logback-spring.xml
+        - name: {{ include "common.fullname" . }}-fproxy-auth-certs
+          mountPath: /opt/app/fproxy/config/auth/fproxy_truststore
+          subPath: fproxy_truststore
+        - name: {{ include "common.fullname" . }}-fproxy-auth-certs
+          mountPath: /opt/app/fproxy/config/auth/tomcat_keystore
+          subPath: tomcat_keystore
+        - name: {{ include "common.fullname" . }}-fproxy-auth-certs
+          mountPath: /opt/app/fproxy/config/auth/client-cert.p12
+          subPath: client-cert.p12
+        ports:
+        - containerPort: {{ .Values.global.fproxy.port }}
+    {{ end }}
+
       volumes:
       - name: localtime
         hostPath:
@@ -139,6 +225,35 @@ spec:
       - name: {{ include "common.fullname" . }}-service-log-conf
         configMap:
          name: {{ include "common.fullname" . }}-service-log
+    {{ if .Values.global.installSidecarSecurity }}
+      - name: {{ include "common.fullname" . }}-rproxy-config
+        configMap:
+          name: {{ include "common.fullname" . }}-rproxy-config
+      - name: {{ include "common.fullname" . }}-rproxy-log-config
+        configMap:
+          name: {{ include "common.fullname" . }}-rproxy-log-config
+      - name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
+        configMap:
+          name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
+      - name: {{ include "common.fullname" . }}-rproxy-auth-config
+        secret:
+          secretName: {{ include "common.fullname" . }}-rproxy-auth-config
+      - name: {{ include "common.fullname" . }}-rproxy-auth-certs
+        secret:
+          secretName: aai-rproxy-auth-certs
+      - name: {{ include "common.fullname" . }}-rproxy-security-config
+        secret:
+          secretName: aai-rproxy-security-config
+      - name: {{ include "common.fullname" . }}-fproxy-config
+        configMap:
+          name: {{ include "common.fullname" . }}-fproxy-config
+      - name: {{ include "common.fullname" . }}-fproxy-log-config
+        configMap:
+          name: {{ include "common.fullname" . }}-fproxy-log-config
+      - name: {{ include "common.fullname" . }}-fproxy-auth-certs
+        secret:
+          secretName: aai-fproxy-auth-certs
+    {{ end }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
