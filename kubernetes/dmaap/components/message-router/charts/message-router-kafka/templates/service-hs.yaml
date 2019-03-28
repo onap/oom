@@ -1,4 +1,5 @@
-# Copyright Â© 2018  AT&T
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: policy/v1beta1
-kind: PodDisruptionBudget
+apiVersion: v1
+kind: Service
 metadata:
-  name: {{ include "common.fullname" . }}-pdb
+  name: {{ .Values.service.name }}
+  namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  ports:
+    - port: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+  clusterIP: None
   selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  maxUnavailable: {{ div (sub .Values.replicaCount 1) 2 }}
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+

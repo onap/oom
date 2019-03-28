@@ -34,7 +34,11 @@ spec:
         release: {{ .Release.Name }}
     spec:
       podAntiAffinity:
+         {{if eq .Values.podAntiAffinityType "hard" -}}
+         requiredDuringSchedulingIgnoredDuringExecution:
+         {{- else -}}
          preferredDuringSchedulingIgnoredDuringExecution:
+         {{- end}}
          - weight: 1
            podAffinityTerm:
              labelSelector:
@@ -44,10 +48,6 @@ spec:
                     values:
                     - {{ include "common.name" . }}
              topologyKey: "kubernetes.io/hostname"
-      {{- if .Values.nodeAffinity }}
-      nodeAffinity:
-        {{ toYaml .Values.nodeAffinity | indent 10 }}
-      {{- end }}
       initContainers:
       - name: {{ include "common.name" . }}-initcontainer
         image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
@@ -70,10 +70,19 @@ spec:
       - name: {{ include "common.name" .  }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        - -exc
+        - |
+          export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
+          export ENDPOINT_PORT=$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )) && \
+          export KAFKA_ADVERTISED_LISTENERS=EXTERNAL_SASL_PLAINTEXT://$(HOST_IP):$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )),INTERNAL_SASL_PLAINTEXT://:{{ .Values.service.internalPort }} && \
+          exec start-kafka.sh
         resources:
 {{ include "common.resources" . | indent 12 }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.externalPort }}
        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -87,30 +96,32 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         env:
-        - name: HOST_NAME
+        - name: HOST_IP
           valueFrom:
             fieldRef:
               apiVersion: v1
-              fieldPath: metadata.name
-        - name: HOST_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+              fieldPath: status.hostIP
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: "{{.Values.zookeeper.name}}:{{.Values.zookeeper.port}}"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT"
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: "INTERNAL_PLAINTEXT://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.internalPort}}"
+          value: "INTERNAL_SASL_PLAINTEXT:SASL_PLAINTEXT,EXTERNAL_SASL_PLAINTEXT:SASL_PLAINTEXT"
         - name: KAFKA_LISTENERS
-          value: "INTERNAL_PLAINTEXT://0.0.0.0:{{.Values.service.internalPort}}"
+          value: "EXTERNAL_SASL_PLAINTEXT://0.0.0.0:{{ .Values.service.externalPort }},INTERNAL_SASL_PLAINTEXT://0.0.0.0:{{ .Values.service.internalPort }}"
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
-          value: "INTERNAL_PLAINTEXT"
+          value: "INTERNAL_SASL_PLAINTEXT"
+        - name: KAFKA_SASL_ENABLED_MECHANISMS
+          value: "PLAIN"
+        - name: KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL
+          value: "PLAIN"
+        - name: KAFKA_AUTHORIZER_CLASS_NAME
+          value: "{{ .Values.kafkaCustomAuthorizer }}"
+        - name: KAFKA_DELETE_TOPIC_ENABLE
+          value: "{{ .Values.deleteTopicEnable }}"
+        - name: aaf_locate_url
+          #value: "https://aaf-locate:8095"
+          value: https://aaf-onap-test.osaaf.org:8095
         - name: KAFKA_LOG_DIRS
           value: "kafka/logs"
-        - name: BROKER_ID_COMMAND
-          value: "hostname | awk -F '-' '{print $NF}'"
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "{{ .Values.replicaCount }}"
         - name: KAFKA_DEFAULT_REPLICATION_FACTOR
@@ -125,10 +136,6 @@ spec:
           name: docker-socket
         - mountPath: /kafka
           name: kafka-data
-      {{- if .Values.tolerations }}
-      tolerations:
-        {{ toYaml .Values.tolerations | indent 10 }}
-      {{- end }}
       volumes:
       - name: localtime
         hostPath:

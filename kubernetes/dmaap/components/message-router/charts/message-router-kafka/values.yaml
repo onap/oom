@@ -30,7 +30,7 @@ global:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/dmaap/kafka01101:0.0.1
+image: onap/dmaap/kafka01101:0.0.4
 pullPolicy: Always
 ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 
@@ -44,6 +44,13 @@ debugEnabled: false
 # default number of instances
 replicaCount: 3
 
+#Kafka custom authorizer class name
+kafkaCustomAuthorizer: org.onap.dmaap.kafkaAuthorize.KafkaCustomAuthorizer
+deleteTopicEnable: true
+
+# To access Kafka outside cluster, this value must be set to hard and the number of nodes in K8S cluster must be equal or greater then replica count
+podAntiAffinityType: soft
+
 # defult partitions
 defaultpartitions: 3
 
@@ -54,6 +61,8 @@ nodeAffinity: {}
 affinity: {}
 
 tolerations: {}
+
+
 
 # probe configuration parameters
 liveness:
@@ -91,11 +100,14 @@ persistence:
   mountSubPath: message-router/data-kafka
 
 service:
-  type: ClusterIP
+  type: NodePort
   name: message-router-kafka
   portName: message-router-kafka
   internalPort: 9092
-  externalPort: 9092
+  externalPort: 9093
+  baseNodePort: 30490
+
+  
 
 ingress:
   enabled: false
