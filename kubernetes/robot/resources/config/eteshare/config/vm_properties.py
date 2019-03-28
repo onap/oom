@@ -41,6 +41,7 @@ GLOBAL_INJECTED_POMBA_NETWORKDISCOVERY_MICROSERVICE_IP_ADDR = "pomba-networkdisc
 GLOBAL_INJECTED_POMBA_VALIDATION_SERVICE_IP_ADDR = "pomba-validation-service.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_KIBANA_IP_ADDR = "pomba-kibana.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POMBA_ELASTIC_SEARCH_IP_ADDR = "pomba-es.{{include "common.namespace" .}}"
+GLOBAL_INJECTED_POMBA_CONTEX_TAGGREGATOR_IP_ADDR = "pomba-contextaggregator.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_KEYSTONE = "{{ .Values.openStackKeyStoneUrl }}"
 GLOBAL_INJECTED_MR_IP_ADDR = "message-router.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_MUSIC_IP_ADDR = "music.{{include "common.namespace" .}}"
@@ -117,6 +118,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POMBA_NETWORK_DISC_CONTEXT_BUILDER_IP_ADDR" : "pomba-networkdiscovery.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_SERVICE_DECOMPOSITION_IP_ADDR" : "pomba-servicedecomposition.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POMBA_SDNC_CTX_BUILDER_IP_ADDR" : "pomba-sdncctxbuilder.{{include "common.namespace" .}}",
+    "GLOBAL_INJECTED_POMBA_CONTEX_TAGGREGATOR_IP_ADDR" : "pomba-contextaggregator.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_MUSIC_IP_ADDR" : "music.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NBI_IP_ADDR" : "nbi.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_NETWORK" : "{{ .Values.openStackPrivateNetId }}",
