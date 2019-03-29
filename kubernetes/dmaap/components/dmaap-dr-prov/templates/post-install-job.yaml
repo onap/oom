@@ -10,7 +10,7 @@ metadata:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
     "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-weight": "-3"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
@@ -25,9 +25,14 @@ spec:
       containers:
       - name: post-install-job
         image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DELAY
           value: "30"
+        - name: PROTO
+          value: "http"
+        - name: PORT
+          value: "8080"
         - name: REQUESTID
           value: "{{.Chart.Name}}-post-install"
 
