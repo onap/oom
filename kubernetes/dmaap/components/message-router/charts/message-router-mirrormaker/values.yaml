@@ -22,30 +22,31 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  persistence: {}
+  ubuntuInitRepository: registry.hub.docker.com
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/dmaap/dmaap-mr:1.1.11
+image: onap/dmaap/kafka01101:0.0.4
 pullPolicy: Always
+ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 
-kafka:
-  name: message-router-kafka
-  port: 9092
 zookeeper:
   name: message-router-zookeeper
   port: 2181
 
+messagerouter:
+  container: message-router 
+
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-config: {}
-
 # default number of instances
 replicaCount: 1
+kafkaHeapOptions: -Xmx4G -Xms2G
 
 nodeSelector: {}
 
@@ -53,30 +54,30 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 70
-  periodSeconds: 10
+  initialDelaySeconds: 60
+  periodSeconds: 20
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 70
-  periodSeconds: 10
+  initialDelaySeconds: 60
+  periodSeconds: 20
+
 
 service:
   type: NodePort
-  name: message-router
-  portName: message-router
-  externalPort: 3904
-  nodePort: 27
-  externalPort2: 3905
-  nodePort2: 26
+  name: message-router-mirrormaker
+  portName: message-router-mirrormaker
+  internalPort: 9092
+  
+ 
 
 ingress:
   enabled: false
 
 # Resource Limit flavor -By Default using small
-flavor: small
+flavor: large
 # Segregation for Different environment (Small and Large)
 resources:
   small:
@@ -94,3 +95,4 @@ resources:
       cpu: 1000m
       memory: 2Gi
   unlimited: {}
+
