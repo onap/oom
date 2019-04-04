@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright ▒ 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+
+{{- if .Values.global.migration.enabled }}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-migration
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
+    name: {{ include "common.fullname" . }}-migration
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   capacity:
     storage: {{ .Values.persistence.size}}
@@ -33,4 +38,4 @@ spec:
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
-{{- end -}}
+{{- end }}
