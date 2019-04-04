@@ -1,0 +1,193 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- if .Values.global.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-backup
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      containers:
+      - name: {{ include "common.fullname" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: DB_HOST
+          value: {{ .Values.global.migration.dbHost }}
+        - name: DB_USER
+          value: {{ .Values.global.migration.dbUser }}
+        - name: DB_PORT
+          value: "{{ .Values.global.migration.dbPort }}"
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-migration
+              key: db-root-password-backup
+        command:
+        - /bin/bash
+        - -c
+        - mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb > /var/data/mariadb/backup-`date +%s`.sql
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: backup-storage
+          mountPath: /var/data/mariadb
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      restartPolicy: Never
+---
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-config-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": post-upgrade,post-rollback,post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.global.mariadbGalera.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-inject-testlab-project
+        command:
+        - /bin/bash
+        - -c
+        - >
+          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
+          echo "Clone complete. Copying from /tmp/gerrit/volumes/mariadb/docker-entrypoint-initdb.d to /docker-entrypoint-initdb.d";
+          cp -rf /tmp/gerrit/volumes/mariadb/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d;
+          chmod -R 755 /docker-entrypoint-initdb.d;
+          echo "Done.";
+        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: docker-entrypoint-initdb-d
+          mountPath: "/docker-entrypoint-initdb.d"
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - -c
+        - >
+          mysql() { /usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
+          export -f mysql;
+          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
+          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; "${mysql[@]}" < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${mysql[@]}"; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
+          {{- if .Values.global.migration.enabled }}
+          mysql -vv --user=root --password=${MYSQL_ROOT_PASSWORD} < `ls -tr /var/data/mariadb/* | tail -1`;
+          {{- end }}
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.port
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-root-password
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: docker-entrypoint-initdb-d
+          mountPath: "/docker-entrypoint-initdb.d"
+        {{- if .Values.global.migration.enabled }}
+        - name: backup-storage
+          mountPath: /var/data/mariadb
+        {{- end }}
+        resources:
+{{ include "common.resources" . | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: docker-entrypoint-initdb-d
+        emptyDir: {}
+      {{- if .Values.global.migration.enabled }}
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      {{- end }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright ▒ 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,25 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+
+{{- if .Values.global.migration.enabled }}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-migration
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-{{- if .Values.persistence.annotations }}
   annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+{{- if .Values.persistence.annotations }}
 {{ toYaml .Values.persistence.annotations | indent 4 }}
 {{- end }}
 spec:
   selector:
     matchLabels:
-      name: {{ include "common.fullname" . }}
+      name: {{ include "common.fullname" . }}-migration
   accessModes:
     - {{ .Values.persistence.accessMode }}
   resources:
@@ -44,4 +48,5 @@ spec:
   storageClassName: "{{ .Values.persistence.storageClass }}"
 {{- end }}
 {{- end }}
-{{- end -}}
+{{- end }}
+

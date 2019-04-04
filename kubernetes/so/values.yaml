@@ -19,10 +19,26 @@ global:
   nodePortPrefixExt: 304
   repository: nexus3.onap.org:10001
   readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
+  readinessImage: readiness-check:2.0.2
+  mariadbGalera:
+    nameOverride: mariadb-galera
+    serviceName: mariadb-galera
+    servicePort: "3306"
+    mariadbRootPassword: secretpassword
+    #This flag allows SO to instantiate its own mariadb-galera cluster, 
+    #serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
+    localCluster: false
   persistence:
     mountPath: /dockerdata-nfs
-
+  #This configuration will run the migration. The configurations are for backing up the data
+  #from DB and then restoring it to the present versions preferred DB.
+  migration:
+    enabled: false
+    dbHost: mariadb-galera
+    dbPort: 3306
+    dbUser: root
+    dbPassword: secretpassword
+    
 #################################################################
 # Application configuration defaults.
 #################################################################
@@ -72,25 +88,20 @@ livenessProbe:
     timeoutSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-mariadb:
-  nameOverride: so-mariadb
-so-bpmn-infra:
-  mariadb:
-    nameOverride: so-mariadb
-so-catalog-db-adapter:
-  mariadb:
-    nameOverride: so-mariadb
-so-openstack-adapter:
-  mariadb:
-    nameOverride: so-mariadb
-so-request-db-adapter:
-  mariadb:
-    nameOverride: so-mariadb
-so-sdc-controller:
-  mariadb:
-    nameOverride: so-mariadb
-so-vfc-adapter:
-  mariadb:
-    nameOverride: so-mariadb
+
 nodeSelector: {}
 affinity: {}
+
+#Used only if localCluster is enabled. Instantiates SO's own cassandra cluster
+#helm deploy demo local/onap --namespace onap --verbose --set so.enabled=true \
+#                                                       --set so.global.mariadbGalera.localCluster=true \
+#                                                       --set so.global.mariadbGalera.nameOverride=so-mariadb-galera \
+#                                                       --set so.global.mariadbGalera.serviceName=so-mariadb-galera
+mariadb-galera:
+  nameOverride: so-mariadb-galera
+  replicaCount: 1
+  service:
+    name: so-mariadb-galera
+  persistence:
+    mountSubPath: so/mariadb-galera/data
+    enabled: true
