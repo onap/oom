@@ -20,17 +20,52 @@
 # ============LICENSE_END=========================================================
 ###
 
+# Append features to karaf boot feature configuration
+# $1 additional feature to be added
+# $2 repositories to be added (optional)
+function addToFeatureBoot() {
+  CFG=$ODL_HOME/etc/org.apache.karaf.features.cfg
+  ORIG=$CFG.orig
+  if [ -n "$2" ] ; then
+    echo "Add repository: $2"
+    mv $CFG $ORIG
+    cat $ORIG | sed -e "\|featuresRepositories|s|$|,$2|" > $CFG
+  fi
+  echo "Add boot feature: $1"
+  mv $CFG $ORIG
+  cat $ORIG | sed -e "\|featuresBoot *=|s|$|,$1|" > $CFG
+}
+
+# Append features to karaf boot feature configuration
+# $1 search pattern
+# $2 replacement
+function replaceFeatureBoot() {
+  CFG=$ODL_HOME/etc/org.apache.karaf.features.cfg
+  ORIG=$CFG.orig
+  echo "Replace boot feature $1 with: $2"
+  sed -i "/featuresBoot/ s/$1/$2/g" $CFG
+}
+
+function install_sdnrwt_features() {
+  addToFeatureBoot "$SDNRWT_BOOTFEATURES" $SDNRWT_REPOSITORY
+}
+
 function enable_odl_cluster(){
   if [ -z $SDNC_REPLICAS ]; then
      echo "SDNC_REPLICAS is not configured in Env field"
      exit
   fi
 
+  #Be sure to remove feature odl-netconf-connector-all from list
+  replaceFeatureBoot "odl-netconf-connector-all,"
+
   echo "Installing Opendaylight cluster features"
-  mv $ODL_HOME/etc/org.apache.karaf.features.cfg $ODL_HOME/etc/org.apache.karaf.features.cfg.orig
-  cat $ODL_HOME/etc/org.apache.karaf.features.cfg.orig | sed -e "\|featuresBoot=config|s|$|,odl-mdsal-clustering,odl-jolokia|" > $ODL_HOME/etc/org.apache.karaf.features.cfg
+  replaceFeatureBoot odl-netconf-topology odl-netconf-clustered-topology
+  replaceFeatureBoot odl-mdsal-all odl-mdsal-all,odl-mdsal-clustering
+  addToFeatureBoot odl-jolokia
   #${ODL_HOME}/bin/client feature:install odl-mdsal-clustering
   #${ODL_HOME}/bin/client feature:install odl-jolokia
+  
 
   echo "Update cluster information statically"
   hm=$(hostname)
@@ -88,6 +123,13 @@ MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.V
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
 DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
+SDNRWT=${SDNRWT:-false}
+SDNRWT_BOOTFEATURES=${SDNRWT_BOOTFEATURES:-sdnr-wt-feature-aggregator}
+
+echo "Settings:"
+echo "  ENABLE_ODL_CLUSTER=$ENABLE_ODL_CLUSTER"
+echo "  SDNC_REPLICAS=$SDNC_REPLICAS"
+echo "  SDNRWT=$SDNRWT"
 
 #
 # Wait for database to init properly
@@ -128,6 +170,8 @@ then
 	#${CCSDK_HOME}/bin/installOdlHostKey.sh
 
 	if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
+
+	if $SDNRWT ; then install_sdnrwt_features ; fi
 
         echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
