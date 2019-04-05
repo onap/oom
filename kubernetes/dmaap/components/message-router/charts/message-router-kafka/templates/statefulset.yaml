@@ -108,11 +108,13 @@ spec:
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: "{{.Values.zookeeper.name}}:{{.Values.zookeeper.port}}"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: "INTERNAL_SASL_PLAINTEXT:SASL_PLAINTEXT,EXTERNAL_SASL_PLAINTEXT:SASL_PLAINTEXT"
+          value: {{ include "kafka.listenerProtocol"}}
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "INTERNAL://$(HOST_NAME).{{ .Values.service.name }}.$(HOST_NAMESPACE).svc.cluster.local:{{ .Values.service.internalPort}}"
         - name: KAFKA_LISTENERS
-          value: "EXTERNAL_SASL_PLAINTEXT://0.0.0.0:{{ .Values.service.externalPort }},INTERNAL_SASL_PLAINTEXT://0.0.0.0:{{ .Values.service.internalPort }}"
+          value: "EXTERNAL://0.0.0.0:{{ .Values.service.externalPort }},INTERNAL_SASL_PLAINTEXT://0.0.0.0:{{ .Values.service.internalPort }}"
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
-          value: "INTERNAL_SASL_PLAINTEXT"
+          value: "INTERNAL"
         - name: KAFKA_SASL_ENABLED_MECHANISMS
           value: "PLAIN"
         - name: KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL
@@ -131,6 +133,16 @@ spec:
           value: "{{ .Values.replicaCount }}"
         - name: KAFKA_NUM_PARTITIONS
           value: "{{ .Values.defaultpartitions }}"
+        {{- if .Values.tls.enabledExternal or .Values.tls.enabledInternal }}
+        - name: KAFKA_SSL_TRUSTSTORE_LOCATION
+          value: {{ .Values.tls.kafkaTrustStorePath }}
+        - name: KAFKA_SSL_TRUSTSTORE_PASSWORD
+          value: {{ .Values.tls.kafkaTrustStorePassword }}
+        - name: KAFKA_SSL_KEYSTORE_LOCATION
+          value: {{ .Values.tls.serverSSLKeyStorePath }}
+        - name: KAFKA_SSL_KEYSTORE_PASSWORD
+          value: {{ .Values.tls.kafkaTrustStorePassword }}
+        {{- end }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -139,6 +151,7 @@ spec:
           name: docker-socket
         - mountPath: /kafka
           name: kafka-data
+        {{ include "kafka.tlsVolumeMounts" . }}
       {{- if .Values.tolerations }}
       tolerations:
         {{ toYaml .Values.tolerations | indent 10 }}
@@ -154,6 +167,7 @@ spec:
       - name: kafka-data
         emptyDir: {}
 {{ else }}
+        {{ include "kafka.tlsVolumes" . }}
   volumeClaimTemplates:
     - metadata:
         name: kafka-data
