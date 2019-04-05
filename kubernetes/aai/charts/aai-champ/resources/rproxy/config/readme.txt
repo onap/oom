@@ -1,1 +1,0 @@
-Relevant configuration files need to be copied here to successfully run this service locally.
