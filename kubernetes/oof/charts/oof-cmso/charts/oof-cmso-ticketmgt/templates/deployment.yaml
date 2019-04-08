@@ -1,4 +1,4 @@
-# Copyright (c) 2018 AT&T
+# Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,66 +30,10 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - {{ .Values.mariadb.nameOverride }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-      - name: db-init
-        image: "{{ include "common.repository" . }}/{{ .Values.dbinit.image }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: DB_HOST
-          value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
-        - name: DB_PORT
-          value: {{ .Values.config.db_port | quote}}
-        - name: DB_USERNAME
-          value: {{ .Values.config.db_root }}
-        - name: DB_SCHEMA
-          value: {{ .Values.config.mysqlDatabase }}
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name}}-cmso-db
-              key: db-root-password
-        terminationMessagePolicy: File
-        volumeMounts:
-        - name: {{ include "common.fullname" . }}-config
-          mountPath: /share/etc/config
-        - name: {{ include "common.fullname" . }}-logs   
-          mountPath: /share/logs
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: DB_HOST
-          value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
-        - name: DB_PORT
-          value: {{ .Values.config.db_port | quote}}
-        - name: DB_USERNAME
-          value: {{ .Values.config.db_user }}
-        - name: DB_SCHEMA
-          value: {{ .Values.config.mysqlDatabase }}
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name}}-cmso-db
-              key: user-password
-        - name: OPTIMIZER_HOST
-          value: {{ .Values.config.optimizer_host }}.{{.Release.Namespace}}
-        - name: OPTIMIZER_PORT
-          value: {{ .Values.config.optimizer_port | quote}}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -130,16 +74,10 @@ spec:
             items:
             - key: logback.xml
               path: logback.xml
-            - key: cmso.properties
-              path: cmso.properties
-            - key: cadi.properties
-              path: cadi.properties
-            - key: optimizer.properties
-              path: optimizer.properties
             - key: ticketmgt.properties
               path: ticketmgt.properties
-            - key: liquibase.properties
-              path: liquibase.properties
+            - key: cadi.properties
+              path: cadi.properties
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
       imagePullSecrets:

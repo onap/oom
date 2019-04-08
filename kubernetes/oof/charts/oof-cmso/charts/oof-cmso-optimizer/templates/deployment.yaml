@@ -1,4 +1,4 @@
-# Copyright (c) 2018 AT&T
+# Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,14 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
+        - name: TOPOLOGY_HOST
+          value: {{ .Values.config.topology_host }}.{{.Release.Namespace}}
+        - name: TOPOLOGY_PORT
+          value: {{ .Values.config.topology_port | quote}}
+        - name: TICKETMGT_HOST
+          value: {{ .Values.config.ticketmgt_host }}.{{.Release.Namespace}}
+        - name: TICKETMGT_PORT
+          value: {{ .Values.config.ticketmgt_port | quote}}
         - name: DB_HOST
           value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
         - name: DB_PORT
@@ -86,10 +94,6 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name}}-cmso-db
               key: user-password
-        - name: OPTIMIZER_HOST
-          value: {{ .Values.config.optimizer_host }}.{{.Release.Namespace}}
-        - name: OPTIMIZER_PORT
-          value: {{ .Values.config.optimizer_port | quote}}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -130,14 +134,10 @@ spec:
             items:
             - key: logback.xml
               path: logback.xml
-            - key: cmso.properties
-              path: cmso.properties
             - key: cadi.properties
               path: cadi.properties
             - key: optimizer.properties
               path: optimizer.properties
-            - key: ticketmgt.properties
-              path: ticketmgt.properties
             - key: liquibase.properties
               path: liquibase.properties
         - name:  {{ include "common.fullname" . }}-logs
