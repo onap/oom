@@ -88,6 +88,8 @@ spec:
           - name: SDC_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
+          - name: SDC_CERT_DIR
+            value: {{ .Values.cert.certDir }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-environments
             mountPath: /root/chef-solo/environments/
@@ -99,6 +101,8 @@ spec:
           - name: {{ include "common.fullname" . }}-logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: sdc-cert-dir
+            mountPath: "{{ .Values.cert.certDir }}"
           lifecycle:
             postStart:
               exec:
@@ -133,5 +137,8 @@ spec:
           defaultMode: 0755
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name:  {{ include "common.fullname" . }}-cert-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-cert
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
