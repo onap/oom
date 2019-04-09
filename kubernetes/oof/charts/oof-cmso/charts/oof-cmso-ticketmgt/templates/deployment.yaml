@@ -1,0 +1,84 @@
+# Copyright © 2018 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-logs
+          mountPath: /share/logs
+        - name: {{ include "common.fullname" . }}-logs
+          mountPath: /share/debug-logs
+        - name: {{ include "common.fullname" . }}-config
+          mountPath: /share/etc/config 
+        resources:
+{{ include "common.resources" . | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
+            - key: logback.xml
+              path: logback.xml
+            - key: ticketmgt.properties
+              path: ticketmgt.properties
+            - key: cadi.properties
+              path: cadi.properties
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
