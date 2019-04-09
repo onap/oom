@@ -22,7 +22,7 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
-MYSQL_HOST=${MYSQL_HOST:-{{.Release.Name}}-{{.Values.mysql.nameOverride}}-0.{{.Values.mysql.service.name}}.{{.Release.Namespace}}}
+MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
