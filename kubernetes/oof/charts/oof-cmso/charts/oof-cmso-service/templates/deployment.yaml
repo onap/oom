@@ -90,7 +90,9 @@ spec:
           value: {{ .Values.config.optimizer_host }}.{{.Release.Namespace}}
         - name: OPTIMIZER_PORT
           value: {{ .Values.config.optimizer_port | quote}}
-        ports:
+        - name: javax.net.ssl.trustStorePassword
+          value: {{ .Values.global.trustpass }}
+          ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
@@ -112,7 +114,10 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/debug-logs
         - name: {{ include "common.fullname" . }}-config
-          mountPath: /share/etc/config 
+          mountPath: /share/etc/config
+        - name: cmso-certs
+          mountPath: /share/etc/config/{{ .Values.global.truststoreFile}}"
+          subPath: {{ .Values.global.truststoreFile}}          
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -142,5 +147,8 @@ spec:
               path: liquibase.properties
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        - name: cmso-certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
