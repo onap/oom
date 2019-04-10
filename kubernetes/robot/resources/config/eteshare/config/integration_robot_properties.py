@@ -84,6 +84,11 @@ GLOBAL_MSB_SERVER_PORT = "80"
 # message router info - everything is from the private oam network (also called onap private network)
 GLOBAL_MR_SERVER_PROTOCOL = "http"
 GLOBAL_MR_SERVER_PORT = "3904"
+# bus controller info
+GLOBAL_BC_SERVER_PORT = "8080"
+GLOBAL_BC_HTTPS_SERVER_PORT = "8443"
+GLOBAL_BC_USERNAME = "{{ .Values.bcUsername }}"
+GLOBAL_BC_PASSWORD = "{{ .Values.bcPassword }}"
 # mso info - everything is from the private oam network (also called onap private network)
 GLOBAL_MSO_SERVER_PROTOCOL = "http"
 GLOBAL_MSO_SERVER_PORT = "8080"
