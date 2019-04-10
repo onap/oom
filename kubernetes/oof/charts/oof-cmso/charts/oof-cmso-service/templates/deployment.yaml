@@ -69,6 +69,20 @@ spec:
         - name: {{ include "common.fullname" . }}-logs   
           mountPath: /share/logs
       containers:
+      # side car containers
+      - name: filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+          name: filebeat-conf
+        - mountPath: /var/log/onap
+          name: {{ include "common.fullname" . }}-logs
+        - mountPath: /usr/share/filebeat/data
+          name: {{ include "common.fullname" . }}-filebeat
+        resources:
+{{ include "common.resources" . }}
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -90,6 +104,10 @@ spec:
           value: {{ .Values.config.optimizer_host }}.{{.Release.Namespace}}
         - name: OPTIMIZER_PORT
           value: {{ .Values.config.optimizer_port | quote}}
+        - name: JAVA_TRUSTSTORE_PASSWORD
+          value: {{ .Values.global.trustpass }}
+        - name: JAVA_TRUSTSTORE
+          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -112,7 +130,9 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/debug-logs
         - name: {{ include "common.fullname" . }}-config
-          mountPath: /share/etc/config 
+          mountPath: /share/etc/config
+        - name: {{ include "common.fullname" . }}-certs
+          mountPath: /share/etc/certs
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -142,5 +162,13 @@ spec:
               path: liquibase.properties
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        - name: {{ include "common.fullname" . }}-filebeat
+          emptyDir: {}
+        - name: filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-cmso-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-certs
+          secret:
+            secretName: {{ .Release.Name }}-{{ .Values.global.commonConfigPrefix }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
