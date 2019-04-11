@@ -18,25 +18,83 @@
 global:
   nodePortPrefix: 302
   readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
+  readinessImage: readiness-check:2.0.2
   ubuntuInitRepository: registry.hub.docker.com
   ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
-  configImage: onap/aaf/aaf_config:2.1.8
   persistence:
     enabled: true
+  pullPolicy: Always
+  repository: "nexus3.onap.org:10001"
+  #pullPolicy: IfNotPresent
+  #repository: "nexus3.onap.org:10003"
 
-  cadi:
-    hostname: "aaf.onap"
+  aaf:
+    imageVersion: 2.1.11
+    #imageVersion: latest
+    readiness: false
+    aaf_env: "DEV"
+    public_fqdn: "aaf.osaaf.org"
+    aaf_release: "Dublin"
+  # DUBLIN ONLY - for M4 compatibility with Casablanca
+    aaf_locator_name: "public.%NS.%N"
+    aaf_locator_name_oom: "%NS.%N"
+  # EL ALTO and Beyond
+  #  aaf_locator_name: "%NS.%N"
+  #  aaf_locator_name_oom: "%CNS.%NS.%N"
     cadi_latitude: "38.0"
     cadi_longitude: "-72.0"
-    aaf_env: "DEV"
-    cass_host: "aaf-cass.onap"
-    cadi_locator_as: "aaf-locate.onap"
+    cadi_x509_issuers: "CN=intermediateCA_1, OU=OSAAF, O=ONAP, C=US:CN=intermediateCA_7, OU=OSAAF, O=ONAP, C=US"
+
+    cass:
+      replicas: 1
+      fqdn: "aaf-cass"
+      cluster_name: "osaaf"
+      heap_new_size: "512M"
+      max_heap_size: "1024M"
+      storage_port: 7000
+      ssl_storage_port: 7001
+      native_trans_port: 9042
+      rpc_port: 9160
+      dc: "dc1"
+    service:
+      replicas: 1
+      fqdn: "aaf-service"
+      internal_port: 8100
+      public_port: 31110
+    locate:
+      replicas: 1
+      fqdn: "aaf-locate"
+      internal_port: 8095
+      public_port: 31111
+    oauth:
+      replicas: 1
+      fqdn: "aaf0oauth"
+      internal_port: 8140
+      public_port: 31112
+    gui:
+      replicas: 1
+      fqdn: "aaf-gui"
+      internal_port: 8200
+      public_port: 31113
+    cm:
+      replicas: 1
+      fqdn: "aaf-cm"
+      internal_port: 8150
+      public_port: 31114
+    fs:
+      replicas: 1
+      fqdn: "aaf-fs"
+      internal_port: 8096
+      public_port: 31115
+    hello:
+      replicas: 0
+      fqdn: "aaf-hello"
+      internal_port: 8130
+      public_port: 31116
 
 #################################################################
 # Application configuration defaults.
 #################################################################
-repository: nexus3.onap.org:10001
 
 flavor: small
 # default number of instances
@@ -67,7 +125,7 @@ persistence:
   enabled: true
   config:
     #existingClaim:
-    volumeReclaimPolicy: Retain
+    volumeReclaimPolicy: Delete
     accessMode: ReadWriteMany
     size: 2Gi
     mountSubPath: "config"
@@ -79,15 +137,21 @@ persistence:
     size: 2Gi
     mountSubPath: "logs"
     storageClass: "manual"
+  status:
+    volumeReclaimPolicy: Delete
+    accessMode: ReadWriteMany
+    size: 2M
+    mountSubPath: "status"
+    storageClass: "manual"
 
-aaf-cs:
+aaf-cass:
   persistence:
     #existingClaim:
     mountPath: /dockerdata-nfs
-    mountSubPath: "cass"
     volumeReclaimPolicy: Retain
     accessMode: ReadWriteOnce
     size: 10Gi
+    mountSubPath: "cass"
     storageClass: "manual"
 
 resources: {}
