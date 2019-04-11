@@ -34,21 +34,42 @@ spec:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        # installing with cmd "onap" will not only initialize the DB, but add ONAP bootstrap data as well
         command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","onap"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","rm /opt/app/aaf/status/aaf-cass"]
         ports:
-        - containerPort: {{ .Values.service.externalPort }}
-        - containerPort: {{ .Values.service.externalPort2 }}
-        - containerPort: {{ .Values.service.externalPort3 }}
-        - containerPort: {{ .Values.service.externalPort4 }}
+        - name: storage
+          containerPort: {{.Values.global.aaf.cass.storage_port}}
+        - name: ssl-storage
+          containerPort: {{.Values.global.aaf.cass.ssl_storage_port}}
+        - name: native-trans
+          containerPort: {{.Values.global.aaf.cass.native_trans_port}}
+        - name: rpc
+          containerPort: {{.Values.global.aaf.cass.rpc_port}}
         env:
         - name: CASSANDRA_CLUSTER_NAME
-          value: "osaaf"
+          value: {{.Values.global.aaf.cass.cluster_name}}
         - name: CASSANDRA_DC
-          value: "dc1"
+          value: {{.Values.global.aaf.cass.dc}}
         - name: HEAP_NEWSIZE
-          value: "512M"
+          value: {{.Values.global.aaf.cass.heap_new_size}}
         - name: MAX_HEAP_SIZE
-          value: "1024M"
+          value: {{.Values.global.aaf.cass.max_heap_size}}
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         volumeMounts:
         - mountPath: /var/lib/cassandra
           name: cassandra-storage

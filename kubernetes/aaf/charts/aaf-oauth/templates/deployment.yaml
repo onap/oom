@@ -32,26 +32,38 @@ spec:
     spec:
       initContainers:
       - name: {{ include "common.name" . }}-config-container
-        image: "{{ include "common.repository" . }}/{{ .Values.global.configImage }}"
+        image: {{ .Values.global.aaf.repository }}onap/aaf/aaf_config:{{.Values.global.aaf.imageVersion}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
           - mountPath: "/opt/app/osaaf"
             name: {{ include "common.name" . }}-config-vol
         env:
-          - name: HOSTNAME
-            value: "{{ .Values.global.cadi.hostname }}"
-          - name: AAF_ENV
-            value: "{{ .Values.global.cadi.aaf_env }}"
-          - name: AAF_REGISTER_AS
-            value: "{{ .Values.aaf_register_as }}"
-          - name: LATITUDE
-            value: "{{ .Values.global.cadi.cadi_latitude }}"
-          - name: LONGITUDE
-            value: "{{ .Values.global.cadi.cadi_longitude }}"
-          - name: CASS_HOST
-            value: "{{ .Values.global.cadi.cass_host }}"
-          - name: AAF_LOCATOR_AS
-            value: "{{ .Values.global.cadi.cadi_locator_as }}"
+          - name: aaf_env
+            value: "{{ .Values.global.aaf.aaf_env }}"
+          - name: cadi_latitude
+            value: "{{ .Values.global.aaf.cadi_latitude }}"
+          - name: cadi_longitude
+            value: "{{ .Values.global.aaf.cadi_longitude }}"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locate_url
+            value: "https://{{.Values.global.aaf.locate.fqdn}}.{{.Values.global.aaf.ns}}:{{.Values.global.aaf.locate.internal_port}}"
+          - name: aaf_locator_public_fqdn
+            value: "{{.Values.global.aaf.public_fqdn}}"
+          - name: aaf_locator_name
+            value: "{{.Values.global.aaf.aaf_locator_name}}"
+          - name: aaf_locator_name_oom
+            value: "{{.Values.global.aaf.aaf_locator_name_oom}}"
+          - name: CASSANDRA_CLUSTER
+            value: "{{.Values.global.aaf.cass.fqdn}}.{{.Values.global.aaf.ns}}"
+#          - name: CASSANDRA_USER
+#            value: ""
+#          - name: CASSANDRA_PASSWORD
+#            value: ""
+#         - name: CASSANDRA_PORT
+#            value: ""
       - name: {{ include "common.name" . }}-readiness
         command:
         - /root/ready.py
@@ -68,9 +80,10 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
       - name: {{ include "common.name" . }}
-        command: ["/bin/bash","/opt/app/aaf/pod/pod_wait.sh","aaf_oauth","sleep","0","cd /opt/app/aaf;bin/oauth"]
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["/bin/bash","-c","cd /opt/app/aaf && /bin/bash bin/pod_wait.sh aaf-oauth aaf-service && exec bin/oauth"]
+#        command: ["/bin/bash","/opt/app/aaf/pod/pod_wait.sh","aaf_oauth","sleep","0","cd /opt/app/aaf;bin/oauth"]
+        image: {{ .Values.global.aaf.repository }}onap/aaf/aaf_oauth:{{.Values.global.aaf.imageVersion}}
+        imagePullPolicy: {{ .Values.global.aaf.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: "/opt/app/osaaf"
           name: {{ include "common.name" . }}-config-vol
