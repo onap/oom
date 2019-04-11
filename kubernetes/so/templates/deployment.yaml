@@ -95,6 +95,8 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
+        #- name: {{ include "common.fullname" . }}-logs
+          #mountPath: /var/log/onap
         livenessProbe:
           httpGet:
             path: {{- index .Values.livenessProbe.path|indent 2}}
@@ -109,11 +111,40 @@ spec:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
           protocol: TCP
+
+      # Filebeat sidecar container
+      - name: {{ include "common.name" . }}-filebeat-onap
+        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          mountPath: /usr/share/filebeat/data
+        - name: logs
+          mountPath: /var/log/onap
+        #- name: {{ include "common.fullname" . }}-logs
+          #mountPath: /var/log/onap
+
+
       volumes:
       - name: logs
         emptyDir: {}
       - name: config
         configMap:
             name: {{ include "common.fullname" . }}-app-configmap
+
+      - name: {{ include "common.fullname" . }}-log-conf
+        configMap:
+          name: {{ include "common.fullname" . }}-log
+      - name: {{ include "common.fullname" . }}-filebeat-conf
+        configMap:
+          name: {{ .Release.Name }}-so-filebeat-configmap
+      - name: {{ include "common.fullname" . }}-data-filebeat
+        emptyDir: {}
+      #- name:  {{ include "common.fullname" . }}-logs
+        #emptyDir: {}
+
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
