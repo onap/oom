@@ -23,7 +23,7 @@ metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.global.aaf.hello.replicas }}
   template:
     metadata:
       labels:
@@ -32,48 +32,60 @@ spec:
     spec:
       initContainers:
       - name: {{ include "common.name" . }}-config-container
-        image: "{{ include "common.repository" . }}/{{ .Values.global.configImage }}"
+        image: {{ .Values.global.repository }}onap/aaf/aaf_agent:{{.Values.global.aaf.imageVersion}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-          - mountPath: "/opt/app/osaaf"
-            name: {{ include "common.name" . }}-config-vol
+        - mountPath: "/opt/app/osaaf/local"
+          name: aaf-hello-vol
+        command: ["bash","-c","/opt/app/aaf_config/bin/pod_wait.sh config nc aaf-cm.{{.Release.Namespace}} 8150 remove && cd /opt/app/osaaf/local && /opt/app/aaf_config/bin/agent.sh"]
         env:
-          - name: HOSTNAME
-            value: "{{ .Values.global.cadi.hostname }}"
-          - name: AAF_ENV
-            value: "{{ .Values.global.cadi.aaf_env }}"
-          - name: AAF_REGISTER_AS
-            value: "{{ .Values.aaf_register_as }}"
-          - name: LATITUDE
-            value: "{{ .Values.global.cadi.cadi_latitude }}"
-          - name: LONGITUDE
-            value: "{{ .Values.global.cadi.cadi_longitude }}"
-          - name: CASS_HOST
-            value: "{{ .Values.global.cadi.cass_host }}"
-          - name: AAF_LOCATOR_AS
-            value: "{{ .Values.global.cadi.cadi_locator_as }}"
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - aaf-locate
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          - name: aaf_env
+            value: "{{ .Values.global.aaf.aaf_env }}"
+          - name: cadi_latitude
+            value: "{{ .Values.global.aaf.cadi_latitude }}"
+          - name: cadi_longitude
+            value: "{{ .Values.global.aaf.cadi_longitude }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace}}:{{.Values.global.aaf.locate.internal_port}}"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_release
+            value: "{{ .Values.global.aaf.aaf_release }}"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_app_ns
+            value: "org.osaaf.aaf"
+          - name: "APP_FQDN"
+            value: "{{ .Values.global.aaf.hello.fqdn }}"
+          - name: "APP_FQI"
+            value: "aaf@aaf.osaaf.org"
+          - name: "DEPLOY_FQI"
+            value: "deployer@people.osaaf.org"
+          - name: "DEPLOY_PASSWORD"
+            value: "demo123456!"
+# Hello specific.  Clients don't necessarily need this
+          - name: aaf_locator_public_fqdn
+            value: "{{.Values.global.aaf.public_fqdn}}"
+          - name: aaf_locator_name
+            value: "{{.Values.global.aaf.aaf_locator_name}}"
+          - name: aaf_locator_name_oom
+            value: "{{.Values.global.aaf.aaf_locator_name_oom}}"
+          - name: aaf_locator_fqdn_oom
+            value: "%N.%CNS"
       containers:
       - name: {{ include "common.name" . }}
-        command: ["/bin/bash","/opt/app/aaf/pod/pod_wait.sh","aaf_hello","sleep","0","cd /opt/app/aaf;bin/hello"]
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        command: ["/bin/bash","-c","cd /opt/app/aaf && exec bin/hello"]
+        image: {{ .Values.global.repository }}onap/aaf/aaf_hello:{{.Values.global.aaf.imageVersion}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-        - mountPath: "/opt/app/osaaf"
-          name: {{ include "common.name" . }}-config-vol
+        - mountPath: "/opt/app/osaaf/local"
+          name: aaf-hello-vol
+        - mountPath: "/opt/app/aaf/status"
+          name: aaf-status-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -103,7 +115,10 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.name" . }}-config-vol
+      - name: aaf-status-vol
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-aaf-status-pvc
+      - name: aaf-hello-vol
         emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
