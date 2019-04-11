@@ -70,6 +70,17 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        -  sh
+        - -exec
+        - |
+          chown -R 1000:1000 /opt/kafka/data;
+        image: "{{ .Values.busyBoxRepository }}/{{ .Values.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /opt/kafka/data
+          name: kafka-data
+        name: {{ include "common.name" . }}-permission-fixer
       containers:
       - name: {{ include "common.name" .  }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -124,7 +135,7 @@ spec:
         - name: aaf_locate_url
           value: "https://aaf-locate:8095"
         - name: KAFKA_LOG_DIRS
-          value: "kafka/logs"
+          value: "/opt/kafka/data"
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "{{ .Values.replicaCount }}"
         - name: KAFKA_DEFAULT_REPLICATION_FACTOR
@@ -137,7 +148,7 @@ spec:
           readOnly: true
         - mountPath: /var/run/docker.sock
           name: docker-socket
-        - mountPath: /kafka
+        - mountPath: /opt/kafka/data
           name: kafka-data
       {{- if .Values.tolerations }}
       tolerations:
