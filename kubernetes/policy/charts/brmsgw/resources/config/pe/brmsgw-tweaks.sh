@@ -39,14 +39,3 @@ for CONFIG in ${PROPS_RUNTIME} ${PROPS_INSTALL}; do
 		sed -i -e "s/brms.dependency.version=.*/brms.dependency.version=${version}/g" "${CONFIG}"
 	fi
 done
-
-DEPS_JSON_RUNTIME="${POLICY_HOME}/servers/brmsgw/dependency.json"
-DEPS_JSON_INSTALL="${POLICY_HOME}/install/servers/brmsgw/dependency.json"
-
-for DEP in ${DEPS_JSON_RUNTIME} ${DEPS_JSON_INSTALL}; do
-	if [ ! -f "${DEP}" ]; then
-		echo "warning: configuration does not exist: ${DEP}"
-	else
-		sed -i -e "s/\"version\":.*-SNAPSHOT\"/\"version\": \"${version}\"/g" "${DEP}"
-	fi
-done
