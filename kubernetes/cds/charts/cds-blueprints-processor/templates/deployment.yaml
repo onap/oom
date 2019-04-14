@@ -1,0 +1,118 @@
+# Copyright (c) 2019 IBM, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - cds-db
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          env:
+          - name: APP_CONFIG_HOME
+            value: {{ .Values.config.appConfigDir }}
+          ports:
+          - containerPort: {{ .Values.service.http.internalPort }}
+          - containerPort: {{ .Values.service.grpc.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if .Values.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/execution-service/ping
+              port: {{ .Values.service.http.internalPort }}
+              httpHeaders:
+              - name: Authorization
+                value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end }}
+          readinessProbe:
+            httpGet:
+              path: /api/v1/execution-service/ping
+              port: {{ .Values.service.http.internalPort }}
+              httpHeaders:
+              - name: Authorization
+                value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: {{ .Values.config.appConfigDir }}/application.properties
+            name: {{ include "common.fullname" . }}-config
+            subPath: application.properties
+          - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
+            name: {{ include "common.fullname" . }}-config
+            subPath: logback.xml
+          - mountPath: {{ .Values.persistence.deployedBlueprint }}
+            name: {{ include "common.fullname" . }}-blueprints
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+            - key: application.properties
+              path: application.properties
+            - key: logback.xml
+              path: logback.xml
+        - name: {{ include "common.fullname" . }}-blueprints
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-cds-blueprints
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1,4 +1,4 @@
-# Copyright (c) 2019 IBM, Bell Canada
+# Copyright (c) 2019 Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - cds-db
+        - cds-blueprints-processor
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,46 +49,26 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          env:
-          - name: APP_CONFIG_HOME
-            value: {{ .Values.config.appConfigDir }}
           ports:
-          - containerPort: {{ .Values.service.http.internalPort }}
-          {{ if .Values.config.grpcEnabled }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
-          {{ end }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
-            httpGet:
-              path: /api/v1/execution-service/ping
-              port: {{ .Values.service.http.internalPort }}
-              httpHeaders:
-              - name: Authorization
-                value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+            tcpSocket:
+              port: {{ .Values.service.grpc.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
-            httpGet:
-              path: /api/v1/execution-service/ping
-              port: {{ .Values.service.http.internalPort }}
-              httpHeaders:
-              - name: Authorization
-                value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+            tcpSocket:
+              port: {{ .Values.service.grpc.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: {{ .Values.config.appConfigDir }}/application.properties
-            name: {{ include "common.fullname" . }}-config
-            subPath: application.properties
-          - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
-            name: {{ include "common.fullname" . }}-config
-            subPath: logback.xml
+          - mountPath: {{ .Values.persistence.deployedBlueprint }}
+            name: {{ include "common.fullname" . }}-blueprints
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -103,13 +83,8 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-config
-          configMap:
-            name: {{ include "common.fullname" . }}-configmap
-            items:
-            - key: application.properties
-              path: application.properties
-            - key: logback.xml
-              path: logback.xml
+        - name: {{ include "common.fullname" . }}-blueprints
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-cds-blueprints
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
