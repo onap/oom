@@ -1,4 +1,4 @@
-# Copyright (c) 2019 IBM, Bell Canada
+# Copyright (c) 2019 Bell Canada
 #
 #  Modifications Copyright (c) 2019 Bell Canada.
 #
@@ -40,15 +40,12 @@ global:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/ccsdk-blueprintsprocessor:0.4-STAGING-latest
+image: onap/ccsdk-commandexecutor:0.4.2-STAGING-latest
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
 
 # application configuration
 config:
-  appConfigDir: /opt/app/onap/config
+  basicAuth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
 
 # default number of instances
 replicaCount: 1
@@ -71,21 +68,12 @@ readiness:
 
 service:
   type: ClusterIP
-  http:
-    portName: blueprints-processor-http
-    internalPort: 8080
-    externalPort: 8080
   grpc:
-    portName: blueprints-processor-grpc
-    internalPort: 9111
-    externalPort: 9111
-
+    portName: command-executor-grpc
+    internalPort: 50051
+    externalPort: 50051
 
 persistence:
-  enabled: true
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteMany
-  size: 2Gi
   enabled: true
   mountSubPath: cds/blueprints/deploy
   deployedBlueprint: /opt/app/onap/blueprints/deploy
@@ -93,21 +81,19 @@ persistence:
 ingress:
   enabled: false
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  #
-  # Example:
-  # Configure resource requests and limits
-  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory
-  # Minimum memory for production is 4 CPU cores and 8GB memory
-#resources:
-#  limits:
-#    cpu: 2
-#    memory: 4Gi
-#  requests:
-#    cpu: 2
-#    memory: 4Gi
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  unlimited: {}
