@@ -1,4 +1,4 @@
-/* Copyright © 2017 AT&T, Amdocs, Bell Canada
+/* Copyright © 2017-2019 AT&T, Amdocs, Bell Canada
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -120,14 +120,6 @@ CREATE TABLE event (
   user_id VARCHAR(80) NULL,
   timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (event_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
-
-CREATE TABLE clds_service_cache (
-  invariant_service_id VARCHAR(36) NOT NULL,
-  service_id VARCHAR(36) NULL,
-  timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  object_data MEDIUMBLOB NULL,
-  PRIMARY KEY (invariant_service_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
 CREATE TABLE IF NOT EXISTS tosca_model (
