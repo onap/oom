@@ -1,0 +1,118 @@
+{{/*
+# Copyright (c) 2019, CMCC Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+      annotations:
+        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
+    spec:
+     containers:
+     - env:
+       - name: MSB_ADDR
+         value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
+       - name: MSB_PORT
+         value: "{{ .Values.config.msbPort }}"
+       - name: AAI_ADDR
+         value: aai.{{ include "common.namespace" . }}
+       - name: AAI_PORT
+         value: "{{ .Values.config.aai.port }}"
+       - name: AAI_SCHEMA_VERSION
+         value: "{{ .Values.config.aai.schemaVersion }}"
+       - name: AAI_USERNAME
+         value: "{{ .Values.config.aai.username }}"
+       - name: AAI_PASSWORD
+         value: "{{ .Values.config.aai.password }}"
+       name: {{ include "common.name" . }}
+       volumeMounts:
+       - mountPath: /var/log/onap
+         name: fcaps-log
+       - mountPath: /opt/fcaps/fcaps/pub/config/log.yml
+         name: fcaps-logconfig
+         subPath: log.yml
+       resources:
+{{ include "common.resources" . | indent 12 }}
+       image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+       ports:
+       - containerPort: {{ .Values.service.internalPort }}
+       # disable liveness probe when breakpoints set in debugger
+       # so K8s doesn't restart unresponsive container
+       {{ if .Values.liveness.enabled }}
+       livenessProbe:
+         httpGet:
+           path: /api/multicloud-fcaps/healthcheck
+           port: {{ .Values.service.internalPort }}
+           scheme: HTTP
+         initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+         periodSeconds: {{ .Values.liveness.periodSeconds }}
+         timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+         successThreshold: {{ .Values.liveness.successThreshold }}
+         failureThreshold: {{ .Values.liveness.failureThreshold }}
+       {{ end }}
+     # side car containers
+     - image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+       name: filebeat-onap
+       volumeMounts:
+       - mountPath: /usr/share/filebeat/filebeat.yml
+         name: filebeat-conf
+         subPath: filebeat.yml
+       - mountPath: /var/log/onap
+         name: fcaps-log
+       - mountPath: /usr/share/filebeat/data
+         name: fcaps-data-filebeat
+
+     volumes:
+     - name: fcaps-log
+       emptyDir: {}
+     - name: fcaps-data-filebeat
+       emptyDir: {}
+     - name: filebeat-conf
+       configMap:
+         name: multicloud-filebeat-configmap
+     - name: fcaps-logconfig
+       configMap:
+         name: {{ include "common.fullname" . }}-log-configmap
+     imagePullSecrets:
+     - name: "{{ include "common.namespace" . }}-docker-registry-key"
+     restartPolicy: Always
+
+     - image: {{ default .Values.rabbitmq }}
+       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+       name: rabbit-mq
+
+     imagePullSecrets:
+     - name: "{{ include "common.namespace" . }}-docker-registry-key"
+     restartPolicy: Always
