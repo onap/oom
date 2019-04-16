@@ -13,40 +13,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Execute tags built to support the hands on demo,
+# Execute tags built to support the hands-on demo
 #
 function usage
 {
-	echo "Usage: demo.sh namespace <command> [<parameters>]"
+	echo "Usage: demo-k8s.sh namespace <command> [<parameters>]"
 	echo " "
-	echo "       demo.sh <namespace> init"
+	echo "       demo-k8s.sh <namespace> init"
 	echo "               - Execute both init_customer + distribute"
 	echo " "
-	echo "       demo.sh <namespace> init_customer"
+	echo "       demo-k8s.sh <namespace> init_customer"
 	echo "               - Create demo customer (Demonstration) and services, etc."
 	echo " "
-	echo "       demo.sh <namespace> distribute  [<prefix>]"
+	echo "       demo-k8s.sh <namespace> distribute  [<prefix>]"
 	echo "               - Distribute demo models (demoVFW and demoVLB)"
 	echo " "
-	echo "       demo.sh <namespace> preload <vnf_name> <module_name>"
+	echo "       demo-k8s.sh <namespace> preload <vnf_name> <module_name>"
 	echo "               - Preload data for VNF for the <module_name>"
 	echo " "
-	echo "       demo.sh <namespace> appc <module_name>"
-    echo "               - provide APPC with vFW module mount point for closed loop"
+	echo "       demo-k8s.sh <namespace> appc <module_name>"
+	echo "               - provide APPC with vFW module mount point for closed loop"
 	echo " "
-	echo "       demo.sh <namespace> init_robot [ <etc_hosts_prefix> ]"
-    echo "               - Initialize robot after all ONAP VMs have started"
+	echo "       demo-k8s.sh <namespace> init_robot [ <etc_hosts_prefix> ]"
+	echo "               - Initialize robot after all ONAP VMs have started"
 	echo " "
-	echo "       demo.sh <namespace> instantiateVFW"
-    echo "               - Instantiate vFW module for the a demo customer (DemoCust<uuid>)"
+	echo "       demo-k8s.sh <namespace> instantiateVFW"
+	echo "               - Instantiate vFW module for the demo customer (DemoCust<uuid>)"
 	echo " "
-	echo "       demo.sh <namespace> deleteVNF <module_name from instantiateVFW>"
-    echo "               - Delete the module created by instantiateVFW"
+	echo "       demo-k8s.sh <namespace> deleteVNF <module_name from instantiateVFW>"
+	echo "               - Delete the module created by instantiateVFW"
 	echo " "
-	echo "       demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
-    echo "               - Run heatbridge against the stack for the given service instance and service"
+	echo "       demo-k8s.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
+	echo "               - Run heatbridge against the stack for the given service instance and service"
 	echo " "
-	echo "       demo.sh <namespace> vfwclosedloop <pgn-ip-address>"
+	echo "       demo-k8s.sh <namespace> vfwclosedloop <pgn-ip-address>"
         echo "           - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
         echo "             kicks in to modulate the rates back to medium"
 	echo " "
@@ -110,7 +110,7 @@ do
 			TAG="PreloadDemo"
 			shift
 			if [ $# -ne 2 ];then
-				echo "Usage: demo.sh <namespace> preload <vnf_name> <module_name>"
+				echo "Usage: demo-k8s.sh <namespace> preload <vnf_name> <module_name>"
 				exit
 			fi
 			VARIABLES="$VARIABLES -v VNF_NAME:$1"
@@ -122,7 +122,7 @@ do
 			TAG="APPCMountPointDemo"
 			shift
 			if [ $# -ne 1 ];then
-					echo "Usage: demo.sh <namespace> appc <module_name>"
+					echo "Usage: demo-k8s.sh <namespace> appc <module_name>"
 					exit
 				fi
 			VARIABLES="$VARIABLES -v MODULE_NAME:$1"
@@ -137,7 +137,7 @@ do
 			TAG="deleteVNF"
 			shift
 			if [ $# -ne 1 ];then
-				echo "Usage: demo.sh <namespace> deleteVNF <module_name from instantiateVFW>"
+				echo "Usage: demo-k8s.sh <namespace> deleteVNF <module_name from instantiateVFW>"
 				exit
 			fi
 			VARFILE=$1.py
@@ -153,7 +153,7 @@ do
 			TAG="heatbridge"
 			shift
 			if [ $# -ne 4 ];then
-				echo "Usage: demo.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
+				echo "Usage: demo-k8s.sh <namespace> heatbridge <stack_name> <service_instance_id> <service> <oam-ip-address>"
 				exit
 			fi
 			VARIABLES="$VARIABLES -v HB_STACK:$1"
