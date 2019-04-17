@@ -45,6 +45,15 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+        - name: {{ include "common.name" . }}-permission-fixer
+          image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: {{ .Values.persistence.spoolPath }}
+            name: {{ include "common.fullname" . }}-spool-data-pvc
+          - mountPath: {{ .Values.persistence.eventLogsPath }}
+            name: {{ include "common.fullname" . }}-event-logs-pvc
+          command: ["chown","-Rf","1000:1001", "/opt/app/datartr"]
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
