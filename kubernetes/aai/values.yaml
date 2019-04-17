@@ -56,7 +56,15 @@ global: # global defaults
     serverPort: 30247
 
   cassandra:
-    serviceName: aai-cassandra
+    #This will instantiate AAI cassandra cluster, default:shared cassandra.
+    localCluster: false
+
+    #Service Name of the cassandra cluster to connect to.
+    #Override it to aai-cassandra if localCluster is enabled.
+    serviceName: cassandra
+
+    #This should be same as shared cassandra instance or if localCluster is enabled 
+    #then it should be same as aai-cassandra replicaCount 
     replicas: 3
 
   aai:
@@ -251,6 +259,20 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+
+#This section is used when localCluster is enabled. AAI will create its own cassandra cluster for its specific use.
+#Below command will instantiate the aai cassandra instances:
+#helm deploy demo local/onap --version=4.0.0 --namespace onap --set aai.enabled=true \
+#                            --set aai.global.cassandra.localCluster=true \
+#                            --set aai.global.cassandra.serviceName=aai-cassandra
+cassandra:
+  nameOverride: aai-cassandra
+  replicaCount: 3
+  service:
+    name: aai-cassandra
+  persistence:
+    mountSubPath: aai/cassandra
+    enabled: true
 
 readiness:
   initialDelaySeconds: 10
