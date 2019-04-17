@@ -34,26 +34,24 @@ spec:
     spec:
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+        image: {{ .Values.repository }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
-          {{ if .Values.liveness.enabled }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end }}
-          readinessProbe:
-            httpGet:
-                path: /api/dcim/regions/
-                port: {{ .Values.service.internalPort }}
-                scheme: HTTP
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
         env:
           - name: DB_PASSWORD
             valueFrom:
