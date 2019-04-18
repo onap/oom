@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============LICENSE_END=========================================================
-
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -45,7 +44,12 @@ spec:
     {{ if .Values.global.initContainers.enabled }}
       initContainers:
       - command:
-      {{  if .Values.global.jobs.createSchema.enabled  }}
+      {{ if .Values.global.jobs.migration.enabled }}
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-aai-graphadmin-migration
+      {{  else if .Values.global.jobs.createSchema.enabled  }}
         - /root/job_complete.py
         args:
         - --job-name
@@ -86,27 +90,27 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-db-real-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-db-cached-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-aaiconfig-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-localhost-access-log-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/realm.properties
-          name: {{ include "common.fullname" . }}-realm-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: realm.properties
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-springapp-conf
+          name: {{ include "common.fullname" . }}-config
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
@@ -166,27 +170,9 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-log-conf
+      - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-localhost-access-log-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-localhost-access-log-configmap
-      - name: {{ include "common.fullname" . }}-db-real-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-real-configmap
-      - name: {{ include "common.fullname" . }}-db-cached-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-db-cached-configmap
-      - name: {{ include "common.fullname" . }}-aaiconfig-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-aaiconfig-configmap
-      - name: {{ include "common.fullname" . }}-springapp-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-springapp-configmap
-      - name: {{ include "common.fullname" . }}-realm-conf
-        configMap:
-         name: {{ include "common.fullname" . }}-realm-configmap
+         name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
          secretName: aai-common-truststore
