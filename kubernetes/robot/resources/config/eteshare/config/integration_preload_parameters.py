@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os.path
+
 GLOBAL_PRELOAD_PARAMETERS = {
     # heat template parameter values common to all heat template continaing these parameters
      "defaults" : {
@@ -503,3 +506,23 @@ GLOBAL_PRELOAD_PARAMETERS = {
         }
     }
 }
+
+
+
+# Create dictionaries for new MAPPING data to join to original MAPPING data
+GLOBAL_PRELOAD_PARAMETERS2 = {}
+
+
+folder=os.path.join('/var/opt/ONAP/demo/preload_data')
+subfolders = [d for d in os.listdir(folder) if os.path.isdir(os.path.join(folder, d))]
+
+for service in subfolders:
+    filepath=os.path.join('/var/opt/ONAP/demo/preload_data', service, 'preload_data.json')
+    with open(filepath, 'r') as f:
+        preload_data = json.load(f)
+        GLOBAL_PRELOAD_PARAMETERS2['Demo']=preload_data
+
+
+# Merge dictionaries
+GLOBAL_PRELOAD_PARAMETERS =  dict(GLOBAL_PRELOAD_PARAMETERS.items() + GLOBAL_PRELOAD_PARAMETERS2.items())
+
