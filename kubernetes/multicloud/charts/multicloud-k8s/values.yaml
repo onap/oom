@@ -1,0 +1,107 @@
+# Copyright 2019 Intel Corporation, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  persistence: {}
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/multicloud/k8s:0.1.0-SNAPSHOT
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration is via config files
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+service:
+  type: ClusterIP
+  name: multicloud-k8s
+  portName: multicloud-k8s
+  internalPort: 8081
+  externalPort: 8081
+
+#Mongo chart overrides for k8splugin
+mongo:
+  nameOverride: multicloud-k8s-mongo
+  service:
+    name: multicloud-k8s-mongo
+    internalPort: 27017
+  nfsprovisionerPrefix: multicloud-k8s
+  sdnctlPrefix: multicloud-k8s
+  persistence:
+    mountSubPath: multicloud-k8s/mongo/data
+    enabled: true
+  disableNfsProvisioner: true
+
+
+# No persistence right now as we rely on Mongo to handle that
+persistence:
+  enabled: false
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: multicloud-k8s/data
+
+ingress:
+  enabled: false
+
+# Configure resource requests and limits
+flavor: large
+resources:
+  small:
+    limits:
+      cpu: 200m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 10Mi
+  large:
+    limits:
+      cpu: 400m
+      memory: 1Gi
+    requests:
+      cpu: 10m
+      memory: 100Mi
+  unlimited: {}
