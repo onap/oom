@@ -14,6 +14,9 @@
 
 import json
 import os.path
+from itertools import chain
+from collections import defaultdict
+
 
 GLOBAL_PRELOAD_PARAMETERS = {
     # heat template parameter values common to all heat template continaing these parameters
@@ -508,7 +511,6 @@ GLOBAL_PRELOAD_PARAMETERS = {
 }
 
 
-
 # Create dictionaries for new MAPPING data to join to original MAPPING data
 GLOBAL_PRELOAD_PARAMETERS2 = {}
 
@@ -524,5 +526,16 @@ for service in subfolders:
 
 
 # Merge dictionaries
-GLOBAL_PRELOAD_PARAMETERS =  dict(GLOBAL_PRELOAD_PARAMETERS.items() + GLOBAL_PRELOAD_PARAMETERS2.items())
+#    preload_data.json is for Demo key in GLOBAL_PRELOAD_PARAMETERS
+
+
+GLOBAL_PRELOAD_PARAMETERS3 = {'Demo':{}}
+
+for k, v in chain(GLOBAL_PRELOAD_PARAMETERS['Demo'].items(), GLOBAL_PRELOAD_PARAMETERS2['Demo'].items()):
+    GLOBAL_PRELOAD_PARAMETERS3['Demo'][k] =  v
+#    print(k, v)
+
+GLOBAL_PRELOAD_PARAMETERS =  dict(GLOBAL_PRELOAD_PARAMETERS.items() + GLOBAL_PRELOAD_PARAMETERS3.items())
+
+#print GLOBAL_PRELOAD_PARAMETERS
 
