@@ -1,0 +1,89 @@
+# Copyright © 2018 Orange
+# Modifications Copyright © 2018  Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefixExt: 304
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:1.1.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+
+subChartsOnly:
+  enabled: true
+
+# application image
+repository: nexus3.onap.org:10001
+image: onap/ccsdk-cds-ui-server:0.4.2-STAGING-latest
+pullPolicy: Always
+
+# application configuration
+config:
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  httpGet:
+    path: /ping
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  portName: ui
+  name: cds-ui
+  nodePort: 97
+  internalPort: 3000
+
+ingress:
+  enabled: false
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 10m
+      memory: 100Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 200Mi
+  unlimited: {}
