@@ -71,8 +71,8 @@ GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE = "{{ .Values.openStackUserNameR
 GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE = "{{ .Values.openStackPasswordRegionThree }}"
 GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE  = "{{ .Values.openSackMsoEncryptdPasswordRegionThree }}"
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE = "{{ .Values.openStackTenantIdRegionThree }}"
-GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN__REGION_THREE = "{{ .Values.openStackProjectNameRegionThree }}"
-GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN__REGION_THREE = "{{ .Values.openStackDomainIdRegionThree }}"
+GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE = "{{ .Values.openStackProjectNameRegionThree }}"
+GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE = "{{ .Values.openStackDomainIdRegionThree }}"
 GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX = "{{ .Values.openStackOamNetworkCidrPrefix }}"
 GLOBAL_INJECTED_POLICY_IP_ADDR = "pdp.{{include "common.namespace" .}}"
 GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = "drools.{{include "common.namespace" .}}"
@@ -157,8 +157,8 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE" : "{{ .Values.openStackPasswordRegionThree }}",
     "GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE" : "{{ .Values.openSackMsoEncryptdPasswordRegionThree }}",
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE" : "{{ .Values.openStackTenantIdRegionThree }}",
-    "GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN__REGION_THREE" : "{{ .Values.openStackProjectNameRegionThree }}",
-    "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN__REGION_THREE" : "{{ .Values.openStackDomainIdRegionThree }}",
+    "GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE" : "{{ .Values.openStackProjectNameRegionThree }}",
+    "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE" : "{{ .Values.openStackDomainIdRegionThree }}",
     "GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX" : "{{ .Values.openStackOamNetworkCidrPrefix }}",
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : "pdp.{{include "common.namespace" .}}",
     "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : "drools.{{include "common.namespace" .}}",
