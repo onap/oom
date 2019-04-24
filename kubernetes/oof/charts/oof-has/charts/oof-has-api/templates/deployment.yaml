@@ -84,15 +84,10 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-          - python
-          args:
-          - /usr/local/bin/conductor-api
-          - --port={{ .Values.service.internalPort }}
-          - --
-          - --config-file=/usr/local/bin/conductor.conf
+          command: ["/bin/bash","-c"]
+          args: ["nginx && /usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port=80 --die-on-term --exit-on-reload --logto /opt/conductor-uwsgi.log --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --logfile-chown --logfile-chmod 664 --protocol=uwsgi --socket 0.0.0.0:80"]
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.liveness.periodSeconds }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if .Values.liveness.enabled }}
@@ -112,8 +107,11 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/local/bin/conductor.conf
-            name: {{ .Values.global.commonConfigPrefix }}-config
+          - mountPath: /etc/nginx/nginx.conf
+            name: {{ .Values.global.commonConfigPrefix  }}-config
+            subPath: nginx.conf
+          - mountPath: /usr/local/etc/conductor/conductor.conf
+            name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: conductor.conf
           - mountPath: /usr/local/bin/log.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
@@ -121,6 +119,12 @@ spec:
           - mountPath: /usr/local/bin/AAF_RootCA.cer
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: AAF_RootCA.cer
+          - mountPath: /etc/nginx/ssl/org.onap.oof.crt
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: org.onap.oof.crt
+          - mountPath: /etc/nginx/ssl/org.onap.oof.key
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: org.onap.oof.key
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -139,11 +143,17 @@ spec:
           configMap:
             name: {{ .Values.global.commonConfigPrefix  }}-configmap
             items:
+            - key: nginx.conf
+              path: nginx.conf
             - key: conductor.conf
               path: conductor.conf
             - key: log.conf
               path: log.conf
             - key: AAF_RootCA.cer
               path: AAF_RootCA.cer
+            - key: org.onap.oof.key
+              path: org.onap.oof.key
+            - key: org.onap.oof.crt
+              path: org.onap.oof.crt
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
