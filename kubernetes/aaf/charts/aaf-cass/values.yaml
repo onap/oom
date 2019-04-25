@@ -1,4 +1,3 @@
-
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,15 +17,13 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
 flavor: small
+
 #################################################################
 # Application configuration defaults.
 #################################################################
-# application image
-pullPolicy: Always
-
+# application configuration
+config: {}
 
 nodeSelector: {}
 
@@ -45,34 +42,49 @@ readiness:
   periodSeconds: 10
 
 service:
-  name: aaf-gui
-  type: NodePort
-  portName: aaf-gui
+  name: aaf-cass
+  type: ClusterIP
+  portName: aaf-cass
   #targetPort
-  internalPort: 8200
+  internalPort: 7000
   #port
-  externalPort: 8200
-  nodePort: 51
+  externalPort: 7000
+
+  internalPort2: 7001
+  externalPort2: 7001
+  internalPort3: 9042
+  externalPort3: 9042
+  internalPort4: 9160
+  externalPort4: 9160
 
 ingress:
   enabled: false
 
 # Configure resource requests and limits
 resources: {}
-# Allow END users to do this, if they want.  Detrimental to Test services
-#resources:
+  # Following AAI's advice, and not trying to guess on Cass usage.  Guessing just makes it slow
 #  small:
 #    limits:
-#      cpu: 100m
-#      memory: 500Mi
+#      cpu: "1000m"
+#      memory: 4096Mi
 #    requests:
-#      cpu: 10m
-#      memory: 200Mi
+#      cpu: 20m
+#      memory: 2048Mi
 #  large:
 #    limits:
-#      cpu: 200m
-#      memory: 1Gi
+#      cpu: 400m
+#      memory: 12000Mi
 #    requests:
-#      cpu: 100m
-#      memory: 500Mi
+#      cpu: 40m
+#      memory: 9000Mi
 #  unlimited: {}
+
+persistence:
+  enabled: true
+  #existingClaim:
+  mountPath: /dockerdata-nfs
+  mountSubPath: "cass"
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  storageClass: "manual"

@@ -1,0 +1,118 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.global.aaf.cass.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ .Values.global.repository }}/onap/aaf/aaf_cass:{{.Values.global.aaf.imageVersion}}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        # installing with cmd "onap" will not only initialize the DB, but add ONAP bootstrap data as well
+        command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","onap"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","rm /opt/app/aaf/status/aaf-cass"]
+        ports:
+        - name: storage
+          containerPort: {{.Values.global.aaf.cass.storage_port}}
+        - name: ssl-storage
+          containerPort: {{.Values.global.aaf.cass.ssl_storage_port}}
+        - name: native-trans
+          containerPort: {{.Values.global.aaf.cass.native_trans_port}}
+        - name: rpc
+          containerPort: {{.Values.global.aaf.cass.rpc_port}}
+        env:
+        - name: CASSANDRA_CLUSTER_NAME
+          value: {{.Values.global.aaf.cass.cluster_name}}
+        - name: CASSANDRA_DC
+          value: {{.Values.global.aaf.cass.dc}}
+        - name: HEAP_NEWSIZE
+          value: {{.Values.global.aaf.cass.heap_new_size}}
+        - name: MAX_HEAP_SIZE
+          value: {{.Values.global.aaf.cass.max_heap_size}}
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - mountPath: /var/lib/cassandra
+          name: aaf-cass-vol
+        - mountPath: /opt/app/aaf/status
+          name: aaf-status-vol
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{.Values.global.aaf.cass.native_trans_port}}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{.Values.global.aaf.cass.native_trans_port}}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources:
+{{ include "common.resources" . | indent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aaf-status-vol
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-aaf-status-pvc
+      - name: aaf-cass-vol
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-pvc
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
