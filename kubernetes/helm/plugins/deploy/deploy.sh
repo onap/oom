@@ -215,6 +215,7 @@ deploy() {
     fi
 
     if [[ $SUBCHART_ENABLED -eq 1 ]]; then
+    {
       if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE == "$subchart" ]]; then
         LOG_FILE=$LOG_DIR/"${RELEASE}-${subchart}".log
         :> $LOG_FILE
@@ -235,15 +236,16 @@ deploy() {
 	      > $LOG_FILE.log 2>&1
         fi
       fi
+    }&
     else
       array=($(helm ls -q | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
-        helm del "${array[i]}" --purge
+        helm del "${array[i]}" --purge &
       done
     fi
   done
-
+  wait
   # report on success/failures of installs/upgrades
   helm ls | grep FAILED | grep $RELEASE
 }
