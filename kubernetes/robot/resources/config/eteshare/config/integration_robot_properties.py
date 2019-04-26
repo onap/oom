@@ -109,13 +109,13 @@ GLOBAL_MSO_PASSWORD = "{{ .Values.soPassword }}"
 GLOBAL_MUSIC_SERVER_PROTOCOL = "http"
 GLOBAL_MUSIC_SERVER_PORT = "8080"
 # oof global info - everything is from the private oam network (also called onap private network)
-GLOBAL_OOF_SERVER_PROTOCOL = "http"
+GLOBAL_OOF_SERVER_PROTOCOL = "https"
 # oof-homing info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_HOMING_SERVER_PORT = "8091"
 # oof-sniro info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_SNIRO_SERVER_PORT = "8698"
 # oof cmso global info - everything is from the private oam network (also called onap private network)
-GLOBAL_OOF_CMSO_PROTOCOL = "http"
+GLOBAL_OOF_CMSO_PROTOCOL = "https"
 GLOBAL_OOF_CMSO_SERVER_PORT = "8080"
 GLOBAL_OOF_CMSO_USERNAME = "none"
 GLOBAL_OOF_CMSO_PASSWORD = "none"
