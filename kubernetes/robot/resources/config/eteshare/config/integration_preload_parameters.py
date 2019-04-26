@@ -87,8 +87,9 @@ GLOBAL_PRELOAD_PARAMETERS = {
             "vsn_flavor_name" : "${GLOBAL_INJECTED_VM_FLAVOR}",
         },
         "vpkg_preload.template": {
-            "unprotected_private_net_id" : "vofwlsnk_unprotected${hostid}",
-            "unprotected_private_subnet_id" : "vofwlsnk_unprotected_sub${hostid}",
+            # vFWSNK_ prepended to vpkg since the default behoir for vFWSNK tempalte is to concatenate vnf_name and network_name
+            "unprotected_private_net_id" : "vFWSNK_vofwlsnk_unprotected${hostid}",
+            "unprotected_private_subnet_id" : "vFWSNK_vofwlsnk_unprotected_sub${hostid}",
             "unprotected_private_net_cidr" : "192.168.10.0/24",
             "protected_private_net_cidr" : "192.168.20.0/24",
             "vfw_private_ip_0" : "192.168.10.100",
