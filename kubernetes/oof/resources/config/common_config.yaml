@@ -1,0 +1,82 @@
+osdf_system:
+    libpath: /opt/app/osdf/libs
+    osdf_ports:
+        internal: 8699  # inside the Docker container, the app listens to this port
+        external: 8698  # clients use this port on DockerHost
+    osdf_ip_default: 0.0.0.0
+#        # Important Note: At deployment time, we need to ensure the port mapping is done
+    ssl_context: ['/opt/app/ssl_cert/org.onap.oof.crt', '/opt/app/ssl_cert/org.onap.oof.key']
+
+osdf_temp:  # special configuration required for "workarounds" or testing
+    local_policies:
+        global_disabled: True
+        local_placement_policies_enabled: True
+        placement_policy_dir_vcpe: "./test/policy-local-files/"
+        placement_policy_files_vcpe: # workaroud for policy platform glitches (or "work-arounds" for other components)
+            - Affinity_vCPE_1.json
+            #- Capacity_vGMuxInfra.json
+            #- Capacity_vG_1.json
+            - Distance_vG_1.json
+            - Distance_vGMuxInfra_1.json
+            - hpa_policy_vG_1.json
+            - hpa_policy_vGMuxInfra_1.json
+            - Placement_Optimization_1.json
+            - QueryPolicy_vCPE.json
+            - vnfPolicy_vG.json
+            - vnfPolicy_vGMuxInfra.json
+        placement_policy_dir_vfw: "./test/policy-local-files/"
+        placement_policy_files_vfw: # workaroud for policy platform glitches (or "work-arounds" for other components)
+            #- Capacity_vFW_1.json
+            - Distance_vFW_1.json
+            - hpa_policy_vFW_1.json
+            - Placement_Optimization_1.json
+            - QueryPolicy_vFW.json
+            - vnfPolicy_vFW.json
+        placement_policy_dir_vfw_td: "./test/policy-local-files/"
+        placement_policy_files_vfw_td:
+            - vnfPolicy_vFW_TD.json
+            - vnfPolicy_vPGN_TD.json
+            - affinity_vFW_TD.json
+            - QueryPolicy_vFW_TD.json
+service_info:
+    vCPE:
+        vcpeHostName: requestParameters.vcpeHostName
+        e2eVpnKey: requestParameters.e2eVpnKey
+    vFW:
+        vcpeHostName: requestParameters.vcpeHostName
+        e2eVpnKey: requestParameters.e2eVpnKey
+
+references:
+    service_name:
+        source: request
+        value: serviceInfo.serviceName
+    subscriber_role:
+        source: SubscriberPolicy
+        value: content.properties.subscriberRole
+
+policy_info:
+    prioritization_attributes:
+        policy_type:
+            - content.policyType
+        resources:
+            - content.resources
+            - content.objectiveParameter.parameterAttributes.resources
+        service_name:
+            - content.serviceName
+
+    placement:
+        policy_fetch: by_scope
+        policy_scope:
+            default_scope: OSDF_CASABLANCA
+            vcpe_scope: OSDF_CASABLANCA
+            vfw_scope: OSDF_DUBLIN
+            secondary_scopes:
+                -
+                    - get_param: service_name
+                    - US
+    #            -
+    #                - get_param: service_name
+    #                - get_param: subscriber_role
+    default:  # if no explicit service related information is needed
+        policy_fetch: by_name
+        policy_scope: none
