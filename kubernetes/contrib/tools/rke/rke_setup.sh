@@ -17,12 +17,13 @@
 #
 # This installation is for an RKE install of kubernetes
 # after this run the standard oom install
-# this installation can be run on amy ubuntu 16.04 VM, RHEL 7.6 (root only), physical or cloud azure/aws host
+# this installation can be run on any ubuntu 16.04/18.04 VM, RHEL 7.6 (root only), physical or cloud azure/aws host
 # https://wiki.onap.org/display/DW/OOM+RKE+Kubernetes+Deployment
 # source from https://jira.onap.org/browse/OOM-1598
 #
 # master/dublin 
 #     RKE 0.1.16 Kubernetes 1.11.6, kubectl 1.11.6, Helm 2.9.1, Docker 18.06
+#     20190428 RKE 0.2.1, Kubernetes 1.13.5, kubectl 1.13.5, Helm 2.12.3, Docker 18.09.5
 # single node install, HA pending
 
 usage() {
@@ -42,19 +43,11 @@ EOF
 install_onap() {
   #constants
   PORT=8880
-  if [ "$BRANCH" == "casablanca" ]; then
-    KUBERNETES_VERSION=
-    RKE_VERSION=0.1.15
-    KUBECTL_VERSION=1.11.3
-    HELM_VERSION=2.9.1
-    DOCKER_VERSION=17.03
-  else
-    KUBERNETES_VERSION=
-    RKE_VERSION=0.1.16
-    KUBECTL_VERSION=1.11.6
-    HELM_VERSION=2.9.1
-    DOCKER_VERSION=18.06
-  fi
+  KUBERNETES_VERSION=
+  RKE_VERSION=0.2.1
+  KUBECTL_VERSION=1.13.5
+  HELM_VERSION=2.12.3
+  DOCKER_VERSION=18.09
  
   # copy your private ssh key and cluster.yml file to the vm
   # on your dev machine
@@ -68,7 +61,7 @@ install_onap() {
   # sudo vi ~/.ssh/authorized_keys
 
   echo "please supply your ssh key as provided by the -k keyname - it must be be chmod 400 and chown user:user in ~/.ssh/"
-  echo "The RKE version specific cluster.yaml is already integrated in this script for 0.1.15/0.1.16 no need for below generation..."
+  echo "The RKE version specific cluster.yaml is already integrated in this script for 0.2.1 no need for below generation..."
   echo "rke config --name cluster.yml"
   echo "specifically"
   echo "address: $SERVER"
@@ -78,16 +71,9 @@ install_onap() {
   RKETOOLS=
   HYPERCUBE=
   POD_INFRA_CONTAINER=
-  if [ "$RKE_VERSION" == "0.1.16" ]; then  
-    RKETOOLS=0.1.15
-    HYPERCUBE=1.11.6-rancher1
-    POD_INFRA_CONTAINER=rancher/pause-amd64:3.1
-  else
-    # 0.1.15
-    RKETOOLS=0.1.14
-    HYPERCUBE=1.11.3-rancher1
-    POD_INFRA_CONTAINER=gcr.io.google_containers/pause-amd64:3.1
-  fi
+  RKETOOLS=0.1.27
+  HYPERCUBE=1.13.5-rancher1
+  POD_INFRA_CONTAINER=rancher/pause:3.1
 
   cat > cluster.yml <<EOF
 # generated from rke_setup.sh
@@ -104,6 +90,8 @@ nodes:
   docker_socket: /var/run/docker.sock
   ssh_key: ""
   ssh_key_path: $SSHPATH_PREFIX/$SSHKEY
+  ssh_cert: ""
+  ssh_cert_path: ""
   labels: {}
 services:
   etcd:
@@ -119,6 +107,7 @@ services:
     snapshot: null
     retention: ""
     creation: ""
+    backup_config: null
   kube-api:
     image: ""
     extra_args: {}
@@ -127,6 +116,7 @@ services:
     service_cluster_ip_range: 10.43.0.0/16
     service_node_port_range: ""
     pod_security_policy: false
+    always_pull_images: false
   kube-controller:
     image: ""
     extra_args: {}
@@ -159,35 +149,36 @@ network:
   options: {}
 authentication:
   strategy: x509
-  options: {}
   sans: []
+  webhook: null
 system_images:
-  etcd: rancher/coreos-etcd:v3.2.18
+  etcd: rancher/coreos-etcd:v3.2.24-rancher1
   alpine: rancher/rke-tools:v$RKETOOLS
   nginx_proxy: rancher/rke-tools:v$RKETOOLS
   cert_downloader: rancher/rke-tools:v$RKETOOLS
   kubernetes_services_sidecar: rancher/rke-tools:v$RKETOOLS
-  kubedns: rancher/k8s-dns-kube-dns-amd64:1.14.10
-  dnsmasq: rancher/k8s-dns-dnsmasq-nanny-amd64:1.14.10
-  kubedns_sidecar: rancher/k8s-dns-sidecar-amd64:1.14.10
-  kubedns_autoscaler: rancher/cluster-proportional-autoscaler-amd64:1.0.0
+  kubedns: rancher/k8s-dns-kube-dns:1.15.0
+  dnsmasq: rancher/k8s-dns-dnsmasq-nanny:1.15.0
+  kubedns_sidecar: rancher/k8s-dns-sidecar:1.15.0
+  kubedns_autoscaler: rancher/cluster-proportional-autoscaler:1.0.0
   kubernetes: rancher/hyperkube:v$HYPERCUBE
-  flannel: rancher/coreos-flannel:v0.10.0
-  flannel_cni: rancher/coreos-flannel-cni:v0.3.0
-  calico_node: rancher/calico-node:v3.1.3
-  calico_cni: rancher/calico-cni:v3.1.3
+  flannel: rancher/coreos-flannel:v0.10.0-rancher1
+  flannel_cni: rancher/flannel-cni:v0.3.0-rancher1
+  calico_node: rancher/calico-node:v3.4.0
+  calico_cni: rancher/calico-cni:v3.4.0
   calico_controllers: ""
   calico_ctl: rancher/calico-ctl:v2.0.0
-  canal_node: rancher/calico-node:v3.1.3
-  canal_cni: rancher/calico-cni:v3.1.3
+  canal_node: rancher/calico-node:v3.4.0
+  canal_cni: rancher/calico-cni:v3.4.0
   canal_flannel: rancher/coreos-flannel:v0.10.0
-  wave_node: weaveworks/weave-kube:2.1.2
-  weave_cni: weaveworks/weave-npc:2.1.2
+  wave_node: weaveworks/weave-kube:2.5.0
+  weave_cni: weaveworks/weave-npc:2.5.0
   pod_infra_container: $POD_INFRA_CONTAINER
-  ingress: rancher/nginx-ingress-controller:0.16.2-rancher1
-  ingress_backend: rancher/nginx-ingress-controller-defaultbackend:1.4
-  metrics_server: rancher/metrics-server-amd64:v0.2.1
+  ingress: rancher/nginx-ingress-controller:0.21.0-rancher3
+  ingress_backend: rancher/nginx-ingress-controller-defaultbackend:1.4-rancher1
+  metrics_server: rancher/metrics-server:v0.3.1
 ssh_key_path: $SSHPATH
+ssh_cert_path: ""
 ssh_agent_auth: false
 authorization:
   mode: rbac
@@ -211,9 +202,15 @@ bastion_host:
   user: ""
   ssh_key: ""
   ssh_key_path: ""
+  ssh_cert: ""
+  ssh_cert_path: ""
 monitoring:
   provider: ""
   options: {}
+restore:
+  restore: false
+  snapshot_name: ""
+dns: null
 EOF
 
 
