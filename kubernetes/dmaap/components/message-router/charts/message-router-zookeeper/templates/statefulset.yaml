@@ -53,24 +53,16 @@ spec:
         {{ toYaml .Values.nodeAffinity | indent 10 }}
       {{- end }}
       initContainers:
-      - name: {{ include "common.name" . }}-seed-topics-apikeys
+      - name: {{ include "common.name" . }}-permission-fixer
         command:
-        - /bin/bash
-        - -c
+        - sh
+        - -exec
         - >
-          if [ -d /tmp/zookeeper/topics/version-2 ]; then
-          echo "nothing to do";
-          else
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/zookeeper/gerrit;
-          echo "Clone complete. Copying from /tmp/zookeeper/gerrit/oom-projects/data-zookeeper/* to /tmp/zookeeper/topics";
-          cp -var /tmp/zookeeper/gerrit/oom-topics/data-zookeeper/* /tmp/zookeeper/topics;
-          chown -R 1000:1000 /tmp/zookeeper/topics;
-          echo "Done.";
-          fi
-        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
+          chown -R 1000:1000 /tmp/zookeeper/apikeys;
+        image: "{{ .Values.busyBoxRepository }}/{{ .Values.busyBoxImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-        - mountPath: /tmp/zookeeper/topics
+        - mountPath: /tmp/zookeeper/apikeys
           name: zookeeper-data
       containers:
       - name: {{ include "common.name" . }}
