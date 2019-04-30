@@ -66,21 +66,13 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-config
           mountPath: /share/etc/config
-        - name: {{ include "common.fullname" . }}-logs   
+        - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
-        - name: TOPOLOGY_HOST
-          value: {{ .Values.config.topology_host }}.{{.Release.Namespace}}
-        - name: TOPOLOGY_PORT
-          value: {{ .Values.config.topology_port | quote}}
-        - name: TICKETMGT_HOST
-          value: {{ .Values.config.ticketmgt_host }}.{{.Release.Namespace}}
-        - name: TICKETMGT_PORT
-          value: {{ .Values.config.ticketmgt_port | quote}}
         - name: DB_HOST
           value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
         - name: DB_PORT
@@ -94,6 +86,14 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name}}-cmso-db
               key: db-root-password
+        - name: JAVA_TRUSTSTORE
+          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
+        - name: SSL_KEYSTORE
+          value: /share/etc/certs/{{ .Values.global.keystoreFile }}
+        - name: JAVA_TRUSTSTORE_PASSWORD
+          value: {{ .Values.global.truststorePassword }}
+        - name: SSL_KEYSTORE_PASSWORD
+          value: {{ .Values.global.keystorePassword }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -116,7 +116,9 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/debug-logs
         - name: {{ include "common.fullname" . }}-config
-          mountPath: /share/etc/config 
+          mountPath: /share/etc/config
+        - name: {{ include "common.fullname" . }}-certs
+          mountPath: /share/etc/certs
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -142,5 +144,8 @@ spec:
               path: liquibase.properties
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        - name: {{ include "common.fullname" . }}-certs
+          secret:
+            secretName: {{ .Release.Name }}-{{ .Values.global.commonConfigPrefix }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
