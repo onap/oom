@@ -40,7 +40,11 @@ spec:
         - /root/ready.py
         args:
         - --container-name
+        {{- if .Values.global.cassandra.localCluster }}
         - sdc-cs
+        {{- else }}
+        - cassandra
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -54,8 +58,6 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /root/chef-solo/environments/
-        - name: {{ include "common.fullname" . }}-data
-          mountPath: /var/lib/cassandra/
         - name: {{ include "common.fullname" . }}-chef-cache
           mountPath: /root/chef-solo/cache
         env:
@@ -81,13 +83,6 @@ spec:
         configMap:
           name: {{ .Release.Name }}-sdc-environments-configmap
           defaultMode: 0755
-      - name: {{ include "common.fullname" . }}-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
       - name: {{ include "common.fullname" . }}-chef-cache
         emptyDir: {}
       imagePullSecrets:

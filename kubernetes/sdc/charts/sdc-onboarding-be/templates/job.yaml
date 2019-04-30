@@ -54,8 +54,6 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /root/chef-solo/environments/
-        - name: {{ include "common.fullname" . }}-data
-          mountPath: /var/lib/cassandra/
         env:
         - name: ENVNAME
           value: {{ .Values.global.env.name }}
@@ -73,19 +71,12 @@ spec:
           valueFrom:
             secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: cs_password}
         - name: CS_HOST_IP
-          value: "sdc-cs"
+          value: "{{ .Values.global.cassandra.serviceName }}"
       volumes:
       - name: {{ include "common.fullname" . }}-environments
         configMap:
           name: {{ .Release.Name }}-sdc-environments-configmap
           defaultMode: 0755
-      - name: {{ include "common.fullname" . }}-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      {{- else }}
-        emptyDir: {}
-      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       restartPolicy: Never
