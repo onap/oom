@@ -1,7 +1,7 @@
 .. This work is licensed under a
 .. Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2019 Amdocs, Bell Canada
 
 .. _quick-start-label:
 
@@ -17,10 +17,10 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone -b 4.0.0-ONAP http://gerrit.onap.org/r/oom
+  > git clone -b 4.0.0-ONAP http://gerrit.onap.org/r/oom --recurse-submodules
   > cd oom/kubernetes
 
-**Step 2.** Install Helm Plugins required to deploy the ONAP Casablanca release::
+**Step 2.** Install Helm Plugins required to deploy ONAP::
 
   > sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
 
@@ -49,8 +49,8 @@ OpenStack tenant information.
 
 
 a. Enabling/Disabling Components:
-Here is an example of the nominal entries that need to be provided. We have different
-values file available for different contexts.
+Here is an example of the nominal entries that need to be provided.
+We have different values file available for different contexts.
 
 .. literalinclude:: onap-values.yaml
    :language: yaml
