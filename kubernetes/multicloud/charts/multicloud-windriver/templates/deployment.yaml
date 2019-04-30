@@ -62,6 +62,8 @@ spec:
        - mountPath: /opt/windriver/titanium_cloud/pub/config/log.yml
          name: windriver-logconfig
          subPath: log.yml
+       - mountPath: /opt/artifacts/
+         name: artifact-data
        resources:
 {{ include "common.resources" . | indent 12 }}
        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -94,6 +96,19 @@ spec:
          name: windriver-log
        - mountPath: /usr/share/filebeat/data
          name: windriver-data-filebeat
+     - image: "{{ include "common.repository" . }}/{{ .Values.global.artifactImage }}"
+       name: framework-artifactbroker
+       command: ["/opt/app/distribution/bin/artifact-dist.sh"]
+       args: ["/opt/app/distribution/etc/mounted/config.json"]
+       ports:
+       - containerPort: 9014
+         protocol: TCP
+       volumeMounts:
+       - mountPath: /opt/app/distribution/etc/mounted/config.json
+         name: windriver-logconfig
+         subPath: config.json
+       - mountPath: /data
+         name: artifact-data
 
      volumes:
      - name: windriver-log
@@ -106,6 +121,8 @@ spec:
      - name: windriver-logconfig
        configMap:
          name: {{ include "common.fullname" . }}-log-configmap
+     - name: artifact-data
+       emptyDir: {}
      imagePullSecrets:
      - name: "{{ include "common.namespace" . }}-docker-registry-key"
      restartPolicy: Always
