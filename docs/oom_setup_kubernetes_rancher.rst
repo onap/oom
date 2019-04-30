@@ -16,184 +16,326 @@
 
 .. _onap-on-kubernetes-with-rancher:
 
-ONAP on Kubernetes with Rancher
-###############################
+ONAP on HA Kubernetes Cluster
+#############################
 
-The following instructions will step you through the installation of Kubernetes
-on an OpenStack environment with Rancher.  The development lab used for this
-installation is the ONAP Windriver lab.
+This guide provides instructions on how to setup a Highly-Available Kubernetes Cluster.
+For this, we are hosting our cluster on OpenStack VMs and using the Rancher Kubernetes Engine (RKE)
+to deploy and manage our Kubernetes Cluster.
 
-This guide does not cover all of the steps required to setup your OpenStack
-environment: e.g. OAM networks and security groups but there is a wealth of
-OpenStack information on the web.
+The result at the end of this tutorial will be:
 
-Rancher Installation
-====================
+*1.* Creation of a Key Pair to use with Open Stack and RKE
 
-The following instructions describe how to create an Openstack VM running
-Rancher. This node will not be used to host ONAP itself, it will be used
-exclusively by Rancher.
+*2.* Creation of OpenStack VMs to host Kubernetes Control Plane
 
-Launch new VM instance to host the Rancher Server
--------------------------------------------------
+*3.* Creation of OpenStack VMs to host Kubernetes Workers
 
-.. image:: Rancher-Launch_new_VM_instance_to_host_the_Rancher_Server.jpeg
+*4.* Installation and configuration of RKE to setup an HA Kubernetes
 
-Select Ubuntu 16.04 as base image
+*5.* Installation and configuration of kubectl
+
+*5.* Installation and configuration of helm
+
+*7.* Creation of an NFS Server to be used by ONAP as shared persistance
+
+There are many ways one can execute the above steps. Including automation through the use of HEAT to setup the OpenStack VMs.
+To better illustrate the steps involved, we have captured the manual creation of such an environment using the ONAP Wind River Open Lab.
+
+
+.. Note::
+ Some steps, such as creating OAM networks and security groups, have been omitted from the guide.
+
+.. contents::
+   :depth: 1
+   :local:
+..
+
+Create Key Pair
+===============
+A Key Pair is required to access the created OpenStack VMs and will be used by
+RKE to configure the VMs for Kubernetes.
+
+Use an existing key pair, import one or create a new one to assign.
+
+.. image:: images/keys/key_pair_1.png
+
+.. Note::
+  If you're creating a new Key Pair, ensure to create a local copy of the Private Key through the use of "Copy Private Key to Clipboard".
+
+For the purpose of this guide, we will assume a new local key called "onap-key"
+has been downloaded and is copied into **~/.ssh/**, from which it can be referenced.
+
+Example:
+  > mv onap-key ~/.ssh
+  > chmod 600 ~/.ssh/onap-key
+
+
+Create Kubernetes Control Plane VMs
+===================================
+
+The following instructions describe how to create 3 OpenStack VMs to host the
+Highly-Available Kubernetes Control Plane.
+ONAP workloads will not be scheduled on this Control Plane nodes.
+
+Launch new VM instances
+-----------------------
+
+.. image:: images/cp_vms/control_plane_1.png
+
+Select Ubuntu 18.04 as base image
 ---------------------------------
 Select "No" on "Create New Volume"
 
-.. image:: Rancher-Select_Ubuntu_16.04_as_base_image.jpeg
+.. image:: images/cp_vms/control_plane_2.png
 
 Select Flavor
 -------------
-Known issues exist if flavor is too small for Rancher. Please select a flavor
-with at least 4 vCPU and 8GB ram. A size of 8 vCPU and 16GB ram is recommended.
+The recommended flavor is at least 4 vCPU and 8GB ram.
 
-.. image:: Rancher-Select_Flavor.jpeg
+.. image:: images/cp_vms/control_plane_3.png
 
 Networking
 ----------
 
-.. image:: Rancher-Networking.jpeg
+.. image:: images/cp_vms/control_plane_4.png
 
 Security Groups
 ---------------
 
-.. image:: Rancher-Security_Groups.jpeg
+.. image:: images/cp_vms/control_plane_5.png
 
 Key Pair
 --------
-Use an existing key pair (e.g. onap_key), import an existing one or create a
-new one to assign.
+Assign the key pair that was created/selected previously (e.g. onap_key).
 
-.. image:: Rancher-Key_Pair.jpeg
+.. image:: images/cp_vms/control_plane_6.png
 
-Apply customization script for the Rancher VM
----------------------------------------------
+Apply customization script for Control Plane VMs
+------------------------------------------------
 
-Click :download:`openstack-rancher.sh <openstack-rancher.sh>` to download the
+Click :download:`openstack-k8s-controlnode.sh <openstack-k8s-controlnode.sh>` to download the
 script.
 
-.. literalinclude:: openstack-rancher.sh
+.. literalinclude:: openstack-k8s-controlnode.sh
    :language: bash
 
 This customization script will:
 
-* setup root access to the VM (comment out if you wish to disable this
-  capability and restrict access to ssh access only)
+* update ubuntu
 * install docker
-* install rancher
-* install kubectl
-* install helm
-* install nfs server
 
-.. note::
-  The Casablanca release of OOM only supports Helm 2.9.1 not the 2.7.2 shown in
-  the screen capture below. The supported versions of all the software components
-  are listed in the :ref:`cloud-setup-guide-label`.
-
-.. image:: Apply_customization_script_for_the_Rancher_VM.jpeg
+.. image:: images/cp_vms/control_plane_7.png
 
 Launch Instance
 ---------------
 
-.. image:: Rancher-Launch_Instance.jpeg
+.. image:: images/cp_vms/control_plane_8.png
 
-Assign Floating IP for external access
---------------------------------------
 
-.. image:: Rancher-Allocate_Floating_IP.jpeg
 
-.. image:: Rancher-Manage_Floating_IP_Associations.jpeg
+Create Kubernetes Worker VMs
+============================
+The following instructions describe how to create OpenStack VMs to host the
+Highly-Available Kubernetes Workers. ONAP workloads will only be scheduled on these nodes.
 
-.. image:: Rancher-Launch_Instance.jpeg
+Launch new VM instances
+-----------------------
 
-Kubernetes Installation
-=======================
+The number and size of Worker VMs is depenedent on the size of the ONAP deployment. 
+By default, all ONAP applications will be deployed. It's possible to customize the deployment 
+and enable/disable only those ONAP applications desired. For the purpose of this guide, however,
+we will deploy 12 Kubernetes Workers that have been sized to handle an entire ONAP 
+application workload.
 
-Launch new VM instance(s) to create a Kubernetes single host or cluster
------------------------------------------------------------------------
+.. image:: images/wk_vms/worker_1.png
 
-To create a cluster:
-
-.. note::
-  #. do not append a '-1' suffix (e.g. sb4-k8s)
-  #. increase count to the # of of kubernetes worker nodes you want (eg. 3)
-
-.. image:: K8s-Launch_new_VM_instance_to_create_a_Kubernetes_single_host_or_cluster.jpeg
-
-Select Ubuntu 16.04 as base image
+Select Ubuntu 18.04 as base image
 ---------------------------------
 Select "No" on "Create New Volume"
 
-.. image:: K8s-Select_Ubuntu_16.04_as_base_image.jpeg
+.. image:: images/wk_vms/worker_2.png
 
 Select Flavor
 -------------
-The size of a Kubernetes host depends on the size of the ONAP deployment that
+The size of Kubernetes hosts depend on the size of the ONAP deployment that
 will be installed.
 
-As of the Casablanca release a minimum 224GB will be needed to run a
-full ONAP deployment (all components). It is recommended that more hosts are
-used with fewer resources instead of only a few large hosts. For example 14 x
-16GB hosts.
+If a small subset of ONAP applications are being deployed for testing purposes,
+then a single 16GB or 32GB may be sufficient.
 
-If a small subset of ONAP components are being deployed for testing purposes,
-then a single 16GB or 32GB host should suffice.
-
-.. image:: K8s-Select_Flavor.jpeg
+.. image:: images/wk_vms/worker_3.png
 
 Networking
 -----------
 
-.. image:: K8s-Networking.jpeg
+.. image:: images/wk_vms/worker_4.png
 
 Security Group
 ---------------
 
-.. image:: K8s-Security_Group.jpeg
+.. image:: images/wk_vms/worker_5.png
 
 Key Pair
 --------
-Use an existing key pair (e.g. onap_key), import an existing one or create a
-new one to assign.
+Assign the key pair that was created/selected previously (e.g. onap_key).
 
-.. image:: K8s-Key_Pair.jpeg
+.. image:: images/wk_vms/worker_6.png
 
 Apply customization script for Kubernetes VM(s)
 -----------------------------------------------
 
-Click :download:`openstack-k8s-node.sh <openstack-k8s-node.sh>` to
-download the script.
+Click :download:`openstack-k8s-workernode.sh <openstack-k8s-workernode.sh>` to download the
+script.
 
-.. literalinclude:: openstack-k8s-node.sh
+.. literalinclude:: openstack-k8s-workernode.sh
    :language: bash
 
 This customization script will:
 
-* setup root access to the VM (comment out if you wish to disable this
-  capability and restrict access to ssh access only)
+* update ubuntu
 * install docker
-* install kubectl
-* install helm
 * install nfs common (see configuration step here)
 
-.. note::
-  Ensure you are using the correct versions as described in the
-  :ref:`cloud-setup-guide-label`
 
 Launch Instance
 ---------------
 
-.. image:: K8s-Launch_Instance.jpeg
+.. image:: images/wk_vms/worker_7.png
 
-Assign Floating IP for external access
---------------------------------------
 
-.. image:: K8s-Manage_Floating_IP_Associations.jpeg
 
-.. image:: K8s-Launch_Instance.jpeg
+
+Assign Floating IP addresses
+----------------------------
+Repeat the assignment of Floating IPs to all Control Plane and Worker VMs.
+These addresses provide external access to the VMs and will be used by RKE to configure
+the VMs with kubernetes.
+
+.. image:: images/floating_ips/floating_1.png
+
+Resulting floating IP assignments in this example.
+
+.. image:: images/floating_ips/floating_2.png
+
+
+
+
+Configure Rancher Kubernetes Engine (RKE)
+=========================================
+
+Install RKE
+-----------
+Download and install RKE on a VM, your desktop or laptop.
+Binaries can be found here for Linux and Mac:
+
+https://github.com/rancher/rke/releases/tag/v0.2.1
+
+The input into RKE is a *cluster.yml* file. This file describes a Kubernetes cluster
+to map onto the OpenStack VMs that were created earlier in this guide.
+
+Example: **cluster.yml**
+
+.. image:: images/rke/rke_1.png
+
+Click :download:`cluster.yml <cluster.yml>` to download the
+configuration file.
+
+.. literalinclude:: cluster.yml
+   :language: yaml
+
+Prepare cluster.yml
+-------------------
+Before this configuration file can be used, however, the external **address**
+and the **internal_address** must be mapped for each control and worker node
+in this file.
+
+Run RKE
+-------
+Once completed, from within the same directory as the cluster.yml file, simply do:
+
+  > rke up
+
+The output will look something like:
+
+.. code-block::
+  INFO[0000] Initiating Kubernetes cluster
+  INFO[0000] [certificates] Generating admin certificates and kubeconfig
+  INFO[0000] Successfully Deployed state file at [./cluster.rkestate]
+  INFO[0000] Building Kubernetes cluster
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.82]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.249]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.74]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.85]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.238]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.89]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.5.11]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.90]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.244]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.5.165]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.126]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.111]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.5.160]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.5.191]
+  INFO[0000] [dialer] Setup tunnel for host [10.12.6.195]
+  INFO[0002] [network] Deploying port listener containers
+  INFO[0002] [network] Pulling image [nexus3.onap.org:10001/rancher/rke-tools:v0.1.27] on host [10.12.6.85]
+  INFO[0002] [network] Pulling image [nexus3.onap.org:10001/rancher/rke-tools:v0.1.27] on host [10.12.6.89]
+  INFO[0002] [network] Pulling image [nexus3.onap.org:10001/rancher/rke-tools:v0.1.27] on host [10.12.6.90]
+  INFO[0011] [network] Successfully pulled image [nexus3.onap.org:10001/rancher/rke-tools:v0.1.27] on host [10.12.6.89]
+  . . . .
+  INFO[0309] [addons] Setting up Metrics Server
+  INFO[0309] [addons] Saving ConfigMap for addon rke-metrics-addon to Kubernetes
+  INFO[0309] [addons] Successfully saved ConfigMap for addon rke-metrics-addon to Kubernetes
+  INFO[0309] [addons] Executing deploy job rke-metrics-addon
+  INFO[0315] [addons] Metrics Server deployed successfully
+  INFO[0315] [ingress] Setting up nginx ingress controller
+  INFO[0315] [addons] Saving ConfigMap for addon rke-ingress-controller to Kubernetes
+  INFO[0316] [addons] Successfully saved ConfigMap for addon rke-ingress-controller to Kubernetes
+  INFO[0316] [addons] Executing deploy job rke-ingress-controller
+  INFO[0322] [ingress] ingress controller nginx deployed successfully
+  INFO[0322] [addons] Setting up user addons
+  INFO[0322] [addons] no user addons defined
+  INFO[0322] Finished building Kubernetes cluster successfully
+
+Configure Kubectl
+=================
+
+Install kubectl
+---------------
+Download and install kubectl. Binaries can be found here for Linu and Mac:
+
+https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/linux/amd64/kubectl
+https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/darwin/amd64/kubectl
+
+Copy RKE-generated kube config file to .kube directory
+------------------------------------------------------
+  > cp kube_config_cluster.yml ~/.kube/config.onap
+
+  > export KUBECONFIG=~/.kube/config.onap
+
+  > kubectl config use-context onap
+
+  > kubectl get nodes -o=wide
+
+.. code-block::
+  NAME             STATUS   ROLES               AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
+  onap-control-1   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-2   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-3   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.12     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-1       Ready    worker              3h53m   v1.13.5   10.0.0.14     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-10      Ready    worker              3h53m   v1.13.5   10.0.0.16     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-11      Ready    worker              3h53m   v1.13.5   10.0.0.18     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-12      Ready    worker              3h53m   v1.13.5   10.0.0.7      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-2       Ready    worker              3h53m   v1.13.5   10.0.0.26     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-3       Ready    worker              3h53m   v1.13.5   10.0.0.5      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-4       Ready    worker              3h53m   v1.13.5   10.0.0.6      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-5       Ready    worker              3h53m   v1.13.5   10.0.0.9      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-6       Ready    worker              3h53m   v1.13.5   10.0.0.17     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-7       Ready    worker              3h53m   v1.13.5   10.0.0.20     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-8       Ready    worker              3h53m   v1.13.5   10.0.0.10     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-9       Ready    worker              3h53m   v1.13.5   10.0.0.4      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+
 
 Setting up an NFS share for Multinode Kubernetes Clusters
 =========================================================
@@ -239,188 +381,10 @@ the NFS Master node as input, e.g.::
 
     > sudo ./slave_nfs_node.sh master_node_ip
 
-Configuration (Rancher and Kubernetes)
-======================================
-
-Access Rancher server via web browser
--------------------------------------
-(e.g.  http://10.12.6.16:8080/env/1a5/apps/stacks)
-
-.. image:: Access_Rancher_server_via_web_browser.jpeg
-
-Add Kubernetes Environment to Rancher
--------------------------------------
-
-1. Select “Manage Environments”
-
-.. image:: Add_Kubernetes_Environment_to_Rancher.png
-
-2. Select “Add Environment”
-
-.. image:: Select_Add_Environment.png
-
-3. Add unique name for your new Rancher environment
-
-4. Select the Kubernetes template
-
-5. Click "create"
-
-.. image:: Click_create.jpeg
-
-6. Select the new named environment (ie. SB4) from the dropdown list (top
-   left).
-
-Rancher is now waiting for a Kubernetes Host to be added.
-
-.. image:: K8s-Assign_Floating_IP_for_external_access.jpeg
-
-Add Kubernetes Host
--------------------
-
-1.  If this is the first (or only) host being added - click on the "Add a host"
-    link
-
-.. image:: K8s-Assign_Floating_IP_for_external_access.jpeg
-
-and click on "Save" (accept defaults).
-
-.. image:: and_click_on_Save_accept_defaults.jpeg
-
-otherwise select INFRASTRUCTURE→ Hosts and click on "Add Host"
-
-.. image:: otherwise_select_INFRASTRUCTURE_Hosts_and_click_on_Add_Host.jpg
-
-2. Enter the management IP for the k8s VM (e.g. 10.0.0.4) that was just
-   created.
-
-3. Click on “Copy to Clipboard” button
-
-4. Click on “Close” button
-
-.. image:: Click_on_Close_button.jpeg
-
-Without the 10.0.0.4 IP - the CATTLE_AGENT will be derived on the host - but it
-may not be a routable IP.
-
-Configure Kubernetes Host
--------------------------
-
-1. Login to the new Kubernetes Host::
-
-    > ssh -i ~/oom-key.pem ubuntu@10.12.5.1
-    The authenticity of host '10.12.5.172 (10.12.5.172)' can't be established.
-    ECDSA key fingerprint is SHA256:tqxayN58nCJKOJcWrEZzImkc0qKQHDDfUTHqk4WMcEI.
-    Are you sure you want to continue connecting (yes/no)? yes
-    Warning: Permanently added '10.12.5.172' (ECDSA) to the list of known hosts.
-    Welcome to Ubuntu 16.04.2 LTS (GNU/Linux 4.4.0-64-generic x86_64)
-
-     * Documentation: https://help.ubuntu.com
-     * Management: https://landscape.canonical.com
-     * Support: https://ubuntu.com/advantage
-
-     Get cloud support with Ubuntu Advantage Cloud Guest:
-       http://www.ubuntu.com/business/services/cloud
-
-    180 packages can be updated.
-    100 updates are security updates.
-
-    The programs included with the Ubuntu system are free software;
-    the exact distribution terms for each program are described in the
-    individual files in /usr/share/doc/*/copyright.
-
-    Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
-    applicable law.
-
-    To run a command as administrator (user "root"), use "sudo <command>".
-    See "man sudo_root" for details.
-
-    ubuntu@sb4-k8s-1:~$
 
 
-2. Paste Clipboard content and hit enter to install Rancher Agent::
 
-    ubuntu@sb4-k8s-1:~$ sudo docker run -e CATTLE_AGENT_IP="10.0.0.4“ --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/rancher:/var/lib/rancher rancher/agent:v1.2.9 http://10.12.6.16:8080/v1/scripts/5D757C68BD0A2125602A:1514678400000:yKW9xHGJDLvq6drz2eDzR2mjato
-    Unable to find image 'rancher/agent:v1.2.9' locally
-    v1.2.9: Pulling From rancher/agent
-    b3e1c725a85f: Pull complete
-    6071086409fc: Pull complete
-    d0ac3b234321: Pull complete
-    87f567b5cf58: Pull complete
-    a63e24b217c4: Pull complete
-    d0a3f58caef0: Pull complete
-    16914729cfd3: Pull complete
-    dc5c21984c5b: Pull complete
-    d7e8f9784b20: Pull complete
-    Digest: sha256:c21255ac4d94ffbc7b523F870F20ea5189b68Fa3d642800adb4774aab4748e66
-    Status: Downloaded newer image for rancher/agent:v1.2.9
 
-    INFO: Running Agent Registration Process, CATTLE_URL=http://10.12.6.16:8080/v1
-    INFO: Attempting to connect to: http://10.12.6.16:8080/v1
-    INFO: http://10.12.6.16:8080/v1 is accessible
-    INFO: Inspecting host capabilities
-    INFO: Boot2Docker: false
-    INFO: Host writable: true
-    INFO: Token: xxxxxxxx
-    INFO: Running registration
-    INFO: Printing Environment
-    INFO: ENV: CATTLE_ACCESS_KEY=98B35AC484FBF820E0AD
-    INFO: ENV: CATTLE_AGENT_IP=10.0.9.4
-    INFO: ENV: CATTLE_HOME=/var/lib/cattle
-    INFO: ENV: CATTLE_REGISTRATION_ACCESS_KEY=registrationToken
-    INFO: ENV: CATTLE_REGISTRATION_SECRET_KEY=xxxxxxx
-    INFO: ENV: CATTLE_SECRET_KEY=xxxxxxx
-    INFO: ENV: CATTLE_URL=http://10.12.6.16:8080/v1
-    INFO: ENV: DETECTED_CATTLE_AGENT_IP=10.12.5.172
-    INFO: ENV: RANCHER_AGENT_IMAGE=rancher/agent:v1.2.9
-    INFO: Launched Rancher Agent: c27ee0f3dc4c783b0db647ea1f73c35b3843a4b8d60b96375b1a05aa77d83136
-    ubuntu@sb4-k8s-1:~$
-
-3. Return to Rancher environment (e.g. SB4) and wait for services to complete
-   (~ 10-15 mins)
-
-.. image:: Return_to_Rancher_environment_eg_SB4_and_wait_for_services_to_complete_10-15_mins.jpeg
-
-Configure kubectl and helm
-==========================
-In this example we are configuring kubectl and helm that have been installed
-(as a convenience) onto the rancher and kubernetes hosts.  Typically you would
-install them both on your PC and remotely connect to the cluster. The following
-procedure would remain the same.
-
-1. Click on CLI and then click on “Generate Config”
-
-.. image:: Click_on_CLI_and_then_click_on_Generate_Config.jpeg
-
-2. Click on “Copy to Clipboard” - wait until you see a "token" - do not copy
-   user+password - the server is not ready at that point
-
-.. image:: Click_on_Copy_to_Clipboard-wait_until_you_see_a_token-do_not_copy_user+password-the_server_is_not_ready_at_that_point.jpeg
-
-3. Create a .kube directory in user directory (if one does not exist)::
-
-    ubuntu@sb4-kSs-1:~$ mkdir .kube
-    ubuntu@sb4-kSs-1:~$ vi .kube/config
-
-4. Paste contents of Clipboard into a file called “config” and save the file::
-
-    apiVersion: v1
-    kind : Config
-    clusters:
-    - cluster:
-        api-version: v1
-        insecure-skip-tls-verify: true
-        server: "https://10.12.6.16:8080/r/projects/1a7/kubernetes:6443"
-      name: "SB4"
-    contexts:
-    - context:
-        cluster: "SB4"
-        user: "SB4"
-      name: "SB4"
-    current-context: "SB4"
-    users:
-    - name: "SB4"
-      user:
-        token: "QmFzaWMgTlRBd01qZzBOemc)TkRrMk1UWkNOMFpDTlVFNlExcHdSa1JhVZreE5XSm1TRGhWU2t0Vk1sQjVhalZaY0dWaFVtZGFVMHQzWW1WWVJtVmpSQT09"
 
 5. Validate that kubectl is able to connect to the kubernetes cluster::
 
