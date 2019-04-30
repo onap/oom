@@ -34,6 +34,17 @@ spec:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: JAVA_TRUSTSTORE
+          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
+        - name: SSL_KEYSTORE
+          value: /share/etc/certs/{{ .Values.global.keystoreFile }}
+        - name: JAVA_TRUSTSTORE_PASSWORD
+          value: {{ .Values.global.truststorePassword }}
+        - name: SSL_KEYSTORE_PASSWORD
+          value: {{ .Values.global.keystorePassword }}
+        - name: AUTHENTICATION
+          value: {{ .Values.global.authentication }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -56,7 +67,11 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/debug-logs
         - name: {{ include "common.fullname" . }}-config
-          mountPath: /share/etc/config 
+          mountPath: /share/etc/config
+        - name: {{ include "common.fullname" . }}-certs
+          mountPath: /share/etc/certs
+        - name: {{ include "common.fullname" . }}-certs
+          mountPath: /opt/app/cmso/src/main/resources/aaf
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -79,6 +94,11 @@ spec:
             - key: topology.properties
               path: topology.properties
         - name:  {{ include "common.fullname" . }}-logs
-          emptyDir: {}
+          hostPath:
+            path: /tmp
+            type: Directory
+        - name: {{ include "common.fullname" . }}-certs
+          secret:
+            secretName: {{ .Release.Name }}-{{ .Values.global.commonConfigPrefix }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
