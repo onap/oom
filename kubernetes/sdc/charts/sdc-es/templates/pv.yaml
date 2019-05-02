@@ -36,3 +36,26 @@ spec:
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
 {{- end -}}
+
+
+{{- if and .Values.persistence.enabled (not .Values.cert.persistence.existingClaim) -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-cert
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    name: {{ include "common.fullname" . }}
+spec:
+  capacity:
+    storage: {{ .Values.cert.persistence.size}}
+  accessModes:
+    - {{ .Values.cert.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.cert.persistence.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.cert.persistence.mountSubPath }}
+{{- end -}}

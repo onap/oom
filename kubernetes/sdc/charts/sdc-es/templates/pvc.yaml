@@ -47,3 +47,36 @@ spec:
 {{- end }}
 {{- end }}
 {{- end -}}
+
+{{- if and .Values.cert.persistence.enabled (not .Values.cert.persistence.existingClaim) -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-cert
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+{{- if .Values.cert.persistence.annotations }}
+  annotations:
+{{ toYaml .Values.cert.persistence.annotations | indent 4 }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ include "common.fullname" . }}
+  accessModes:
+    - {{ .Values.cert.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.cert.persistence.size }}
+{{- if .Values.cert.persistence.storageClass }}
+{{- if (eq "-" .Values.cert.persistence.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.cert.persistence.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end -}}
