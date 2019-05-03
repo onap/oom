@@ -15,7 +15,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "common.servicename" . }}
+  name: {{ include "common.servicename" . }}-http
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -24,19 +24,34 @@ metadata:
     heritage: {{ .Release.Service }}
   annotations:
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.http.type }}
   ports:
     - port: {{ .Values.service.http.externalPort }}
       targetPort: {{ .Values.service.http.internalPort }}
-      {{- if eq .Values.service.type "NodePort"}}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      {{- if eq .Values.service.http.type "NodePort"}}
+      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.http.nodePort }}
       {{- end}}
       name: {{ .Values.service.http.portName | default "http" }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-grpc
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+spec:
+  type: {{ .Values.service.grpc.type }}
+  ports:
     - port: {{ .Values.service.grpc.externalPort }}
       targetPort: {{ .Values.service.grpc.internalPort }}
-      {{- if eq .Values.service.type "NodePort"}}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      {{- end}}
       name: {{ .Values.service.grpc.portName | default "grpc" }}
   selector:
     app: {{ include "common.name" . }}
