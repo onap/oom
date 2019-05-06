@@ -41,6 +41,10 @@ function usage
 	echo "       demo-k8s.sh <namespace> instantiateVFW"
 	echo "               - Instantiate vFW module for the demo customer (DemoCust<uuid>)"
 	echo " "
+	echo "       demo-k8s.sh <namespace> instantiateVFWdirectso  csar_filename"
+	echo "               - Instantiate vFW module using direct SO interface using previously distributed model "
+        echo "                 that is in /tmp/csar in robot container"
+	echo " "
 	echo "       demo-k8s.sh <namespace> deleteVNF <module_name from instantiateVFW>"
 	echo "               - Delete the module created by instantiateVFW"
 	echo " "
@@ -134,6 +138,16 @@ do
 			VARIABLES="$VARIABLES -v GLOBAL_BUILD_NUMBER:$$"
 			shift
 			;;
+        instantiateVFWdirectso)
+                        TAG="instantiateVFWdirectso"
+                        shift
+                        if [ $# -ne 1 ];then
+                                        echo "Usage: demo-k8s.sh <namespace> instantiateVFWdirectso <csar_filename>"
+                                        exit
+                                fi
+                        VARIABLES="$VARIABLES -v CSAR_FILE:$1 -v GLOBAL_BUILD_NUMBER:$$"
+                        shift
+                        ;;
     	deleteVNF)
 			TAG="deleteVNF"
 			shift
