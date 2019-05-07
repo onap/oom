@@ -13,19 +13,19 @@
 # limitations under the License.
 
 # aaf info - everything is from the private oam network (also called onap private network)
-GLOBAL_AAF_SERVER = "https://aaf-service.{{include "common.namespace" .}}:8100"
-GLOBAL_AAF_USERNAME = "{{ .Values.aafUsername }}"
-GLOBAL_AAF_PASSWORD = "{{ .Values.aafPassword }}"
+GLOBAL_AAF_SERVER = 'https://aaf-service.{{include "common.namespace" .}}:8100'
+GLOBAL_AAF_USERNAME = '{{ .Values.aafUsername }}'
+GLOBAL_AAF_PASSWORD = '{{ .Values.aafPassword }}'
 # aai info - everything is from the private oam network (also called onap private network)
 GLOBAL_AAI_SERVER_PROTOCOL = "https"
 GLOBAL_AAI_SERVER_PORT = "8443"
-GLOBAL_AAI_USERNAME = "{{ .Values.aaiUsername }}"
-GLOBAL_AAI_PASSWORD = "{{ .Values.aaiPassword}}"
+GLOBAL_AAI_USERNAME = '{{ .Values.aaiUsername }}'
+GLOBAL_AAI_PASSWORD = '{{ .Values.aaiPassword}}'
 # appc info - everything is from the private oam network (also called onap private network)
 GLOBAL_APPC_SERVER_PROTOCOL = "http"
 GLOBAL_APPC_SERVER_PORT = "8282"
-GLOBAL_APPC_USERNAME = "{{ .Values.appcUsername }}"
-GLOBAL_APPC_PASSWORD = "{{ .Values.appcPassword }}"
+GLOBAL_APPC_USERNAME = '{{ .Values.appcUsername }}'
+GLOBAL_APPC_PASSWORD = '{{ .Values.appcPassword }}'
 GLOBAL_APPC_CDT_SERVER_PROTOCOL = "https"
 GLOBAL_APPC_CDT_SERVER_PORT = "18080"
 GLOBAL_APPC_CDT_USERNAME = "demo"
@@ -48,8 +48,8 @@ GLOBAL_CLI_SERVER_PORT = "8080"
 # dcae info - everything is from the private oam network (also called onap private network)
 GLOBAL_DCAE_SERVER_PROTOCOL = "http"
 GLOBAL_DCAE_HEALTH_SERVER_PORT = "80"
-GLOBAL_DCAE_USERNAME = "{{ .Values.dcaeUsername }}"
-GLOBAL_DCAE_PASSWORD = "{{ .Values.dcaePassword}}"
+GLOBAL_DCAE_USERNAME = '{{ .Values.dcaeUsername }}'
+GLOBAL_DCAE_PASSWORD = '{{ .Values.dcaePassword}}'
 # data router info - everything is from the private oam network (also called onap private network)
 GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = "http"
 GLOBAL_DMAAP_DR_PROV_SERVER_PORT = "8080"
@@ -57,8 +57,8 @@ GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = "http"
 GLOBAL_DMAAP_DR_NODE_SERVER_PORT = "8080"
 # DROOL server port and credentials
 GLOBAL_DROOLS_SERVER_PORT = "9696"
-GLOBAL_DROOLS_USERNAME = "{{ .Values.droolsUsername }}"
-GLOBAL_DROOLS_PASSWORD = "{{ .Values.droolsPassword }}"
+GLOBAL_DROOLS_USERNAME = '{{ .Values.droolsUsername }}'
+GLOBAL_DROOLS_PASSWORD = '{{ .Values.droolsPassword }}'
 # log server config - NOTE: no log server is run in HEAT; only on OOM
 GLOBAL_LOG_SERVER_PROTOCOL = "http"
 GLOBAL_LOG_ELASTICSEARCH_PORT = "9200"
@@ -86,8 +86,8 @@ GLOBAL_MR_SERVER_PROTOCOL = "http"
 GLOBAL_MR_SERVER_PORT = "3904"
 # bus controller info
 GLOBAL_BC_HTTPS_SERVER_PORT = "8443"
-GLOBAL_BC_USERNAME = "{{ .Values.bcUsername }}"
-GLOBAL_BC_PASSWORD = "{{ .Values.bcPassword }}"
+GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
+GLOBAL_BC_PASSWORD = '{{ .Values.bcPassword }}'
 # mso info - everything is from the private oam network (also called onap private network)
 GLOBAL_MSO_SERVER_PROTOCOL = "http"
 GLOBAL_MSO_SERVER_PORT = "8080"
@@ -101,9 +101,9 @@ GLOBAL_MSO_REQDB_SERVER_PORT = "8083"
 GLOBAL_MSO_SDNC_SERVER_PORT =  "8086"
 GLOBAL_MSO_VFC_SERVER_PORT = "8084"
 GLOBAL_MSO_VNFM_SERVER_PORT = "9092"
-GLOBAL_MSO_USERNAME = "{{ .Values.soUsername }}"
-GLOBAL_MSO_CATDB_USERNAME = "{{ .Values.soCatdbUsername }}"
-GLOBAL_MSO_PASSWORD = "{{ .Values.soPassword }}"
+GLOBAL_MSO_USERNAME = '{{ .Values.soUsername }}'
+GLOBAL_MSO_CATDB_USERNAME = '{{ .Values.soCatdbUsername }}'
+GLOBAL_MSO_PASSWORD = '{{ .Values.soPassword }}'
 # robot uses MSO_PASSWORD for both SO and CATDB
 # music info - everything is from the private oam network (also called onap private network)
 GLOBAL_MUSIC_SERVER_PROTOCOL = "http"
@@ -129,34 +129,34 @@ GLOBAL_PGN_PORT = "2831"
 GLOBAL_POLICY_SERVER_PROTOCOL = "https"
 GLOBAL_POLICY_SERVER_PORT = "8081"
 GLOBAL_POLICY_HEALTHCHECK_PORT = "6969"
-GLOBAL_POLICY_AUTH = "{{ .Values.policyAuth}}"
-GLOBAL_POLICY_CLIENTAUTH = "{{ .Values.policyClientAuth}}"
-GLOBAL_POLICY_USERNAME = "{{ .Values.policyUsername }}"
-GLOBAL_POLICY_PASSWORD = "{{ .Values.policyPassword }}"
-GLOBAL_POLICY_HEALTHCHECK_USERNAME = "{{ .Values.policyComponentUsername }}"
-GLOBAL_POLICY_HEALTHCHECK_PASSWORD = "{{ .Values.policyComponentPassword }}"
+GLOBAL_POLICY_AUTH = '{{ .Values.policyAuth}}'
+GLOBAL_POLICY_CLIENTAUTH = '{{ .Values.policyClientAuth}}'
+GLOBAL_POLICY_USERNAME = '{{ .Values.policyUsername }}'
+GLOBAL_POLICY_PASSWORD = '{{ .Values.policyPassword }}'
+GLOBAL_POLICY_HEALTHCHECK_USERNAME = '{{ .Values.policyComponentUsername }}'
+GLOBAL_POLICY_HEALTHCHECK_PASSWORD = '{{ .Values.policyComponentPassword }}'
 # portal info - everything is from the private oam network (also called onap private network)
 GLOBAL_PORTAL_SERVER_PROTOCOL = "http"
 GLOBAL_PORTAL_SERVER_PORT = "8989"
-GLOBAL_PORTAL_USERNAME = "{{ .Values.portalUsername }}"
-GLOBAL_PORTAL_PASSWORD = "{{ .Values.portalPassword }}"
+GLOBAL_PORTAL_USERNAME = '{{ .Values.portalUsername }}'
+GLOBAL_PORTAL_PASSWORD = '{{ .Values.portalPassword }}'
 # sdngc info - everything is from the private oam network (also called onap private network)
 GLOBAL_SDNGC_SERVER_PROTOCOL = "http"
 GLOBAL_SDNGC_REST_PORT = "8282"
 GLOBAL_SDNGC_ADMIN_PORT = "8843"
-GLOBAL_SDNGC_USERNAME = "{{ .Values.sdncUsername }}"
-GLOBAL_SDNGC_PASSWORD = "{{ .Values.sdncPassword }}"
+GLOBAL_SDNGC_USERNAME = '{{ .Values.sdncUsername }}'
+GLOBAL_SDNGC_PASSWORD = '{{ .Values.sdncPassword }}'
 # sms (AAF)  info
 GLOBAL_SMS_SERVER_PROTOCOL = "https"
-GLOBAL_SMS_SERVER_NAME = "aaf-sms.{{include "common.namespace" .}}"
+GLOBAL_SMS_SERVER_NAME = 'aaf-sms.{{include "common.namespace" .}}'
 GLOBAL_SMS_SERVER_PORT = "10443"
 # vid info - everything is from the private oam network (also called onap private network)
-GLOBAL_VID_SERVER_PROTOCOL = "{{ .Values.vidServerProtocol }}"
-GLOBAL_VID_SERVER_PORT = "{{ .Values.vidServerPort }}"
-GLOBAL_VID_USERNAME = "{{ .Values.vidUsername }}"
-GLOBAL_VID_PASSWORD = "{{ .Values.vidPassword}}"
-GLOBAL_VID_HEALTH_USERNAME = "{{ .Values.vidHealthUsername }}"
-GLOBAL_VID_HEALTH_PASSWORD = "{{ .Values.vidHealthPassword }}"
+GLOBAL_VID_SERVER_PROTOCOL = '{{ .Values.vidServerProtocol }}'
+GLOBAL_VID_SERVER_PORT = '{{ .Values.vidServerPort }}'
+GLOBAL_VID_USERNAME = '{{ .Values.vidUsername }}'
+GLOBAL_VID_PASSWORD = '{{ .Values.vidPassword}}'
+GLOBAL_VID_HEALTH_USERNAME = '{{ .Values.vidHealthUsername }}'
+GLOBAL_VID_HEALTH_PASSWORD = '{{ .Values.vidHealthPassword }}'
 # vnfsdk info - everything is from the private oam network (also called onap private network)
 GLOBAL_VNFSDK_SERVER_PROTOCOL = "http"
 GLOBAL_VNFSDK_SERVER_PORT = "8702"
