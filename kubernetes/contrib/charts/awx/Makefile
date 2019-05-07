@@ -12,7 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-awx:
-  enabled: true
-netbox:
-  enabled: true
+make-awx:
+	cd charts && helm dep up awx-postgres
