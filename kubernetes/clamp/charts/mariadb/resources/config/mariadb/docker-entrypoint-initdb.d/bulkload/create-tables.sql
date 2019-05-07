@@ -22,7 +22,7 @@
        id bigint not null,
         log_instant datetime(6) not null,
         log_type varchar(255) not null,
-        message varchar(255) not null,
+        message MEDIUMTEXT not null,
         loop_id varchar(255) not null,
         primary key (id)
     ) engine=InnoDB;
@@ -63,22 +63,22 @@
         primary key (name)
     ) engine=InnoDB;
 
-    alter table loop_logs
-       add constraint FK1j0cda46aickcaoxqoo34khg2
-       foreign key (loop_id)
+    alter table loop_logs 
+       add constraint FK1j0cda46aickcaoxqoo34khg2 
+       foreign key (loop_id) 
        references loops (name);
 
-    alter table loops_microservicepolicies
-       add constraint FKem7tp1cdlpwe28av7ef91j1yl
-       foreign key (microservicepolicy_id)
+    alter table loops_microservicepolicies 
+       add constraint FKem7tp1cdlpwe28av7ef91j1yl 
+       foreign key (microservicepolicy_id) 
        references micro_service_policies (name);
 
-    alter table loops_microservicepolicies
-       add constraint FKsvx91jekgdkfh34iaxtjfgebt
-       foreign key (loop_id)
+    alter table loops_microservicepolicies 
+       add constraint FKsvx91jekgdkfh34iaxtjfgebt 
+       foreign key (loop_id) 
        references loops (name);
 
-    alter table operational_policies
-       add constraint FK1ddoggk9ni2bnqighv6ecmuwu
-       foreign key (loop_id)
+    alter table operational_policies 
+       add constraint FK1ddoggk9ni2bnqighv6ecmuwu 
+       foreign key (loop_id) 
        references loops (name);
