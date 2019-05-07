@@ -47,6 +47,14 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - name: {{ include "common.name" . }}-chown
+        image: "busybox"
+        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.odluid }}:{{ .Values.odlgid}} {{ .Values.certpersistence.certPath }} ;"]
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.mdsalPath }}
+            name: {{ include "common.fullname" . }}-mdsal
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
