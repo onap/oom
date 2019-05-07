@@ -133,6 +133,8 @@ GLOBAL_POLICY_AUTH = "{{ .Values.policyAuth}}"
 GLOBAL_POLICY_CLIENTAUTH = "{{ .Values.policyClientAuth}}"
 GLOBAL_POLICY_USERNAME = "{{ .Values.policyUsername }}"
 GLOBAL_POLICY_PASSWORD = "{{ .Values.policyPassword }}"
+GLOBAL_POLICY_HEALTHCHECK_USERNAME = "{{ .Values.policyComponentUsername }}"
+GLOBAL_POLICY_HEALTHCHECK_PASSWORD = "{{ .Values.policyComponentPassword }}"
 # portal info - everything is from the private oam network (also called onap private network)
 GLOBAL_PORTAL_SERVER_PROTOCOL = "http"
 GLOBAL_PORTAL_SERVER_PORT = "8989"
