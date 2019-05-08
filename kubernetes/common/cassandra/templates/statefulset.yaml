@@ -54,6 +54,9 @@ spec:
           - name: localtime
             mountPath: /etc/localtime
             readOnly: true
+          - name: cassandra-entrypoint
+            mountPath: /docker-entrypoint.sh
+            subPath: docker-entrypoint.sh
           {{- range $key, $value := .Values.configOverrides }}
           - name: cassandra-config-{{ $key | replace "." "-" }}
             mountPath: /etc/cassandra/{{ $key }}
@@ -110,6 +113,8 @@ spec:
             value: {{ default "true" .Values.config.start_rpc | quote }}
           - name: CASSANDRA_ENDPOINT_SNITCH
             value: {{ default "GossipingPropertyFileSnitch" .Values.config.endpoint_snitch | quote }}
+          - name: CASSANDRA_AUTHENTICATOR
+            value: {{ default "PasswordAuthenticator" .Values.config.authenticator | quote }}
           - name: POD_IP
             valueFrom:
               fieldRef:
@@ -141,6 +146,10 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-configOverrides
       {{- end }}
+      - name: cassandra-entrypoint
+        configMap:
+          name: {{ include "common.fullname" . }}-entrypoint
+          defaultMode: 0755
   {{- if not .Values.persistence.enabled }}
       - name: cassandra-data
         emptyDir: {}
