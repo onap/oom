@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-awx:
-  enabled: true
-netbox:
-  enabled: true
+DATABASE_USER={{ .Values.config.postgresUser }}
+DATABASE_NAME={{ .Values.config.postgresDB }}
+DATABASE_HOST=awx-postgresql
+DATABASE_PORT=5432
+DATABASE_PASSWORD={{ .Values.config.postgresPassword }}
+MEMCACHED_HOST=localhost
+RABBITMQ_HOST=localhost
+AWX_ADMIN_USER={{ .Values.config.awxAdminUser }}
+AWX_ADMIN_PASSWORD={{ .Values.config.awxAdminPassword }}

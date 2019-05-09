@@ -1,0 +1,146 @@
+{{/*
+# Copyright © 2019 Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-init-mgnt
+  namespace: {{ include "common.namespace" . }}
+data:
+  entrypoint: |
+    #/bin/sh
+
+    awx-manage migrate --noinput
+    if [[ `echo 'from django.contrib.auth.models import User; nsu = User.objects.filter(is_superuser=True).count(); exit(0 if nsu > 0 else 1)' | awx-manage shell` > 0 ]]
+    then
+      echo 'from django.contrib.auth.models import User; User.objects.create_superuser('{{ .Values.config.awxAdminUser }}', '{{ .Values.config.awxAdminEmail }}', '{{ .Values.config.awxAdminPassword }}')' | awx-manage shell
+      awx-manage update_password --username='{{ .Values.config.awxAdminUser }}' --password='{{ .Values.config.awxAdminPassword }}'
+    fi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-settings
+  namespace: {{ include "common.namespace" . }}
+data:
+  awx_settings: |
+    import os
+    import socket
+    ADMINS = ()
+
+    AWX_PROOT_ENABLED = True
+
+    # Automatically deprovision pods that go offline
+    AWX_AUTO_DEPROVISION_INSTANCES = True
+
+    SYSTEM_TASK_ABS_CPU = 6
+    SYSTEM_TASK_ABS_MEM = 20
+
+    INSIGHTS_URL_BASE = "https://example.org"
+
+    #Autoprovisioning should replace this
+    CLUSTER_HOST_ID = socket.gethostname()
+    SYSTEM_UUID = '00000000-0000-0000-0000-000000000000'
+
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
+    REMOTE_HOST_HEADERS = ['HTTP_X_FORWARDED_FOR']
+
+    STATIC_ROOT = '/var/lib/awx/public/static'
+    PROJECTS_ROOT = '/var/lib/awx/projects'
+    JOBOUTPUT_ROOT = '/var/lib/awx/job_status'
+    SECRET_KEY = open('/etc/tower/SECRET_KEY', 'rb').read().strip()
+    ALLOWED_HOSTS = ['*']
+    INTERNAL_API_URL = 'http://127.0.0.1:8052'
+    SERVER_EMAIL = 'root@localhost'
+    DEFAULT_FROM_EMAIL = 'webmaster@localhost'
+    EMAIL_SUBJECT_PREFIX = '[AWX] '
+    EMAIL_HOST = 'localhost'
+    EMAIL_PORT = 25
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''
+    EMAIL_USE_TLS = False
+
+    LOGGING['handlers']['console'] = {
+        '()': 'logging.StreamHandler',
+        'level': 'DEBUG',
+        'formatter': 'simple',
+    }
+
+    LOGGING['loggers']['django.request']['handlers'] = ['console']
+    LOGGING['loggers']['rest_framework.request']['handlers'] = ['console']
+    LOGGING['loggers']['awx']['handlers'] = ['console']
+    LOGGING['loggers']['awx.main.commands.run_callback_receiver']['handlers'] = ['console']
+    LOGGING['loggers']['awx.main.commands.inventory_import']['handlers'] = ['console']
+    LOGGING['loggers']['awx.main.tasks']['handlers'] = ['console']
+    LOGGING['loggers']['awx.main.scheduler']['handlers'] = ['console']
+    LOGGING['loggers']['django_auth_ldap']['handlers'] = ['console']
+    LOGGING['loggers']['social']['handlers'] = ['console']
+    LOGGING['loggers']['system_tracking_migrations']['handlers'] = ['console']
+    LOGGING['loggers']['rbac_migrations']['handlers'] = ['console']
+    LOGGING['loggers']['awx.isolated.manager.playbooks']['handlers'] = ['console']
+    LOGGING['handlers']['callback_receiver'] = {'class': 'logging.NullHandler'}
+    LOGGING['handlers']['task_system'] = {'class': 'logging.NullHandler'}
+    LOGGING['handlers']['tower_warnings'] = {'class': 'logging.NullHandler'}
+    LOGGING['handlers']['rbac_migrations'] = {'class': 'logging.NullHandler'}
+    LOGGING['handlers']['system_tracking_migrations'] = {'class': 'logging.NullHandler'}
+    LOGGING['handlers']['management_playbooks'] = {'class': 'logging.NullHandler'}
+
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+            'LOCATION': '{}:{}'.format("localhost", "11211")
+        },
+        'ephemeral': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        },
+    }
+
+    USE_X_FORWARDED_PORT = True
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-rabbitmq
+  namespace: {{ include "common.namespace" . }}
+data:
+  enabled_plugins: |
+    [rabbitmq_management,rabbitmq_peer_discovery_k8s].
+  rabbitmq.conf: |
+    ## Clustering
+    management.load_definitions = /etc/rabbitmq/rabbitmq_definitions.json
+    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+    cluster_formation.k8s.host = kubernetes.default.svc
+    cluster_formation.k8s.address_type = ip
+    cluster_formation.node_cleanup.interval = 10
+    cluster_formation.node_cleanup.only_log_warning = false
+    cluster_partition_handling = autoheal
+    ## queue master locator
+    queue_master_locator=min-masters
+    ## enable guest user
+    loopback_users.guest = false
+  rabbitmq_definitions.json: |
+    {
+      "users":[{"name": "{{ .Values.config.rabbitmqUser }}", "password": "{{ .Values.config.rabbitmqPassword }}", "tags": ""}],
+      "permissions":[
+        {"user":"{{ .Values.config.rabbitmqUser }}","vhost":"{{ .Values.config.rabbitmqVhost }}","configure":".*","write":".*","read":".*"}
+      ],
+      "vhosts":[{"name":"{{ .Values.config.rabbitmqVhost }}"}],
+      "policies":[
+          {"vhost":"{{ .Values.config.rabbitmqVhost }}","name":"ha-all","pattern":".*","definition":{"ha-mode":"all","ha-sync-mode":"automatic"}}
+      ]
+    }
