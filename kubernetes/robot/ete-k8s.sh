@@ -15,44 +15,44 @@
 #!/bin/bash
 
 #
-# Run the testsuite for the passed tag. Valid tags are ete, health, closedloop, instantiate
+# Run the testsuite for the passed tag. Valid tags are listed in usage help
 # Please clean up logs when you are done...
-# Note: Do not run multiple concurrent ete.sh as the --display is not parameterized and tests will collide
+# Note: Do not run multiple concurrent ete-k8s.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ] || [ "$2" == "" ]; then
-   echo "Usage: ete-k8s.sh [namespace] [ health | healthdist | distribute | instantiate | instantiateVFWCL | instantiateDemoVFWCL |  | portal ]"
+   echo "Usage: ete-k8s.sh [namespace] [tag]"
    echo ""
-   echo "  List of test case tags (filename for intent: tag) "
-   echo " "
-   echo "  cds.robot: cds "
-   echo " "
-   echo "  clamp.robot: clamp "
-   echo " "
-   echo "  demo.robot: InitDemo, InitCustomer , APPCCDTPreloadDemo, APPCMountPointDemo, DistributeDemoVFWDT, DistributeVFWNG,  "
-   echo "              InitDistribution, PreloadDemo, deleteVNF, heatbridge, instantiateDemoVFWCL, instantiateVFW, instantiateVFWCL, instantiateVFWDT "
-   echo " "
-   echo "  health-check.robot: health , core, small, medium, 3rdparty, api,  datarouter, externalapi, health-aaf, health-aai, health-appc, "
-   echo "                      health-clamp, health-cli, health-dcae, health-dmaap, health-log, health-modeling, health-msb, "
-   echo "                      health-multicloud, health-oof, health-policy, health-pomba, health-portal, health-sdc, health-sdnc, "
-   echo "                      health-so, health-uui, health-vfc, health-vid, health-vnfsdk, healthdist, healthlogin, healthmr, "
-   echo "                      healthportalapp, multicloud, oom "
-   echo " "
-   echo " hvves.robot: :HVVES, ete "
-   echo " "
-   echo " model-distribution-vcpe.robot: distributevCPEResCust "
-   echo " "
-   echo " model-distribution.robot: distribute, distributeVFWDT, distributeVLB "
-   echo " "
-   echo " oof-*.robot: cmso , has, homing "
-   echo " "
-   echo " pnf-registration.robot: ete, pnf_registrate "
-   echo " "
+   echo "  List of test case tags (filename for intent: tag)"
+   echo ""
+   echo "  cds.robot: cds"
+   echo ""
+   echo "  clamp.robot: clamp"
+   echo ""
+   echo "  demo.robot: InitDemo, InitCustomer, APPCCDTPreloadDemo, APPCMountPointDemo, DistributeDemoVFWDT, DistributeVFWNG,"
+   echo "              InitDistribution, PreloadDemo, deleteVNF, heatbridge, instantiateDemoVFWCL, instantiateVFW, instantiateVFWCL, instantiateVFWDT"
+   echo ""
+   echo "  health-check.robot: health, core, small, medium, 3rdparty, api, datarouter, externalapi, health-aaf, health-aai, health-appc,"
+   echo "                      health-clamp, health-cli, health-dcae, health-dmaap, health-log, health-modeling, health-msb,"
+   echo "                      health-multicloud, health-oof, health-policy, health-pomba, health-portal, health-sdc, health-sdnc,"
+   echo "                      health-so, health-uui, health-vfc, health-vid, health-vnfsdk, healthdist, healthlogin, healthmr,"
+   echo "                      healthportalapp, multicloud, oom"
+   echo ""
+   echo " hvves.robot: HVVES, ete"
+   echo ""
+   echo " model-distribution-vcpe.robot: distributevCPEResCust"
+   echo ""
+   echo " model-distribution.robot: distribute, distributeVFWDT, distributeVLB"
+   echo ""
+   echo " oof-*.robot: cmso, has, homing"
+   echo ""
+   echo " pnf-registration.robot: ete, pnf_registrate"
+   echo ""
    echo " post-install-tests.robot dmaapacl, postinstall"
-   echo " "
-   echo " update_onap_page.robot: UpdateWebPage "
-   echo " "
-   echo " vnf-orchestration-direct-so.robot:  instantiateVFWdirectso "
-   echo " "
+   echo ""
+   echo " update_onap_page.robot: UpdateWebPage"
+   echo ""
+   echo " vnf-orchestration-direct-so.robot: instantiateVFWdirectso"
+   echo ""
    echo " vnf-orchestration.robot: instantiate, instantiateNoDelete, stability72hr"
    exit
 fi
@@ -62,7 +62,6 @@ set -x
 export NAMESPACE="$1"
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
-
 
 TAGS="-i $2"
 
