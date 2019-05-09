@@ -23,6 +23,11 @@ This guide provides instructions on how to setup a Highly-Available Kubernetes C
 For this, we are hosting our cluster on OpenStack VMs and using the Rancher Kubernetes Engine (RKE)
 to deploy and manage our Kubernetes Cluster.
 
+.. contents::
+   :depth: 1
+   :local:
+..
+
 The result at the end of this tutorial will be:
 
 *1.* Creation of a Key Pair to use with Open Stack and RKE
@@ -42,11 +47,6 @@ The result at the end of this tutorial will be:
 There are many ways one can execute the above steps. Including automation through the use of HEAT to setup the OpenStack VMs.
 To better illustrate the steps involved, we have captured the manual creation of such an environment using the ONAP Wind River Open Lab.
 
-.. contents::
-   :depth: 1
-   :local:
-..
-
 Create Key Pair
 ===============
 A Key Pair is required to access the created OpenStack VMs and will be used by
@@ -63,9 +63,9 @@ For the purpose of this guide, we will assume a new local key called "onap-key"
 has been downloaded and is copied into **~/.ssh/**, from which it can be referenced.
 
 Example:
-  $ mv onap-key ~/.ssh
+  > mv onap-key ~/.ssh
 
-  $ chmod 600 ~/.ssh/onap-key
+  > chmod 600 ~/.ssh/onap-key
 
 
 Create Kubernetes Control Plane VMs
@@ -252,11 +252,12 @@ Run RKE
 -------
 From within the same directory as the cluster.yml file, simply execute:
 
-  $ rke up
+  > rke up
 
 The output will look something like:
 
 .. code-block::
+
   INFO[0000] Initiating Kubernetes cluster
   INFO[0000] [certificates] Generating admin certificates and kubeconfig
   INFO[0000] Successfully Deployed state file at [./cluster.rkestate]
@@ -306,15 +307,16 @@ https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/darwin/amd
 
 Validate deployment
 -------------------
-  $ cp kube_config_cluster.yml ~/.kube/config.onap
+  > cp kube_config_cluster.yml ~/.kube/config.onap
 
-  $ export KUBECONFIG=~/.kube/config.onap
+  > export KUBECONFIG=~/.kube/config.onap
 
-  $ kubectl config use-context onap
+  > kubectl config use-context onap
 
-  $ kubectl get nodes -o=wide
+  > kubectl get nodes -o=wide
 
 .. code-block::
+
   NAME             STATUS   ROLES               AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
   onap-control-1   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
   onap-control-2   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
@@ -336,13 +338,22 @@ Validate deployment
 Install Helm
 ============
 
-  $ kubectl -n kube-system create serviceaccount tiller
+Example Helm client install on Linux:
+  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.12.3-linux-amd64.tar.gz
 
-  $ kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+  > tar -zxvf helm-v2.12.3-linux-amd64.tar.gz
 
-  $ helm init --service-account tiller
+  > sudo mv linux-amd64/helm /usr/local/bin/helm
 
-  $ kubectl -n kube-system  rollout status deploy/tiller-deploy
+Initialize Kubernetes Cluster for use by Helm
+---------------------------------------------
+  > kubectl -n kube-system create serviceaccount tiller
+
+  > kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+
+  > helm init --service-account tiller
+
+  > kubectl -n kube-system  rollout status deploy/tiller-deploy
 
 
 
@@ -438,12 +449,12 @@ Click :download:`slave_nfs_node.sh <slave_nfs_node.sh>` to download the script.
 The master_nfs_node.sh script runs in the NFS Master node and needs the list of
 NFS Slave nodes as input, e.g.::
 
-    $ sudo ./master_nfs_node.sh node1_ip node2_ip ... nodeN_ip
+    > sudo ./master_nfs_node.sh node1_ip node2_ip ... nodeN_ip
 
 The slave_nfs_node.sh script runs in each NFS Slave node and needs the IP of
 the NFS Master node as input, e.g.::
 
-    $ sudo ./slave_nfs_node.sh master_node_ip
+    > sudo ./slave_nfs_node.sh master_node_ip
 
 
 ONAP Deployment via OOM

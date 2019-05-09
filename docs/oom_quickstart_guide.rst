@@ -25,9 +25,13 @@ available), follow the following instructions to deploy ONAP.
   > sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
 
 
-**Step 3.** Customize the helm charts like onap.values.yaml or an override.yaml
-like integration-override.yaml file to suit your deployment with items like the
+**Step 3.** Customize the helm charts like oom/kubernetes/onap/values.yaml or an override
+file like onap-all.yaml, onap-vfw.yaml or openstack.yaml file to suit your deployment with items like the
 OpenStack tenant information.
+
+.. note::
+  Standard and example override files (e.g. onap-all.yaml, openstack.yaml) can be found in 
+  the oom/kubernetes/onap/resources/overrides/ directory.
 
 
  a. You may want to selectively enable or disable ONAP components by changing
@@ -35,11 +39,11 @@ OpenStack tenant information.
 
 
  b. Encyrpt the OpenStack password using the shell tool for robot and put it in
-    the robot helm charts or robot section of integration-override.yaml
+    the robot helm charts or robot section of openstack.yaml
 
 
  c. Encrypt the OpenStack password using the java based script for SO helm charts
-    or SO section of integration-override.yaml.
+    or SO section of openstack.yaml.
 
 
  d. Update the OpenStack parameters that will be used by robot, SO and APPC helm
@@ -63,9 +67,9 @@ openssl algorithm that works with the python based Robot Framework.
 .. note::
   To generate ROBOT openStackEncryptedPasswordHere :
 
-  ``root@olc-rancher:~# cd so/resources/config/mso/``
+  ``cd so/resources/config/mso/``
 
-  ``root@olc-rancher:~/oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
+  ``/oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
 
 c. Generating SO Encrypted Password:
 The SO Encrypted Password uses a java based encryption utility since the
@@ -120,20 +124,24 @@ follows::
 **Step 8.** Once the repo is setup, installation of ONAP can be done with a
 single command
 
- a. If you updated the values directly use this command::
+.. note::
+  The --timeout 900 is currently required in Dublin to address long running initialization tasks
+  for DMaaP and SO. Without this timeout value both applications may fail to deploy.
 
-    > helm deploy dev local/onap --namespace onap
+ a. To deploy all ONAP applications use this command::
 
+    > cd oom/kubernetes
+    > helm deploy dev local/onap --namespace onap -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
 
- b. If you are using an integration-override.yaml file use this command::
+ b. If you are using a custom override (e.g. integration-override.yaml) use this command::
 
-    > helm deploy dev local/onap -f /root/integration-override.yaml --namespace onap
+    > helm deploy dev local/onap -f /root/integration-override.yaml --namespace onap --timeout 900
 
 
  c. If you have a slower cloud environment you may want to use the public-cloud.yaml
     which has longer delay intervals on database updates.::
 
-    > helm deploy dev local/onap -f /root/oom/kubernetes/onap/resources/environments/public-cloud.yaml -f /root/integration-override.yaml --namespace onap
+    > helm deploy dev local/onap -f /root/oom/kubernetes/onap/resources/environments/public-cloud.yaml -f /root/integration-override.yaml --namespace onap --timeout 900
 
 
 **Step 9.** Commands to interact with the OOM installation
@@ -141,7 +149,7 @@ single command
 Use the following to monitor your deployment and determine when ONAP is
 ready for use::
 
-  > kubectl get pods --all-namespaces -o=wide
+  > kubectl get pods -n onap -o=wide
 
 Undeploying onap can be done using the following command::
 
