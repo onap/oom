@@ -17,7 +17,6 @@
 #
 # Run the testsuite for the passed tag. Valid tags are listed in usage help
 # Please clean up logs when you are done...
-# Note: Do not run multiple concurrent ete-k8s.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ] || [ "$2" == "" ]; then
    echo "Usage: ete-k8s.sh [namespace] [tag]"

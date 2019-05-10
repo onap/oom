@@ -15,12 +15,11 @@
 #!/bin/bash
 
 #
-# Run the health-check testsuites for the tags discovered by helm list 
+# Run the health-check testsuites for the tags discovered by helm list
 # Please clean up logs when you are done...
-# Note: Do not run multiple concurrent eteHelm-k8s.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ] ;  then
-   echo "Usage: eteHelm-k8s.sh namespace"
+   echo "Usage: eteHelm-k8s.sh [namespace]"
    echo " list projects via helm list and runs health-check with those tags except dev and dev-consul"
    exit
 fi
