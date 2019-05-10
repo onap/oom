@@ -17,7 +17,6 @@
 #
 # Run the health-check testsuites for the tags discovered by helm list 
 # Please clean up logs when you are done...
-# Note: Do not run multiple concurrent eteHelm-k8s.sh as the --display is not parameterized and tests will collide
 #
 if [ "$1" == "" ] ;  then
    echo "Usage: eteHelm-k8s.sh namespace"
