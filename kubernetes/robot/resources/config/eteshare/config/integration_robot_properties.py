@@ -50,11 +50,22 @@ GLOBAL_DCAE_SERVER_PROTOCOL = "http"
 GLOBAL_DCAE_HEALTH_SERVER_PORT = "80"
 GLOBAL_DCAE_USERNAME = '{{ .Values.dcaeUsername }}'
 GLOBAL_DCAE_PASSWORD = '{{ .Values.dcaePassword}}'
+# dcae hv-ves info
+GLOBAL_DCAE_HVVES_SERVER_NAME = 'dcae-hv-ves-collector.{{include "common.namespace" .}}'
+GLOBAL_DCAE_HVVES_SERVER_PORT = "6061"
 # data router info - everything is from the private oam network (also called onap private network)
 GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = "http"
 GLOBAL_DMAAP_DR_PROV_SERVER_PORT = "8080"
 GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = "http"
 GLOBAL_DMAAP_DR_NODE_SERVER_PORT = "8080"
+# dmaap message router info
+GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_NAME = 'message-router.{{include "common.namespace" .}}'
+GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_PORT = "3904"
+# dmaap kafka info
+GLOBAL_DMAAP_KAFKA_SERVER_NAME = 'message-router-kafka.{{include "common.namespace" .}}'
+GLOBAL_DMAAP_KAFKA_SERVER_PORT = "9092"
+GLOBAL_DMAAP_KAFKA_JAAS_USERNAME = '{{ .Values.kafkaJaasUsername }}'
+GLOBAL_DMAAP_KAFKA_JAAS_PASSWORD = '{{ .Values.kafkaJaasPassword }}'
 # DROOL server port and credentials
 GLOBAL_DROOLS_SERVER_PORT = "9696"
 GLOBAL_DROOLS_USERNAME = '{{ .Values.droolsUsername }}'
