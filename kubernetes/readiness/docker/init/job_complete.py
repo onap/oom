@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import time
+import random
 
 from kubernetes import client
 
@@ -91,7 +92,8 @@ def main(argv):
                 log.warning("timed out waiting for '" + job_name + "' to be completed")
                 exit(1)
             else:
-                time.sleep(5)
+                # spread in time potentially parallel execution in multiple containers
+                time.sleep(random.randint(5, 11))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
