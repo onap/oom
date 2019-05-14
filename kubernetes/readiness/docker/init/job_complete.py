@@ -20,7 +20,8 @@ with open(token_path, 'r') as token_file:
 # setup logging
 log = logging.getLogger(__name__)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 handler.setLevel(logging.INFO)
 log.addHandler(handler)
 log.setLevel(logging.INFO)
@@ -54,17 +55,22 @@ def is_job_complete(job_name):
 
 DEF_TIMEOUT = 10
 DESCRIPTION = "Kubernetes container job complete check utility"
-USAGE = "Usage: job_complete.py [-t <timeout>] -j <job_name> [-j <job_name> ...]\n" \
+USAGE = "Usage: job_complete.py [-t <timeout>] -j <job_name> " \
+        "[-j <job_name> ...]\n" \
         "where\n" \
-        "<timeout> - wait for container job complete timeout in min, default is " + str(DEF_TIMEOUT) + "\n" \
+        "<timeout> - wait for container job complete timeout in min, " \
+        "default is " + str(DEF_TIMEOUT) + "\n" \
         "<job_name> - name of the job to wait for\n"
+
 
 def main(argv):
     # args are a list of job names
     job_names = []
     timeout = DEF_TIMEOUT
     try:
-        opts, args = getopt.getopt(argv, "hj:t:", ["job-name=", "timeout=", "help"])
+        opts, args = getopt.getopt(argv, "hj:t:", ["job-name=",
+                                                   "timeout=",
+                                                   "help"])
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print("%s\n\n%s" % (DESCRIPTION, USAGE))
@@ -89,11 +95,14 @@ def main(argv):
             if complete is True:
                 break
             elif time.time() > timeout:
-                log.warning("timed out waiting for '" + job_name + "' to be completed")
+                log.warning("timed out waiting for '" + job_name +
+                            "' to be completed")
                 exit(1)
             else:
-                # spread in time potentially parallel execution in multiple containers
+                # spread in time potentially parallel execution in multiple
+                # containers
                 time.sleep(random.randint(5, 11))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
