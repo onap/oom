@@ -54,13 +54,13 @@ GLOBAL_DCAE_PASSWORD = '{{ .Values.dcaePassword}}'
 GLOBAL_DCAE_HVVES_SERVER_NAME = 'dcae-hv-ves-collector.{{include "common.namespace" .}}'
 GLOBAL_DCAE_HVVES_SERVER_PORT = "6061"
 # data router info - everything is from the private oam network (also called onap private network)
-GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = "http"
-GLOBAL_DMAAP_DR_PROV_SERVER_PORT = "8080"
-GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = "http"
-GLOBAL_DMAAP_DR_NODE_SERVER_PORT = "8080"
+GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = "https"
+GLOBAL_DMAAP_DR_PROV_SERVER_PORT = "8443"
+GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = "https"
+GLOBAL_DMAAP_DR_NODE_SERVER_PORT = "8443"
 # dmaap message router info
 GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_NAME = 'message-router.{{include "common.namespace" .}}'
-GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_PORT = "3904"
+GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_PORT = "3905"
 # dmaap kafka info
 GLOBAL_DMAAP_KAFKA_SERVER_NAME = 'message-router-kafka.{{include "common.namespace" .}}'
 GLOBAL_DMAAP_KAFKA_SERVER_PORT = "9092"
@@ -93,8 +93,8 @@ GLOBAL_POMBA_CONTEXTAGGREGATOR_PORT = "9529"
 GLOBAL_MSB_SERVER_PROTOCOL = "http"
 GLOBAL_MSB_SERVER_PORT = "80"
 # message router info - everything is from the private oam network (also called onap private network)
-GLOBAL_MR_SERVER_PROTOCOL = "http"
-GLOBAL_MR_SERVER_PORT = "3904"
+GLOBAL_MR_SERVER_PROTOCOL = "https"
+GLOBAL_MR_SERVER_PORT = "3905"
 # bus controller info
 GLOBAL_BC_HTTPS_SERVER_PORT = "8443"
 GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
