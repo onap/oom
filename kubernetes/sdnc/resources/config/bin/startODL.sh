@@ -118,8 +118,8 @@ SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SDNC_BIN=${SDNC_BIN:-/opt/onap/sdnc/bin}
 CCSDK_HOME=${CCSDK_HOME:-/opt/onap/ccsdk}
 SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
-MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.dbServiceName}}.{{.Release.Namespace}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.global.mariadbGalera.mariadbRootPassword}}}
+MYSQL_HOST=${MYSQL_HOST:-{{.Values.global.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
 DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
@@ -147,7 +147,7 @@ then
     mkdir -p ${DBINIT_DIR}
 fi
 
-if [ ! -f ${DBINIT_DIR}/.installed ]
+if [ ! -f ${DBINIT_DIR}/.installed ] {{if .Values.global.migration.enabled }}|| true{{end}}
 then
         echo "Installing SDNC database"
         ${SDNC_HOME}/bin/installSdncDb.sh
@@ -182,4 +182,3 @@ nohup python ${SDNC_BIN}/installCerts.py &
 
 
 exec ${ODL_HOME}/bin/karaf server
-

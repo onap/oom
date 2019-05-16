@@ -12,12 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+global:
+  # image repositories
+  repository: nexus3.onap.org:10001
+
+  # readiness check
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  persistence:
+    mountPath: /dockerdata-nfs
+
+  mariadbGalera:
+    localCluster: false
+    serviceName: mariadb-galera
+    mariadbRootPassword: secretpassword
+  migration:
+    enabled: false
+
+image: library/mariadb:10
+pullPolicy: Always
+
 mariadb-galera:
   config:
-      userName: sdnctl
-      userPassword: sdnctl
-      mariadbRootPassword: sdnctl
-      mysqlDatabase: sdnctl
+      userName: cdssdnctl
+      userPassword: cdssdnctl
+      mariadbRootPassword: cdssdnctl
+      mysqlDatabase: cdssdnctl
   nameOverride: cds-db
   service:
     name: cds-db
@@ -26,3 +46,33 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: cds/data
+
+config:
+  migration:
+    dbName: sdnctl
+    dbHost: controller-blueprints-db #DB host to take backup from
+    dbUser: sdnctl # of source DB
+    dbPassword: sdnctl #root password of source DB
+    dbPort: 3306 #Of source DB
+
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sdnc/migration
+

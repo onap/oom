@@ -31,11 +31,19 @@ spec:
         release: {{ .Release.Name }}
     spec:
       initContainers:
+      {{ if or ( not .Values.global.mariadbGalera.localCluster ) ( .Values.global.migration.enabled ) }}
+      - command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ .Release.Name }}-cds-galera-config
+      {{ else }}
       - command:
         - /root/ready.py
         args:
         - --container-name
         - cds-db
+      {{ end }}
         env:
         - name: NAMESPACE
           valueFrom:

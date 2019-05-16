@@ -37,7 +37,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - {{ .Values.config.mariadbGalera.chartName }}
+        - {{ .Values.global.mariadbGalera.chartName }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -46,7 +46,7 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness   
+        name: {{ include "common.name" . }}-readiness
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certpersistence.certPath }}"]
@@ -102,7 +102,7 @@ spec:
             - name: SDNC_REPLICAS
               value: "{{ .Values.replicaCount }}"
             - name: MYSQL_HOST
-              value: "{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}"
+              value: "{{.Values.global.mariadbGalera.serviceName}}.{{.Release.Namespace}}"
             - name: JAVA_HOME
               value: "{{ .Values.config.javaHome}}"
           volumeMounts:
@@ -145,6 +145,12 @@ spec:
             name: logs
           - mountPath: {{ .Values.certpersistence.certPath }}
             name: {{ include "common.fullname" . }}-certs
+          {{ if .Values.global.migration.enabled }}
+          - mountPath: {{ .Values.config.migration.mountPath }}
+            name: {{ include "common.fullname" . }}-migration
+          - mountPath: {{ .Values.config.migration.mdsalMountPath }}
+            name: {{ include "common.fullname" . }}-mdsal-migration
+          {{ end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -192,6 +198,14 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-properties
             defaultMode: 0644
+        {{ if .Values.global.migration.enabled }}
+        - name: {{ include "common.fullname" . }}-migration
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-migration
+        - name: {{ include "common.fullname" . }}-mdsal-migration
+          hostPath:
+            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.config.migration.persistence.mountSubPath }}/mdsal
+        {{ end }}
         - name: {{ include "common.fullname" . }}-certs
   {{ if .Values.certpersistence.enabled }}
           persistentVolumeClaim:

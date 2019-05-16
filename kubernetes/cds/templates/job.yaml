@@ -1,0 +1,195 @@
+# Copyright © 2018 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-galera-config
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-job
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{ if .Values.global.migration.enabled }}
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+  {{ end }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        {{ if not .Values.global.mariadbGalera.localCluster }}
+        - mariadb-galera
+        {{ else }}
+        - {{ index .Values "mariadb-galera" "nameOverride" }}
+        {{ end }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - |
+          {{ if not .Values.global.migration.enabled }}
+          mysql -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{ end }} -u root -p${MYSQL_ROOT_PASSWORD} {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }} -e exit > /dev/null 2>&1
+          rc=$?
+          {{ else }}
+          rc=1
+          {{ end }}
+          cat > /tmp/cds.sql << EOF
+          DROP DATABASE IF EXISTS {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }};
+          CREATE DATABASE /*!32312 IF NOT EXISTS*/ {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }} /*!40100 DEFAULT CHARACTER SET latin1 */;
+          DROP USER IF EXISTS {{ index .Values "mariadb-galera" "config" "userName" }};
+          CREATE USER {{ index .Values "mariadb-galera" "config" "userName" }};
+          GRANT ALL on {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}.* to {{ index .Values "mariadb-galera" "config" "userName" }} identified by '${DB_PASSWORD}' with GRANT OPTION;
+          FLUSH PRIVILEGES;
+          EOF
+
+          if [ $rc -eq 0 ]; then
+            echo "Database already initialized!!!"
+          else
+            echo "Creating database . . ."
+            mysql -vv -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{ end }} -u root -p${MYSQL_ROOT_PASSWORD} < /tmp/cds.sql || exit 1
+          fi
+          {{ if .Values.global.migration.enabled }}
+          echo "Importing backup"
+          mysql -vv -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{ end }} -u root -p${MYSQL_ROOT_PASSWORD} {{ index .Values "mariadb-galera" "config" "userName" }} < `ls -tr /backup/backup-cds-* | tail -1` || exit 1
+          echo "Running Migration"
+          mysql -vv -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{ end }} -u root -p${MYSQL_ROOT_PASSWORD} {{ index .Values "mariadb-galera" "config" "userName" }} < /data/cds_migration.sql || exit 1
+          {{ end }}
+          echo "Created database . . ."
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              {{ if .Values.global.mariadbGalera.localCluster }}
+              key: db-root-password
+              {{ else }}
+              key: shared-db-password
+              {{ end }}
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-password
+        image: "{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-job
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        {{ if .Values.global.migration.enabled }}
+        - name: backup-storage
+          mountPath: /backup
+        - name: migration-script
+          mountPath: /data/cds_migration.sql
+          subPath: cds_migration.sql
+        {{ end }}
+      restartPolicy: Never
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      {{ if .Values.global.migration.enabled }}
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      - name: migration-script
+        configMap:
+          name: {{ include "common.fullname" . }}-migration-script
+      {{ end }}      
+{{- if .Values.global.migration.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-backup
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      containers:
+      - name: {{ include "common.fullname" . }}
+        image: "{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: DB_HOST
+          value: {{ .Values.config.migration.dbHost }}
+        - name: DB_USER
+          value: {{ .Values.config.migration.dbUser }}
+        - name: DB_PORT
+          value: "{{ .Values.config.migration.dbPort }}"
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-migration
+              key: db-root-password-backup
+        command:
+        - /bin/bash
+        - -c
+        - mysqldump -vv -u${DB_USER} -p${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --single-transaction --quick --lock-tables=false {{ .Values.config.migration.dbName }} > /backup/backup-cds-`date +%s`.sql
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: backup-storage
+          mountPath: /backup
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+#      securityContext:
+#        runAsUser: 0
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      restartPolicy: Never
+{{ end }}

@@ -35,7 +35,11 @@ spec:
         - /root/ready.py
         args:
         - --container-name
+        {{ if .Values.global.mariadbGalera.localCluster }}
         - {{ index .Values "mariadb-galera" "nameOverride" }}
+        {{ else }}
+        - mariadb-galera
+        {{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,6 +49,61 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{ if or ( not .Values.global.mariadbGalera.localCluster ) ( .Values.global.migration.enabled ) }}
+      - command:
+        - /bin/bash
+        - -c
+        - |
+          {{ if not .Values.global.migration.enabled }}
+          mysql -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{end }} --user=root --password=${MYSQL_ROOT_PASSWORD} {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }} -e exit > /dev/null 2>&1
+          rc=$?
+          {{ else }}
+          rc=1
+          {{ end }}
+          cat > /tmp/nengen.sql << EOF
+          DROP DATABASE IF EXISTS {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }};
+          CREATE DATABASE /*!32312 IF NOT EXISTS*/ {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }} /*!40100 DEFAULT CHARACTER SET latin1 */;
+          DROP USER IF EXISTS {{ index .Values "mariadb-galera" "config" "userName" }};
+          CREATE USER {{ index .Values "mariadb-galera" "config" "userName" }};
+          GRANT ALL on {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}.* to {{ index .Values "mariadb-galera" "config" "userName" }} identified by '${DB_PASSWORD}' with GRANT OPTION;
+          FLUSH PRIVILEGES;
+          EOF
+
+          if [ $rc -eq 0 ]; then
+            echo "Database already initialized!!!"
+          else
+            echo "Creating database . . ."
+            mysql -vv -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{end }} -u root -p${MYSQL_ROOT_PASSWORD} < /tmp/nengen.sql || exit 1
+          fi
+          {{ if .Values.global.migration.enabled }}
+          echo "Running migration"
+          mysql -vv -h {{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{end }} -u root -p${MYSQL_ROOT_PASSWORD} {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }} < `ls -tr /backup/backup-nengen* | tail -1` || exit 1
+          {{ end }}
+          echo "Created database . . ."
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              {{ if .Values.global.mariadbGalera.localCluster }}
+              key: db-root-password
+              {{ else }}
+              key: shared-db-password
+              {{ end }}
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-password
+        image: "{{ .Values.mariadb_image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-db-init
+        {{- if .Values.global.migration.enabled }}
+        volumeMounts:
+        - name: backup-storage
+          mountPath: /backup
+        {{ end }}
+      {{ end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -58,9 +117,10 @@ spec:
           valueFrom:
             secretKeyRef:
               name: {{ template "common.fullname" . }}
-              key: db-root-password
+              key: db-password
         - name: NENG_DB_URL
           value: {{ .Values.config.dbUrl }}
+          value: jdbc:mysql://{{ if .Values.global.mariadbGalera.localCluster }}{{ index .Values "mariadb-galera" "service" "name" }}{{ else }}{{ index .Values "global" "mariadbGalera" "serviceName" }}{{ end }}:3306/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
         - name: POL_CLIENT_AUTH
           value: "{{ .Values.config.polClientAuth }}"
         - name: POL_BASIC_AUTH
@@ -98,5 +158,10 @@ spec:
       - name: certs
         secret:
             secretName: {{ .Release.Name}}-aai-keystore
+      {{- if .Values.global.migration.enabled }}
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      {{ end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
