@@ -22,8 +22,8 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
-MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+MYSQL_HOST=${MYSQL_HOST:-{{.Values.global.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
+MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.global.mariadbGalera.mariadbRootPassword}}}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
 SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
@@ -32,14 +32,16 @@ SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
 
 # Create tablespace and user account
 mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} mysql <<-END
-CREATE DATABASE ${SDNC_DB_DATABASE};
-CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
-CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
-GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'localhost' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'%' WITH GRANT OPTION;
+DROP DATABASE IF EXISTS ${SDNC_DB_DATABASE};
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ ${SDNC_DB_DATABASE} /*!40100 DEFAULT CHARACTER SET latin1 */;
+DROP USER IF EXISTS ${SDNC_DB_USER};
+CREATE USER ${SDNC_DB_USER};
+GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
 commit;
 END
 
+{{if not .Values.global.migration.enabled}}
 # load schema
 if [ -f ${SDNC_HOME}/data/sdnctl.dump ]
 then
@@ -56,3 +58,7 @@ ${SDNC_HOME}/bin/addVnis.sh 100 199
 
 # Drop FK_NETWORK_MODEL foreign key as workaround for SDNC-291.
 ${SDNC_HOME}/bin/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
+{{else}}
+echo "Restoring the database"
+mysql -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < `ls -tr {{.Values.config.migration.mountPath}}/backup-sdnc* | tail -1`
+{{end}}

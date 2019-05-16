@@ -25,6 +25,14 @@ global:
   loggingImage: beats/filebeat:5.5.0
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera:
+    localCluster: false
+    serviceName: mariadb-galera
+    mariadbRootPassword: secretpassword
+    chartName: mariadb-galera
+  migration:
+    enabled: false
+    mdsal: false
 
 #################################################################
 # Application configuration defaults.
@@ -42,7 +50,6 @@ config:
   odlUid: 100
   odlGid: 101
   odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-  dbRootPassword: secretpassword
   dbSdnctlPassword: gamma
   enableClustering: true
   binDir: /opt/onap/sdnc/bin
@@ -60,16 +67,19 @@ config:
   ansibleServiceName: sdnc-ansible-server
   ansiblePort: 8000
   javaHome: /usr/lib/jvm/java-1.8-openjdk
-
-  #local Mariadb-galera cluster
-  localDBCluster: false
-
-  #Shared mariadb-galera details
-  mariadbGalera:
-    chartName: mariadb-galera
-    serviceName: mariadb-galera
-    internalPort: 3306
-
+  migration:
+    dbHost: sdnc-dbhost #DB host to take backup from
+    dbUser: root # of source DB
+    dbName: sdnctl
+    dbPassword: openECOMP1.0 #root password of source DB
+    dbPort: 3306 #Of source DB
+    mountPath: /opt/onap/sdnc/data/migration #Mount path for backed up data in SDNC POD
+    persistence:
+      mountSubPath: sdnc/migration
+    mdsal:
+      host: sdnc
+      port: 8282
+      mountPath: /opt/opendaylight/clustered-datastore-restore
 # dependency / sub-chart configuration
 cds:
   enabled: true
@@ -78,7 +88,6 @@ dmaap-listener:
   nameOverride: sdnc-dmaap-listener
   config:
     sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
     dmaapPort: 3904
     sdncPort: 8282
     configDir: /opt/onap/sdnc/data/properties
@@ -89,16 +98,13 @@ ueb-listener:
   config:
     sdncPort: 8282
     sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
     configDir: /opt/onap/sdnc/data/properties
     odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
 sdnc-portal:
   config:
     sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
     configDir: /opt/onap/sdnc/data/properties
-    dbRootPassword: secretpassword
     dbSdnctlPassword: gamma
     odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
@@ -106,15 +112,12 @@ sdnc-ansible-server:
   service:
     name: sdnc-ansible-server
     internalPort: 8000
-  config:
-    mysqlServiceName: mariadb-galera
 
 mariadb-galera:
-  nameOverride: sdnc-db
+  nameOverride: sdncdb
   service:
-    name: sdnc-dbhost
+    name: sdncdb
     internalPort: 3306
-  sdnctlPrefix: sdnc
   persistence:
     mountSubPath: sdnc/mariadb-galera
     enabled: true
