@@ -113,6 +113,7 @@ function enable_odl_cluster(){
 # Install SDN-C platform components if not already installed and start container
 
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
+ODL_ADMIN_USERNAME=${ODL_ADMIN_USERNAME:-admin}
 ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SDNC_BIN=${SDNC_BIN:-/opt/onap/sdnc/bin}
@@ -125,6 +126,7 @@ GEO_ENABLED=${GEO_ENABLED:-false}
 DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 SDNRWT=${SDNRWT:-false}
 SDNRWT_BOOTFEATURES=${SDNRWT_BOOTFEATURES:-sdnr-wt-feature-aggregator}
+export ODL_ADMIN_PASSWORD ODL_ADMIN_USERNAME
 
 echo "Settings:"
 echo "  ENABLE_ODL_CLUSTER=$ENABLE_ODL_CLUSTER"
