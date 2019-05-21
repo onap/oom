@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- define "rules.wf" -}}
+- http:
+    paths:
+      - path: /workflows/
+        backend:
+          serviceName: {{.Values.service.name}}
+          servicePort: {{.Values.service.internalPort}}
+{{- end -}}
+
 {{- if .Values.ingress.enabled }}
+
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -29,11 +39,21 @@ metadata:
 {{- end }}
 spec:
   rules:
-  - http:
-      paths:
-      - path: /workflows/
-        backend:
-          serviceName: {{.Values.service.name}}
-          servicePort: {{.Values.service.internalPort}}
+{{- if .Values.global.ingress.hosts}}
+{{- range .Values.global.ingress.hosts}}
+{{- include "rules.wf" $ | nindent 2}}
+{{- if .}}
+    host: {{. | quote}}
+{{- end}}
+{{- end}}
+  tls:
+  - hosts:
+{{- range .Values.global.ingress.hosts}}
+{{- if .}}
+    - {{ . | quote }}
+{{- end}}
+{{- end }}
+{{- else}}
+{{- include "rules.wf" . | nindent 2}}
+{{- end}}
 {{ end }}
-
