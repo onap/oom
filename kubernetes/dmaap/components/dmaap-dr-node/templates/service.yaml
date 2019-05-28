@@ -49,3 +49,44 @@ spec:
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
+---
+# External service mappings to central site
+{{ if .Values.global.edgeDeploy }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{.Values.global.dmaapDrProv.name}}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+ type: ClusterIP
+ ports:
+   - port: {{.Values.global.dmaapDrProv.externalPort}}
+     name: {{.Values.global.dmaapDrProv.portName}}
+     protocol: TCP
+   - port: {{.Values.global.dmaapDrProv.externalPort2}}
+     name: {{.Values.global.dmaapDrProv.portName2}}
+     protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{.Values.global.dmaapBc.name}}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+ type: ClusterIP
+ ports:
+   - port: {{.Values.global.dmaapBc.externalPort}}
+     name: {{.Values.global.dmaapBc.portName}}
+     protocol: TCP
+   - port: {{.Values.global.dmaapBc.externalPort2}}
+     name: {{.Values.global.dmaapBc.portName2}}
+     protocol: TCP
+{{ end }}

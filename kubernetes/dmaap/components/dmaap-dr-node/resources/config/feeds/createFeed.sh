@@ -1,6 +1,6 @@
 #!/bin/sh
 
-dr_prov_url="{{.Values.config.dmaapDrProv.name}}:{{.Values.config.dmaapDrProv.internalPort2}}"
+dr_prov_url="{{.Values.global.dmaapDrProv.name}}:{{.Values.global.dmaapDrProv.externalPort2}}"
 ct_header="Content-Type:application/vnd.dmaap-dr.feed"
 obo_header="X-DMAAP-DR-ON-BEHALF-OF:dradmin"
 feed_payload=/opt/app/datartr/etc/dedicatedFeed.json
