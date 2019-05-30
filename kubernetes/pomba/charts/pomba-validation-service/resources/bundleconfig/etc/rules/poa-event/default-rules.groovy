@@ -218,7 +218,25 @@ entity {
       name 'SDC-AAI-vf-module-instance-check'
       attributes 'context-list.sdc.vnfList[*].vfModuleList[*]', 'context-list.aai.vnfList[*].vfModuleList[*]'
     }
+
+    useRule {
+       name 'AAI-not-empty'
+       attributes 'context-list.aai.pnfList', 'context-list.aai.vnfList', 'context-list.aai.networkList'
+    }
   }
+}
+
+rule {
+    name        'AAI-not-empty'
+    category    'VNFC Consistency'
+    description 'Check if AAI collected anything'
+    errorText   'AAI section is empty'
+    severity    'ERROR'
+    attributes  'pnfList', 'vnfList', 'networkList'
+    validate    '''
+        // expect at least one not empty list
+        return !pnfList.isEmpty() || !vnfList.isEmpty() || !networkList.isEmpty()
+                '''
 }
 
 rule {
