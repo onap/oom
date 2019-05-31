@@ -25,6 +25,8 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  tlsRepository: nexus3.onap.org:10001
+  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:1.0.3
   repositoryCred:
     user: docker
     password: docker
@@ -43,7 +45,7 @@ config:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/org.onap.dcaegen2.platform.configbinding.app-app:2.3.0
+image: onap/org.onap.dcaegen2.platform.configbinding:2.5.1-STAGING-latest
 pullPolicy: Always
 
 # probe configuration parameters
@@ -63,9 +65,18 @@ readiness:
 service:
   type: NodePort
   name: config-binding-service
-  externalPort: 10000
-  internalPort: 10000
-  nodePort: 15
+  # TLS service
+  secure:
+    enabled: true
+    externalPort: 10443
+    internalPort: 10443
+    nodePort: 14
+  # Non-TLS service
+  insecure:
+    enabled: true
+    externalPort: 10000
+    internalPort: 10000
+    nodePort: 15
 
 # Resource Limit flavor -By Default using small
 flavor: small
