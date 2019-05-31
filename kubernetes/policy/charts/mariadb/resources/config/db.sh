@@ -22,3 +22,24 @@ do
 done
 
 mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
+
+mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" <<EOF
+use operationshistory;
+
+drop table if exists operationshistory;
+
+create table operationshistory(
+id int(11) not null auto_increment,
+closedLoopName varchar(255) not null,
+requestID varchar(50),
+actor varchar(50) not null,
+operation varchar(50) not null,
+target varchar(50) not null,
+starttime timestamp not null,
+outcome varchar(50) not null,
+message varchar(255),
+subrequestId varchar(50),
+endtime timestamp not null default current_timestamp,
+PRIMARY KEY (id)
+);
+EOF
