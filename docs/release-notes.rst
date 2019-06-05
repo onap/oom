@@ -53,6 +53,8 @@ Summary
 
 *Known Security Issues*
 
+* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://jira.onap.org/browse/OJSI-134>`_]
+
 *Known Vulnerabilities in Used Modules*
 
 OOM code has been formally scanned during build time using NexusIQ and no
