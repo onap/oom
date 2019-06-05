@@ -10,6 +10,58 @@
 Release Notes
 =============
 
+Version 4.0.0 Dublin Release
+----------------------------
+
+:Release Date: 2019-06-10
+
+Summary
+=======
+
+**Platform Resiliency**
+
+* Documenation of Highly-Available Kubernetes Cluster Deployment
+* Availability of Default Storage Class Provisioner for improved Persistent Storage resiliency
+* Availability of CNI reference integration for Multi-site support 
+
+  * applications can take advantage of multi-site by using POD and/or Node (anti)affinity, taints/tolerations, labels per application
+
+**Footprint Optimization**
+
+* Shared MariaDB-Galera Cluster - current clients in Dublin: SO, SDNC
+* Shared Cassandra Cluster - current clients in Dublin: AAI, SDC
+* Optional deployment of independent clusters (backward compatibility)
+
+**Platform Upgradability**
+
+* Introduction of an Upgrade Framework supporting:
+* Automated rolling upgrades for applications
+* In-place schema and data migrations
+* Blue-Green deployment environment migration (e.g. Pre-prod to Prod)
+* Upgrades from embedded database instance into shared database instance
+
+* Release-to-release upgrade support delivered for the following projects
+
+  * A&AI
+  * SDNC
+  * SO
+
+**Security Notes**
+
+OOM code has been formally scanned during build time using NexusIQ and no
+Critical vulnerability was found.
+
+Quick Links:
+
+  - `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+
+  - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
+
+
+**Known Issues**
+
+
+
 Version 3.0.0 Casablanca Release
 --------------------------------
 
