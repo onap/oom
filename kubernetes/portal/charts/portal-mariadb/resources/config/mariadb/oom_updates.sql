@@ -80,6 +80,8 @@ Replace spaces with underscores for role names to match AAF role names
 */
 UPDATE fn_role SET role_name= REPLACE(role_name, ' ', '_') WHERE active_yn= 'Y';
 
+Insert ignore into fn_role (ROLE_ID,ROLE_NAME,ACTIVE_YN,PRIORITY,APP_ID,APP_ROLE_ID) values (2144,'ui_view','Y', NULL, 7,2144);
+Insert ignore into fn_user_role (USER_ID,ROLE_ID,PRIORITY,APP_ID) values (1,2144,null,7);
 
 /*
 Onboard LF Acumos App
