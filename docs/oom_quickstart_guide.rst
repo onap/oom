@@ -83,7 +83,8 @@ ROBOT uses in Dublin.
   OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
 
   git clone http://gerrit.onap.org/r/integration
-  cd integration/deployment/heat/onap-oom/scripts
+
+  cd integration/deployment/heat/onap-rke/scripts
   javac Crypto.java
   java Crypto "$OS_PASSWORD" "$SO_ENCRYPTION_KEY"
 
