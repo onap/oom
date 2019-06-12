@@ -49,6 +49,12 @@ Summary
 
 **Security Notes**
 
+*Fixed Security Issues*
+
+*Known Security Issues*
+
+*Known Vulnerabilities in Used Modules*
+
 OOM code has been formally scanned during build time using NexusIQ and no
 Critical vulnerability was found.
 
