@@ -107,7 +107,7 @@ GLOBAL_INJECTED_VM_IMAGE_NAME = '{{ .Values.ubuntu14Image }}'
 GLOBAL_INJECTED_VID_IP_ADDR = 'vid.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_VM_FLAVOR = '{{ .Values.openStackFlavourMedium }}'
 GLOBAL_INJECTED_VNFSDK_IP_ADDR = 'refrepo.{{include "common.namespace" .}}'
-
+GLOBAL_INJECTED_PACKET_GENERATOR_HOST = 'N/A'
 GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_AAF_IP_ADDR" : 'aaf-service.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_AAI1_IP_ADDR" : 'aai.{{include "common.namespace" .}}',
@@ -197,6 +197,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_VM_IMAGE_NAME" : '{{ .Values.ubuntu14Image }}',
     "GLOBAL_INJECTED_VID_IP_ADDR" : 'vid.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_VM_FLAVOR" : '{{ .Values.openStackFlavourMedium }}',
-    "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : 'refrepo.{{include "common.namespace" .}}'
+    "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : 'refrepo.{{include "common.namespace" .}}',
+    "GLOBAL_INJECTED_PACKET_GENERATOR_HOST" : 'N/A'
 
 }
