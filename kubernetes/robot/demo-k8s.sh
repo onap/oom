@@ -199,7 +199,7 @@ do
         vfwclosedloop)
                         TAG="vfwclosedloop"
                         shift
-                        VARIABLES="$VARIABLES -v pkg_host:$1"
+                        VARIABLES="$VARIABLES -v PACKET_GENERATOR_HOST:$1"
                         shift
                         ;;
     	*)
