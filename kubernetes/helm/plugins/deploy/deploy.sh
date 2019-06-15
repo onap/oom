@@ -206,6 +206,9 @@ deploy() {
 
   # upgrade/install each "enabled" subchart
   cd $CACHE_SUBCHART_DIR/
+  #“helm ls” is an expensive command in that it can take a long time to execute.
+  #So cache the results to prevent repeated execution.
+  ALL_HELM_RELEASES=$(helm ls -q)
   for subchart in * ; do
     SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
@@ -236,7 +239,7 @@ deploy() {
         fi
       fi
     else
-      array=($(helm ls -q | grep "${RELEASE}-${subchart}"))
+      array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
         helm del "${array[i]}" --purge
