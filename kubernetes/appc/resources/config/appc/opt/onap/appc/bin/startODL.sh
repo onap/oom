@@ -133,6 +133,7 @@ then
         if $ENABLE_ODL_CLUSTER
         then
                 echo "Installing Opendaylight cluster features"
+                ${ODL_HOME}/bin/client feature:install odl-mdsal-clustering
                 enable_odl_cluster
         fi
 
@@ -145,11 +146,24 @@ then
         fi
 
         echo "Restarting OpenDaylight"
-        echo "Stopping OpenDaylight and waiting for it to stop"
         ${ODL_HOME}/bin/stop
-        #The karaf command will exit when odl shuts down. This is the most reliable way to wait for opendaylight to stop
-        #before exiting the docker container.
-        ${ODL_HOME}/bin/karaf
+        checkRun () {
+                running=0
+                while read a b c d e f g h
+                do
+                if [ "$h" == "/bin/sh /opt/opendaylight/bin/karaf server" ]
+                then
+                     running=1
+                fi
+                done < <(ps -eaf)
+                echo $running
+        }
+
+        while [ $( checkRun ) == 1 ]
+        do
+                echo "Karaf is still running, waiting..."
+                sleep 5s
+        done
         echo "Karaf process has stopped"
         sleep 10s
 
