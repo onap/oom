@@ -176,6 +176,9 @@ GLOBAL_VID_HEALTH_PASSWORD = '{{ .Values.vidHealthPassword }}'
 # vnfsdk info - everything is from the private oam network (also called onap private network)
 GLOBAL_VNFSDK_SERVER_PROTOCOL = "http"
 GLOBAL_VNFSDK_SERVER_PORT = "8702"
+
+GLOBAL_DCAE_VES_PROTOCOL = "http"
+GLOBAL_DCAE_VES_SERVER_PORT = "8080"
 #global selenium info
 GLOBAL_PROXY_WARNING_TITLE=""
 GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""

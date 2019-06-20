@@ -24,6 +24,7 @@ GLOBAL_INJECTED_CLAMP_IP_ADDR = 'clamp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_CLI_IP_ADDR = 'cli.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_CLOUD_ENV = 'openstack'
 GLOBAL_INJECTED_DCAE_IP_ADDR = 'dcae-healthcheck.{{include "common.namespace" .}}'
+GLOBAL_INJECTED_DCAE_VES_HOST = 'dcae-ves-collector.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR = 'dmaap-dr-prov.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_DMAAP_DR_NODE_IP_ADDR = 'dmaap-dr-node.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_DNS_IP_ADDR = 'N/A'
@@ -119,6 +120,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_CLI_IP_ADDR" : 'cli.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_CLOUD_ENV" : 'openstack',
     "GLOBAL_INJECTED_DCAE_IP_ADDR" : 'dcae-healthcheck.{{include "common.namespace" .}}',
+    "GLOBAL_INJECTED_DCAE_VES_HOST" : 'dcae-ves-collector.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR" : 'dmaap-dr-prov.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_DMAAP_DR_NODE_IP_ADDR" : 'dmaap-dr-node.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_DNS_IP_ADDR" : 'N/A',
