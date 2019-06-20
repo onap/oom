@@ -123,6 +123,8 @@ GLOBAL_MUSIC_SERVER_PORT = "8080"
 GLOBAL_OOF_SERVER_PROTOCOL = "https"
 # oof-homing info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_HOMING_SERVER_PORT = "8091"
+GLOBAL_OOF_HOMING_USERNAME="{{ .Values.oofHomingUsername }}"
+GLOBAL_OOF_HOMING_PASSWORD="{{ .Values.oofHomingPassword }}"
 # oof-sniro info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_SNIRO_SERVER_PORT = "8698"
 #oof user
