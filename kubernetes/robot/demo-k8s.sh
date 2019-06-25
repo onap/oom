@@ -59,7 +59,7 @@ function usage
 
 # Set the defaults
 
-echo "Number of parameters:" 
+echo "Number of parameters:"
 echo $#
 
 if [ $# -lt 2 ];then
@@ -199,7 +199,7 @@ do
         vfwclosedloop)
                         TAG="vfwclosedloop"
                         shift
-                        VARIABLES="$VARIABLES -v PACKET_GENERATOR_HOST:$1"
+                        VARIABLES="$VARIABLES -v PACKET_GENERATOR_HOST:$1 -v pkg_host:$1"
                         shift
                         ;;
     	*)
@@ -221,4 +221,3 @@ DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
 VARIABLEFILES="-V /share/config/vm_properties.py -V /share/config/integration_robot_properties.py -V /share/config/integration_preload_parameters.py"
 
 kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
-
