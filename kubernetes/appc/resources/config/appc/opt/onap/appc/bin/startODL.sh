@@ -132,8 +132,7 @@ then
 
         if $ENABLE_ODL_CLUSTER
         then
-                echo "Installing Opendaylight cluster features"
-                ${ODL_HOME}/bin/client feature:install odl-mdsal-clustering
+                echo "Enabling Opendaylight cluster features"
                 enable_odl_cluster
         fi
 
