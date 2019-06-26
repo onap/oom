@@ -118,12 +118,8 @@ ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJv
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SDNC_BIN=${SDNC_BIN:-/opt/onap/sdnc/bin}
 CCSDK_HOME=${CCSDK_HOME:-/opt/onap/ccsdk}
-SLEEP_TIME=${SLEEP_TIME:-120}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
-MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.dbServiceName}}.{{.Release.Namespace}}}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
-DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 SDNRWT=${SDNRWT:-false}
 SDNRWT_BOOTFEATURES=${SDNRWT_BOOTFEATURES:-sdnr-wt-feature-aggregator}
 export ODL_ADMIN_PASSWORD ODL_ADMIN_USERNAME
@@ -133,43 +129,12 @@ echo "  ENABLE_ODL_CLUSTER=$ENABLE_ODL_CLUSTER"
 echo "  SDNC_REPLICAS=$SDNC_REPLICAS"
 echo "  SDNRWT=$SDNRWT"
 
-#
-# Wait for database to init properly
-#
-echo "Waiting for mysql"
-until mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} mysql &> /dev/null
-do
-  printf "."
-  sleep 1
-done
-echo -e "\nmysql ready"
 
-if [ ! -d ${DBINIT_DIR} ]
-then
-    mkdir -p ${DBINIT_DIR}
-fi
-
-if [ ! -f ${DBINIT_DIR}/.installed ]
-then
-        echo "Installing SDNC database"
-        ${SDNC_HOME}/bin/installSdncDb.sh
-
-        if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
-        then
-                echo "Installing directed graphs"
-                ${SDNC_HOME}/svclogic/bin/install.sh
-        fi
-
-        echo "Installed at `date`" > ${DBINIT_DIR}/.installed
-fi
 
 if [ ! -f ${SDNC_HOME}/.installed ]
 then
 	echo "Installing SDN-C keyStore"
 	${SDNC_HOME}/bin/addSdncKeyStore.sh
-
-	# No longer needed (this was a workaround for bug in Nitrogen)
-	#${CCSDK_HOME}/bin/installOdlHostKey.sh
 
 	if $ENABLE_ODL_CLUSTER ; then enable_odl_cluster ; fi
 
