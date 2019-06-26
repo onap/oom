@@ -7,16 +7,16 @@
 .. Links
 .. _release-notes-label:
 
-Release Notes
-=============
+ONAP Operations Manager Release Notes
+=====================================
 
-Version 4.0.0 Dublin Release
-----------------------------
+Version 4.0.0 (Dublin Release)
+------------------------------
 
-:Release Date: 2019-06-10
+:Release Date: 2019-06-26
 
 Summary
-=======
+-------
 
 **Platform Resiliency**
 
@@ -78,7 +78,7 @@ Version 3.0.0 Casablanca Release
 :Release Date: 2018-11-30
 
 Summary
-=======
+-------
 
 The focus of this release was on incremental improvements in the following
 areas:
