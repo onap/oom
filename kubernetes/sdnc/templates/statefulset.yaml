@@ -55,6 +55,59 @@ spec:
             name: {{ include "common.fullname" . }}-mdsal
           - mountPath: {{ .Values.certpersistence.certPath }}
             name: {{ include "common.fullname" . }}-certs
+      - name: {{ include "common.name" . }}-dbinit
+        image: "{{.Values.config.mariadbImage}}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}
+                key: db-root-password
+          - name: ODL_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}-odl
+                key: odl-password
+          - name: SDNC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}-sdnctl
+                key: db-sdnctl-password
+          - name: MYSQL_HOST
+            value: "{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}"
+        volumeMounts:
+          - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+            name: bin
+            subPath: installSdncDb.sh
+          - mountPath: {{ .Values.config.etcDir }}/allotted_resource_model.data.dump
+            name: properties
+            subPath : allotted_resource_model.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/blueprint-processor.data.dump
+            name: properties
+            subPath : blueprint-processor.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/ipam.data.dump
+            name: properties
+            subPath: ipam.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/network_model.data.dump
+            name: properties
+            subPath: network_model.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/sdnctl.dump
+            name: properties
+            subPath: sdnctl.dump
+          - mountPath: {{ .Values.config.etcDir }}/vf_model.data.dump
+            name: properties
+            subPath: vf_model.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/vf_module_model.data.dump
+            name: properties
+            subPath: vf_module_model.data.dump
+          - mountPath: {{ .Values.config.etcDir }}/vfc_model.data.dump
+            name: properties
+            subPath: vfc_model.data.dump
+        command:
+          - /bin/bash
+        args:
+          - {{.Values.config.binDir }}/installSdncDb.sh
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
