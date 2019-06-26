@@ -21,13 +21,14 @@
 # ============LICENSE_END=========================================================
 ###
 
-SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
+ETC_DIR=${ETC_DIR:-{{.Values.config.etcDir}}}
+BIN_DIR=${BIN_
 MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
 MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
 
-SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
-SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
-SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
+SDNC_DB_USER=${SDNC_DB_USER:-{{.Values.config.dbSdnctlUser}}}
+SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-{{.Values.config.dbSdnctlPassword}}}
+SDNC_DB_DATABASE=${SDN_DB_DATABASE:-{{.Values.config.dbSdnctlDatabase}}}
 
 
 # Create tablespace and user account
@@ -41,18 +42,18 @@ commit;
 END
 
 # load schema
-if [ -f ${SDNC_HOME}/data/sdnctl.dump ]
+if [ -f ${ETC_DIR}/sdnctl.dump ]
 then
   mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/sdnctl.dump
 fi
 
-for datafile in ${SDNC_HOME}/data/*.data.dump
+for datafile in ${ETC_DIR}/*.data.dump
 do
   mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < $datafile
 done
 
 # Create VNIs 100-199
-${SDNC_HOME}/bin/addVnis.sh 100 199
+${BIN_DIR}/addVnis.sh 100 199
 
 # Drop FK_NETWORK_MODEL foreign key as workaround for SDNC-291.
-${SDNC_HOME}/bin/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
+${BIN_DIR}/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL

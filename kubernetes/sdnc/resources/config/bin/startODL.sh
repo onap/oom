@@ -151,8 +151,8 @@ fi
 
 if [ ! -f ${DBINIT_DIR}/.installed ]
 then
-        echo "Installing SDNC database"
-        ${SDNC_HOME}/bin/installSdncDb.sh
+        # echo "Installing SDNC database"
+        # ${SDNC_HOME}/bin/installSdncDb.sh
 
         if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
         then
