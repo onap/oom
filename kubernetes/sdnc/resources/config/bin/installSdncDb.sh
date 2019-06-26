@@ -22,37 +22,49 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
-MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.dbRootPassword}}}
+ETC_DIR=${ETC_DIR:-${SDNC_HOME}/data}
+BIN_DIR=${BIN_DIR-${SDNC_HOME}/bin}
+MYSQL_HOST=${MYSQL_HOST:-dbhost}
+MYSQL_PASSWORD=${MYSQL_PASSWORD:-openECOMP1.0}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
-SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
+SDNC_DB_PASSWORD=${SDNC_DB_PASSWORD:-gamma}
 SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
 
 
 # Create tablespace and user account
-mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} mysql <<-END
-CREATE DATABASE ${SDNC_DB_DATABASE};
-CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
-CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
+mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} mysql <<-END
+CREATE DATABASE IF NOT EXISTS ${SDNC_DB_DATABASE};
+CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
+CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'localhost' WITH GRANT OPTION;
 GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'%' WITH GRANT OPTION;
+flush privileges;
 commit;
 END
 
 # load schema
-if [ -f ${SDNC_HOME}/data/sdnctl.dump ]
+if [ -f ${ETC_DIR}/sdnctl.dump ]
 then
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/sdnctl.dump
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} sdnctl < ${ETC_DIR}/sdnctl.dump
 fi
 
-for datafile in ${SDNC_HOME}/data/*.data.dump
+for datafile in ${ETC_DIR}/*.data.dump
 do
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWD} sdnctl < $datafile
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} sdnctl < $datafile
 done
 
 # Create VNIs 100-199
-${SDNC_HOME}/bin/addVnis.sh 100 199
+${BIN_DIR}/addVnis.sh 100 199
 
 # Drop FK_NETWORK_MODEL foreign key as workaround for SDNC-291.
-${SDNC_HOME}/bin/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
+${BIN_DIR}/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
+
+if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
+then
+    echo "Installing directed graphs"
+     ${SDNC_HOME}/svclogic/bin/install.sh
+fi
+
+
+exit 0
