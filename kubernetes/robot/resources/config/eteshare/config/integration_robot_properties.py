@@ -130,6 +130,9 @@ GLOBAL_OOF_SNIRO_SERVER_PORT = "8698"
 #oof user
 GLOBAL_OOF_OSDF_USERNAME="{{ .Values.oofUsername }}"
 GLOBAL_OOF_OSDF_PASSWORD="{{ .Values.oofPassword }}"
+#oof pci user
+GLOBAL_OOF_PCI_USERNAME="{{ .Values.oofOsdfPciOptUsername }}"
+GLOBAL_OOF_PCI_PASSWORD="{{ .Values.oofOsdfPciOptPassword }}"
 # oof cmso global info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_CMSO_PROTOCOL = "https"
 GLOBAL_OOF_CMSO_SERVER_PORT = "8080"
