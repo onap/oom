@@ -1,0 +1,41 @@
+{{- define "ingress.config" -}}
+{{- if .Values.ingress -}}
+{{- if .Values.ingress.service -}}
+{{- range .Values.ingress.service -}}
+        - path: {{ .path }}
+        backend:
+            serviceName: {{ .name }}
+            servicePort: {{ .port }}
+{{- end -}}
+{{- else -}}
+         - path: {{ printf "/%s" .Chart.Name }}
+         backend:
+             serviceName: {{ .Chart.Name }}
+             servicePort: {{ .Values.service.externalPort2 }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+
+{{- if .Values.ingress.enabled -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "common.fullname" . }}-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  rules:
+  - http:
+      paths:
+         {{ include "ingress.config" . }}
+{{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end -}}
+{{- end -}}
