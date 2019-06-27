@@ -1,0 +1,42 @@
+{{- if .Values.ingress.enabled -}}
+    {{- $serviceName := .Chart.Name -}}
+    {{- $servicePort := .Values.service.externalPort -}}
+    {{- $servicePath := .Chart.Name -}}
+    {{- if .Values.ingress -}}
+    {{- if .Values.ingress.service -}}
+    {{- if .Values.ingress.service.name -}}
+        {{- $serviceName = .Values.ingress.service.name -}}
+    {{- end -}}
+    {{- if .Values.ingress.service.port -}}
+        {{- $servicePort = .Values.ingress.service.port -}}
+    {{- end -}}
+    {{- if .Values.ingress.service.path -}}
+        {{- $servicePath = .Values.ingress.service.path -}}
+    {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "common.fullname" . }}-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  rules:
+  - http:
+      paths:
+          - path: {{ printf "/%s" $servicePath }}
+            backend:
+                serviceName: {{ $serviceName }}
+                servicePort: {{ $servicePort }}
+  {{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end -}}
+{{- end -}}
