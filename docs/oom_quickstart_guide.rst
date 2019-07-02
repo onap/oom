@@ -129,20 +129,12 @@ single command
   The --timeout 900 is currently required in Dublin to address long running initialization tasks
   for DMaaP and SO. Without this timeout value both applications may fail to deploy.
 
- a. To deploy all ONAP applications use this command::
+ To deploy all ONAP applications use this command::
 
     > cd oom/kubernetes
-    > helm deploy dev local/onap --namespace onap -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
+    > helm deploy dev local/onap --namespace onap -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
 
- b. If you are using a custom override (e.g. integration-override.yaml) use this command::
-
-    > helm deploy dev local/onap -f /root/integration-override.yaml --namespace onap --timeout 900
-
-
- c. If you have a slower cloud environment you may want to use the public-cloud.yaml
-    which has longer delay intervals on database updates.::
-
-    > helm deploy dev local/onap -f /root/oom/kubernetes/onap/resources/environments/public-cloud.yaml -f /root/integration-override.yaml --namespace onap --timeout 900
+ All override files may be customized (or replaced by other overrides) as per needs.
 
 
 **Step 9.** Commands to interact with the OOM installation
