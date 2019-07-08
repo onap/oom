@@ -77,7 +77,7 @@ GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE = '{{ .Values.openStackDomain
 GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX = '{{ .Values.openStackOamNetworkCidrPrefix }}'
 GLOBAL_INJECTED_OPENSTACK_PUBLIC_NETWORK = 'public'
 GLOBAL_INJECTED_POLICY_IP_ADDR = 'pdp.{{include "common.namespace" .}}'
-GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = 'drools.{{include "common.namespace" .}}'
+GLOBAL_INJECTED_POLICY_DROOLS_IP_ADDR = 'drools.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_PORTAL_IP_ADDR = 'portal-app.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_POLICY_API_IP_ADDR = 'policy-api.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_POLICY_PAP_IP_ADDR = 'policy-pap.{{include "common.namespace" .}}'
@@ -170,7 +170,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX" : '{{ .Values.openStackOamNetworkCidrPrefix }}',
     "GLOBAL_INJECTED_OPENSTACK_PUBLIC_NETWORK" : 'public',
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : 'pdp.{{include "common.namespace" .}}',
-    "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : 'drools.{{include "common.namespace" .}}',
+    "GLOBAL_INJECTED_POLICY_DROOLS_IP_ADDR" : 'drools.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_POLICY_API_IP_ADDR" : 'policy-api.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_POLICY_PAP_IP_ADDR" : 'policy-pap.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_POLICY_DISTRIBUTION_IP_ADDR" : 'policy-distribution.{{include "common.namespace" .}}',
