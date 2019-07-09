@@ -136,17 +136,33 @@ single command
 
  All override files may be customized (or replaced by other overrides) as per needs.
 
+ onap-all.yaml
 
-**Step 9.** Commands to interact with the OOM installation
+  Enables the modules in the ONAP deployment. As ONAP is very modular, it is possible to customize ONAP and disable some components through this configuration file.
+
+ environment.yaml
+
+  Includes configuration values specific to the deployment environment.
+
+  Example: adapt readiness and liveness timers to the level of performance of your infrastructure
+
+ openstack.yaml
+
+  Includes all the Openstack related information for the default target tenant you want to use to deploy VNFs from ONAP and/or additional parameters for the embedded tests.
+
+**Step 9.** Verify ONAP installation
 
 Use the following to monitor your deployment and determine when ONAP is
 ready for use::
 
   > kubectl get pods -n onap -o=wide
 
-Undeploying onap can be done using the following command::
+.. note::
+  While all pods may be in a Running state, it is not a guarantee that all components are running fine.
+  Launch the healthcheck tests using Robot to verify that the components are healthy.
+
+**Step 10.** Undeploy ONAP
 
   > helm undeploy dev --purge
-
 
 More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
