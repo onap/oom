@@ -30,19 +30,19 @@ to deploy and manage our Kubernetes Cluster.
 
 The result at the end of this tutorial will be:
 
-*1.* Creation of a Key Pair to use with Open Stack and RKE
+#. Creation of a Key Pair to use with Open Stack and RKE
 
-*2.* Creation of OpenStack VMs to host Kubernetes Control Plane
+#. Creation of OpenStack VMs to host Kubernetes Control Plane
 
-*3.* Creation of OpenStack VMs to host Kubernetes Workers
+#. Creation of OpenStack VMs to host Kubernetes Workers
 
-*4.* Installation and configuration of RKE to setup an HA Kubernetes
+#. Installation and configuration of RKE to setup an HA Kubernetes
 
-*5.* Installation and configuration of kubectl
+#. Installation and configuration of kubectl
 
-*5.* Installation and configuration of helm
+#. Installation and configuration of helm
 
-*7.* Creation of an NFS Server to be used by ONAP as shared persistance
+#. Creation of an NFS Server to be used by ONAP as shared persistance
 
 There are many ways one can execute the above steps. Including automation through the use of HEAT to setup the OpenStack VMs.
 To better illustrate the steps involved, we have captured the manual creation of such an environment using the ONAP Wind River Open Lab.
