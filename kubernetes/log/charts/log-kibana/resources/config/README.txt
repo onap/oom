@@ -1,0 +1,1 @@
+"kibana-onboarding.json" file contains initial setup of Kibana obtained using Elasticdump tool.
