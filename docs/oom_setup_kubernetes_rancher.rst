@@ -62,7 +62,8 @@ Use an existing key pair, import one or create a new one to assign.
 For the purpose of this guide, we will assume a new local key called "onap-key"
 has been downloaded and is copied into **~/.ssh/**, from which it can be referenced.
 
-Example:
+Example::
+
   > mv onap-key ~/.ssh
 
   > chmod 600 ~/.ssh/onap-key
@@ -250,13 +251,11 @@ in this file.
 
 Run RKE
 -------
-From within the same directory as the cluster.yml file, simply execute:
+From within the same directory as the cluster.yml file, simply execute::
 
   > rke up
 
-The output will look something like:
-
-.. code-block::
+The output will look something like::
 
   INFO[0000] Initiating Kubernetes cluster
   INFO[0000] [certificates] Generating admin certificates and kubeconfig
@@ -307,6 +306,9 @@ https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/darwin/amd
 
 Validate deployment
 -------------------
+
+::
+
   > cp kube_config_cluster.yml ~/.kube/config.onap
 
   > export KUBECONFIG=~/.kube/config.onap
@@ -315,7 +317,7 @@ Validate deployment
 
   > kubectl get nodes -o=wide
 
-.. code-block::
+::
 
   NAME             STATUS   ROLES               AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
   onap-control-1   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
@@ -338,7 +340,8 @@ Validate deployment
 Install Helm
 ============
 
-Example Helm client install on Linux:
+Example Helm client install on Linux::
+
   > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.12.3-linux-amd64.tar.gz
 
   > tar -zxvf helm-v2.12.3-linux-amd64.tar.gz
@@ -347,6 +350,9 @@ Example Helm client install on Linux:
 
 Initialize Kubernetes Cluster for use by Helm
 ---------------------------------------------
+
+::
+
   > kubectl -n kube-system create serviceaccount tiller
 
   > kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
