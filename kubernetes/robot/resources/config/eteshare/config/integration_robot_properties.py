@@ -187,5 +187,6 @@ GLOBAL_PROXY_WARNING_TITLE=""
 GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""
 # dns info
 GLOBAL_DNS_TRAFFIC_DURATION = "600"
-# location where heat templates are loaded from
+# location where heat templates and data are loaded from
 GLOBAL_HEAT_TEMPLATES_FOLDER = "/var/opt/ONAP/demo/heat"
+GLOBAL_PRELOAD_DATA_FOLDER = "/var/opt/ONAP/demo/preload-data"
