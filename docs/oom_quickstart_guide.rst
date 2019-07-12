@@ -91,7 +91,12 @@ ROBOT uses in Dublin.
 
 d. Update the OpenStack parameters:
 
+Example Keystone v2.0 
 .. literalinclude:: example-integration-override.yaml
+   :language: yaml
+
+Example Keystone v3  (required for Rocky and later releases)
+.. literalinclude:: example-integration-override-v3.yaml
    :language: yaml
 
 **Step 4.** To setup a local Helm server to server up the ONAP charts::
