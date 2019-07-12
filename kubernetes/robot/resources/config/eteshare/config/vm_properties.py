@@ -64,6 +64,7 @@ GLOBAL_INJECTED_OPENSTACK_TENANT_ID = '{{ .Values.openStackTenantId }}'
 GLOBAL_INJECTED_OPENSTACK_USERNAME = '{{ .Values.openStackUserName }}'
 GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME = '{{ .Values.openStackProjectName }}'
 GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID = '{{ .Values.openStackDomainId }}'
+GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN = '{{ .Values.openStackUserDomain }}'
 GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION = '{{ .Values.openStackKeystoneAPIVersion }}'
 GLOBAL_INJECTED_REGION_THREE = '{{ .Values.openStackRegionRegionThree }}'
 GLOBAL_INJECTED_KEYSTONE_REGION_THREE = '{{ .Values.openStackKeyStoneUrlRegionThree }}'
@@ -71,6 +72,7 @@ GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION_REGION_THREE = '{{ .Values.openSt
 GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE = '{{ .Values.openStackUserNameRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE = '{{ .Values.openStackPasswordRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE  = '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}'
+GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD = '{{ .Values.config.openStackSoEncryptedPassword}}'
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE = '{{ .Values.openStackTenantIdRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE = '{{ .Values.openStackProjectNameRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE = '{{ .Values.openStackDomainIdRegionThree }}'
@@ -157,6 +159,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_USERNAME" : '{{ .Values.openStackUserName }}',
     "GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME" : '{{ .Values.openStackProjectName }}',
     "GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID" : '{{ .Values.openStackDomainId }}',
+    "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN" : '{{ .Values.openStackUserDomain }}',
     "GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION" : '{{ .Values.openStackKeystoneAPIVersion }}',
     "GLOBAL_INJECTED_REGION_THREE" : '{{ .Values.openStackRegionRegionThree }}',
     "GLOBAL_INJECTED_KEYSTONE_REGION_THREE" : '{{ .Values.openStackKeyStoneUrlRegionThree }}',
@@ -164,6 +167,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE" : '{{ .Values.openStackUserNameRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE" : '{{ .Values.openStackPasswordRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE" : '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}',
+    "GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD" :  '{{ .Values.config.openStackSoEncryptedPassword}}',
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE" : '{{ .Values.openStackTenantIdRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE" : '{{ .Values.openStackProjectNameRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE" : '{{ .Values.openStackDomainIdRegionThree }}',
@@ -204,3 +208,4 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_VNFSDK_IP_ADDR" : 'refrepo.{{include "common.namespace" .}}'
 
 }
+
