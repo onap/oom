@@ -30,7 +30,7 @@ file like onap-all.yaml, onap-vfw.yaml or openstack.yaml file to suit your deplo
 OpenStack tenant information.
 
 .. note::
-  Standard and example override files (e.g. onap-all.yaml, openstack.yaml) can be found in 
+  Standard and example override files (e.g. onap-all.yaml, openstack.yaml) can be found in
   the oom/kubernetes/onap/resources/overrides/ directory.
 
 
@@ -77,22 +77,64 @@ Java encryption library is not easy to integrate with openssl/python that
 ROBOT uses in Dublin.
 
 .. note::
-  To generate SO openStackEncryptedPasswordHere :
+  To generate SO openStackEncryptedPasswordHere and openStackSoEncryptedPassword:
 
-  SO_ENCRYPTION_KEY=`cat ~/oom/kubenertes/so/resources/config/mso/encrypt.key`
+  SO_ENCRYPTION_KEY=`cat ~/oom/kubernetes/so/resources/config/mso/encryption.key`
+
   OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
 
   git clone http://gerrit.onap.org/r/integration
 
   cd integration/deployment/heat/onap-rke/scripts
+
+
   javac Crypto.java
+
+  [ if javac is not installed 'apt-get update ; apt-get install default-jdk' ]
+
   java Crypto "$OS_PASSWORD" "$SO_ENCRYPTION_KEY"
 
 
 d. Update the OpenStack parameters:
 
+There are assumptions in the demonstration VNF heat templates about the networking 
+available in the environment. To get the most value out of these templates and the 
+automation that can help confirm the setup is correct, please observe the following 
+constraints.
+
+openStackPublicNetId: 
+
+This network should allow heat templates to add interfaces. 
+This need not be an external network, floating IPs can be assigned to the ports on 
+the VMs that are created by the heat template but its important that neutron allow 
+ports to be created on them.
+
+openStackPrivateNetCidr: "10.0.0.0/16"
+
+This ip address block is used to assign OA&M addresses on VNFs to allow ONAP connectivity.
+The demonstration heat templates assume that 10.0 prefix can be used by the VNFs and the 
+demonstration ip addressing plan embodied in the preload template prevent conflicts when 
+instantiating the various VNFs. If you need to change this, you will need to modify the preload 
+data in the robot helm chart like integration_preload_parametes.py and the demo/heat/preload_data 
+in the robot container. The size of the CIDR should be sufficient for ONAP and the VMs you expect 
+to create.
+
+openStackOamNetworkCidrPrefix: "10.0"
+
+This ip prefix mush match the openStackPrivateNetCidr and is a helper variable to some of the
+robot scripts for demonstration. A production deployment need not worry about this
+setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
+
+
+Example Keystone v2.0 
 .. literalinclude:: example-integration-override.yaml
    :language: yaml
+
+Example Keystone v3  (required for Rocky and later releases)
+.. literalinclude:: example-integration-override-v3.yaml
+   :language: yaml
+
+
 
 **Step 4.** To setup a local Helm server to server up the ONAP charts::
 
