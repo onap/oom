@@ -20,9 +20,11 @@ GLOBAL_INJECTED_AAI2_IP_ADDR = 'N/A'
 GLOBAL_INJECTED_APPC_IP_ADDR = 'appc.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_APPC_CDT_IP_ADDR = 'appc-cdt.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_ARTIFACTS_VERSION = '{{.Values.demoArtifactsVersion}}'
+GLOBAL_INJECTED_ARTIFACTS_REPO_URL = "{{ .Values.demoArtifactsRepoUrl }}"
 GLOBAL_INJECTED_CLAMP_IP_ADDR = 'clamp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_CLI_IP_ADDR = 'cli.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_CLOUD_ENV = 'openstack'
+GLOBAL_INJECTED_DCAE_COLLECTOR_IP = "{{ .Values.dcaeCollectorIp }}"
 GLOBAL_INJECTED_DCAE_IP_ADDR = 'dcae-healthcheck.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_DCAE_VES_HOST = 'dcae-ves-collector.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR = 'dmaap-dr-prov.{{include "common.namespace" .}}'
@@ -64,6 +66,7 @@ GLOBAL_INJECTED_OPENSTACK_TENANT_ID = '{{ .Values.openStackTenantId }}'
 GLOBAL_INJECTED_OPENSTACK_USERNAME = '{{ .Values.openStackUserName }}'
 GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME = '{{ .Values.openStackProjectName }}'
 GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID = '{{ .Values.openStackDomainId }}'
+GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN = '{{ .Values.openStackUserDomain }}'
 GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION = '{{ .Values.openStackKeystoneAPIVersion }}'
 GLOBAL_INJECTED_REGION_THREE = '{{ .Values.openStackRegionRegionThree }}'
 GLOBAL_INJECTED_KEYSTONE_REGION_THREE = '{{ .Values.openStackKeyStoneUrlRegionThree }}'
@@ -71,11 +74,15 @@ GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION_REGION_THREE = '{{ .Values.openSt
 GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE = '{{ .Values.openStackUserNameRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE = '{{ .Values.openStackPasswordRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE  = '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}'
+GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD = '{{ .Values.config.openStackSoEncryptedPassword}}'
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE = '{{ .Values.openStackTenantIdRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE = '{{ .Values.openStackProjectNameRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE = '{{ .Values.openStackDomainIdRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX = '{{ .Values.openStackOamNetworkCidrPrefix }}'
 GLOBAL_INJECTED_OPENSTACK_PUBLIC_NETWORK = 'public'
+GLOBAL_INJECTED_OPENSTACK_SECURITY_GROUP = '{{ .Values.openStackSecurityGroup }}'
+GLOBAL_INJECTED_OPENSTACK_PRIVATE_SUBNET_ID = "{{ .Values.openStackPrivateSubnetId }}"
+GLOBAL_INJECTED_OPENSTACK_PRIVATE_NET_CIDR = "{{ .Values.openStackPrivateNetCidr }}"
 GLOBAL_INJECTED_POLICY_IP_ADDR = 'pdp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR = 'drools.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_PORTAL_IP_ADDR = 'portal-app.{{include "common.namespace" .}}'
@@ -85,6 +92,7 @@ GLOBAL_INJECTED_POLICY_DISTRIBUTION_IP_ADDR = 'policy-distribution.{{include "co
 GLOBAL_INJECTED_POLICY_PDPX_IP_ADDR = 'policy-xacml-pdp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_POLICY_APEX_PDP_IP_ADDR = 'policy-apex-pdp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_PUBLIC_NET_ID = '{{ .Values.openStackPublicNetId }}'
+GLOBAL_INJECTED_PUBLIC_KEY = "{{ .Values.vnfPubKey }}"
 GLOBAL_INJECTED_REGION = '{{ .Values.openStackRegion }}'
 GLOBAL_INJECTED_SCRIPT_VERSION = '{{ .Values.scriptVersion }}'
 GLOBAL_INJECTED_SDC_BE_IP_ADDR = 'sdc-be.{{include "common.namespace" .}}'
@@ -117,9 +125,11 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_APPC_IP_ADDR" : 'appc.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_APPC_CDT_IP_ADDR" : 'appc-cdt.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_ARTIFACTS_VERSION" : '{{.Values.demoArtifactsVersion}}',
+    "GLOBAL_INJECTED_ARTIFACTS_REPO_URL" : "{{ .Values.demoArtifactsRepoUrl }}",
     "GLOBAL_INJECTED_CLAMP_IP_ADDR" : 'clamp.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_CLI_IP_ADDR" : 'cli.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_CLOUD_ENV" : 'openstack',
+    "GLOBAL_INJECTED_DCAE_COLLECTOR_IP" : "{{ .Values.dcaeCollectorIp }}",
     "GLOBAL_INJECTED_DCAE_IP_ADDR" : 'dcae-healthcheck.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_DCAE_VES_HOST" : 'dcae-ves-collector.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR" : 'dmaap-dr-prov.{{include "common.namespace" .}}',
@@ -157,6 +167,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_USERNAME" : '{{ .Values.openStackUserName }}',
     "GLOBAL_INJECTED_OPENSTACK_PROJECT_NAME" : '{{ .Values.openStackProjectName }}',
     "GLOBAL_INJECTED_OPENSTACK_DOMAIN_ID" : '{{ .Values.openStackDomainId }}',
+    "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN" : '{{ .Values.openStackUserDomain }}',
     "GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION" : '{{ .Values.openStackKeystoneAPIVersion }}',
     "GLOBAL_INJECTED_REGION_THREE" : '{{ .Values.openStackRegionRegionThree }}',
     "GLOBAL_INJECTED_KEYSTONE_REGION_THREE" : '{{ .Values.openStackKeyStoneUrlRegionThree }}',
@@ -164,11 +175,15 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE" : '{{ .Values.openStackUserNameRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_PASSWORD_REGION_THREE" : '{{ .Values.openStackPasswordRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_MSO_ENCRYPTED_PASSWORD_REGION_THREE" : '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}',
+    "GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD" :  '{{ .Values.config.openStackSoEncryptedPassword}}',
     "GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE" : '{{ .Values.openStackTenantIdRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE" : '{{ .Values.openStackProjectNameRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN_REGION_THREE" : '{{ .Values.openStackDomainIdRegionThree }}',
     "GLOBAL_INJECTED_OPENSTACK_OAM_NETWORK_CIDR_PREFIX" : '{{ .Values.openStackOamNetworkCidrPrefix }}',
     "GLOBAL_INJECTED_OPENSTACK_PUBLIC_NETWORK" : 'public',
+    "GLOBAL_INJECTED_OPENSTACK_SECURITY_GROUP": '{{ .Values.openStackSecurityGroup }}',
+    "GLOBAL_INJECTED_OPENSTACK_PRIVATE_SUBNET_ID" : "{{ .Values.openStackPrivateSubnetId }}",
+    "GLOBAL_INJECTED_OPENSTACK_PRIVATE_NET_CIDR" : "{{ .Values.openStackPrivateNetCidr }}",
     "GLOBAL_INJECTED_POLICY_IP_ADDR" : 'pdp.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_POLICY_HEALTHCHECK_IP_ADDR" : 'drools.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_POLICY_API_IP_ADDR" : 'policy-api.{{include "common.namespace" .}}',
@@ -178,6 +193,7 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POLICY_APEX_PDP_IP_ADDR" : 'policy-apex-pdp.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_PORTAL_IP_ADDR" : 'portal-app.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_PUBLIC_NET_ID" : '{{ .Values.openStackPublicNetId }}',
+    "GLOBAL_INJECTED_PUBLIC_KEY" : "{{ .Values.vnfPubKey }}",
     "GLOBAL_INJECTED_REGION" : '{{ .Values.openStackRegion }}',
     "GLOBAL_INJECTED_SDC_BE_IP_ADDR" : 'sdc-be.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_SDC_BE_ONBOARD_IP_ADDR" : 'sdc-onboarding-be.{{include "common.namespace" .}}',
