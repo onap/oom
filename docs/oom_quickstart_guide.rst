@@ -79,19 +79,30 @@ ROBOT uses in Dublin.
 .. note::
   To generate SO openStackEncryptedPasswordHere :
 
-  SO_ENCRYPTION_KEY=`cat ~/oom/kubenertes/so/resources/config/mso/encrypt.key`
+  SO_ENCRYPTION_KEY=`cat ~/oom/kubernetes/so/resources/config/mso/encryption.key`
+
   OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
 
   git clone http://gerrit.onap.org/r/integration
 
   cd integration/deployment/heat/onap-rke/scripts
+
+
   javac Crypto.java
+
+  [ if javac is not installed 'apt-get update ; apt-get install default-jdk' ]
+
   java Crypto "$OS_PASSWORD" "$SO_ENCRYPTION_KEY"
 
 
 d. Update the OpenStack parameters:
 
+Example Keystone v2.0 
 .. literalinclude:: example-integration-override.yaml
+   :language: yaml
+
+Example Keystone v3  (required for Rocky and later releases)
+.. literalinclude:: example-integration-override-v3.yaml
    :language: yaml
 
 **Step 4.** To setup a local Helm server to server up the ONAP charts::
