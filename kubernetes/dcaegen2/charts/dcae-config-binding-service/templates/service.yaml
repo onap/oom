@@ -28,16 +28,29 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
-      nodePort: {{ .Values.global.nodePortPrefixExt| default .Values.nodePortPrefixExt }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.name }}
+    {{ if eq .Values.service.type "NodePort" -}}
+    {{ if .Values.service.insecure.enabled -}}
+    - port: {{ .Values.service.insecure.externalPort }}
+      nodePort: {{ .Values.global.nodePortPrefixExt| default .Values.nodePortPrefixExt }}{{ .Values.service.insecure.nodePort }}
+      name: {{ .Values.service.name }}-insecure
+    {{- end }}
+    {{ if .Values.service.secure.enabled -}}
+    - port: {{ .Values.service.secure.externalPort }}
+      nodePort: {{ .Values.global.nodePortPrefixExt| default .Values.nodePortPrefixExt }}{{ .Values.service.secure.nodePort }}
+      name: {{ .Values.service.name }}-secure
+    {{- end }}
     {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.name }}
-    {{- end}}
+    {{ if .Values.service.insecure.enabled -}}
+    - port: {{ .Values.service.insecure.externalPort }}
+      targetPort: {{ .Values.service.insecure.internalPort }}
+      name: {{ .Values.service.name }}-insecure
+    {{- end }}
+    {{ if .Values.service.secure.enabled -}}
+    - port: {{ .Values.service.secure.externalPort }}
+      targetPort: {{ .Values.service.secure.internalPort }}
+      name: {{ .Values.service.name }}-secure
+    {{- end }}
+    {{- end }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ .Release.Name }}
-
