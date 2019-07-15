@@ -92,6 +92,7 @@ GLOBAL_INJECTED_POLICY_DISTRIBUTION_IP_ADDR = 'policy-distribution.{{include "co
 GLOBAL_INJECTED_POLICY_PDPX_IP_ADDR = 'policy-xacml-pdp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_POLICY_APEX_PDP_IP_ADDR = 'policy-apex-pdp.{{include "common.namespace" .}}'
 GLOBAL_INJECTED_PUBLIC_NET_ID = '{{ .Values.openStackPublicNetId }}'
+GLOBAL_INJECTED_PRIVATE_KEY = "{{ .Files.Get .Values.vnfPrivateKey }}"
 GLOBAL_INJECTED_PUBLIC_KEY = "{{ .Values.vnfPubKey }}"
 GLOBAL_INJECTED_REGION = '{{ .Values.openStackRegion }}'
 GLOBAL_INJECTED_SCRIPT_VERSION = '{{ .Values.scriptVersion }}'
@@ -193,7 +194,8 @@ GLOBAL_INJECTED_PROPERTIES = {
     "GLOBAL_INJECTED_POLICY_APEX_PDP_IP_ADDR" : 'policy-apex-pdp.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_PORTAL_IP_ADDR" : 'portal-app.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_PUBLIC_NET_ID" : '{{ .Values.openStackPublicNetId }}',
-    "GLOBAL_INJECTED_PUBLIC_KEY" : "{{ .Values.vnfPubKey }}",
+    "GLOBAL_INJECTED_PRIVATE_KEY" : '{{ .Files.Get .Values.vnfPrivateKey }}',
+    "GLOBAL_INJECTED_PUBLIC_KEY" : '{{ .Values.vnfPubKey }}',
     "GLOBAL_INJECTED_REGION" : '{{ .Values.openStackRegion }}',
     "GLOBAL_INJECTED_SDC_BE_IP_ADDR" : 'sdc-be.{{include "common.namespace" .}}',
     "GLOBAL_INJECTED_SDC_BE_ONBOARD_IP_ADDR" : 'sdc-onboarding-be.{{include "common.namespace" .}}',
