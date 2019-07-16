@@ -29,3 +29,57 @@
   {{- $name := default .Chart.Name .Values.nameOverride -}}
   {{- default $name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{- define "common.service" -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  {{- if eq .Values.service.type "NodePort" -}}
+  {{- if .Values.global.installSidecarSecurity }}
+  - port: {{ .Values.global.rproxy.port }}
+  {{- else }}
+  - port: {{ .Values.service.internalPort }}
+  {{- end }}
+    {{- if lt ( .Values.service.nodePort | int ) 10 }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix | int }}0{{ .Values.service.nodePort }}
+    {{- else }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix | int }}{{ .Values.service.nodePort }}
+    {{- end }}
+    name: {{ .Values.service.portName }}
+    {{- if .Values.service.nodePort2 }}
+  - port: {{ .Values.service.internalPort2 }}
+    {{- if lt ( .Values.service.nodePort2 | int ) 10 }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix | int }}0{{ .Values.service.nodePort2 }}
+    {{- else }}
+    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix | int }}{{ .Values.service.nodePort2 }}
+    {{- end }}
+    name: {{ .Values.service.portName2 }}
+    {{- end }}
+  {{- else }}
+  {{- if .Values.global.installSidecarSecurity }}
+  - port: {{ .Values.global.rproxy.port }}
+  {{- else }}
+  - port: {{ .Values.service.internalPort }}
+  {{- end }}
+    name: {{ .Values.service.portName }}
+    {{- if .Values.service.internalPort2 }}
+  - port: {{ .Values.service.internalPort2 }}
+    name: {{ .Values.service.portName2 }}
+    {{- end }}
+  clusterIP: None
+  {{- end}}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
+{{- end -}}
