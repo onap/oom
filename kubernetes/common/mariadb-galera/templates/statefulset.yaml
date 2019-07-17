@@ -89,7 +89,6 @@ spec:
               - /usr/share/container-scripts/mysql/readiness-probe.sh
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
       {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             exec:
@@ -110,18 +109,17 @@ spec:
             readOnly: true
 {{- if .Values.persistence.enabled }}
           - mountPath: /var/lib/mysql
-            name: {{ include "common.fullname" . }}-data
+            name: {{ include "common.fullname" . }}
       initContainers:
         - name: mariadb-galera-prepare
           image: "{{ include "common.repository" . }}/{{ .Values.imageInit }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
           command: ["sh", "-c", "chown -R 27:27 /var/lib/mysql"]
           volumeMounts:
-            - name: {{ include "common.fullname" . }}-data
+            - name: {{ include "common.fullname" . }}
               mountPath: /var/lib/mysql
   volumeClaimTemplates:
   - metadata:
-      name: {{ include "common.fullname" . }}-data
+      name: {{ include "common.fullname" . }}
       labels:
         name: {{ include "common.fullname" . }}
         chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
@@ -130,11 +128,8 @@ spec:
     spec:
       accessModes:
       - {{ .Values.persistence.accessMode | quote }}
-      storageClassName: {{ include "common.fullname" . }}-data
+      storageClassName: {{ .Values.persistence.storageClass | quote }}
       resources:
         requests:
           storage: {{ .Values.persistence.size | quote }}
-      selector:
-        matchLabels:
-          name: {{ include "common.fullname" . }}
 {{- end }}
