@@ -26,3 +26,6 @@ make-dcae-deployment-handler:
 
 make-dcae-policy-handler:
 	cd charts && helm dep up dcae-policy-handler && helm lint dcae-policy-handler
+
+make-dcae-dashboard:
+	cd charts && helm dep up dcae-dashboard && helm lint dcae-dashboard
