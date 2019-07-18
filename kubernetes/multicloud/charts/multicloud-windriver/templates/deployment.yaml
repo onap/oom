@@ -39,6 +39,14 @@ spec:
       annotations:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
+     initContainers:
+     - command: ["sh", "-c", "chown -R 100:101 /data"]
+       image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.global.ubuntuInitImage }}"
+       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+       name: {{ include "common.name" . }}-init
+       volumeMounts:
+       - mountPath: /data
+         name: artifact-data
      containers:
      - env:
        - name: MSB_ADDR
@@ -122,7 +130,12 @@ spec:
        configMap:
          name: {{ include "common.fullname" . }}-log-configmap
      - name: artifact-data
+     {{- if .Values.persistence.enabled }}
+       persistentVolumeClaim:
+         claimName: {{ include "common.fullname" . }}
+     {{- else }}
        emptyDir: {}
+     {{- end }}
      imagePullSecrets:
      - name: "{{ include "common.namespace" . }}-docker-registry-key"
      restartPolicy: Always
