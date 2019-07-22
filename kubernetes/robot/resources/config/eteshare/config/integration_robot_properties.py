@@ -22,8 +22,8 @@ GLOBAL_AAI_SERVER_PORT = "8443"
 GLOBAL_AAI_USERNAME = '{{ .Values.aaiUsername }}'
 GLOBAL_AAI_PASSWORD = '{{ .Values.aaiPassword}}'
 # appc info - everything is from the private oam network (also called onap private network)
-GLOBAL_APPC_SERVER_PROTOCOL = "http"
-GLOBAL_APPC_SERVER_PORT = "8282"
+GLOBAL_APPC_SERVER_PROTOCOL = "https"
+GLOBAL_APPC_SERVER_PORT = "8443"
 GLOBAL_APPC_USERNAME = '{{ .Values.appcUsername }}'
 GLOBAL_APPC_PASSWORD = '{{ .Values.appcPassword }}'
 GLOBAL_APPC_CDT_SERVER_PROTOCOL = "https"
