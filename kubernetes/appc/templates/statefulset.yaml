@@ -32,10 +32,9 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -48,7 +47,12 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+      - name: {{ include "common.name" . }}-chown
+        image: "busybox"
+        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}"]
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.mdsalPath }}
+            name: {{ include "common.fullname" . }}-data
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -116,9 +120,6 @@ spec:
           - mountPath: /opt/onap/appc/bin/installAppcDb.sh
             name: onap-appc-bin
             subPath: installAppcDb.sh
-          - mountPath: /opt/onap/appc/bin/installFeatures.sh
-            name: onap-appc-bin
-            subPath: installFeatures.sh
           - mountPath: /opt/onap/appc/bin/health_check.sh
             name: onap-appc-bin
             subPath: health_check.sh
@@ -137,9 +138,6 @@ spec:
           - mountPath: /opt/onap/ccsdk/svclogic/bin/showActiveGraphs.sh
             name: onap-sdnc-svclogic-bin
             subPath: showActiveGraphs.sh
-          - mountPath: /opt/onap/ccsdk/bin/startODL.sh
-            name: onap-sdnc-bin
-            subPath: startODL.sh
           - mountPath: /opt/onap/ccsdk/bin/installSdncDb.sh
             name: onap-sdnc-bin
             subPath: installSdncDb.sh
