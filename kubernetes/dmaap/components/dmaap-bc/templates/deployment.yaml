@@ -31,11 +31,9 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostAliases:
-      - ip: "10.12.5.145"
-        hostnames:
-        - "aaf-onap-test.osaaf.org"
       initContainers:
+{{ if .Values.global.aafCadiEnabled }}
+  {{ if eq .Values.global.aafHostName "aaf-locate" }}
       - command:
         - /root/ready.py
         args:
@@ -50,6 +48,13 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-aaf-readiness
+  {{ else }}
+      hostAliases:
+      - ip: "10.12.5.145"
+        hostnames:
+        - {{ .Values.global.aafHostName | quote }}
+  {{ end }}
+{{ end }}
 {{ if .Values.PG.enabled }}
       - command:
         - /root/ready.py

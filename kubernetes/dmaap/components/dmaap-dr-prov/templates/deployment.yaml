@@ -31,6 +31,29 @@ spec:
     spec:
       hostname: {{.Values.config.dmaapDrProv.name}}
       initContainers:
+{{ if .Values.global.aafCadiEnabled }}
+  {{ if eq .Values.global.aafHostName "aaf-locate" }}
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aaf-locate
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-aaf-readiness
+  {{ else }}
+      hostAliases:
+      - ip: "10.12.5.145"
+        hostnames:
+        - {{ .Values.global.aafHostName | quote }}
+  {{ end }}
+{{ end }}
       - command:
         - /root/ready.py
         args:
