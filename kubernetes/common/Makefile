@@ -21,7 +21,7 @@ COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.)))
-
+PARENT_DIR := $(shell dirname $(ROOT_DIR))
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
@@ -39,10 +39,33 @@ dep-%: make-%
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then helm lint $*; fi
 
-package-%: lint-%
+schema-%: lint-%
+	@if [ -f $*/values.yaml ]; then python $(PARENT_DIR)/validateSchema.py $*/values.yaml $* "-d"; fi
+	@for sub_chart in $*/charts/*; \
+	do \
+		if [ -f $${sub_chart}/values.yaml ]; then \
+			python $(PARENT_DIR)/validateSchema.py $${sub_chart}/values.yaml $${sub_chart} "-d"; \
+		fi; \
+	done
+
+package-%: schema-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
 	@helm repo index $(PACKAGE_DIR)
+
+checkSchema:  
+	@for charts in $(HELM_CHARTS); \
+        do \
+                if [ -f $${charts}/values.yaml ]; then \
+                        python $(PARENT_DIR)/validateSchema.py $${charts}/values.yaml $${charts} "-v"; \
+                fi; \
+	 	for sub_charts in $${charts}/charts/*; \
+        	do \
+                	if [ -f $${sub_charts}/values.yaml ]; then \
+                        	python $(PARENT_DIR)/validateSchema.py $${sub_charts}/values.yaml $${sub_charts} "-v"; \
+                	fi; \
+        	done;\
+        done
 
 clean:
 	@rm -f */requirements.lock
