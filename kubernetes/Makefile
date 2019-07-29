@@ -22,7 +22,8 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
-
+EXCLUSIONS_FOR_SCHEMA_CHECK := uui sniro-emulator vid so common dmaap cli aaf log esr pomba modeling consul dcaegen2 vnfsdk cds policy multicloud contrib clamp appc sdc portal aai oof nbi robot msb vfc pnda sdnc onap
+ALL_CHARTS := $(filter-out $(EXCLUSIONS_FOR_SCHEMA_CHECK), $(HELM_CHARTS))  
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) plugins
@@ -44,10 +45,41 @@ dep-%: make-%
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then helm lint $*; fi
 
-package-%: lint-%
+schema-%: lint-%
+	@if [ -f $*/values.yaml ]; then python $(ROOT_DIR)/validateSchema.py $*/values.yaml $* "-d"; fi
+	@for sub_charts in $*/charts/*; \
+	do \
+		if [ -f $${sub_charts}/values.yaml ]; then \
+			python $(ROOT_DIR)/validateSchema.py $${sub_charts}/values.yaml $${sub_charts} "-d"; \
+		fi; \
+	done	
+		
+
+package-%: schema-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
 	@helm repo index $(PACKAGE_DIR)
+
+checkSchema:  
+	@for charts in $(ALL_CHARTS); \
+        do \
+		if [ $${charts} = common ]; then \
+			  $(MAKE) -C common checkSchema; \
+		fi; \
+		if [ -f $${charts}/values.yaml ]; then \
+                        python $(ROOT_DIR)/validateSchema.py $${charts}/values.yaml $${charts} "-v"; \
+                fi; \
+	 	for sub_charts in $${charts}/charts/*; \
+        	do \
+                	if [ -f $${sub_charts}/values.yaml ]; then \
+                        	python $(ROOT_DIR)/validateSchema.py $${sub_charts}/values.yaml $${sub_charts} "-v"; \
+                	fi; \
+        	done;\
+        done
+
+install:
+	@pip install -r $(ROOT_DIR)/requirements.txt
+
 
 clean:
 	@rm -f */requirements.lock
