@@ -97,10 +97,19 @@ spec:
           - name: KEYSTORE_PATH
             value: "{{ .Values.security.storePath }}/{{ .Values.security.keystoreFilename }}"
           - name: TRUSTSTORE_TYPE
-            value: {{ .Values.security.truststore.type }}
+            value: {{ .Values.security.truststoreType }}
           - name: KEYSTORE_TYPE
-            value: {{ .Values.security.keystore.type }}
-            {{ end }}
+            value: {{ .Values.security.keystoreType }}
+          - name: IS_CLIENT_AUTH
+            value: "{{ .Values.security.isClientAuthentication}}"
+          - name: TRUST_ALL
+            value: "{{ .Values.security.isTrustAll}}"
+            {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
+          - name: KEYSTORE_PASSWORD
+            value: "{{ .Values.config.keystorePassword }}"
+          - name: TRUSTSTORE_PASSWORD
+            value: "{{ .Values.config.truststorePassword }}"
+            {{- end }}
           volumeMounts:
           {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
           - name: {{ include "common.fullname" . }}-jetty-https-truststore
@@ -147,5 +156,6 @@ spec:
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        {{- template "sdc-wfd-fe.volumes" . }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
