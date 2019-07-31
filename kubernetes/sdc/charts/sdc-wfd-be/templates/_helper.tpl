@@ -10,6 +10,10 @@
       hostPath:
         path: /config/server-https-keystore/keystore
         type: File
+    - name: {{ include "common.fullname" . }}-server-https-truststore
+      hostPath:
+        path: /config/server-https-keystore/keystore
+        type: File
     {{- end }}
 {{- end }}
 
@@ -24,6 +28,10 @@
     - name: {{ include "common.fullname" . }}-server-https-keystore
       mountPath: /etc/server-https-keystore/keystore
       subPath: keystore
+      readOnly: true
+    - name: {{ include "common.fullname" . }}-server-https-truststore
+      mountPath: /etc/server-https-keystore/keystore
+      subPath: truststore
       readOnly: true
     {{- end }}
 {{- end }}
