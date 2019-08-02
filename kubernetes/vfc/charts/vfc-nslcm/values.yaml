@@ -12,80 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#################################################################
-# Global configuration defaults.
-#################################################################
 global:
-  nodePortPrefix: 302
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-
-#################################################################
-# Application configuration defaults.
-#################################################################
-# application image
-flavor: small
-
-repository: nexus3.onap.org:10001
-image: onap/vfc/nslcm:1.3.2
-pullPolicy: Always
-
-#Istio sidecar injection policy
-istioSidecar: true
-
-# flag to enable debugging - application support required
-debugEnabled: false
+  config:
+    msbServiceName: msb-iag
+    msbPort: 80
+    dbServiceName: vfc-db
+    dbPort: 3306
+    dbUser: root
+    mariadbRootPassword: secretpassword
+    redisServiceName: vfc-redis
+    redisPort: 6379
+    reg_to_msb_when_start: True
+  persistence:
+    mountPath: /dockerdata-nfs
 
 # application configuration
-config: {}
+config:
+  logstashServiceName: log-ls
+  logstashPort: 5044
 
-# default number of instances
-replicaCount: 1
+mariadb-galera:
+  nameOverride: vfc-mariadb
+  service:
+    name: vfc-db
+    portName: vfc-db
+  nfsprovisionerPrefix: vfc
+  persistence:
+    mountSubPath: vfc/data
+    enabled: true
+  disableNfsProvisioner: true
 
-nodeSelector: {}
+catalog:
+  config:
+    dbPodName: vfc-db
+    dbServiceName: vfc-db
+nslcm:
+  config:
+    dbPodName: vfc-db
+    dbServiceName: vfc-db
+# sub-chart configuration
+vfc-workflow:
+  service:
+    externalPort: 10550
 
-affinity: {}
-
-# probe configuration parameters
-liveness:
-  initialDelaySeconds: 120
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
-
-readiness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-
-service:
-  type: ClusterIP
-  name: vfc-nslcm
-  portName: vfc-nslcm
-  externalPort: 8403
-  internalPort: 8403
-#  nodePort: 30403
-
-ingress:
-  enabled: false
-
-
-# Configure resource requests and limits
-resources:
-  small:
-    limits:
-      cpu: 200m
-      memory: 500Mi
-    requests:
-      cpu: 100m
-      memory: 250Mi
-  large:
-    limits:
-      cpu: 400m
-      memory: 1000Mi
-    requests:
-      cpu: 200m
-      memory: 500Mi
-  unlimited: {}
+vfc-workflow-engine:
+  config:
+    workflowPort: 10550
