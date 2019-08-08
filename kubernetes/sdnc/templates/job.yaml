@@ -1,0 +1,129 @@
+# Copyright © 2017 Amdocs, Bell Canada, AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-dbinit-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.config.mariadbGalera.chartName }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}
+                key: db-root-password
+          - name: ODL_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}-odl
+                key: odl-password
+          - name: SDNC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" . }}-sdnctl
+                key: db-sdnctl-password
+          - name: MYSQL_HOST
+            value: "{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}"
+          - name: SDNC_HOME
+            value: "{{.Values.config.sdncHome}}"
+          - name: ETC_DIR
+            value: "{{.Values.config.etcDir}}"
+          - name: BIN_DIR
+            value: "{{.Values.config.binDir}}"
+          - name: SDNC_DB_USER
+            value: "{{.Values.config.dbSdnctlUser}}"
+          - name: SDNC_DB_DATABASE
+            value: "{{.Values.config.dbSdnctlDatabase}}"
+        volumeMounts:
+          - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+            name: bin
+            subPath: installSdncDb.sh
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: {{ .Values.config.configDir }}/dblib.properties
+            name: properties
+            subPath: dblib.properties
+        command:
+          - /bin/bash
+        args:
+          - {{.Values.config.binDir }}/installSdncDb.sh
+        resources:
+{{ include "common.resources" . | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: docker-entrypoint-initdb-d
+        emptyDir: {}
+      - name: bin
+        configMap:
+          name: {{ include "common.fullname" . }}-bin
+          defaultMode: 0755
+      - name: properties
+        configMap:
+          name: {{ include "common.fullname" . }}-properties
+          defaultMode: 0644
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
