@@ -369,6 +369,9 @@ blocks access to the ONAP Portal. To enable direct access to this Portal from a
 user's own environment (a laptop etc.) the portal application's port 8989 is
 exposed through a `Kubernetes LoadBalancer`_ object.
 
+**Note**: This only applies to Kubernetes Cluster deployments using Rancher. 
+For RKE deployments, a Kubernetes Load Balancer is not created.
+
 Typically, to be able to access the Kubernetes nodes publicly a public address
 is assigned. In Openstack this is a floating IP address.
 
