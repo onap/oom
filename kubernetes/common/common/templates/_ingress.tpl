@@ -3,13 +3,13 @@
 {{- if .Values.ingress.service -}}
 {{- range .Values.ingress.service }}
         - path: {{ .path }}
-        backend:
+          backend:
             serviceName: {{ .name }}
             servicePort: {{ .port }}
 {{- end }}
 {{- else -}}
          - path: {{ printf "/%s" .Chart.Name }}
-         backend:
+           backend:
              serviceName: {{ .Chart.Name }}
              servicePort: {{ .Values.service.externalPort }}
 {{- end -}}
