@@ -1,4 +1,4 @@
-make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-redis make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler
+make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-redis make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard
 
 make-dcae-bootstrap:
 	cd charts && helm dep up dcae-bootstrap && helm lint dcae-bootstrap
@@ -26,3 +26,6 @@ make-dcae-deployment-handler:
 
 make-dcae-policy-handler:
 	cd charts && helm dep up dcae-policy-handler && helm lint dcae-policy-handler
+
+make-dcae-dashboard:
+	cd charts && helm dep up dcae-dashboard && helm lint dcae-dashboard

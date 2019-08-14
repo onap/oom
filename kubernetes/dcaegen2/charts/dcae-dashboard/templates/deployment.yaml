@@ -40,10 +40,18 @@ spec:
           command:
             - /root/ready.py
           args:
-            - --container-name
-            - {{ .Values.postgres.nameOverride }}
-            - "-t"
-            - "15"
+          - --container-name
+          - dcae-cloudify-manager
+          - --container-name
+          - consul-server
+          - --container-name
+          - dcae-inventory-api
+          - --container-name
+          - dcae-deployment-handler
+          - --container-name
+          - {{ .Values.postgres.nameOverride }}
+          - "-t"
+          - "45"
           env:
           - name: NAMESPACE
             valueFrom:
@@ -67,18 +75,11 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          # Assumes that the Docker image is built with ENTRYPOINT set to
-          # ["java", "-jar", "/opt/inventory-api-x.y.z.jar", "server"]
-          # where "x.y.z" is the version number (matches the Docker image version number)
-          # The arg below adds a parameter, the path to a config file.
-          # This tells the inventory-api app to get its configuration from the file
-          # rather than querying Consul.
-          args:
-            - "/opt/config.json"
           resources:
 {{ include "common.resources" . | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+            protocol: TCP
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -95,20 +96,73 @@ spec:
               scheme: {{ .Values.readiness.scheme }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 1
           volumeMounts:
-            - name: {{  include "common.fullname" . }}-inv-config
-              mountPath: /opt/config.json
-              subPath: config.json
-            - mountPath: /opt/cert/
+            - mountPath: /usr/local/share/ca-certificates/
               name: tls-info
           env:
             - name: CONSUL_HOST
-              value: consul.{{ include "common.namespace" . }}
+              value: consul-server.{{ include "common.namespace" . }}
+            - name: CONFIG_BINDING_SERVICE
+              value: config-binding-service
+            - name: inventory_url
+              value: {{ .Values.config.inventory_url }}
+            - name: postgres_port
+              value: "{{ .Values.postgres.config.pgPort }}"
+            - name: cloudify_password
+              value: admin
+            - name: dhandler_url
+              value: {{ .Values.config.dhandler_url }}
+            - name: cfy_url
+              value: {{ .Values.config.cfy_url }}
+            - name: cloudify_user
+              value: admin
+            - name: consul_url
+              value: http://consul-server-ui:8500
+            - name: postgres_user_dashboard
+              value: {{ .Values.postgres.config.pgUserName }}
+            - name: postgres_db_name
+              value: {{ .Values.postgres.config.pgDatabase }}
+            - name: postgres_password_dashboard
+              value: {{ .Values.postgres.config.pgUserPassword }}
+            - name: postgres_ip
+              value: {{ .Values.postgres.service.name2 }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+        - name: {{ include "common.name" . }}-filebeat
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          image: {{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}
+          imagePullPolicy: IfNotPresent
+          resources: {}
+          volumeMounts:
+          - mountPath: /var/log/onap/dashboard
+            name: component-log
+          - mountPath: /usr/share/filebeat/data
+            name: filebeat-data
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
       volumes:
-        - name: {{ include "common.fullname" . }}-inv-config
-          configMap:
-            name: {{ include "common.fullname" . }}-configmap
+        - emptyDir: {}
+          name: component-log
+        - emptyDir: {}
+          name: filebeat-data
+        - configMap:
+            defaultMode: 420
+            name: {{ include "common.fullname" . }}-filebeat-configmap
+          name: filebeat-conf
         - emptyDir: {}
           name: tls-info
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
