@@ -32,7 +32,7 @@ spec:
     spec:
       initContainers:
       - name: {{ include "common.name" . }}-config-container
-        image: {{ .Values.global.repository }}/onap/aaf/aaf_config:{{.Values.global.aaf.imageVersion}}
+        image: {{ .Values.global.repository }}/{{.Values.global.aaf.config.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c","cd /opt/app/aaf_config && bin/pod_wait.sh config nc aaf-cass.{{ .Release.Namespace }} 9042 sleep 15 remove && bin/agent.sh"]
         volumeMounts:
@@ -63,6 +63,8 @@ spec:
             value: "{{.Values.global.aaf.aaf_locator_name}}"
           - name: aaf_locator_name_oom
             value: "{{.Values.global.aaf.aaf_locator_name_oom}}"
+          - name: cm_always_ignore_ips
+            value: "true"
           - name: CASSANDRA_CLUSTER
             value: "{{.Values.global.aaf.cass.fqdn}}.{{ .Release.Namespace }}"
 #          - name: CASSANDRA_USER
@@ -73,9 +75,12 @@ spec:
 #            value: ""
       containers:
       - name: {{ include "common.name" . }}
-        command: ["/bin/bash","-c","cd /opt/app/aaf && bin/pod_wait.sh aaf-service aaf-cass  && exec bin/service"]
-        image: {{ .Values.global.repository }}/onap/aaf/aaf_service:{{.Values.global.aaf.imageVersion}}
+        command: ["/bin/bash","-c","cd /opt/app/aaf  && bin/pod_wait.sh aaf-service aaf-cass  && exec bin/service"]
+        image: {{.Values.global.repository}}/{{.Values.global.aaf.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: cm_always_ignore_ips
+            value: "true"
         lifecycle:
           preStop:
             exec:
