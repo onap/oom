@@ -10,6 +10,19 @@
 ONAP Operations Manager Release Notes
 =====================================
 
+Version 5.0.0 (El Alto Early Drop)
+----------------------------------
+
+:Release Date: 2019-08-19
+
+Summary
+-------
+
+**Software Requirements**
+
+* Upgraded to Kubernetes 1.15.x and Helm 1.14.x
+
+
 Version 4.0.0 (Dublin Release)
 ------------------------------
 
