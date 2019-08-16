@@ -52,8 +52,18 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
-            - name: APP_CONFIG_HOME
-              value: {{ .Values.config.appConfigDir }}
+          - name: APP_CONFIG_HOME
+            value: {{ .Values.config.appConfigDir }}
+          - name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.namespace" . -}}-secret-cds
+                key: dbPassword
+          - name: BASIC_AUTH_HASHED_PWD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.namespace" . -}}-secret-cds
+                key: authHashedPassword
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
