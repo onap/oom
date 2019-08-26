@@ -20,6 +20,7 @@
 
     create table loop_logs (
        id bigint not null,
+        log_component varchar(255) not null,
         log_instant datetime(6) not null,
         log_type varchar(255) not null,
         message MEDIUMTEXT not null,
@@ -36,6 +37,7 @@
         global_properties_json json,
         last_computed_state varchar(255) not null,
         model_properties_json json,
+        operational_policy_schema json,
         svg_representation MEDIUMTEXT,
         primary key (name)
     ) engine=InnoDB;
