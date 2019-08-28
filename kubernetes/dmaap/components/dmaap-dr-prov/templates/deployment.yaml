@@ -29,13 +29,13 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostname: {{.Values.config.dmaapDrProv.name}}
+      hostname: {{ .Values.global.dmaapDrProvName }}
       initContainers:
       - command:
         - /root/ready.py
         args:
         - --container-name
-        - {{.Values.config.dmaapDrDb.mariadbContName}}
+        - {{ .Values.config.dmaapDrDb.mariadbContName }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -50,18 +50,18 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{.Values.config.dmaapDrProv.externalPort}}
-          - containerPort: {{.Values.config.dmaapDrProv.externalPort2}}
+          - containerPort: {{ .Values.global.dmaapDrProvExtPort }}
+          - containerPort: {{ .Values.global.dmaapDrProvExtPort2 }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrProv.externalPort}}
+              port: {{ .Values.global.dmaapDrProvExtPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrProv.externalPort}}
+              port: {{ .Values.global.dmaapDrProvExtPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
@@ -74,6 +74,9 @@ spec:
           - mountPath: /opt/app/datartr/etc/drProvCadi.properties
             name: {{ include "common.fullname" . }}-config
             subPath: drProvCadi.properties
+          - mountPath: /opt/app/datartr/etc/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
           - mountPath: {{ .Values.global.loggingDirectory }}
             name: {{ include "common.fullname" . }}-logs
           resources:
@@ -115,7 +118,7 @@ spec:
           name: {{ include "common.fullname" . }}-log
       - name: {{ include "common.fullname" . }}-filebeat-conf
         configMap:
-          name: {{ .Release.Name }}-dmaap-filebeat-configmap
+          name: {{ include "common.fullname" . }}-dmaap-dr-prov-filebeat-configmap
       - name: {{ include "common.fullname" . }}-data-filebeat
         emptyDir: {}
       - name:  {{ include "common.fullname" . }}-logs

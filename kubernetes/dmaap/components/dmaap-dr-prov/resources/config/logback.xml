@@ -18,131 +18,390 @@
   ============LICENSE_END=========================================================
 -->
 <configuration scan="true" scanPeriod="3 seconds" debug="true">
+    <!--<jmxConfigurator /> -->
+    <!-- directory path for all other type logs -->
+    <!-- property name="logDir" value="/home/eby/dr2/logs" / -->
+    <property name="logDir" value="/opt/app/datartr/logs" />
 
-  <property name="generalLogName" value="apicalls" />
-  <property name="errorLogName" value="errors" />
-  <property name="jettyLogName" value="jetty"/>
+    <!-- directory path for debugging type logs -->
+    <!-- property name="debugDir" value="/home/eby/dr2/debug-logs" /-->
 
-  <property name="defaultPattern"    value="%d{MM/dd-HH:mm:ss.SSS}|%logger|%X{RequestId}|%X{ServiceInstanceId}|%thread|%X{ServiceName}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ServerFQDN}|%X{RemoteHost}|%X{Timer}|%msg%n" />
-  <property name="jettyLoggerPattern" value="%d{MM/dd-HH:mm:ss.SSS}|%logger|%thread|%.-5level|%msg%n" />
-  <property name="debugLoggerPattern" value="%d{MM/dd-HH:mm:ss.SSS}|%X{RequestId}|%X{ServiceInstanceId}|%thread|%X{ServiceName}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ServerFQDN}|%X{RemoteHost}|%X{Timer}|[%caller{3}]|%msg%n" />
+    <!--  specify the component name
+      <ECOMP-component-name>::= "MSO" | "DCAE" | "ASDC " | "AAI" |"Policy" | "SDNC" | "AC"  -->
+    <!-- This creates the MSO directory in in the LogDir which is not needed, mentioned last directory of the path-->
+    <!-- property name="componentName" value="logs"></property -->
 
-  <property name="logDirectory" value="/opt/app/datartr/logs" />
+    <!--  log file names -->
+    <property name="generalLogName" value="apicalls" />
+    <!-- name="securityLogName" value="security" -->
+    <!-- name="performanceLogName" value="performance" -->
+    <!-- name="serverLogName" value="server" -->
+    <!-- name="policyLogName" value="policy"-->
+    <property name="errorLogName" value="errors" />
+    <!-- name="metricsLogName" value="metrics" -->
+    <property name="debugLogName" value="debug"/>
+    <property name="jettyLogName" value="jetty"/>
+    <property name="defaultPattern"     value="%d{MM/dd-HH:mm:ss.SSS}|%logger|%X{RequestId}|%X{InvocationId}|%X{ServiceInstanceId}|%thread|%X{ServiceName}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ServerFQDN}|%X{RemoteHost}|%X{Timer}|%msg%n" />
+    <property name="jettyLoggerPattern" value="%d{MM/dd-HH:mm:ss.SSS}|%logger|%thread|%.-5level|%msg%n" />
 
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>${defaultPattern}</pattern>
-    </encoder>
-  </appender>
+    <property name="debugLoggerPattern" value="%d{MM/dd-HH:mm:ss.SSS}|%logger|%X{RequestId}|%X{InvocationId}|%X{ServiceInstanceId}|%thread|%X{ServiceName}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ServerFQDN}|%X{RemoteHost}|%X{Timer}|[%caller{3}]|%msg%n" />
 
-  <!-- ============================================================================ -->
-  <!-- EELF Appenders -->
-  <!-- ============================================================================ -->
+    <property name="logDirectory" value="${logDir}" />
+    <!-- property name="debugLogDirectory" value="${debugDir}/${componentName}" /-->
 
-  <appender name="EELF"
-    class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${generalLogName}.log</file>
-     <filter class="ch.qos.logback.classic.filter.LevelFilter">
-        <level>INFO</level>
-        <onMatch>ACCEPT</onMatch>
-        <onMismatch>DENY</onMismatch>
-    </filter>
-    <rollingPolicy
-      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${logDirectory}/${generalLogName}.%i.log.zip
-      </fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>9</maxIndex>
-    </rollingPolicy>
-    <triggeringPolicy
-      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>5MB</maxFileSize>
-    </triggeringPolicy>
-    <encoder>
-      <pattern>${defaultPattern}</pattern>
-    </encoder>
-  </appender>
 
-  <appender name="asyncEELF" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELF" />
-  </appender>
+    <!-- Example evaluator filter applied against console appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${defaultPattern}</pattern>
+        </encoder>
+    </appender>
 
-  <appender name="EELFError"
-    class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${errorLogName}.log</file>
-    <filter class="ch.qos.logback.classic.filter.LevelFilter">
-        <level>ERROR</level>
-        <onMatch>ACCEPT</onMatch>
-        <onMismatch>DENY</onMismatch>
-    </filter>
-    <rollingPolicy
-      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${logDirectory}/${errorLogName}.%i.log.zip
-      </fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>9</maxIndex>
-    </rollingPolicy>
-    <triggeringPolicy
-      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>5MB</maxFileSize>
-    </triggeringPolicy>
-    <encoder>
-      <pattern>${defaultPattern}</pattern>
-    </encoder>
-  </appender>
+    <!-- ============================================================================ -->
+    <!-- EELF Appenders -->
+    <!-- ============================================================================ -->
 
-  <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELFError"/>
-  </appender>
+    <!-- The EELFAppender is used to record events to the general application
+      log -->
 
-  <!-- ============================================================================ -->
-   <appender name="jettylog"
-    class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${jettyLogName}.log</file>
-     <filter class="org.onap.dmaap.datarouter.provisioning.eelf.JettyFilter" />
-    <rollingPolicy
-      class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${logDirectory}/${jettyLogName}.%i.log.zip
-      </fileNamePattern>
-      <minIndex>1</minIndex>
-      <maxIndex>9</maxIndex>
-    </rollingPolicy>
-    <triggeringPolicy
-      class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-      <maxFileSize>5MB</maxFileSize>
-    </triggeringPolicy>
-    <encoder>
-      <pattern>${jettyLoggerPattern}</pattern>
-    </encoder>
-  </appender>
 
-  <appender name="asyncEELFjettylog" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="jettylog" />
-    <includeCallerData>true</includeCallerData>
-  </appender>
+    <appender name="EELF"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDirectory}/${generalLogName}.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${logDirectory}/${generalLogName}.%i.log.zip
+            </fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>9</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>${defaultPattern}</pattern>
+        </encoder>
+    </appender>
 
-  <!-- ============================================================================ -->
-  <!--  EELF loggers -->
-  <!-- ============================================================================ -->
-  <logger name="com.att.eelf" level="info" additivity="false">
-    <appender-ref ref="asyncEELF" />
-  </logger>
+    <appender name="asyncEELF" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <appender-ref ref="EELF" />
+    </appender>
 
-     <logger name="com.att.eelf.error" level="error" additivity="false">
-          <appender-ref ref="asyncEELFError" />
-      </logger>
+    <!-- EELF Security Appender. This appender is used to record security events
+      to the security log file. Security events are separate from other loggers
+      in EELF so that security log records can be captured and managed in a secure
+      way separate from the other logs. This appender is set to never discard any
+      events. -->
+    <!--appender name="EELFSecurity"
+      class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${securityLogName}.log</file>
+      <rollingPolicy
+        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logDirectory}/${securityLogName}.%i.log.zip
+        </fileNamePattern>
+        <minIndex>1</minIndex>
+        <maxIndex>9</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy
+        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>5MB</maxFileSize>
+      </triggeringPolicy>
+      <encoder>
+        <pattern>${defaultPattern}</pattern>
+      </encoder>
+    </appender>
 
-     <logger name="log4j.logger.org.eclipse.jetty" additivity="false" level="info">
+    <appender name="asyncEELFSecurity" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>256</queueSize>
+      <discardingThreshold>0</discardingThreshold>
+      <appender-ref ref="EELFSecurity" />
+    </appender-->
+
+    <!-- EELF Performance Appender. This appender is used to record performance
+      records. -->
+    <!--appender name="EELFPerformance"
+      class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${performanceLogName}.log</file>
+      <rollingPolicy
+        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logDirectory}/${performanceLogName}.%i.log.zip
+        </fileNamePattern>
+        <minIndex>1</minIndex>
+        <maxIndex>9</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy
+        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>5MB</maxFileSize>
+      </triggeringPolicy>
+      <encoder>
+        <outputPatternAsHeader>true</outputPatternAsHeader>
+        <pattern>${defaultPattern}</pattern>
+      </encoder>
+    </appender>
+    <appender name="asyncEELFPerformance" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>256</queueSize>
+      <appender-ref ref="EELFPerformance" />
+    </appender-->
+
+    <!-- EELF Server Appender. This appender is used to record Server related
+      logging events. The Server logger and appender are specializations of the
+      EELF application root logger and appender. This can be used to segregate Server
+      events from other components, or it can be eliminated to record these events
+      as part of the application root log. -->
+    <!--appender name="EELFServer"
+      class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${serverLogName}.log</file>
+      <rollingPolicy
+        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logDirectory}/${serverLogName}.%i.log.zip
+        </fileNamePattern>
+        <minIndex>1</minIndex>
+        <maxIndex>9</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy
+        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>5MB</maxFileSize>
+      </triggeringPolicy>
+      <encoder>
+          <pattern>${defaultPattern}</pattern>
+      </encoder>
+    </appender>
+    <appender name="asyncEELFServer" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>256</queueSize>
+      <appender-ref ref="EELFServer" />
+    </appender-->
+
+
+    <!-- EELF Policy Appender. This appender is used to record Policy engine
+      related logging events. The Policy logger and appender are specializations
+      of the EELF application root logger and appender. This can be used to segregate
+      Policy engine events from other components, or it can be eliminated to record
+      these events as part of the application root log. -->
+    <!--appender name="EELFPolicy"
+      class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${policyLogName}.log</file>
+      <rollingPolicy
+        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logDirectory}/${policyLogName}.%i.log.zip
+        </fileNamePattern>
+        <minIndex>1</minIndex>
+        <maxIndex>9</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy
+        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>5MB</maxFileSize>
+      </triggeringPolicy>
+      <encoder>
+          <pattern>${defaultPattern}</pattern>
+      </encoder>
+    </appender>
+    <appender name="asyncEELFPolicy" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>256</queueSize>
+      <appender-ref ref="EELFPolicy" >
+    </appender-->
+
+
+    <!-- EELF Audit Appender. This appender is used to record audit engine
+      related logging events. The audit logger and appender are specializations
+      of the EELF application root logger and appender. This can be used to segregate
+      Policy engine events from other components, or it can be eliminated to record
+      these events as part of the application root log. -->
+
+    <!--appender name="EELFAudit"
+      class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${auditLogName}.log</file>
+      <rollingPolicy
+        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logDirectory}/${auditLogName}.%i.log.zip
+        </fileNamePattern>
+        <minIndex>1</minIndex>
+        <maxIndex>9</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy
+        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>5MB</maxFileSize>
+      </triggeringPolicy>
+      <encoder>
+           <pattern>${defaultPattern}</pattern>
+      </encoder>
+    </appender>
+    <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>256</queueSize>
+      <appender-ref ref="EELFAudit" />
+    </appender-->
+
+    <!--appender name="EELFMetrics"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDirectory}/${metricsLogName}.log</file>
+        <rollingPolicy
+          class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+          <fileNamePattern>${logDirectory}/${metricsLogName}.%i.log.zip
+          </fileNamePattern>
+          <minIndex>1</minIndex>
+          <maxIndex>9</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+          class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+          <maxFileSize>5MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder-->
+    <!-- <pattern>"%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} -
+      %msg%n"</pattern> -->
+    <!--pattern>${defaultPattern}</pattern>
+  </encoder>
+</appender>
+
+
+<appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
+  <queueSize>256</queueSize>
+  <appender-ref ref="EELFMetrics"/>
+</appender-->
+
+    <appender name="EELFError"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDirectory}/${errorLogName}.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${logDirectory}/${errorLogName}.%i.log.zip
+            </fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>9</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>${defaultPattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <appender-ref ref="EELFError"/>
+    </appender>
+
+    <!-- ============================================================================ -->
+    <appender name="jettylog"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDirectory}/${jettyLogName}.log</file>
+        <filter class="org.onap.dmaap.datarouter.provisioning.eelf.JettyFilter" />
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${logDirectory}/${jettyLogName}.%i.log.zip
+            </fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>9</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>${jettyLoggerPattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncEELFjettylog" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <appender-ref ref="jettylog" />
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <!-- ============================================================================ -->
+
+
+    <appender name="EELFDebug"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDirectory}/${debugLogName}.log</file>
+        <filter class="org.onap.dmaap.datarouter.provisioning.eelf.DebugTraceFilter" />
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${logDirectory}/${debugLogName}.%i.log.zip
+            </fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>9</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>50MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>${defaultPattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <appender-ref ref="EELFDebug" />
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+
+    <!-- ============================================================================ -->
+    <!--  EELF loggers -->
+    <!-- ============================================================================ -->
+    <logger name="com.att.eelf" level="info" additivity="false">
+        <appender-ref ref="asyncEELF" />
+    </logger>
+
+    <logger name="com.att.eelf.error" level="error" additivity="false">
+        <appender-ref ref="asyncEELFError" />
+    </logger>
+
+    <logger name="log4j.logger.org.eclipse.jetty" additivity="false" level="info">
         <appender-ref ref="asyncEELFjettylog"/>
     </logger>
 
-  <root level="INFO">
-    <appender-ref ref="asyncEELF" />
-    <appender-ref ref="asyncEELFError" />
-     <appender-ref ref="asyncEELFjettylog" />
-  </root>
+    <logger name="com.att.eelf.debug" level="debug" additivity="false">
+        <appender-ref ref="asyncEELFDebug" />
+    </logger>
+
+    <!-- logger name="com.att.eelf.security" level="info" additivity="false">
+      <appender-ref ref="asyncEELFSecurity" />
+    </logger>
+    <logger name="com.att.eelf.perf" level="info" additivity="false">
+      <appender-ref ref="asyncEELFPerformance" />
+    </logger>
+    <logger name="com.att.eelf.server" level="info" additivity="false">
+      <appender-ref ref="asyncEELFServer" />
+    </logger>
+    <logger name="com.att.eelf.policy" level="info" additivity="false">
+      <appender-ref ref="asyncEELFPolicy" />
+    </logger>
+
+    <logger name="com.att.eelf.audit" level="info" additivity="false">
+      <appender-ref ref="asyncEELFAudit" />
+    </logger>
+
+    <logger name="com.att.eelf.metrics" level="info" additivity="false">
+          <appender-ref ref="asyncEELFMetrics" />
+    </logger>
+
+     <logger name="com.att.eelf.debug" level="debug" additivity="false">
+          <appender-ref ref="asyncEELFDebug" />
+    </logger-->
+
+
+
+
+    <root level="INFO">
+        <appender-ref ref="asyncEELF" />
+        <appender-ref ref="asyncEELFError" />
+        <appender-ref ref="asyncEELFjettylog" />
+        <appender-ref ref="asyncEELFDebug" />
+    </root>
 
 </configuration>
