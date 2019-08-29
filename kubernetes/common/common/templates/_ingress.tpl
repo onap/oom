@@ -6,12 +6,12 @@
           backend:
             serviceName: {{ .name }}
             servicePort: {{ .port }}
-{{- end }}
+{{- end -}}
 {{- else -}}
-         - path: {{ printf "/%s" .Chart.Name }}
-           backend:
-             serviceName: {{ .Chart.Name }}
-             servicePort: {{ .Values.service.externalPort }}
+        - path: {{ printf "/%s" .Chart.Name }}
+          backend:
+            serviceName: {{ .Chart.Name }}
+            servicePort: {{ .Values.service.externalPort }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -44,7 +44,7 @@ spec:
   rules:
   - http:
       paths:
-         {{- include "ingress.config.port" . }}
+        {{- include "ingress.config.port" . }}
 {{- if .Values.ingress.tls }}
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
