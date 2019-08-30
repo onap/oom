@@ -81,23 +81,17 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: false
-          - mountPath: /opt/app/datartr/etc/dedicatedFeed.json
-            name: {{ include "common.fullname" . }}-create-feed-config
-            subPath: dedicatedFeed.json
-          - mountPath: /opt/app/datartr/etc/createFeed.sh
-            name: {{ include "common.fullname" . }}-create-feed-config
-            subPath: createFeed.sh
           - mountPath: /opt/app/datartr/etc/node.properties
             name: {{ include "common.fullname" . }}-config
             subPath: node.properties
           - mountPath: /opt/app/datartr/etc/drNodeCadi.properties
             name: {{ include "common.fullname" . }}-config
             subPath: drNodeCadi.properties
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - /opt/app/datartr/etc/createFeed.sh
+          - mountPath: /opt/app/datartr/etc/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
+          - mountPath: {{ .Values.global.loggingDirectory }}
+            name: {{ include "common.fullname" . }}-logs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -118,7 +112,7 @@ spec:
             subPath: filebeat.yml
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
-          - name: {{ include "common.fullname" . }}-event-logs-pvc
+          - name: {{ include "common.fullname" . }}-logs
             mountPath: /var/log/onap/datarouter-node
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -126,15 +120,6 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-create-feed-config
-          configMap:
-            name: {{ include "common.fullname" . }}-create-feed-configmap
-            defaultMode: 0755
-            items:
-            - key: createFeed.sh
-              path: createFeed.sh
-            - key: dedicatedFeed.json
-              path: dedicatedFeed.json
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
@@ -148,10 +133,12 @@ spec:
             name: {{ include "common.fullname" . }}-log
         - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
-            name: {{ .Release.Name }}-dmaap-filebeat-configmap
+            name: {{ include "common.fullname" . }}-dmaap-dr-node-filebeat-configmap
         - name: {{ include "common.fullname" . }}-data-filebeat
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-event-logs-pvc
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
   volumeClaimTemplates:
   - metadata:
