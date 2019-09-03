@@ -1,4 +1,5 @@
-# Copyright © 2019 Bell Canada
+# Copyright © 2019 Orange, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +12,57 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  repository: nexus3.onap.org:10001
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  persistence:
+    mountPath: /dockerdata-nfs
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application images
+repository: nexus3.onap.org:10001
+pullPolicy: Always
+
+
+subChartsOnly:
+  enabled: true
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+ingress:
+  enabled: false
+
 
 mariadb-galera:
   config:
@@ -26,3 +78,24 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: cds/data
+
+#Resource Limit flavor -By Default using small
+flavor: small
+#segregation for different envionment (Small and Large)
+
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  unlimited: {}
