@@ -53,15 +53,33 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+            - name: SPRING_DATASOURCE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-nbi-db-secrets
+                  key: mariadb.readwrite.host
+            - name: SPRING_DATASOURCE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-nbi-db-secrets
+                  key: mariadb.readwrite.port
+            - name: SPRING_DATASOURCE_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-nbi-db-secrets
+                  key: mariadb.database
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mariadb://{{ .Values.mariadb.service.name }}.{{ include "common.namespace" . }}:{{.Values.mariadb.service.internalPort }}/{{ .Values.mariadb.config.db.database }}
+              value: jdbc:mariadb://$(SPRING_DATASOURCE_HOST):$(SPRING_DATASOURCE_PORT)/$(SPRING_DATASOURCE_DB)
             - name: SPRING_DATASOURCE_USERNAME
-              value: {{ .Values.mariadb.config.db.user }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-nbi-db-secrets
+                  key: mariadb.readwrite.rolename
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ template "common.fullname" . }}-secret
-                  key: db-user-password
+                  name: {{ .Release.Name}}-nbi-db-secrets
+                  key: mariadb.readwrite.password
             - name: SPRING_DATA_MONGODB_HOST
               value: {{ .Values.mongo.service.name }}.{{ include "common.namespace" . }}
             - name: SPRING_DATA_MONGODB_PORT

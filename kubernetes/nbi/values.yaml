@@ -22,6 +22,14 @@ global:
   readinessImage: readiness-check:1.1.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  mariadbGalera:
+    nameOverride: mariadb-galera
+    serviceName: mariadb-galera
+    servicePort: "3306"
+    mariadbRootPassword: secretpassword
+    #This flag allows SO to instantiate its own mariadb-galera cluster,
+    #serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
+    localCluster: false
 
 subChartsOnly:
   enabled: true
@@ -43,22 +51,6 @@ config:
   ecompInstanceId: OOM
   openStackRegion: RegionOne
   openStackVNFTenantId: 31047205ce114b60833b23e400d6a535
-
-mariadb:
-  nameOverride: nbi-mariadb
-  service:
-    name: nbi-mariadbhost
-    internalPort: 3306
-  config:
-    db:
-      database: nbi
-      user: rene
-      password: lkjgklqsdareyhjujlnnbvfvdttuiukgpiokqbfsjdhfigquosegombvjfqhb
-      root_password: dhqjdshjdsguryebvcnbvcvdsqghyjqgktgjjfhjfghbfs
-  persistence:
-    mountSubPath: nbi/maria/data
-    enabled: true
-  disableNfsProvisioner: true
 
 mongo:
   nameOverride: nbi-mongo
@@ -128,3 +120,17 @@ resources:
       cpu: 200m
       memory: 2Gi
   unlimited: {}
+
+#Used only if localCluster is enabled. Instantiates NBI's own galera cluster
+#helm deploy demo local/onap --namespace onap --verbose --set nbi.enabled=true \
+#                                                       --set nbi.global.mariadbGalera.localCluster=true \
+#                                                       --set nbi.global.mariadbGalera.nameOverride=nbi-mariadb-galera \
+#                                                       --set nbi.global.mariadbGalera.serviceName=nbi-mariadb-galera
+mariadb-galera:
+  nameOverride: nbi-mariadb-galera
+  replicaCount: 1
+  service:
+    name: nbi-mariadb-galera
+  persistence:
+    mountSubPath: nbi/mariadb-galera/data
+    enabled: true
