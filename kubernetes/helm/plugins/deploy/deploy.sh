@@ -109,6 +109,12 @@ deploy() {
     FLAGS="$(echo $FLAGS| sed -n 's/--verbose//p')"
     VERBOSE="true"
   fi
+  # determine if delay for deployment is enabled
+  DELAY="false"
+  if [[ $FLAGS = *"--delay"* ]]; then
+    FLAGS="$(echo $FLAGS| sed -n 's/--delay//p')"
+    DELAY="true"
+  fi	
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
   if [[ $FLAGS = *"--set-last-applied"* ]]; then
@@ -238,6 +244,10 @@ deploy() {
 	      > $LOG_FILE.log 2>&1
         fi
       fi
+	  if [[ $DELAY == "true" ]]; then
+		echo sleep 3m
+		sleep 3m
+	  fi						  
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
