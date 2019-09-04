@@ -33,39 +33,41 @@ spec:
     spec:
       initContainers:
       - command:
-        - /bin/sh
-        - -c
-        - |
-          sysctl -w vm.max_map_count=262144
-          mkdir -p /usr/share/elasticsearch/logs
-          mkdir -p /usr/share/elasticsearch/data
-          chmod -R 777 /usr/share/elasticsearch
+        - /root/ready.py
+        args:
+        - --container-name
+        - mariadb
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-#        securityContext:
-#          privileged: true
-        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.busyboxImage }}
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: init-sysctl
-        volumeMounts:
-        - name: {{ include "common.fullname" . }}-logs
-          mountPath: /usr/share/elasticsearch/logs/
-        - name: {{ include "common.fullname" . }}-data
-          mountPath: /usr/share/elasticsearch/data/
+        name: {{ include "common.name" . }}-readiness
       containers:
+        # side car containers
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          args:
+            - "-Dcom.att.eelf.logging.file=file:/opt/clamp/logback.xml"
+            - ""
           ports:
           - containerPort: {{ .Values.service.internalPort }}
-            name: {{ include "common.servicename" . }}
-          - containerPort: {{ .Values.service.internalPort2 }}
-            name: {{ include "common.servicename" . }}2
-# disable liveness probe when breakpoints set in debugger
+          # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -76,19 +78,24 @@ spec:
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
           volumeMounts:
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: true
-          - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
+          - mountPath: /opt/clamp/sdc-controllers-config.json
             name: {{ include "common.fullname" . }}-config
-            subPath: elasticsearch.yml
-          - mountPath: /usr/share/elasticsearch/data/
-            name: {{ include "common.fullname" . }}-data
+            subPath: sdc-controllers-config.json
+          - mountPath: /opt/clamp/logback.xml
+            name: {{ include "common.fullname" . }}-config
+            subPath: logback.xml
+          env:
+            - name: SPRING_APPLICATION_JSON
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: spring_application_json
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -100,20 +107,20 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
         - name: {{ include "common.fullname" . }}-config
           configMap:
-            name: {{ include "common.fullname" . }}-configmap
+            name: {{ include "common.fullname" . }}
             items:
-            - key: elasticsearch.yml
-              path: elasticsearch.yml
-        - name: {{ include "common.fullname" . }}-data
-          persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
-        - name: {{ include "common.fullname" . }}-logs
-          hostPath:
-            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPathLogs }}
+            - key: sdc-controllers-config.json
+              path: sdc-controllers-config.json
+            - key: logback.xml
+              path: logback.xml
+        - name: {{ include "common.fullname" . }}-filebeat-conf
+          configMap:
+            name: {{ .Release.Name }}-clamp-filebeat-configmap
+        - name: {{ include "common.fullname" . }}-data-filebeat
+          emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2018-2019 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ flavor: small
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/clamp-backend:4.1.0
+image: onap/clamp-frontend:4.1.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -43,41 +43,8 @@ config:
   log:
     logstashServiceName: log-ls
     logstashPort: 5044
-  mysqlPassword: strong_pitchou
+  clampBackendPort: 8443
   dataRootDir: /dockerdata-nfs
-  springApplicationJson: >
-    {
-        "spring.datasource.cldsdb.url": "jdbc:mariadb:sequential://clampdb.{{ include "common.namespace" . }}:3306/cldsdb4?autoReconnect=true&connectTimeout=10000&socketTimeout=10000&retriesAllDown=3",
-        "clamp.config.sdc.catalog.url": "http://sdc-be.{{ include "common.namespace" . }}:8080/sdc/v1/catalog/",
-        "clamp.config.sdc.hostUrl": "http://sdc-be.{{ include "common.namespace" . }}:8080/",
-        "clamp.config.sdc.serviceUrl": "http://sdc-be.{{ include "common.namespace" . }}:8080/sdc/v1/catalog/services",
-        "clamp.config.sdc.serviceUsername": "clamp",
-        "clamp.config.sdc.servicePassword": "b7acccda32b98c5bb7acccda32b98c5b05D511BD6D93626E90D18E9D24D9B78CD34C7EE8012F0A189A28763E82271E50A5D4EC10C7D93E06E0A2D27CAE66B981",
-        "clamp.config.files.sdcController": "file:/opt/clamp/sdc-controllers-config.json",
-        "clamp.config.dcae.inventory.url": "https://inventory.{{ include "common.namespace" . }}:8080",
-        "clamp.config.dcae.dispatcher.url": "https4://deployment-handler.{{ include "common.namespace" . }}:8443",
-        "clamp.config.dcae.deployment.url": "https4://deployment-handler.{{ include "common.namespace" . }}:8443",
-        "clamp.config.dcae.deployment.userName": "none",
-        "clamp.config.dcae.deployment.password": "none",
-        "clamp.config.policy.api.url": "https4://policy-api.{{ include "common.namespace" . }}:6969",
-        "clamp.config.policy.api.userName": "healthcheck",
-        "clamp.config.policy.api.password": "zb!XztG34",
-        "clamp.config.policy.pap.url": "https4://policy-pap.{{ include "common.namespace" . }}:6969",
-        "clamp.config.policy.pap.userName": "healthcheck",
-        "clamp.config.policy.pap.password": "zb!XztG34",
-        "clamp.config.policy.pdpUrl1": "https://pdp.{{ include "common.namespace" . }}:8081/pdp/ , testpdp, alpha123",
-        "clamp.config.policy.pdpUrl2": "https://pdp.{{ include "common.namespace" . }}:8081/pdp/ , testpdp, alpha123",
-        "clamp.config.policy.papUrl": "https://pap.{{ include "common.namespace" . }}:9091/pap/ , testpap, alpha123",
-        "clamp.config.policy.clientKey": "dGVzdA==",
-        "clamp.config.cadi.aafLocateUrl": "https://aaf-locate.{{ include "common.namespace" . }}:8095",
-        "com.att.eelf.logging.path": "/opt/clamp",
-        "com.att.eelf.logging.file": "logback.xml"
-    }
-
-# subchart configuration
-mariadb:
-  nameOverride: clampdb
-
 
 # default number of instances
 replicaCount: 1
@@ -103,12 +70,11 @@ service:
   type: NodePort
   name: clamp
   portName: clamp
-  internalPort: 8443
+  internalPort: 443
   externalPort: 8443
   nodePort: 58
   # as of 20180904 port 58 is reserved for clamp from log/logdemonode
   # see https://wiki.onap.org/display/DW/OOM+NodePort+List
-
 
 ingress:
   enabled: false
@@ -128,15 +94,15 @@ resources:
   small:
     limits:
       cpu: 1
-      memory: 1.2Gi
+      memory: 200Mi
     requests:
       cpu: 10m
-      memory: 800Mi
+      memory: 50Mi
   large:
     limits:
       cpu: 1
-      memory: 1.2Gi
+      memory: 500Mi
     requests:
       cpu: 10m
-      memory: 800Mi
+      memory: 50Mi
   unlimited: {}
