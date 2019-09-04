@@ -78,15 +78,16 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /tmp/policy-install/config/feature-healthcheck.conf
+          {{- range $path, $bytes := .Files.Glob "resources/secrets/*" }}
+          - mountPath: /tmp/policy-install/config/{{ base $path }}
             name: drools-secret
-            subPath: feature-healthcheck.conf
-          - mountPath: /tmp/policy-install/config/feature-pooling-dmaap.conf
+            subPath: {{ base $path }}
+          {{- end }}
+          {{- range $path, $bytes := .Files.Glob "resources/configmaps/*" }}
+          - mountPath: /tmp/policy-install/config/{{ base $path }}
             name: drools-config
-            subPath: feature-pooling-dmaap.conf
-          - mountPath: /tmp/policy-install/config/base.conf
-            name: drools-config
-            subPath: base.conf
+            subPath: {{ base $path }}
+          {{- end }}
           - mountPath: /var/log/onap
             name: policy-logs
           resources:
@@ -125,18 +126,19 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             items:
-            - key: base.conf
-              path: base.conf
+            {{- range $path, $bytes := .Files.Glob "resources/configmaps/*" }}
+            - key: {{ base $path }}
+              path: {{ base $path }}
               mode: 0755
-            - key: feature-pooling-dmaap.conf
-              path: feature-pooling-dmaap.conf
-              mode: 0755
+            {{- end }}
         - name: drools-secret
           secret:
             secretName: {{ include "common.fullname" . }}-secret
             items:
-            - key: feature-healthcheck.conf
-              path: feature-healthcheck.conf
+            {{- range $path, $bytes := .Files.Glob "resources/secrets/*" }}
+            - key: {{ base $path }}
+              path: {{ base $path }}
               mode: 0644
+            {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
