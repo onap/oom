@@ -36,7 +36,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - {{ .Values.mariadb.nameOverride }}
+        - clamp-backend
         env:
         - name: NAMESPACE
           valueFrom:
@@ -58,13 +58,10 @@ spec:
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
+            mountPath: /var/log/nginx/
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          args:
-            - "-Dcom.att.eelf.logging.file=file:/opt/clamp/logback.xml"
-            - ""
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -83,19 +80,10 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - mountPath: /opt/clamp/sdc-controllers-config.json
+            mountPath: /var/log/nginx/
+          - mountPath: /etc/nginx/conf.d/nginx.conf
             name: {{ include "common.fullname" . }}-config
-            subPath: sdc-controllers-config.json
-          - mountPath: /opt/clamp/logback.xml
-            name: {{ include "common.fullname" . }}-config
-            subPath: logback.xml
-          env:
-            - name: SPRING_APPLICATION_JSON
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: spring_application_json
+            subPath: nginx.conf
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -111,10 +99,8 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}
             items:
-            - key: sdc-controllers-config.json
-              path: sdc-controllers-config.json
-            - key: logback.xml
-              path: logback.xml
+            - key: nginx.conf
+              path: nginx.conf
         - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
             name: {{ .Release.Name }}-clamp-filebeat-configmap
