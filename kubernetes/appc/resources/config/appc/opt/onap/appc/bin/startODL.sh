@@ -111,8 +111,6 @@ then
 #        echo "Copying a working version of the logging configuration into the opendaylight etc folder"
 #        cp ${APPC_HOME}/data/org.ops4j.pax.logging.cfg ${ODL_HOME}/etc/org.ops4j.pax.logging.cfg
 
-        echo "Starting OpenDaylight"
-        ${ODL_HOME}/bin/start
 
         echo "Waiting ${SLEEP_TIME} seconds for OpenDaylight to initialize"
         sleep ${SLEEP_TIME}
@@ -144,29 +142,6 @@ then
              cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
         fi
 
-        echo "Restarting OpenDaylight"
-        ${ODL_HOME}/bin/stop
-        checkRun () {
-                running=0
-                while read a b c d e f g h
-                do
-                if [ "$h" == "/bin/sh /opt/opendaylight/bin/karaf server" ]
-                then
-                     running=1
-                fi
-                done < <(ps -eaf)
-                echo $running
-        }
-
-        while [ $( checkRun ) == 1 ]
-        do
-                echo "Karaf is still running, waiting..."
-                sleep 5s
-        done
-        echo "Karaf process has stopped"
-        sleep 10s
-
-        echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
 # Move journal and snapshots directory to persistent storage
@@ -195,5 +170,18 @@ ln -s ${hostdir}/snapshots ${ODL_HOME}/snapshots
 echo "Starting cdt-proxy-service jar, logging to ${APPC_HOME}/cdt-proxy-service/jar.log"
 java -jar ${APPC_HOME}/cdt-proxy-service/cdt-proxy-service.jar > ${APPC_HOME}/cdt-proxy-service/jar.log &
 
-exec ${ODL_HOME}/bin/karaf server
+echo "Copying the aaa shiro configuration into opendaylight"
+mkdir -p ${ODL_HOME}/etc/opendaylight/datastore/initial/config
+cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
 
+echo "Copying jetty, keystore for https into opendalight"
+cp ${APPC_HOME}/data/jetty.xml ${ODL_HOME}/etc/jetty.xml
+cp ${APPC_HOME}/data/keystore ${ODL_HOME}/etc/keystore
+cp ${APPC_HOME}/data/custom.properties ${ODL_HOME}/etc/custom.properties
+
+ODL_BOOT_FEATURES_EXTRA="odl-netconf-connector,odl-restconf-noauth,odl-netconf-clustered-topology,odl-mdsal-clustering"
+sed -i -e "\|featuresBoot[^a-zA-Z]|s|$|,${ODL_BOOT_FEATURES_EXTRA}|"  $ODL_HOME/etc/org.apache.karaf.features.cfg
+
+exec ${APPC_HOME}/bin/dockerInstall.sh &
+echo "Starting OpenDaylight"
+exec ${ODL_HOME}/bin/karaf server
