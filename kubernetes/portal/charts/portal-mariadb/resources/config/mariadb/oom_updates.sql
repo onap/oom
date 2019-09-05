@@ -28,7 +28,7 @@ update fn_app set app_url = 'http://{{.Values.config.portalSdkHostName}}:{{.Valu
 update fn_app set app_url = 'http://{{.Values.config.dmaapBcHostName}}:{{.Values.config.dmaapBcPort}}/ECOMPDBCAPP/dbc#/dmaap', app_rest_endpoint = 'http://dmaap-bc:8989/ECOMPDBCAPP/api/v2' where app_name = 'DMaaP Bus Ctrl';
 --sdc-be => 8443:30204, 8080:30205
 --sdc-fe => 8181:30206, 9443:30207
-update fn_app set app_url = 'http://{{.Values.config.sdcFeHostName}}:{{.Values.config.sdcFePort}}/sdc1/portal', app_rest_endpoint = 'http://sdc-be:8080/api/v3' where app_name = 'SDC';
+update fn_app set app_url = 'https://{{.Values.config.sdcFeHostName}}:{{.Values.config.sdcFePort}}/sdc1/portal', app_rest_endpoint = 'https://sdc-be:8443/api/v3' where app_name = 'SDC';
 --pap => 8443:30219
 update fn_app set app_url = 'https://{{.Values.config.papHostName}}:{{.Values.config.papPort}}/onap/policy', app_rest_endpoint = 'https://pap:8443/onap/api/v3' where app_name = 'Policy';
 --vid => 8080:30200
