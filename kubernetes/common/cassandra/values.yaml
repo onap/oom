@@ -17,7 +17,13 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
-
+  persistence:
+    mountPath: /dockerdata-nfs
+    backup:
+      mountPath: /dockerdata-nfs/backup
+  repository: nexus3.onap.org:10001
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
 
 # application image
 repository: nexus3.onap.org:10001
@@ -115,6 +121,8 @@ persistence:
   mountSubPath: cassandra
   storageType: local
   storageClass: ""
+  backup:
+      mountPath: /dockerdata-nfs/backup
 
 configOverrides: {}
 
@@ -136,3 +144,12 @@ resources: {}
 #  requests:
 #    cpu: 2
 #    memory: 4Gi
+backup:
+  enabled: false
+  cron: "00 00 * * *"
+  retentionPeriod: 3
+  dbSize: 1
+  keyspacesToSkip:
+  - name: system_traces
+  - name: system_auth
+  - name: system_distributed
