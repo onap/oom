@@ -111,21 +111,6 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      - name: {{ include "common.name" . }}-inject-testlab-project
-        command:
-        - /bin/bash
-        - -c
-        - >
-          git clone -b {{ .Values.config.gerritBranch }} --single-branch {{ .Values.config.gerritProject }} /tmp/gerrit;
-          echo "Clone complete. Copying from /tmp/gerrit/volumes/mariadb/docker-entrypoint-initdb.d to /docker-entrypoint-initdb.d";
-          cp -rf /tmp/gerrit/volumes/mariadb/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d;
-          chmod -R 755 /docker-entrypoint-initdb.d;
-          echo "Done.";
-        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: docker-entrypoint-initdb-d
-          mountPath: "/docker-entrypoint-initdb.d"
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -182,7 +167,8 @@ spec:
         hostPath:
           path: /etc/localtime
       - name: docker-entrypoint-initdb-d
-        emptyDir: {}
+        configMap:
+          name: {{ include "common.fullname" . }}-mariadb
       {{- if .Values.global.migration.enabled }}
       - name: backup-storage
         persistentVolumeClaim:
