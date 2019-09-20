@@ -87,3 +87,11 @@ For more information on OOM project documentation, refer to:
 
  -  [Quick Start Guide on Wiki](https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project#ONAPOperationsManagerProject-QuickStartGuide)
  -  [Quick Start Guide on readthedocs](http://onap.readthedocs.io/en/latest/submodules/oom.git/docs/OOM%20Project%20Description/oom_project_description.html#quick-start-guide)
+
+
+###############Install Prometheus-operator for health monitoring#######################
+
+To install prometheus-operator, set prometheus.enabled to true in onap/values.yaml
+
+To create a service monitor for a service, add the servicemonitor details in prometheus's additionalServiceMonitors section of onap/values.yaml. Add the selector labels according to the labels of the service to be monitored.
+An example has been provided for the oof-has-data service.
