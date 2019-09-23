@@ -95,6 +95,14 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
+        - name: aaf-trust-secret
+          mountPath: /app/org.onap.so.trust.jks
+          subPath: org.onap.so.trust.jks
+          readOnly: true
+        - name: aaf-keyfile-secret
+          mountPath: /app/so.keyfile
+          subPath: so.keyfile
+          readOnly: true
         livenessProbe:
           httpGet:
             path: {{- index .Values.livenessProbe.path|indent 2}}
@@ -114,6 +122,13 @@ spec:
         emptyDir: {}
       - name: config
         configMap:
-            name: {{ include "common.fullname" . }}-app-configmap
+          name: {{ include "common.fullname" . }}-app-configmap
+      - name: aaf-trust-secret
+        secret:
+          name: {{ .Release.Name}}-so-aaf-trust-secret
+      - name: aaf-keyfile-secret
+        secret:
+          name: {{ .Release.Name}}-so-aaf-keyfile-secret
+      hostAliases: {{ toYaml .Values.hostAliases| nindent 6}}    
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
