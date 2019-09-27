@@ -45,6 +45,38 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+        {{- if .Values.global.aafEnabled }}
+        - name: {{ include "common.name" . }}-dr-node-aaf-config
+          image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
+          command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+          env:
+          - name: APP_FQI
+            value: "{{ .Values.aafConfig.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+          - name: aaf_locator_container
+            value: "{{ .Values.global.aafLocatorContainer }}"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aafConfig.fqdn }}"
+          - name: aaf_locator_public_fqdn
+            value: "{{.Values.aafConfig.publicFqdn}}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.global.aafAppNs }}"
+          - name: DEPLOY_FQI
+            value: "{{ .Values.global.aafDeployFqi }}"
+          - name: DEPLOY_PASSWORD
+            value: "{{ .Values.global.aafDeployPass }}"
+          - name: cadi_longitude
+            value: "{{ .Values.aafConfig.cadiLongitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aafConfig.cadiLatitude }}"
+        {{- end }}
         - name: {{ include "common.name" . }}-permission-fixer
           image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -53,7 +85,11 @@ spec:
             name: {{ include "common.fullname" . }}-spool-data-pvc
           - mountPath: {{ .Values.persistence.eventLogsPath }}
             name: {{ include "common.fullname" . }}-event-logs-pvc
-          command: ["chown","-Rf","1000:1001", "/opt/app/datartr"]
+        {{- if .Values.global.aafEnabled }}
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
+        {{- end }}
+          command: ["chown","-Rf","1000:1001", "/opt/app/"]
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -74,6 +110,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+          {{- if .Values.global.aafEnabled }}
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
+          {{- end }}
           - mountPath: {{ .Values.persistence.spoolPath }}
             name: {{ include "common.fullname" . }}-spool-data-pvc
           - mountPath: {{ .Values.persistence.eventLogsPath }}
@@ -84,16 +124,13 @@ spec:
           - mountPath: /opt/app/datartr/etc/node.properties
             name: {{ include "common.fullname" . }}-config
             subPath: node.properties
-          - mountPath: /opt/app/datartr/etc/drNodeCadi.properties
-            name: {{ include "common.fullname" . }}-config
-            subPath: drNodeCadi.properties
           - mountPath: /opt/app/datartr/etc/logback.xml
             name: {{ include "common.fullname" . }}-log-conf
             subPath: logback.xml
           - mountPath: {{ .Values.global.loggingDirectory }}
             name: {{ include "common.fullname" . }}-logs
           resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -101,8 +138,8 @@ spec:
         {{- if .Values.affinity }}
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
-        {{- end }}
-        # Filebeat sidecar container
+        {{- end -}}
+      # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -126,8 +163,6 @@ spec:
             items:
             - key: node.properties
               path: node.properties
-            - key: drNodeCadi.properties
-              path: drNodeCadi.properties
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
@@ -140,6 +175,10 @@ spec:
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+      {{- if .Values.global.aafEnabled }}
+        - name:  {{ include "common.fullname" . }}-aaf-props-pvc
+          emptyDir: {}
+      {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-spool-data-pvc
@@ -167,3 +206,18 @@ spec:
       selector:
         matchLabels:
           name: {{ include "common.fullname" . }}-event-logs-pv
+{{- if .Values.global.aafEnabled }}
+  - metadata:
+      name: {{ include "common.fullname" . }}-aaf-props-pvc
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-aaf-props-stcl
+      resources:
+        requests:
+          storage: {{ .Values.persistence.aafCredsSize }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}-aaf-props-pv
+{{- end }}
