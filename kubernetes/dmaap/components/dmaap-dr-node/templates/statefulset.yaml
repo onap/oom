@@ -45,6 +45,38 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+        - name: {{ include "common.name" . }}-dr-node-aaf-config
+          image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
+          command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+          env:
+          - name: APP_FQI
+            value: "{{ .Values.aafConfig.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+          - name: aaf_locator_container
+            value: "{{ .Values.global.aafLocatorContainer }}"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aafConfig.fqdn }}"
+          - name: aaf_locator_public_fqdn
+            value: "{{.Values.aafConfig.publicFqdn}}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.global.aafAppNs }}"
+          - name: DEPLOY_FQI
+            value: "{{ .Values.global.aafDeployFqi }}"
+          # Note: We want to put this in Secrets or at LEAST ConfigMaps
+          - name: DEPLOY_PASSWORD
+            value: "{{ .Values.global.aafDeployPass }}"
+          # Note: want to put this on Nodes, evenutally
+          - name: cadi_longitude
+            value: "{{ .Values.aafConfig.cadiLongitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aafConfig.cadiLatitude }}"
         - name: {{ include "common.name" . }}-permission-fixer
           image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -53,7 +85,9 @@ spec:
             name: {{ include "common.fullname" . }}-spool-data-pvc
           - mountPath: {{ .Values.persistence.eventLogsPath }}
             name: {{ include "common.fullname" . }}-event-logs-pvc
-          command: ["chown","-Rf","1000:1001", "/opt/app/datartr"]
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
+          command: ["chown","-Rf","1000:1001", "/opt/app/"]
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -74,6 +108,8 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-props-pvc
           - mountPath: {{ .Values.persistence.spoolPath }}
             name: {{ include "common.fullname" . }}-spool-data-pvc
           - mountPath: {{ .Values.persistence.eventLogsPath }}
@@ -140,6 +176,8 @@ spec:
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-aaf-props-pvc
+          emptyDir: {}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-spool-data-pvc
@@ -167,3 +205,16 @@ spec:
       selector:
         matchLabels:
           name: {{ include "common.fullname" . }}-event-logs-pv
+  - metadata:
+      name: {{ include "common.fullname" . }}-aaf-props-pvc
+      labels:
+        name: {{ include "common.fullname" . }}
+    spec:
+      accessModes: [ {{ .Values.persistence.accessMode }} ]
+      storageClassName: {{ include "common.fullname" . }}-aaf-props-stcl
+      resources:
+        requests:
+          storage: {{ .Values.persistence.aafCredsSize }}
+      selector:
+        matchLabels:
+          name: {{ include "common.fullname" . }}-aaf-props-pv

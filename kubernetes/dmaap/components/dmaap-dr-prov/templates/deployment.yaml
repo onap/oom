@@ -31,20 +31,59 @@ spec:
     spec:
       hostname: {{ .Values.global.dmaapDrProvName }}
       initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - {{ .Values.config.dmaapDrDb.mariadbContName }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        - name: {{ include "common.name" . }}-readiness
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /root/ready.py
+          args:
+          - --container-name
+          - {{ .Values.config.dmaapDrDb.mariadbContName }}
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+        - name: {{ include "common.name" . }}-dr-prov-aaf-config
+          image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+          volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
+          env:
+            - name: APP_FQI
+              value: "{{ .Values.aafConfig.fqi }}"
+            - name: aaf_locate_url
+              value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+            - name: aaf_locator_container
+              value: "{{ .Values.global.aafLocatorContainer }}"
+            - name: aaf_locator_container_ns
+              value: "{{ .Release.Namespace }}"
+            - name: aaf_locator_fqdn
+              value: "{{ .Values.aafConfig.fqdn }}"
+            - name: aaf_locator_public_fqdn
+              value: "{{.Values.aafConfig.publicFqdn}}"
+            - name: aaf_locator_app_ns
+              value: "{{ .Values.global.aafAppNs }}"
+            - name: DEPLOY_FQI
+              value: "{{ .Values.global.aafDeployFqi }}"
+            # Note: We want to put this in Secrets or at LEAST ConfigMaps
+            - name: DEPLOY_PASSWORD
+              value: "{{ .Values.global.aafDeployPass }}"
+            # Note: want to put this on Nodes, evenutally
+            - name: cadi_longitude
+              value: "{{ .Values.aafConfig.cadiLongitude }}"
+            - name: cadi_latitude
+              value: "{{ .Values.aafConfig.cadiLatitude }}"
+        - name: {{ include "common.name" . }}-permission-fixer
+          image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
+          command: ["chown","-Rf","1000:1001", "/opt/app/"]
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -79,6 +118,8 @@ spec:
             subPath: logback.xml
           - mountPath: {{ .Values.global.loggingDirectory }}
             name: {{ include "common.fullname" . }}-logs
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -123,5 +164,8 @@ spec:
         emptyDir: {}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name: {{ include "common.fullname" . }}-aaf-config-vol
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-aaf-props
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
