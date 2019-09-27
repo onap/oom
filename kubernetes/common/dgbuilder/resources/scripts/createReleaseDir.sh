@@ -85,6 +85,12 @@ then
 	echo "		'dbUser': '$dbUser'," >>$customSettingsFile
 	echo "		'dbPassword': '$dbPassword'," >>$customSettingsFile
 	echo "		'gitLocalRepository': '$gitLocalRepository'" >>$customSettingsFile
+	echo "		'restConfUrl': '$restConfUrl'," >>$customSettingsFile
+	echo "		'restConfUser': '$restConfUser'," >>$customSettingsFile
+	echo "		'restConfPassword': '$restConfPassword'," >>$customSettingsFile
+	echo "		'formatXML': '$formatXML'," >>$customSettingsFile
+	echo "		'formatJSON': '$formatJSON'," >>$customSettingsFile
+	echo "		'enableHttps': true" >>$customSettingsFile
 	echo "		}" >>$customSettingsFile
 fi
 	#echo "Created custom settings  file $customSettingsFile"
