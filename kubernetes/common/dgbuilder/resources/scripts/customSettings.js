@@ -35,6 +35,11 @@ module.exports={
     "dbUser": "sdnctl",
     "dbPassword": "{{.Values.config.dbSdnctlPassword}}",
     "gitLocalRepository": "",
+    "restConfUrl": "http://localhost:8181/restconf/operations/SLI-API:execute-graph",
+    "restConfUser": "admin",
+    "restConfPassword": "admin",
+    "formatXML": "Y",
+    "formatJSON": "Y",
     "httpRoot": "/",
     "disableEditor": false,
     "httpAdminRoot": "/",
@@ -49,5 +54,6 @@ module.exports={
     },
     "uiHost": "0.0.0.0",
     "version": "0.9.1",
-    "performGitPull": "N"
+    "performGitPull": "N",
+    "enableHttps" : true
 }
