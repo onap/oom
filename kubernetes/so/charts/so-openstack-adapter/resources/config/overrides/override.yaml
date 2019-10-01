@@ -11,46 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-aai:
-  auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
-  endpoint: https://aai.{{ include "common.namespace" . }}:8443
 server:
   port: {{ index .Values.containerPort }}
-spring:
-  datasource:
-    hikari:
-      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: org.mariadb.jdbc.Driver
-      pool-name: catdb-pool
-      registerMbeans: false
-  security:
-    usercredentials:
-    -
-      username: sdnc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SDNC-Client
-    -
-      username: sitecontrol
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SiteControl-Client
-    -
-      username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: apih
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: MSO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
 org:
   onap:
     so:
@@ -58,7 +20,7 @@ org:
         default_keystone_url_version: /v2.0
         default_keystone_reg_ex: "/[vV][0-9]"
         vnf:
-          bpelauth: D1A67FA93B6A6419132D0F83CC771AF774FD3C60853C50C22C8C6FC5088CC79E9E81EDE9EA39F22B2F66A0068E
+          bpelauth: {{ .Values.auth.rest.aafEncrypted }}
           checkRequiredParameters: true
           addGetFilesOnVolumeReq: false
           sockettimeout: 30
@@ -69,13 +31,13 @@ org:
           valet_enabled: false
           fail_requests_on_valet_failure: false
         network:
-          bpelauth: D1A67FA93B6A6419132D0F83CC771AF774FD3C60853C50C22C8C6FC5088CC79E9E81EDE9EA39F22B2F66A0068E
+          bpelauth: {{ .Values.auth.rest.aafEncrypted }}
           sockettimeout: 5
           connecttimeout: 5
           retrycount: 5
           retryinterval: -15
           retrylist: 408,429,500,502,503,504,900
-          encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
+          encryptionKey: {{ .Values.global.app.msoKey }}
         tenant:
           default_keystone_url_version: /v2.0
           default_keystone_reg_ex: "/[vV][0-9]"
@@ -86,33 +48,47 @@ org:
           default_no_regions_status_string: no regions
           default_quota_value: 10
           set_default_quota: false
-ecomp:
-  mso:
-    adapters:
-      po:
-        retryCodes: 504
-        retryDelay: 5
-        retryCount: 3
-        pollTimeout: 7500
-        pollInterval: 15
+        po:
+          retryCodes: 504
+          retryDelay: 5
+          retryCount: 3
+          pollTimeout: 7500
+          pollInterval: 15
+          pollMultiplier: {{ .Values.org.onap.so.adapters.po.pollMultiplier }}
+        heat:
+          retryCodes: 504
+          retryDelay: 5
+          retryCount: 3
+          create:
+            pollInterval: 15
+            pollTimeout: 300
+aai:
+  auth: {{ .Values.aai.auth }}
+  endpoint: https://aai.{{ include "common.namespace" . }}:8443
 mso:
-  auth: BEA8637716A7EB617DF472BA6552D22F68C1CB17B0D094D77DDA562F4ADAAC4457CAB848E1A4
   logPath: ./logs/openstack
+  msoKey: {{ .Values.global.app.msoKey }}
+  auth: {{ .Values.global.app.auth }}
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
-  workflow:
-    endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
-  config:
-    cadi:
-      aafId: poBpmn
+  adapters:
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: {{ .Values.auth.rest.aaf }}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+  workflow:
+    endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
+    topics:
+      retryMultiplier: {{ .Values.mso.workflow.topics.retryMultiplier }}
+      retrySequence: {{ .Values.mso.workflow.topics.retrySequence }}
   db:
-    auth: Basic YnBlbDpwYXNzd29yZDEk
-  site-name: localDevEnv
+    auth: {{ .Values.auth.rest.aaf }}
+  site-name: {{ index .Values.global.app.siteName }}
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8}}
   async:
     core-pool-size: 50
     max-pool-size: 50

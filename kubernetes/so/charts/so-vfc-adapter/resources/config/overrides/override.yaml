@@ -22,27 +22,21 @@ spring:
        password: ${DB_PASSWORD}
        pool-name: reqdb-pool
        registerMbeans: true
-  security:
-    usercredentials:
-    - username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    - username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
 server:
     port: {{ index .Values.containerPort }}
     tomcat:
         max-threads: 50
 mso:
-  site-name: localSite
+  site-name: {{ .Values.global.app.siteName }}
   logPath: ./logs/vfc
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8}}
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
   adapters:
     requestDb:
       endpoint: https://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: Basic YnBlbDpwYXNzd29yZDEk
+      auth: {{ .Values.global.aafCredentials }}
 #Actuator
 management:
   security:
