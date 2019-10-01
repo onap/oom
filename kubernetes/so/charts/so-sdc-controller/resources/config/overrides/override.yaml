@@ -12,64 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 aai:
-  auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
+  auth: {{ .Values.aai.auth }}
 server:
   port: {{ index .Values.containerPort }}
-spring:
-  datasource:
-    hikari:
-      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: org.mariadb.jdbc.Driver
-      pool-name: catdb-pool
-      registerMbeans: false
-  security:
-    usercredentials:
-    -
-      username: asdc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: Asdc-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
-request:
-  datasource:
-    hikari:
-      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/requestdb
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: org.mariadb.jdbc.Driver
-      pool-name: reqdb-pool
-      registerMbeans: false
 mso:
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+  msoKey: {{ .Values.global.app.msoKey }}
   logPath: ./logs/sdc
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8 }}
+  site-name: {{ .Values.global.app.siteName }}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: Basic YnBlbDpwYXNzd29yZDEk
-  site-name: onapheat
+    auth: {{ .Values.auth.rest.aaf }}
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: Basic YnBlbDpwYXNzd29yZDEk
+      auth: {{ .Values.auth.rest.aaf }}
   aai:
     endpoint: https://aai.{{ include "common.namespace" . }}:8443
   asdc-connections:
     asdc-controller1:
-      user: mso
-      consumerGroup: SO-OpenSource-Env11
-      consumerId: SO-COpenSource-Env11
-      environmentName: AUTO
+      user: {{ index .Values.mso "asdc-connections" "asdc-controller1" "user" }}
+      password: {{ index .Values.mso "asdc-connections" "asdc-controller1" "password" }}
+      consumerGroup: {{ index .Values.mso "asdc-connections" "asdc-controller1" "consumerGroup" }}
+      consumerId: {{ index .Values.mso "asdc-connections" "asdc-controller1" "consumerId" }}
+      environmentName: {{ index .Values.mso "asdc-connections" "asdc-controller1" "environmentName" }}
       asdcAddress: sdc-be.{{ include "common.namespace" . }}:8443
-      password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
-      pollingInterval: 60
-      pollingTimeout: 60
+      pollingInterval: {{ index .Values.mso "asdc-connections" "asdc-controller1" "pollingInterval" }}
+      pollingTimeout: {{ index .Values.mso "asdc-connections" "asdc-controller1" "pollingTimeout" }}
       relevantArtifactTypes: HEAT,HEAT_ENV,HEAT_VOL
       useHttpsWithDmaap: false
       activateServerTLSAuth: false
@@ -80,9 +54,9 @@ mso:
       messageBusAddress: message-router.{{ include "common.namespace" . }},message-router.{{ include "common.namespace" . }}
   asdc:
     config:
+      key: {{ .Values.mso.asdc.config.key }}
       activity:
         endpoint: http://sdc-wfd-be:8080
-      key: 566B754875657232314F5548556D3665
       components:
         count: 3,
         componentNames: SO,AAI,SDNC
