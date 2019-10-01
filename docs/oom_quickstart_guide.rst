@@ -17,8 +17,12 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone -b 4.0.0-ONAP http://gerrit.onap.org/r/oom --recurse-submodules
+  > git clone -b <BRANCH> http://gerrit.onap.org/r/oom --recurse-submodules
   > cd oom/kubernetes
+
+where <BRANCH> is offical release tag, such as
+4.0.0-ONAP for Dublin
+5.0.0-ONAP for El Alto
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
