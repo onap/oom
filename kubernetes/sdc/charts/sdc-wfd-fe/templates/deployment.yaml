@@ -75,41 +75,23 @@ spec:
             value: "{{ .Values.config.isHttpsEnabled}}"
             {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
           - name: KEYSTORE_PASS
-            {{- if .Values.global.security.keysFromCa }}
-            valueFrom:
-              secretKeyRef:
-                name: mft-sdc
-                key: keystore-password.txt
-            {{ else }}
-            value: {{ .Values.global.security.keyStorePass}}
-            {{- end }}
+            value: "{{ .Values.security.keystorePass}}"
           - name: TRUSTSTORE_PASS
-            {{- if .Values.global.security.keysFromCa }}
-            valueFrom:
-              secretKeyRef:
-                name: mft-catruststore
-                key: keystore-password.txt
-            {{ else }}
-            value: {{ .Values.global.security.trustStorePass}}
-            {{- end }}
+            value: "{{ .Values.security.truststorePass}}"
           - name: TRUSTSTORE_PATH
             value: "{{ .Values.security.storePath }}/{{ .Values.security.truststoreFilename }}"
           - name: KEYSTORE_PATH
             value: "{{ .Values.security.storePath }}/{{ .Values.security.keystoreFilename }}"
-          - name: TRUSTSTORE_TYPE
-            value: {{ .Values.security.truststore.type }}
-          - name: KEYSTORE_TYPE
-            value: {{ .Values.security.keystore.type }}
             {{ end }}
           volumeMounts:
-          {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
-          - name: {{ include "common.fullname" . }}-jetty-https-truststore
-            mountPath: /var/lib/jetty/{{ .Values.security.storePath }}/{{ .Values.security.truststoreFilename }}
-            subPath: {{ .Values.security.truststoreFilename }}
-          - name: {{ include "common.fullname" . }}-jetty-https-keystore
-            mountPath: /var/lib/jetty/etc/{{ .Values.security.storePath }}/{{ .Values.security.keystoreFilename }}
-            subPath: {{ .Values.security.keystoreFilename }}
-          {{ end }}
+#          {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
+#          - name: {{ include "common.fullname" . }}-jetty-https-truststore
+#            mountPath: {{ .Values.security.storePath }}/{{ .Values.security.truststoreFilename }}
+#            subPath: {{ .Values.security.truststoreFilename }}
+#          - name: {{ include "common.fullname" . }}-jetty-https-keystore
+#            mountPath: {{ .Values.security.storePath }}/{{ .Values.security.keystoreFilename }}
+#            subPath: {{ .Values.security.keystoreFilename }}
+#          {{ end }}
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -123,7 +105,6 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
