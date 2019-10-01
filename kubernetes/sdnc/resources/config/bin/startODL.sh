@@ -123,13 +123,25 @@ GEO_ENABLED=${GEO_ENABLED:-false}
 SDNRWT=${SDNRWT:-false}
 SDNRWT_BOOTFEATURES=${SDNRWT_BOOTFEATURES:-sdnr-wt-feature-aggregator}
 export ODL_ADMIN_PASSWORD ODL_ADMIN_USERNAME
+export SDNC_STORE_DIR=/opt/app/osaaf/local
+export SDNC_CONFIG_DIR=/opt/app/osaaf/local
+export SDNC_KEYPASS=`cat /opt/app/osaaf/local/.pass`
+export SDNC_KEYSTORE=${sdnc.keystore:-org.onap.sdnc.p12}
 
 echo "Settings:"
 echo "  ENABLE_ODL_CLUSTER=$ENABLE_ODL_CLUSTER"
 echo "  SDNC_REPLICAS=$SDNC_REPLICAS"
 echo "  SDNRWT=$SDNRWT"
 
+sed -i '/cadi_prop_files/d' $ODL_HOME/etc/system.properties
+echo "cadi_prop_files=$SDNC_CONFIG_DIR/org.onap.sdnc.props" >> $ODL_HOME/etc/system.properties
 
+sed -i '/org.ops4j.pax.web.ssl.keystore/d' $ODL_HOME/etc/custom.properties
+sed -i '/org.ops4j.pax.web.ssl.password/d' $ODL_HOME/etc/custom.properties
+sed -i '/org.ops4j.pax.web.ssl.keypassword/d' $ODL_HOME/etc/custom.properties
+echo org.ops4j.pax.web.ssl.keystore=$SDNC_STORE_DIR/$SDNC_KEYSTORE >> $ODL_HOME/etc/custom.properties
+echo org.ops4j.pax.web.ssl.password=$SDNC_KEYPASS >> $ODL_HOME/etc/custom.properties
+echo org.ops4j.pax.web.ssl.keypassword=$SDNC_KEYPASS >> $ODL_HOME/etc/custom.properties
 
 if [ ! -f ${SDNC_HOME}/.installed ]
 then

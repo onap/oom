@@ -32,6 +32,13 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      hostAliases:
+      - ip: "10.12.5.145"
+        hostnames:
+        - "aaf-onap-test.osaaf.org"
+        - "aaf-locate.onap"
+        - "aaf-cm"
+        - "aaf-service"
       initContainers:
       - command:
         - /root/ready.py
@@ -47,6 +54,38 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness   
+      - name: {{ include "common.name" . }}-aaf
+        image: {{ .Values.global.repository }}/{{ .Values.aaf_init.agentImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
+# NOTE: Before this, need Liveness Attached to aaf-certman
+        command: ["bash","-c","/opt/app/aaf_config/bin/agent.sh && cd /opt/app/osaaf/local && /opt/app/aaf_config/bin/agent.sh local showpass | grep cadi_keystore_password= | cut -d= -f 2 > /opt/app/osaaf/local/.pass 2>&1"] 
+        env:
+          - name: APP_FQI
+            value: "{{ .Values.aaf_init.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aaf_init.fqdn }}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.aaf_init.app_ns }}"
+          - name: DEPLOY_FQI
+            value: "deployer@people.osaaf.org"
+          - name: DEPLOY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" .}}-aaf
+                key: aaf-password   
+          - name: cadi_longitude
+            value: "{{ .Values.aaf_init.cadi_longitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aaf_init.cadi_latitude }}"
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certpersistence.certPath }}"]
