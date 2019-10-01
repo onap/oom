@@ -47,6 +47,59 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{ if .Values.global.security.aaf.enabled }}
+      - name: {{ include "common.name" . }}-aaf-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aaf-locate
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-aaf
+        image: {{ .Values.global.repository }}/{{ .Values.aaf_init.agentImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
+        command:
+        - bash
+        - -c
+        - |
+          /opt/app/aaf_config/bin/agent.sh &&
+          cd /opt/app/osaaf/local &&
+          /opt/app/aaf_config/bin/agent.sh local showpass | grep cadi_keystore_password= | cut -d= -f 2 > /opt/app/osaaf/local/.pass 2>&1
+        env:
+          - name: APP_FQI
+            value: "{{ .Values.aaf_init.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aaf_init.fqdn }}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.aaf_init.app_ns }}"
+          - name: DEPLOY_FQI
+            value: "{{ .Values.aaf_init.deploy_fqi }}"
+          - name: DEPLOY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "common.fullname" .}}-aaf
+                key: aaf-password
+          - name: cadi_longitude
+            value: "{{ .Values.aaf_init.cadi_longitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aaf_init.cadi_latitude }}"
+      {{ end }}
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certpersistence.certPath }}"]
@@ -99,6 +152,8 @@ spec:
               value: "{{ .Values.config.isPrimaryCluster }}"
             - name: GEO_ENABLED
               value: "{{ .Values.config.geoEnabled}}"
+            - name: SDNC_AAF_ENABLED
+              value: "{{ .Values.global.security.aaf.enabled}}"
             - name: SDNC_REPLICAS
               value: "{{ .Values.replicaCount }}"
             - name: MYSQL_HOST
