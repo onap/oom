@@ -79,7 +79,7 @@ def wait_for_deployment_complete(deployment_name):
         response = api.read_namespaced_deployment(deployment_name, namespace)
         s = response.status
         if (s.unavailable_replicas is None and
-                s.updated_replicas == response.spec.replicas and
+                ( s.updated_replicas == None or s.updated_replicas == response.spec.replicas ) and
                 s.replicas == response.spec.replicas and
                 s.ready_replicas == response.spec.replicas and
                 s.observed_generation == response.metadata.generation):
