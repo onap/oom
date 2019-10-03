@@ -301,8 +301,8 @@ Install Kubectl
 
 Download and install kubectl. Binaries can be found here for Linux and Mac:
 
-https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/linux/amd64/kubectl
-https://storage.googleapis.com/kubernetes-release/release/v1.13.5/bin/darwin/amd64/kubectl
+https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/linux/amd64/kubectl
+https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/darwin/amd64/kubectl
 
 Validate deployment
 -------------------
@@ -320,21 +320,21 @@ Validate deployment
 ::
 
   NAME             STATUS   ROLES               AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
-  onap-control-1   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-control-2   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-control-3   Ready    controlplane,etcd   3h53m   v1.13.5   10.0.0.12     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-1       Ready    worker              3h53m   v1.13.5   10.0.0.14     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-10      Ready    worker              3h53m   v1.13.5   10.0.0.16     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-11      Ready    worker              3h53m   v1.13.5   10.0.0.18     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-12      Ready    worker              3h53m   v1.13.5   10.0.0.7      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-2       Ready    worker              3h53m   v1.13.5   10.0.0.26     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-3       Ready    worker              3h53m   v1.13.5   10.0.0.5      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-4       Ready    worker              3h53m   v1.13.5   10.0.0.6      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-5       Ready    worker              3h53m   v1.13.5   10.0.0.9      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-6       Ready    worker              3h53m   v1.13.5   10.0.0.17     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-7       Ready    worker              3h53m   v1.13.5   10.0.0.20     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-8       Ready    worker              3h53m   v1.13.5   10.0.0.10     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-9       Ready    worker              3h53m   v1.13.5   10.0.0.4      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-1   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-2   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-3   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.12     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-1       Ready    worker              3h53m   v1.15.2   10.0.0.14     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-10      Ready    worker              3h53m   v1.15.2   10.0.0.16     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-11      Ready    worker              3h53m   v1.15.2   10.0.0.18     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-12      Ready    worker              3h53m   v1.15.2   10.0.0.7      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-2       Ready    worker              3h53m   v1.15.2   10.0.0.26     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-3       Ready    worker              3h53m   v1.15.2   10.0.0.5      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-4       Ready    worker              3h53m   v1.15.2   10.0.0.6      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-5       Ready    worker              3h53m   v1.15.2   10.0.0.9      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-6       Ready    worker              3h53m   v1.15.2   10.0.0.17     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-7       Ready    worker              3h53m   v1.15.2   10.0.0.20     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-8       Ready    worker              3h53m   v1.15.2   10.0.0.10     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-9       Ready    worker              3h53m   v1.15.2   10.0.0.4      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
 
 
 Install Helm
@@ -342,9 +342,9 @@ Install Helm
 
 Example Helm client install on Linux::
 
-  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.12.3-linux-amd64.tar.gz
+  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.14.2-linux-amd64.tar.gz
 
-  > tar -zxvf helm-v2.12.3-linux-amd64.tar.gz
+  > tar -zxvf helm-v2.14.2-linux-amd64.tar.gz
 
   > sudo mv linux-amd64/helm /usr/local/bin/helm
 
