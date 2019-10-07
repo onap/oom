@@ -1,11 +1,24 @@
 {{- define "ingress.config.port" -}}
 {{- if .Values.ingress -}}
 {{- if .Values.ingress.service -}}
+  - http:
+      paths:
 {{- range .Values.ingress.service }}
         - path: {{ .path }}
           backend:
             serviceName: {{ .name }}
             servicePort: {{ .port }}
+{{- end -}}
+{{- else if .Values.ingress.vhosts -}}
+{{- range .Values.ingress.vhosts -}}
+  - host: {{ .vhost }}
+    http:
+      paths:
+{{- range .service }}
+      - backend:
+          serviceName: {{ .name }}
+          servicePort: {{ .port }}
+{{- end -}}
 {{- end -}}
 {{- else -}}
         - path: {{ printf "/%s" .Chart.Name }}
@@ -42,9 +55,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   rules:
-  - http:
-      paths:
-        {{- include "ingress.config.port" . }}
+  {{ include "ingress.config.port" . }}
 {{- if .Values.ingress.tls }}
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
