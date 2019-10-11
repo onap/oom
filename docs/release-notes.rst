@@ -27,6 +27,18 @@ A list of issues resolved in this release can be found here: https://jira.onap.o
 
 * 25 defects addressed (see link above)
 
+**Known Issues**
+
+The following known issues will be addressed in a future release:
+
+* [`OOM-1480 <https://jira.onap.org/browse/OOM-1480>`_] - postgres chart does not set root password when installing on an existing database instances
+* [`OOM-1966 <https://jira.onap.org/browse/OOM-1966>`_] - ONAP on HA Kubernetes Cluster - Documentation update
+* [`OOM-1995 <https://jira.onap.org/browse/OOM-1995>`_] - Mariadb Galera cluster pods keep failing
+* [`OOM-2061 <https://jira.onap.org/browse/OOM-2061>`_] - Details Missing for installing the kubectl section
+* [`OOM-2075 <https://jira.onap.org/browse/OOM-2075>`_] - Invalid MTU for Canal CNI interfaces
+* [`OOM-2080 <https://jira.onap.org/browse/OOM-2080>`_] - Need for "ReadWriteMany" access on storage when deploying on Kubernetes?
+* [`OOM-2091 <https://jira.onap.org/browse/OOM-2091>`_] - incorrect release deployed
+
 **Security Notes**
 
 *Fixed Security Issues*
