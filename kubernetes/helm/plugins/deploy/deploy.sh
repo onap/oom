@@ -140,13 +140,12 @@ deploy() {
   # actual upgrade/install of parent and subcharts.
   DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
 
- # determine if upgrading individual subchart or entire parent + subcharts
+  # determine if upgrading individual subchart or entire parent + subcharts
   SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
-  if [[ ! -d "$CACHE_SUBCHART_DIR/$SUBCHART_RELEASE" ]]; then
+  # update specified subchart without parent
+  RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
+  if [[ $SUBCHART_RELEASE == $RELEASE ]]; then
     SUBCHART_RELEASE=
-  else
-    # update specified subchart without parent
-    RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
   fi
 
   # clear previously cached charts
