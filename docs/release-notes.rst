@@ -38,6 +38,7 @@ The following known issues will be addressed in a future release:
 * [`OOM-2075 <https://jira.onap.org/browse/OOM-2075>`_] - Invalid MTU for Canal CNI interfaces
 * [`OOM-2080 <https://jira.onap.org/browse/OOM-2080>`_] - Need for "ReadWriteMany" access on storage when deploying on Kubernetes?
 * [`OOM-2091 <https://jira.onap.org/browse/OOM-2091>`_] - incorrect release deployed
+* [`OOM-2132 <https://jira.onap.org/browse/OOM-2132>`_] - Common Galera server.cnf does not contain Camunda required settings
 
 **Security Notes**
 
