@@ -11,29 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-aai:
-  auth: 221187EFA3AD4E33600DE0488F287099934CE65C3D0697BCECC00BB58E784E07CD74A24581DC31DBC086FF63DF116378776E9BE3D1325885
-  dme2:
-    timeout: '30000'
-  endpoint: https://aai.{{ include "common.namespace" . }}:8443
-  workflowAaiDistributionDelay: PT30S
-  pnfEntryNotificationTimeout: P14D
-cds:
-  endpoint: cds-blueprints-processor-grpc
-  port: 9111
-  auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-  timeout: 600
-camunda:
-  bpm:
-    admin-user:
-      id: admin
-      password: admin
-    history-level: full
-    job-execution:
-      max-pool-size: 30
-      core-pool-size: 3
-entitymanager:
-  packagesToScan: com
 pnf:
   dmaap:
     host: message-router
@@ -44,17 +21,50 @@ pnf:
     consumerGroup: consumerGroup
     consumerId: consumerId
     topicListenerDelayInSeconds: 5
+aai:
+  auth: {{ .Values.aai.auth}}
+  dme2:
+    timeout: '30000'
+  endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  workflowAaiDistributionDelay: PT30S
+  pnfEntryNotificationTimeout: P14D
+cds:
+   endpoint: cds-blueprints-processor-grpc
+   port: 9111
+   auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+   timeout: 600
+camunda:
+  bpm:
+    application:
+      delete-upon-undeploy: false
+      scan-for-process-definitions: true
+      deploy-changed-only: true
+      database:
+        schema-update: true
+      batchStartTime: "05:00"
+      batchEndTime: "10:00"
+    admin-user:
+      id: admin
+      password: admin
+    history-level: full
+    job-execution:
+      max-pool-size: 30
+      core-pool-size: 3
+entitymanager:
+  packagesToScan: com
 bpelURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081
 msb-ip: msb-iag.{{ include "common.namespace" . }}
 msb-port: 80
 mso:
   rainyDay:
-    retryDurationMultiplier: 2
-    maxRetries: 5
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+    retryDurationMultiplier: {{ .Values.mso.rainyDay.retryDurationMultiplier }}
+    maxRetries: {{ .Values.mso.rainyDay.maxRetries }}
+  msoKey: {{ .Values.global.app.msoKey }}
   correlation:
     timeout: 60
-  logPath: logs
+  logPath: ./logs/bpmn
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8}}
   async:
     core-pool-size: 50
     max-pool-size: 50
@@ -64,10 +74,10 @@ mso:
       endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/CompleteMsoProcess
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: Basic YnBlbDpwYXNzd29yZDEk
+      auth: {{ .Values.global.aafCredentials }}
     db:
-      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
-      password: wLg4sjrAFUS8rfVfdvTXeQ==
+      auth: {{ .Values.auth.rest.aafEncrypted }}
+      password: {{ .Values.global.aafCredentials }}
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
       spring:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
@@ -79,7 +89,7 @@ mso:
       db:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
     po:
-      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
+      auth: {{ .Values.auth.rest.aafEncrypted }}
     sdnc:
       endpoint: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/SDNCAdapter
       rest:
@@ -112,7 +122,7 @@ mso:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: Basic YnBlbDpwYXNzd29yZDEk
+    auth: {{ .Values.auth.rest.aaf }}
   default:
     adapter:
       namespace: http://org.onap.mso
@@ -129,7 +139,7 @@ mso:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/
   rollback: 'true'
   sdnc:
-    password: 1D78CFC35382B6938A989066A7A7EAEF4FE933D2919BABA99EB4763737F39876C333EE5F
+    password: {{ .Values.mso.sdnc.password}}
   service:
     agnostic:
       sniro:
@@ -137,12 +147,12 @@ mso:
         host: http://sniro-emulator:80
   site-name: CamundaEngine
   sniro:
-    auth: test:testpwd
+    auth: {{ .Values.mso.sniro.auth}}
     callback: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/adapters/rest/SDNCNotify
-    endpoint: http://replaceme:28090/optimizationInstance/V1/create
+    endpoint: {{ .Values.mso.sniro.endpoint}}
     timeout: PT30M
   oof:
-    auth: test:testpwd
+    auth: {{ .Values.mso.oof.auth}}
     callbackEndpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
     endpoint: https://oof-osdf.{{ include "common.namespace" . }}:8698/api/oof/v1/placement
     timeout: PT30M
@@ -284,7 +294,7 @@ sdnc:
   auth: Basic YWRtaW46S3A4Yko0U1hzek0wV1hsaGFrM2VIbGNzZTJnQXc4NHZhb0dHbUp2VXkyVQ==
   host: http://sdnc.{{ include "common.namespace" . }}:8282
   path: /restconf/operations/GENERIC-RESOURCE-API
-  si:
+  st:
     svc:
       types: PORT-MIRROR,PPROBE
 appc:
@@ -322,46 +332,11 @@ server:
   port: {{ index .Values.containerPort }}
   tomcat:
     max-threads: 50
-spring:
-  datasource:
-    hikari:
-      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/camundabpmn
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: org.mariadb.jdbc.Driver
-      pool-name: bpmn-pool
-      registerMbeans: true
-  security:
-    usercredentials:
-    -
-      username: apihBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: sdncaBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: poBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: wmaBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
 so:
   vnfm:
     adapter:
       url: http://so-vnfm-adapter.{{ include "common.namespace" . }}:9092/so/vnfm-adapter/v1/
-      auth: Basic dm5mbTpwYXNzd29yZDEk
+      auth: {{ .Values.auth.rest.aaf }}
 org:
   onap:
     so:

@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 server:
-    port: {{ index .Values.containerPort }}
+  port: {{ index .Values.containerPort }}
 mso:
-    async:
-        core-pool-size: 50
-        max-pool-size: 50
-        queue-capacity: 500
-    logPath: ./logs/sdnc
+  msoKey: {{ .Values.global.app.msoKey }}
+  async:
+    core-pool-size: 50
+    max-pool-size: 50
+    queue-capacity: 500
+  logPath: ./logs/sdnc
+  site-name: {{ .Values.global.app.siteName }}
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8}}
     catalog:
         db:
           spring:
@@ -31,6 +35,13 @@ org:
         so:
             adapters:
                 sdnc:
+                    TRANSPORT:
+                        service-topology-operation:
+                        activate: POST|270000|sdncurl13|sdnc-request-header|com:att:sdnctl:generic-resource
+                        assign: POST|270000|sdncurl13|sdnc-request-header|com:att:sdnctl:generic-resource
+                        deactivate: POST|270000|sdncurl13|sdnc-request-header|com:att:sdnctl:generic-resource
+                        delete: POST|270000|sdncurl13|sdnc-request-header|com:att:sdnctl:generic-resource
+                        rollback: POST|270000|sdncur13|sdnc-request-header|com:att:sdnctl:generic-resource
                     '.':
                         put: PUT|60000|sdncurl5|
                         query: GET|60000|sdncurl2|
@@ -50,6 +61,10 @@ org:
                             deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
                             delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
                             unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        feature-configuration-operation:
+                           activate: POST|60000|sdncurl4|sdnc-feature-request-header|com:att:sdnctl:firewallapi
+                           changeactivate: POST|60000|sdncurl4|sdnc-feature-request-header|com:att:sdnctl:firewallapi
+                           delete: POST|60000|sdncurl4|sdnc-feature-request-header|com:att:sdnctl:firewallapi
                         network-topology-operation:
                             activate: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             assign: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
@@ -100,7 +115,7 @@ org:
                             changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
-                    bpelauth: 4C18603C5AE7E3A42A6CED95CDF9C0BA9B2109B3725747662E5D34E5FDF63DA9ADEBB08185098F14699195FDE9475100
+                    bpelauth: {{ .Values.auth.rest.aafEncrypted }}
                     bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
                     generic-resource:
                         network-topology-operation:
@@ -139,12 +154,17 @@ org:
                     myurl: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/rest/SDNCNotify
                     rest:
                         bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
-                    sdncauth: ED07A7EE5F099FA53369C3DF2240AD68A00154676EEDBC6F8C16BAA83B1912941B8941ABD48683D2C1072DA7040659692DE936A59BBF42A038CF71DE67B4A375190071EC76EA657801B033C135
+                    sdncauth: {{ .Values.auth.rest.aafEncrypted }}
                     sdncconnecttime: 5000
+                    sdncurl1: 'http://sdnc.{{ include "common.namespace" . }}:8282{{ .Values.apiPaths.sdncurl1.uri }}'
                     sdncurl10: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/GENERIC-RESOURCE-API:'
                     sdncurl11: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/VNFTOPOLOGYAIC-API:'
                     sdncurl12: 'http://sdnc.{{ include "common.namespace" . }}:8282/'
-                    sdncurl5: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/config'
+                    sdncurl13: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/SDNW-API:'
+                    sdncurl2: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/config/L3SDN-API:'
+                    sdncurl3: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/AicHoming:'
+                    sdncurl4: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/Firewall-API:'
+                    sdncurl5: 'http://sdnc.{{ include "common.namespace" . }}:{{ .Values.apiPaths.sdncurl5.uri }}'
                     sdncurl6: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/VNF-API:'
                     sdncurl7: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/L3UCPE-API:'
                     sdncurl8: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/NBNC-API:'
@@ -160,30 +180,3 @@ org:
                             query: GET|60000|sdncurl12|
                 network:
                     encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
-spring:
-  security:
-    usercredentials:
-    -
-      username: sdnc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SDNC-Client
-    -
-      username: sitecontrol
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SiteControl-Client
-    -
-      username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: apih
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: MSO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
