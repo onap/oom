@@ -39,6 +39,14 @@ spec:
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+        env:
+        - name: TRUSTSTORE
+          value: /app/org.onap.so.trust.jks
+        - name: TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-trust-pass-secret
+              key: trustStorePassword
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
@@ -66,5 +74,8 @@ spec:
       - name: config
         configMap:
             name: {{ include "common.fullname" . }}-app-configmap
+      {{- if (.Values.global.hostAliases) }}
+      hostAliases: {{ toYaml .Values.global.hostAliases| nindent 6}}
+      {{- end}}
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
