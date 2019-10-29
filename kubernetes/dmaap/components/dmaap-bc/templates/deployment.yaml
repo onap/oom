@@ -31,11 +31,8 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      hostAliases:
-      - ip: "10.12.5.145"
-        hostnames:
-        - "aaf-onap-test.osaaf.org"
       initContainers:
+{{- if .Values.global.aafEnabled }}
       - command:
         - /root/ready.py
         args:
@@ -50,7 +47,8 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-aaf-readiness
-{{ if .Values.PG.enabled }}
+{{- end }}
+{{- if .Values.PG.enabled }}
       - command:
         - /root/ready.py
         args:
@@ -73,7 +71,7 @@ spec:
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
-          {{if eq .Values.liveness.enabled true }}
+          {{ if eq .Values.liveness.enabled true -}}
           livenessProbe:
             httpGet:
               port: {{ .Values.service.internalPort }}
@@ -92,7 +90,6 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-
 # NOTE: on the following several configMaps, careful to include / at end
 #       since there may be more than one file in each mountPath
           - name: {{ include "common.name" . }}-config
@@ -100,9 +97,8 @@ spec:
           - name: {{ include "common.name" . }}-aaf-config
             mountPath: /opt/app/dmaapbc/etc/org.onap.dmaap-bc.props
             subPath: org.onap.dmaap-bc.props
-
           resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
