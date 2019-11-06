@@ -171,6 +171,9 @@ ln -s ${hostdir}/snapshots ${ODL_HOME}/snapshots
 echo "Starting cdt-proxy-service jar, logging to ${APPC_HOME}/cdt-proxy-service/jar.log"
 java -jar ${APPC_HOME}/cdt-proxy-service/cdt-proxy-service.jar > ${APPC_HOME}/cdt-proxy-service/jar.log &
 
+echo "Starting dmaap-event-service jar, logging to ${APPC_HOME}/dmaap-event-service/jar.log"
+java -jar -Dorg_onap_appc_bootstrap_path=/opt/onap/appc/data/properties -Dorg_onap_appc_bootstrap_file=appc.properties ${APPC_HOME}/dmaap-event-service/dmaap-event-service.jar > ${APPC_HOME}/dmaap-event-service/jar.log &
+
 echo "Adding a property system.properties for AAF cadi.properties location"
 echo "" >> ${ODL_HOME}/etc/system.properties
 echo "cadi_prop_files=${APPC_HOME}/data/properties/cadi.properties" >> ${ODL_HOME}/etc/system.properties
