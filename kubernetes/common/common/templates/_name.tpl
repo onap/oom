@@ -29,3 +29,16 @@
   {{- $name := default .Chart.Name .Values.nameOverride -}}
   {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/*
+  Retrieve the "original" release from the component release:
+  if ONAP is deploy with "helm deploy --name toto", then cassandra components
+  will have "toto-cassandra" as release name.
+  this function would answer back "toto".
+  work only for now with main charts but not sub charts (as .Release.Name comes
+  from main chart and .Chart.Name comes from sub chart...)
+  {{- .Release.Name | replace .Chart.Name "" | trimSuffix "-" -}}
+*/}}
+{{- define "common.release" -}}
+  {{- .Release.Name | regexReplaceAll "-[a-zA-Z0-9]*$" "" -}}
+{{- end -}}
