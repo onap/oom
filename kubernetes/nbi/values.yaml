@@ -19,9 +19,15 @@
 global:
   nodePortPrefix: 302
   readinessRepository: oomk8s
-  readinessImage: readiness-check:1.1.0
+  readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  mariadbGalera: &mariadbGalera
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    servicePort: "3306"
+    nameOverride: mariadb-galera
 
 subChartsOnly:
   enabled: true
@@ -45,7 +51,9 @@ config:
   openStackVNFTenantId: 31047205ce114b60833b23e400d6a535
 
 mariadb-galera:
-  config:
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
       userName: rene
       userPassword: lkjgklqsdareyhjujlnnbvfvdttuiukgpiokqbfsjdhfigquosegombvjfqhb
       mariadbRootPassword: dhqjdshjdsguryebvcnbvcvdsqghyjqgktgjjfhjfghbfs
@@ -58,6 +66,10 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: nbi/maria/data
+
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: nbi-config
 
 mongo:
   nameOverride: nbi-mongo
