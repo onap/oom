@@ -1,0 +1,124 @@
+# Copyright © 2019 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- if not .Values.global.mariadbGalera.localCluster }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-config-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.global.mariadbGalera.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.global.mariadbGalera.job.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - -c
+        - >
+          mysql() { /usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
+          export -f mysql;
+          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} CREATE DATABASE {{ .Values.mariadb-galera.config.mysqlDatabase }};
+          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} CREATE USER '{{ .Values.mariadb-galera.config.userName }}'@'localhost' IDENTIFIED BY "${MYSQL_PASSWORD}";
+          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} GRANT ALL PRIVILEGES ON {{ .Values.mariadb-galera.config.mysqlDatabase }}.* TO '{{ .Values.mariadb-galera.config.userName }}'@'%';
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-db-secrets
+              key: mariadb.readwrite.port
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-root-password
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}
+              key: db-user-password
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: docker-entrypoint-initdb-d-sh
+          mountPath: "/docker-entrypoint-initdb.d"
+        - name: docker-entrypoint-initdb-d-sql
+          mountPath: "/docker-entrypoint-initdb.d/db-sql-scripts"
+        {{- if .Values.global.migration.enabled }}
+        - name: backup-storage
+          mountPath: /var/data/mariadb
+        {{- end }}
+        resources:
+{{ include "common.resources" . | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: docker-entrypoint-initdb-d-sh
+        configMap:
+          name: {{ include "common.fullname" . }}-mariadb-sh
+      - name: docker-entrypoint-initdb-d-sql
+        configMap:
+          name: {{ include "common.fullname" . }}-mariadb-sql
+      {{- if .Values.global.migration.enabled }}
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-migration
+      {{- end }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
+{{- endif }}
