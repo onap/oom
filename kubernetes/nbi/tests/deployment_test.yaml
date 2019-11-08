@@ -1,0 +1,205 @@
+---
+suite: test deployment behavior
+templates:
+  - deployment.yaml
+tests:
+  - it: "should render with default values (global)"
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-nbi
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+      - matchRegex:
+          path: metadata.labels.app
+          pattern: nbi
+      - matchRegex:
+          path: spec.template.metadata.labels.app
+          pattern: nbi
+      - equal:
+          path: spec.template.metadata.name
+          value: RELEASE-NAME-nbi
+      - equal:
+          path: spec.replicas
+          value: 1
+      - isNull:
+          path: spec.template.spec.nodeSelector
+      - isNull:
+          path: spec.template.spec.affinity
+
+  - it: "should render with default value (container)"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: nbi
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: nexus3.onap.org:10001/onap/externalapi/nbi:5.0.1
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_URL
+            value: jdbc:mariadb://mariadb-galera:3306/nbi
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_USERNAME
+            value: rene
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-nbi-config
+                key: db-user-password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATA_MONGODB_HOST
+            value: nbi-mongohost.NAMESPACE
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATA_MONGODB_PORT
+            value: "27017"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATA_MONGODB_DATABASE
+            value: ServiceOrderDB
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ONAP_LCPCLOUDREGIONID
+            value: RegionOne
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ONAP_TENANTID
+            value: 31047205ce114b60833b23e400d6a535
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ONAP_CLOUDOWNER
+            value: CloudOwner
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NBI_URL
+            value: http://nbi.NAMESPACE:8080/nbi/api/v4
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SDC_HOST
+            value: https://sdc-be.NAMESPACE:8443
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SDC_HEADER_ECOMPINSTANCEID
+            value: OOM
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SDC_HEADER_AUTHORIZATION
+            value: Basic YWFpOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU=
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AAI_HOST
+            value: https://aai.NAMESPACE:8443
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AAI_HEADER_AUTHORIZATION
+            value: Basic QUFJOkFBSQ==
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SO_HOST
+            value: http://so.NAMESPACE:8080
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DMAAP_HOST
+            value: http://message-router.NAMESPACE:3904
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LOGGING_LEVEL_ORG_ONAP_NBI
+            value: INFO
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MSB_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MSB_DISCOVERY_HOST
+            value: msb-discovery.NAMESPACE
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MSB_DISCOVERY_PORT
+            value: "10081"
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe
+          value:
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            tcpSocket:
+              port: 8080
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe
+          value:
+            initialDelaySeconds: 185
+            periodSeconds: 30
+            tcpSocket:
+              port: 8080
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8080
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 2Gi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 1Gi
+  - it: "should render when deciding to use local cluster (container)"
+    set:
+      global:
+        mariadbGalera:
+          localCluster: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_URL
+            value: jdbc:mariadb://nbi-galera:3306/nbi
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_USERNAME
+            value: rene
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-nbi-nbi-galera
+                key: user-password

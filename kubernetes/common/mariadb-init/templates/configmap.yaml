@@ -1,4 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada, Orange
+# Copyright © 2019 Orange
+# Modifications Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +14,14 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-secret
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-type: Opaque
 data:
-  db-user-password: {{ index .Values "mariadb-galera" "config" "userPassword" | b64enc | quote }}
-  db-root-password: {{ index .Values "mariadb-galera" "config" "mariadbRootPassword" | b64enc | quote }}
+{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
