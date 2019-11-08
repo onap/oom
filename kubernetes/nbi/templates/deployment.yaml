@@ -30,7 +30,7 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
-        name: {{ include "common.fullname" . }}
+      name: {{ include "common.fullname" . }}
     spec:
       containers:
         - name: {{ include "common.name" . }}
@@ -54,14 +54,14 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
             - name: SPRING_DATASOURCE_URL
-              value: jdbc:mariadb://{{ index .Values "mariadb-galera" "service" "name" }}.{{ include "common.namespace" . }}:3306/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+              value: jdbc:mariadb://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
             - name: SPRING_DATASOURCE_USERNAME
               value: {{ index .Values "mariadb-galera" "config" "userName" }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ template "common.fullname" . }}-secret
-                  key: db-user-password
+                  name: {{ include "common.mariadbSecret" . }}
+                  key: {{ include "common.mariadbSecretParam" . }}
             - name: SPRING_DATA_MONGODB_HOST
               value: {{ .Values.mongo.service.name }}.{{ include "common.namespace" . }}
             - name: SPRING_DATA_MONGODB_PORT

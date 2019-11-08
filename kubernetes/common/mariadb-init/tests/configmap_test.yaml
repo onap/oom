@@ -1,0 +1,114 @@
+---
+suite: test configmap behavior
+templates:
+  - configmap.yaml
+tests:
+  - it: "should render with default value"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-mariadb-init
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+      - matchRegex:
+          path: metadata.labels.app
+          pattern: mariadb-init
+      - equal:
+          path: data
+          value:
+            db_init.sh: |
+              #!/bin/sh
+              # Copyright © 2019 Orange
+              #
+              # Licensed under the Apache License, Version 2.0 (the "License");
+              # you may not use this file except in compliance with the License.
+              # You may obtain a copy of the License at
+              #
+              #       http://www.apache.org/licenses/LICENSE-2.0
+              #
+              # Unless required by applicable law or agreed to in writing, software
+              # distributed under the License is distributed on an "AS IS" BASIS,
+              # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+              # See the License for the specific language governing permissions and
+              # limitations under the License.
+
+              echo "Creating database ynsaUCru6mUNwGal and user u5WZ1GMSIS1wHZF..."
+
+              mysql -h ${DB_HOST} -P ${DB_PORT} -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
+              CREATE OR REPLACE USER 'u5WZ1GMSIS1wHZF'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              CREATE OR REPLACE USER 'u5WZ1GMSIS1wHZF'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              CREATE DATABASE IF NOT EXISTS ynsaUCru6mUNwGal;
+              GRANT ALL PRIVILEGES ON ynsaUCru6mUNwGal.* TO 'u5WZ1GMSIS1wHZF'@'%';
+              GRANT ALL PRIVILEGES ON ynsaUCru6mUNwGal.* TO 'u5WZ1GMSIS1wHZF'@'localhost';
+              EOF
+
+              echo "Created database ynsaUCru6mUNwGal and user u5WZ1GMSIS1wHZF."
+  - it: "shoud render with other databases"
+    set:
+      config:
+        userName: testUser
+        mysqlDatabase: testDB
+        mysqlAdditionalDatabases:
+          dbOne:
+            user: one
+            password: pwd1
+          dbTwo:
+            user: two
+            password: pwd2
+    asserts:
+      - equal:
+          path: data
+          value:
+            db_init.sh: |
+              #!/bin/sh
+              # Copyright © 2019 Orange
+              #
+              # Licensed under the Apache License, Version 2.0 (the "License");
+              # you may not use this file except in compliance with the License.
+              # You may obtain a copy of the License at
+              #
+              #       http://www.apache.org/licenses/LICENSE-2.0
+              #
+              # Unless required by applicable law or agreed to in writing, software
+              # distributed under the License is distributed on an "AS IS" BASIS,
+              # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+              # See the License for the specific language governing permissions and
+              # limitations under the License.
+
+              echo "Creating database testDB and user testUser..."
+
+              mysql -h ${DB_HOST} -P ${DB_PORT} -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
+              CREATE OR REPLACE USER 'testUser'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              CREATE OR REPLACE USER 'testUser'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+              CREATE DATABASE IF NOT EXISTS testDB;
+              GRANT ALL PRIVILEGES ON testDB.* TO 'testUser'@'%';
+              GRANT ALL PRIVILEGES ON testDB.* TO 'testUser'@'localhost';
+              EOF
+
+              echo "Created database testDB and user testUser."
+
+              echo "Creating database dbOne and user one..."
+
+              mysql -h ${DB_HOST} -P ${DB_PORT} -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
+              CREATE OR REPLACE USER 'one'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD_DBONE}';
+              CREATE OR REPLACE USER 'one'@'%' IDENTIFIED BY '${MYSQL_PASSWORD_DBONE}';
+              CREATE DATABASE IF NOT EXISTS dbOne;
+              GRANT ALL PRIVILEGES ON dbOne.* TO 'one'@'%';
+              GRANT ALL PRIVILEGES ON dbOne.* TO 'one'@'localhost';
+              EOF
+
+              echo "Created database dbOne and user one."
+              echo "Creating database dbTwo and user two..."
+
+              mysql -h ${DB_HOST} -P ${DB_PORT} -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
+              CREATE OR REPLACE USER 'two'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD_DBTWO}';
+              CREATE OR REPLACE USER 'two'@'%' IDENTIFIED BY '${MYSQL_PASSWORD_DBTWO}';
+              CREATE DATABASE IF NOT EXISTS dbTwo;
+              GRANT ALL PRIVILEGES ON dbTwo.* TO 'two'@'%';
+              GRANT ALL PRIVILEGES ON dbTwo.* TO 'two'@'localhost';
+              EOF
+
+              echo "Created database dbTwo and user two."
