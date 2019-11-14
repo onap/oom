@@ -69,11 +69,10 @@ The ROBOT encrypted Password uses the same encryption.key as SO but an
 openssl algorithm that works with the python based Robot Framework.
 
 .. note::
-  To generate ROBOT openStackEncryptedPasswordHere :
+  To generate ROBOT openStackEncryptedPasswordHere::
 
-  ``cd so/resources/config/mso/``
-
-  ``/oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
+    cd so/resources/config/mso/
+    /oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
 
 c. Generating SO Encrypted Password:
 The SO Encrypted Password uses a java based encryption utility since the
@@ -81,23 +80,21 @@ Java encryption library is not easy to integrate with openssl/python that
 ROBOT uses in Dublin.
 
 .. note::
-  To generate SO openStackEncryptedPasswordHere and openStackSoEncryptedPassword:
+  To generate SO openStackEncryptedPasswordHere and openStackSoEncryptedPassword
+  ensure ``default-jdk`` is installed::
 
-  SO_ENCRYPTION_KEY=`cat ~/oom/kubernetes/so/resources/config/mso/encryption.key`
+    apt-get update; apt-get install default-jdk
 
-  OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
+  Then execute::
 
-  git clone http://gerrit.onap.org/r/integration
+    SO_ENCRYPTION_KEY=`cat ~/oom/kubernetes/so/resources/config/mso/encryption.key`
+    OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
 
-  cd integration/deployment/heat/onap-rke/scripts
+    git clone http://gerrit.onap.org/r/integration
+    cd integration/deployment/heat/onap-rke/scripts
 
-
-  javac Crypto.java
-
-  [ if javac is not installed 'apt-get update ; apt-get install default-jdk' ]
-
-  java Crypto "$OS_PASSWORD" "$SO_ENCRYPTION_KEY"
-
+    javac Crypto.java
+    java Crypto "$OS_PASSWORD" "$SO_ENCRYPTION_KEY"
 
 d. Update the OpenStack parameters:
 
@@ -207,12 +204,12 @@ Use the following to monitor your deployment and determine when ONAP is ready fo
 .. note::
   While all pods may be in a Running state, it is not a guarantee that all components are running fine.
 
-  Launch the healthcheck tests using Robot to verify that the components are healthy.
+  Launch the healthcheck tests using Robot to verify that the components are healthy::
 
-  > ~/oom/kubernetes/robot/ete-k8s.sh onap health
+    > ~/oom/kubernetes/robot/ete-k8s.sh onap health
 
-**Step 10.** Undeploy ONAP
+**Step 10.** Undeploy ONAP::
 
-> helm undeploy dev --purge
+  > helm undeploy dev --purge
 
 More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
