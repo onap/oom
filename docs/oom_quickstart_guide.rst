@@ -60,7 +60,7 @@ a. Enabling/Disabling Components:
 Here is an example of the nominal entries that need to be provided.
 We have different values file available for different contexts.
 
-.. literalinclude:: onap-values.yaml
+.. literalinclude:: ../kubernetes/onap/values.yaml
    :language: yaml
 
 

@@ -250,7 +250,7 @@ precedence of all.
 The top level onap/values.yaml file contains the values required to be set
 before deploying ONAP.  Here is the contents of this file:
 
-.. include:: onap_values.yaml
+.. include:: ../kubernetes/onap/values.yaml
    :code: yaml
 
 One may wish to create a value file that is specific to a given deployment such
