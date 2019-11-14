@@ -1,4 +1,3 @@
-
 # Modifications Copyright © 2018 Amdocs,Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,6 +46,46 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-aaf-readiness
+      - name: {{ include "common.name" . }}-dbc-aaf-config
+        image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.aafCredsPath }}
+          name: {{ include "common.name" . }}-aaf-config
+        env:
+        - name: APP_FQI
+          value: "{{ .Values.aafConfig.fqi }}"
+        - name: aaf_locate_url
+          value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+        - name: aaf_locator_container
+          value: "{{ .Values.global.aafLocatorContainer }}"
+        - name: aaf_locator_container_ns
+          value: "{{ .Release.Namespace }}"
+        - name: aaf_locator_fqdn
+          value: "{{ .Values.aafConfig.fqdn }}"
+        - name: aaf_locator_public_fqdn
+          value: "{{.Values.aafConfig.publicFqdn}}"
+        - name: aaf_locator_app_ns
+          value: "{{ .Values.global.aafAppNs }}"
+        - name: DEPLOY_FQI
+          value: "{{ .Values.aafConfig.aafDeployFqi }}"
+        - name: DEPLOY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.fullname" . }}-secret
+              key: aaf-deploy-password
+        - name: cadi_longitude
+          value: "{{ .Values.aafConfig.cadiLongitude }}"
+        - name: cadi_latitude
+          value: "{{ .Values.aafConfig.cadiLatitude }}"
+      - name: {{ include "common.name" . }}-permission-fixer
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.aafCredsPath }}
+          name: {{ include "common.name" . }}-aaf-config
+        command: ["chown","-Rf","1000:1001", "/opt/app/"]
 {{- end }}
 {{- if .Values.PG.enabled }}
       - command:
