@@ -42,7 +42,7 @@ if [[ -f /opt/app/policy/etc/build.info ]]; then
 	echo "Found existing installation, will not reinstall"
 	. /opt/app/policy/etc/profile.d/env.sh
 
-else 
+else
 	if [[ -d config ]]; then
 		cp config/*.conf .
 	fi
@@ -80,7 +80,7 @@ else
 		# (which does nothing if the db is already up-to-date)
 		dbuser=$(echo $(grep '^JDBC_USER=' base.conf | cut -f2 -d=))
 		dbpw=$(echo $(grep '^JDBC_PASSWORD=' base.conf | cut -f2 -d=))
-		db_upgrade_remote.sh $dbuser $dbpw {{.Values.global.mariadb.nameOverride}}
+		db_upgrade_remote.sh $dbuser $dbpw {{.Values.global.mariadb.service.name}}
 	fi
 
 fi
