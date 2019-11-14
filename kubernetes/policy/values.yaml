@@ -19,12 +19,10 @@
 global:
   nodePortPrefix: 302
   readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.0
+  readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   ubuntuImage: ubuntu:16.04
-  mariadb:
-    nameOverride: policydb
   pdp:
     nameOverride: pdp
   pap:
@@ -35,6 +33,18 @@ global:
     nameOverride: brmsgw
   nexus:
     nameOverride: nexus
+  mariadb:
+    # '&mariadbConfig' means we "store" the values for  later use in the file
+    # with '*mariadbConfig' pointer.
+    config: &mariadbConfig
+      userName: policy_user
+      userPassword: policy_user
+      mariadbRootPassword: secret
+      mysqlDatabase: policyadmin
+    service: &mariadbService
+      name: policy-mariadb
+      portName: mysql-policy
+      internalPort: 3306
 
 #################################################################
 # Application configuration defaults.
@@ -42,6 +52,7 @@ global:
 # application image
 repository: nexus3.onap.org:10001
 image: onap/policy-pe:1.5.2
+mariadb_image: library/mariadb:10
 pullPolicy: Always
 
 subChartsOnly:
@@ -51,8 +62,6 @@ nameOverride: pap
 
 pdp:
   nameOverride: pdp
-mariadb:
-  nameOverride: policydb
 drools:
   nameOverride: drools
 brmwgw:
@@ -100,6 +109,17 @@ service:
 
 ingress:
   enabled: false
+
+mariadb-galera:
+  # mariadb-galera.config and global.mariadb.config must be equals
+  config: *mariadbConfig
+  nameOverride: policy-mariadb
+  # mariadb-galera.service and global.mariadb.service must be equals
+  service: *mariadbService
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: policy/maria/data
 
 # Resource Limit flavor -By Default using small
 flavor: small
