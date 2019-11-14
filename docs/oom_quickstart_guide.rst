@@ -131,10 +131,12 @@ setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 
 
 
 Example Keystone v2.0 
+
 .. literalinclude:: example-integration-override.yaml
    :language: yaml
 
 Example Keystone v3  (required for Rocky and later releases)
+
 .. literalinclude:: example-integration-override-v3.yaml
    :language: yaml
 
