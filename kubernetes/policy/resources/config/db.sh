@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada, AT&T
 # Modifications Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dependencies:
-  - name: common
-    version: ~5.x-0
-    # local reference to common chart, as it is
-    # a part of this chart's package and will not
-    # be published independently to a repo (at this point)
-    repository: '@local'
+#!/bin/bash -xv
+mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
+for db in support onap_sdk log migration operationshistory10 pooling policyadmin operationshistory
+do
+	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
+	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
+done
+
+mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
