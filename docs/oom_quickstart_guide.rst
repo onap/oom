@@ -103,28 +103,25 @@ available in the environment. To get the most value out of these templates and t
 automation that can help confirm the setup is correct, please observe the following 
 constraints.
 
-openStackPublicNetId: 
-
-This network should allow heat templates to add interfaces. 
-This need not be an external network, floating IPs can be assigned to the ports on 
-the VMs that are created by the heat template but its important that neutron allow 
-ports to be created on them.
+openStackPublicNetId:
+  This network should allow heat templates to add interfaces.
+  This need not be an external network, floating IPs can be assigned to the ports on
+  the VMs that are created by the heat template but its important that neutron allow
+  ports to be created on them.
 
 openStackPrivateNetCidr: "10.0.0.0/16"
-
-This ip address block is used to assign OA&M addresses on VNFs to allow ONAP connectivity.
-The demonstration heat templates assume that 10.0 prefix can be used by the VNFs and the 
-demonstration ip addressing plan embodied in the preload template prevent conflicts when 
-instantiating the various VNFs. If you need to change this, you will need to modify the preload 
-data in the robot helm chart like integration_preload_parametes.py and the demo/heat/preload_data 
-in the robot container. The size of the CIDR should be sufficient for ONAP and the VMs you expect 
-to create.
+  This ip address block is used to assign OA&M addresses on VNFs to allow ONAP connectivity.
+  The demonstration heat templates assume that 10.0 prefix can be used by the VNFs and the
+  demonstration ip addressing plan embodied in the preload template prevent conflicts when
+  instantiating the various VNFs. If you need to change this, you will need to modify the preload
+  data in the robot helm chart like integration_preload_parametes.py and the demo/heat/preload_data
+  in the robot container. The size of the CIDR should be sufficient for ONAP and the VMs you expect
+  to create.
 
 openStackOamNetworkCidrPrefix: "10.0"
-
-This ip prefix mush match the openStackPrivateNetCidr and is a helper variable to some of the
-robot scripts for demonstration. A production deployment need not worry about this
-setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
+  This ip prefix mush match the openStackPrivateNetCidr and is a helper variable to some of the
+  robot scripts for demonstration. A production deployment need not worry about this
+  setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
 
 
 Example Keystone v2.0 
@@ -182,17 +179,14 @@ To deploy all ONAP applications use this command::
 All override files may be customized (or replaced by other overrides) as per needs.
 
 onap-all.yaml
-
   Enables the modules in the ONAP deployment. As ONAP is very modular, it is possible to customize ONAP and disable some components through this configuration file.
 
 environment.yaml
-
   Includes configuration values specific to the deployment environment.
 
   Example: adapt readiness and liveness timers to the level of performance of your infrastructure
 
 openstack.yaml
-
   Includes all the Openstack related information for the default target tenant you want to use to deploy VNFs from ONAP and/or additional parameters for the embedded tests.
 
 **Step 9.** Verify ONAP installation
