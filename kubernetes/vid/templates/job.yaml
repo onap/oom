@@ -34,11 +34,8 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /root/ready.py
-{{- $fullname := include "common.fullname" . -}}
-{{- range $i,$t := until (int .Values.vid_mariadb_galera.replicaCount)}}
         - --container-name
-        - {{ $fullname }}-mariadb-galera-{{$i}}
-{{- end }}
+        - {{ index .Values "mariadb-galera" "service" "internalPort" }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -63,13 +60,16 @@ spec:
         - /dbcmd-config/db_cmd.sh
         env:
         - name: MYSQL_PASSWORD
-          value: "{{ .Values.config.vidmysqlpassword }}"
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-db
+              key: db-user-password
         - name: MYSQL_HOST
-          value: "{{ .Values.config.vidmysqlhost }}"
+          value: {{ index .Values "mariadb-galera" "service" "name" }}
         - name: MYSQL_USER
-          value: "{{ .Values.config.vidmysqluser }}"
+          value: {{ index .Values "mariadb-galera" "config" "userName" }}
         - name: MYSQL_PORT
-          value: "{{ .Values.config.vidmysqlport }}"
+          value: {{ index .Values "mariadb-galera" "service" "internalPort" }}
       restartPolicy: Never
       volumes:
         - name: {{ include "common.fullname" . }}-config
@@ -80,4 +80,3 @@ spec:
                 path: db_cmd.sh
               - key: vid-pre-init.sql
                 path: vid-pre-init.sql
-
