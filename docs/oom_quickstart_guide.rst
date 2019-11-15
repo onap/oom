@@ -29,25 +29,25 @@ where <BRANCH> can be an offical release tag, such as
   > sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
 
 
-**Step 3.** Customize the helm charts like oom/kubernetes/onap/values.yaml or an override
-file like onap-all.yaml, onap-vfw.yaml or openstack.yaml file to suit your deployment with items like the
-OpenStack tenant information.
+**Step 3.** Customize the helm charts like `oom/kubernetes/onap/values.yaml` or an override
+file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file to suit your deployment
+with items like the OpenStack tenant information.
 
 .. note::
-  Standard and example override files (e.g. onap-all.yaml, openstack.yaml) can be found in
-  the oom/kubernetes/onap/resources/overrides/ directory.
+  Standard and example override files (e.g. `onap-all.yaml`, `openstack.yaml`) can be found in
+  the `oom/kubernetes/onap/resources/overrides/` directory.
 
 
  a. You may want to selectively enable or disable ONAP components by changing
-    the `enabled: true/false` flags.
+    the ``enabled: true/false`` flags.
 
 
- b. Encyrpt the OpenStack password using the shell tool for robot and put it in
-    the robot helm charts or robot section of openstack.yaml
+ b. Encrypt the OpenStack password using the shell tool for robot and put it in
+    the robot helm charts or robot section of `openstack.yaml`
 
 
  c. Encrypt the OpenStack password using the java based script for SO helm charts
-    or SO section of openstack.yaml.
+    or SO section of `openstack.yaml`.
 
 
  d. Update the OpenStack parameters that will be used by robot, SO and APPC helm
@@ -69,7 +69,7 @@ The ROBOT encrypted Password uses the same encryption.key as SO but an
 openssl algorithm that works with the python based Robot Framework.
 
 .. note::
-  To generate ROBOT openStackEncryptedPasswordHere::
+  To generate ROBOT ``openStackEncryptedPasswordHere``::
 
     cd so/resources/config/mso/
     /oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
@@ -80,8 +80,8 @@ Java encryption library is not easy to integrate with openssl/python that
 ROBOT uses in Dublin.
 
 .. note::
-  To generate SO openStackEncryptedPasswordHere and openStackSoEncryptedPassword
-  ensure ``default-jdk`` is installed::
+  To generate SO ``openStackEncryptedPasswordHere`` and ``openStackSoEncryptedPassword``
+  ensure `default-jdk` is installed::
 
     apt-get update; apt-get install default-jdk
 
@@ -103,13 +103,13 @@ available in the environment. To get the most value out of these templates and t
 automation that can help confirm the setup is correct, please observe the following 
 constraints.
 
-openStackPublicNetId:
+``openStackPublicNetId:``
   This network should allow heat templates to add interfaces.
   This need not be an external network, floating IPs can be assigned to the ports on
   the VMs that are created by the heat template but its important that neutron allow
   ports to be created on them.
 
-openStackPrivateNetCidr: "10.0.0.0/16"
+``openStackPrivateNetCidr: "10.0.0.0/16"``
   This ip address block is used to assign OA&M addresses on VNFs to allow ONAP connectivity.
   The demonstration heat templates assume that 10.0 prefix can be used by the VNFs and the
   demonstration ip addressing plan embodied in the preload template prevent conflicts when
@@ -118,7 +118,7 @@ openStackPrivateNetCidr: "10.0.0.0/16"
   in the robot container. The size of the CIDR should be sufficient for ONAP and the VMs you expect
   to create.
 
-openStackOamNetworkCidrPrefix: "10.0"
+``openStackOamNetworkCidrPrefix: "10.0"``
   This ip prefix mush match the openStackPrivateNetCidr and is a helper variable to some of the
   robot scripts for demonstration. A production deployment need not worry about this
   setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
@@ -162,13 +162,13 @@ follows::
 .. literalinclude:: helm-search.txt
 
 .. note::
-  The setup of the Helm repository is a one time activity. If you make changes to your deployment charts or values be sure to use `make` to update your local Helm repository.
+  The setup of the Helm repository is a one time activity. If you make changes to your deployment charts or values be sure to use ``make`` to update your local Helm repository.
 
 **Step 8.** Once the repo is setup, installation of ONAP can be done with a
 single command
 
 .. note::
-  The --timeout 900 is currently required in Dublin to address long running initialization tasks
+  The ``--timeout 900`` is currently required in Dublin to address long running initialization tasks
   for DMaaP and SO. Without this timeout value both applications may fail to deploy.
 
 To deploy all ONAP applications use this command::
@@ -178,15 +178,15 @@ To deploy all ONAP applications use this command::
 
 All override files may be customized (or replaced by other overrides) as per needs.
 
-onap-all.yaml
+`onap-all.yaml`
   Enables the modules in the ONAP deployment. As ONAP is very modular, it is possible to customize ONAP and disable some components through this configuration file.
 
-environment.yaml
+`environment.yaml`
   Includes configuration values specific to the deployment environment.
 
   Example: adapt readiness and liveness timers to the level of performance of your infrastructure
 
-openstack.yaml
+`openstack.yaml`
   Includes all the Openstack related information for the default target tenant you want to use to deploy VNFs from ONAP and/or additional parameters for the embedded tests.
 
 **Step 9.** Verify ONAP installation
