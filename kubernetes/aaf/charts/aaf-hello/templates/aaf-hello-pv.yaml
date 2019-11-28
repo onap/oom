@@ -1,4 +1,6 @@
+{{- if ne 0 (int .Values.global.aaf.hello.replicas) }}
 {{- if and .Values.global.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 #########
 ##  ============LICENSE_START====================================================
 ##  org.onap.aaf
@@ -37,12 +39,8 @@ spec:
     - {{ .Values.persistence.config.accessMode }}
   persistentVolumeReclaimPolicy: {{ .Values.persistence.config.volumeReclaimPolicy }}
   hostPath:
-     path: {{ .Values.persistence.config.mountPath }}
-{{- if .Values.persistence.config.storageClass }}
-{{- if (eq "-" .Values.persistence.config.storageClass) }}
-  storageClassName: ""
-{{- else }}
-  storageClassName: "{{ .Values.persistence.config.storageClass }}"
-{{- end }}
-{{- end }}
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
+{{- end -}}
+{{- end -}}
 {{- end -}}
