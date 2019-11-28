@@ -31,6 +31,8 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
@@ -44,8 +46,10 @@ spec:
           - mountPath: /quorumclient/config.json
             name: {{ include "common.name" .}}
             subPath: config.json
+{{- if .Values.persistence.enabled }}
           - mountPath: /quorumclient/auth
-            name: {{ include "common.fullname" . }}-auth
+            name: {{ include "common.fullname" . }}-data
+{{- end }}
         resources:
 {{ include "common.resources" . | indent 10 }}
         {{- if .Values.nodeSelector }}
@@ -67,8 +71,20 @@ spec:
           - key: config.json
             path: config.json
             mode: 0755
-      - name: {{ include "common.fullname" . }}-auth
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+{{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+    spec:
+      accessModes:
+      - {{ .Values.persistence.accessMode | quote }}
+      storageClassName: {{ include "common.storageClass" . }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}
+{{- end }}
