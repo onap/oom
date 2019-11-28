@@ -55,8 +55,10 @@ spec:
         - name: http
           containerPort: 8500
         volumeMounts:
+{{- if .Values.persistence.enabled }}
         - mountPath: /consul/data
-          name: {{ include "common.fullname" . }}-consuldata
+          name: {{ include "common.fullname" . }}-data
+{{- end }}
         - mountPath: /consul/config/config.json
           name: {{ include "common.fullname" . }}-consulconfiguration
           subPath: config.json
@@ -68,7 +70,7 @@ spec:
       volumes:
         - name: {{ include "common.fullname" . }}-consuldata
           persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
+            claimName: {{ include "common.fullname" . }}-data
         - name: {{ include "common.fullname" . }}-consulconfiguration
           configMap:
             name: {{ include "common.fullname" . }}-consul
@@ -80,3 +82,20 @@ spec:
             path: /etc/localtime
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+{{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+    spec:
+      accessModes:
+      - {{ .Values.persistence.accessMode | quote }}
+      storageClassName: {{ include "common.storageClass" . }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}
+{{- end }}
