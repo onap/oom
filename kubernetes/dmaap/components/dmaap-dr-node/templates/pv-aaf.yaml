@@ -17,29 +17,38 @@
   # SPDX-License-Identifier: Apache-2.0
   # ============LICENSE_END=========================================================
 */}}
+
+
 {{- if .Values.global.aafEnabled }}
+{{- $global := . }}
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
 {{- if eq "True" (include "common.needPV" .) -}}
+{{- range $i := until (int $global.Values.replicaCount)}}
+---
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}-aaf-props
-  namespace: {{ include "common.namespace" . }}
+  name: {{ include "common.fullname" $global }}-aaf-props-{{ $i }}
+  namespace: {{ include "common.namespace" $global }}
   labels:
-    app: {{ include "common.name" . }}-aaf-props
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}-aaf-props
+    app: {{ include "common.name" $global }}
+    chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
+    release: "{{ $global.Release.Name }}"
+    heritage: "{{ $global.Release.Service }}"
+    name: {{ include "common.fullname" $global }}-aaf-props
 spec:
   capacity:
-    storage: {{ .Values.persistence.aafCredsSize}}
+    storage: {{ $global.Values.persistence.aafCredsSize }}
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+    - {{ $global.Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" $global }}-data-aaf-props"
+  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   hostPath:
-    path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.aafCredsMountSubPath }}
-{{ end -}}
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.aafCredsMountSubPath }}-{{$i}}
+{{if ne $i (int $global.Values.replicaCount) }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

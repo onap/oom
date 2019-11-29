@@ -18,6 +18,7 @@
   # ============LICENSE_END=========================================================
 */}}
 {{- if .Values.global.aafEnabled }}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -33,13 +34,11 @@ metadata:
 {{ toYaml .Values.persistence.annotations | indent 4 }}
 {{- end }}
 spec:
-  selector:
-    matchLabels:
-      name: {{ include "common.fullname" . }}-aaf-props
   accessModes:
     - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-aaf-props-stcl"
+  storageClassName: {{ include "common.storageClass" . }}
   resources:
     requests:
       storage: {{ .Values.persistence.aafCredsSize }}
+{{ end -}}
 {{ end -}}
