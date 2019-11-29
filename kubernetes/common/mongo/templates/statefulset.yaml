@@ -33,24 +33,6 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-#{{ if not .Values.disableNfsProvisioner }}
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - {{ .Values.nfsprovisionerPrefix }}-nfs-provisioner
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-#{{ end }}
-
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
@@ -79,8 +61,8 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
-          - mountPath: /var/lib/mongo
-            name: {{ include "common.fullname" . }}-data
+          - name: {{ include "common.fullname" . }}-data
+            mountPath: /var/lib/mongo
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -95,10 +77,24 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+    spec:
+      accessModes:
+      - "{{ .Values.persistence.accessMode }}"
+      storageClassName: {{ include "common.storageClass" . }}
+      resources:
+        requests:
+          storage: "{{ .Values.persistence.storage }}"
+  {{- else }}
+      volumes:
       - name: {{ include "common.fullname" . }}-data
-#{{ if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}-data
-#{{ else }}
         emptyDir: {}
-#{{ end }}
+  {{- end }}
