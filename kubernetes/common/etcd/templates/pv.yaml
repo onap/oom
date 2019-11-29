@@ -12,30 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{ if .Values.persistence.enabled }}
-{{- $root := . -}}
-{{ range $i, $e := until (int $root.Values.replicaCount) }}
+{{- $global := . }}
+{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
+{{- if eq "True" (include "common.needPV" .) -}}
+{{- range $i := until (int $global.Values.replicaCount)}}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "common.fullname" $root }}-data-{{ $i }}
-  namespace: {{ $root.Release.Namespace }}
+  name: {{ include "common.fullname" $global }}-data-{{ $i }}
+  namespace: {{ include "common.namespace" $global }}
   labels:
-    type: {{ $root.Values.persistence.storageType }}
-    app: {{ include "common.fullname" $root }}
-    chart: {{ $root.Chart.Name }}-{{ $root.Chart.Version | replace "+" "_" }}
-    release: {{ $root.Release.Name }}
-    heritage: {{ $root.Release.Service }}
+    app: {{ include "common.fullname" $global }}
+    chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
+    release: "{{ $global.Release.Name }}"
+    heritage: "{{ $global.Release.Service }}"
+    name: {{ include "common.fullname" $global }}
 spec:
   capacity:
-    storage: {{ $root.Values.persistence.storage }}
+    storage: {{ $global.Values.persistence.storage }}
   accessModes:
-    - {{ $root.Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" $root }}-data"
+    - {{ $global.Values.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $global }}-data"
   hostPath:
-    path: {{ $root.Values.persistence.mountPath }}/{{ $root.Release.Name }}/{{ $root.Values.persistence.mountSubPath }}-{{ $i }}
-  persistentVolumeReclaimPolicy: {{ $root.Values.persistence.volumeReclaimPolicy }}
-{{ end }}
-{{ end }}
-
+    path: {{ $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.mountSubPath }}-{{ $i }}
+{{if ne $i (int $global.Values.replicaCount) }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

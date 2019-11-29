@@ -91,10 +91,8 @@ spec:
                   name: {{ include "common.fullname" . }}
                   key: db-root-password
             volumeMounts:
-            - name: backup-data
+            - name: backup-dir
               mountPath: /backup
-            - name: db-data
-              mountPath: /var/lib/mysql
           containers:
           - name: mariadb-backup-validate
             image: "{{ include "common.repository" . }}/{{ .Values.backupImage }}"
@@ -130,7 +128,7 @@ spec:
                 remove_dir $target_dir
                 exit 0
               fi
-              
+
               /docker-entrypoint.sh mysqld &
 
               count=0
@@ -163,16 +161,13 @@ spec:
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
-            - name: backup-data
+            - name: backup-dir
               mountPath: /backup
           volumes:
           - name: localtime
             hostPath:
               path: /etc/localtime
-          - name: db-data
+          - name: backup-dir
             persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-db-data
-          - name: backup-data
-            persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-backup 
+              claimName: {{ include "common.fullname" . }}-backup-data
 {{- end }}
