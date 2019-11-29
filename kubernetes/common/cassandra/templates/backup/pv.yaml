@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2019 Amdocs, Bell Canada, AT&T
+# Copyright © 2019 Amdocs, Bell Canada, AT&T, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,25 +14,8 @@
 # limitations under the License.
 */}}
 {{- if .Values.backup.enabled }}
-{{ if .Values.persistence.enabled }}
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ include "common.fullname" . }}-db-data
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    heritage: {{ .Release.Service }}
-    name: {{ include "common.fullname" . }}-db-data
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size }}
-  accessModes:
-  - {{ .Values.persistence.accessMode }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -49,9 +32,10 @@ spec:
     storage: {{ .Values.persistence.size }}
   accessModes:
   - {{ .Values.persistence.accessMode }}
-  hostPath:
-    path: {{ .Values.global.persistence.backup.mountPath | default .Values.persistence.backup.mountPath }}/{{ include "common.namespace" $ }}/{{ include "common.fullname" $ }}
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-{{ end }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
+  hostPath:
+    path: {{ .Values.global.persistence.backup.mountPath | default .Values.persistence.backup.mountPath }}/{{ include "common.namespace" . }}/{{ include "common.fullname" . }}
 {{- end -}}
-
+{{- end -}}
+{{- end -}}

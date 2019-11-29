@@ -75,7 +75,7 @@ spec:
 
                 echo "Executing cleanup!!"
                 command="nodetool cleanup"
-                /root/exec.py -p "cassandra" -c "$command"                
+                /root/exec.py -p "cassandra" -c "$command"
                 echo "Cleaned Node!! Backing up database now!!!"
 
                 command="nodetool snapshot -t $curr_time"
@@ -97,7 +97,7 @@ spec:
                     if [ 1 ] {{- range $t, $keyspace := $root.Values.backup.keyspacesToSkip }} && [ "{{ $keyspace.name }}" != "$keyspace_name" ] {{- end }}; then
                       /root/restore.sh -b $backup_dir/cassandra-{{ $i }}/data -s  /onap-data/cassandra-{{ $i }}/data/$keyspace_name -k $keyspace_name -t $curr_time &
                       pids="$pids $!"
-                    fi                  
+                    fi
                   done
                 {{- end }}
 
@@ -121,7 +121,7 @@ spec:
                   echo "Failed" > /backup/backup.log
                   exit 0
                 fi
-                
+
                 mv /backup/temp /backup/backup-${curr_time}
                 echo "Success" > /backup/backup.log
                 echo "Cassandra Backup Succeeded"
@@ -135,8 +135,10 @@ spec:
               - mountPath: /etc/localtime
                 name: localtime
                 readOnly: true
-              - mountPath: /onap-data
-                name: data-dir
+              {{- range $i := until (int .Values.replicaCount)}}
+              - mountPath: /onap-data/cassandra-{{ $i }}
+                name: data-dir-{{ $i }}
+              {{- end }}
               - mountPath: /backup
                 name: backup-dir
               - name: scripts
@@ -144,7 +146,7 @@ spec:
                 subPath: restore.sh
               - name: scripts
                 mountPath: /root/exec.py
-                subPath: exec.py           
+                subPath: exec.py
           containers:
             - name: cassandra-backup-validate
               image: "{{ .Values.image }}"
@@ -200,7 +202,7 @@ spec:
                   done
                   kill -9 $CASS_PID
                 {{- end }}
-                echo "Validation Successful!!!" 
+                echo "Validation Successful!!!"
                 cd /backup
                 totalFiles=`ls -t | grep "backup-" | wc -l`
                 if [ $totalFiles -gt {{ .Values.backup.retentionPeriod }} ]; then
@@ -230,13 +232,14 @@ spec:
               path: /etc/localtime
           - name: scripts
             configMap:
-              name: {{ include "common.fullname" $ }}-configmap
+              name: {{ include "common.fullname" . }}-configmap
               defaultMode: 0755
-          - name: data-dir
+          {{- range $i := until (int .Values.replicaCount)}}
+          - name: data-dir-{{ $i }}
             persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-db-data
+              claimName: {{ include "common.fullname" . }}-data-{{ $i }}
+          {{- end }}
           - name: backup-dir
             persistentVolumeClaim:
               claimName: {{ include "common.fullname" . }}-backup-data
 {{- end -}}
-              

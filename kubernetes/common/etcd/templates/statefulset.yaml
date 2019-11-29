@@ -213,14 +213,19 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
     spec:
       accessModes:
-        - "{{ .Values.persistence.accessMode }}"
+      - "{{ .Values.persistence.accessMode }}"
+      storageClassName: {{ include "common.storageClass" . }}
       resources:
         requests:
           # upstream recommended max is 700M
           storage: "{{ .Values.persistence.storage }}"
-      storageClassName: {{ include "common.fullname" . }}-data
   {{- else }}
       volumes:
       - name: {{ include "common.fullname" . }}-data
@@ -231,4 +236,3 @@ spec:
         emptyDir: {}
       {{- end }}
   {{- end }}
-
