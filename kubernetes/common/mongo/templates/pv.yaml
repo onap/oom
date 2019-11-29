@@ -14,25 +14,33 @@
 # limitations under the License.
 */}}
 
-{{- if (and (and (.Values.persistence.enabled) (not .Values.persistence.existingClaim)) ( .Values.disableNfsProvisioner)) -}}
+{{- $global := . }}
+{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
+{{- if eq "True" (include "common.needPV" .) -}}
+{{- range $i := until (int $global.Values.replicaCount)}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}-data
-  namespace: {{ include "common.namespace" . }}
+  name: {{ include "common.fullname" $global }}-data-{{ $i }}
+  namespace: {{ include "common.namespace" $global }}
   labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
+    app: {{ include "common.fullname" $global }}
+    chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
+    release: "{{ $global.Release.Name }}"
+    heritage: "{{ $global.Release.Service }}"
+    name: {{ include "common.fullname" $global }}
 spec:
   capacity:
-    storage: {{ .Values.persistence.size}}
+    storage: {{ $global.Values.persistence.size}}
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+    - {{ $global.Values.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $global }}-data"
   hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.mountSubPath }}-{{$i}}
+{{if ne $i (int $global.Values.replicaCount) }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}

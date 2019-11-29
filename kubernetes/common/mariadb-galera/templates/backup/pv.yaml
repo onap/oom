@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2019 Amdocs, Bell Canada
+# Copyright © 2019 Amdocs, Bell Canada, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,45 +15,27 @@
 */}}
 {{- if .Values.backup.enabled }}
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-backup
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}-backup
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-  - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.backup.mountPath | default .Values.persistence.backup.mountPath }}/{{ include "common.namespace" . }}/{{include "common.name" . }}
+{{- if eq "True" (include "common.needPV" .) -}}
 ---
-kind: PersistentVolume
 apiVersion: v1
+kind: PersistentVolume
 metadata:
-  name: {{ include "common.fullname" . }}-db-data
+  name: {{ include "common.fullname" . }}-backup-data
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}-db-data
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    heritage: {{ .Release.Service }}
+    name: {{ include "common.fullname" . }}-backup-data
 spec:
   capacity:
-    storage: {{ .Values.persistence.size}}
+    storage: {{ .Values.persistence.size }}
   accessModes:
   - {{ .Values.persistence.accessMode }}
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $global }}-data-backup"
   hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}{{ sub .Values.replicaCount 1 }}
+    path: {{ .Values.global.persistence.backup.mountPath | default .Values.persistence.backup.mountPath }}/{{ include "common.namespace" $ }}/{{ include "common.fullname" $ }}
 {{- end -}}
 {{- end -}}
-
+{{- end -}}

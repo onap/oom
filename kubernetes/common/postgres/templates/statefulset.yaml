@@ -37,23 +37,13 @@ spec:
         - /bin/sh
         - -c
         - |
-          for i in $(seq 0 $(({{ .Values.replicaCount }}-1))); do
-            if [ ! -d /podroot/data$i ]; then
-              mkdir -p /podroot/data$i;
-              chown 26:26 /podroot/data$i;
-              chmod 700 /podroot/data$i;
-            fi;
-          done
-        env:
-        - name: POD_NAME
-          valueFrom: { fieldRef: { fieldPath: metadata.name } }
-        securityContext:
-          privileged: true
+          chown -R 26:26 /podroot/;
+          chmod 700 /podroot/;
         image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.busyboxImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: init-sysctl
+        name: {{ include "common.name" . }}-prepare
         volumeMounts:
-        - name: {{ include "common.fullname" . }}-init
+        - name: {{ include "common.fullname" . }}-data
           mountPath: /podroot/
       containers:
       - name: {{ include "common.name" . }}
@@ -129,27 +119,25 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-init
-        hostPath:
-          path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountInitPath }}
       - name: {{ include "common.fullname" . }}-backup
         emptyDir: {}
-#{{ if not .Values.persistence.enabled }}
+{{- if not .Values.persistence.enabled }}
       - name: {{ include "common.fullname" . }}-data
         emptyDir: {}
-#{{ else }}
+{{- else }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data
       labels:
         name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
     spec:
-      accessModes: [ {{ .Values.persistence.accessMode }} ]
-      storageClassName: {{ include "common.fullname" . }}-data
+      accessModes:
+      - {{ .Values.persistence.accessMode | quote }}
+      storageClassName: {{ include "common.storageClass" . }}
       resources:
         requests:
-          storage: {{ .Values.persistence.size }}
-      selector:
-        matchLabels:
-          name: {{ include "common.fullname" . }}
-#{{ end }}
+          storage: {{ .Values.persistence.size | quote }}
+{{- end }}
