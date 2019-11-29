@@ -18,6 +18,8 @@
   # ============LICENSE_END=========================================================
 */}}
 {{- if .Values.global.aafEnabled }}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+{{- if eq "True" (include "common.needPV" .) -}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -34,8 +36,10 @@ spec:
     storage: {{ .Values.persistence.aafCredsSize}}
   accessModes:
     - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-aaf-props-stcl"
+  storageClassName: "{{ include "common.fullname" . }}-data"
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
   hostPath:
     path: {{ .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.aafCredsMountSubPath }}
 {{ end -}}
+{{- end -}}
+{{- end -}}

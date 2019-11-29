@@ -14,6 +14,7 @@
 
 {{- $root := . -}}
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 {{ range $i, $e := until (atoi (quote $root.Values.replicaCount) | default 3) }}
 ---
 apiVersion: v1
@@ -31,9 +32,10 @@ spec:
     storage: {{ $root.Values.persistence.size }}
   accessModes:
     - {{ $root.Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" $global }}-data"
   hostPath:
     path: {{ $root.Values.persistence.mountPath }}/{{ $root.Release.Name }}/{{ $root.Values.persistence.mountSubPath }}-{{ $i }}
   persistentVolumeReclaimPolicy: {{ $root.Values.persistence.volumeReclaimPolicy }}
 {{ end }}
 {{ end }}
-
+{{ end }}
