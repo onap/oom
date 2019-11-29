@@ -51,7 +51,7 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - mountPath: {{ .Values.persistence.aafCredsPath }}
-            name: {{ include "common.fullname" . }}-aaf-props-pvc
+            name: {{ include "common.fullname" . }}-aaf-props
           command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
           env:
           - name: APP_FQI
@@ -82,12 +82,12 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - mountPath: {{ .Values.persistence.spoolPath }}
-            name: {{ include "common.fullname" . }}-spool-data-pvc
+            name: {{ include "common.fullname" . }}-data
           - mountPath: {{ .Values.persistence.eventLogsPath }}
-            name: {{ include "common.fullname" . }}-event-logs-pvc
+            name: {{ include "common.fullname" . }}-event-logs
         {{- if .Values.global.aafEnabled }}
           - mountPath: {{ .Values.persistence.aafCredsPath }}
-            name: {{ include "common.fullname" . }}-aaf-props-pvc
+            name: {{ include "common.fullname" . }}-aaf-props
         {{- end }}
           command: ["chown","-Rf","1000:1001", "/opt/app/"]
       containers:
@@ -112,12 +112,12 @@ spec:
           volumeMounts:
           {{- if .Values.global.aafEnabled }}
           - mountPath: {{ .Values.persistence.aafCredsPath }}
-            name: {{ include "common.fullname" . }}-aaf-props-pvc
+            name: {{ include "common.fullname" . }}-aaf-props
           {{- end }}
           - mountPath: {{ .Values.persistence.spoolPath }}
-            name: {{ include "common.fullname" . }}-spool-data-pvc
+            name: {{ include "common.fullname" . }}-data
           - mountPath: {{ .Values.persistence.eventLogsPath }}
-            name: {{ include "common.fullname" . }}-event-logs-pvc
+            name: {{ include "common.fullname" . }}-event-logs
           - mountPath: /etc/localtime
             name: localtime
             readOnly: false
@@ -171,53 +171,61 @@ spec:
             name: {{ include "common.fullname" . }}-dmaap-dr-node-filebeat-configmap
         - name: {{ include "common.fullname" . }}-data-filebeat
           emptyDir: {}
+        - name:  {{ include "common.fullname" . }}-logs
+          emptyDir: {}
+      {{- if not .Values.persistence.enabled }}
         - name:  {{ include "common.fullname" . }}-event-logs-pvc
           emptyDir: {}
-        - name:  {{ include "common.fullname" . }}-logs
+        - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
       {{- if .Values.global.aafEnabled }}
         - name:  {{ include "common.fullname" . }}-aaf-props-pvc
           emptyDir: {}
       {{- end }}
+      {{- end }}
+{{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
   - metadata:
-      name: {{ include "common.fullname" . }}-spool-data-pvc
+      name: {{ include "common.fullname" . }}-data
       labels:
         name: {{ include "common.fullname" . }}
     spec:
-      accessModes: [ {{ .Values.persistence.accessMode }} ]
-      storageClassName: {{ include "common.fullname" . }}-spool-data-stcl
+      accessModes:
+      - {{ .Values.persistence.accessMode }}
+      storageClassName: {{ include "common.storageClass" . }}
       resources:
         requests:
           storage: {{ .Values.persistence.spoolSize }}
-      selector:
-        matchLabels:
-          name: {{ include "common.fullname" . }}-spool-data-pv
   - metadata:
-      name: {{ include "common.fullname" . }}-event-logs-pvc
+      name: {{ include "common.fullname" . }}-event-logs
       labels:
         name: {{ include "common.fullname" . }}
     spec:
-      accessModes: [ {{ .Values.persistence.accessMode }} ]
-      storageClassName: {{ include "common.fullname" . }}-event-logs-stcl
+      accessModes:
+      - {{ .Values.persistence.accessMode }}
+      {{- if eq "True" (include "common.needPV" .) }}
+      storageClassName: "{{ include "common.fullname" $global }}-data-event-logs"
+      {{- else }}
+      storageClassName: {{ include "common.storageClass" . }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.persistence.eventLogSize }}
-      selector:
-        matchLabels:
-          name: {{ include "common.fullname" . }}-event-logs-pv
 {{- if .Values.global.aafEnabled }}
   - metadata:
-      name: {{ include "common.fullname" . }}-aaf-props-pvc
+      name: {{ include "common.fullname" . }}-aaf-props
       labels:
         name: {{ include "common.fullname" . }}
     spec:
-      accessModes: [ {{ .Values.persistence.accessMode }} ]
-      storageClassName: {{ include "common.fullname" . }}-aaf-props-stcl
+      accessModes:
+      - {{ .Values.persistence.accessMode }}
+      {{- if eq "True" (include "common.needPV" .) }}
+      storageClassName: "{{ include "common.fullname" $global }}-data-aaf-props"
+      {{- else }}
+      storageClassName: {{ include "common.storageClass" . }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.persistence.aafCredsSize }}
-      selector:
-        matchLabels:
-          name: {{ include "common.fullname" . }}-aaf-props-pv
+{{- end }}
 {{- end }}
