@@ -1,5 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright © 2017 Amdocs, AT&T, Bell Canada, VMware
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-type: Opaque
-data:
-  db-root-password: {{ .Values.config.mysqlPassword | b64enc | quote }}
+make-clamp-backend:
+	cd charts && helm dep up clamp-backend
+
+clean:
+	@find . -type f -name '*.tgz' -delete
+	@find . -type f -name '*.lock' -delete

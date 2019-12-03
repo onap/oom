@@ -1,0 +1,77 @@
+# Copyright © 2018 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-galera-config
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-job
+    release: {{ .Release.Name }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+#This container checks that all galera instances are up before initializing it.
+      - name: {{ include "common.name" . }}-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        - --container-name
+        - {{ index .Values "mariadb-galera" "service" "name" }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - name: {{ include "common.name" . }}-job
+        image: {{ .Values.mariadb_image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /db_init/db_init.sh
+          name: {{ include "common.fullname" . }}-db
+          subPath: db_init.sh
+        - mountPath: /db_init/create-tables.sql
+          name: {{ include "common.fullname" . }}-db
+          subPath: create-tables.sql
+        command:
+        - /bin/sh
+        args:
+        - -x
+        - /db_init/db_init.sh
+        env:
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-db
+              key: db-user-password
+        - name: MYSQL_HOST
+          value: {{ index .Values "mariadb-galera" "service" "name" }}
+        - name: MYSQL_USER
+          value: {{ index .Values "mariadb-galera" "config" "userName" }}
+        - name: MYSQL_PORT
+          value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
+      restartPolicy: Never
+      volumes:
+        - name: {{ include "common.fullname" . }}-db
+          configMap:
+            name: {{ include "common.fullname" . }}-db
