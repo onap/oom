@@ -1,0 +1,307 @@
+---
+suite: test job behavior
+templates:
+  - job.yaml
+tests:
+  - it: "should render with default value (global)"
+    asserts:
+      - isKind:
+          of: Job
+      - matchRegex:
+          path: metadata.name
+          pattern: -mariadb-init-config-job$
+      - equal:
+          path: metadata.namespace
+          value: NAMESPACE
+      - matchRegex:
+          path: metadata.labels.app
+          pattern: mariadb-init
+      - matchRegex:
+          path: spec.template.metadata.labels.app
+          pattern: mariadb-init
+      - matchRegex:
+          path: spec.template.metadata.name
+          pattern: mariadb-init
+      - isNull:
+          path: spec.template.spec.nodeSelector
+      - isNull:
+          path: spec.template.spec.affinity
+  - it: "should render with default value (init container)"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].name
+          pattern: mariadb-init-readiness
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: mariadb-galera
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: oomk8s/readiness-check:2.0.2
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: IfNotPresent
+  - it: "should render with default value (container)"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].name
+          pattern: mariadb-init
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: nexus3.onap.org:10001/mariadb:10.1.38
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: mariadb-galera
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "3306"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-galera-mariadb-galera
+                key: db-root-password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-init-secret
+                key: db-user-password
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: mariadb-conf
+            mountPath: /db_init/
+            readOnly: true
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 500Mbi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 10m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 10Mbi
+  - it: "should render with default value (volumes)"
+    asserts:
+      - contains:
+            path: spec.template.spec.volumes
+            content:
+              name: mariadb-conf
+              configMap:
+                name: RELEASE-NAME-mariadb-init
+
+  - it: "should render with nameOverride set"
+    set:
+      nameOverride: myJob
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: -myJob-config-job$
+      - matchRegex:
+          path: metadata.labels.app
+          pattern: myJob
+      - matchRegex:
+          path: spec.template.metadata.labels.app
+          pattern: myJob
+      - matchRegex:
+          path: spec.template.metadata.name
+          pattern: myJob
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].name
+          pattern: myJob-readiness
+      - matchRegex:
+          path: spec.template.spec.containers[0].name
+          pattern: myJob
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                # replicating name from mariadb galera cluster, kind of hardcoded...
+                name: RELEASE-NAME-myJob-secret
+                key: db-user-password
+      - contains:
+            path: spec.template.spec.volumes
+            content:
+              name: mariadb-conf
+              configMap:
+                name: RELEASE-NAME-myJob
+
+  - it: "should render with configmap set"
+    set:
+      config:
+        config_map: myCM
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: mariadb-conf
+            configMap:
+              name: RELEASE-NAME-myCM
+
+  - it: "should render with mariadbGalera changes"
+    set:
+      global:
+        mariadbGalera:
+            nameOverride: myMaria
+            servicePort: 545
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: myMaria
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: myMaria
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "545"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-galera-myMaria
+                key: db-root-password
+
+  - it: "should render with full mariadbGalera changes"
+    set:
+      global:
+        mariadbGalera:
+            nameOverride: myMaria
+            servicePort: 545
+            userRootSecret: galera-secret
+            userRootSecretKey: root-password
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: myMaria
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: myMaria
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "545"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: galera-secret
+                key: root-password
+
+  - it: "should set the right nodeSelector"
+    set:
+      nodeSelector:
+        disktype: ssd
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+
+  - it: "should set the right affinity"
+    set:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/e2e-az-name
+                  operator: In
+                  values:
+                    - e2e-az1
+                    - e2e-az2
+    asserts:
+      - equal:
+          path: spec.template.spec.affinity
+          value:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: kubernetes.io/e2e-az-name
+                      operator: In
+                      values:
+                        - e2e-az1
+                        - e2e-az2
+  - it: "should use large flavor"
+    set:
+      flavor: large
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 200m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 500Mbi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 20m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 20Mbi
+  - it: "should use unlimited flavor"
+    set:
+      flavor: unlimited
+    asserts:
+      - isEmpty:
+          path: spec.template.spec.containers[0].resources
+  - it: "shoud render with other databases"
+    set:
+      config:
+        mysqlAdditionalDatabases:
+          dbOne:
+            user: one
+            password: pwd1
+          dbTwo:
+            user: two
+            password: pwd2
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-init-secret
+                key: db-user-password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_PASSWORD_DBONE
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-init-secret
+                key: db-dbOne-user-password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MYSQL_PASSWORD_DBTWO
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-mariadb-init-secret
+                key: db-dbTwo-user-password
