@@ -19,12 +19,14 @@ mso:
         max-pool-size: 50
         queue-capacity: 500
     logPath: ./logs/sdnc
+    config:
+        cadi: {{ include "cadi.keys" . | nindent 14}}
     catalog:
         db:
           spring:
             endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
     db:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
+      auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
     site-name: onapheat
 org:
     onap:
@@ -100,7 +102,7 @@ org:
                             changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
-                    bpelauth: 4C18603C5AE7E3A42A6CED95CDF9C0BA9B2109B3725747662E5D34E5FDF63DA9ADEBB08185098F14699195FDE9475100
+                    bpelauth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.bpelauth )}}
                     bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
                     generic-resource:
                         network-topology-operation:
@@ -139,7 +141,7 @@ org:
                     myurl: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/rest/SDNCNotify
                     rest:
                         bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
-                    sdncauth: ED07A7EE5F099FA53369C3DF2240AD68A00154676EEDBC6F8C16BAA83B1912941B8941ABD48683D2C1072DA7040659692DE936A59BBF42A038CF71DE67B4A375190071EC76EA657801B033C135
+                    sdncauth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.sdncauth )}}
                     sdncconnecttime: 5000
                     sdncurl10: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/GENERIC-RESOURCE-API:'
                     sdncurl11: 'http://sdnc.{{ include "common.namespace" . }}:8282/restconf/operations/VNFTOPOLOGYAIC-API:'
@@ -159,7 +161,7 @@ org:
                         '':
                             query: GET|60000|sdncurl12|
                 network:
-                    encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
+                    encryptionKey: {{ index .Values.org.onap.so.adapters.sdnc.network.encryptionKey }}
 spring:
   security:
     usercredentials:
