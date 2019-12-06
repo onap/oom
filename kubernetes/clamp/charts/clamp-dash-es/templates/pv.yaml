@@ -14,10 +14,11 @@
 # limitations under the License.
 */}}
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-data
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -30,7 +31,9 @@ spec:
     storage: {{ .Values.persistence.size}}
   accessModes:
     - {{ .Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+{{- end -}}
 {{- end -}}
