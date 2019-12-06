@@ -17,110 +17,131 @@ kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ .Values.service.name }}
   replicas: {{ .Values.replicaCount }}
+  serviceName: {{ template "common.servicename" . }}
   template:
     metadata:
-      labels:
-        app: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ .Release.Name }}"
-        heritage: "{{ .Release.Service }}"
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
+      labels: {{- include "common.labels" . | nindent 8 }}
+      annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
     spec:
-    {{- if .Values.nodeSelector }}
+      {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
-    {{- end }}
+      {{- end }}
       volumes:
-      {{- if .Values.externalConfig }}
-        - name: config
-          configMap:
-            name: {{ include "common.fullname" . }}-external-config
-      {{- end}}
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
+      - name: config
+        configMap:
+          name: {{ include "common.fullname" . }}-config
+      {{- if and .Values.persistence.enabled .Values.persistence.existingClaim }}
+      - name: {{ include "common.fullname" . }}-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingClaim }}
+      {{- end }}
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
       imagePullSecrets:
       - name: {{ include "common.namespace" . }}-docker-registry-key
       containers:
         - name: {{ include "common.name" . }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            fsGroup: {{ .Values.securityContext.fsGroup }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+          {{- end }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
           env:
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-            - name: MYSQL_USER
-              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-credentials" "key" "login") | indent 14}}
-            - name: MYSQL_PASSWORD
-              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-credentials" "key" "password") | indent 14}}
-            - name: MYSQL_DATABASE
-              value: {{ default "" .Values.config.mysqlDatabase | quote }}
-            - name: MYSQL_ROOT_PASSWORD
-              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-password" "key" "password") | indent 14}}
+          - name: MARIADB_GALERA_CLUSTER_NAME
+            value: {{ .Values.galera.name | quote }}
+          - name: MARIADB_GALERA_CLUSTER_ADDRESS
+            value: "gcomm://{{ include "common.servicename" . }}-headless.{{ .Release.Namespace }}.svc.{{ .Values.global.clusterDomain }}"
+          - name: MARIADB_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12}}
+          - name: MARIADB_USER
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-credentials" "key" "login") | indent 12}}
+          - name: MARIADB_PASSWORD
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-credentials" "key" "password") | indent 12}}
+          - name: MARIADB_DATABASE
+            value: {{ default "" .Values.config.mysqlDatabase | quote }}
+          - name: MARIADB_GALERA_MARIABACKUP_PASSWORD
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12}}
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
-            name: {{ .Values.service.portName }}
-          - containerPort: {{ .Values.service.sstPort }}
-            name: {{ .Values.service.sstPortName }}
-          - containerPort: {{ .Values.service.replicationPort }}
-            name: {{ .Values.service.replicationName }}
-          - containerPort: {{ .Values.service.istPort }}
-            name: {{ .Values.service.istPortName }}
+          {{- range $index, $port := .Values.service.ports }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
+          {{- range $index, $port := .Values.service.headlessPorts }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
           readinessProbe:
             exec:
               command:
-              - /usr/share/container-scripts/mysql/readiness-probe.sh
+                - bash
+                - -ec
+                - |
+                  exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+            successThreshold: {{ .Values.readiness.successThreshold }}
+            failureThreshold: {{ .Values.readiness.failureThreshold }}
       {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             exec:
-              command: ["mysqladmin", "ping"]
+              command:
+                - bash
+                - -ec
+                - |
+                  exec mysqladmin status -uroot -p$MARIADB_ROOT_PASSWORD
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+            successThreshold: {{ .Values.liveness.successThreshold }}
+            failureThreshold: {{ .Values.liveness.failureThreshold }}
       {{- end }}
           resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
           volumeMounts:
-        {{- if .Values.externalConfig }}
-          - mountPath: /etc/config
+          {{- if .Values.externalConfig }}
+          - mountPath: /opt/bitnami/mariadb/conf/my_extra.cnf
             name: config
-        {{- end}}
+            subPath: my_extra.cnf
+          {{- end}}
+          {{- if .Values.persistence.enabled }}
+          - mountPath: /bitnami/mariadb
+            name: {{ include "common.fullname" . }}-data
+          {{- end }}
+          - name: config
+            mountPath: /opt/bitnami/mariadb/conf/my.cnf
+            subPath: my.cnf
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-{{- if .Values.persistence.enabled }}
-          - mountPath: /var/lib/mysql
-            name: {{ include "common.fullname" . }}-data
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+      {{- if .Values.securityContext.enabled }}
       initContainers:
-        - name: {{ include "common.name" . }}-prepare
-          image: "{{ include "common.repository" . }}/{{ .Values.imageInit }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
-          command: ["sh", "-c", "chown -R 27:27 /var/lib/mysql"]
-          volumeMounts:
-            - name: {{ include "common.fullname" . }}-data
-              mountPath: /var/lib/mysql
+      - name: mariadb-galera-prepare
+        image: "{{ include "common.repository" . }}/{{ .Values.imageInit }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
+        command:
+        - "sh"
+        - "-c"
+        - "chown -R {{.Values.securityContext.runAsUser }}:{{.Values.securityContext.fsGroup }} /data"
+        volumeMounts:
+          - name: {{ include "common.fullname" . }}-data
+            mountPath: /data
+      {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data
       labels:
-        name: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ .Release.Name }}"
-        heritage: "{{ .Release.Service }}"
+        app.kubernetes.io/name: {{ include "common.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
     spec:
       accessModes:
       - {{ .Values.persistence.accessMode | quote }}
