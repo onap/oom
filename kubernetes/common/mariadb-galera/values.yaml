@@ -33,6 +33,7 @@ secrets:
 #################################################################
 global:
   nodePortPrefix: 302
+  clusterDomain: cluster.local
   persistence:
     mountPath: /dockerdata-nfs
     backup:
@@ -50,8 +51,8 @@ global:
 
 #repository: mysql
 repository: nexus3.onap.org:10001
-image: adfinissygroup/k8s-mariadb-galera-centos:v002
-backupImage: library/mariadb:10.1.38
+image: bitnami/mariadb-galera:10.2.29
+backupImage: library/mariadb:10.2.29
 imageInit: busybox
 pullPolicy: IfNotPresent
 
@@ -71,11 +72,19 @@ nodeSelector: {}
 
 affinity: {}
 
+galera:
+  name: galera
+
+podAnnotations:
+  pod.alpha.kubernetes.io/initialized: "true"
+
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
@@ -84,6 +93,8 @@ readiness:
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 ## Persist data to a persitent volume
 persistence:
@@ -112,19 +123,27 @@ persistence:
     mountPath: /dockerdata-nfs/backup{{- if or (or .Values.storageClassOverride .Values.persistence.storageClass) .Values.global.persistence.storageClass -}}
 
 service:
-  internalPort: 3306
-  name: mariadb-galera
-  portName: mariadb-galera
-  sstPort: 4444
-  sstPortName: sst
-  replicationPort: 4567
-  replicationName: replication
-  istPort: 4568
-  istPortName: ist
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+  headlessPorts:
+    - name: tcp-sst
+      port: 4444
+    - name: tcp-replication
+      port: 4567
+    - name: tcp-ist
+      port: 4568
+  headless:
+    annotations: {}
 
 ingress:
   enabled: false
 
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
 
 ## Configure MariaDB-Galera with a custom my.cnf file
 ## ref: https://mariadb.com/kb/en/mariadb/configuring-mariadb-with-mycnf/#example-of-configuration-file
@@ -145,21 +164,23 @@ externalConfig: {}
   # ref: http://kubernetes.io/docs/user-guide/compute-resources/
   # Minimum memory for development is 2 CPU cores and 4GB memory
   # Minimum memory for production is 4 CPU cores and 8GB memory
+
+flavor: small
 resources:
   small:
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 0.5
+      memory: 256Mi
     requests:
-      cpu: 1
-      memory: 2Gi
+      cpu: 0.5
+      memory: 256Mi
   large:
     limits:
       cpu: 2
-      memory: 4Gi
+      memory: 2Gi
     requests:
       cpu: 1
-      memory: 2Gi
+      memory: 1Gi
   unlimited: {}
 
 # Name for mariadb-galera cluster - should be unique accross all projects or other clusters
@@ -172,3 +193,89 @@ backup:
   enabled: false
   cron: "00 00 * * *"
   retentionPeriod: 3
+
+mariadbConfiguration: |-
+  [client]
+  port=3306
+  socket=/opt/bitnami/mariadb/tmp/mysql.sock
+  plugin_dir=/opt/bitnami/mariadb/plugin
+  [mysqld]
+  default-storage-engine=InnoDB
+  basedir=/opt/bitnami/mariadb
+  datadir=/bitnami/mariadb/data
+  plugin_dir=/opt/bitnami/mariadb/plugin
+  tmpdir=/opt/bitnami/mariadb/tmp
+  socket=/opt/bitnami/mariadb/tmp/mysql.sock
+  pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
+  bind-address=0.0.0.0
+  ## Character set
+  collation-server=utf8_unicode_ci
+  init-connect='SET NAMES utf8'
+  character-set-server=utf8
+  ## MyISAM
+  key-buffer-size=32M
+  myisam-recover-options=FORCE,BACKUP
+  ## safety
+  skip-host-cache
+  skip-name-resolve
+  max-allowed-packet=16M
+  max-connect-errors=1000000
+  sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_AUTO_VALUE_ON_ZERO,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DATE,ONLY_FULL_GROUP_BY
+  sysdate-is-now=1
+  innodb=FORCE
+  innodb-strict-mode=1
+  innodb_file_per_table=1
+  # Mandatory per https://github.com/codership/documentation/issues/25
+  innodb-autoinc-lock-mode=2
+  # Per https://www.percona.com/blog/2006/08/04/innodb-double-write/
+  innodb-doublewrite=1
+  # Not fully ACID compliant, up to 1sec transaction loss in the event of total cluster failure (across both regions)
+  # Enabled for performance per https://mariadb.com/kb/en/mariadb/getting-started-with-mariadb-galera-cluster/
+  innodb_flush_log_at_trx_commit=0
+  ## binary logging
+  log-bin=mysql-bin
+  expire-logs-days=14
+  # Disabling for performance per http://severalnines.com/blog/9-tips-going-production-galera-cluster-mysql
+  sync-binlog=0
+  # Required for Galera
+  binlog-format=row
+  ## Caches and limits
+  tmp-table-size=32M
+  max-heap-table-size=32M
+  # Re-enabling as now works with Maria 10.1.2
+  query-cache-type=1
+  query-cache-limit=4M
+  query-cache-size=256M
+  max-connections=500
+  thread-cache-size=50
+  open-files-limit=65535
+  table-definition-cache=4096
+  table-open-cache=4096
+  ## innodb
+  innodb-flush-method=O_DIRECT
+  innodb-log-files-in-group=2
+  innodb-log-file-size=128M
+  innodb-flush-log-at-trx-commit=1
+  innodb-file-per-table=1
+  # 80% Memory is default reco.
+  # Need to re-evaluate when DB size grows
+  innodb-buffer-pool-size=2G
+  innodb_file_format=Barracuda
+  ## logging
+  log-error=/opt/bitnami/mariadb/logs/mysqld.log
+  slow-query-log-file=/opt/bitnami/mariadb/logs/mysqld.log
+  log-queries-not-using-indexes=1
+  slow-query-log=1
+  [galera]
+  wsrep_on=ON
+  wsrep_provider=/opt/bitnami/mariadb/lib/libgalera_smm.so
+  wsrep_sst_method=mariabackup
+  wsrep_slave_threads=4
+  wsrep_cluster_address=gcomm://
+  wsrep_cluster_name=galera
+  wsrep_sst_auth="root:"
+  innodb-flush-log-at-trx-commit=2
+  # MYISAM REPLICATION SUPPORT #
+  wsrep_replicate_myisam=ON
+  [mariadb]
+  plugin_load_add=auth_pam
