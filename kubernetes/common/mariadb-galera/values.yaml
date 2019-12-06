@@ -17,6 +17,7 @@
 #################################################################
 global:
   nodePortPrefix: 302
+  clusterDomain: cluster.local
   persistence:
     mountPath: /dockerdata-nfs
     backup:
@@ -34,14 +35,15 @@ global:
 
 #repository: mysql
 repository: nexus3.onap.org:10001
-image: adfinissygroup/k8s-mariadb-galera-centos:v002
-backupImage: library/mariadb:10.1.38
+image: bitnami/mariadb-galera:10.2.29
+backupImage: library/mariadb:10.2.29
 imageInit: busybox
 pullPolicy: IfNotPresent
 
 # application configuration
 config:
   mariadbRootPassword: secretpassword
+  mariadbBackupRootPassword: jsqjapozzeirizeruioannwxbcncqsdhfio
   userName: my-user
   userPassword: my-password
   mysqlDatabase: my-database
@@ -53,11 +55,19 @@ nodeSelector: {}
 
 affinity: {}
 
+galera:
+  name: galera
+
+podAnnotations:
+  pod.alpha.kubernetes.io/initialized: "true"
+
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
@@ -66,6 +76,8 @@ readiness:
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 ## Persist data to a persitent volume
 persistence:
@@ -94,19 +106,32 @@ persistence:
     mountPath: /dockerdata-nfs/backup{{- if or (or .Values.storageClassOverride .Values.persistence.storageClass) .Values.global.persistence.storageClass -}}
 
 service:
-  internalPort: 3306
-  name: mariadb-galera
-  portName: mariadb-galera
-  sstPort: 4444
-  sstPortName: sst
-  replicationPort: 4567
-  replicationName: replication
-  istPort: 4568
-  istPortName: ist
+  type: ClusterIP
+  ports:
+    - name: mysql
+      internalPort: 3306
+      externalPort: mysql
+  headlessPorts:
+    - name: tcp-sst
+      internalPort: 4444
+      targetPort: sst
+    - name: tcp-replication
+      internalPort: 4567
+      targetPort: replication
+    - name: tcp-ist
+      internalPort: 4568
+      targetPort: ist
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
 
 ingress:
   enabled: false
 
+
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
 
 ## Configure MariaDB-Galera with a custom my.cnf file
 ## ref: https://mariadb.com/kb/en/mariadb/configuring-mariadb-with-mycnf/#example-of-configuration-file
@@ -127,21 +152,23 @@ externalConfig: {}
   # ref: http://kubernetes.io/docs/user-guide/compute-resources/
   # Minimum memory for development is 2 CPU cores and 4GB memory
   # Minimum memory for production is 4 CPU cores and 8GB memory
+
+flavor: small
 resources:
   small:
     limits:
-      cpu: 2
-      memory: 4Gi
+      cpu: 0.5
+      memory: 256Mi
     requests:
-      cpu: 1
-      memory: 2Gi
+      cpu: 0.5
+      memory: 256Mi
   large:
     limits:
       cpu: 2
-      memory: 4Gi
+      memory: 2Gi
     requests:
       cpu: 1
-      memory: 2Gi
+      memory: 1Gi
   unlimited: {}
 
 # Name for mariadb-galera cluster - should be unique accross all projects or other clusters
