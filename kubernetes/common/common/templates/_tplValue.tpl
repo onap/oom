@@ -1,4 +1,5 @@
-# Copyright © 2018 Amdocs, Bell Canada
+{{/*
+# Copyright © 2019 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels: {{- include "common.labels" . | nindent 4 }}
-type: Opaque
-data:
-  db-root-password: {{ .Values.config.mariadbRootPassword | b64enc | quote }}
-  user-password: {{ default "" .Values.config.userPassword | b64enc | quote }}
+{{/*
+Renders a value that contains template.
+Usage:
+{{ include "common.tplValue" ( dict "value" .Values.path.to.the.Value "context" $) }}
+*/}}
+{{- define "common.tplValue" -}}
+    {{- if typeIs "string" .value }}
+        {{- tpl .value .context }}
+    {{- else }}
+        {{- tpl (.value | toYaml) .context }}
+    {{- end }}
+{{- end -}}

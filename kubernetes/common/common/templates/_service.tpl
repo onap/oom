@@ -29,3 +29,56 @@
   {{- $name := default .Chart.Name .Values.nameOverride -}}
   {{- default $name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/* Create service template */}}
+{{- define "common.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  {{- if .Values.service.annotations }}
+  annotations: {{ include "common.tplValue" (dict "value" .Values.service.annotations "context" $) | nindent 4 }}
+  {{- end }}
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+  ports:
+{{- if eq .Values.service.type "NodePort" }}
+  {{- $global := . }}
+  {{- range $index, $ports := .Values.service.ports }}
+  - port: {{ $ports.internalPort }}
+    targetPort: {{ $ports.externalPort }}
+    nodePort: {{ $global.Values.global.nodePortPrefix | default $global.Values.nodePortPrefix }}{{ $ports.nodePort }}
+    name: {{ $ports.name }}
+  {{- end }}
+{{- else }}
+  {{- range $index, $ports := .Values.service.ports }}
+  - port: {{ $ports.internalPort }}
+    targetPort: {{ $ports.externalPort }}
+    name: {{ $ports.name }}
+  {{- end }}
+{{- end }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+{{- end -}}
+
+{{/* Create headless service template */}}
+{{- define "common.headlessService" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  {{- if .Values.service.annotations }}
+  annotations: {{ include "common.tplValue" (dict "value" .Values.service.annotations "context" $) | nindent 4 }}
+  {{- end }}
+  name: {{ include "common.servicename" . }}-headless
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+  ports:
+  {{- range $index, $ports := .Values.service.headlessPorts }}
+  - port: {{ $ports.internalPort }}
+    targetPort: {{ $ports.externalPort }}
+    name: {{ $ports.name }}
+  {{- end }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+  clusterIP: None
+{{- end -}}
