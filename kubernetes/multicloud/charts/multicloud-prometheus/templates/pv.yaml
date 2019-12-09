@@ -15,8 +15,8 @@
 */}}
 
 {{- if .Values.global.prometheus.enabled -}}
-
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -33,9 +33,10 @@ spec:
     storage: {{ .Values.persistence.size}}
   accessModes:
     - {{ .Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
 {{- end -}}
-
+{{- end -}}
 {{- end -}}
