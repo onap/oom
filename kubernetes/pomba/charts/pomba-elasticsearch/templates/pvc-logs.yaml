@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2019 Amdocs, Bell Canada, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-logs
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
+    name: {{ include "common.fullname" . }}-logs
 {{- if .Values.persistence.annotations }}
   annotations:
 {{ toYaml .Values.persistence.annotations | indent 4 }}
@@ -33,7 +33,11 @@ metadata:
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}
+{{- if eq "True" (include "common.needPV" .) }}
+  storageClassName: "{{ include "common.fullname" . }}-logs"
+{{- else }}
   storageClassName: {{ include "common.storageClass" . }}
+{{- end }}
   resources:
     requests:
       storage: {{ .Values.persistence.size }}

@@ -108,10 +108,18 @@ spec:
             - key: elasticsearch.yml
               path: elasticsearch.yml
         - name: {{ include "common.fullname" . }}-data
+        {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "common.fullname" . }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
         - name: {{ include "common.fullname" . }}-logs
-          hostPath:
-            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPathLogs }}
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-logs
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
