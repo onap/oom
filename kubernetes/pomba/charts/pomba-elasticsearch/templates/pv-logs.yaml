@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2019 Amdocs, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,26 +15,26 @@
 */}}
 
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-kind: PersistentVolumeClaim
+{{- if eq "True" (include "common.needPV" .) -}}
+kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.fullname" . }}-logs
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-{{- if .Values.persistence.annotations }}
-  annotations:
-{{ toYaml .Values.persistence.annotations | indent 4 }}
-{{- end }}
+    name: {{ include "common.fullname" . }}-logs
 spec:
+  capacity:
+    storage: {{ .Values.persistence.size}}
   accessModes:
     - {{ .Values.persistence.accessMode }}
-  storageClassName: {{ include "common.storageClass" . }}
-  resources:
-    requests:
-      storage: {{ .Values.persistence.size }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" . }}-logs"
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPathLogs }}
+{{- end -}}
 {{- end -}}
