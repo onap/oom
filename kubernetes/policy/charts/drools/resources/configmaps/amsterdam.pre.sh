@@ -18,4 +18,4 @@
 # ============LICENSE_END=========================================================
 
 
-docker-entrypoint.sh nexus
+pdpd-cl-entrypoint.sh nexus
