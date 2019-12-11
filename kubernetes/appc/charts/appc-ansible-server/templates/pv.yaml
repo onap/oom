@@ -15,11 +15,12 @@
 */}}
 {{- $global := . }}
 {{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 {{- range $i, $t := until (int $global.Values.replicaCount)}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ include "common.fullname" $global }}-playbook{{$i}}
+  name: {{ include "common.fullname" $global }}-playbook-{{$i}}
   namespace: {{ include "common.namespace" $global }}
   labels:
     app: {{ include "common.fullname" $global }}
@@ -32,10 +33,13 @@ spec:
     storage: {{ $global.Values.persistence.size}}
   accessModes:
     - {{ $global.Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" $global }}-playbook"
+  storageClassName: "{{ include "common.fullname" $global }}-data"
   persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   hostPath:
     path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.mountSubPath }}{{$i}}
+{{if ne $i (int $global.Values.replicaCount) }}
 ---
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
