@@ -31,33 +31,6 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - name: {{ include "common.name" . }}-job
-        image: "{{.Values.repository}}/{{.Values.image}}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: pgpool-pgconf
-          mountPath: /pgconf/pgpoolconfigdir
-          readOnly: false
-        - name: pgpool-pgconf-static
-          mountPath: /configdir/
-          readOnly: false
-        command:
-        - /bin/sh
-        args:
-        - -c
-        - |
-          cp /configdir/pgpool.conf   /pgconf/pgpoolconfigdir/
-          cp /configdir/pool_hba.conf /pgconf/pgpoolconfigdir/
-          pg_md5 -f /pgconf/pgpoolconfigdir/pgpool.conf --md5auth --username=${PG_USER} ${PG_PASSWORD} 
-        env:
-        - name: PG_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}
-              key: db-user-password
-        - name: PG_USER
-          value: {{ index .Values.credentials.pgusername }}
       containers:
       - image: "{{.Values.repository}}/{{.Values.image}}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -70,10 +43,7 @@ spec:
         - name: PG_USERNAME
           value: {{.Values.credentials.pgusername}}
         - name: PG_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}
-              key: db-user-password
+          value: {{.Values.credentials.pgpassword}}
         ports:
         - containerPort: 5432
           name: pgpool
@@ -94,7 +64,5 @@ spec:
           readOnly: false
       volumes:
       - name: pgpool-pgconf
-        emptyDir: {}
-      - name: pgpool-pgconf-static
         configMap:
           name: {{ include "common.fullname" . }}-pgpool-configmap
