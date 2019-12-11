@@ -15,6 +15,7 @@
 */}}
 
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
 {{- if not .Values.persistence.storageClass -}}
 kind: PersistentVolume
 apiVersion: v1
@@ -33,7 +34,9 @@ spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}
   persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ .Release.Name }}/{{ .Values.persistence.mountSubPath }}
+{{- end -}}
 {{- end -}}
 {{- end -}}
