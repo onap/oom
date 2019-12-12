@@ -79,159 +79,123 @@ have been created following the guidelines provided.
 
 The top level of the ONAP charts is shown below:
 
-.. graphviz::
+.. code-block:: bash
 
-   digraph onap_top_chart {
-      rankdir="LR";
-      {
-        node      [shape=folder]
-        oValues   [label="values.yaml"]
-        oChart    [label="Chart.yaml"]
-        dev       [label="dev.yaml"]
-        prod      [label="prod.yaml"]
-        crb       [label="clusterrolebindings.yaml"]
-        secrets   [label="secrets.yaml"]
-      }
-      {
-        node      [style=dashed]
-        vCom      [label="component"]
-      }
-
-      onap         -> oValues
-      onap         -> oChart
-      onap         -> templates
-      onap         -> resources
-      oValues      -> vCom
-      resources    -> environments
-      environments -> dev
-      environments -> prod
-      templates    -> crb
-      templates    -> secrets
-   }
-
-Within the `values.yaml` file at the `onap` level, one will find a set of
-boolean values that control which of the ONAP components get deployed as shown
-below:
-
-.. code-block:: yaml
-
-  aaf: # Application Authorization Framework
-    enabled: false
-  <...>
-  so: # Service Orchestrator
-    enabled: true
-
-By setting these flags a custom deployment can be created and used during
-deployment by using the `-f` Helm option as follows::
-
-  > helm install local/onap -name development -f dev.yaml
-
-Note that there are one or more example deployment files in the
-`onap/resources/environments/` directory. It is best practice to create a
-unique deployment file for each environment used to ensure consistent
-behaviour.
-
-To aid in the long term supportability of ONAP, a set of common charts have
-been created (and will be expanded in subsequent releases of ONAP) that can be
-used by any of the ONAP components by including the common component in its
-`requirements.yaml` file. The common components are arranged as follows:
-
-.. graphviz::
-
-   digraph onap_common_chart {
-      rankdir="LR";
-      {
-         node      [shape=folder]
-         mValues   [label="values.yaml"]
-         ccValues  [label="values.yaml"]
-         comValues [label="values.yaml"]
-         comChart  [label="Chart.yaml"]
-         ccChart   [label="Chart.yaml"]
-         mChart    [label="Chart.yaml"]
-
-         mReq      [label="requirements.yaml"]
-         mService  [label="service.yaml"]
-         mMap      [label="configmap.yaml"]
-         ccName    [label="_name.tpl"]
-         ccNS      [label="_namespace.tpl"]
-      }
-      {
-         cCom       [label="common"]
-         mTemp      [label="templates"]
-         ccTemp     [label="templates"]
-      }
-      {
-         more       [label="...",style=dashed]
-      }
-
-      common -> comValues
-      common -> comChart
-      common -> cCom
-      common -> mysql
-      common -> more
-
-      cCom   -> ccChart
-      cCom   -> ccValues
-      cCom   -> ccTemp
-      ccTemp -> ccName
-      ccTemp -> ccNS
-
-      mysql  -> mValues
-      mysql  -> mChart
-      mysql  -> mReq
-      mysql  -> mTemp
-      mTemp  -> mService
-      mTemp  -> mMap
-   }
+  common
+  ├── cassandra
+  │   ├── Chart.yaml
+  │   ├── requirements.yaml
+  │   ├── resources
+  │   │   ├── config
+  │   │   │   └── docker-entrypoint.sh
+  │   │   ├── exec.py
+  │   │   └── restore.sh
+  │   ├── templates
+  │   │   ├── backup
+  │   │   │   ├── configmap.yaml
+  │   │   │   ├── cronjob.yaml
+  │   │   │   ├── pv.yaml
+  │   │   │   └── pvc.yaml
+  │   │   ├── configmap.yaml
+  │   │   ├── pv.yaml
+  │   │   ├── service.yaml
+  │   │   └── statefulset.yaml
+  │   └── values.yaml
+  ├── common
+  │   ├── Chart.yaml
+  │   ├── templates
+  │   │   ├── _createPassword.tpl
+  │   │   ├── _ingress.tpl
+  │   │   ├── _labels.tpl
+  │   │   ├── _mariadb.tpl
+  │   │   ├── _name.tpl
+  │   │   ├── _namespace.tpl
+  │   │   ├── _repository.tpl
+  │   │   ├── _resources.tpl
+  │   │   ├── _secret.yaml
+  │   │   ├── _service.tpl
+  │   │   ├── _storage.tpl
+  │   │   └── _tplValue.tpl
+  │   └── values.yaml
+  ├── ...
+  └── postgres-legacy
+      ├── Chart.yaml
+      ├── requirements.yaml
+      ├── charts
+      └── configs
 
 The common section of charts consists of a set of templates that assist with
-parameter substitution (`_name.tpl` and `_namespace.tpl`) and a set of charts
-for components used throughout ONAP. Initially `mysql` is in the common area
-but this will expand to include other databases like `mariadb-galera`,
-`postgres`, and `cassandra`. Other candidates for common components include
-`redis` and`kafka`.  When the common components are used by other charts they
-are instantiated each time. In subsequent ONAP releases some of the common
-components could be a setup as services that are used by multiple ONAP
-components thus minimizing the deployment and operational costs.
+parameter substitution (`_name.tpl`, `_namespace.tpl` and others) and a set of charts
+for components used throughout ONAP.  When the common components are used by other charts they
+are instantiated each time or we can deploy a shared instances for several components.
 
 All of the ONAP components have charts that follow the pattern shown below:
 
-.. graphviz::
+.. code-block:: bash
 
-   digraph onap_component_chart {
-      rankdir="LR";
-      {
-         node      [shape=folder]
-         cValues   [label="values.yaml"]
-         cChart    [label="Chart.yaml"]
-         cService  [label="service.yaml"]
-         cMap      [label="configmap.yaml"]
-         cFiles    [label="config file(s)"]
-      }
-      {
-         cCharts   [label="charts"]
-         cTemp     [label="templates"]
-         cRes      [label="resources"]
+  name-of-my-component
+  ├── Chart.yaml
+  ├── requirements.yaml
+  ├── component
+  │   └── subcomponent-folder
+  ├── charts
+  │   └── subchart-folder
+  ├── resources
+  │   ├── folder1
+  │   │   ├── file1
+  │   │   └── file2
+  │   └── folder1
+  │       ├── file3
+  │       └── folder3
+  │           └── file4
+  ├── templates
+  │   ├── NOTES.txt
+  │   ├── configmap.yaml
+  │   ├── deployment.yaml
+  │   ├── ingress.yaml
+  │   ├── job.yaml
+  │   ├── secrets.yaml
+  │   └── service.yaml
+  └── values.yaml
 
-      }
-      {
-         sCom       [label="component",style=dashed]
-      }
+Note that the component charts / components may include a hierarchy of sub
+components and in themselves can be quite complex.
 
-      component -> cValues
-      component -> cChart
-      component -> cCharts
-      component -> cTemp
-      component -> cRes
-      cTemp     -> cService
-      cTemp     -> cMap
-      cRes      -> config
-      config    -> cFiles
-      cCharts   -> sCom
-   }
+You can use either `charts` or `components` folder for your subcomponents.
+`charts` folder means that the subcomponent will always been deployed.
 
-Note that the component charts may include a hierarchy of components and in
-themselves can be quite complex.
+`components` folders means we can choose if we want to deploy the sub component.
+
+This choice is done in root `values.yaml`:
+
+.. code-block:: yaml
+
+  ---
+  global:
+    key: value
+
+  component1:
+    enabled: true
+  component2:
+    enabled: true
+
+Then in `requirements.yaml`, you'll use these values:
+
+.. code-block:: yaml
+
+  ---
+  dependencies:
+    - name: common
+      version: ~x.y-0
+      repository: '@local'
+    - name: component1
+      version: ~x.y-0
+      repository: 'file://components/component1'
+      condition: component1.enabled
+    - name: component2
+      version: ~x.y-0
+      repository: 'file://components/component2'
+      condition: component2.enabled
 
 Configuration of the components varies somewhat from component to component but
 generally follows the pattern of one or more `configmap.yaml` files which can
@@ -260,126 +224,134 @@ configuration as well as ONAP components configuration.
 
 One of the artifacts that OOM/Kubernetes uses to deploy ONAP components is the
 deployment specification, yet another yaml file.  Within these deployment specs
-are a number of parameters as shown in the following mariadb example:
+are a number of parameters as shown in the following example:
 
 .. code-block:: yaml
 
-  apiVersion: extensions/v1beta1
-  kind: Deployment
+  apiVersion: apps/v1
+  kind: StatefulSet
   metadata:
-    name: mariadb
+    labels:
+      app.kubernetes.io/name: zookeeper
+      helm.sh/chart: zookeeper
+      app.kubernetes.io/component: server
+      app.kubernetes.io/managed-by: Tiller
+      app.kubernetes.io/instance: onap-oof
+    name: onap-oof-zookeeper
+    namespace: onap
   spec:
-     <...>
+    <...>
+    replicas: 3
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: zookeeper
+        app.kubernetes.io/component: server
+        app.kubernetes.io/instance: onap-oof
+    serviceName: onap-oof-zookeeper-headless
     template:
-      <...>
+      metadata:
+        labels:
+          app.kubernetes.io/name: zookeeper
+          helm.sh/chart: zookeeper
+          app.kubernetes.io/component: server
+          app.kubernetes.io/managed-by: Tiller
+          app.kubernetes.io/instance: onap-oof
       spec:
-        hostname: mariadb
+        <...>
+        affinity:
         containers:
-        - args:
-          image: nexus3.onap.org:10001/mariadb:10.1.11
-          name: "mariadb"
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: password
-            - name: MARIADB_MAJOR
-              value: "10.1"
+        - name: zookeeper
           <...>
-        imagePullSecrets:
-        - name: onap-docker-registry-key
+          image: gcr.io/google_samples/k8szk:v3
+          imagePullPolicy: Always
+          <...>
+          ports:
+          - containerPort: 2181
+            name: client
+            protocol: TCP
+          - containerPort: 3888
+            name: election
+            protocol: TCP
+          - containerPort: 2888
+            name: server
+            protocol: TCP
+          <...>
 
-Note that within the deployment specification, one of the container arguments
-is the key/value pair image: nexus3.onap.org:10001/mariadb:10.1.11 which
-specifies the version of the mariadb software to deploy.  Although the
-deployment specifications greatly simplify deployment, maintenance of the
-deployment specifications themselves become problematic as software versions
+Note that within the statefulset specification, one of the container arguments
+is the key/value pair image: gcr.io/google_samples/k8szk:v3 which
+specifies the version of the zookeeper software to deploy.  Although the
+statefulset specifications greatly simplify statefulset, maintenance of the
+statefulset specifications themselves become problematic as software versions
 change over time or as different versions are required for different
-deployments.  For example, if the R&D team needs to deploy a newer version of
+statefulsets.  For example, if the R&D team needs to deploy a newer version of
 mariadb than what is currently used in the production environment, they would
-need to clone the deployment specification and change this value.  Fortunately,
+need to clone the statefulset specification and change this value.  Fortunately,
 this problem has been solved with the templating capabilities of Helm.
 
-The following example shows how the deployment specifications are modified to
+The following example shows how the statefulset specifications are modified to
 incorporate Helm templates such that key/value pairs can be defined outside of
-the deployment specifications and passed during instantiation of the component.
+the statefulset specifications and passed during instantiation of the component.
 
 .. code-block:: yaml
 
-  apiVersion: extensions/v1beta1
-  kind: Deployment
+  apiVersion: apps/v1
+  kind: StatefulSet
   metadata:
-    name: mariadb
-    namespace: "{{ .Values.nsPrefix }}-mso"
+    name: {{ include "common.fullname" . }}
+    namespace: {{ include "common.namespace" . }}
+    labels: {{- include "common.labels" . | nindent 4 }}
   spec:
+    replicas: {{ .Values.replicaCount }}
+    selector:
+      matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
+    # serviceName is only needed for StatefulSet
+    # put the postfix part only if you have add a postfix on the service name
+    serviceName: {{ include "common.servicename" . }}-{{ .Values.service.postfix }}
     <...>
     template:
-      <...>
+      metadata:
+        labels: {{- include "common.labels" . | nindent 8 }}
+        annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        name: {{ include "common.name" . }}
       spec:
-        hostname: mariadb
-        containers:
-        - args:
-          image: {{ .Values.image.mariadb }}
-          imagePullPolicy: {{ .Values.pullPolicy }}
-          name: "mariadb"
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: password
-            - name: MARIADB_MAJOR
-              value: "10.1"
         <...>
-        imagePullSecrets:
-        - name: "{{ .Values.nsPrefix }}-docker-registry-key"apiVersion: extensions/v1beta1
-  kind: Deployment
-  metadata:
-    name: mariadb
-    namespace: "{{ .Values.nsPrefix }}-mso"
-  spec:
-    <...>
-    template:
-      <...>
-      spec:
-        hostname: mariadb
         containers:
-        - args:
-          image: {{ .Values.image.mariadb }}
-          imagePullPolicy: {{ .Values.pullPolicy }}
-          name: "mariadb"
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: password
-            - name: MARIADB_MAJOR
-              value: "10.1"
-        <...>
-        imagePullSecrets:
-        - name: "{{ .Values.nsPrefix }}-docker-registry-key"
+          - name: {{ include "common.name" . }}
+            image: {{ .Values.image }}
+            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+            ports:
+            {{- range $index, $port := .Values.service.ports }}
+              - containerPort: {{ $port.port }}
+                name: {{ $port.name }}
+            {{- end }}
+            {{- range $index, $port := .Values.service.headlessPorts }}
+              - containerPort: {{ $port.port }}
+                name: {{ $port.name }}
+            {{- end }}
+            <...>
 
-This version of the deployment specification has gone through the process of
-templating values that are likely to change between deployments. Note that the
-image is now specified as: image: {{ .Values.image.mariadb }} instead of a
-string used previously.  During the deployment phase, Helm (actually the Helm
+This version of the statefulset specification has gone through the process of
+templating values that are likely to change between statefulsets. Note that the
+image is now specified as: image: {{ .Values.image }} instead of a
+string used previously.  During the statefulset phase, Helm (actually the Helm
 sub-component Tiller) substitutes the {{ .. }} entries with a variable defined
 in a values.yaml file.  The content of this file is as follows:
 
 .. code-block:: yaml
 
-  nsPrefix: onap
-  pullPolicy: IfNotPresent
-  image:
-    readiness: oomk8s/readiness-check:2.0.0
-    mso: nexus3.onap.org:10001/openecomp/mso:1.0-STAGING-latest
-    mariadb: nexus3.onap.org:10001/mariadb:10.1.11
+  <...>
+  image: gcr.io/google_samples/k8szk:v3
+  replicaCount: 3
+  <...>
 
-Within the values.yaml file there is an image section with the key/value pair
-mariadb: nexus3.onap.org:10001/mariadb:10.1.11 which is the same value used in
+
+Within the values.yaml file there is an image key with the value
+`gcr.io/google_samples/k8szk:v3` which is the same value used in
 the non-templated version.  Once all of the substitutions are complete, the
-resulting deployment specification ready to be used by Kubernetes.
+resulting statefulset specification ready to be used by Kubernetes.
 
-Also note that in this example, the namespace key/value pair is specified in
-the values.yaml file.  This key/value pair will be global across the entire
-ONAP deployment and is therefore a prime example of where configuration
-hierarchy can be very useful.
-
-When creating a deployment template consider the use of default values if
-appropriate.  Helm templating has built in support for DEFAULT values, here is
+When creating a template consider the use of default values if appropriate.
+Helm templating has built in support for DEFAULT values, here is
 an example:
 
 .. code-block:: yaml
@@ -394,6 +366,227 @@ Helm template language is a superset of the Go template language).  These
 functions include simple string operations like upper and more complex flow
 control operations like if/else.
 
+OOM is mainly helm templating. In order to have consistent deployment of the
+different components of ONAP, some rules must be followed.
+
+Templates are provided in order to create Kubernetes resources (Secrets,
+Ingress, Services, ...) or part of Kubernetes resources (names, labels,
+resources requests and limits, ...).
+
+Service template
+----------------
+
+In order to create a Service for a component, you have to create a file (with
+`service` in the name.
+For normal service, just put the following line:
+
+.. code-block:: yaml
+
+  {{ include "common.service" . }}
+
+For headless service, the line to put is the following:
+
+.. code-block:: yaml
+
+  {{ include "common.headlessService" . }}
+
+The configuration of the service is done in component `values.yaml`:
+
+.. code-block:: yaml
+
+  service:
+   name: NAME-OF-THE-SERVICE
+   postfix: MY-POSTFIX
+   type: NodePort
+   annotations:
+     someAnnotationsKey: value
+   ports:
+   - name: tcp-MyPort
+     port: 5432
+     nodePort: 88
+   - name: http-api
+     port: 8080
+     nodePort: 89
+   - name: https-api
+     port: 9443
+     nodePort: 90
+
+`annotations` and `postfix` keys are optional.
+if `service.type` is `NodePort`, then you have to give `nodePort` value for your
+service ports (which is the end of the computed nodePort, see example).
+
+It would render the following Service Resource (for a component named
+`name-of-my-component`, with version `x.y.z`, helm deployment name
+`my-deployment` and `global.nodePortPrefix` `302`):
+
+.. code-block:: yaml
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      someAnnotationsKey: value
+    name: NAME-OF-THE-SERVICE-MY-POSTFIX
+    labels:
+      app.kubernetes.io/name: name-of-my-component
+      helm.sh/chart: name-of-my-component-x.y.z
+      app.kubernetes.io/instance: my-deployment-name-of-my-component
+      app.kubernetes.io/managed-by: Tiller
+  spec:
+    ports:
+      - port: 5432
+        targetPort: tcp-MyPort
+        nodePort: 30288
+      - port: 8080
+        targetPort: http-api
+        nodePort: 30289
+      - port: 9443
+        targetPort: https-api
+        nodePort: 30290
+    selector:
+      app.kubernetes.io/name: name-of-my-component
+      app.kubernetes.io/instance:  my-deployment-name-of-my-component
+    type: NodePort
+
+In the deployment or statefulSet file, you needs to set the good labels in order
+for the service to match the pods.
+
+here's an example to be sure it matchs (for a statefulSet):
+
+.. code-block:: yaml
+
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: {{ include "common.fullname" . }}
+    namespace: {{ include "common.namespace" . }}
+    labels: {{- include "common.labels" . | nindent 4 }}
+  spec:
+    selector:
+      matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
+    # serviceName is only needed for StatefulSet
+    # put the postfix part only if you have add a postfix on the service name
+    serviceName: {{ include "common.servicename" . }}-{{ .Values.service.postfix }}
+    <...>
+    template:
+      metadata:
+        labels: {{- include "common.labels" . | nindent 8 }}
+        annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        name: {{ include "common.name" . }}
+      spec:
+       <...>
+       containers:
+         - name: {{ include "common.name" . }}
+           ports:
+           {{- range $index, $port := .Values.service.ports }}
+           - containerPort: {{ $port.port }}
+             name: {{ $port.name }}
+           {{- end }}
+           {{- range $index, $port := .Values.service.headlessPorts }}
+           - containerPort: {{ $port.port }}
+             name: {{ $port.name }}
+           {{- end }}
+           <...>
+
+The configuration of the service is done in component `values.yaml`:
+
+.. code-block:: yaml
+
+  service:
+   name: NAME-OF-THE-SERVICE
+   headless:
+     postfix: NONE
+     annotations:
+       anotherAnnotationsKey : value
+     publishNotReadyAddresses: true
+   headlessPorts:
+   - name: tcp-MyPort
+     port: 5432
+   - name: http-api
+     port: 8080
+   - name: https-api
+     port: 9443
+
+`headless.annotations`, `headless.postfix` and
+`headless.publishNotReadyAddresses` keys are optional.
+
+If `headless.postfix` is not set, then we'll add `-headless` at the end of the
+service name.
+
+If it set to `NONE`, there will be not postfix.
+
+And if set to something, it will add `-something` at the end of the service
+name.
+
+It would render the following Service Resource (for a component named
+`name-of-my-component`, with version `x.y.z`, helm deployment name
+`my-deployment` and `global.nodePortPrefix` `302`):
+
+.. code-block:: yaml
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      anotherAnnotationsKey: value
+    name: NAME-OF-THE-SERVICE
+    labels:
+      app.kubernetes.io/name: name-of-my-component
+      helm.sh/chart: name-of-my-component-x.y.z
+      app.kubernetes.io/instance: my-deployment-name-of-my-component
+      app.kubernetes.io/managed-by: Tiller
+  spec:
+    clusterIP: None
+    ports:
+      - port: 5432
+        targetPort: tcp-MyPort
+        nodePort: 30288
+      - port: 8080
+        targetPort: http-api
+        nodePort: 30289
+      - port: 9443
+        targetPort: https-api
+        nodePort: 30290
+    publishNotReadyAddresses: true
+    selector:
+      app.kubernetes.io/name: name-of-my-component
+      app.kubernetes.io/instance:  my-deployment-name-of-my-component
+    type: ClusterIP
+
+Previous example of StatefulSet would also match (except for the `postfix` part
+obviously).
+
+Creating Deployment or StatefulSet
+----------------------------------
+
+Deployment and StatefulSet should use the `apps/v1` (which has appeared in
+v1.9).
+As seen on the service part, the following parts are mandatory:
+
+.. code-block:: yaml
+
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: {{ include "common.fullname" . }}
+    namespace: {{ include "common.namespace" . }}
+    labels: {{- include "common.labels" . | nindent 4 }}
+  spec:
+    selector:
+      matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
+    # serviceName is only needed for StatefulSet
+    # put the postfix part only if you have add a postfix on the service name
+    serviceName: {{ include "common.servicename" . }}-{{ .Values.service.postfix }}
+    <...>
+    template:
+      metadata:
+        labels: {{- include "common.labels" . | nindent 8 }}
+        annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        name: {{ include "common.name" . }}
+      spec:
+        <...>
+        containers:
+          - name: {{ include "common.name" . }}
 
 ONAP Application Configuration
 ------------------------------
@@ -423,18 +616,16 @@ SO deployment specification excerpt:
 
 .. code-block:: yaml
 
-  apiVersion: extensions/v1beta1
+  apiVersion: apps/v1
   kind: Deployment
   metadata:
-    name: {{ include "common.name" . }}
+    name: {{ include "common.fullname" . }}
     namespace: {{ include "common.namespace" . }}
-    labels:
-      app: {{ include "common.name" . }}
-      chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-      release: {{ .Release.Name }}
-      heritage: {{ .Release.Service }}
+    labels: {{- include "common.labels" . | nindent 4 }}
   spec:
     replicas: {{ .Values.replicaCount }}
+    selector:
+      matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
     template:
       metadata:
         labels:
