@@ -20,12 +20,13 @@ OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
-EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae
+SUBMODS := robot aai
+EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS)
+.PHONY: $(EXCLUDES) $(HELM_CHARTS) $(SUBMODS)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) plugins
+all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) plugins 
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -34,6 +35,18 @@ $(COMMON_CHARTS):
 $(HELM_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
+
+$(SUBMODS):
+	@echo "\n[$@]"
+	@make submod-$@
+	@make package-$@
+
+submod-%:
+	@make $*/requirements.yaml
+
+%/requirements.yaml:
+	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
+
 
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
