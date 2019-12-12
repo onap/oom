@@ -49,9 +49,38 @@
   Calculate if we need a PV. If a storageClass is provided, then we don't need.
 */}}
 {{- define "common.needPV" -}}
-{{- if or (or .Values.persistence.storageClassOverride .Values.persistence.storageClass) .Values.global.persistence.storageClass -}}
-  False
-{{- else -}}
+{{- if not (or (or .Values.persistence.storageClassOverride .Values.persistence.storageClass) .Values.global.persistence.storageClass) -}}
   True
+{{- end -}}
+{{- end -}}
+
+
+{{/* Generate N PV for a statefulset
+*/}}
+{{- define "common.replicaPV" -}}
+{{- $global := . }}
+{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
+{{- if (include "common.needPV" .) -}}
+{{- range $i := until (int $global.Values.replicaCount)}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" $global }}-data-{{$i}}
+  namespace: {{ include "common.namespace" $global }}
+  labels: {{- include "common.labels" $global | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ $global.Values.persistence.size}}
+  accessModes:
+    - {{ $global.Values.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $global }}-data"
+  hostPath:
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ $global.Release.Name }}/{{ $global.Values.persistence.mountSubPath }}-{{$i}}
+{{if ne $i (int $global.Values.replicaCount) }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

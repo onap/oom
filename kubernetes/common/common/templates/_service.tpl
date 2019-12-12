@@ -29,3 +29,73 @@
   {{- $name := default .Chart.Name .Values.nameOverride -}}
   {{- default $name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/* Define the metadata of Service
+     The function takes from one to three arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .postfix : a string which will be added at the end of the name (with a
+       '-'). If set to "NONE", it won't be printed (interesting for headless
+       services).
+     - .annotations: the annotations to add
+     Usage example:
+      {{ include "common.serviceMetadata" ( dict "postfix" "myService" "dot" .) }}
+      {{ include "common.serviceMetadata" ( dict "annotations" .Values.service.annotation "dot" .) }}
+*/}}
+{{- define "common.serviceMetadata" -}}
+  {{- $dot := default . .dot -}}
+  {{- $postfix := default "" .postfix -}}
+  {{- $annotations := default "" .annotations -}}
+{{- if $annotations -}}
+annotations: {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2 }}
+{{- end }}
+name: {{ include "common.servicename" $dot }}{{ if and $postfix (ne "NONE" $postfix) }}{{ print "-" $postfix }}{{ end }}
+namespace: {{ include "common.namespace" $dot }}
+labels: {{- include "common.labels" $dot | nindent 2 -}}
+{{- end -}}
+{{/* Define the ports of Service
+     The function takes three arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .ports : an array of ports
+     - .portType: the type of the service
+*/}}
+{{- define "common.servicePorts" -}}
+{{- $portType := .portType -}}
+{{- $dot := .dot -}}
+{{- range $index, $port := .ports }}
+- port: {{ $port.port }}
+  targetPort: {{ $port.name }}
+  {{- if (eq $portType "NodePort") }}
+  nodePort: {{ $dot.Values.global.nodePortPrefix | default $dot.Values.nodePortPrefix }}{{ $port.nodePort }}
+  {{- end }}
+  name: {{ $port.name }}
+{{- end -}}
+{{- end -}}
+{{/* Create service template */}}
+{{- define "common.service" -}}
+{{- $postfix := default "" .Values.service.postfix -}}
+{{- $annotations := default "" .Values.service.annotations -}}
+apiVersion: v1
+kind: Service
+metadata: {{ include "common.serviceMetadata" (dict "postfix" $postfix "annotations" $annotations "dot" . ) | nindent 2 }}
+spec:
+  ports: {{- include "common.servicePorts" (dict "portType" .Values.service.type "ports" .Values.service.ports "dot" .) | nindent 4 }}
+  type: {{ .Values.service.type }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+{{- end -}}
+
+{{/* Create headless service template */}}
+{{- define "common.headlessService" -}}
+{{- $postfix := default "headless" .Values.service.headless.postfix -}}
+{{- $annotations := default "" .Values.service.headless.annotations -}}
+apiVersion: v1
+kind: Service
+metadata: {{ include "common.serviceMetadata" (dict "postfix" $postfix "annotations" $annotations "dot" . ) | nindent 2 }}
+spec:
+  clusterIP: None
+  ports: {{- include "common.servicePorts" (dict "portType" "ClusterIP" "ports" .Values.service.headlessPorts "dot" .) | nindent 4 }}
+  {{- if .Values.service.headless.publishNotReadyAddresses }}
+  publishNotReadyAddresses: {{ .Values.service.headless.publishNotReadyAddresses }}
+  {{- end }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+  type: ClusterIP
+{{- end -}}

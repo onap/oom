@@ -17,16 +17,10 @@ kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   selector:
-    matchLabels:
-      app: {{ include  "common.name" . }}
-      release: {{ .Release.Name }}
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
   serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
@@ -34,9 +28,8 @@ spec:
     type: {{ .Values.updateStrategy.type }}
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ .Release.Name }}
+      labels: {{- include "common.labels" . | nindent 8 }}
+      annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
       hostNetwork: {{ .Values.hostNetwork }}
@@ -45,8 +38,13 @@ spec:
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports:
-        {{- range $index, $ports := .Values.service.ports }}
-        - containerPort: {{ $ports.port }}
+        {{- range $index, $port := .Values.service.ports }}
+        - containerPort: {{ $port.port }}
+          name: {{ $port.name }}
+        {{- end }}
+        {{- range $index, $port := .Values.service.headlessPorts }}
+        - containerPort: {{ $port.port }}
+          name: {{ $port.name }}
         {{- end }}
         volumeMounts:
           - name: {{ include "common.fullname" . }}-data
