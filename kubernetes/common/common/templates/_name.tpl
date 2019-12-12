@@ -39,3 +39,7 @@
 {{- define "common.release" -}}
   {{- regexReplaceAll "-[a-zA-Z0-9]*$" .Release.Name ""  }}
 {{- end -}}
+
+{{- define "common.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
