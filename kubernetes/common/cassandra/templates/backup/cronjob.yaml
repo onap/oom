@@ -19,11 +19,7 @@ kind: CronJob
 metadata:
   name: {{ include "common.fullname" . }}-backup
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   schedule: {{ .Values.backup.cron | quote }}
   concurrencyPolicy: Forbid
@@ -31,6 +27,10 @@ spec:
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels: {{- include "common.labels" . | nindent 12 }}
+          annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 12 }}
+          name: {{ include "common.name" . }}
         spec:
           restartPolicy: Never
           initContainers:
