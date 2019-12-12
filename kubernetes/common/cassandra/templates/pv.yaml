@@ -12,35 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- $global := . }}
-{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
-{{- if eq "True" (include "common.needPV" .) -}}
-{{- range $i := until (int $global.Values.replicaCount)}}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ include "common.release" $global }}-{{ $global.Values.service.name }}-{{ $i }}
-  namespace: {{ $global.Release.Namespace }}
-  labels:
-    type: {{ $global.Values.persistence.storageType }}
-    app: {{ $global.Values.service.name }}
-    chart: {{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" $global }}
-    heritage: {{ $global.Release.Service }}
-spec:
-  capacity:
-    storage: {{ $global.Values.persistence.size }}
-  accessModes:
-  {{- if $global.Values.backup.enabled }}
-  - ReadWriteMany
-  {{- else }}
-  - ReadWriteOnce
-  {{- end }}
-  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
-  storageClassName: "{{ include "common.fullname" $global }}-data"
-  hostPath:
-    path: {{ $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.mountSubPath }}-{{ $i }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+{{ include "common.replicaPV" . }}
