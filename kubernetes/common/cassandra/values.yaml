@@ -75,22 +75,27 @@ readiness:
   failureThreshold: 3
 
 service:
-  type: ClusterIP
   name: cassandra
-  ports:
-  - name: intra
+  headless:
+    suffix: NONE
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    publishNotReadyAddresses: true
+  headlessPorts:
+  - name: tcp-intra
     port: 7000
   - name: tls
     port: 7001
-  - name: jmx
+  - name: tcp-jmx
     port: 7199
-  - name: cql
+  - name: tcp-cql
     port: 9042
-  - name: thrift
+  - name: tcp-thrift
     port: 9160
-  - name: agent
+  - name: tcp-agent
     port: 61621
 
+podAnnotations: {}
 podManagementPolicy: OrderedReady
 updateStrategy:
   type: RollingUpdate
@@ -116,7 +121,7 @@ persistence:
   ##
   ## storageClass: "-"
   ## Not set as it depends of the backup enabledment or not.
-  #accessMode: ReadWriteOnce
+  accessMode: ReadWriteOnce
   size: 2Gi
   mountPath: /dockerdata-nfs
   mountSubPath: cassandra
