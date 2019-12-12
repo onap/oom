@@ -12,42 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadatas" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include  "common.name" . }}
-      release: {{ .Release.Name }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: {{ .Values.podManagementPolicy }}
   updateStrategy:
     type: {{ .Values.updateStrategy.type }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ .Release.Name }}
-      name: {{ include "common.name" . }}
+    metadata: {{- include "common.templateMetadatas" . | nindent 6 }}
     spec:
       hostNetwork: {{ .Values.hostNetwork }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        ports:
-        {{- range $index, $ports := .Values.service.ports }}
-        - containerPort: {{ $ports.port }}
-        {{- end }}
+        ports: {{ include "common.containerPorts" . | nindent 8  }}
         volumeMounts:
           - name: {{ include "common.fullname" . }}-data
             mountPath: /var/lib/cassandra
