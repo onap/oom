@@ -29,3 +29,61 @@
   {{- $name := default .Chart.Name .Values.nameOverride -}}
   {{- default $name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/* Create service template */}}
+{{- define "common.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  {{- if .Values.service.annotations }}
+  annotations: {{ include "common.tplValue" (dict "value" .Values.service.annotations "context" $) | nindent 4 }}
+  {{- end }}
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+  ports:
+{{- if eq .Values.service.type "NodePort" }}
+  {{- $global := . }}
+  {{- range $index, $port := .Values.service.ports }}
+  - port: {{ $port.port }}
+    targetPort: {{ $port.name }}
+    nodePort: {{ $global.Values.global.nodePortPrefix | default $global.Values.nodePortPrefix }}{{ $port.nodePort }}
+    name: {{ $port.name }}
+  {{- end }}
+{{- else }}
+  {{- range $index, $port := .Values.service.ports }}
+  - port: {{ $port.port }}
+    targetPort: {{ $port.name }}
+    name: {{ $port.name }}
+  {{- end }}
+{{- end }}
+  type: {{ .Values.service.type }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+{{- end -}}
+
+{{/* Create headless service template */}}
+{{- define "common.headlessService" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  {{- if .Values.service.headless.annotations }}
+  annotations: {{ include "common.tplValue" (dict "value" .Values.service.headless.annotations "context" $) | nindent 4 }}
+  {{- end }}
+  name: {{ include "common.servicename" . }}-headless
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+  {{- range $index, $port := .Values.service.headlessPorts }}
+  - port: {{ $port.port }}
+    targetPort: {{ $port.name }}
+    name: {{ $port.name }}
+  {{- end }}
+  {{- if .Values.service.headless.publishNotReadyAddresses }}
+  publishNotReadyAddresses: {{ .Values.service.headless.publishNotReadyAddresses }}
+  {{- end }}
+  selector: {{- include "common.matchLabels" . | nindent 4 }}
+  type: ClusterIP
+{{- end -}}
