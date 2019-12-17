@@ -50,18 +50,17 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
+          - containerPort: {{ template "wfd-fe.internalPort" . }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ template "wfd-fe.internalPort" . }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ template "wfd-fe.internalPort" . }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -75,13 +74,17 @@ spec:
             value: "{{ .Values.config.isHttpsEnabled}}"
             {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
           - name: KEYSTORE_PASS
-            value: "{{ .Values.security.keystorePass}}"
+            valueFrom:
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: keystore_password}
           - name: TRUSTSTORE_PASS
-            value: "{{ .Values.security.truststorePass}}"
+            valueFrom:
+              secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: truststore_password}
           - name: TRUSTSTORE_PATH
             value: "{{ .Values.security.storePath }}/{{ .Values.security.truststoreFilename }}"
           - name: KEYSTORE_PATH
             value: "{{ .Values.security.storePath }}/{{ .Values.security.keystoreFilename }}"
+          - name: TRUST_ALL
+            value: "{{ .Values.config.isTrustAll}}"
             {{ end }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-localtime
