@@ -3,7 +3,7 @@
   ================================================================================
   eCOMP Portal SDK
   ================================================================================
-  Copyright (C) 2017 AT&amp;T Intellectual Property
+  Copyright (C) 2017 AT&T Intellectual Property
   ================================================================================
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,35 +19,59 @@
   ================================================================================
   -->
 <configuration scan="true" scanPeriod="3 seconds" debug="true">
-   <!--  specify the base path of the log directory -->
-   <property name="logDir" value="/var/log/onap" />
    <!--  specify the component name -->
-   <property name="componentName" value="vid" />
+   <property name="componentName" value="vid"/>
+   <!--  specify the base path of the log directory -->
+   <property name="logDirPrefix" value="/var/log/onap" />
    <!-- The directory where logs are written -->
-   <property name="logDirectory" value="${logDir}/${componentName}" />
-   <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+   <property name="logDirectory" value="${logDirPrefix}/${componentName}" />
+
    <!--  log file names -->
    <property name="generalLogName" value="application" />
    <property name="errorLogName" value="error" />
    <property name="metricsLogName" value="metrics" />
    <property name="auditLogName" value="audit" />
    <property name="debugLogName" value="debug" />
+   <property name="outgoingRequestsLogName" value="outgoingRequests" />
+
    <!--  other constants -->
    <property name="queueSize" value="256" />
    <property name="maxFileSize" value="50MB" />
    <property name="maxHistory" value="30" />
    <property name="totalSizeCap" value="10GB" />
+
+  <!-- ONAP Application Logging Specification v1.2 (Casablanca)
+       https://wiki.onap.org/pages/viewpage.action?pageId=28378955 -->
+
+   <property name="auditLoggerPattern"
+     value="%X{EntryTimestamp}|%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC}|%X{RequestID}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level||%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{ClientIPAddress}|%X{ClassName}|||%marker|%mdc|||%msg%n"/>
+
+   <property name="metricsLoggerPattern"
+     value="%X{InvokeTimestamp}|%X{LogTimestamp}|%X{RequestID}|%X{ServiceInstanceId}|%thread|%X{VirtualServerName}|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDescription}|%X{InstanceUUID}|%.-5level|0|%X{ServerIPAddress}|%replace(%X{ElapsedTime}){' ms',''}|%X{ServerFQDN}|%X{ClientIPAddress}|%X{ClassName}|%X{Unused}|%X{ProcessKey}|%X{TargetVisualEntity}|%marker|%mdc|%X{CustomField3}|%X{CustomField4}| %msg%nopexception%n" />
+
+   <property name="errorLoggerPattern"
+     value="%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%X{RequestId}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{AlertSeverity}|%X{ErrorCode}|%X{ErrorDescription}| %msg%nopexception%n" />
+
+   <property name="debugLoggerPattern" value="%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%X{RequestID}|%msg %nopexception%replace(%xThrowable){'[\r\n]+', '\\\\n'}|^%n" />
+
+   <!-- use %class so library logging calls yield their class name -->
+   <property name="applicationLoggerPattern"
+     value="%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%X{RequestId}|%thread|%.-5level|%class{36}| %msg%n" />
+
+
+
    <!-- Example evaluator filter applied against console appender -->
    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
       <encoder>
-         <pattern>${pattern}</pattern>
+         <pattern>${debugLoggerPattern}</pattern>
       </encoder>
    </appender>
+
    <!-- ============================================================================ -->
    <!-- EELF Appenders -->
    <!-- ============================================================================ -->
-   <!-- The EELFAppender is used to record events to the general application 
-    log -->
+
+   <!-- The EELFAppender is used to record events to the general application log -->
    <appender name="EELF" class="ch.qos.logback.core.rolling.RollingFileAppender">
       <file>${logDirectory}/${generalLogName}.log</file>
       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -59,16 +83,18 @@
          <totalSizeCap>${totalSizeCap}</totalSizeCap>
       </rollingPolicy>
       <encoder>
-         <pattern>${pattern}</pattern>
+         <pattern>${applicationLoggerPattern}</pattern>
       </encoder>
-      <filter class="org.openecomp.portalapp.util.CustomLoggingFilter" />
+      <filter class="org.onap.portalapp.util.CustomLoggingFilter" />
    </appender>
+
    <appender name="asyncEELF" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>${queueSize}</queueSize>
       <includeCallerData>true</includeCallerData>
       <appender-ref ref="EELF" />
    </appender>
-   <!-- EELF Security Appender. This appender is used to record security events 
+
+   <!-- EELF Security Appender. This appender is used to record security events
     to the security log file. Security events are separate from other loggers 
     in EELF so that security log records can be captured and managed in a secure 
     way separate from the other logs. This appender is set to never discard any 
@@ -200,14 +226,24 @@
          <totalSizeCap>${totalSizeCap}</totalSizeCap>
       </rollingPolicy>
       <encoder>
-         <pattern>${pattern}</pattern>
+         <pattern>${auditLoggerPattern}</pattern>
       </encoder>
    </appender>
    <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>${queueSize}</queueSize>
       <appender-ref ref="EELFAudit" />
+      <includeCallerData>true</includeCallerData>
    </appender>
+
    <appender name="EELFMetrics" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+          <marker>INVOKE</marker>
+          <marker>INVOKE-RETURN</marker>
+        </evaluator>
+        <onMismatch>DENY</onMismatch>
+        <onMatch>ACCEPT</onMatch>
+      </filter>
       <file>${logDirectory}/${metricsLogName}.log</file>
       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
          <fileNamePattern>${logDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
@@ -218,14 +254,26 @@
          <totalSizeCap>${totalSizeCap}</totalSizeCap>
       </rollingPolicy>
       <encoder>
-         <pattern>${pattern}</pattern>
+      <pattern>${metricsLoggerPattern}</pattern>
       </encoder>
    </appender>
    <appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>${queueSize}</queueSize>
       <appender-ref ref="EELFMetrics" />
+      <includeCallerData>true</includeCallerData>
    </appender>
+
    <appender name="EELFError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>ERROR</level>
+        <onMatch>ACCEPT</onMatch>
+        <onMismatch>NEUTRAL</onMismatch>
+      </filter>
+      <filter class="ch.qos.logback.classic.filter.LevelFilter">
+        <level>WARN</level>
+        <onMatch>ACCEPT</onMatch>
+        <onMismatch>DENY</onMismatch>
+      </filter>
       <file>${logDirectory}/${errorLogName}.log</file>
       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
          <fileNamePattern>${logDirectory}/${errorLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
@@ -236,13 +284,16 @@
          <totalSizeCap>${totalSizeCap}</totalSizeCap>
       </rollingPolicy>
       <encoder>
-         <pattern>${pattern}</pattern>
+        <pattern>${errorLoggerPattern}</pattern>
       </encoder>
    </appender>
+
    <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>${queueSize}</queueSize>
       <appender-ref ref="EELFError" />
+      <includeCallerData>true</includeCallerData>
    </appender>
+
    <appender name="EELFDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
       <file>${logDirectory}/${debugLogName}.log</file>
       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -254,19 +305,43 @@
          <totalSizeCap>${totalSizeCap}</totalSizeCap>
       </rollingPolicy>
       <encoder>
-         <pattern>${pattern}</pattern>
+         <pattern>${debugLoggerPattern}</pattern>
       </encoder>
    </appender>
    <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>${queueSize}</queueSize>
       <appender-ref ref="EELFDebug" />
+      <includeCallerData>true</includeCallerData>
    </appender>
+
+   <appender name="OutgoingRequests" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logDirectory}/${outgoingRequestsLogName}.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+         <fileNamePattern>${logDirectory}/${outgoingRequestsLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+         <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>${maxFileSize}</maxFileSize>
+         </timeBasedFileNamingAndTriggeringPolicy>
+         <maxHistory>${maxHistory}</maxHistory>
+         <totalSizeCap>${totalSizeCap}</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+         <pattern>${debugLoggerPattern}</pattern>
+      </encoder>
+   </appender>
+   <appender name="asyncOutgoingRequests" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>${queueSize}</queueSize>
+      <appender-ref ref="OutgoingRequests" />
+      <includeCallerData>true</includeCallerData>
+   </appender>
+
+
    <!-- ============================================================================ -->
    <!--  EELF loggers -->
    <!-- ============================================================================ -->
    <logger name="com.att.eelf" level="debug" additivity="false">
       <appender-ref ref="asyncEELF" />
    </logger>
+
    <!--
   <logger name="com.att.eelf.security" level="info" additivity="false">
     <appender-ref ref="asyncEELFSecurity" />
@@ -281,19 +356,31 @@
     <appender-ref ref="asyncEELFPolicy" />
   </logger>
   -->
-   <logger name="com.att.eelf.audit" level="info" additivity="false">
+
+   <logger name="org.onap.logging.filter.base.AbstractAuditLogFilter" level="info" additivity="false">
       <appender-ref ref="asyncEELFAudit" />
    </logger>
-   <logger name="com.att.eelf.metrics" level="info" additivity="false">
+
+   <logger name="org.onap.logging.filter.base.AbstractMetricLogFilter" level="info" additivity="false">
       <appender-ref ref="asyncEELFMetrics" />
    </logger>
+
    <logger name="com.att.eelf.error" level="info" additivity="false">
       <appender-ref ref="asyncEELFError" />
+      <appender-ref ref="asyncEELFDebug" />
    </logger>
+
    <logger name="com.att.eelf.debug" level="debug" additivity="false">
       <appender-ref ref="asyncEELFDebug" />
    </logger>
+
+   <logger name="http.requests.outgoing" level="DEBUG" additivity="false">
+      <appender-ref ref="asyncOutgoingRequests"/>
+   </logger>
+
    <root level="INFO">
       <appender-ref ref="asyncEELF" />
+      <appender-ref ref="asyncEELFError" />
    </root>
+
 </configuration>
