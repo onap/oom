@@ -1,5 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
+# Modifications Copyright © 2018 Amdocs,Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: {{ .Values.service.name }}
+  name: {{ include "common.fullname" . }}-config
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-spec:
-  ports:
-    - port: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-  clusterIP: None
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ .Release.Name }}
-
+data:
+{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}

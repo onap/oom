@@ -1,0 +1,59 @@
+{{/*
+# Copyright © 2019 Amdocs, Bell Canada, Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+{{/*
+  calculate if we are on service mesh
+*/}}
+{{- define "common.serviceMesh" -}}
+{{- if .Values.global.serviceMesh -}}
+{{- if .Values.global.serviceMesh.enabled -}}
+True
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Calculate if we need TLS.
+*/}}
+{{- define "common.needTLS" -}}
+{{- if .Values.global.serviceMesh -}}
+{{- if and .Values.global.serviceMesh.enabled .Values.global.serviceMesh.tls -}}
+{{- else -}}
+  True
+{{- end -}}
+{{- else -}}
+  True
+{{- end -}}
+{{- end -}}
+
+{{- define "common.istio" -}}
+{{- if .Values.global.serviceMesh -}}
+{{- if and .Values.global.serviceMesh.enabled (eq "istio" .Values.global.serviceMesh.provider) -}}
+  True
+{{- end -}}
+{{- if and .Values.global.serviceMesh.enabled (not .Values.global.serviceMesh.provider) -}}
+  True
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "common.linkerd" -}}
+{{- if .Values.global.serviceMesh -}}
+{{- if and .Values.global.serviceMesh.enabled (eq "linkerd" .Values.global.serviceMesh.provider) -}}
+  True
+{{- end -}}
+{{- end -}}
+{{- end -}}
