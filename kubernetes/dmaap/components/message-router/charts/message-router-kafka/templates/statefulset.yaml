@@ -18,13 +18,11 @@ kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ .Values.service.name }}
+  serviceName: {{ .Values.service.name }}-headless
+  selector:
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: Parallel
   template:
@@ -105,8 +103,10 @@ spec:
         resources:
 {{ include "common.resources" . | indent 12 }}
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.externalPort }}
+        {{- range $index, $port := .Values.service.headlessPorts }}
+        - containerPort: {{ $port.port }}
+          name: {{ $port.name }}
+        {{- end }}
        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:

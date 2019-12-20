@@ -36,6 +36,15 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ .Release.Name }}
+      {{- if or (eq "True" (include "common.linkerd" .)) (eq "True" (include "common.istio" .)) }}
+      annotations:
+      {{- if eq "True" (include "common.linkerd" .) }}
+        linkerd.io/inject: disabled
+      {{- end }}
+      {{- if eq "True" (include "common.istio" .) }}
+        sidecar.istio.io/inject: disabled
+      {{- end }}
+      {{- end }}
     spec:
       podAntiAffinity:
          preferredDuringSchedulingIgnoredDuringExecution:
@@ -145,5 +154,3 @@ spec:
 {{ end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-
-
