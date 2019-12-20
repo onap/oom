@@ -22,6 +22,15 @@ spec:
         app.kubernetes.io/instance: {{.Release.Name | quote }}
         helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
         release: {{ .Release.Name }}
+      {{- if or (eq "True" (include "common.linkerd" .)) (eq "True" (include "common.istio" .)) }}
+      annotations:
+      {{- if eq "True" (include "common.linkerd" .) }}
+        linkerd.io/inject: disabled
+      {{- end }}
+      {{- if eq "True" (include "common.istio" .) }}
+        sidecar.istio.io/inject: disabled
+      {{- end }}
+      {{- end }}
     spec:
       restartPolicy: Never
 
@@ -32,10 +41,17 @@ spec:
         env:
         - name: DELAY
           value: "0"
+        {{- if eq "True" (include "common.needTLS" .) }}
         - name: PROTO
           value: "https"
         - name: PORT
           value: "8443"
+        {{- else }}
+        - name: PROTO
+          value: "http"
+        - name: PORT
+          value: "8080"
+        {{- end }}
         - name: REQUESTID
           value: "{{.Chart.Name}}-post-install"
         volumeMounts:
