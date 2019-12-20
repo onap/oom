@@ -20,20 +20,27 @@ kind: Service
 metadata:
   name: {{ $root.Values.service.name }}-{{ $i }}
   namespace: {{ $root.Release.Namespace }}
-  labels:
-    app: {{ $root.Values.service.name }}
-    chart: {{ $root.Chart.Name }}-{{ $root.Chart.Version | replace "+" "_" }}
-    release: {{ $root.Release.Name }}
-    heritage: {{ $root.Release.Service }}
-
+  labels: {{- include "common.labels" $root | nindent 4 }}
 spec:
-  type: {{ $root.Values.service.type }} 
+  type: {{ $root.Values.service.singleType }}
+  {{- if or (eq $root.Values.service.singleType "NodePort")  (eq $root.Values.service.singleType "LoadBalancer") }}
   externalTrafficPolicy: Local
-  selector:
-   statefulset.kubernetes.io/pod-name: {{ $root.Release.Name }}-{{ $root.Values.service.name }}-{{ $i }}
+  {{- end }}
   ports:
-    - port: {{ $root.Values.service.externalPort }}
-      targetPort: {{ $root.Values.service.externalPort }}
-      nodePort: {{ $root.Values.service.baseNodePort  | add $i }}
-      name: {{ $root.Values.service.name }}-{{ $i }}
+{{- if eq $root.Values.service.type "NodePort" }}
+  {{- range $index, $port := $root.Values.service.ports }}
+  - port: {{ $port.port }}
+    targetPort: {{ $port.name }}
+    nodePort: {{ $root.Values.global.nodePortPrefix | default $root.Values.nodePortPrefix }}{{ $port.nodePort }}
+    name: {{ $port.name }}
+  {{- end }}
+{{- else }}
+  {{- range $index, $port := $root.Values.service.ports }}
+  - port: {{ $port.port }}
+    targetPort: {{ $port.name }}
+    name: {{ $port.name }}
+  {{- end }}
+{{- end }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $root.Release.Name }}-{{ $root.Values.service.name }}-{{ $i }}
 {{ end }}
