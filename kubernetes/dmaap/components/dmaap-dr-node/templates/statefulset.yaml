@@ -11,24 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  serviceName: {{ .Values.config.dmaapDrNode.name }}
+  selector:
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
+  serviceName: {{ include "common.servicename" . }}
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ .Release.Name }}
+      labels: {{- include "common.labels" . | nindent 8 }}
     spec:
       initContainers:
         - name: {{ include "common.name" . }}-readiness
@@ -95,18 +91,24 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{.Values.config.dmaapDrNode.externalPort}}
-          - containerPort: {{.Values.config.dmaapDrNode.externalPort2}}
+          {{- range $index, $port := .Values.service.ports }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
+          {{- range $index, $port := .Values.service.headlessPorts }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrNode.internalPort}}
+              port: {{index .Values.service.ports 0 "port" }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrNode.internalPort}}
+              port: {{index .Values.service.ports 0 "port" }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
