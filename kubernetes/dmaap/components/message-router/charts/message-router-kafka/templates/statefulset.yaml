@@ -18,13 +18,11 @@ kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ .Values.service.name }}
+  serviceName: {{ .Values.service.name }}-headless
+  selector:
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: Parallel
   template:
@@ -94,6 +92,7 @@ spec:
       - name: {{ include "common.name" .  }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{- if eq "True" (include "common.needTLS" .) }}
         command:
         - sh
         - -exc
@@ -102,11 +101,22 @@ spec:
           export ENDPOINT_PORT=$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )) && \
           export KAFKA_ADVERTISED_LISTENERS=EXTERNAL_SASL_PLAINTEXT://$(HOST_IP):$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )),INTERNAL_SASL_PLAINTEXT://:{{ .Values.service.internalPort }} && \
           exec start-kafka.sh
+        {{- else }}
+        command:
+        - sh
+        - -exc
+        - |
+          export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
+          export ENDPOINT_PORT=$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )) && \
+          export KAFKA_ADVERTISED_LISTENERS=EXTERNAL_PLAINTEXT://$(HOST_IP):$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )),INTERNAL_PLAINTEXT://:{{ .Values.service.internalPort }} && \
+          exec start-kafka.sh
         resources:
 {{ include "common.resources" . | indent 12 }}
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.externalPort }}
+        {{- range $index, $port := .Values.service.headlessPorts }}
+        - containerPort: {{ $port.port }}
+          name: {{ $port.name }}
+        {{- end }}
        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -127,8 +137,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.hostIP
+        {{- if eq "True" (include "common.needTLS" .) }}
         - name: aaf_locate_url
           value: https://aaf-locate.{{ include "common.namespace" . }}:8095
+        {{- else }}
+        - name: enableCadi 
+          value: "false"
+        {{- end }}
 
         volumeMounts:
         - mountPath: /etc/localtime
