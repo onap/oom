@@ -41,7 +41,7 @@
 */}}
 {{- define "common.mariadbSecret" -}}
   {{- if .Values.global.mariadbGalera.localCluster -}}
-    {{ printf "%s-%s" (include "common.fullname" .) (index .Values "mariadb-galera" "nameOverride") -}}
+    {{ printf "%s-%s-db-user-credentials" (include "common.fullname" .) (index .Values "mariadb-galera" "nameOverride") -}}
   {{- else -}}
     {{ printf "%s-%s" (.Release.Name) (index .Values "mariadb-init" "nameOverride") -}}
   {{- end -}}
@@ -52,7 +52,7 @@
 */}}
 {{- define "common.mariadbSecretParam" -}}
   {{- if .Values.global.mariadbGalera.localCluster -}}
-    {{ printf "user-password" -}}
+    {{ printf "password" -}}
   {{- else -}}
     {{ printf "db-user-password" -}}
   {{- end -}}
