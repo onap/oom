@@ -1,1 +1,1 @@
-{{- define "wfd-be.internalPort" }}{{ if .Values.config.serverSSLEnabled }}{{ .Values.service.internalPort2 }}{{ else }}{{ .Values.service.internalPort }}{{ end }}{{- end }}
+{{- define "wfd-be.internalPort" }}{{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort2 }}{{ else }}{{ .Values.service.internalPort }}{{ end }}{{- end }}

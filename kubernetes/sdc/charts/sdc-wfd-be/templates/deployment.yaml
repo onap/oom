@@ -91,16 +91,25 @@ spec:
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: cs_truststore_password}
           - name: SDC_PROTOCOL
-            value: "{{ .Values.config.sdcProtocol }}"
+            {{- if (include "common.needTLS" .) }}
+            value: "HTTPS"
+            {{- else }}
+            value: "HTTP"
+            {{- end }}
           - name: SDC_ENDPOINT
-            value: "{{ .Values.config.sdcEndpoint }}"
+            {{- if (include "common.needTLS" .) }}
+            value: "{{ .Values.config.sdcEndpoint.https }}"
+            {{- else }}
+            value: "{{ .Values.config.sdcEndpoint.http }}"
+            {{- end }}
           - name: SDC_USER
             value: "{{ .Values.config.sdcExternalUser }}"
           - name: SDC_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: wf_external_user_password}
+          {{- if (include "common.needTLS" .) }}
           - name: SERVER_SSL_ENABLED
-            value: "{{ .Values.config.serverSSLEnabled }}"
+            value: "true"
           - name: SERVER_SSL_KEYSTORE_TYPE
             value: "{{ .Values.config.serverSSLKeyStoreType }}"
           - name: SERVER_SSL_KEYSTORE_PATH
@@ -115,5 +124,9 @@ spec:
           - name: SERVER_SSL_TRUST_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: truststore_password}
+          {{- else }}
+          - name: SERVER_SSL_ENABLED
+            value: "false"
+          {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
