@@ -1,4 +1,5 @@
 # Copyright © 2019 Orange
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,13 +64,17 @@ spec:
             secretKeyRef:
               name: {{ include "mariadbInit.mariadbClusterSecret" . }}
               key: {{ .Values.global.mariadbGalera.userRootSecretKey }}
-        - name: MYSQL_PASSWORD
+        - name: {{ printf "MYSQL_USER_%s" .Values.config.mysqlDatabase | upper }}
+          value: "{{ .Values.config.userName }}"
+        - name: {{ printf "MYSQL_PASSWORD_%s" .Values.config.mysqlDatabase | upper }}
           valueFrom:
             secretKeyRef:
               name: {{ template "common.fullname" . }}
               key: db-user-password
 {{- $root := . }}
-{{ range $db, $_value := .Values.config.mysqlAdditionalDatabases }}
+{{ range $db, $dbInfos := .Values.config.mysqlAdditionalDatabases }}
+        - name: {{ printf "MYSQL_USER_%s" $db | upper }}
+          value: {{ $dbInfos.user }}
         - name: {{ printf "MYSQL_PASSWORD_%s" $db | upper }}
           valueFrom:
             secretKeyRef:
