@@ -16,40 +16,39 @@ global:
   config:
     msbServiceName: msb-iag
     msbPort: 80
-    dbServiceName: vfc-db
-    dbPort: 3306
-    dbUser: root
-    mariadbRootPassword: secretpassword
     redisServiceName: vfc-redis
     redisPort: 6379
     reg_to_msb_when_start: True
   persistence:
     mountPath: /dockerdata-nfs
-
+  mariadbGalera: &mariadbGalera
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+    localmariadbGalera:
+      nameOverride: vfc-mariadb
+      service:
+        name: vfc-db
+        internalPort: 3306
 # application configuration
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
-
 mariadb-galera:
   nameOverride: vfc-mariadb
   service:
     name: vfc-db
     portName: vfc-db
+    internalPort: 3306
+  replicaCount: 3
   nfsprovisionerPrefix: vfc
   persistence:
-    mountSubPath: vfc/data
     enabled: true
+    mountSubPath: vfc/data
   disableNfsProvisioner: true
 
-catalog:
-  config:
-    dbPodName: vfc-db
-    dbServiceName: vfc-db
-nslcm:
-  config:
-    dbPodName: vfc-db
-    dbServiceName: vfc-db
 # sub-chart configuration
 vfc-workflow:
   service:
