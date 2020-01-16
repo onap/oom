@@ -92,6 +92,20 @@ def wait_for_deployment_complete(deployment_name):
         log.error("Exception when waiting for deployment status: %s\n" % e)
 
 
+def wait_for_daemonset_complete(daemonset_name):
+    try:
+        response = api_instance.read_namespaced_daemon_set(daemonset_name, namespace)
+        s = response.status
+        if s.desired_number_scheduled == s.number_ready:
+            log.info("DaemonSet: " + str(s.number_ready) + "/" + str(s.desired_number_scheduled) + " nodes ready --> " + daemonset_name + " is ready")
+            return True
+        else:
+            log.info("DaemonSet: " + str(s.number_ready) + "/" + str(s.desired_number_scheduled) + " nodes ready --> " + daemonset_name + " is not ready")
+            return False
+    except Exception as e:
+        log.error("Exception when waiting for DaemonSet status: %s\n" % e)
+
+
 def is_ready(container_name):
     ready = False
     log.info("Checking if " + container_name + "  is ready")
@@ -112,6 +126,8 @@ def is_ready(container_name):
                         ready = wait_for_deployment_complete(deployment_name)
                     elif i.metadata.owner_references[0].kind == "Job":
                         ready = is_job_complete(name)
+                    elif i.metadata.owner_references[0].kind == "DaemonSet":
+                        ready = wait_for_daemonset_complete(i.metadata.owner_references[0].name)
 
                     return ready
 
@@ -123,7 +139,7 @@ def is_ready(container_name):
 
 
 def read_name(item):
-    return item.metadata.owner_reference[0].name
+    return item.metadata.owner_references[0].name
 
 
 def get_deployment_name(replicaset):
