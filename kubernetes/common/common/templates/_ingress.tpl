@@ -59,7 +59,7 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
 {{- define "common.ingress" -}}
 {{- if .Values.ingress -}}
 {{- if .Values.global.ingress -}}
-{{- if and .Values.ingress.enabled .Values.global.ingress.enabled -}}
+{{- if and (or .Values.ingress.enabled .Values.global.ingress.enabled) (not .Values.ingress.override) -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
