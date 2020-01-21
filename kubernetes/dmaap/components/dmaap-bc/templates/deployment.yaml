@@ -12,27 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ .Release.Name }}
+      labels: {{- include "common.labels" . | nindent 8 }}
     spec:
+{{- if or .Values.global.aafEnabled .Values.PG.enabled }}
       initContainers:
 {{- if .Values.global.aafEnabled }}
-      - command:
+      - name: {{ include "common.name" . }}-aaf-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -44,9 +42,8 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-aaf-readiness
-      - name: {{ include "common.name" . }}-dbc-aaf-config
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+      - name: "{{ include "common.name" . }}-dbc-aaf-config"
         image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
@@ -81,7 +78,8 @@ spec:
           value: "{{ .Values.aafConfig.cadiLatitude }}"
 {{- end }}
 {{- if .Values.PG.enabled }}
-      - command:
+      - name: {{ include "common.name" . }}-postgres-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -94,16 +92,22 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-postgres-readiness
-{{- end}}
+{{- end }}
+{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
-          {{ if eq .Values.liveness.enabled true -}}
+          {{- range $index, $port := .Values.service.ports }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
+          {{- range $index, $port := .Values.service.headlessPorts }}
+          - containerPort: {{ $port.port }}
+            name: {{ $port.name }}
+          {{- end }}
+          {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             httpGet:
               port: {{ .Values.service.internalPort }}
@@ -117,7 +121,7 @@ spec:
               path: /topics
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          {{ end -}}
+          {{- end }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
