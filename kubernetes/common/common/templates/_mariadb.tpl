@@ -15,6 +15,43 @@
 */}}
 
 {{/*
+  UID of mariadb root password
+*/}}
+{{- define "common.mariadb.secret.rootPassUID" -}}
+  {{- printf "db-root-password" }}
+{{- end -}}
+
+{{/*
+  Name of mariadb secret
+*/}}
+{{- define "common.mariadb.secret._secretName" -}}
+  {{- $global := .dot }}
+  {{- $chartName := tpl .chartName $global -}}
+  {{- include "common.secret.genName" (dict "global" $global "uid" (include .uidTemplate $global) "chartName" $chartName) }}
+{{- end -}}
+
+{{/*
+  Name of mariadb root password secret
+*/}}
+{{- define "common.mariadb.secret.rootPassSecretName" -}}
+  {{- include "common.mariadb.secret._secretName" (set . "uidTemplate" "common.mariadb.secret.rootPassUID") }}
+{{- end -}}
+
+{{/*
+  UID of mariadb user credentials
+*/}}
+{{- define "common.mariadb.secret.userCredentialsUID" -}}
+  {{- printf "db-user-credentials" }}
+{{- end -}}
+
+{{/*
+  Name of mariadb user credentials secret
+*/}}
+{{- define "common.mariadb.secret.userCredentialsSecretName" -}}
+  {{- include "common.mariadb.secret._secretName" (set . "uidTemplate" "common.mariadb.secret.userCredentialsUID") }}
+{{- end -}}
+
+{{/*
   Choose the name of the mariadb service to use.
 */}}
 {{- define "common.mariadbService" -}}
