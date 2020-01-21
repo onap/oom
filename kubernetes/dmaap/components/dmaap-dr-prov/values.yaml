@@ -70,20 +70,9 @@ ingress:
     ssl: "redirect"
 
 config:
-  # dr provisioning server configuration
-  dmaapDrProv:
-    servicetype: NodePort
-    internalPort: 8080
-    internalPort2: 8443
-    portName: dr-prov-port
-    portName2: dr-prov-port2
-    nodePort: 59
-    nodePort2: 69
   # dr-prov db configuration
   dmaapDrDb:
-    mariadbServiceName: dmaap-dr-db-svc
     mariadbServicePort: 3306
-    mariadbContName: dmaap-dr-db
 
 # mariadb-galera configuration
 mariadb:
@@ -96,8 +85,8 @@ mariadb:
     userPassword: datarouter
     mysqlDatabase: datarouter
   service:
-    name: dmaap-dr-db-svc
-    portName: dmaap-dr-db-svc
+    name: dmaap-dr-db
+    portName: dmaap-dr-db
   nfsprovisionerPrefix: dmaap-dr-db
   persistence:
     size: 1Gi
@@ -133,3 +122,27 @@ resources:
       cpu: 1000m
       memory: 2Gi
   unlimited: {}
+
+  service:
+  type: NodePort
+  name: dmaap-dr-prov
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    msb.onap.org/service-info: '[
+      {
+          "serviceName": "{{ .Values.service.name }}",
+          "version": "v1",
+          "url": "/",
+          "protocol": "REST",
+          "port": "{{ index .Values.service.ports 1 "port" }}",
+          "visualRange": "1"
+      }
+      ]'
+  ports:
+    - port: 8080
+      name: http
+      nodePort: 59
+    - port: 8443
+      name: https
+      nodePort: 69
+      
