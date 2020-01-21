@@ -1,5 +1,6 @@
 {{- define "ingress.config.port" -}}
 {{- if .Values.ingress -}}
+{{- if .Values.global.ingress -}}
 {{- if or (not .Values.global.ingress.virtualhost) (not .Values.global.ingress.virtualhost.enabled) -}}
   - http:
       paths:
@@ -24,6 +25,7 @@
           backend:
             serviceName: {{ .Chart.Name }}
             servicePort: {{ .Values.service.externalPort }}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -55,11 +57,27 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
 {{ include "ingress.config.annotations.ssl" . | indent 4 | trim }}
 {{- end -}}
 
+{{- define "common.ingress._overrideIfDefined" -}}
+  {{- $currValue := .currVal }}
+  {{- $parent := .parent }}
+  {{- $var := .var }}
+  {{- if $parent -}}
+    {{- if hasKey $parent $var }}
+      {{- default "" (index $parent $var) }}
+    {{- else -}}
+      {{- default "" $currValue -}}
+    {{- end -}}
+  {{- else -}}
+    {{- default "" $currValue }}
+  {{- end -}}
+{{- end -}}
 
 {{- define "common.ingress" -}}
 {{- if .Values.ingress -}}
-{{- if .Values.global.ingress -}}
-{{- if and .Values.ingress.enabled .Values.global.ingress.enabled -}}
+  {{- $ingressEnabled := default false .Values.ingress.enabled -}}
+  {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" (default (dict) .Values.global.ingress) "var" "enabled") }}
+  {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" .Values.ingress "var" "enabledOverride") }}
+  {{- if $ingressEnabled }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -78,7 +96,6 @@ spec:
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
   {{- end -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
