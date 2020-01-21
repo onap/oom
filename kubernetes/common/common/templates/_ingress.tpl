@@ -1,5 +1,6 @@
 {{- define "ingress.config.port" -}}
 {{- if .Values.ingress -}}
+{{- if .Values.global.ingress -}}
 {{- if or (not .Values.global.ingress.virtualhost) (not .Values.global.ingress.virtualhost.enabled) -}}
   - http:
       paths:
@@ -24,6 +25,7 @@
           backend:
             serviceName: {{ .Chart.Name }}
             servicePort: {{ .Values.service.externalPort }}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -56,10 +58,15 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
 {{- end -}}
 
 
+
 {{- define "common.ingress" -}}
 {{- if .Values.ingress -}}
 {{- if .Values.global.ingress -}}
-{{- if and .Values.ingress.enabled .Values.global.ingress.enabled -}}
+{{- $_ := set . "ingressEnableFlag" (default .Values.global.ingress.enabled .Values.ingress.enabled) -}}
+{{- else -}}
+{{- $_ := set . "ingressEnableFlag" (default .Values.ingress.enabled false) -}}
+{{- end -}}
+{{- if and .ingressEnableFlag (not .Values.ingress.enabledOverride) -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -78,7 +85,6 @@ spec:
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
   {{- end -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
