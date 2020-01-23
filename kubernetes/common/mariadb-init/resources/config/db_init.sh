@@ -17,8 +17,8 @@
 while read DB ; do
     USER_VAR="MYSQL_USER_${DB^^}"
     PASS_VAR="MYSQL_PASSWORD_${DB^^}"
-    USER=${USER_VAR}
-    PASS=${PASS_VAR}
+    USER=${!USER_VAR}
+    PASS=${!PASS_VAR}
     MYSQL_OPTS=( -h ${DB_HOST} -P ${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} )
 
     echo "Creating database ${DB} and user ${USER}..."
