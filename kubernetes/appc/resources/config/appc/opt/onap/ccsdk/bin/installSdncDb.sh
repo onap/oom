@@ -23,7 +23,7 @@
 ###
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
+MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
 
 SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
 SDNC_DB_PASSWD=${SDNC_DB_PASSWD:-gamma}
@@ -44,4 +44,3 @@ if [ -f ${SDNC_HOME}/data/odlsli.dump ]
 then
 mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${SDNC_HOME}/data/odlsli.dump
 fi
-
