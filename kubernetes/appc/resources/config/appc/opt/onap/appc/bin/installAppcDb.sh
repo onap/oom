@@ -21,7 +21,7 @@
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
-MYSQL_PASSWD=${MYSQL_PASSWD:-{{.Values.config.mariadbRootPassword}}}
+MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
 
 APPC_DB_USER=${APPC_DB_USER:-appcctl}
 APPC_DB_PASSWD=${APPC_DB_PASSWD:-appcctl}
@@ -52,4 +52,3 @@ if [ -f ${APPC_HOME}/data/sqlData.dump ]
 then
   mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sqlData.dump
 fi
-
