@@ -29,7 +29,7 @@ fi
 
 set -ex
 
-CLUSTER_PREFIX="{{ .Release.Name }}-{{ include "common.namespace" . }}-pnda"
+CLUSTER_PREFIX="{{ include "common.release" . }}-{{ include "common.namespace" . }}-pnda"
 DATANODES="{{ .Values.pnda.dataNodes }}"
 KAFKANODES="{{ .Values.pnda.kafkaNodes }}"
 VERSION="{{ .Values.pnda.version }}"
