@@ -20,7 +20,7 @@ metadata:
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -28,7 +28,7 @@ spec:
     metadata:
       labels:
         app: {{ include "common.name" . }}
-        release: {{ .Release.Name }}
+        release: {{ include "common.release" . }}
     spec:
       initContainers:
       - command:
@@ -60,7 +60,7 @@ spec:
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name}}-cmso-db
+              name: {{ include "common.release" . }}-cmso-db
               key: db-root-password
         terminationMessagePolicy: File
         volumeMounts:
@@ -108,7 +108,7 @@ spec:
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Release.Name}}-cmso-db
+              name: {{ include "common.release" . }}-cmso-db
               key: user-password
         - name: JAVA_TRUSTSTORE
           value: /share/etc/certs/{{ .Values.global.truststoreFile }}
@@ -180,9 +180,9 @@ spec:
           emptyDir: {}
         - name: filebeat-conf
           configMap:
-            name: {{ .Release.Name }}-cmso-filebeat-configmap
+            name: {{ include "common.release" . }}-cmso-filebeat-configmap
         - name: {{ include "common.fullname" . }}-certs
           secret:
-            secretName: {{ .Release.Name }}-{{ .Values.global.commonConfigPrefix }}-certs
+            secretName: {{ include "common.release" . }}-{{ .Values.global.commonConfigPrefix }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

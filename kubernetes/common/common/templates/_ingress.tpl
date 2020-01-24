@@ -69,7 +69,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
   rules:
