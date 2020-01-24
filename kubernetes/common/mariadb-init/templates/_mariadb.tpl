@@ -19,7 +19,7 @@
 */}}
 {{- define "mariadbInit.mariadbClusterSecret" -}}
   {{- if (eq "default" .Values.global.mariadbGalera.userRootSecret) -}}
-    {{- printf "%s-mariadb-galera-%s-db-root-password" (include "common.release" .) .Values.global.mariadbGalera.nameOverride -}}
+    {{- printf "%s-%s-db-root-password" (include "common.release" .) .Values.global.mariadbGalera.nameOverride -}}
   {{- else -}}
     {{- .Values.global.mariadbGalera.userRootSecret -}}
   {{- end -}}

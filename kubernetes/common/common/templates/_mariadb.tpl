@@ -43,7 +43,7 @@
   {{- if .Values.global.mariadbGalera.localCluster -}}
     {{ printf "%s-%s-db-user-credentials" (include "common.fullname" .) (index .Values "mariadb-galera" "nameOverride") -}}
   {{- else -}}
-    {{ printf "%s-%s" (.Release.Name) (index .Values "mariadb-init" "nameOverride") -}}
+    {{ printf "%s-%s" (include "common.release" .) (index .Values "mariadb-init" "nameOverride") -}}
   {{- end -}}
 {{- end -}}
 
