@@ -27,7 +27,7 @@
 */}}
 {{- define "common.fullname" -}}
   {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+  {{- printf "%s-%s" (include "common.release" .) $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -37,5 +37,5 @@
   this function would answer back "toto".
 */}}
 {{- define "common.release" -}}
-  {{- regexReplaceAll "-[a-zA-Z0-9]*$" .Release.Name ""  }}
+  {{- first (regexSplit "-" .Release.Name -1)  }}
 {{- end -}}
