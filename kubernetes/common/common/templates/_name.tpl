@@ -27,7 +27,7 @@
 */}}
 {{- define "common.fullname" -}}
   {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+  {{- printf "%s-%s" (include "common.release" .) $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*

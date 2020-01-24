@@ -22,7 +22,7 @@ metadata:
   labels:
     app: {{ include "common.name" . }}-job
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
   backoffLimit: 20
@@ -30,7 +30,7 @@ spec:
     metadata:
       labels:
         app: {{ include "common.name" . }}-job
-        release: {{ .Release.Name }}
+        release: {{ include "common.release" . }}
     spec:
       restartPolicy: Never
       initContainers:
@@ -41,7 +41,7 @@ spec:
         - /root/job_complete.py
         args:
         - --job-name
-        - {{ .Release.Name }}-sdc-cs-config-cassandra
+        - {{ include "common.release" . }}-sdc-cs-config-cassandra
         env:
         - name: NAMESPACE
           valueFrom:
@@ -61,10 +61,10 @@ spec:
           value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
         - name: CS_USER
           valueFrom:
-            secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_user}
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_user}
         - name: CS_PASSWORD
           valueFrom:
-            secretKeyRef: {name: {{ .Release.Name }}-sdc-cs-secrets, key: sdc_password}
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end }}

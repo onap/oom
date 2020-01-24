@@ -28,7 +28,7 @@ fi
 for instance in $(seq $count);do
   shard=member-$(( $siteId*$count + $instance ))-shard-default-config
   mbean=Category=Shards,name=$shard,type=DistributedConfigDatastore
-  url=http://{{.Release.Name}}-sdnc-$(( $instance-1 )).sdnc-cluster.{{.Release.Namespace}}:8181/jolokia/read/org.opendaylight.controller:$mbean
+  url=http://{{ include "common.release" . }}-sdnc-$(( $instance-1 )).sdnc-cluster.{{.Release.Namespace}}:8181/jolokia/read/org.opendaylight.controller:$mbean
 
   response=$( curl -s -u $USERNAME:$PASSWORD $url )
   rc=$?
