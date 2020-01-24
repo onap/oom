@@ -22,12 +22,22 @@
 {{- end -}}
 
 {{/*
+  The same as common.full name but based on passed dictionary instead of trying to figure
+  out chart name on its own.
+*/}}
+{{- define "common.fullnameExplicit" -}}
+  {{- $dot := .dot }}
+  {{- $name := .chartName }}
+  {{- printf "%s-%s" (include "common.release" $dot) $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
   Create a default fully qualified application name.
   Truncated at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "common.fullname" -}}
   {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- printf "%s-%s" (include "common.release" .) $name | trunc 63 | trimSuffix "-" -}}
+  {{- include "common.fullnameExplicit" (dict "dot" . "chartName" $name) }}
 {{- end -}}
 
 {{/*
