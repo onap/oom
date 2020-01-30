@@ -141,7 +141,7 @@ deploy() {
   DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
 
   # determine if upgrading individual subchart or entire parent + subcharts
-  SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
+  SUBCHART_RELEASE="$(cut -d'-' -f2- <<<"$RELEASE")"
   # update specified subchart without parent
   RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
   if [[ $SUBCHART_RELEASE == $RELEASE ]]; then
