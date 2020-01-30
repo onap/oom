@@ -43,7 +43,7 @@
   {{- if .Values.global.mariadbGalera.localCluster -}}
     {{ printf "%s-%s-db-user-credentials" (include "common.fullname" .) (index .Values "mariadb-galera" "nameOverride") -}}
   {{- else -}}
-    {{ printf "%s-%s" (include "common.release" .) (index .Values "mariadb-init" "nameOverride") -}}
+    {{ printf "%s-%s-%s" ( include "common.release" .) (index .Values "mariadb-init" "nameOverride") (index .Values "mariadb-init" "config" "mysqlDatabase" ) -}}
   {{- end -}}
 {{- end -}}
 
@@ -51,9 +51,5 @@
   Choose the value of secret param to retrieve user value.
 */}}
 {{- define "common.mariadbSecretParam" -}}
-  {{- if .Values.global.mariadbGalera.localCluster -}}
-    {{ printf "password" -}}
-  {{- else -}}
-    {{ printf "db-user-password" -}}
-  {{- end -}}
+  {{ printf "password" -}}
 {{- end -}}

@@ -23,8 +23,24 @@ global:
     nameOverride: mariadb-galera
     servicePort: 3306
     # set these two values if you want to access an 'out of ONAP' mariadb
-    userRootSecret: default
-    userRootSecretKey: password
+    # userRootPassword: some-password
+    # userRootSecret: some-secret-name
+    # userRootSecretKey: password
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: root-password
+    type: password
+    externalSecret: '{{ tpl (default (include "mariadbInit.mariadbClusterSecret" .) .Values.global.mariadbGalera.userRootSecret) . }}'
+    password: '{{ tpl (default "" .global.mariadbGalera.userRootPassword) . }}'
+  - uid: '{{ .Values.config.mysqlDatabase }}'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.mysqlExternalSecret) . }}'
+    login: '{{ .Values.config.userName }}'
+    password: '{{ .Values.config.userPassword }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -39,6 +55,8 @@ pullPolicy: IfNotPresent
 config:
   userPassword: Ci@shsOd3pky1Vji
   userName: u5WZ1GMSIS1wHZF
+  # set this value if you would like to use external secret instead of providing a password
+  # mysqlExternalsecret: some-secret-name
   mysqlDatabase: ynsaUCru6mUNwGal
   mysqlAdditionalDatabases: {}
   # add addtional dabases
@@ -48,9 +66,11 @@ config:
   #   dbOne:
   #     user: one
   #     password: pwd1
+  #     externalSecret: some-secret-name
   #   dbTwo:
   #     user: two
   #     password: pwd2
+  #     externalSecret: some-secret-name
   config_map: default
 
 nodeSelector: {}
