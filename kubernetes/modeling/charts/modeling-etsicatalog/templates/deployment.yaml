@@ -49,6 +49,11 @@ spec:
         name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
+          command:
+            - bash
+          args:
+            - -c
+            - 'MYSQL_AUTH=root:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
@@ -68,14 +73,14 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-            - name: MSB_ADDR
-              value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-            - name: MYSQL_ADDR
-              value: "{{ .Values.config.dbServiceName }}:{{ .Values.config.dbPort }}"
-            - name: MYSQL_AUTH
-              value: "{{ .Values.config.dbUser }}:{{ index .Values "mariadb-galera" "config" "mariadbRootPassword" }}"
-            - name: REDIS_ADDR
-              value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
+          - name: MSB_ADDR
+            value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+          - name: MYSQL_ADDR
+            value: {{ printf "%s:%s" (index .Values "mariadb-galera" "service" "name") (index .Values "mariadb-galera" "service" "internalPort") }}
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 12}}
+          - name: REDIS_ADDR
+            value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
           volumeMounts:
           - name: {{ include "common.fullname" . }}-etsicatalog
             mountPath: /service/modeling/etsicatalog/static
