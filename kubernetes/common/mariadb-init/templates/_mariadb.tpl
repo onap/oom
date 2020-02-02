@@ -18,5 +18,5 @@
   Choose the name of the mariadb secret to use.
 */}}
 {{- define "mariadbInit.mariadbClusterSecret" -}}
-  {{- printf "%s-%s-db-root-password" (include "common.release" .) (default "mariadb-galera" .Values.global.mariadbGalera.nameOverride) -}}
+  {{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (default "mariadb-galera" .Values.global.mariadbGalera.nameOverride)) -}}
 {{- end -}}
