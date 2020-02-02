@@ -32,16 +32,23 @@ global:
     mountPath: /dockerdata-nfs
 
 #################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: "db-root-pass"
+    externalSecret: '{{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride")) }}'
+    type: password
+
+#################################################################
 # Dependencies configuration
 #################################################################
 
 mariadb-galera:
-  config:
-    mariadbRootPassword: secretpassword
   nameOverride: modeling-mariadb
   service:
     name: modeling-db
     portName: modeling-db
+    internalPort: 3306
   nfsprovisionerPrefix: modeling
   persistence:
     mountSubPath: modeling/data
@@ -63,12 +70,6 @@ istioSidecar: true
 
 # flag to enable debugging - application support required
 debugEnabled: false
-
-# application configuration
-config:
-  dbServiceName: modeling-db
-  dbPort: 3306
-  dbUser: root
 
 # default number of instances
 replicaCount: 1
