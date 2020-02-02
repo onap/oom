@@ -39,6 +39,23 @@ spec:
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+         {{- if eq .Values.global.security.aaf.enabled true }}
+        env: 
+        - name: TRUSTSTORE
+          value: /app/org.onap.so.trust.jks
+        - name: TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-client-certs-secret
+              key: trustStorePassword
+        - name: KEYSTORE
+          value: /app/org.onap.so.jks
+        - name: KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name}}-so-client-certs-secret
+              key: keyStorePassword
+        {{- end }}
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap

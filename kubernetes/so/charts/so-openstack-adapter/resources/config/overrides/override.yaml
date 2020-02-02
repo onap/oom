@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 aai:
-  auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
+  auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
 server:
   port: {{ index .Values.containerPort }}
@@ -58,7 +58,7 @@ org:
         default_keystone_url_version: /v2.0
         default_keystone_reg_ex: "/[vV][0-9]"
         vnf:
-          bpelauth: D1A67FA93B6A6419132D0F83CC771AF774FD3C60853C50C22C8C6FC5088CC79E9E81EDE9EA39F22B2F66A0068E
+          bpelauth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
           checkRequiredParameters: true
           addGetFilesOnVolumeReq: false
           sockettimeout: 30
@@ -69,7 +69,7 @@ org:
           valet_enabled: false
           fail_requests_on_valet_failure: false
         network:
-          bpelauth: D1A67FA93B6A6419132D0F83CC771AF774FD3C60853C50C22C8C6FC5088CC79E9E81EDE9EA39F22B2F66A0068E
+          bpelauth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
           sockettimeout: 5
           connecttimeout: 5
           retrycount: 5
@@ -96,22 +96,21 @@ ecomp:
         pollTimeout: 7500
         pollInterval: 15
 mso:
-  auth: BEA8637716A7EB617DF472BA6552D22F68C1CB17B0D094D77DDA562F4ADAAC4457CAB848E1A4
+  auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.encrypted "value2" .Values.mso.auth )}}
   logPath: ./logs/openstack
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
   workflow:
     endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+  msoKey: {{ .Values.mso.msoKey }}
   config:
-    cadi:
-      aafId: poBpmn
+    cadi: {{ include "cadi.keys" . | nindent 8}}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: Basic YnBlbDpwYXNzd29yZDEk
+    auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
   site-name: localDevEnv
   async:
     core-pool-size: 50
