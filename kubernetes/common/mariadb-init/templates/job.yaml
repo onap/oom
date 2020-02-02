@@ -60,26 +60,17 @@ spec:
         - name: DB_PORT
           value: "{{ .Values.global.mariadbGalera.servicePort }}"
         - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "mariadbInit.mariadbClusterSecret" . }}
-              key: {{ .Values.global.mariadbGalera.userRootSecretKey }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "root-password" "key" (default "password" .Values.global.mariadbGalera.userRootSecretKey)) | indent 10 }}
         - name: {{ printf "MYSQL_USER_%s" .Values.config.mysqlDatabase | upper }}
-          value: "{{ .Values.config.userName }}"
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "login") | indent 10 }}
         - name: {{ printf "MYSQL_PASSWORD_%s" .Values.config.mysqlDatabase | upper }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}
-              key: db-user-password
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "password") | indent 10 }}
 {{- $root := . }}
-{{ range $db, $dbInfos := .Values.config.mysqlAdditionalDatabases }}
+{{ range $db, $_values := .Values.config.mysqlAdditionalDatabases }}
         - name: {{ printf "MYSQL_USER_%s" $db | upper }}
-          value: {{ $dbInfos.user }}
+          {{- include "common.secret.envFromSecret" (dict "global" $root "uid" $db "key" "login") | indent 10 }}
         - name: {{ printf "MYSQL_PASSWORD_%s" $db | upper }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" $root }}-secret
-              key: {{ printf "db-%s-user-password" $db }}
+          {{- include "common.secret.envFromSecret" (dict "global" $root "uid" $db "key" "password") | indent 10 }}
 {{ end }}
         volumeMounts:
         - mountPath: /etc/localtime
