@@ -88,24 +88,15 @@ spec:
         - name: PG_PRIMARY_PORT
           value: "{{ $dot.Values.service.internalPort }}"
         - name: PG_PRIMARY_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" $dot }}
-              key: pg-primary-password
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
-          value: "{{ $dot.Values.config.pgUserName }}"
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
         - name: PG_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" $dot }}
-              key: pg-user-password
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
         - name: PG_DATABASE
           value: "{{ $dot.Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" $dot }}
-              key: pg-root-password
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         volumeMounts:
         - name: pool-hba-conf
           mountPath: /pgconf/pool_hba.conf
