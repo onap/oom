@@ -16,14 +16,19 @@
 
 {{/*
   Expand the name of a chart.
+  The function takes from one to three arguments (inside a dictionary):
+     - .dot : environment (.)
 */}}
 {{- define "common.name" -}}
-  {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+  {{- $dot := default . .dot -}}
+  {{- default $dot.Chart.Name $dot.Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
   The same as common.full name but based on passed dictionary instead of trying to figure
   out chart name on its own.
+  The function takes from one to three arguments (inside a dictionary):
+     - .dot : environment (.)
 */}}
 {{- define "common.fullnameExplicit" -}}
   {{- $dot := .dot }}
@@ -34,10 +39,15 @@
 {{/*
   Create a default fully qualified application name.
   Truncated at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+  The function takes from one to three arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix : add a suffix to the fullname
 */}}
 {{- define "common.fullname" -}}
-  {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- include "common.fullnameExplicit" (dict "dot" . "chartName" $name) }}
+{{- $dot := default . .dot -}}
+{{- $suffix := default (dict) .suffix -}}
+  {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
+  {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name) }}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 {{- end -}}
 
 {{/*
@@ -45,9 +55,17 @@
   if ONAP is deploy with "helm deploy --name toto", then cassandra components
   will have "toto-cassandra" as release name.
   this function would answer back "toto".
+  The function takes from one to three arguments (inside a dictionary):
+     - .dot : environment (.)
 */}}
 {{- define "common.release" -}}
-  {{- first (regexSplit "-" .Release.Name -1)  }}
+  {{- $dot := default . .dot -}}
+  {{- first (regexSplit "-" $dot.Release.Name -1)  }}
+{{- end -}}
+
+{{- define "common.chart" -}}
+{{- $dot := default . .dot -}}
+{{- printf "%s-%s" $dot.Chart.Name $dot.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "common.chart" -}}
