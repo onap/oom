@@ -1,0 +1,104 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  persistence:
+    mountPath: /dockerdata-nfs
+    backup:
+      mountPath: /dockerdata-nfs/backup
+    storageClass:
+repositoryOverride: docker.io
+#################################################################
+# Application configuration defaults.
+#################################################################
+## Elasticsearch Prometheus exporter configuration
+## ref: https://hub.docker.com/r/bitnami/elasticsearch-exporter/tags/
+##
+enabled: false
+name: metrics
+image:
+  imageName: bitnami/elasticsearch-exporter
+  tag: 1.1.0-debian-9-r134
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+## Elasticsearch Prometheus exporter service type
+##
+service:
+  type: ClusterIP
+  ports:
+  - name: metrics
+  - port: 9114
+  ## TODO: remove
+  name: metrics
+  port: 9114
+  targetPort: metrics
+  ## Provide any additional annotations which may be required. This can be used to
+  ## set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9114"
+## Elasticsearch Prometheus exporter resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits: {}
+  #   cpu: 100m
+  #   memory: 128Mi
+  requests: {}
+  #   cpu: 100m
+  #   memory: 128Mi
+## Metrics exporter pod Annotation and Labels
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9200"
+
+## Prometheus Operator ServiceMonitor configuration
+##
+serviceMonitor:
+  enabled: false
+  ## Namespace in which Prometheus is running
+  ##
+  # namespace: monitoring
+
+  ## Interval at which metrics should be scraped.
+  ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+  ##
+  # interval: 10s
+
+  ## Timeout after which the scrape is ended
+  ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+  ##
+  # scrapeTimeout: 10s
+
+  ## ServiceMonitor selector labels
+  ## ref: https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#prometheus-configuration
+  ##
+  # selector:
+  #   prometheus: my-prometheus
