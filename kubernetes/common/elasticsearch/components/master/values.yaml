@@ -1,0 +1,203 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  persistence:
+    mountPath: /dockerdata-nfs
+    backup:
+      mountPath: /dockerdata-nfs/backup
+    storageClass:
+repositoryOverride: docker.io
+#################################################################
+# Application configuration defaults.
+#################################################################
+## Init containers parameters:
+sysctlImage:
+  enabled: true
+## volumePermissions: Change the owner and group of the persistent volume mountpoint to runAsUser:fsGroup values from the securityContext section.
+volumePermissions:
+  enabled: true
+
+# application image
+## Elasticsearch master-eligible node parameters
+##
+name: master
+## Number of master-eligible node(s) replicas to deploy
+##
+replicaCount: 3
+## master acts as master only node, choose 'no' if no further data nodes are deployed)
+dedicatednode: "yes"
+## dedicatednode: "no"
+image:
+  imageName: bitnami/elasticsearch
+  tag: 6.8.6-debian-9-r23
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+  ## Set to true if you would like to see extra information on logs
+  ## ref:  https://github.com/bitnami/minideb-extras/#turn-on-bash-debugging
+  ##
+  debug: false
+
+## String to partially override common.fullname template (will maintain the release name)
+##
+# nameOverride:
+
+## String to fully override common.fullname template
+##
+# fullnameOverride:
+## updateStrategy for ElasticSearch master statefulset
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+##
+updateStrategy:
+  type: RollingUpdate
+heapSize: 128m
+## Provide annotations for master-eligible pods.
+##
+podAnnotations: {}
+## Pod Security Context for master-eligible pods.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+## Affinity for pod assignment.
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+affinity: {}
+## Node labels for pod assignment. Evaluated as a template.
+## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+## Tolerations for pod assignment. Evaluated as a template.
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+## Elasticsearch master-eligible container's resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources:
+  ## We usually recommend not to specify default resources and to leave this as a conscious
+  ## choice for the user. This also increases chances charts run on environments with little
+  ## resources, such as Minikube.
+  limits: {}
+  #   cpu: 100m
+  #   memory: 128Mi
+  requests:
+    cpu: 25m
+    memory: 256Mi
+## Elasticsearch master-eligible container's liveness and readiness probes
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+livenessProbe:
+  enabled: false
+#  initialDelaySeconds: 90
+#  periodSeconds: 10
+#  timeoutSeconds: 5
+#  successThreshold: 1
+#  failureThreshold: 5
+readinessProbe:
+  enabled: false
+#  initialDelaySeconds: 90
+#  periodSeconds: 10
+#  timeoutSeconds: 5
+#  successThreshold: 1
+#  failureThreshold: 5
+## Enable persistence using Persistent Volume Claims
+## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+##
+persistence:
+  ## If true, use a Persistent Volume Claim, If false, use emptyDir
+  ##
+  enabled: true
+  ## suffix for pv
+  suffix: master-pv
+  ## Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  ## Persistent Volume Claim annotations
+  ##
+  annotations: {}
+  ## Persistent Volume Access Mode
+  ##
+  accessMode: ReadWriteOnce
+  ## Persistent Volume size
+  ##
+  size: 8Gi
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+  mountSubPath: elastic-master
+  storageType: local
+  backup:
+    mountPath: /dockerdata-nfs/backup
+## Service parameters for master-eligible node(s)
+##
+service:
+  suffix: "service"
+  name: ""
+  ## list of ports for "common.containerPorts"
+  ## Elasticsearch transport port
+  ports:
+  - name: http-transport
+    port: 9300
+  ## master-eligible service type
+  ##
+  type: ClusterIP
+  ## Specify the nodePort value for the LoadBalancer and NodePort service types.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+  ##
+  # nodePort:
+  ## Provide any additional annotations which may be required. This can be used to
+  ## set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  annotations: {}
+  ## Set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  # loadBalancerIP:
+## Provide functionality to use RBAC
+##
+serviceAccount:
+  ## Specifies whether a ServiceAccount should be created for the master node
+  create: false
+  ## The name of the ServiceAccount to use.
+  ## If not set and create is true, a name is generated using the fullname template
+  # name:
+
+
+## Elasticsearch cluster name
+##
+clusterName: elastic-cluster
+
+
+
