@@ -1,0 +1,39 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{ if .Values.master.persistence.enabled }}
+{{- $root := . -}}
+{{ range $i, $e := until (int $root.Values.master.replicas) }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $root.Release.Name }}-{{ $root.Values.master.service.name }}-{{ $i }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    type: {{ $root.Values.master.persistence.storageType }}
+    app: {{ $root.Values.master.service.name }}
+    chart: {{ $root.Chart.Name }}-{{ $root.Chart.Version | replace "+" "_" }}
+    release: {{ $root.Release.Name }}
+    heritage: {{ $root.Release.Service }}
+spec:
+  capacity:
+    storage: {{ $root.Values.master.persistence.size }}
+  accessModes:
+    - {{ $root.Values.master.persistence.accessModes }}
+  hostPath:
+    path: {{ $root.Values.master.persistence.mountPath }}/{{ $root.Release.Name }}/{{ $root.Values.master.persistence.mountSubPath }}-{{ $i }}
+  persistentVolumeReclaimPolicy: {{ $root.Values.master.persistence.volumeReclaimPolicy }}
+{{ end }}
+{{ end }}

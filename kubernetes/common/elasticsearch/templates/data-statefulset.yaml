@@ -1,0 +1,187 @@
+# Copyright © 2020 Bitnami
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: {{ template "statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ include "elasticsearch.data.fullname" . }}
+  labels: {{- include "elasticsearch.labels" . | nindent 4 }}
+    role: data
+spec:
+  updateStrategy:
+    type: {{ .Values.data.updateStrategy.type }}
+    {{- if (eq "OnDelete" .Values.data.updateStrategy.type) }}
+    rollingUpdate: null
+    {{- else if .Values.data.updateStrategy.rollingUpdatePartition }}
+    rollingUpdate:
+      partition: {{ .Values.data.updateStrategy.rollingUpdatePartition }}
+    {{- end }}
+  selector:
+    matchLabels: {{- include "elasticsearch.matchLabels" . | nindent 6 }}
+      role: data
+  serviceName: {{ include "elasticsearch.data.fullname" . }}
+  replicas: {{ .Values.data.replicas }}
+  template:
+    metadata:
+      labels: {{- include "elasticsearch.labels" . | nindent 8 }}
+        role: data
+      {{- with .Values.data.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+{{- include "elasticsearch.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.data.affinity }}
+      affinity: {{- include "elasticsearch.tplValue" (dict "value" .Values.data.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.data.nodeSelector }}
+      nodeSelector: {{- include "elasticsearch.tplValue" (dict "value" .Values.data.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.data.tolerations }}
+      tolerations: {{- include "elasticsearch.tplValue" (dict "value" .Values.data.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "elasticsearch.data.serviceAccountName" . }}
+      {{- if .Values.data.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.data.securityContext.fsGroup }}
+      {{- end }}
+      {{- if or .Values.sysctlImage.enabled (and .Values.volumePermissions.enabled .Values.data.persistence.enabled) }}
+      initContainers:
+        {{- if .Values.sysctlImage.enabled }}
+        ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
+        - name: sysctl
+          image: {{ include "elasticsearch.sysctl.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          command:
+            - /scripts/sysctl.sh
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: initcontainer-script
+              mountPath: /scripts/sysctl.sh
+              subPath: sysctl.sh
+        {{- end }}
+        {{- if and .Values.volumePermissions.enabled .Values.data.persistence.enabled }}
+        - name: volume-permissions
+          image: {{ include "elasticsearch.volumePermissions.image" . }}
+          imagePullPolicy: {{ .Values.volumePermissions.image.pullPolicy | quote }}
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              chown -R {{ .Values.data.securityContext.runAsUser }}:{{ .Values.data.securityContext.fsGroup }} //bitnami/elasticsearch/data
+          securityContext:
+            runAsUser: 0
+          {{- if .Values.volumePermissions.resource }}
+          resources: {{- toYaml .Values.volumePermissions.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: "/bitnami/elasticsearch/data"
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: elasticsearch
+          image: {{ include "elasticsearch.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.data.securityContext.enabled }}
+          securityContext:
+            runAsUser: {{ .Values.data.securityContext.runAsUser }}
+          {{- end }}
+          env:
+            - name: BITNAMI_DEBUG
+              value: {{ ternary "true" "false" .Values.image.debug | quote }}
+            - name: ELASTICSEARCH_CLUSTER_NAME
+              value: "{{ include "common.name" . }}-cluster"
+            - name: ELASTICSEARCH_CLUSTER_HOSTS
+              value: {{ template "elasticsearch.discovery.fullname" . }}
+            {{- if .Values.plugins }}
+            - name: ELASTICSEARCH_PLUGINS
+              value: {{ .Values.plugins | quote }}
+            {{- end }}
+            - name: ELASTICSEARCH_HEAP_SIZE
+              value: {{ .Values.data.heapSize | quote }}
+            - name: ELASTICSEARCH_IS_DEDICATED_NODE
+              value: "yes"
+            - name: ELASTICSEARCH_NODE_TYPE
+              value: "data"
+          ports:
+            - name: transport
+              containerPort: 9300
+          {{- if .Values.data.livenessProbe.enabled }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.data.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.data.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.data.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.data.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.data.livenessProbe.failureThreshold }}
+            httpGet:
+              path: /_cluster/health?local=true
+              port: 9200
+          {{- end }}
+          {{- if .Values.data.readinessProbe.enabled }}
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.data.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.data.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.data.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.data.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.data.livenessProbe.failureThreshold }}
+            httpGet:
+              path: /_cluster/health?local=true
+              port: 9200
+          {{- end }}
+          {{- if .Values.data.resources }}
+          resources: {{- toYaml .Values.data.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.config }}
+            - mountPath: /opt/bitnami/elasticsearch/config/elasticsearch.yml
+              name: "config"
+              subPath: elasticsearch.yml
+            {{- end }}
+            - name: "data"
+              mountPath: "/bitnami/elasticsearch/data"
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.sysctlImage.enabled }}
+        - name: initcontainer-script
+          configMap:
+            name: {{ include "elasticsearch.fullname" . }}-initcontainer
+            defaultMode: 0755
+        {{- end }}
+        {{- if .Values.config }}
+        - name: "config"
+          configMap:
+            name: {{ template "elasticsearch.fullname" . }}
+        {{- end }}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+{{- if not .Values.data.persistence.enabled }}
+        - name: "data"
+          emptyDir: {}
+{{- else }}
+  volumeClaimTemplates:
+    - metadata:
+        name: "data"
+        {{- if .Values.data.persistence.annotations }}
+        annotations: {{- toYaml .Values.data.persistence.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: {{- toYaml .Values.data.persistence.accessModes | nindent 10 }}
+        {{ include "elasticsearch.data.storageClass" . }}
+        resources:
+          requests:
+            storage: {{ .Values.data.persistence.size | quote }}
+{{- end }}
