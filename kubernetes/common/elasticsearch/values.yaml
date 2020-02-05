@@ -1,0 +1,336 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  aafEnabled: true
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  busyboxRepository: registry.hub.docker.com
+  busyboxImage: library/busybox:latest
+
+persistence:
+  mountPath: /dockerdata-nfs
+  backup:
+    mountPath: /dockerdata-nfs/backup
+  storageClass:
+repositoryOverride: docker.io
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+## Init containers parameters:
+sysctlImage:
+  enabled: true
+
+# application image
+image:
+  imageName: bitnami/elasticsearch
+  tag: 6.8.6-debian-9-r23
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+  ## Set to true if you would like to see extra information on logs
+  ## ref:  https://github.com/bitnami/minideb-extras/#turn-on-bash-debugging
+  ##
+  debug: false
+
+## String to partially override common.fullname template (will maintain the release name)
+##
+# nameOverride:
+
+## String to fully override common.fullname template
+##
+# fullnameOverride:
+## updateStrategy for ElasticSearch coordinating deployment
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+##
+updateStrategy:
+  type: RollingUpdate
+heapSize: 128m
+## Provide annotations for the coordinating-only pods.
+##
+podAnnotations: {}
+## Pod Security Context for coordinating-only pods.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+## Affinity for pod assignment.
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+affinity: {}
+## Node labels for pod assignment. Evaluated as a template.
+## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+## Tolerations for pod assignment. Evaluated as a template.
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+## Elasticsearch coordinating-only container's resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources:
+  ## We usually recommend not to specify default resources and to leave this as a conscious
+  ## choice for the user. This also increases chances charts run on environments with little
+  ## resources, such as Minikube.
+  limits: {}
+  #   cpu: 100m
+  #   memory: 128Mi
+  requests:
+    cpu: 25m
+    memory: 256Mi
+## Elasticsearch coordinating-only container's liveness and readiness probes
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+livenessProbe:
+  enabled: false
+#  initialDelaySeconds: 90
+#  periodSeconds: 10
+#  timeoutSeconds: 5
+#  successThreshold: 1
+#  failureThreshold: 5
+readinessProbe:
+  enabled: false
+#  initialDelaySeconds: 90
+#  periodSeconds: 10
+#  timeoutSeconds: 5
+#  successThreshold: 1
+#  failureThreshold: 5
+## Service parameters for coordinating-only node(s)
+##
+serviceAccount:
+  ## Specifies whether a ServiceAccount should be created for the coordinating node
+  ##
+  create: false
+  ## The name of the ServiceAccount to use.
+  ## If not set and create is true, a name is generated using the fullname template
+  ##
+  # name:
+
+## Bitnami Minideb image version
+## ref: https://hub.docker.com/r/bitnami/minideb/tags/
+##
+sysctlImage:
+  enabled: true
+  imageName: bitnami/minideb
+  tag: stretch
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: Always
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+
+# nginx image
+nginx:
+  imageName: bitnami/nginx
+  tag: 1.16-debian-9
+  pullPolicy: IfNotPresent
+  service:
+    name: nginx
+    ports:
+    - name: elasticsearch
+      port: 8080
+## Custom server block to be added to NGINX configuration
+## PHP-FPM example server block:
+  serverBlock:
+    https: |-
+      server {
+        listen 9200 ssl;
+        #server_name ;
+        # auth_basic "server auth";
+        # auth_basic_user_file /etc/nginx/passwords;
+        ssl_certificate /opt/app/osaaf/local/certs/cert.pem;
+        ssl_certificate_key /opt/app/osaaf/local/certs/key.pem;
+        location / {
+          # deny node shutdown api
+          if ($request_filename ~ "_shutdown") {
+            return 403;
+            break;
+          }
+
+          proxy_pass http://localhost:9000;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "Keep-Alive";
+          proxy_set_header Proxy-Connection "Keep-Alive";
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header Host $http_host;
+          proxy_redirect off;
+        }
+
+        location = / {
+          proxy_pass http://localhost:9000;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "Keep-Alive";
+          proxy_set_header Proxy-Connection "Keep-Alive";
+          proxy_redirect off;
+          auth_basic "off";
+        }
+      }
+    http: |-
+      server {
+        listen 9200 ;
+        #server_name ;
+        location / {
+          # deny node shutdown api
+          if ($request_filename ~ "_shutdown") {
+            return 403;
+            break;
+          }
+
+          proxy_pass http://localhost:9000;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "Keep-Alive";
+          proxy_set_header Proxy-Connection "Keep-Alive";
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header Host $http_host;
+          proxy_redirect off;
+        }
+
+        location = / {
+          proxy_pass http://localhost:9000;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "Keep-Alive";
+          proxy_set_header Proxy-Connection "Keep-Alive";
+          proxy_redirect off;
+          auth_basic "off";
+        }
+      }
+#################################################################
+# coordinating service configuration defaults.
+#################################################################
+
+service:
+  name: ""
+  suffix: ""
+  ## coordinating-only service type
+  ##
+  type: ClusterIP
+  headlessPorts:
+  - name: transport
+    port: 9300
+  headless:
+    suffix: discovery
+    annotations:
+      service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+    publishNotReadyAddresses: true
+  ## Elasticsearch tREST API port
+  ##
+  ports:
+  - name: elasticsearch
+    port: 9200
+
+
+  ## Specify the nodePort value for the LoadBalancer and NodePort service types.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+  ##
+  # nodePort:
+  ## Provide any additional annotations which may be required. This can be used to
+  ## set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  annotations: {}
+  ## Set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  # loadBalancerIP:
+  ## Provide functionality to use RBAC
+  ##
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
+#################################################################
+# aaf configuration defaults.
+#################################################################
+aafConfig:
+  addconfig: true
+  fqdn: "elastic"
+  image: onap/aaf/aaf_agent:2.1.15
+  app_ns: "org.osaaf.aaf"
+  fqi_namespace: org.onap.elastic
+  fqi: "elastic@elastic.onap.org"
+  public_fqdn: "aaf.osaaf.org"
+  deploy_fqi: "deployer@people.osaaf.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  #aafDeployCredsExternalSecret: some secret
+  #cadi_latitude: "52.5"
+  #cadi_longitude: "13.4"
+  secret_uid: &aaf_secret_uid elasticsearch-aaf-deploy-creds
+
+#################################################################
+# subcharts configuration defaults.
+#################################################################
+
+## Change nameOverride to be consistent accross all elasticsearch (sub)-charts
+
+elasticsearch-master:
+  replicaCount: 3
+  # dedicatednode: "yes"
+  # working as master node only, in this case increase replicaCount for elasticsearch-data
+  # dedicatednode: "no"
+  # handles master and data node functionality
+  dedicatednode: "no"
+  nameOverride: elasticsearch
+
+elasticsearch-data:
+  enabled: false
+  replicaCount: 0
+  nameOverride: elasticsearch
+
+elasticsearch-curator:
+  enabled: false
+  nameOverride: elasticsearch
+
+elasticsearch-metrics:
+  enabled: false
+  nameOverride: elasticsearch
+
+elasticsearch-ingest:
+  enabled: false
+  nameOverride: elasticsearch
