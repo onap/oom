@@ -186,8 +186,8 @@ spec:
 {{-   $labels := default (dict) .labels -}}
 {{-   $matchLabels := default (dict) .matchLabels -}}
 
-{{-   if (and (include "common.needTLS" .) $both_tls_and_plain) }}
-{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true $labels "matchLabels" $matchLabels) }}
+{{-   if (and (include "common.needTLS" $dot) $both_tls_and_plain) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true $labels "matchLabels" $matchLabels) }}
 {{-     if (ne $serviceType "ClusterIP") }}
 ---
 {{-       if $suffix }}
@@ -195,10 +195,10 @@ spec:
 {{-       else }}
 {{-         $suffix = "external" }}
 {{-       end }}
-{{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
+{{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
 {{-     end }}
 {{-   else }}
-{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
 {{-   end }}
 {{- end -}}
 
