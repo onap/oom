@@ -1,0 +1,182 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: apps/v1
+kind: Deployment
+{{ $role := .Values.global.coordinating.name -}}
+{{ $suffix := $role -}}
+{{ $labels := (dict "role" $role) -}}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "labels" $labels "dot" . )| nindent 2 }}
+spec:
+  strategy:
+    type: {{ .Values.coordinating.updateStrategy.type }}
+    {{- if (eq "Recreate" .Values.coordinating.updateStrategy.type) }}
+    rollingUpdate: null
+    {{- end }}
+  selector: {{- include "common.selectors" (dict "matchLabels" $labels "dot" .) | nindent 4 }}
+  replicas: {{ .Values.coordinating.replicaCount }}
+  template:
+    metadata:
+      labels: {{- include "common.labels" . | nindent 8 }}
+        role: coordinating-only
+      {{- with .Values.coordinating.podAnnotations }}
+      annotations: {{- toYaml . | nindent 10 }}
+      {{- end }}
+    spec:
+{{- include "elasticsearch.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.coordinating.affinity }}
+      affinity: {{- include "common.tplValue" (dict "value" .Values.coordinating.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.coordinating.nodeSelector }}
+      nodeSelector: {{- include "common.tplValue" (dict "value" .Values.coordinating.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.coordinating.tolerations }}
+      tolerations: {{- include "common.tplValue" (dict "value" .Values.coordinating.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "elasticsearch.coordinating.serviceAccountName" . }}
+      {{- if .Values.coordinating.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.coordinating.securityContext.fsGroup }}
+      {{- end }}
+
+      ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
+      initContainers:
+      {{- if .Values.sysctlImage.enabled }}
+        - name: sysctl
+          image: {{printf "%s/%s:%s" (include "common.repository" .)  .Values.sysctlImage.imageName  .Values.sysctlImage.tag }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+            - /scripts/sysctl.sh
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: initcontainer-script
+              mountPath: /scripts/sysctl.sh
+              subPath: sysctl.sh
+      {{- end }}
+          {{ include "common.aaf-config" . | nindent 8}}
+
+      containers:
+        - name: {{ include "common.name" . }}-nginx
+          image: {{printf "%s/%s:%s" (include "common.repository" .)  .Values.nginx.imageName  .Values.nginx.tag }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.nginx.pullPolicy | quote }}
+          ports:
+            - name: https
+              containerPort: 8080
+          {{- if .Values.livenessProbe }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          {{- if .Values.nginx.serverBlock }}
+          - name: nginx-server-block
+            mountPath: /opt/bitnami/nginx/conf/server_blocks
+          {{- end }}
+          {{- if .Values.global.aafEnabled }}
+          - mountPath: "/opt/app/osaaf"
+            name: {{ include "common.fullname" . }}-aaf-config-vol
+          {{- end }}
+        - name: elasticsearch
+          image: {{ printf "%s/%s:%s" (include "common.repository" .)  .Values.image.imageName  .Values.image.tag }}
+          {{- if .Values.coordinating.securityContext.enabled }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.coordinating.securityContext.runAsUser }}
+          {{- end }}
+          env:
+            - name: BITNAMI_DEBUG
+              value: {{ ternary "true" "false" .Values.image.debug | quote }}
+            - name: ELASTICSEARCH_CLUSTER_NAME
+              value: "{{ include "common.name" . }}-cluster"
+            - name: ELASTICSEARCH_CLUSTER_HOSTS
+              value: {{ include "common.name" . }}-discovery
+            {{- if .Values.plugins }}
+            - name: ELASTICSEARCH_PLUGINS
+              value: {{ .Values.plugins | quote }}
+            {{- end }}
+            - name: ELASTICSEARCH_HEAP_SIZE
+              value: {{ .Values.coordinating.heapSize | quote }}
+            - name: ELASTICSEARCH_IS_DEDICATED_NODE
+              value: "yes"
+            - name: ELASTICSEARCH_NODE_TYPE
+              value: "coordinating"
+          ports:
+            - name: http
+              containerPort: 9200
+            - name: transport
+              containerPort: 9300
+          {{- if .Values.coordinating.livenessProbe.enabled }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.coordinating.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.coordinating.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.coordinating.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.coordinating.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.coordinating.livenessProbe.failureThreshold }}
+            httpGet:
+              path: /_cluster/health?local=true
+              port: http
+          {{- end }}
+          {{- if .Values.coordinating.readinessProbe.enabled}}
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.coordinating.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.coordinating.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.coordinating.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.coordinating.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.coordinating.readinessProbe.failureThreshold }}
+            httpGet:
+              path: /_cluster/health?local=true
+              port: http
+          {{- end }}
+          {{- if .Values.coordinating.resources }}
+          resources: {{- toYaml .Values.coordinating.resources | nindent 12 }}
+          {{- end}}
+          volumeMounts:
+            {{- if .Values.config }}
+            - mountPath: /opt/bitnami/elasticsearch/config/elasticsearch.yml
+              name: config
+              subPath: elasticsearch.yml
+            {{- end }}
+            - name: data
+              mountPath: "/bitnami/elasticsearch/data/"
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.sysctlImage.enabled }}
+        - name: initcontainer-script
+          configMap:
+            name: {{ include "common.fullname" . }}-initcontainer
+            defaultMode: 0755
+        {{- end }}
+        {{- if .Values.config }}
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}
+        {{- end }}
+        - name: data
+          emptyDir: {}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+        {{- if .Values.nginx.serverBlock }}
+        - name: nginx-server-block
+          configMap:
+            name: {{ include "common.fullname" . }}-nginx-server-block
+        {{- end }}
+        {{- include "common.aaf-config-volumes" . | nindent 8}}
+

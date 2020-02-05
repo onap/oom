@@ -35,6 +35,7 @@
      - .dot : environment (.)
      - .suffix : a string which will be added at the end of the name (with a '-').
      - .annotations: the annotations to add
+     - .labels : labels to add
      Usage example:
       {{ include "common.serviceMetadata" ( dict "suffix" "myService" "dot" .) }}
       {{ include "common.serviceMetadata" ( dict "annotations" .Values.service.annotation "dot" .) }}
@@ -43,12 +44,13 @@
   {{- $dot := default . .dot -}}
   {{- $suffix := default "" .suffix -}}
   {{- $annotations := default "" .annotations -}}
+  {{- $labels := default (dict) .labels -}}
 {{- if $annotations -}}
 annotations: {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2 }}
 {{- end }}
 name: {{ include "common.servicename" $dot }}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 namespace: {{ include "common.namespace" $dot }}
-labels: {{- include "common.labels" $dot | nindent 2 -}}
+labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 2 -}}
 {{- end -}}
 
 {{/* Define the ports of Service
@@ -62,7 +64,7 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
 {{- $dot := .dot -}}
 {{- range $index, $port := .ports }}
 - port: {{ $port.port }}
-  targetPort: {{ $port.name }}
+  targetPort: {{ $port.targetPort }}
   {{- if (eq $portType "NodePort") }}
   nodePort: {{ $dot.Values.global.nodePortPrefix | default $dot.Values.nodePortPrefix }}{{ $port.nodePort }}
   {{- end }}
@@ -79,6 +81,8 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
      - .annotations: the annotations to add
      - .publishNotReadyAddresses: if we publish not ready address
      - .headless: if the service is headless
+     - .labels : labels to add (dict)
+     - .matchLabels: selectors/matachlLabels to add (dict)
 */}}
 {{- define "common.genericService" -}}
 {{- $dot := default . .dot -}}
@@ -88,9 +92,12 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
 {{- $portType := .portType -}}
 {{- $ports := .ports -}}
 {{- $headless := default false .headless -}}
+{{- $labels := default (dict) .labels -}}
+{{- $matchLabels := default (dict) .matchLabels -}}
+
 apiVersion: v1
 kind: Service
-metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "dot" $dot ) | nindent 2 }}
+metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "labels" $labels "dot" $dot ) | nindent 2 }}
 spec:
   {{- if $headless }}
   clusterIP: None
@@ -100,7 +107,7 @@ spec:
   publishNotReadyAddresses: true
   {{- end }}
   type: {{ $portType }}
-  selector: {{- include "common.matchLabels" $dot | nindent 4 }}
+  selector: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "dot" $dot) | nindent 4 }}
 {{- end -}}
 
 {{/* Create service template */}}
