@@ -1,0 +1,112 @@
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- if .Values.enabled }}
+{{ $role := "curator" -}}
+{{ $suffix := $role -}}
+{{ $labels := (dict "role" $role) -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "labels" $labels "dot" . )| nindent 2 }}
+  {{- if .Values.cronjob.annotations }}
+  annotations: {{- toYaml .Values.cronjob.annotations | indent 4 }}
+  {{- end }}
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  {{- with .Values.cronjob.concurrencyPolicy }}
+  concurrencyPolicy: {{ . }}
+  {{- end }}
+  {{- with .Values.cronjob.failedJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ . }}
+  {{- end }}
+  {{- with .Values.cronjob.successfulJobsHistoryLimit }}
+  successfulJobsHistoryLimit: {{ . }}
+  {{- end }}
+  jobTemplate:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      template:
+        metadata: {{- include "common.templateMetadata" . | nindent 10 }}
+        spec:
+          volumes:
+            - name: config-volume
+              configMap:
+                name: {{ template "common.fullname" . }}-curator
+            {{- if .Values.extraVolumes }}
+            {{- toYaml .Values.extraVolumes | nindent 12 }}
+            {{- end }}
+          restartPolicy: {{ .Values.global.restartPolicy | default .Values.cronjob.jobRestartPolicy }}
+          {{- if .Values.priorityClassName }}
+          priorityClassName: {{ .Values.priorityClassName | quote }}
+          {{- end }}
+{{- include "elasticsearch.imagePullSecrets" . | indent 10 }}
+          {{- if .Values.extraInitContainers }}
+          initContainers:
+            {{- range $key, $value := .Values.extraInitContainers }}
+            - name: "{{ $key }}"
+            {{- toYaml $value | nindent 14 }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.rbac.enabled }}
+          serviceAccountName: {{ include "elasticsearch.curator.serviceAccountName" . }}
+          {{- end }}
+          {{- if .Values.affinity }}
+          affinity: {{- include "common.tplValue" (dict "value" .Values.affinity "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.nodeSelector }}
+          nodeSelector: {{- include "common.tplValue" (dict "value" .Values.nodeSelector "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.tolerations }}
+          tolerations: {{- include "common.tplValue" (dict "value" .Values.tolerations "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.securityContext }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: {{ template "common.fullname" . }}-curator
+              image: {{printf "%s/%s:%s" (include "common.repository" .)  .Values.image.imageName  .Values.image.tag }}
+              imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+              volumeMounts:
+                - name: config-volume
+                  mountPath: /etc/es-curator
+                {{- if .Values.extraVolumeMounts }}
+                {{- toYaml .Values.extraVolumeMounts | nindent 16 }}
+                {{- end }}
+              {{ if .Values.command }}
+              command: {{ toYaml .Values.command | nindent 16 }}
+              {{- end }}
+              {{- if .Values.dryrun }}
+              args: [ "--dry-run", "--config", "/etc/es-curator/config.yml", "/etc/es-curator/action_file.yml" ]
+              {{- else }}
+              args: [ "--config", "/etc/es-curator/config.yml", "/etc/es-curator/action_file.yml" ]
+              {{- end }}
+              env:
+                {{- if .Values.env }}
+                {{- range $key,$value := .Values.env }}
+                - name: {{ $key | upper | quote}}
+                  value: {{ $value | quote}}
+                {{- end }}
+                {{- end }}
+                {{- if .Values.envFromSecrets }}
+                {{- range $key,$value := .Values.envFromSecrets }}
+                - name: {{ $key | upper | quote}}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $value.from.secret | quote}}
+                      key: {{ $value.from.key | quote}}
+                {{- end }}
+                {{- end }}
+              {{- if .Values.resources }}
+              resources: {{- toYaml .Values.resources | nindent 16 }}
+              {{- end }}
+{{- end }}
