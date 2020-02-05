@@ -1,4 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada
+{{/*
+# Copyright © 2020 Bitnami, AT&T, Amdocs, Bell Canada, highstreet technologies
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,25 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
+{{- if .Values.nginx.serverBlock -}}
 
-dependencies:
-  - name: common
-    version: ~6.x-0
-    repository: '@local'
-  - name: network-name-gen
-    version: ~6.x-0
-    repository: '@local'
-  - name: dgbuilder
-    version: ~6.x-0
-    repository: '@local'
-  - name: sdnc-prom
-    version: ~6.x-0
-    repository: '@local'
-    condition: config.geoEnabled
-  - name: mariadb-galera
-    version: ~6.x-0
-    repository: '@local'
-    condition: .global.mariadbGalera.localCluster
-  - name: elasticsearch
-    version: ~6.x-0
-    repository: '@local'
+apiVersion: v1
+kind: ConfigMap
+{{ $suffix := "nginx-server-block" -}}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
+data:
+  server-block.conf: |-
+{{ if .Values.global.aafEnabled }}
+{{ .Values.nginx.serverBlock.https | indent 4 }}
+{{ else }}
+{{ .Values.nginx.serverBlock.http | indent 4 }}
+
+
+{{ end }}
+{{- end -}}
