@@ -1,3 +1,4 @@
+# Copyright © 2020 Samsung Electronics
 # Copyright © 2019 Orange, Bell Canada
 # Copyright © 2017 Amdocs, Bell Canada
 #
@@ -26,6 +27,22 @@ global:
   loggingImage: beats/filebeat:5.5.0
   persistence:
     mountPath: /dockerdata-nfs
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - name: &dbUserSecretName '{{ include "common.release" . }}-cds-db-secret'
+    uid: 'cds-db-secret'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+  - name: &dbRootPasswordSecretName '{{ include "common.release" . }}-cds-db-root-pass'
+    uid: 'cds-db-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret")) .) (hasSuffix "cds-db-root-pass" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret"))}}'
+    password: '{{ index .Values "mariadb-galera" "config" "mariadbRootPassword" }}'
 
 #################################################################
 # Application configuration defaults.
@@ -64,14 +81,14 @@ readiness:
 ingress:
   enabled: false
 
-
 mariadb-galera:
   config:
-      userName: sdnctl
-      userPassword: sdnctl
-      mariadbRootPassword: sdnctl
-      mysqlDatabase: sdnctl
-  nameOverride: cds-db
+    userName: sdnctl
+    # userPassword: sdnctl
+    userCredentialsExternalSecret: *dbUserSecretName
+    mariadbRootPasswordExternalSecret: *dbRootPasswordSecretName
+    mysqlDatabase: &mysqlDbName sdnctl
+  nameOverride: &dbServer cds-db
   service:
     name: cds-db
     portName: cds-db
@@ -79,6 +96,15 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: cds/data
+
+cds-blueprints-processor:
+  config:
+    cdsDB:
+      dbServer: *dbServer
+      dbPort: 3306
+      dbName: *mysqlDbName
+      dbCredsExternalSecret: *dbUserSecretName
+      dbRootPassExternalSecret: *dbRootPasswordSecretName
 
 #Resource Limit flavor -By Default using small
 flavor: small

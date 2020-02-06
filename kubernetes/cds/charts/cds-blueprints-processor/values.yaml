@@ -1,4 +1,5 @@
 # Copyright (c) 2019 IBM, Bell Canada
+# Copyright (c) 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +34,25 @@ global:
   persistence:
     mountPath: /dockerdata-nfs
 
+  # envsusbt
+  envsubstImage: dibi/envsubst
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: 'cds-db-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.cdsDB.dbCredsExternalSecret) . }}'
+    login: '{{ .Values.config.cdsDB.dbUser }}'
+    password: '{{ .Values.config.cdsDB.dbPassword }}'
+    passwordPolicy: required
+  - uid: 'cds-db-root-pass'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.cdsDB.dbRootPassExternalSecret) . }}'
+    password: '{{ .Values.config.cdsDB.dbRootPassword }}'
+    passwordPolicy: required
+
 #################################################################
 # Application configuration defaults.
 #################################################################
@@ -48,6 +68,15 @@ debugEnabled: false
 config:
   appConfigDir: /opt/app/onap/config
   useScriptCompileCache: true
+  cdsDB:
+    dbServer: cds-db
+    dbPort: 3306
+    dbName: sdnctl
+    # dbUser: sdnctl
+    # dbPassword: sdnctl
+    # dbCredsExternalSecret: <some secret name>
+    # dbRootPassword: password
+    # dbRootPassExternalSecret
 
 # default number of instances
 replicaCount: 1
@@ -59,6 +88,7 @@ affinity: {}
 # flag for kafka-listener dependency. Set to true if you are using message-router otherwise set to false if you are using
 # custom kafka cluster.
 dmaapEnabled: true
+
 
 # probe configuration parameters
 liveness:
