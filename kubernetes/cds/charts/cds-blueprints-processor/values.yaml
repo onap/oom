@@ -1,4 +1,5 @@
 # Copyright (c) 2019 IBM, Bell Canada
+# Copyright (c) 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +35,17 @@ global:
     mountPath: /dockerdata-nfs
 
 #################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: 'cds-db-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.cdsDB.dbCredsExternalSecret) . }}'
+    login: '{{ .Values.config.cdsDB.dbUser }}'
+    password: '{{ .Values.config.cdsDB.dbPassword }}'
+    passwordPolicy: required
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
@@ -47,6 +59,13 @@ debugEnabled: false
 # application configuration
 config:
   appConfigDir: /opt/app/onap/config
+  cdsDB:
+    dbServer: cds-db
+    dbPort: 3306
+    dbName: sdnctl
+    # dbUser: sdnctl
+    # dbPassword: sdnctl
+    # dbCredsExternalSecret: <some secret name>
 
 # default number of instances
 replicaCount: 1
@@ -58,6 +77,7 @@ affinity: {}
 # flag for kafka-listener dependency. Set to true if you are using message-router otherwise set to false if you are using
 # custom kafka cluster.
 dmaapEnabled: true
+
 
 # probe configuration parameters
 liveness:
