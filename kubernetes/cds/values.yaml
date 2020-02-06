@@ -1,3 +1,4 @@
+# Copyright © 2020 Samsung Electronics
 # Copyright © 2019 Orange, Bell Canada
 # Copyright © 2017 Amdocs, Bell Canada
 #
@@ -26,6 +27,16 @@ global:
   loggingImage: beats/filebeat:5.5.0
   persistence:
     mountPath: /dockerdata-nfs
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - name: '{{ include "common.release" . }}-cds-db-secret'
+    uid: 'cds-db-secret'
+    type: basicAuth
+    login: 'sdnctl'
+    password: ''
 
 #################################################################
 # Application configuration defaults.
@@ -64,13 +75,18 @@ readiness:
 ingress:
   enabled: false
 
+cds-blueprints-processor:
+  config:
+    cdsDB:
+      dbServer: cds-db
+      dbPort: 3306
+      dbName: sdnctl
+      dbCredsExternalSecret: '{{ include "common.release" . }}-cds-db-secret'
 
 mariadb-galera:
   config:
-      userName: sdnctl
-      userPassword: sdnctl
-      mariadbRootPassword: sdnctl
-      mysqlDatabase: sdnctl
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-cds-db-secret'
+    mysqlDatabase: sdnctl
   nameOverride: cds-db
   service:
     name: cds-db
