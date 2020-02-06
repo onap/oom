@@ -49,3 +49,7 @@
 {{- define "common.release" -}}
   {{- first (regexSplit "-" .Release.Name -1)  }}
 {{- end -}}
+
+{{- define "common.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
