@@ -1,4 +1,5 @@
 # Copyright (c) 2019 IBM, Bell Canada
+# Copyright (c) 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +44,27 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: CDS_DB_USERNAME
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "cds-db-user-creds" "key" "login") | indent 10}}
+        - name: CDS_DB_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "cds-db-user-creds" "key" "password") | indent 10}}
+
+        volumeMounts:
+        - mountPath: /config-input/application.properties
+          name: {{ include "common.fullname" . }}-config
+          subPath: application.properties
+        - mountPath: /config
+          name: processed-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
       - command:
         - /root/ready.py
         args:
@@ -114,7 +136,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: {{ .Values.config.appConfigDir }}/application.properties
-            name: {{ include "common.fullname" . }}-config
+            name: processed-config
             subPath: application.properties
           - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
             name: {{ include "common.fullname" . }}-config
@@ -158,5 +180,8 @@ spec:
         - name: {{ include "common.fullname" . }}-blueprints
           persistentVolumeClaim:
             claimName: {{ include "common.release" . }}-cds-blueprints
+        - name: processed-config
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
