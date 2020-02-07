@@ -29,6 +29,17 @@ global:
     internalPort: 3306
     nameOverride: mariadb-galera
 
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: nbi-db-secret
+    name: '{{ include "common.release" . }}-nbi-db-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
+
 subChartsOnly:
   enabled: true
 
@@ -49,15 +60,17 @@ config:
   ecompInstanceId: OOM
   openStackRegion: RegionOne
   openStackVNFTenantId: 31047205ce114b60833b23e400d6a535
+  db:
+    userName: rene
+    # userPassword: password
+    # userCredentialsExternalSecret: some-secret
 
 mariadb-galera:
   # '&mariadbConfig' means we "store" the values for  later use in the file
   # with '*mariadbConfig' pointer.
   config: &mariadbConfig
-      userName: rene
-      userPassword: lkjgklqsdareyhjujlnnbvfvdttuiukgpiokqbfsjdhfigquosegombvjfqhb
-      mariadbRootPassword: dhqjdshjdsguryebvcnbvcvdsqghyjqgktgjjfhjfghbfs
-      mysqlDatabase: nbi
+    mysqlExternalSecret: '{{ include "common.release" . }}-nbi-db-secret'
+    mysqlDatabase: nbi
   nameOverride: nbi-galera
   service:
     name: nbi-galera
