@@ -27,37 +27,12 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
       annotations:
-        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
-    spec:
-      initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - vfc-mariadb
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       containers:
-        - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
-          livenessProbe:
-            tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
@@ -69,13 +44,11 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
             - name: MSB_ADDR
-              value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-            - name: MYSQL_ADDR
-              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
-            - name: MYSQL_AUTH
-              value: "{{ .Values.global.config.dbUser }}:{{ .Values.global.config.mariadbRootPassword }}"
             - name: REDIS_ADDR
-              value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
+            - name: MYSQL_ADDR
+            - name: MYSQL_DBNAME
+              value: {{ .Values.config.vfcDb.dbName }}
+            - name: MYSQL_USERNAME
           volumeMounts:
           - name: {{ include "common.fullname" . }}-catalog
             mountPath: /service/vfc/nfvo/catalog/static
@@ -100,7 +73,6 @@ spec:
 
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-filebeat-conf
