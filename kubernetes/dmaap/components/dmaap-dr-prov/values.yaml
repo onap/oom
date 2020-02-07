@@ -20,6 +20,17 @@ global:
   loggingDirectory: /opt/app/datartr/logs
 
 #################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: dmaap-dr-db-user-secret
+    name: '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.dmaapDrDb.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.dmaapDrDb.userName }}'
+    password: '{{ .Values.config.dmaapDrDb.userPassword }}'
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
@@ -88,6 +99,9 @@ config:
     mariadbServiceName: dmaap-dr-db-svc
     mariadbServicePort: 3306
     mariadbContName: dmaap-dr-db
+    userName: datarouter
+#    userPassword: password
+#    userCredentialsExternalSecret: some secret
 
 # mariadb-galera configuration
 mariadb:
@@ -95,9 +109,7 @@ mariadb:
   nameOverride: dmaap-dr-db
   replicaCount: 2
   config:
-    mariadbRootPassword: datarouter
-    userName: datarouter
-    userPassword: datarouter
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
     mysqlDatabase: datarouter
   service:
     name: dmaap-dr-db-svc
