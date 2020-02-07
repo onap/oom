@@ -33,11 +33,6 @@ spec:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
       initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - vfc-mariadb
         env:
         - name: NAMESPACE
           valueFrom:
@@ -70,12 +65,17 @@ spec:
           env:
             - name: MSB_ADDR
               value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-            - name: MYSQL_ADDR
-              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
-            - name: MYSQL_AUTH
-              value: "{{ .Values.global.config.dbUser }}:{{ .Values.global.config.mariadbRootPassword }}"
             - name: REDIS_ADDR
               value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
+            - name: MYSQL_ADDR
+              value: {{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+            - name: MYSQL_USERNAME
+              value: {{ index .Values "mariadb-galera" "config" "userName" }}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.mariadbSecret" . }}
+                  key: {{ include "common.mariadbSecretParam" . }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-catalog
             mountPath: /service/vfc/nfvo/catalog/static
