@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: cmso-db-root-password
+    name: '{{ include "common.release" . }}-cmso-db-root-password'
+    type: password
+    password: ''
+    policy: generate
+  - uid: cmso-db-secret
+    name: '{{ include "common.release" . }}-cmso-db-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
+    passwordPolicy: generate
+
 mariadb-galera:
   replicaCount: 1
   nameOverride: cmso-db
@@ -26,9 +43,8 @@ mariadb-galera:
     enabled: true
   disableNfsProvisioner: true
   config:
-    mariadbRootPassword: beer
-    userName: cmso-admin
-    userPassword: nimda-osmc
+    mariadbRootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
     mysqlDatabase: cmso
   externalConfig: |
     [mysqld]
@@ -50,3 +66,25 @@ config:
   log:
     logstashServiceName: log-ls
     logstashPort: 5044
+  db:
+    # userCredentialsExternalsecret: some secret
+    userName: cmso-admin
+    # userPassword: password
+
+oof-cmso-service:
+  config:
+    db:
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+      host: oof-cmso-dbhost
+      container: cmso-db
+      mysqlDatabase: cmso
+
+oof-cmso-optimizer:
+  config:
+    db:
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+      host: oof-cmso-dbhost
+      container: cmso-db
+      mysqlDatabase: optimizer
