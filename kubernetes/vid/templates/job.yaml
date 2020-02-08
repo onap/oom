@@ -1,4 +1,5 @@
 # Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,14 +61,11 @@ spec:
         - /dbcmd-config/db_cmd.sh
         env:
         - name: MYSQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}-db
-              key: db-user-password
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 10 }}
         - name: MYSQL_HOST
           value: {{ index .Values "mariadb-galera" "service" "name" }}
         - name: MYSQL_USER
-          value: {{ index .Values "mariadb-galera" "config" "userName" }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "vid-db-user-secret" "key" "login") | indent 10 }}
         - name: MYSQL_PORT
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
       restartPolicy: Never

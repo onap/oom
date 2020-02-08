@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,14 +106,9 @@ spec:
             - name: VID_MYSQL_DBNAME
               value: {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
             - name: VID_MYSQL_USER
-              value: {{ index .Values "mariadb-galera" "config" "userName" }}
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "vid-db-user-secret" "key" "login") | indent 14 }}
             - name: VID_MYSQL_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}-db
-                  key: db-user-password
-              #valueFrom:
-              #  secretKeyRef: {name: {{ include "common.fullname" . }}, key: vid-password}
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 14 }}
             - name: VID_MYSQL_MAXCONNECTIONS
               value: "{{ .Values.config.vidmysqlmaxconnections }}"
           volumeMounts:
