@@ -62,13 +62,13 @@ spec:
           - name: request_topic
             value: "{{ .Values.config.requestTopic }}"
           - name: dmaap_base_url
-            value: {{ .Values.config.dmaapScheme }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
+            value: {{ ternary "https" "http" .Values.security.ssl.enabled }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
           - name: logstash_user
             value: "{{ .Values.config.logstash_user }}"
           - name: logstash_pwd
             value: "{{ .Values.config.logstash_pwd }}"
           - name: elasticsearch_base_url
-            value: "http://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
+            value: "{{ ternary "https" "http" .Values.security.ssl.enabled }}://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ include "common.servicename" . }}
@@ -77,6 +77,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -85,6 +86,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           volumeMounts:
           - mountPath: /etc/localtime
@@ -96,8 +98,6 @@ spec:
           - mountPath: /usr/share/logstash/pipeline/logstash.conf
             name: {{ include "common.fullname" . }}
             subPath: pipeline.conf
-          - name: {{ include "common.fullname" . }}-aaf-certs
-            mountPath: /certs.d/
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -120,9 +120,5 @@ spec:
               path: logstash.yml
             - key: pipeline.conf
               path: pipeline.conf
-        - name: {{ include "common.fullname" . }}-aaf-certs
-          secret:
-            secretName: {{ include "common.fullname" . }}-aaf-keys
-
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
