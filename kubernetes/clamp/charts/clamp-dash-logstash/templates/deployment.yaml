@@ -61,14 +61,24 @@ spec:
             value: "{{ .Values.config.notificationTopic }}"
           - name: request_topic
             value: "{{ .Values.config.requestTopic }}"
+          {{- if eq .Values.security.ssl.enabled true }}
           - name: dmaap_base_url
-            value: {{ .Values.config.dmaapScheme }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
+            value: {{ .Values.config.dmaapSchemeSSL }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
+          {{- else }}
+          - name: dmaap_base_url
+            value: {{ .Values.config.dmaapSchemeNoSSL }}://{{ .Values.config.dmaapHost }}.{{ include "common.namespace" . }}:{{ .Values.config.dmaapPort }}
+          {{- end }}
           - name: logstash_user
             value: "{{ .Values.config.logstash_user }}"
           - name: logstash_pwd
             value: "{{ .Values.config.logstash_pwd }}"
+          {{- if eq .Values.security.ssl.enabled true }}
+          - name: elasticsearch_base_url
+            value: "https://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
+          {{- else }}
           - name: elasticsearch_base_url
             value: "http://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
+          {{ end -}}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ include "common.servicename" . }}
@@ -77,6 +87,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -85,6 +96,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           volumeMounts:
           - mountPath: /etc/localtime
@@ -98,6 +110,8 @@ spec:
             subPath: pipeline.conf
           - name: {{ include "common.fullname" . }}-aaf-certs
             mountPath: /certs.d/
+          - name: {{ include "common.fullname" . }}-clamp-certs
+            mountPath: /clamp-cert/
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -123,6 +137,9 @@ spec:
         - name: {{ include "common.fullname" . }}-aaf-certs
           secret:
             secretName: {{ include "common.fullname" . }}-aaf-keys
+        - name: {{ include "common.fullname" . }}-clamp-certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-clamp-keys
 
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
