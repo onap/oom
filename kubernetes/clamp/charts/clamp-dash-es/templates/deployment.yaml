@@ -73,12 +73,14 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort2 }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:
           volumeMounts:
           - mountPath: /etc/localtime
@@ -89,6 +91,21 @@ spec:
             subPath: elasticsearch.yml
           - mountPath: /usr/share/elasticsearch/data/
             name: {{ include "common.fullname" . }}-data
+          - mountPath: /usr/share/elasticsearch/config/esnode.pem
+            name: {{ include "common.fullname" . }}-aaf-certs
+            subPath: esnode.pem
+          - mountPath: /usr/share/elasticsearch/config/esnode-key.pem
+            name: {{ include "common.fullname" . }}-aaf-certs
+            subPath: esnode-key.pem
+          - mountPath: /usr/share/elasticsearch/config/kirk.pem
+            name: {{ include "common.fullname" . }}-aaf-certs
+            subPath: kirk.pem
+          - mountPath: /usr/share/elasticsearch/config/kirk-key.pem
+            name: {{ include "common.fullname" . }}-aaf-certs
+            subPath: kirk-key.pem
+          - mountPath: /usr/share/elasticsearch/config/root-ca.pem
+            name: {{ include "common.fullname" . }}-aaf-certs
+            subPath: root-ca.pem
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -115,5 +132,19 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           hostPath:
             path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPathLogs }}
+        - name: {{ include "common.fullname" . }}-aaf-certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-aaf-keys
+            items:
+            - key: esnode-key.pem
+              path: esnode-key.pem
+            - key: esnode.pem
+              path: esnode.pem
+            - key: kirk-key.pem
+              path: kirk-key.pem
+            - key: kirk.pem
+              path: kirk.pem
+            - key: root-ca.pem
+              path: root-ca.pem
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
