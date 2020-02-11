@@ -1,4 +1,5 @@
-# Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
+---
+# Copyright © 2020  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,30 +31,24 @@
 # The default name is elasticsearch, but you should change it to an appropriate name which describes the
 # purpose of the cluster.
 #
+## Default Elasticsearch configuration from elasticsearch-docker.
+## from https://opendistro.github.io/for-elasticsearch-docs/docs/elasticsearch/configuration/
+#
+
 cluster.name: "clamp-dashboard"
+node.name: "cldash-es-node1"
+# ---------------------------------- Network -----------------------------------
 #
-# The port that other nodes in the cluster should use when communicating with this node.
-# Required for Elasticsearch's nodes running on different cluster nodes.
-# More : https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html
-#transport.publish_port:$transport.publish_port
+# Set the bind address to a specific IP (IPv4 or IPv6):
+# In order to communicate and to form a cluster with nodes on other servers, your node will need to bind to a
+# non-loopback address.
+network.host: 0.0.0.0
 #
-# The host address to publish for nodes in the cluster to connect to.
-# Required for Elasticsearch's nodes running on different cluster nodes.
-# More : https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-transport.html
-#transport.publish_host:$transport.publish_host
+# Set a custom port for HTTP: If required, default is 9200-9300
 #
-# ------------------------------------ Node ------------------------------------
+#http.port: $http.port
 #
-# It is better to provide different meaningfull names fot different elastic nodes.
-# By default, Elasticsearch will take the 7 first character of the randomly generated uuid used as the node id.
-# Note that the node id is persisted and does not change when a node restarts
-#
-#node.name: $node.name
-#
-# Add custom attributes to the node:
-#
-#node.attr.rack: r1
-#
+# For more information, consult the network module documentation.
 # ----------------------------------- Paths ------------------------------------
 #
 # The location of the data files of each index / shard allocated on the node. Can hold multiple locations separated by coma.
@@ -78,19 +73,6 @@ bootstrap.memory_lock: false
 #
 # Elasticsearch performs poorly when the system is swapping the memory.
 #
-# ---------------------------------- Network -----------------------------------
-#
-# Set the bind address to a specific IP (IPv4 or IPv6):
-# In order to communicate and to form a cluster with nodes on other servers, your node will need to bind to a
-# non-loopback address.
-network.host: 0.0.0.0
-#
-# Set a custom port for HTTP: If required, default is 9200-9300
-#
-#http.port: $http.port
-#
-# For more information, consult the network module documentation.
-#
 # --------------------------------- Discovery ----------------------------------
 #
 # Pass an initial list of hosts to perform discovery when new node is started
@@ -98,24 +80,16 @@ network.host: 0.0.0.0
 # that are likely to be live and contactable.
 # By default, Elasticsearch will bind to the available loopback addresses and will scan ports 9300 to 9305 to try
 # to connect to other nodes running on the same server.
-#
-#$discovery.zen.ping.unicast.hosts
-#
-# This setting tells Elasticsearch to not elect a master unless there are enough master-eligible nodes
-# available. Only then will an election take place.
-# Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
+# # minimum_master_nodes need to be explicitly set when bound on a public IP
+# # set to 1 to allow single node clusters
+# # Details: https://github.com/elastic/elasticsearch/pull/17288
 discovery.zen.minimum_master_nodes: 1
-#
-# For more information, consult the zen discovery module documentation.
-#
-# ---------------------------------- Gateway -----------------------------------
-#
-# Block initial recovery after a full cluster restart until N nodes are started:
-#
-#gateway.recover_after_nodes: 3
-#
-# For more information, consult the gateway module documentation.
-#
+discovery.seed_hosts: "cldash-es-node1"
+# # Breaking change in 7.0
+# # https://www.elastic.co/guide/en/elasticsearch/reference/7.0/breaking-changes-7.0.html#breaking_70_discovery_changes
+cluster.initial_master_nodes: 
+    - cldash-es-node1
+#    - docker-test-node-1
 # ---------------------------------- Various -----------------------------------
 #
 # Require explicit names when deleting indices:
@@ -129,26 +103,26 @@ http.port: {{.Values.service.externalPort}}
 # Defaults to 9300-9400.
 # More info:
 transport.tcp.port: {{.Values.service.externalPort2}}
-#xpack.graph.enabled: false
-#Set to false to disable X-Pack graph features.
-#xpack.ml.enabled: false
-#Set to false to disable X-Pack machine learning features.
-#xpack.monitoring.enabled: false
-#Set to false to disable X-Pack monitoring features.
+# 
+######## Start OpenDistro for Elasticsearch Security Demo Configuration ########
+# WARNING: revise all the lines below before you go into production
+opendistro_security.ssl.transport.pemcert_filepath: esnode.pem
+opendistro_security.ssl.transport.pemkey_filepath: esnode-key.pem
+opendistro_security.ssl.transport.pemtrustedcas_filepath: root-ca.pem
+opendistro_security.ssl.transport.enforce_hostname_verification: false
+opendistro_security.ssl.http.enabled: true
+opendistro_security.ssl.http.pemcert_filepath: esnode.pem
+opendistro_security.ssl.http.pemkey_filepath: esnode-key.pem
+opendistro_security.ssl.http.pemtrustedcas_filepath: root-ca.pem
+opendistro_security.allow_unsafe_democertificates: true
+opendistro_security.allow_default_init_securityindex: true
+opendistro_security.authcz.admin_dn:
+  - CN=kirk,OU=client,O=client,L=test, C=de
 
-
-#xpack.watcher.enabled: false
-#Set to false to disable Watcher.
-
-#xpack.license.self_generated.type: basic
-#xpack.security.enabled: false
-
-## Search Guard
-#
-searchguard.enterprise_modules_enabled: false
-searchguard.ssl.transport.keystore_filepath: sg/node-0-keystore.jks
-searchguard.ssl.transport.truststore_filepath: sg/truststore.jks
-searchguard.ssl.transport.enforce_hostname_verification: false
-
-searchguard.authcz.admin_dn:
-  - "CN=kirk,OU=client,O=client,l=tEst,C=De"
+opendistro_security.audit.type: internal_elasticsearch
+opendistro_security.enable_snapshot_restore_privilege: true
+opendistro_security.check_snapshot_restore_write_privileges: true
+opendistro_security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+cluster.routing.allocation.disk.threshold_enabled: false
+node.max_local_storage_nodes: 3
+######## End OpenDistro for Elasticsearch Security Demo Configuration ########
