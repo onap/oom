@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 aai:
-  auth: 221187EFA3AD4E33600DE0488F287099934CE65C3D0697BCECC00BB58E784E07CD74A24581DC31DBC086FF63DF116378776E9BE3D1325885
+  auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
   dme2:
     timeout: '30000'
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
@@ -21,7 +21,7 @@ aai:
 cds:
   endpoint: cds-blueprints-processor-grpc
   port: 9111
-  auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+  auth: {{ .Values.cds.auth }}
   timeout: 600
 camunda:
   bpm:
@@ -51,10 +51,12 @@ mso:
   rainyDay:
     retryDurationMultiplier: 2
     maxRetries: 5
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+  msoKey: {{ .Values.mso.key }}
   correlation:
     timeout: 60
   logPath: logs
+  config:
+    cadi: {{ include "cadi.keys" . | nindent 8}}
   async:
     core-pool-size: 50
     max-pool-size: 50
@@ -64,10 +66,10 @@ mso:
       endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/CompleteMsoProcess
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: Basic YnBlbDpwYXNzd29yZDEk
+      auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.adapters.requestDb.auth )}}
     db:
-      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
-      password: wLg4sjrAFUS8rfVfdvTXeQ==
+      auth: {{ .Values.mso.adapters.db.auth }}
+      password: {{ .Values.mso.adapters.db.password }}
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
       spring:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
@@ -79,7 +81,7 @@ mso:
       db:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
     po:
-      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
+      auth: {{ .Values.mso.adapters.po.auth }}
     sdnc:
       endpoint: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/SDNCAdapter
       rest:
@@ -112,7 +114,7 @@ mso:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: Basic YnBlbDpwYXNzd29yZDEk
+    auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
   default:
     adapter:
       namespace: http://org.onap.mso
@@ -129,7 +131,7 @@ mso:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/
   rollback: 'true'
   sdnc:
-    password: 1D78CFC35382B6938A989066A7A7EAEF4FE933D2919BABA99EB4763737F39876C333EE5F
+    password: {{ .Values.mso.sdnc.password }}
   service:
     agnostic:
       sniro:
@@ -137,12 +139,12 @@ mso:
         host: http://sniro-emulator:80
   site-name: CamundaEngine
   sniro:
-    auth: test:testpwd
+    auth: {{ .Values.mso.sniro.auth }}
     callback: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/adapters/rest/SDNCNotify
-    endpoint: http://replaceme:28090/optimizationInstance/V1/create
+    endpoint: {{ .Values.mso.sniro.endpoint }}
     timeout: PT30M
   oof:
-    auth: test:testpwd
+    auth: {{ .Values.mso.oof.auth }}
     callbackEndpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
     endpoint: https://oof-osdf.{{ include "common.namespace" . }}:8698/api/oof/v1/placement
     timeout: PT30M
@@ -361,7 +363,7 @@ so:
   vnfm:
     adapter:
       url: https://so-vnfm-adapter.{{ include "common.namespace" . }}:9092/so/vnfm-adapter/v1/
-      auth: Basic dm5mbTpwYXNzd29yZDEk
+      auth: {{ .Values.so.vnfm.adapter.auth }}
 org:
   onap:
     so:
