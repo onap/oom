@@ -1,0 +1,93 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2020 AT&T Intellectual Property. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+       - name: {{ include "common.name" . }}-readiness
+         image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
+         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+         command:
+          - /root/ready.py
+         args:
+           - --container-name
+           - {{ .Values.postgres.nameOverride }}
+           - "-t"
+           - "15"
+         env:
+         - name: NAMESPACE
+           valueFrom:
+             fieldRef:
+               apiVersion: v1
+               fieldPath: metadata.namespace
+      containers:
+        - name: {{ include "common.name" . }}
+          command:
+            - sh
+          args:
+            - -c
+            - 'PG_CONN=postgresql://${PG_USER}:${PG_PASSWORD}@${PG_ADDR}:${PG_PORT}/${PG_DB_NAME} ./start.sh'
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources:
+{{ include "common.resources" . | indent 12 }}
+          env:
+            - name: PG_ADDR
+              value: {{ .Values.postgres.service.name2 }}
+              # This should be kept in secret but it needs a fix in postgres common chart
+            - name: PG_USER
+              value: postgres
+            - name: PG_PASSWORD
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 14 }}
+            - name: PG_PORT
+              value: 5432
+            - name: PG_DB_NAME
+              values: dcae_onboarding_db
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
