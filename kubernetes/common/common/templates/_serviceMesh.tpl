@@ -1,4 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada, Orange
+{/*
+# Copyright © 2019 Amdocs, Bell Canada, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,5 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-{{ include "common.service" . }}
+
+{/*
+  Calculate if we need TLS.
+*/}}
+{{- define "common.needTLS" -}}
+{{-   if .Values.global.serviceMesh -}}
+{{-     if not (and (default false .Values.global.serviceMesh.enabled) (default false .Values.global.serviceMesh.tls)) -}}
+True
+{{-     end -}}
+{{-   else -}}
+True
+{{-   end -}}
+{{- end -}}

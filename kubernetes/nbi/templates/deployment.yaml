@@ -13,107 +13,95 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      name: {{ include "common.fullname" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       containers:
-        - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{ if .Values.liveness.enabled }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
-            - name: SPRING_DATASOURCE_URL
-              value: jdbc:mariadb://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
-            - name: SPRING_DATASOURCE_USERNAME
-              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "nbi-db-secret" "key" "login") | indent 14 }}
-            - name: SPRING_DATASOURCE_PASSWORD
-              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "nbi-db-secret" "key" "password") | indent 14 }}
-            - name: SPRING_DATA_MONGODB_HOST
-              value: {{ .Values.mongo.service.name }}.{{ include "common.namespace" . }}
-            - name: SPRING_DATA_MONGODB_PORT
-              value: "{{ .Values.mongo.service.internalPort }}"
-            - name: SPRING_DATA_MONGODB_DATABASE
-              value: {{ .Values.mongo.config.dbName }}
-            - name: ONAP_LCPCLOUDREGIONID
-              value: {{ .Values.config.openStackRegion }}
-            - name: ONAP_TENANTID
-              value: {{ .Values.config.openStackVNFTenantId | quote }}
-            - name: ONAP_CLOUDOWNER
-              value: {{ .Values.config.cloudOwner }}
-            - name: NBI_URL
-              value: "http://nbi.{{ include "common.namespace" . }}:8080/nbi/api/v4"
-            - name: SDC_HOST
-              value: "https://sdc-be.{{ include "common.namespace" . }}:8443"
-            - name: SDC_HEADER_ECOMPINSTANCEID
-              value: {{ .Values.config.ecompInstanceId }}
-            - name: SDC_HEADER_AUTHORIZATION
-              value: {{ .Values.sdc_authorization }}
-            - name: AAI_HOST
-              value: "https://aai.{{ include "common.namespace" . }}:8443"
-            - name: AAI_HEADER_AUTHORIZATION
-              value: {{ .Values.aai_authorization }}
-            - name: SO_HOST
-              value: http://so.{{ include "common.namespace" . }}:8080
-            {{- if .Values.so_authorization }}
-            - name: SO_HEADER_AUTHORIZATION
-              value: {{ .Values.so_authorization }}
-            {{- end }}
-            - name: DMAAP_HOST
-              value: "https://message-router.{{ include "common.namespace" . }}:3905"
-            - name: LOGGING_LEVEL_ORG_ONAP_NBI
-              value: {{ .Values.config.loglevel }}
-            - name: MSB_ENABLED
-              value: "true"
-            - name: MSB_DISCOVERY_HOST
-              value: "msb-discovery.{{ include "common.namespace" . }}"
-            - name: MSB_DISCOVERY_PORT
-              value: "10081"
-          volumeMounts:
-            - mountPath: /etc/localtime
-              name: localtime
-              readOnly: true
-          resources:
-{{ include "common.resources" . | indent 12 }}
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{- include "common.containerPorts" . | nindent 8  }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if .Values.liveness.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.liveness.httpGet.path }}
+            port: {{ index .Values.service.ports (.Values.liveness.httpGet.port_id | int) "name" }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{- end }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readiness.httpGet.path }}
+            port: {{ index .Values.service.ports (.Values.readiness.httpGet.port_id | int) "name" }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mariadb://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+        - name: SPRING_DATASOURCE_USERNAME
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "nbi-db-secret" "key" "login") | indent 10 }}
+        - name: SPRING_DATASOURCE_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "nbi-db-secret" "key" "password") | indent 10 }}
+        - name: SPRING_DATA_MONGODB_HOST
+          value: {{ .Values.mongo.service.name }}.{{ include "common.namespace" . }}
+        - name: SPRING_DATA_MONGODB_PORT
+          value: "{{ .Values.mongo.service.internalPort }}"
+        - name: SPRING_DATA_MONGODB_DATABASE
+          value: {{ .Values.mongo.config.dbName }}
+        - name: ONAP_LCPCLOUDREGIONID
+          value: {{ .Values.config.openStackRegion }}
+        - name: ONAP_TENANTID
+          value: {{ .Values.config.openStackVNFTenantId | quote }}
+        - name: ONAP_CLOUDOWNER
+          value: {{ .Values.config.cloudOwner }}
+        - name: NBI_URL
+          value: "http://nbi.{{ include "common.namespace" . }}:8080/nbi/api/v4"
+        - name: SDC_HOST
+          value: "https://sdc-be.{{ include "common.namespace" . }}:8443"
+        - name: SDC_HEADER_ECOMPINSTANCEID
+          value: {{ .Values.config.ecompInstanceId }}
+        - name: SDC_HEADER_AUTHORIZATION
+          value: {{ .Values.sdc_authorization }}
+        - name: AAI_HOST
+          value: "https://aai.{{ include "common.namespace" . }}:8443"
+        - name: AAI_HEADER_AUTHORIZATION
+          value: {{ .Values.aai_authorization }}
+        - name: SO_HOST
+          value: http://so.{{ include "common.namespace" . }}:8080
+        {{- if .Values.so_authorization }}
+        - name: SO_HEADER_AUTHORIZATION
+          value: {{ .Values.so_authorization }}
+        {{- end }}
+        - name: DMAAP_HOST
+          value: "https://message-router.{{ include "common.namespace" . }}:3905"
+        - name: LOGGING_LEVEL_ORG_ONAP_NBI
+          value: {{ .Values.config.loglevel }}
+        - name: MSB_ENABLED
+          value: "true"
+        - name: MSB_DISCOVERY_HOST
+          value: "msb-discovery.{{ include "common.namespace" . }}"
+        - name: MSB_DISCOVERY_PORT
+          value: "10081"
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        resources: {{- include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{- toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
-      # side car containers
+        # side car containers
         # - name: filebeat-onap
         #   image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
         #   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
