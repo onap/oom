@@ -1,4 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada, Orange
+{/*
+# Copyright © 2020 Amdocs, Bell Canada, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,5 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-{{ include "common.service" . }}
+
+{/*
+  Calculate if we are on service mesh.
+*/}}
+{{- define "common.onServiceMesh" -}}
+{{-   if .Values.global.serviceMesh -}}
+{{-     if (default false .Values.global.serviceMesh.enabled) -}}
+true
+{{-     end -}}
+{{-   end -}}
+{{- end -}}

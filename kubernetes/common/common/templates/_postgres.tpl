@@ -58,7 +58,7 @@
 {{- end -}}
 
 {{/*
-  Name of postgres user credentials secret
+  Name of postgres primary credentials secret
 */}}
 {{- define "common.postgres.secret.primaryPasswordSecretName" -}}
   {{- include "common.postgres.secret._secretName" (set . "uidTemplate" "common.postgres.secret.primaryPasswordUID") }}
