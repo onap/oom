@@ -31,8 +31,13 @@
 {{-       $ports = append $ports $port }}
 {{-     end }}
 {{-   end }}
+{{- $global := . }}
 {{-   range $index, $port := $ports }}
+{{-     if (include "common.needTLS" $global) }}
 - containerPort: {{ $port.port }}
+{{-     else }}
+- containerPort: {{ default $port.port $port.plain_port }}
+{{-     end }}
   name: {{ $port.name }}
 {{-   end }}
 {{- end -}}
