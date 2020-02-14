@@ -32,24 +32,29 @@ global:
   # image pull policy
   pullPolicy: IfNotPresent
 
+  mariadbGalera: &mariadbGalera
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: "db-user-creds"
-    externalSecret: '{{- include "common.mariadb.secret.userCredentialsSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride")) }}'
+  - uid: neng-db-secret
+    name: '{{ include "common.release" . }}-neng-db-secret'
     type: basicAuth
-  - uid: "db-root-pass"
-    externalSecret: '{{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride")) }}'
-    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
 
 # sub-chart config
 mariadb-galera:
-  config:
-      userName: nenguser
-      userPassword: nenguser123
-      mariadbRootPassword: nenguser123
-      mysqlDatabase: nengdb
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-nbi-db-secret'
+    mysqlDatabase: nengdb
   nameOverride: nengdb
   service:
     name: nengdb
@@ -59,6 +64,9 @@ mariadb-galera:
     enabled: true
     mountSubPath: network-name-gen/data
 
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: nengdb-init
 
 #################################################################
 # Application configuration defaults.
@@ -70,7 +78,10 @@ pullPolicy: IfNotPresent
 
 # application configuration
 config:
-  dbUrl: jdbc:mysql://nengdb:3306/nengdb
+  db:
+    userName: nenguser
+    # userPassword: password
+    # userCredentialsExternalSecret: some-secret
   springProfile: live
   polClientAuth: cHl0aG9uOnRlc3Q=
   polBasicAuth: dGVzdHBkcDphbHBoYTEyMw==

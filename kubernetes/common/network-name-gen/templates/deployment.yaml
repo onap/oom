@@ -31,11 +31,19 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+{{- if .Values.global.mariadbGalera.localCluster }}
       - command:
         - /root/ready.py
         args:
         - --container-name
         - {{ index .Values "mariadb-galera" "nameOverride" }}
+{{- else }}
+      - command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ index .Values "mariadb-init" "nameOverride" }}-config-job
+{{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -53,11 +61,11 @@ spec:
         - name: SPRING_PROFILE
           value: "{{ .Values.config.springProfile }}"
         - name: NENG_DB_USER
-          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-creds" "key" "login") | indent 10}}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "neng-db-secret" "key" "login") | indent 10}}
         - name: NENG_DB_PASS
-          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-creds" "key" "password") | indent 10}}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "neng-db-secret" "key" "password") | indent 10}}
         - name: NENG_DB_URL
-          value: {{ .Values.config.dbUrl }}
+          value: jdbc:mysql://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
         - name: POL_CLIENT_AUTH
           value: "{{ .Values.config.polClientAuth }}"
         - name: POL_BASIC_AUTH
