@@ -18,36 +18,63 @@ global:
     msbprotocol: https
     msbServiceName: msb-iag
     msbPort: 443
-    dbServiceName: vfc-db
-    dbPort: 3306
-    dbUser: root
-    mariadbRootPassword: secretpassword
     redisServiceName: vfc-redis
     redisPort: 6379
     reg_to_msb_when_start: False
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera: &mariadbGalera
+    #This flag allows VFC to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: vfc-db-user-secret
+    name: '{{ include "common.release" . }}-vfc-db-user-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.vfcDb.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.vfcDb.userName }}'
+    password: '{{ .Values.config.vfcDb.userPassword }}'
 
 # application configuration
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
+  vfcDb:
+    userName: vfc
+    # userPassword: password
+    # userCredentialsExternalSecret: some secret
 
-mariadb-galera:
+mariadb-galera: &mariadbForSubchart
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-vfc-db-user-secret'
+    mysqlDatabase: vfc
   nameOverride: vfc-mariadb
   service:
     name: vfc-db
     portName: vfc-db
-  nfsprovisionerPrefix: vfc
+    internalPort: 3306
+  replicaCount: 1
   persistence:
     mountSubPath: vfc/data
     enabled: true
-  disableNfsProvisioner: true
 
-catalog:
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: vfc-config
+
+vfc-catalog:
+  mariadb-galera: *mariadbForSubchart
   config:
-    dbPodName: vfc-db
-    dbServiceName: vfc-db
+    vfcDb:
+      dbName: vfc
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-vfc-db-user-secret'
+
 nslcm:
   config:
     dbPodName: vfc-db
