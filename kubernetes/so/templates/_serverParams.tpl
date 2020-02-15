@@ -1,3 +1,4 @@
+
 # Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,7 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: v1
-description: A Helm chart for so  secrets
-name: so-secrets
-version: 5.0.0
+{{- define "server.params" -}}
+{{- if eq .Values.global.aaf.ssl.certs.enabled true -}}
+port: 8443
+ssl:
+  key-store-type: JKS
+  key-store: certs/org.onap.so.jks
+  key-store-password: ${CADI_KEYSTORE_PASSWORD}
+  trust-store: certs/org.onap.so.trust.jks
+  trust-store-password: ${CADI_TRUSTSTORE_PASSWORD}
+{{- else -}}
+port: {{ .Values.containerPort}}
+ssl-enable: false
+{{- end }}
+tomcat:
+  max-threads: 50
+{{- end -}}

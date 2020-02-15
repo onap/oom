@@ -1,20 +1,29 @@
-server:
-    port: {{ index .Values.containerPort }}
-    tomcat:
-        max-threads: 50
-ssl-enable: false
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+server: {{ include "server.params" . |nindent 4 }}
 mso:
   msoKey: {{ .Values.global.app.msoKey }}
   logPath: ./logs/apih
   site-name: {{ index .Values.global.app.siteName }}
   adapters:
     requestDb:
-      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      endpoint: {{ include "tls.protocol" .}}://so-request-db-adapter.{{ include "common.namespace" . }}:8083
       auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
   catalog:
     db:
       spring:
-        endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+        endpoint: {{ include "tls.protocol" .}}://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
     auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
   config:
@@ -30,7 +39,7 @@ mso:
         macro:
           default:
             testApi: GR_API
-  camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
+  camundaURL: {{ include "tls.protocol" .}}://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
   camundaAuth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.camundaAuth )}}
   async:
     core-pool-size: 50
@@ -42,7 +51,7 @@ mso:
     activate:
       instanceid: test
       userid: cs0008
-    endpoint: http://sdc-be.{{ include "common.namespace" . }}:8443
+    endpoint: {{ include "tls.protocol" .}}://sdc-be.{{ include "common.namespace" . }}:8443
   tenant:
     isolation:
       retry:
@@ -52,13 +61,13 @@ mso:
     auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.aai.auth )}}
 
   extApi:
-    endpoint: http://nbi.onap:8080/nbi/api/v3
+    endpoint: {{ include "tls.protocol" .}}://nbi.onap:8080/nbi/api/v3
   so:
     operational-environment:
       dmaap:
         username: testuser
         password: VjR5NDcxSzA=
-        host: http://dmaap-bc.{{ include "common.namespace" . }}:8080
+        host: {{ include "tls.protocol" .}}://dmaap-bc.{{ include "common.namespace" . }}:8080
         auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.so.operationalEnv.dmaap.auth )}}
       publisher:
         topic: com.att.ecomp.mso.operationalEnvironmentEvent
@@ -66,9 +75,9 @@ mso:
     auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.health.auth )}}
     endpoints:
       - subsystem: apih
-        uri: http://so-bpmn-infra:8081
+        uri: {{ include "tls.protocol" .}}://so-bpmn-infra:8081
       - subsystem: catalogdb
-        uri: http://so-catalog-db-adapter:8082
+        uri: {{ include "tls.protocol" .}}://so-catalog-db-adapter:8082
 spring:
   datasource:
     hikari:
