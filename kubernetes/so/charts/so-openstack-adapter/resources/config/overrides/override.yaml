@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+server: {{ include "server.params" . |nindent 4 }}
 aai:
   auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
-server:
-  port: {{ index .Values.containerPort }}
 spring:
   datasource:
     hikari:
@@ -101,14 +100,14 @@ mso:
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
   workflow:
-    endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
+    endpoint: {{ include "tls.protocol" .}}://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
   msoKey: {{ .Values.mso.msoKey }}
   config:
     cadi: {{ include "cadi.keys" . | nindent 8}}
   catalog:
     db:
       spring:
-        endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+        endpoint: {{ include "tls.protocol" .}}://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
     auth: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
   site-name: localDevEnv

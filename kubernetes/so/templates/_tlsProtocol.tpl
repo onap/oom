@@ -1,3 +1,4 @@
+
 # Copyright © 2018 AT&T USA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,17 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ .Release.Name }}-so-client-certs-secret
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-data:
-  trustStorePassword: {{ .Values.global.client.certs.trustStorePassword }}
-  keyStorePassword: {{ .Values.global.client.certs.keyStorePassword}}
-type: Opaque
+{{- define "tls.protocol" -}}
+  {{ if eq  .Values.global.aaf.ssl.certs.enabled true}}https{{else}}http{{ end }}
+{{- end -}}

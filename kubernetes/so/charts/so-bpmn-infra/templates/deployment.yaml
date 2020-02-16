@@ -34,86 +34,27 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:
-      - command:
-        - /root/job_complete.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-so-mariadb-config-job
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+      initContainers: {{ include "container.initContainers" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources:
 {{ include "common.resources" . | indent 12 }}
-        env:
-        - name: DB_HOST
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.readwrite.host
-        - name: DB_PORT
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.readwrite.port
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.readwrite.rolename
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.readwrite.password
-        - name: DB_ADMIN_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.admin.rolename
-        - name: DB_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-so-db-secrets
-              key: mariadb.admin.password
-         {{- if eq .Values.global.security.aaf.enabled true }}
-        - name: TRUSTSTORE
-          value: /app/org.onap.so.trust.jks
-        - name: TRUSTSTORE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name}}-so-client-certs-secret
-              key: trustStorePassword
-        - name: KEYSTORE
-          value: /app/org.onap.so.jks
-        - name: KEYSTORE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name}}-so-client-certs-secret
-              key: keyStorePassword
-        {{- end }}
-        envFrom:
-        - configMapRef:
-            name: {{ include "common.fullname" . }}-configmap
-        imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env: {{ include "container.env" . | nindent 8 }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: config
           mountPath: /app/config
           readOnly: true
+        - name: aaf-client-certs-vol
+          mountPath: /app/client
+        - name: aaf-ssl-certs-vol
+          mountPath: /app/certs
 {{ include "helpers.livenessProbe" .| indent 8 }}
         ports:
-        - containerPort: {{ index .Values.containerPort }}
+        - containerPort: {{ include "helpers.profileProperty" (dict "condition" .Values.global.aaf.ssl.certs.enabled "value1" .Values.containerSslPort "value2"  .Values.containerPort ) }}
           name: {{ .Values.service.portName }}
           protocol: TCP
       volumes:
@@ -122,5 +63,11 @@ spec:
       - name: config
         configMap:
             name: {{ include "common.fullname" . }}-app-configmap
+      - name: aaf-client-certs-vol
+        secret:
+          secretName: {{ include "common.release" . }}-so-aaf-client-certs-secret
+      - name: aaf-ssl-certs-vol
+        persistentVolumeClaim:
+          claimName: {{ include "common.release" . }}-so-aaf-ssl-certs-pvc
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
