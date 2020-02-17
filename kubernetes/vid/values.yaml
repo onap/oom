@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +23,17 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
 
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: vid-db-user-secret
+    name: '{{ include "common.release" . }}-vid-db-user-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
+
 subChartsOnly:
   enabled: true
 
@@ -35,7 +47,10 @@ mariadb_image: library/mariadb:10
 
 # application configuration
 config:
-  vidmysqlpassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  db:
+    userName: vidadmin
+#    userCredentialsExternalSecret: some secret
+#    userPassword: password
   vidkeystorepassword: '\^7w\!f+aR\{EJcTRsDuA7x\,+c\!'
   asdcclientrestauth: "Basic dmlkOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU="
   asdcclientrestport: "8443"
@@ -54,9 +69,7 @@ config:
 
 mariadb-galera:
   config:
-    userName: vidadmin
-    userPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-    mariadbRootPassword: kjgsdhjqhawxvnbpoiawsfgjsqhsgjhjhdqihhjqdvcbxkjchizpw
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-vid-db-user-secret'
     mysqlDatabase: vid_openecomp_epsdk
   nameOverride: vid-galera
   service:
