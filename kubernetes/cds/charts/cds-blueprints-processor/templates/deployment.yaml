@@ -24,6 +24,18 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # This allow a new pod to be ready before terminating the old one
+      # causing no downtime when replicas is set to 1
+      maxUnavailable: 0
+
+      # maxSurge to 1 is very important for the hazelcast integration
+      # we only want one pod at a time to restart not multiple
+      # and break the hazelcast cluster. We should not use % maxSurge value
+      # ref : https://hazelcast.com/blog/rolling-upgrade-hazelcast-imdg-on-kubernetes/
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -56,9 +68,23 @@ spec:
           env:
           - name: APP_CONFIG_HOME
             value: {{ .Values.config.appConfigDir }}
+          - name: USE_SCRIPT_COMPILE_CACHE
+            value: {{ .Values.config.useScriptCompileCache | quote }}
+          # Cluster should only be enabled when replicaCount is more than 2 and useScriptCompileCache is set to false otherwise it won't work properly
+          - name: CLUSTER_ENABLED
+            value: {{ if and (gt (int (.Values.replicaCount)) 2) (not .Values.config.useScriptCompileCache) }} {{ .Values.cluster.enabled | quote }} {{ else }} "false" {{ end }}
+          - name: CLUSTER_ID
+            value: {{ .Values.cluster.clusterName }}
+          - name: CLUSTER_NODE_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: CLUSTER_CONFIG_FILE
+            value: {{ .Values.config.appConfigDir }}/hazelcast.yaml
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
+          - containerPort: {{ .Values.service.cluster.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
@@ -93,6 +119,9 @@ spec:
           - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
             name: {{ include "common.fullname" . }}-config
             subPath: logback.xml
+          - mountPath: {{ .Values.config.appConfigDir }}/hazelcast.yaml
+            name: {{ include "common.fullname" . }}-config
+            subPath: hazelcast.yaml
 
           - mountPath: {{ .Values.config.appConfigDir }}/ONAP_RootCA.cer
             name: {{ include "common.fullname" . }}-config
@@ -122,6 +151,8 @@ spec:
               path: application.properties
             - key: logback.xml
               path: logback.xml
+            - key: hazelcast.yaml
+              path: hazelcast.yaml
             - key: ONAP_RootCA.cer
               path: ONAP_RootCA.cer
         - name: {{ include "common.fullname" . }}-blueprints
