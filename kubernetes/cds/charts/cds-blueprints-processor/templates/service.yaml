@@ -56,3 +56,27 @@ spec:
   selector:
     app: {{ include "common.name" . }}
     release: {{ include "common.release" . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-cluster
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+spec:
+  type: {{ .Values.service.cluster.type }}
+  ports:
+    - port: {{ .Values.service.cluster.externalPort }}
+      targetPort: {{ .Values.service.cluster.internalPort }}
+      {{- if eq .Values.service.cluster.type "NodePort"}}
+      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.cluster.nodePort }}
+      {{- end}}
+      name: {{ .Values.service.cluster.portName | default "cluster" }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ .Release.Name }}
