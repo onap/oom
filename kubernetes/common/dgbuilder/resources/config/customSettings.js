@@ -26,31 +26,31 @@ module.exports={
     "sharedDir": "releases/sdnc1.0/flows/shared",
     "userDir": "releases/sdnc1.0",
     "httpAuth": {
-        "user": "dguser",
-        "pass": "{{.Values.config.dgUserPassword}}"
+        "user": "${HTTP_USER}",
+        "pass": "${HTTP_PASSWORD}"
     },
     "dbHost": "{{.Values.config.dbServiceName}}.{{ include "common.namespace" . }}",
     "dbPort": "3306",
-    "dbName": "sdnctl",
-    "dbUser": "sdnctl",
-    "dbPassword": "{{.Values.config.dbSdnctlPassword}}",
+    "dbName": "{{.Values.config.db.dbName}}",
+    "dbUser": "${DB_USER}",
+    "dbPassword": "${DB_PASSWORD}",
     "gitLocalRepository": "",
     "restConfUrl": "http://localhost:8181/restconf/operations/SLI-API:execute-graph",
-    "restConfUser": "admin",
-    "restConfPassword": "admin",
+    "restConfUser": "${REST_CONF_USER}",
+    "restConfPassword": "${REST_CONF_PASSWORD}",
     "formatXML": "Y",
     "formatJSON": "Y",
     "httpRoot": "/",
     "disableEditor": false,
     "httpAdminRoot": "/",
     "httpAdminAuth": {
-        "user": "dguser",
-        "pass": "{{.Values.config.dgUserPassword}}"
+        "user": "${HTTP_ADMIN_USER}",
+        "pass": "${HTTP_ADMIN_PASSWORD}"
     },
     "httpNodeRoot": "/",
     "httpNodeAuth": {
-        "user": "dguser",
-        "pass": "{{.Values.config.dgUserPassword}}"
+        "user": "${HTTP_NODE_USER}",
+        "pass": "${HTTP_NODE_PASSWORD}"
     },
     "uiHost": "0.0.0.0",
     "version": "0.9.1",
