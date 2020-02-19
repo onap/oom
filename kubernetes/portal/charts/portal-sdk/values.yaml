@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2018, 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,53 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
-
+  persistence: {}
+  #AAF global config overrides
+  aafEnabled: true
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
+  aafAppNs: org.osaaf.aaf
+  aafLocatorContainer: oom
 #################################################################
 # Application configuration defaults.
 #################################################################
+secrets:
+  - uid: aaf-deploy-creds
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
+
+## Persist data to a persitent volume
+persistence:
+  volumeReclaimPolicy: Delete
+  accessMode: ReadWriteOnce
+  mountPath: /dockerdata-nfs
+  enabled: true
+  aafCredsMountSubPath: portal/portal-sdk/aaf-props
+  aafCredsSize: 10M
+  aafCredsPath: /opt/app/osaaf/local
+
 # application image
 repository: nexus3.onap.org:10001
 image: onap/portal-sdk:2.6.0
 pullPolicy: Always
+
+#AAF service
+aafURL: https://aaf-service:8100/
+aafLocateUrl: https://aaf-locate:8095
+
+#AAF local config
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: portal
+  fqi: portal@portal.onap.org
+  publicFqdn: portal.onap.org
+  cadiLatitude: 0.0
+  cadiLongitude: 0.0
+  keystoreFile: "org.onap.portal.p12"
+  truststoreFile: "org.onap.portal.trust.jks"
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -57,8 +96,8 @@ service:
   type: NodePort
   name: portal-sdk
   portName: portal-sdk
-  internalPort: 8080
-  externalPort: 8080
+  internalPort: 8443
+  externalPort: 8443
   nodePort: 12
 
 mariadb:
@@ -85,7 +124,7 @@ ingress:
   service:
     - baseaddr: portalsdk
       name: "portal-sdk"
-      port: 8080
+      port: 8443
   config:
     ssl: "none"
 
