@@ -33,6 +33,41 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
+        env:
+        - name: APPC_DB_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "appcdb-user-creds" "key" "login") | indent 10 }}
+        - name: APPC_DB_PASSWD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "appcdb-user-creds" "key" "password") | indent 10 }}
+        - name: SDNC_DB_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "sdncdb-user-creds" "key" "login") | indent 10 }}
+        - name: SDNC_DB_PASSWD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "sdncdb-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input/appc-data-properties
+          name: onap-appc-data-properties-input
+        - mountPath: /config-input/appc-svclogic-config
+          name: onap-appc-svclogic-config-input
+        - mountPath: /config-input/sdnc-data-properties
+          name: onap-sdnc-data-properties-input
+        - mountPath: /config-input/sdnc-svclogic-config
+          name: onap-sdnc-svclogic-config-input
+        - mountPath: /config/appc-data-properties
+          name: onap-appc-data-properties
+        - mountPath: /config/appc-svclogic-config
+          name: onap-appc-svclogic-config
+        - mountPath: /config/sdnc-data-properties
+          name: onap-sdnc-data-properties
+        - mountPath: /config/sdnc-svclogic-config
+          name: onap-sdnc-svclogic-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
       - name: {{ include "common.name" . }}-readiness
         command:
         - /root/ready.py
@@ -70,6 +105,14 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 14}}
+            - name: APPC_DB_USER
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "appcdb-user-creds" "key" "login") | indent 14 }}
+            - name: APPC_DB_PASSWD
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "appcdb-user-creds" "key" "password") | indent 14 }}
+            - name: SDNC_DB_USER
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "sdncdb-user-creds" "key" "login") | indent 14 }}
+            - name: SDNC_DB_PASSWD
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "sdncdb-user-creds" "key" "password") | indent 14 }}
             - name: SDNC_CONFIG_DIR
               value: "{{ .Values.config.configDir }}"
             - name: APPC_CONFIG_DIR
@@ -102,7 +145,7 @@ spec:
             name: onap-appc-data-properties
             subPath: cadi.properties
           - mountPath: /opt/onap/appc/data/properties/aaa-app-config.xml
-            name: onap-appc-data-properties
+            name: onap-appc-data-properties-input
             subPath: aaa-app-config.xml
           - mountPath: /opt/onap/appc/data/properties/bath_config.csv
             name: onap-appc-data-properties
@@ -184,10 +227,10 @@ spec:
           emptyDir: {}
         - name: data-filebeat
           emptyDir: {}
-        - name: onap-appc-data-properties
+        - name: onap-appc-data-properties-input
           configMap:
             name: {{ include "common.fullname" . }}-onap-appc-data-properties
-        - name: onap-appc-svclogic-config
+        - name: onap-appc-svclogic-config-input
           configMap:
             name: {{ include "common.fullname" . }}-onap-appc-svclogic-config
         - name: onap-appc-svclogic-bin
@@ -198,10 +241,10 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-onap-appc-bin
             defaultMode: 0755
-        - name: onap-sdnc-data-properties
+        - name: onap-sdnc-data-properties-input
           configMap:
             name: {{ include "common.fullname" . }}-onap-sdnc-data-properties
-        - name: onap-sdnc-svclogic-config
+        - name: onap-sdnc-svclogic-config-input
           configMap:
             name: {{ include "common.fullname" . }}-onap-sdnc-svclogic-config
         - name: onap-sdnc-svclogic-bin
@@ -212,6 +255,18 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-onap-sdnc-bin
             defaultMode: 0755
+        - name: onap-appc-data-properties
+          emptyDir:
+            medium: Memory
+        - name: onap-appc-svclogic-config
+          emptyDir:
+            medium: Memory
+        - name: onap-sdnc-data-properties
+          emptyDir:
+            medium: Memory
+        - name: onap-sdnc-svclogic-config
+          emptyDir:
+            medium: Memory
 {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
