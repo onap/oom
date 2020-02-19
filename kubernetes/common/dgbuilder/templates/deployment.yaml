@@ -32,6 +32,40 @@ spec:
     spec:
       initContainers:
       - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: DB_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-creds" "key" "login") | indent 10 }}
+        - name: DB_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-user-creds" "key" "password") | indent 10 }}
+        - name: HTTP_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "http-user-creds" "key" "login") | indent 10 }}
+        - name: HTTP_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "http-user-creds" "key" "password") | indent 10 }}
+        - name: HTTP_ADMIN_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "admin-creds" "key" "login") | indent 10 }}
+        - name: HTTP_ADMIN_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "admin-creds" "key" "password") | indent 10 }}
+        - name: HTTP_NODE_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "node-creds" "key" "login") | indent 10 }}
+        - name: HTTP_NODE_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "node-creds" "key" "password") | indent 10 }}
+        - name: REST_CONF_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "restconf-creds" "key" "login") | indent 10 }}
+        - name: REST_CONF_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "restconf-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+      - command:
         - /root/ready.py
         args:
         - --container-name
@@ -59,11 +93,6 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-          - name: MYSQL_ROOT_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}
-                key: db-root-password
           - name: SDNC_CONFIG_DIR
             value: /opt/onap/sdnc/data/properties
           volumeMounts:
@@ -79,10 +108,7 @@ spec:
           - name: config
             mountPath: /opt/onap/ccsdk/dgbuilder/svclogic/svclogic.properties
             subPath: svclogic.properties
-          - name: scripts
-            mountPath: /opt/onap/ccsdk/dgbuilder/createReleaseDir.sh
-            subPath: createReleaseDir.sh
-          - name: scripts
+          - name: config
             mountPath: /opt/onap/ccsdk/dgbuilder/releases/sdnc1.0/customSettings.js
             subPath: customSettings.js
           resources:
@@ -99,12 +125,11 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: config
+        - name: config-input
           configMap:
             name: {{ include "common.fullname" . }}-config
-        - name: scripts
-          configMap:
-            name: {{ include "common.fullname" . }}-scripts
-            defaultMode: 0755
+        - name: config
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

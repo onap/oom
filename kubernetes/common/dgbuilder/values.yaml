@@ -31,6 +31,9 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
 
+  # envsusbt
+  envsubstImage: dibi/envsubst
+
   # image pull policy
   pullPolicy: Always
 
@@ -41,6 +44,40 @@ global:
 
   # flag to enable debugging - application support required
   debugEnabled: true
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: 'db-root-password'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.db.rootPasswordExternalSecret) . }}'
+    password: '{{ .Values.config.dbRootPassword }}'
+  - uid: 'db-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.dbSdnctlPassword }}'
+  - uid: 'http-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.httpCredsExternalSecret) . }}'
+    login: '{{ .Values.config.httpUser }}'
+    password: '{{ .Values.config.dgUserPassword }}'
+  - uid: 'admin-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.adminCredsExternalSecret) . }}'
+    login: '{{ .Values.config.adminUser }}'
+    password: '{{ .Values.config.dgUserPassword }}'
+  - uid: 'node-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.nodeCredsExternalSecret) . }}'
+    login: '{{ .Values.config.nodeUser }}'
+    password: '{{ .Values.config.dgUserPassword }}'
+  - uid: 'restconf-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.restconfCredsExternalSecret) . }}'
+    login: '{{ .Values.config.restconfUser }}'
+    password: '{{ .Values.config.restconfPassword }}'
 
 #################################################################
 # Application configuration defaults.
@@ -55,6 +92,32 @@ debugEnabled: false
 
 # application configuration
 config:
+  db:
+    dbName: sdnctl
+    # unused for now to preserve the API
+    rootPassword: openECOMP1.0
+    # rootPasswordExternalSecret: some secret
+    userName: sdnctl
+    # unused for now to preserve the API
+    userPassword: gamma
+    # userCredentialsExternalSecret: some secret
+  httpUser: dguser
+  # unused for now to preserve the API
+  httpPassword: cc03e747a6afbbcbf8be7668acfebee5
+  # httpCredsExternalSecret: some secret
+  adminUser: dguser
+  # unused for now to preserve the API
+  adminPassword: cc03e747a6afbbcbf8be7668acfebee5
+  # adminCredsExternalSecret: some secret
+  nodeUser: dguser
+  # unused for now to preserve the API
+  nodePassword: cc03e747a6afbbcbf8be7668acfebee5
+  # nodeCredsExternalSecret: some secret
+  restconfUser: admin
+  # unused for now to preserve the API
+  restconfPassword: admin
+  # restconfCredsExternalSecret: some secret
+
   dbRootPassword: openECOMP1.0
   dbSdnctlPassword: gamma
   dbPodName: mysql-db
