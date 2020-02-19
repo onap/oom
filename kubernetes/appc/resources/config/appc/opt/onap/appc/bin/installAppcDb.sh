@@ -23,9 +23,10 @@ SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
 MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
 
-APPC_DB_USER=${APPC_DB_USER:-appcctl}
-APPC_DB_PASSWD=${APPC_DB_PASSWD:-appcctl}
-APPC_DB_DATABASE=${SDN_DB_DATABASE:-appcctl}
+APPC_DB_USER=${APPC_DB_USER}
+APPC_DB_PASSWD=${APPC_DB_PASSWD}
+APPC_DB_DATABASE={{.Values.config.appcdb.dbName}}
+SDNC_DB_DATABASE={{.Values.config.sdncdb.dbName}}
 
 
 # Create tablespace and user account
@@ -40,15 +41,15 @@ END
 
 if [ -f ${APPC_HOME}/data/appcctl.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} appcctl < ${APPC_HOME}/data/appcctl.dump
+  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${APPC_DB_DATABASE} < ${APPC_HOME}/data/appcctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sdnctl.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sdnctl.dump
+  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sdnctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sqlData.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} sdnctl < ${APPC_HOME}/data/sqlData.dump
+  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sqlData.dump
 fi

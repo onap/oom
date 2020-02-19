@@ -22,6 +22,8 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  # envsusbt
+  envsubstImage: dibi/envsubst
   persistence:
     mountPath: /dockerdata-nfs
 
@@ -30,8 +32,23 @@ global:
 #################################################################
 secrets:
   - uid: "db-root-pass"
-    externalSecret: '{{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride")) }}'
+    name: '{{ include "common.release" . }}-appc-db-root-pass'
+    externalSecret: '{{ .Values.config.dbRootPassExternalSecret }}'
     type: password
+    password: '{{ .Values.config.dbRootPass }}'
+  - uid: 'appcdb-user-creds'
+    name: '{{ include "common.release" . }}-appcdb-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.appcdb.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.appcdb.userName }}'
+    password: '{{ .Values.config.appcdb.password }}'
+  - uid: 'sdncdb-user-creds'
+    name: '{{ include "common.release" . }}-sdncdb-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.sdncdb.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.sdncdb.userName }}'
+    password: '{{ .Values.config.sdncdb.password }}'
+
 
 #################################################################
 # Application configuration defaults.
@@ -47,13 +64,26 @@ debugEnabled: false
 
 # application configuration
 config:
+#  dbRootPassExternalSecret: some secret
+#  dbRootPass: password
+  appcdb:
+    # Warning: changing this config option may not work.
+    # It seems that the DB name is hardcoded.
+    dbName: appcctl
+    userName: appcctl
+    password: appcctl
+    # userCredsExternalSecret: some secret
+  sdncdb:
+    # Warning: changing this config option may not work.
+    # It seems that the DB name is hardcoded.
+    dbName: sdnctl
+    userName: sdnctl
+    password: gamma
+    # userCredsExternalSecret: some secret
   odlUid: 100
   odlGid: 101
   ansibleServiceName: appc-ansible-server
   ansiblePort: 8000
-  userName: my-user
-  userPassword: my-password
-  mysqlDatabase: my-database
   mariadbGaleraSVCName: appc-dbhost
   mariadbGaleraContName: appc-db
   enableAAF: true
@@ -85,6 +115,8 @@ appc-ansible-server:
 
 mariadb-galera:
   nameOverride: appc-db
+  config:
+    mariadbRootPasswordExternalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
   service:
     name: appc-dbhost
     portName: appc-dbhost
@@ -98,6 +130,9 @@ mariadb-galera:
 dgbuilder:
   nameOverride: appc-dgbuilder
   config:
+    db:
+      rootPasswordExternalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-sdncdb-user-creds'
     dbPodName: appc-db
     dbServiceName: appc-dbhost
   service:
