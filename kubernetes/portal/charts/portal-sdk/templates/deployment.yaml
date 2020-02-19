@@ -46,6 +46,64 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      {{- if .Values.global.aafEnabled }}
+      - name: {{ include "common.name" . }}-aaf-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /root/ready.py
+        args:
+          - --container-name
+          - aaf-locate
+          - --container-name
+          - aaf-cm
+        env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-aaf-config
+        image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
+        env:
+          - name: APP_FQI
+            value: "{{ .Values.aafConfig.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+          - name: aaf_locator_container
+            value: "{{ .Values.global.aafLocatorContainer }}"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aafConfig.fqdn }}"
+          - name: aaf_locator_public_fqdn
+            value: "{{.Values.aafConfig.publicFqdn}}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.global.aafAppNs }}"
+          - name: DEPLOY_FQI
+            value: "{{ .Values.aafConfig.aafDeployFqi }}"
+          - name: DEPLOY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.fullname" . }}-secret
+                key: aaf-deploy-password
+          - name: cadi_longitude
+            value: "{{ .Values.aafConfig.cadiLongitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aafConfig.cadiLatitude }}"
+      - name: {{ include "common.name" . }}-permission-fixer
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
+        command: ["chown","-Rf","1000:1001", "/opt/app/"]
+      {{ end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -69,6 +127,10 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+        {{- if .Values.global.aafEnabled }}
+        - mountPath: {{ .Values.persistence.aafCredsPath }}
+          name: {{ include "common.fullname" . }}-aaf-config-vol
+        {{- end }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -129,5 +191,14 @@ spec:
           emptyDir: {}
         - name: portal-tomcat-logs
           emptyDir: {}
+        {{- if .Values.global.aafEnabled }}
+        - name: {{ include "common.fullname" . }}-aaf-config-vol
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}-portal-sdk-aaf-pvc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
