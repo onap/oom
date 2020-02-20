@@ -35,7 +35,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - {{ .Values.mariadb.nameOverride }}
+        - {{ .Values.config.db.container }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -50,18 +50,15 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DB_HOST
-          value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
+          value: {{ .Values.config.db.host }}.{{.Release.Namespace}}
         - name: DB_PORT
-          value: {{ .Values.config.db_port | quote}}
+          value: {{ .Values.config.db.port | quote}}
         - name: DB_USERNAME
-          value: {{ .Values.config.db_root }}
+          value: {{ .Values.config.db.root }}
         - name: DB_SCHEMA
-          value: {{ .Values.config.mysqlDatabase }}
+          value: {{ .Values.config.db.mysqlDatabase }}
         - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-cmso-db-db-root-password
-              key: password
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "cmso-db-root-password" "key" "password") | indent 10}}
         terminationMessagePolicy: File
         volumeMounts:
         - name: {{ include "common.fullname" . }}-config
@@ -74,18 +71,15 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DB_HOST
-          value: {{ .Values.config.db_host }}.{{.Release.Namespace}}
+          value: {{ .Values.config.db.host }}.{{.Release.Namespace}}
         - name: DB_PORT
-          value: {{ .Values.config.db_port | quote}}
+          value: {{ .Values.config.db.port | quote}}
         - name: DB_USERNAME
-          value: {{ .Values.config.db_root }}
+          value: {{ .Values.config.db.root }}
         - name: DB_SCHEMA
-          value: {{ .Values.config.mysqlDatabase }}
+          value: {{ .Values.config.db.mysqlDatabase }}
         - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.release" . }}-cmso-db-db-root-password
-              key: password
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "cmso-db-root-password" "key" "password") | indent 10}}
         - name: JAVA_TRUSTSTORE
           value: /share/etc/certs/{{ .Values.global.truststoreFile }}
         - name: SSL_KEYSTORE
