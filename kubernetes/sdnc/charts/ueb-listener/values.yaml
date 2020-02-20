@@ -21,6 +21,41 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+    # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-secret
+    name: '{{ include "common.release" . }}-sdnc-ueb-listener-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-ueb-listener-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    passwordPolicy: required
+  - uid: odl-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.odlCredsExternalSecret }}'
+    login: '{{ .Values.config.odlUser }}'
+    password: '{{ .Values.config.odlPassword }}'
+    passwordPolicy: required
+  - uid: ueb-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.odlCredsExternalSecret }}'
+    login: '{{ .Values.config.uebUser }}'
+    password: '{{ .Values.config.uebPassword }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -40,11 +75,30 @@ config:
   sdcbeChartName: sdc-be
   msgRouterContainerName: message-router
   configDir: /opt/onap/sdnc/data/properties
+  uebUser: sdnc
+  uebPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  # uebCredsExternalSecret: some secret
+  odlUser: admin
   odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-  mariadbGalera:
-    chartName: mariadb-galera
-    serviceName: mariadb-galera
+  # odlCredsExternalSecret: some secret
+
+mariadb-galera:
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config:
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-sdnc-ueb-listener-db-secret'
+    userName: sdnctl
+    userPassword: gamma
+    mysqlDatabase: sdnctl
+  nameOverride: ueb-listener-galera
+  service:
+    name: ueb-listener-galera
+    portName: ueb-listener-galera
     internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: ueb-listener/maria/data
 
 # default number of instances
 replicaCount: 1
