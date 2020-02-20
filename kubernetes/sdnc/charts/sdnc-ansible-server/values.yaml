@@ -21,6 +21,35 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-sdnc-ansible-server-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-ansible-server-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    passwordPolicy: required
+  - uid: rest-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.restCredsExternalSecret }}'
+    login: '{{ .Values.config.restUser }}'
+    password: '{{ .Values.config.restPassword }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -37,9 +66,25 @@ debugEnabled: false
 config:
   sdncChartName: sdnc
   configDir: /opt/onap/sdnc
-  mariadbGalera:
-    serviceName: mariadb-galera
+  restUser: sdnc
+  restPassword: sdnc
+  # restCredsExternalSecret: some secret
 
+mariadb-galera:
+  config:
+    userCredentialsExternalSecret: *dbSecretName
+    userName: sdnc
+    userPassword: sdnc
+    mysqlDatabase: ansible
+  nameOverride: ansible-server-galera
+  service:
+    name: ansible-server-galera
+    portName: ansible-server-galera
+    internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: ansible-server/maria/data
 
 # default number of instances
 replicaCount: 1
