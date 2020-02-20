@@ -101,10 +101,38 @@ spec:
               subPath: config.json
             - mountPath: /opt/cert/
               name: tls-info
+            - mountPath: /opt/logs/
+              name: component-log
           env:
             - name: CONSUL_HOST
               value: consul.{{ include "common.namespace" . }}
+        - name: {{ include "common.name" . }}-filebeat
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          image: {{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}
+          imagePullPolicy: IfNotPresent
+          resources: {}
+          volumeMounts:
+          - mountPath: /var/log/onap/inventory
+            name: component-log
+          - mountPath: /usr/share/filebeat/data
+            name: filebeat-data
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
       volumes:
+        - emptyDir: {}
+          name: component-log
+        - emptyDir: {}
+          name: filebeat-data
+        - configMap:
+            defaultMode: 420
+            name: {{ include "common.fullname" . }}-filebeat-configmap
+          name: filebeat-conf
         - name: {{ include "common.fullname" . }}-inv-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
@@ -112,3 +140,4 @@ spec:
           name: tls-info
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
