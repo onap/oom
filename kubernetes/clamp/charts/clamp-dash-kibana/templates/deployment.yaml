@@ -68,6 +68,8 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           env:
+          - name: elasticsearch_base_url
+            value: "{{ternary "https" "http" .Values.security.ssl.enabled}}://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
@@ -75,8 +77,6 @@ spec:
           - mountPath: /usr/share/kibana/config/kibana.yml
             name: {{ include "common.fullname" . }}
             subPath: kibana.yml
-          - name: {{ include "common.fullname" . }}-aaf-pem-certs
-            mountPath: /usr/share/kibana/config/keystore/
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -97,8 +97,5 @@ spec:
             items:
             - key: kibana.yml
               path: kibana.yml
-        - name: {{ include "common.fullname" . }}-aaf-pem-certs
-          secret:
-            secretName: {{ include "common.fullname" . }}-aaf-pem-keys
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
