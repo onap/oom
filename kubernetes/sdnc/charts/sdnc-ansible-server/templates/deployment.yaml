@@ -32,6 +32,29 @@ spec:
     spec:
       initContainers:
       - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: DB_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: DB_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: REST_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "rest-creds" "key" "login") | indent 10 }}
+        - name: REST_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "rest-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
         - /root/ready.py
         args:
         - --container-name
@@ -89,9 +112,12 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: config
+        - name: config-input
           configMap:
             name: {{ include "common.fullname" . }}
             defaultMode: 0644
+        - name: config
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
