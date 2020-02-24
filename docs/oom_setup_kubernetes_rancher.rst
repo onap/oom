@@ -412,7 +412,7 @@ Apply customization script for NFS Server VM
 Click :download:`openstack-nfs-server.sh <openstack-nfs-server.sh>` to download the
 script.
 
-.. literalinclude:: openstack-k8s-workernode.sh
+.. literalinclude:: openstack-nfs-server.sh
    :language: bash
 
 This customization script will:
