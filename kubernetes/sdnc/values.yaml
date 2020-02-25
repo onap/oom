@@ -26,6 +26,83 @@ global:
   persistence:
     mountPath: /dockerdata-nfs
   aafEnabled: true
+  # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-root-password
+    name: '{{ include "common.release" . }}-sdnc-db-root-password'
+    type: password
+    externalSecret: '{{ .Values.global.mariadbGalera.localCluster | ternary (default (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride"))) (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret")) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+    password: '{{ (index .Values "mariadb-galera" "config" "mariadbRootPassword" }}'
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-sdnc-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+  - uid: odl-creds
+    name: &odlCredsSecretName '{{ include "common.release" . }}-sdnc-odl-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.config.odlCredsExternalSecret }}'
+    login: '{{ .Values.config.odlUser }}'
+    password: '{{ .Values.config.odlPassword }}'
+    # For now this is left hardcoded but should be revisited in a future
+    passwordPolicy: required
+  - uid: aaf-creds
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aaf_init.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aaf_init.deploy_fqi }}'
+    password: '{{ .Values.aaf_init.deploy_pass }}'
+    passwordPolicy: required
+  - uid: netbox-apikey
+    type: password
+    externalSecret: '{{ .Values.config.netboxApikeyExternalSecret }}'
+    password: '{{ .Values.config.netboxApikey }}'
+    passwordPolicy: required
+  - uid: aai-user-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.aaiCredsExternalSecret}}'
+    login: '{{ .Values.config.aaiUser }}'
+    password: '{{ .Values.config.aaiPassword }}'
+    passwordPolicy: required
+  - uid: modeling-user-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.modelingCredsExternalSecret}}'
+    login: '{{ .Values.config.modelingUser }}'
+    password: '{{ .Values.config.modelingPassword }}'
+    passwordPolicy: required
+  - uid: restconf-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.restconfCredsExternalSecret}}'
+    login: '{{ .Values.config.restconfUser }}'
+    password: '{{ .Values.config.restconfPassword }}'
+    passwordPolicy: required
+  - uid: ansible-creds
+    name: &ansibleSecretName '{{ include "common.release" . }}-sdnc-ansible-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.config.ansibleCredsExternalSecret}}'
+    login: '{{ .Values.config.ansibleUser }}'
+    password: '{{ .Values.config.ansiblePassword }}'
+    passwordPolicy: required
+  - uid: scaleout-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.scaleoutCredsExternalSecret}}'
+    login: '{{ .Values.config.scaleoutUser }}'
+    password: '{{ .Values.config.scaleoutPassword }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -43,11 +120,27 @@ debugEnabled: false
 config:
   odlUid: 100
   odlGid: 101
+  odlUser: admin
   odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-  dbRootPassword: secretpassword
-  dbSdnctlUser: sdnctl
-  dbSdnctlDatabase: sdnctl
-  dbSdnctlPassword: gamma
+  # odlCredsExternalSecret: some secret
+  netboxApikey: onceuponatimeiplayedwithnetbox20180814
+  # netboxApikeyExternalSecret: some secret
+  aaiUser: sdnc@sdnc.onap.org
+  aaiPassword: demo123456!
+  # aaiCredsExternalSecret: some secret
+  modelingUser: ccsdkapps
+  modelingPassword: ccsdkapps
+  # modelingCredsExternalSecret: some secret
+  restconfUser: admin
+  restconfPassword: admin
+  # restconfCredsExternalSecret: some secret
+  scaleoutUser: admin
+  scaleoutPassword: admin
+  # scaleoutExternalSecret: some secret
+  ansibleUser: sdnc
+  ansiblePassword: sdnc
+  # ansibleCredsExternalSecret: some secret
+  dbSdnctlDatabase: &sdncDbName sdnctl
   enableClustering: true
   sdncHome: /opt/onap/sdnc
   binDir: /opt/onap/sdnc/bin
@@ -91,17 +184,6 @@ config:
       parallelGCThreads : 3
       numberGGLogFiles: 10
 
-
-
-  #local Mariadb-galera cluster
-  localDBCluster: false
-
-  #Shared mariadb-galera details
-  mariadbGalera:
-    chartName: mariadb-galera
-    serviceName: mariadb-galera
-    internalPort: 3306
-
 # dependency / sub-chart configuration
 aaf_init:
   agentImage: onap/aaf/aaf_agent:2.1.15
@@ -114,46 +196,12 @@ aaf_init:
   cadi_latitude: "38.0"
   cadi_longitude: "-72.0"
 
-cds:
-  enabled: false
-
-dmaap-listener:
-  nameOverride: sdnc-dmaap-listener
-  config:
-    sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
-    dmaapPort: 3904
-    sdncPort: 8282
-    configDir: /opt/onap/sdnc/data/properties
-    odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-
-ueb-listener:
-  nameOverride: sdnc-ueb-listener
-  config:
-    sdncPort: 8282
-    sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
-    configDir: /opt/onap/sdnc/data/properties
-    odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-
-sdnc-portal:
-  config:
-    sdncChartName: sdnc
-    mysqlChartName: mariadb-galera
-    configDir: /opt/onap/sdnc/data/properties
-    dbRootPassword: secretpassword
-    dbSdnctlPassword: gamma
-    odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-
-sdnc-ansible-server:
-  service:
-    name: sdnc-ansible-server
-    internalPort: 8000
-  config:
-    mysqlServiceName: mariadb-galera
-
-mariadb-galera:
+mariadb-galera: &mariadbGalera
   nameOverride: sdnc-db
+  config:
+    rootPasswordExternalSecret: '{{ ternary (include "common.release" .)-sdnc-db-root-password "" .Values.global.mariadbGalera.localCluster }}'
+    userName: sdnctl
+    userCredentialsExternalSecret: *dbSecretName
   service:
     name: sdnc-dbhost
     internalPort: 3306
@@ -163,14 +211,67 @@ mariadb-galera:
     enabled: true
   replicaCount: 1
 
+cds:
+  enabled: false
+
+dmaap-listener:
+  nameOverride: sdnc-dmaap-listener
+  mariadb-galera:
+    << : *mariadbGalera
+    confing:
+      mysqlDatabase: *sdncDbName
+  config:
+    sdncChartName: sdnc
+    dmaapPort: 3904
+    sdncPort: 8282
+    configDir: /opt/onap/sdnc/data/properties
+    odlCredsExternalSecret: *odlCredsSecretName
+
+ueb-listener:
+  mariadb-galera:
+    << : *mariadbGalera
+    confing:
+      mysqlDatabase: *sdncDbName
+  nameOverride: sdnc-ueb-listener
+  config:
+    sdncPort: 8282
+    sdncChartName: sdnc
+    configDir: /opt/onap/sdnc/data/properties
+    odlCredsExternalSecret: *odlCredsSecretName
+
+sdnc-portal:
+  mariadb-galera:
+    << : *mariadbGalera
+    confing:
+      mysqlDatabase: *sdncDbName
+  config:
+    sdncChartName: sdnc
+    configDir: /opt/onap/sdnc/data/properties
+    odlCredsExternalSecret: *odlCredsSecretName
+
+sdnc-ansible-server:
+  config:
+    restCredsExternalSecret: *ansibleSecretName
+  mariadb-galera:
+    << : *mariadbGalera
+    confing:
+      mysqlDatabase: ansible
+  service:
+    name: sdnc-ansible-server
+    internalPort: 8000
+
 dgbuilder:
   nameOverride: sdnc-dgbuilder
   config:
+    db:
+      dbName: *sdncDbName
+      rootPasswordExternalSecret: '{{ ternary (printf "%s-sdnc-db-root-password" (include "common.release" .)) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" "mariadb-galera")) .Values.global.mariadbGalera.localCluster }}'
+      userCredentialsExternalSecret: *dbSecretName
     dbPodName: mariadb-galera
     dbServiceName: mariadb-galera
-    dbRootPassword: secretpassword
-    dbSdnctlPassword: gamma
+    # This should be revisited and changed to plain text
     dgUserPassword: cc03e747a6afbbcbf8be7668acfebee5
+  mariadb-galera:
   service:
     name: sdnc-dgbuilder
     nodePort: "03"

@@ -36,12 +36,53 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: AAI_CLIENT_NAME
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "aai-user-creds" "key" "login") | indent 10 }}
+        - name: AAI_CLIENT_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "aai-user-creds" "key" "password") | indent 10 }}
+        - name: MODELSERVICE_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "modeling-user-creds" "key" "login") | indent 10 }}
+        - name: MODELSERVICE_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "modeling-user-creds" "key" "password") | indent 10 }}
+        - name: RESTCONF_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "restconf-creds" "key" "login") | indent 10 }}
+        - name: RESTCONF_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "restconf-creds" "key" "password") | indent 10 }}
+        - name: ANSIBLE_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "ansible-creds" "key" "login") | indent 10 }}
+        - name: ANSIBLE_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "ansible-creds" "key" "password") | indent 10 }}
+        - name: SCALEOUT_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "scaleout-creds" "key" "login") | indent 10 }}
+        - name: SCALEOUT_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "scaleout-creds" "key" "password") | indent 10 }}
+        - name: NETBOX_APIKEY
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "netbox-apikey" "key" "password") | indent 10 }}
+        - name: SDNC_DB_USER
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SDNC_DB_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: properties
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
       - name: {{ include "common.name" . }}-readiness
         command:
         - /root/ready.py
         args:
         - --container-name
-        - {{ .Values.config.mariadbGalera.chartName }}
+        - {{ include "common.mariadbService" . }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -55,31 +96,24 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
-          - name: MYSQL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}
-                key: db-root-password
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
+          - name: ODL_ADMIN_USERNAME
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "odl-creds" "key" "login") | indent 12 }}
           - name: ODL_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}-odl
-                key: odl-password
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "odl-creds" "key" "password") | indent 12 }}
+          - name: SDNC_DB_USER
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
           - name: SDNC_DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "common.fullname" . }}-sdnctl
-                key: db-sdnctl-password
+            {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           - name: MYSQL_HOST
-            value: "{{.Values.config.mariadbGalera.serviceName}}.{{.Release.Namespace}}"
+            value: {{ include "common.mariadbService" . }}
           - name: SDNC_HOME
             value: "{{.Values.config.sdncHome}}"
           - name: ETC_DIR
             value: "{{.Values.config.etcDir}}"
           - name: BIN_DIR
             value: "{{.Values.config.binDir}}"
-          - name: SDNC_DB_USER
-            value: "{{.Values.config.dbSdnctlUser}}"
           - name: SDNC_DB_DATABASE
             value: "{{.Values.config.dbSdnctlDatabase}}"
         volumeMounts:
@@ -119,11 +153,13 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-bin
           defaultMode: 0755
-      - name: properties
+      - name: config-input
         configMap:
           name: {{ include "common.fullname" . }}-properties
           defaultMode: 0644
+      - name: properties
+        emptyDir:
+          medium: Memory
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-
