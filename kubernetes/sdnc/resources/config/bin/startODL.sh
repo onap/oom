@@ -65,7 +65,7 @@ function enable_odl_cluster(){
   addToFeatureBoot odl-jolokia
   #${ODL_HOME}/bin/client feature:install odl-mdsal-clustering
   #${ODL_HOME}/bin/client feature:install odl-jolokia
-  
+
 
   echo "Update cluster information statically"
   hm=$(hostname)
@@ -113,8 +113,8 @@ function enable_odl_cluster(){
 # Install SDN-C platform components if not already installed and start container
 
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
-ODL_ADMIN_USERNAME=${ODL_ADMIN_USERNAME:-admin}
-ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD:-Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U}
+ODL_ADMIN_USERNAME=${ODL_ADMIN_USERNAME}
+ODL_ADMIN_PASSWORD=${ODL_ADMIN_PASSWORD}
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 SDNC_BIN=${SDNC_BIN:-/opt/onap/sdnc/bin}
 CCSDK_HOME=${CCSDK_HOME:-/opt/onap/ccsdk}
@@ -166,4 +166,3 @@ nohup python ${SDNC_BIN}/installCerts.py &
 
 
 exec ${ODL_HOME}/bin/karaf server
-
