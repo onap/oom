@@ -25,11 +25,11 @@ SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 ETC_DIR=${ETC_DIR:-${SDNC_HOME}/data}
 BIN_DIR=${BIN_DIR-${SDNC_HOME}/bin}
 MYSQL_HOST=${MYSQL_HOST:-dbhost}
-MYSQL_PASSWORD=${MYSQL_PASSWORD:-openECOMP1.0}
+MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
 
-SDNC_DB_USER=${SDNC_DB_USER:-sdnctl}
-SDNC_DB_PASSWORD=${SDNC_DB_PASSWORD:-gamma}
-SDNC_DB_DATABASE=${SDN_DB_DATABASE:-sdnctl}
+SDNC_DB_USER=${SDNC_DB_USER}
+SDNC_DB_PASSWORD=${SDNC_DB_PASSWORD}
+SDNC_DB_DATABASE=${SDNC_DB_DATABASE}
 
 
 # Create tablespace and user account
@@ -46,12 +46,12 @@ END
 # load schema
 if [ -f ${ETC_DIR}/sdnctl.dump ]
 then
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} sdnctl < ${ETC_DIR}/sdnctl.dump
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < ${ETC_DIR}/sdnctl.dump
 fi
 
 for datafile in ${ETC_DIR}/*.data.dump
 do
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} sdnctl < $datafile
+  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < $datafile
 done
 
 # Create VNIs 100-199
