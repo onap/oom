@@ -56,15 +56,18 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
      - .dot : environment (.)
      - .ports : an array of ports
      - .portType: the type of the service
+     - .prefix: NodePort prefix to be used
+
 */}}
 {{- define "common.servicePorts" -}}
 {{- $portType := .portType -}}
 {{- $dot := .dot -}}
 {{- range $index, $port := .ports }}
+{{- $portPrefix := default "nodePortPrefix" $port.prefix }}
 - port: {{ $port.port }}
   targetPort: {{ $port.name }}
   {{- if (eq $portType "NodePort") }}
-  nodePort: {{ $dot.Values.global.nodePortPrefix | default $dot.Values.nodePortPrefix }}{{ $port.nodePort }}
+  nodePort: {{ index $dot.Values "global" $portPrefix | default (index $dot.Values $portPrefix) }}{{ $port.nodePort }}
   {{- end }}
   name: {{ $port.name }}
 {{- end -}}
