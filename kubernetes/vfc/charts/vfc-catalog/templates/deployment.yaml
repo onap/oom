@@ -37,7 +37,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - vfc-mariadb
+        - {{ .Values.config.mariadbService }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,6 +49,11 @@ spec:
         name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
+          command:
+            - sh
+          args:
+            - -c
+            - 'MYSQL_AUTH=root:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
@@ -75,9 +80,11 @@ spec:
             - name: MSB_ADDR
               value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
             - name: MYSQL_ADDR
-              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
-            - name: MYSQL_AUTH
-              value: "{{ .Values.global.config.dbUser }}:{{ .Values.global.config.mariadbRootPassword }}"
+              value: "{{ .Values.config.mariadbService }}:{{ .Values.config.mariadbPort }}"
+            - name: MYSQL_ROOT_USER
+              value: "{{ .Values.global.config.mariadb_admin }}"
+            - name: MYSQL_ROOT_PASSWORD
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 14}}
             - name: REDIS_ADDR
               value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
           volumeMounts:
