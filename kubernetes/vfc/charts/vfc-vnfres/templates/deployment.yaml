@@ -37,7 +37,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - vfc-mariadb
+        - {{ .Values.config.mariadbService }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -75,11 +75,14 @@ spec:
             - name: MSB_ADDR
               value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
             - name: MYSQL_ADDR
-              value: "{{ .Values.global.config.dbServiceName }}:{{ .Values.global.config.dbPort }}"
+              value: "{{ .Values.config.mariadbService }}:{{ .Values.config.mariadbPort }}"
             - name: REDIS_ADDR
               value: "{{ .Values.global.config.redisServiceName }}:{{ .Values.global.config.redisPort }}"
-            - name: MYSQL_AUTH
-              value: "{{ .Values.global.config.dbUser }}:{{ .Values.global.config.mariadbRootPassword }}"
+            - name: MYSQL_ROOT_USER
+              value: "{{ .Values.global.config.mariadb_admin }}"
+            - name: MYSQL_ROOT_PASSWORD
+              {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 14}}
+
           volumeMounts:
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
