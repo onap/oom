@@ -18,15 +18,21 @@ global:
     msbprotocol: https
     msbServiceName: msb-iag
     msbPort: 443
-    dbServiceName: vfc-db
-    dbPort: 3306
-    dbUser: root
-    mariadbRootPassword: secretpassword
     redisServiceName: vfc-redis
     redisPort: 6379
     reg_to_msb_when_start: False
+    mariadb_admin: root
   persistence:
     mountPath: /dockerdata-nfs
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: "db-root-pass"
+    name: &dbRootPassSecret '{{ include "common.release" . }}-vfc-db-root-pass'
+    type: password
+    password: '{{ .Values.config.mariadbRootPassword }}'
 
 # application configuration
 config:
@@ -34,24 +40,43 @@ config:
   logstashPort: 5044
 
 mariadb-galera:
+  config:
+    mariadbRootPasswordExternalSecret: *dbRootPassSecret
   nameOverride: vfc-mariadb
   service:
-    name: vfc-db
-    portName: vfc-db
+    name: vfc-mariadb
+    portName: vfc-mariadb
   nfsprovisionerPrefix: vfc
   persistence:
     mountSubPath: vfc/data
     enabled: true
   disableNfsProvisioner: true
 
-catalog:
+db: &dbConfig
+  mariadbService: vfc-mariadb
+  mariadbPort: 3306
+  mariadbRootPasswordExternalSecret: *dbRootPassSecret
+
+vfc-catalog:
   config:
-    dbPodName: vfc-db
-    dbServiceName: vfc-db
-nslcm:
+    << : *dbConfig
+
+vfc-nslcm:
   config:
-    dbPodName: vfc-db
-    dbServiceName: vfc-db
+    << : *dbConfig
+
+vfc-vnflcm:
+  config:
+    << : *dbConfig
+
+vfc-vnfmgr:
+  config:
+    << : *dbConfig
+
+vfc-vnfres:
+  config:
+    << : *dbConfig
+
 # sub-chart configuration
 vfc-workflow:
   service:
