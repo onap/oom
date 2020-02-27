@@ -16,7 +16,29 @@
 #################################################################
 # Global configuration defaults.
 #################################################################
+
+mariadb-galera:
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-ejbca-db-secret'
+    mysqlDatabase: ejbca
+  nameOverride: ejbca-galera
+  service:
+    name: '{{ include "common.servicename" . }}-ejbca-db-secret'
+    portName: ejbca-galera
+    internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: ejbca/maria/data
+
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: nbi-config
+
 global:
+  envsubstImage: dibi/envsubst
   nodePortPrefix: 302
   # Readiness image
   readinessRepository: oomk8s
@@ -35,11 +57,20 @@ global:
   # Standard OOM
   pullPolicy: "Always"
   repository: "nexus3.onap.org:10001"
+  masterPassword: password
+  mariadbGalera: &mariadbGalera
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: aaf-ejbca-database
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
   # Use Local
   #pullPolicy: IfNotPresent
   #repository: "nexus3.onap.org:10003"
 
+  cmpv2Enabled: true
+  cmpv2Testing: true
   aaf:
     readiness: false
     image: onap/aaf/aaf_core:2.1.20
@@ -103,7 +134,9 @@ global:
     hello:
       replicas: 0
 #     Note: as hello is a sample app, find values in charts/aaf-hello/values.yaml
-
+    certServiceClient:
+      secret:
+        name: aaf-cert-service-client-tls-secret
 
 #################################################################
 # Application configuration defaults.
