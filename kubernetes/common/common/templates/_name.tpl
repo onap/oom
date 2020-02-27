@@ -16,9 +16,14 @@
 
 {{/*
   Expand the name of a chart.
+  The function takes from one to two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix : add a suffix to the name
 */}}
 {{- define "common.name" -}}
-  {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+  {{- $dot := default . .dot -}}
+  {{- $suffix := .suffix -}}
+  {{- default $dot.Chart.Name $dot.Values.nameOverride | trunc 63 | trimSuffix "-" -}}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 {{- end -}}
 
 {{/*
@@ -34,10 +39,18 @@
 {{/*
   Create a default fully qualified application name.
   Truncated at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+  Usage:
+      include "common.fullname" .
+      include "common.fullname" (dict "suffix" "mySuffix" "dot" .)
+  The function takes from one to two arguments:
+     - .dot : environment (.)
+     - .suffix : add a suffix to the fullname
 */}}
 {{- define "common.fullname" -}}
-  {{- $name := default .Chart.Name .Values.nameOverride -}}
-  {{- include "common.fullnameExplicit" (dict "dot" . "chartName" $name) }}
+{{- $dot := default . .dot -}}
+{{- $suffix := default (dict) .suffix -}}
+  {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
+  {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name) }}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 {{- end -}}
 
 {{/*
