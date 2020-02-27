@@ -1,0 +1,122 @@
+# Copyright © 2020, Nokia
+# Modifications Copyright  © 2020, Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+appLabel: aaf-cert-service
+replicaCount: 1
+repository: nexus3.onap.org:10001
+image: onap/org.onap.aaf.certservice.aaf-certservice-api:1.0.0
+pullPolicy: Always
+containerPort: 8443
+service:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8443
+      port_protocol: http
+liveness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  command: curl https://localhost:$HTTPS_PORT/actuator/health --cacert $ROOT_CERT --cert-type p12 --cert $KEYSTORE_P12_PATH --pass $KEYSTORE_PASSWORD
+readiness:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  command: curl https://localhost:$HTTPS_PORT/ready --cacert $ROOT_CERT --cert-type p12 --cert $KEYSTORE_P12_PATH --pass $KEYSTORE_PASSWORD
+volume:
+  name: aaf-cert-service-volume
+  mountPath: /etc/onap/aaf/certservice
+
+flavor: small
+resources:
+  small:
+    limits:
+      cpu: 0.5
+      memory: 1Gi
+    requests:
+      cpu: 0.2
+      memory: 512Mi
+  large:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 0.4
+      memory: 1Gi
+  unlimited: {}
+
+
+secret:
+  name: aaf-cert-service-secret
+
+tls:
+  server:
+    secret:
+      name: aaf-cert-service-server-tls-secret
+    volume:
+      name: aaf-cert-service-server-tls-volume
+      mountPath: /etc/onap/aaf/certservice/certs/
+  client:
+    secret:
+      name: aaf-cert-service-client-tls-secret
+
+envs:
+  keystore:
+    jksName: certServiceServer-keystore.jks
+    p12Name: certServiceServer-keystore.p12
+  truststore:
+    jksName: truststore.jks
+    crtName: root.crt
+
+config:
+  cmp:
+    client:
+      iak: mypassword
+      rv: mypassword
+    ra:
+      iak: mypassword
+      rv: mypassword
+    #clientExternalSecret:  some secret
+    #raExternalSecret: some secret
+  tls:
+    keystorePassword: secret
+    truststorePassword: secret
+    #keystorePasswordExternalSecret:
+    #truststorePasswordExternalSecret:
+
+secrets:
+  - uid: cmp-config-client
+    name: '{{ include "common.release" . }}-cmp-config-client'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.cmp.clientExternalSecret) . }}'
+    login: '{{ .Values.config.cmp.client.iak }}'
+    password: '{{ .Values.config.cmp.client.rv }}'
+  - uid: cmp-config-ra
+    name: '{{ include "common.release" . }}-cmp-config-ra'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.cmp.raExternalSecret) . }}'
+    login: '{{ .Values.config.cmp.ra.iak }}'
+    password: '{{ .Values.config.cmp.ra.rv }}'
+  - uid: keystore-password
+    name: '{{ include "common.release" . }}-keystore-password'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.tls.keystorePasswordExternalSecret) . }}'
+    password: '{{ .Values.config.tls.keystorePassword }}'
+  - uid: truststore-password
+    name: '{{ include "common.release" . }}-truststore-password'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.tls.truststorePasswordExternalSecret) . }}'
+    password: '{{ .Values.config.tls.truststorePassword }}'
