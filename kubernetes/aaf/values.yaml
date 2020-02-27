@@ -15,6 +15,27 @@
 #################################################################
 # Global configuration defaults.
 #################################################################
+
+mariadb-galera:
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-ejbca-db-secret'
+    mysqlDatabase: ejbca
+  nameOverride: ejbca-galera
+  service:
+    name: '{{ include "common.servicename" . }}-ejbca-db-secret'
+    portName: ejbca-galera
+    internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: ejbca/maria/data
+
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: nbi-config
+
 global:
   nodePortPrefix: 302
   readinessRepository: oomk8s
@@ -26,6 +47,15 @@ global:
   # Standard OOM
   pullPolicy: "Always"
   repository: "nexus3.onap.org:10001"
+  cmpv2_enabled: true
+  cmpv2_testing: true
+  masterPassword: password
+  mariadbGalera: &mariadbGalera
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: aaf-ejbca-database
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
   # Use Local
   #pullPolicy: IfNotPresent
