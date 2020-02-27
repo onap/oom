@@ -1,0 +1,59 @@
+# Copyright © 2020, Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{- if and .Values.global.cmpv2_enabled .Values.global.cmpv2_testing }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      volumes:
+        - secret:
+            secretName: "{{ include "common.fullname" . }}-secret"
+            defaultMode: 0755
+          name: "{{ include "common.fullname" . }}-volume"
+      containers:
+        - name: {{ include "common.name" . }}-ejbca
+          image: {{ .Values.ejbca.image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "/opt/primekey/scripts/ejbca-config.sh"]
+            volumeMounts:
+              - name: "{{ include "common.fullname" . }}-volume"
+                mountPath: /opt/primekey/scripts/
+          ports:
+            - containerPort: {{ .Values.ejbca.containerPortHTTP }}
+              name: proxied-http
+            - containerPort: {{ .Values.ejbca.containerPortHTTPS }}
+              name: proxied-https
+          env:
+            - name: INITIAL_ADMIN
+              value: ";PublicAccessAuthenticationToken:TRANSPORT_ANY;"
+            - name: DATABASE_JDBC_URL
+              value: jdbc:mariadb://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+            - name: DATABASE_USER
+              value: user
+            - name: DATABASE_PASSWORD
+              value: passwordcd
+
+{{ end -}}
