@@ -1,0 +1,66 @@
+# Copyright © 2020, Nokia
+# Modifications Copyright  © 2020, Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+appLabel: aaf-cert-service
+replicaCount: 1
+repository: nexus3.onap.org:10001
+image: onap/org.onap.aaf.certservice.aaf-certservice-api:1.0.0
+pullPolicy: Always
+containerPort: 8443
+service:
+  type: ClusterIP
+liveness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  command: curl https://localhost:8443/actuator/health --cacert /etc/onap/aaf/certservice/certs/root.crt --cert-type p12 --cert /etc/onap/aaf/certservice/certs/certServiceServer-keystore.p12 --pass secret
+readiness:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  command: curl https://localhost:8443/ready --cacert /etc/onap/aaf/certservice/certs/root.crt --cert-type p12 --cert /etc/onap/aaf/certservice/certs/certServiceServer-keystore.p12 --pass secret
+volume:
+  name: aaf-cert-service-volume
+  mountPath: /etc/onap/aaf/certservice
+env_variables:
+  cmpv2_issuer: "ManagementCA"
+  cmpv2_country: "US"
+  cmpv2_organization: "ONAP"
+  cmpv2_state: "California"
+  cmpv2_organizational_unit: ""
+  cmpv2_location: ""
+
+resources:
+  limits:
+    cpu: 2
+    memory: 2Gi
+  requests:
+    cpu: 1
+    memory: 1Gi
+
+secret:
+  name: aaf-cert-service-secret
+
+tls:
+  server:
+    secret:
+      name: aaf-cert-service-server-tls-secret
+    volume:
+      name: aaf-cert-service-server-tls-volume
+      mountPath: /etc/onap/aaf/certservice/certs/
+  client:
+    secret:
+      name: aaf-cert-service-client-tls-secret
