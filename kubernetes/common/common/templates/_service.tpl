@@ -31,11 +31,12 @@
 {{- end -}}
 
 {{/* Define the metadata of Service
-     The function takes from one to three arguments (inside a dictionary):
+     The function takes from one to four arguments (inside a dictionary):
      - .dot : environment (.)
      - .suffix : a string which will be added at the end of the name (with a '-').
      - .annotations: the annotations to add
      - .msb_informations: msb information in order to create msb annotation
+     - .labels : labels to add
      Usage example:
       {{ include "common.serviceMetadata" ( dict "suffix" "myService" "dot" .) }}
       {{ include "common.serviceMetadata" ( dict "annotations" .Values.service.annotation "dot" .) }}
@@ -45,6 +46,7 @@
   {{- $suffix := default "" .suffix -}}
   {{- $annotations := default "" .annotations -}}
   {{- $msb_informations := default "" .msb_informations -}}
+  {{- $labels := default (dict) .labels -}}
 {{- if or $annotations $msb_informations -}}
 annotations:
 {{-   if $annotations }}
@@ -65,7 +67,7 @@ annotations:
 {{- end }}
 name: {{ include "common.servicename" $dot }}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 namespace: {{ include "common.namespace" $dot }}
-labels: {{- include "common.labels" $dot | nindent 2 -}}
+labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 2 -}}
 {{- end -}}
 
 {{/* Define the ports of Service
@@ -125,6 +127,9 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
      - .publishNotReadyAddresses: if we publish not ready address
      - .headless: if the service is headless
      - .add_plain_port: add tls port AND plain port
+     - .labels : labels to add (dict)
+     - .matchLabels: selectors/machLabels to add (dict)
+     - .sessionAffinity: ClientIP  - enables sticky sessions based on client IP, default: None
 */}}
 {{- define "common.genericService" -}}
 {{- $dot := default . .dot -}}
@@ -136,9 +141,12 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
 {{- $ports := .ports -}}
 {{- $headless := default false .headless -}}
 {{- $add_plain_port := default false .add_plain_port }}
+{{- $labels := default (dict) .labels -}}
+{{- $matchLabels := default (dict) .matchLabels -}}
+{{- $sessionAffinity := default "None" $dot.Values.service.sessionAffinity -}}
 apiVersion: v1
 kind: Service
-metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" $dot) | nindent 2 }}
+metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "labels" $labels "dot" $dot) | nindent 2 }}
 spec:
   {{- if $headless }}
   clusterIP: None
@@ -148,7 +156,8 @@ spec:
   publishNotReadyAddresses: true
   {{- end }}
   type: {{ $serviceType }}
-  selector: {{- include "common.matchLabels" $dot | nindent 4 }}
+  selector: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "dot" $dot) | nindent 4 }}
+  sessionAffinity: {{ $sessionAffinity }}
 {{- end -}}
 
 {{/*
@@ -166,15 +175,19 @@ spec:
     ports and the other one is NodePort (or LoadBalancer) with crypted port only.
 */}}
 {{- define "common.service" -}}
-{{-   $suffix := default "" .Values.service.suffix -}}
-{{-   $annotations := default "" .Values.service.annotations -}}
-{{-   $publishNotReadyAddresses := default false .Values.service.publishNotReadyAddresses -}}
-{{-   $msb_informations := default "" .Values.service.msb -}}
-{{-   $serviceType := .Values.service.type -}}
-{{-   $ports := .Values.service.ports -}}
-{{-   $both_tls_and_plain:= default false .Values.service.both_tls_and_plain }}
+{{-   $dot := default . .dot -}}
+{{-   $suffix := default "" $dot.Values.service.suffix -}}
+{{-   $annotations := default "" $dot.Values.service.annotations -}}
+{{-   $publishNotReadyAddresses := default false $dot.Values.service.publishNotReadyAddresses -}}
+{{-   $msb_informations := default "" $dot.Values.service.msb -}}
+{{-   $serviceType := $dot.Values.service.type -}}
+{{-   $ports := $dot.Values.service.ports -}}
+{{-   $both_tls_and_plain:= default false $dot.Values.service.both_tls_and_plain }}
+{{-   $labels := default (dict) .labels -}}
+{{-   $matchLabels := default (dict) .matchLabels -}}
+
 {{-   if (and (include "common.needTLS" .) $both_tls_and_plain) }}
-{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true $labels "matchLabels" $matchLabels) }}
 {{-     if (ne $serviceType "ClusterIP") }}
 ---
 {{-       if $suffix }}
@@ -182,20 +195,23 @@ spec:
 {{-       else }}
 {{-         $suffix = "external" }}
 {{-       end }}
-{{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType) }}
+{{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
 {{-     end }}
 {{-   else }}
-{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
 {{-   end }}
 {{- end -}}
 
 {{/* Create headless service template */}}
 {{- define "common.headlessService" -}}
-{{- $suffix := include "common._makeHeadlessSuffix" . -}}
-{{- $annotations := default "" .Values.service.headless.annotations -}}
-{{- $publishNotReadyAddresses := default false .Values.service.headless.publishNotReadyAddresses -}}
-{{- $ports := .Values.service.headlessPorts -}}
-{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "headless" true ) }}
+{{- $dot := default . .dot -}}
+{{- $suffix := include "common._makeHeadlessSuffix" $dot -}}
+{{- $annotations := default "" $dot.Values.service.headless.annotations -}}
+{{- $publishNotReadyAddresses := default false $dot.Values.service.headless.publishNotReadyAddresses -}}
+{{- $ports := $dot.Values.service.headlessPorts -}}
+{{- $labels := default (dict) .labels -}}
+{{- $matchLabels := default (dict) .matchLabels -}}
+{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "headless" true "labels" $labels "matchLabels" $matchLabels) }}
 {{- end -}}
 
 {{/*
