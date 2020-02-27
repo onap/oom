@@ -1,0 +1,44 @@
+{{- if and .Values.global.cmpv2_enabled.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appLabel }}
+    spec:
+      volumes:
+        - name: {{ .Values.volume.name }}
+          secret:
+            secretName: {{ .Values.secret.name }}
+      containers:
+        - name: aaf-cert-service
+          image: {{ .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.containerPort }}
+              path: {{ .Values.healthcheck.path }}
+              initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+              periodSeconds: {{ .Values.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.containerPort }}
+              path: {{ .Values.healthcheck.path }}
+              initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+              periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+            - name: {{ .Values.volume.name }}
+              mountPath: {{ .Values.volume.mountPath }}
+              readOnly: true
+          resources:
+            {{ toYaml .Values.resources }}
+{{ end -}}
