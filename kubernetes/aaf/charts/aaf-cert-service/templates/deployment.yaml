@@ -1,0 +1,64 @@
+{{- if .Values.global.cmpv2_enabled.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}`
+
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appLabel }}
+    spec:
+      volumes:
+        - name: {{ .Values.volume.name }}
+          secret:
+            secretName: {{ .Values.secret.name }}
+      containers:
+        - name: aaf-cert-service
+          image: {{ .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          env:
+            - name: cmpv2_issuer
+              value: {{ .Values.env_variables.cmpv2_issuer }}
+            - name: cmpv2_country
+              value: {{ .Values.env_variables.cmpv2_country }}
+            - name: cmpv2_organization
+              value: {{ .Values.env_variables.cmpv2_organization }}
+            - name: cmpv2_state
+              value: {{ .Values.env_variables.cmpv2_state }}
+            - name: cmpv2_organizational_unit
+              value: {{ .Values.env_variables.cmpv2_organizational_unit }}
+            - name: cmpv2_location
+              value: {{ .Values.env_variables.cmpv2_location }}
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.containerPort }}
+              path: {{ .Values.healthcheck.path }}
+              initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+              periodSeconds: {{ .Values.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.containerPort }}
+              path: {{ .Values.healthcheck.path }}
+              initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+              periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+            - name: {{ .Values.volume.name }}
+              mountPath: {{ .Values.volume.mountPath }}
+              readOnly: true
+          resources:
+            {{ toYaml .Values.resources }}
+{{ end -}}

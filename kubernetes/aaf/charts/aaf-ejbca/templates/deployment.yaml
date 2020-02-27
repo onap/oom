@@ -1,0 +1,93 @@
+{{- if and .Values.global.cmpv2_enabled.enabled .Values.global.cmpv2_testing.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    app: {{ include "common.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+    spec:
+      containers:
+        - name: ejbca
+          image: primekey/ejbca-ce
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.containerPortHTTP }}
+              name: proxied-http
+            - containerPort: {{ .Values.containerPortHTTPS }}
+              name: proxied-https
+          env:
+            - name: PROXY_HTTP_BIND
+              value: "0.0.0.0"
+            - name: INITIAL_ADMIN
+              value: ";PublicAccessAuthenticationToken:TRANSPORT_ANY;"
+            - name: DATABASE_JDBC_URL
+              value: "jdbc:mysql://ejbca-database-service:3306/ejbca?characterEncoding=utf8"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "common.fullname" . }}-database-credentials"
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "common.fullname" . }}-database-credentials"
+                  key: password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ include "common.fullname" . }}-database"
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: mariadb
+          image: library/mariadb:10.2
+          ports:
+            - containerPort: 3306
+              name: mariadb
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "common.fullname" . }}-database-credentials"
+                  key: password-root
+            - name: MYSQL_DATABASE
+              value: "ejbca"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "common.fullname" . }}-database-credentials"
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ include "common.fullname" . }}-database-credentials"
+                  key: password
+          volumeMounts:
+            - name: config-mariadb-volume
+              mountPath: /etc/mysql/config.d/
+      volumes:
+        - name: config-mariadb-volume
+          configMap:
+            name: {{ include "common.fullname" . }}
+---
+{{ end -}}
