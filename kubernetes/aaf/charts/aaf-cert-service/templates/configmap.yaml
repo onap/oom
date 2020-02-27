@@ -1,4 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2020, Nokia
+# Modifications Copyright  © 2020, Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dependencies:
-  - name: common
-    version: ~6.x-0
-    repository: '@local'
-  - name: mariadb-galera
-    version: ~6.x-0
-    repository: '@local'
-    condition: global.mariadbGalera.localCluster
-  - name: mariadb-init
-    version: ~6.x-0
-    repository: '@local'
-    condition: not global.mariadbGalera.localCluster
+{{- if .Values.global.cmpv2Enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMap.name }}
+data:
+{{ if .Values.global.cmpv2Testing }}
+  {{- (.Files.Glob "resources/test/cmpServers.json").AsConfig | indent 2 }}
+{{ else }}
+  {{- (.Files.Glob "resources/default/cmpServers.json").AsConfig | indent 2 }}
+{{ end }}
+{{ end -}}
