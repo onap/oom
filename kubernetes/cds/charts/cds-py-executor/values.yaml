@@ -1,0 +1,107 @@
+# Copyright (c) 2020 Bell Canada, Deutsche Telekom
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific lan`guage governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  # Change to an unused port prefix range to prevent port conflicts
+  # with other instances running within the same k8s cluster
+  nodePortPrefix: 302
+
+  # image repositories
+  repository: nexus3.onap.org:10001
+
+  # readiness check
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+
+  # image pull policy
+  pullPolicy: Always
+
+  persistence:
+    mountPath: /dockerdata-nfs
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/ccsdk-py-executor:0.7.0-STAGING-latest
+pullPolicy: Always
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 20
+  periodSeconds: 20
+  timeoutSeconds: 20
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 20
+
+service:
+  type: ClusterIP
+  ports:
+  - port: 50052
+    name: executor-grpc
+  - port: 50053
+    name: manager-grpc
+
+deployment:
+  env:
+    appPort: 50052
+    authType: tls-auth
+    authToken: insert_token_here_if_auth_type=basic
+    logFile: /dev/stdout
+    artifactManagerPort: 50053
+    artifactManagerLogFile: /dev/stdout
+
+persistence:
+  enabled: true
+  mountSubPath: cds/blueprints/deploy
+  deployedBlueprint: /opt/app/onap/blueprints/deploy
+
+ingress:
+  enabled: false
+
+flavor: small
+
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  unlimited: {}
