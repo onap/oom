@@ -21,7 +21,7 @@
 # https://wiki.onap.org/display/DW/OOM+RKE+Kubernetes+Deployment
 # source from https://jira.onap.org/browse/OOM-1598
 #
-# master/dublin 
+# master/dublin
 #     RKE 0.1.16 Kubernetes 1.11.6, kubectl 1.11.6, Helm 2.9.1, Docker 18.06
 #     20190428 RKE 0.2.1, Kubernetes 1.13.5, kubectl 1.13.5, Helm 2.12.3, Docker 18.09.5
 # single node install, HA pending
@@ -30,7 +30,7 @@ usage() {
 cat <<EOF
 Usage: $0 [PARAMs]
 example
-sudo ./rke_setup.sh -b dublin -s rke.onap.cloud -e onap -l amdocs -v true
+sudo ./rke_setup.sh -b master -s rke.onap.cloud -e onap -l amdocs -v true
 -u                  : Display usage
 -b [branch]         : branch = master or dublin (required)
 -s [server]         : server = IP or DNS name (required)
@@ -48,16 +48,16 @@ install_onap() {
   KUBECTL_VERSION=1.13.5
   HELM_VERSION=2.12.3
   DOCKER_VERSION=18.09
- 
+
   # copy your private ssh key and cluster.yml file to the vm
   # on your dev machine
   #sudo cp ~/.ssh/onap_rsa .
-  #sudo chmod 777 onap_rsa 
+  #sudo chmod 777 onap_rsa
   #scp onap_rsa ubuntu@192.168.241.132:~/
   # on this vm
-  #sudo chmod 400 onap_rsa 
+  #sudo chmod 400 onap_rsa
   #sudo cp onap_rsa ~/.ssh
-  # make sure public key is insetup correctly in 
+  # make sure public key is insetup correctly in
   # sudo vi ~/.ssh/authorized_keys
 
   echo "please supply your ssh key as provided by the -k keyname - it must be be chmod 400 and chown user:user in ~/.ssh/"
@@ -66,8 +66,8 @@ install_onap() {
   echo "specifically"
   echo "address: $SERVER"
   echo "user: $USERNAME"
-  echo "ssh_key_path: $SSHPATH_PREFIX/$SSHKEY" 
-  
+  echo "ssh_key_path: $SSHPATH_PREFIX/$SSHKEY"
+
   RKETOOLS=
   HYPERCUBE=
   POD_INFRA_CONTAINER=

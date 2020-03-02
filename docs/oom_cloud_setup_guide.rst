@@ -53,7 +53,9 @@ The versions of Kubernetes that are supported by OOM are as follows:
   casablanca         1.11.5       2.9.1   1.11.5    17.03.x
   dublin             1.13.5       2.12.3  1.13.5    18.09.5
   el alto            1.15.2       2.14.2  1.15.2    18.09.x
+  frankfurt          1.15.9       2.16.3  1.15.9    18.09.x
   ==============     ===========  ======  ========  ========
+
 
 Minimum Hardware Configuration
 ==============================
