@@ -373,6 +373,9 @@ Templates are provided in order to create Kubernetes resources (Secrets,
 Ingress, Services, ...) or part of Kubernetes resources (names, labels,
 resources requests and limits, ...).
 
+a full list and simple description is done in
+`kubernetes/common/common/documentation.rst`.
+
 Service template
 ----------------
 
