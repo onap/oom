@@ -19,10 +19,12 @@
   Will use first ".Values.service.ports" list.
   Will append ports from ".Values.service.headlessPorts" only if port number is
   not already in port list.
+  Will add tls port AND plain port if both_tls_and_plain is set to true
 */}}
 {{- define "common.containerPorts" -}}
 {{-   $ports := default (list) .Values.service.ports }}
 {{-   $portsNumber := list }}
+{{-   $both_tls_and_plain:= default false .Values.service.both_tls_and_plain }}
 {{-   range $index, $port := $ports }}
 {{-     $portsNumber = append $portsNumber $port.port }}
 {{-   end }}
@@ -31,8 +33,17 @@
 {{-       $ports = append $ports $port }}
 {{-     end }}
 {{-   end }}
+{{- $global := . }}
 {{-   range $index, $port := $ports }}
+{{-     if (include "common.needTLS" $global) }}
 - containerPort: {{ $port.port }}
+{{-     else }}
+- containerPort: {{ default $port.port $port.plain_port }}
+{{-     end }}
   name: {{ $port.name }}
+{{-     if (and $port.plain_port (and (include "common.needTLS" $global) $both_tls_and_plain))  }}
+- containerPort: {{ $port.plain_port }}
+  name: {{ $port.name }}-plain
+{{-     end }}
 {{-   end }}
 {{- end -}}
