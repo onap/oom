@@ -55,29 +55,41 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
      The function takes three arguments (inside a dictionary):
      - .dot : environment (.)
      - .ports : an array of ports
-     - .portType: the type of the service
-     - .prefix: NodePort prefix to be used
-
+     - .serviceType: the type of the service
 */}}
 {{- define "common.servicePorts" -}}
-{{- $portType := .portType -}}
-{{- $dot := .dot -}}
-{{- range $index, $port := .ports }}
-{{- $portPrefix := default "nodePortPrefix" $port.prefix }}
+{{- $serviceType := .serviceType }}
+{{- $dot := .dot }}
+{{-   range $index, $port := .ports }}
+{{-     if (include "common.needTLS" $dot) }}
 - port: {{ $port.port }}
   targetPort: {{ $port.name }}
-  {{- if (eq $portType "NodePort") }}
-  nodePort: {{ index $dot.Values "global" $portPrefix | default (index $dot.Values $portPrefix) }}{{ $port.nodePort }}
-  {{- end }}
+{{-       if $port.port_protocol }}
+  name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
+{{-       else }}
   name: {{ $port.name }}
-{{- end -}}
+{{-       end }}
+{{-       if (eq $serviceType "NodePort") }}
+{{- $portPrefix := default "nodePortPrefix" $port.prefix }}
+  nodePort: {{ index $dot.Values "global" $portPrefix | default (index $dot.Values $portPrefix) }}{{ $port.nodePort }}
+{{-       end }}
+{{-     else }}
+- port: {{ default $port.port $port.plain_port }}
+  targetPort: {{ $port.name }}
+{{-       if $port.port_protocol }}
+  name: {{ printf "%s-%s" $port.port_protocol $port.name }}
+{{-       else }}
+  name: {{ $port.name }}
+{{-       end }}
+{{-     end }}
+{{-   end }}
 {{- end -}}
 
 {{/* Create generic service template
      The function takes several arguments (inside a dictionary):
      - .dot : environment (.)
      - .ports : an array of ports
-     - .portType: the type of the service
+     - .serviceType: the type of the service
      - .suffix : a string which will be added at the end of the name (with a '-')
      - .annotations: the annotations to add
      - .publishNotReadyAddresses: if we publish not ready address
@@ -88,7 +100,7 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
 {{- $suffix := default "" .suffix -}}
 {{- $annotations := default "" .annotations -}}
 {{- $publishNotReadyAddresses := default false .publishNotReadyAddresses -}}
-{{- $portType := .portType -}}
+{{- $serviceType := .serviceType -}}
 {{- $ports := .ports -}}
 {{- $headless := default false .headless -}}
 apiVersion: v1
@@ -98,11 +110,15 @@ spec:
   {{- if $headless }}
   clusterIP: None
   {{- end }}
-  ports: {{- include "common.servicePorts" (dict "portType" $portType "ports" $ports "dot" $dot) | nindent 4 }}
+  ports: {{- include "common.servicePorts" (dict "serviceType" $serviceType "ports" $ports "dot" $dot) | nindent 4 }}
   {{- if $publishNotReadyAddresses }}
   publishNotReadyAddresses: true
   {{- end }}
-  type: {{ $portType }}
+  {{- if (include "common.needTLS" $dot) }}
+  type: {{ $serviceType }}
+  {{- else }}
+  type: ClusterIP
+  {{- end }}
   selector: {{- include "common.matchLabels" $dot | nindent 4 }}
 {{- end -}}
 
@@ -111,9 +127,9 @@ spec:
 {{- $suffix := default "" .Values.service.suffix -}}
 {{- $annotations := default "" .Values.service.annotations -}}
 {{- $publishNotReadyAddresses := default false .Values.service.publishNotReadyAddresses -}}
-{{- $portType := .Values.service.type -}}
+{{- $serviceType := .Values.service.type -}}
 {{- $ports := .Values.service.ports -}}
-{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "portType" $portType) }}
+{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType) }}
 {{- end -}}
 
 {{/* Create headless service template */}}
@@ -122,7 +138,7 @@ spec:
 {{- $annotations := default "" .Values.service.headless.annotations -}}
 {{- $publishNotReadyAddresses := default false .Values.service.headless.publishNotReadyAddresses -}}
 {{- $ports := .Values.service.headlessPorts -}}
-{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "portType" "ClusterIP" "headless" true ) }}
+{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "headless" true ) }}
 {{- end -}}
 
 {{/*
