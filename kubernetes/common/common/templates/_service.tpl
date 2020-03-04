@@ -55,65 +55,118 @@ labels: {{- include "common.labels" $dot | nindent 2 -}}
      The function takes three arguments (inside a dictionary):
      - .dot : environment (.)
      - .ports : an array of ports
-     - .portType: the type of the service
-     - .prefix: NodePort prefix to be used
-
+     - .serviceType: the type of the service
+     - .add_plain_port: add tls port AND plain port
 */}}
 {{- define "common.servicePorts" -}}
-{{- $portType := .portType -}}
-{{- $dot := .dot -}}
-{{- range $index, $port := .ports }}
-{{- $portPrefix := default "nodePortPrefix" $port.prefix }}
+{{- $serviceType := .serviceType }}
+{{- $dot := .dot }}
+{{- $add_plain_port := default false .add_plain_port }}
+{{-   range $index, $port := .ports }}
+{{-     if (include "common.needTLS" $dot) }}
 - port: {{ $port.port }}
   targetPort: {{ $port.name }}
-  {{- if (eq $portType "NodePort") }}
-  nodePort: {{ index $dot.Values "global" $portPrefix | default (index $dot.Values $portPrefix) }}{{ $port.nodePort }}
-  {{- end }}
+{{-       if $port.port_protocol }}
+  name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
+{{-       else }}
   name: {{ $port.name }}
-{{- end -}}
+{{-       end }}
+{{-       if (eq $serviceType "NodePort") }}
+  nodePort: {{ $dot.Values.global.nodePortPrefix | default $dot.Values.nodePortPrefix }}{{ $port.nodePort }}
+{{-       end }}
+{{-     else }}
+- port: {{ default $port.port $port.plain_port }}
+  targetPort: {{ $port.name }}
+{{-       if $port.port_protocol }}
+  name: {{ printf "%s-%s" $port.port_protocol $port.name }}
+{{-       else }}
+  name: {{ $port.name }}
+{{-       end }}
+{{-     end }}
+{{-     if (and (and (include "common.needTLS" $dot) $add_plain_port) $port.plain_port)  }}
+{{-       if (eq $serviceType "ClusterIP")  }}
+- port: {{ $port.plain_port }}
+  targetPort: {{ $port.name }}-plain
+{{-         if $port.port_protocol }}
+  name: {{ printf "%s-%s" $port.port_protocol $port.name }}
+{{-         else }}
+  name: {{ $port.name }}-plain
+{{-         end }}
+{{-       end }}
+{{-     end }}
+{{-   end }}
 {{- end -}}
 
 {{/* Create generic service template
      The function takes several arguments (inside a dictionary):
      - .dot : environment (.)
      - .ports : an array of ports
-     - .portType: the type of the service
+     - .serviceType: the type of the service
      - .suffix : a string which will be added at the end of the name (with a '-')
      - .annotations: the annotations to add
      - .publishNotReadyAddresses: if we publish not ready address
      - .headless: if the service is headless
+     - .add_plain_port: add tls port AND plain port
 */}}
 {{- define "common.genericService" -}}
 {{- $dot := default . .dot -}}
 {{- $suffix := default "" .suffix -}}
 {{- $annotations := default "" .annotations -}}
 {{- $publishNotReadyAddresses := default false .publishNotReadyAddresses -}}
-{{- $portType := .portType -}}
+{{- $serviceType := .serviceType -}}
 {{- $ports := .ports -}}
 {{- $headless := default false .headless -}}
+{{- $add_plain_port := default false .add_plain_port }}
 apiVersion: v1
 kind: Service
-metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "dot" $dot ) | nindent 2 }}
+metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "dot" $dot) | nindent 2 }}
 spec:
   {{- if $headless }}
   clusterIP: None
   {{- end }}
-  ports: {{- include "common.servicePorts" (dict "portType" $portType "ports" $ports "dot" $dot) | nindent 4 }}
+  ports: {{- include "common.servicePorts" (dict "serviceType" $serviceType "ports" $ports "dot" $dot "add_plain_port" $add_plain_port) | nindent 4 }}
   {{- if $publishNotReadyAddresses }}
   publishNotReadyAddresses: true
   {{- end }}
-  type: {{ $portType }}
+  type: {{ $serviceType }}
   selector: {{- include "common.matchLabels" $dot | nindent 4 }}
 {{- end -}}
 
-{{/* Create service template */}}
+{{/*
+    Create service template
+    Will create one or two service templates according to this table:
+
+    | serviceType   | both_tls_and_plain | result       |
+    |---------------|--------------------|--------------|
+    | ClusterIP     | any                | one Service  |
+    | Not ClusterIP | not present        | one Service  |
+    | Not ClusterIP | false              | one Service  |
+    | Not ClusterIP | true               | two Services |
+
+    If two services are created, one is ClusterIP with both crypted and plain
+    ports and the other one is NodePort (or LoadBalancer) with crypted port only.
+*/}}
 {{- define "common.service" -}}
-{{- $suffix := default "" .Values.service.suffix -}}
-{{- $annotations := default "" .Values.service.annotations -}}
-{{- $publishNotReadyAddresses := default false .Values.service.publishNotReadyAddresses -}}
-{{- $portType := .Values.service.type -}}
-{{- $ports := .Values.service.ports -}}
-{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "portType" $portType) }}
+{{-   $suffix := default "" .Values.service.suffix -}}
+{{-   $annotations := default "" .Values.service.annotations -}}
+{{-   $publishNotReadyAddresses := default false .Values.service.publishNotReadyAddresses -}}
+{{-   $serviceType := .Values.service.type -}}
+{{-   $ports := .Values.service.ports -}}
+{{-   $both_tls_and_plain:= default false .Values.service.both_tls_and_plain }}
+{{-   if (and (include "common.needTLS" .) $both_tls_and_plain) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true) }}
+{{-     if (ne $serviceType "ClusterIP") }}
+---
+{{-       if $suffix }}
+{{-         $suffix = printf "%s-external" $suffix }}
+{{-       else }}
+{{-         $suffix = "external" }}
+{{-       end }}
+{{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType) }}
+{{-     end }}
+{{-   else }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType) }}
+{{-   end }}
 {{- end -}}
 
 {{/* Create headless service template */}}
@@ -122,7 +175,7 @@ spec:
 {{- $annotations := default "" .Values.service.headless.annotations -}}
 {{- $publishNotReadyAddresses := default false .Values.service.headless.publishNotReadyAddresses -}}
 {{- $ports := .Values.service.headlessPorts -}}
-{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "portType" "ClusterIP" "headless" true ) }}
+{{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "headless" true ) }}
 {{- end -}}
 
 {{/*
@@ -133,5 +186,47 @@ spec:
 {{-     .Values.service.headless.suffix }}
 {{-   else }}
 {{-     print "headless" }}
+{{-   end }}
+{{- end -}}
+
+{{/*
+  Calculate if we need to use TLS ports.
+  We use TLS by default unless we're on service mesh with TLS.
+  We can also override this behavior with override toggles:
+  - .Values.global.tlsEnabled  : override default TLS behavior for all charts
+  - .Values.tlsOverride : override global and default TLS on a per chart basis
+
+  this will give these combinations:
+  | tlsOverride | global.tlsEnabled | global.serviceMesh.enabled | global.serviceMesh.tls | result |
+  |-------------|-------------------|----------------------------|------------------------|--------|
+  | not present | not present       | not present                | any                    | true   |
+  | not present | not present       | false                      | any                    | true   |
+  | not present | not present       | true                       | false                  | true   |
+  | not present | not present       | true                       | true                   | false  |
+  | not present | true              | any                        | any                    | true   |
+  | not present | false             | any                        | any                    | false  |
+  | true        | any               | any                        | any                    | true   |
+  | false       | any               | any                        | any                    | false  |
+
+*/}}
+{{- define "common.needTLS" -}}
+{{-   if hasKey .Values "tlsOverride" }}
+{{-     if .Values.tlsOverride -}}
+true
+{{-       end }}
+{{-   else }}
+{{-     if hasKey .Values.global "tlsEnabled" }}
+{{-       if .Values.global.tlsEnabled }}
+true
+{{-       end }}
+{{-     else }}
+{{-       if not (include "common.onServiceMesh" .) -}}
+true
+{{-       else }}
+{{-         if not (default false .Values.global.serviceMesh.tls) -}}
+true
+{{-         end }}
+{{-       end }}
+{{-     end }}
 {{-   end }}
 {{- end -}}
