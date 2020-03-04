@@ -43,14 +43,11 @@ spec:
         - name: DB_HOST
           value: {{ .Values.global.migration.dbHost }}
         - name: DB_USER
-          value: {{ .Values.global.migration.dbUser }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-backup-creds" "key" "login") | indent 10 }}
         - name: DB_PORT
           value: "{{ .Values.global.migration.dbPort }}"
         - name: DB_PASS
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}-migration
-              key: db-root-password-backup
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-backup-creds" "key" "password") | indent 10 }}
         command:
         - /bin/bash
         - -c
@@ -138,10 +135,7 @@ spec:
               name: {{ include "common.release" . }}-so-db-secrets
               key: mariadb.readwrite.port
         - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "common.fullname" . }}
-              key: db-root-password
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime

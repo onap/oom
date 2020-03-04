@@ -26,6 +26,28 @@ global:
   ubuntuInitRepository: registry.hub.docker.com
 
 #################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-root-password
+    name: '{{ include "common.release" . }}-so-mariadb-root-pass'
+    type: password
+    externalSecret: '{{ .Values.db.rootPasswordExternalSecret }}'
+    password: '{{ .Values.db.rootPassword }}'
+    passwordPolicy: required
+  - uid: db-backup-creds
+    name: '{{ include "common.release" . }}-so-mariadb-backup-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.db.backupCredsExternalSecret }}'
+    login: '{{ .Values.db.backupUser }}'
+    password: '{{ .Values.db.backupPassword }}'
+    passwordPolicy: required
+    annotations:
+      helm.sh/hook: pre-upgrade,pre-install
+      helm.sh/hook-weight: "0"
+      helm.sh/hook-delete-policy: before-hook-creation
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
@@ -34,6 +56,13 @@ image: mariadb:10.1.38
 pullPolicy: Always
 ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 
+# db config
+db:
+  rootPassword: secretpassword
+  # rootPasswordExternalSecret: some secret
+  backupPassword: secretpassword
+  backupUser: root
+  # backupCredsExternalSecret: some secret
 # application configuration
 config:
   # gerrit branch where the latest heat code is checked in
