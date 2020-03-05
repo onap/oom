@@ -55,6 +55,36 @@
 {{- end -}}
 
 {{/*
+  Generate a PV
+*/}}
+{{- define "common.PV" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-data
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ include "common.release" . }}"
+    heritage: "{{ .Release.Service }}"
+    name: {{ include "common.fullname" . }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.size}}
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
   Generate N PV for a statefulset
 */}}
 {{- define "common.replicaPV" -}}
@@ -80,5 +110,34 @@ spec:
     path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.mountSubPath }}-{{$i}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Generate a PVC
+*/}}
+{{- define "common.PVC" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ include "common.release" . }}"
+    heritage: "{{ .Release.Service }}"
+{{- if .Values.persistence.annotations }}
+  annotations:
+{{ toYaml .Values.persistence.annotations | indent 4 }}
+{{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: {{ include "common.storageClass" . }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
 {{- end -}}
 {{- end -}}
