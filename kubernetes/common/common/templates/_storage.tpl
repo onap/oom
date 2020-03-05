@@ -15,6 +15,13 @@
 */}}
 
 {{/*
+  Give the root folder for ONAP when using host pathes
+*/}}
+{{- define "common.persistencePath" -}}
+{{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath }}
+{{- end -}}
+
+{{/*
   Expand the name of the storage class.
   The value "common.fullname"-data is used by default,
   unless either override mechanism is used.
@@ -55,6 +62,31 @@
 {{- end -}}
 
 {{/*
+  Generate a PV
+*/}}
+{{- define "common.PV" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if (include "common.needPV" .) -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-data
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.size }}
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ include "common.persistencePath" . }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
   Generate N PV for a statefulset
 */}}
 {{- define "common.replicaPV" -}}
@@ -77,8 +109,30 @@ spec:
   persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   storageClassName: "{{ include "common.fullname" $global }}-data"
   hostPath:
-    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.mountSubPath }}-{{$i}}
+    path: {{ include "common.persistencePath" $global }}-{{$i}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Generate a PVC
+*/}}
+{{- define "common.PVC" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+{{- if .Values.persistence.annotations }}
+  annotations:
+{{ toYaml .Values.persistence.annotations | indent 4 }}
+{{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: {{ include "common.storageClass" . }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
 {{- end -}}
 {{- end -}}
