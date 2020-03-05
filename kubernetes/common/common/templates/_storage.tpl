@@ -55,6 +55,36 @@
 {{- end -}}
 
 {{/*
+  Generate a PV
+*/}}
+{{- define "common.PV" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if eq "True" (include "common.needPV" .) -}}
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ include "common.fullname" . }}-data
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: "{{ include "common.release" . }}"
+    heritage: "{{ .Release.Service }}"
+    name: {{ include "common.fullname" . }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.size}}
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  storageClassName: "{{ include "common.fullname" . }}-data"
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  hostPath:
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
   Generate N PV for a statefulset
 */}}
 {{- define "common.replicaPV" -}}
