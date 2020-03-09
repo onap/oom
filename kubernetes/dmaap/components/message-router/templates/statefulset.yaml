@@ -12,23 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: apps/v1beta1
+
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -51,20 +44,18 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.externalPort }}
-          - containerPort: {{ .Values.service.externalPort2 }}
+          ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.externalPort }}
+              port: {{ .Values.liveness.port }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.externalPort }}
+              port: {{ .Values.readiness.port }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -87,8 +78,7 @@ spec:
           - mountPath: /appl/dmaapMR1/etc/keyfile
             subPath: mykey
             name: mykey
-          resources:
-{{ include "common.resources" . }}
+          resources: {{ include "common.resources" . | nindent 12 }}
       volumes:
         - name: localtime
           hostPath:
