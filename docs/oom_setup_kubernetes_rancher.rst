@@ -69,6 +69,42 @@ Example::
   > chmod 600 ~/.ssh/onap-key
 
 
+Create Network
+==============
+
+An internal network is required in order to deploy our VMs that will host
+Kubernetes.
+
+.. image:: images/network/network_1.png
+
+.. image:: images/network/network_2.png
+
+.. image:: images/network/network_3.png
+
+.. Note::
+  It's better to have one network per deployment and obviously the name of this
+  network should be unique.
+
+Now we need to create a router to attach this network to outside:
+
+.. image:: images/network/network_4.png
+
+Create Security Group
+=====================
+
+A specific security group is also required
+
+.. image:: images/sg/sg_1.png
+
+then click on `manage rules` of the newly created security group.
+And finally click on `Add Rule` and create the following one:
+
+.. image:: images/sg/sg_2.png
+
+.. Note::
+  the security is clearly not good here and the right SG will be proposed in a
+  future version
+
 Create Kubernetes Control Plane VMs
 ===================================
 
@@ -96,10 +132,14 @@ The recommended flavor is at least 4 vCPU and 8GB ram.
 Networking
 ----------
 
+Use the created network:
+
 .. image:: images/cp_vms/control_plane_4.png
 
 Security Groups
 ---------------
+
+Use the created security group:
 
 .. image:: images/cp_vms/control_plane_5.png
 
@@ -112,7 +152,7 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for Control Plane VMs
 ------------------------------------------------
 
-Click :download:`openstack-k8s-controlnode.sh <openstack-k8s-controlnode.sh>` 
+Click :download:`openstack-k8s-controlnode.sh <openstack-k8s-controlnode.sh>`
 to download the script.
 
 .. literalinclude:: openstack-k8s-controlnode.sh
@@ -140,10 +180,10 @@ Highly-Available Kubernetes Workers. ONAP workloads will only be scheduled on th
 Launch new VM instances
 -----------------------
 
-The number and size of Worker VMs is depenedent on the size of the ONAP deployment. 
-By default, all ONAP applications are deployed. It's possible to customize the deployment 
+The number and size of Worker VMs is depenedent on the size of the ONAP deployment.
+By default, all ONAP applications are deployed. It's possible to customize the deployment
 and enable a subset of the ONAP applications. For the purpose of this guide, however,
-we will deploy 12 Kubernetes Workers that have been sized to handle the entire ONAP 
+we will deploy 12 Kubernetes Workers that have been sized to handle the entire ONAP
 application workload.
 
 .. image:: images/wk_vms/worker_1.png
