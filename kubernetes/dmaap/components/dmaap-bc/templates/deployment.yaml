@@ -12,31 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+{{- if or .Values.global.aafEnabled .Values.PG.enabled }}
       initContainers:
 {{- if .Values.global.aafEnabled }}
-      - command:
+      - name: {{ include "common.name" . }}-aaf-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
         - aaf-locate
+        - --container-name
+        - aaf-cm
+        - --container-name
+        - aaf-service
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,8 +42,7 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-aaf-readiness
-      - name: {{ include "common.name" . }}-dbc-aaf-config
+      - name: {{ include "common.name" . }}-aaf-config
         image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
@@ -81,7 +77,8 @@ spec:
           value: "{{ .Values.aafConfig.cadiLatitude }}"
 {{- end }}
 {{- if .Values.PG.enabled }}
-      - command:
+      - name: {{ include "common.name" . }}-postgres-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -94,30 +91,27 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-postgres-readiness
-{{- end}}
+{{- end }}
+{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
+          ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{ if eq .Values.liveness.enabled true -}}
           livenessProbe:
             httpGet:
-              port: {{ .Values.service.internalPort }}
-              path: /webapi/info
+              port: {{ .Values.liveness.port }}
+              path: /webapi/topics
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
           readinessProbe:
             httpGet:
-              host: {{ .Values.dmaapMessageRouterService }}
-              port: 3904
-              path: /topics
+              port: {{ .Values.readiness.port }}
+              path: /webapi/topics
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          {{ end -}}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
@@ -129,15 +123,12 @@ spec:
           - name: {{ include "common.name" . }}-aaf-config
             mountPath: /opt/app/dmaapbc/etc/org.onap.dmaap-bc.props
             subPath: org.onap.dmaap-bc.props
-          resources:
-{{ include "common.resources" . }}
+          resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
       volumes:
         - name: localtime
