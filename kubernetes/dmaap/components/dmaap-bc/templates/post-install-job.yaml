@@ -2,11 +2,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "common.fullname" . }}-post-install
-  labels:
-    app.kubernetes.io/managed-by: {{.Release.Service | quote }}
-    app.kubernetes.io/instance: {{include "common.release" . | quote }}
-    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
-    release: {{ include "common.release" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
@@ -15,16 +12,9 @@ metadata:
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   template:
-    metadata:
-      name: {{ include "common.fullname" . }}
-      labels:
-        app.kubernetes.io/managed-by: {{.Release.Service | quote }}
-        app.kubernetes.io/instance: {{include "common.release" . | quote }}
-        helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
-
       containers:
       - name: post-install-job
         image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
@@ -33,9 +23,15 @@ spec:
         - name: DELAY
           value: "0"
         - name: PROTO
+{{- if (include "common.needTLS" .) }}
           value: "https"
         - name: PORT
           value: "8443"
+{{- else }}
+          value: "http"
+        - name: PORT
+          value: "8080"
+{{- end }}
         - name: REQUESTID
           value: "{{.Chart.Name}}-post-install"
         volumeMounts:
@@ -50,15 +46,12 @@ spec:
           mountPath: /opt/app/config/dmaap/
         - name:  {{ include "common.fullname" . }}-dbc-dcaelocations
           mountPath: /opt/app/config/dcaeLocations/
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
         {{- end }}
       volumes:
         - name: localtime
