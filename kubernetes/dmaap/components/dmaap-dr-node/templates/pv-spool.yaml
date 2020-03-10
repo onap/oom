@@ -20,7 +20,7 @@
 
 {{- $global := . }}
 {{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
-{{- if eq "True" (include "common.needPV" .) -}}
+{{- if (include "common.needPV" .) -}}
 {{- range $i := until (int $global.Values.replicaCount)}}
 kind: PersistentVolume
 apiVersion: v1
@@ -30,7 +30,7 @@ metadata:
   labels:
     app: {{ include "common.fullname" $global }}
     chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
-    release: "{{ include "common.release" . }}"
+    release: "{{ include "common.release" $global }}"
     heritage: "{{ $global.Release.Service }}"
     name: {{ include "common.fullname" $global }}-spool-data
 spec:
@@ -41,7 +41,7 @@ spec:
   persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   storageClassName: "{{ include "common.fullname" $global }}-data"
   hostPath:
-    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ $global.Values.persistence.spoolMountSubPath }}-{{$i}}
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.spoolMountSubPath }}-{{$i}}
 {{if ne $i (int $global.Values.replicaCount) }}
 ---
 {{- end -}}
