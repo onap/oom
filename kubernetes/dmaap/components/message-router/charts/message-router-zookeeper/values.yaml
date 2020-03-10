@@ -30,7 +30,7 @@ global:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/dmaap/zookeeper:6.0.0
+image: onap/dmaap/zookeeper:6.0.2
 pullPolicy: Always
 ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
 busyBoxImage: busybox:1.30
@@ -39,12 +39,6 @@ busyBoxRepository: docker.io
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-config:
-  # gerrit branch where the latest code is checked in
-  gerritBranch: master
-  # gerrit project where the latest code is checked in
-  gerritProject: http://gerrit.onap.org/r/dmaap/messagerouter/messageservice.git
 
 # default number of instances
 replicaCount: 3
@@ -59,22 +53,41 @@ tolerations: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  timeoutSeconds: 1
+  initialDelaySeconds: 40
+  periodSeconds: 20
+  timeoutSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  timeoutSeconds: 1
+  initialDelaySeconds: 40
+  periodSeconds: 20
+  timeoutSeconds: 10
 
 #Zookeeper properties
-zk:
- initLimit: 5
- syncLimit: 2
+zkConfig:
+  tickTime: 2000
+  syncLimit: 5
+  initLimit: 10
+  maxClientCnxns: 200
+  autoPurgeSnapRetainCount: 3
+  autoPurgePurgeInterval: 24
+  heapOptions: -Xmx2G -Xms2G
+  kafkaOpts: -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+  extraArgs: -Djava.security.auth.login.config=/etc/zookeeper/secrets/jaas/zk_server_jaas.conf
+  clientPort: 2181
+
+jmx:
+  port: 5555
+
+prometheus:
+  jmx:
+    enabled: false
+    image: solsson/kafka-prometheus-jmx-exporter@sha256
+    imageTag: 6f82e2b0464f50da8104acd7363fb9b995001ddff77d248379f8788e78946143
+    imageRepository: docker.io
+    port: 5556
 
 ## Persist data to a persitent volume
 persistence:
