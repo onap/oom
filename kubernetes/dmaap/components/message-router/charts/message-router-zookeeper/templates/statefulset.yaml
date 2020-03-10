@@ -36,6 +36,11 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
+      {{- if .Values.prometheus.jmx.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.prometheus.jmx.port | quote }}
+      {{- end }}
     spec:
       podAntiAffinity:
          preferredDuringSchedulingIgnoredDuringExecution:
@@ -47,6 +52,10 @@ spec:
                     operator: In
                     values:
                     - {{ include "common.name" . }}
+                  - key: "release"
+                    operator: In
+                    values:
+                    - {{ include "common.release" . }}
              topologyKey: "kubernetes.io/hostname"
       {{- if .Values.nodeAffinity }}
       nodeAffinity:
@@ -58,13 +67,53 @@ spec:
         - sh
         - -exec
         - >
-          chown -R 1000:1000 /tmp/zookeeper/apikeys;
+          chown -R 1000:0 /tmp/zookeeper/apikeys;
         image: "{{ .Values.busyBoxRepository }}/{{ .Values.busyBoxImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /tmp/zookeeper/apikeys
           name: zookeeper-data
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/etc/zookeeper/secrets/jaas/${PFILE}; done"
+        env:
+        - name: ZK_ADMIN
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "zk-admin" "key" "login") | indent 10 }}
+        - name: ZK_PSWD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "zk-admin" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /etc/zookeeper/secrets/jaas
+          name: jaas-config
+        - mountPath: /config-input
+          name: jaas
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
       containers:
+      {{- if .Values.prometheus.jmx.enabled }}
+      - name: prometheus-jmx-exporter
+        image: "{{ .Values.prometheus.jmx.imageRepository }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - java
+        - -XX:+UnlockExperimentalVMOptions
+        - -XX:+UseCGroupMemoryLimitForHeap
+        - -XX:MaxRAMFraction=1
+        - -XshowSettings:vm
+        - -jar
+        - jmx_prometheus_httpserver.jar
+        - {{ .Values.prometheus.jmx.port | quote }}
+        - /etc/jmx-zookeeper/jmx-zookeeper-prometheus.yml
+        ports:
+        - containerPort: {{ .Values.prometheus.jmx.port }}
+        resources:
+{{ toYaml .Values.prometheus.jmx.resources | indent 10 }}
+        volumeMounts:
+        - name: jmx-config
+          mountPath: /etc/jmx-zookeeper
+      {{- end }}
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -77,39 +126,71 @@ spec:
           name: {{ .Values.service.serverPortName }}
         - containerPort: {{ .Values.service.leaderElectionPort }}
           name: {{ .Values.service.leaderElectionPortName }}
+        {{- if .Values.prometheus.jmx.enabled }}
+        - containerPort: {{ .Values.jmx.port }}
+          name: jmx
+        {{- end }}
         {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           exec:
-            command:
-            - sh
-            - -c
-            - "zookeeper-ready.sh 2181"
+            command:  ['/bin/bash', '-c', 'echo "ruok" | nc -w 2 -q 2 localhost 2181 | grep imok']
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
           timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
         {{ end }}
         readinessProbe:
           exec:
-            command:
-            - sh
-            - -c
-            - "zookeeper-ready.sh 2181"
+            command: ['/bin/bash', '-c', 'echo "ruok" | nc -w 2 -q 2 localhost 2181 | grep imok']
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
           timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
         env:
-        - name: ZK_REPLICAS
+        - name : KAFKA_HEAP_OPTS
+          value: "{{ .Values.zkConfig.heapOptions }}"
+        {{- if .Values.jmx.port }}
+        - name : KAFKA_JMX_PORT
+          value: "{{ .Values.jmx.port }}"
+        {{- end }}
+        - name : ZOOKEEPER_REPLICAS
           value: "{{ .Values.replicaCount }}"
-        - name: ZK_INIT_LIMIT
-          value: "{{ .Values.zk.initLimit }}"
-        - name: ZK_SYNC_LIMIT
-          value: "{{ .Values.zk.syncLimit }}"
+        - name : ZOOKEEPER_TICK_TIME
+          value: "{{ .Values.zkConfig.tickTime }}"
+        - name : ZOOKEEPER_SYNC_LIMIT
+          value: "{{ .Values.zkConfig.syncLimit }}"
+        - name : ZOOKEEPER_INIT_LIMIT
+          value: "{{ .Values.zkConfig.initLimit }}"
+        - name : ZOOKEEPER_MAX_CLIENT_CNXNS
+          value: "{{ .Values.zkConfig.maxClientCnxns }}"
+        - name : ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT
+          value: "{{ .Values.zkConfig.autoPurgeSnapRetainCount}}"
+        - name : ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL
+          value: "{{ .Values.zkConfig.autoPurgePurgeInterval}}"
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "{{ .Values.zkConfig.clientPort }}"
+        - name: KAFKA_OPTS
+          value: "{{ .Values.zkConfig.kafkaOpts }}"
+        - name: EXTRA_ARGS
+          value: "{{ .Values.zkConfig.extraArgs }}"
+        - name: ZOOKEEPER_SERVER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        command:
+        - "bash"
+        - "-c"
+        - |
+          ZOOKEEPER_SERVER_ID=$((${HOSTNAME##*-}+1)) \
+          /etc/confluent/docker/run
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /var/lib/zookeeper/data
           name: zookeeper-data
+        - name: jaas-config
+          mountPath: /etc/zookeeper/secrets/jaas
       {{- if .Values.tolerations }}
       tolerations:
         {{ toYaml .Values.tolerations | indent 10 }}
@@ -118,15 +199,29 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
+      - name: jaas-config
+        emptyDir:
+          medium: Memory
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: jaas
+        configMap:
+          name: {{ include "common.fullname" . }}-jaas-configmap
+       {{- if .Values.prometheus.jmx.enabled }}
+      - name: jmx-config
+         configMap:
+           name: {{ include "common.fullname" . }}-prometheus-configmap
+       {{- end }}
 {{ if not .Values.persistence.enabled }}
       - name: zookeeper-data
         emptyDir: {}
 {{ else }}
   volumeClaimTemplates:
     - metadata:
-        name:  zookeeper-data
+        name: zookeeper-data
         labels:
-          app:  {{ include "common.fullname" . }}
+          app: {{ include "common.fullname" . }}
           chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
           release: "{{ include "common.release" . }}"
           heritage: "{{ .Release.Service }}"
