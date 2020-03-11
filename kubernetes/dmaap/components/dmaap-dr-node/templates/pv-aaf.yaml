@@ -22,7 +22,7 @@
 {{- if .Values.global.aafEnabled }}
 {{- $global := . }}
 {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
-{{- if eq "True" (include "common.needPV" .) -}}
+{{- if (include "common.needPV" .) -}}
 {{- range $i := until (int $global.Values.replicaCount)}}
 ---
 kind: PersistentVolume
@@ -33,7 +33,7 @@ metadata:
   labels:
     app: {{ include "common.name" $global }}
     chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
-    release: "{{ include "common.release" . }}"
+    release: "{{ include "common.release" $global }}"
     heritage: "{{ $global.Release.Service }}"
     name: {{ include "common.fullname" $global }}-aaf-props
 spec:
@@ -44,7 +44,7 @@ spec:
   storageClassName: "{{ include "common.fullname" $global }}-data-aaf-props"
   persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
   hostPath:
-    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ $global.Values.persistence.aafCredsMountSubPath }}-{{$i}}
+    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.aafCredsMountSubPath }}-{{$i}}
 {{if ne $i (int $global.Values.replicaCount) }}
 ---
 {{- end -}}
