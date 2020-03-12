@@ -344,6 +344,12 @@ Download and install kubectl. Binaries can be found here for Linux and Mac:
 https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/linux/amd64/kubectl
 https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/darwin/amd64/kubectl
 
+You only need to install kubectl where you'll launch kubernetes command. This 
+can be any machines of the kubernetes cluster or a machine that has IP access 
+to the APIs.
+Usually, we use the first controller as it has also access to internal 
+Kubernetes services, which can be convenient.
+
 Validate deployment
 -------------------
 
