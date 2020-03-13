@@ -40,6 +40,34 @@ spec:
         name: "{{ index $dot.Values "container" "name" $pgMode }}"
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: PG_PRIMARY_USER
+          value: primaryuser
+        - name: PG_PRIMARY_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
+        - name: PG_USER
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
+        - name: PG_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
+        - name: PG_DATABASE
+          value: "{{ $dot.Values.config.pgDatabase }}"
+        - name: PG_ROOT_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input/setup.sql
+          name: config
+          subPath: setup.sql
+        - mountPath: /config
+          name: pgconf
+        image: "{{ $dot.Values.global.envsubstImage }}"
+        imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+        name: {{ include "common.name" $dot }}-update-config
+
       - name: init-sysctl
         command:
         - /bin/sh
@@ -98,9 +126,12 @@ spec:
         - name: PG_ROOT_PASSWORD
           {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         volumeMounts:
-        - name: pool-hba-conf
+        - name: config
           mountPath: /pgconf/pool_hba.conf
           subPath: pool_hba.conf
+        - name: pgconf
+          mountPath: /pgconf/setup.sql
+          subPath: setup.sql
         - mountPath: /pgdata
           name: {{ include "common.fullname" $dot }}-data
         - mountPath: /backup
@@ -129,7 +160,10 @@ spec:
 {{- else }}
         emptyDir: {}
 {{ end }}
-      - name: pool-hba-conf
+      - name: config
         configMap:
           name: {{ include "common.fullname" $dot }}
+      - name: pgconf
+        emptyDir:
+          medium: Memory
 {{- end -}}
