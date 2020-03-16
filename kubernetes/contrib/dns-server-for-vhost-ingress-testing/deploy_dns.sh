@@ -26,6 +26,8 @@ cat << ==usage
 $0 [cluster_domain] [helm_chart_args ...]
 	[cluster_domain] Default value simpledemo.onap.org
 	[helm_chart_args...] Optional arguments passed to helm install command
+$0 --help This message
+$0 --info Display howto configure target machine
 ==usage
 }
 
@@ -57,6 +59,8 @@ deploy() {
 
 if [[ $# -eq 1 ]] && [[ $1 == "-h" || $1 == "--help" ]]; then
 	usage
+elif [[ $# -eq 1 ]] && [[ $1 == "--info" ]]; then
+	target_machine_notice_info
 else
 	deploy $@
 fi
