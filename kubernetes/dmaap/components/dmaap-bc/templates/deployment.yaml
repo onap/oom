@@ -48,7 +48,7 @@ spec:
         command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
         volumeMounts:
         - mountPath: {{ .Values.persistence.aafCredsPath }}
-          name: {{ include "common.name" . }}-aaf-config
+          name: {{ include "common.name" . }}-aaf-config-vol
         env:
         - name: APP_FQI
           value: "{{ .Values.aafConfig.fqi }}"
@@ -75,6 +75,26 @@ spec:
           value: "{{ .Values.aafConfig.cadiLongitude }}"
         - name: cadi_latitude
           value: "{{ .Values.aafConfig.cadiLatitude }}"
+      - name: {{ include "common.name" . }}-permission-fixer
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.aafCredsPath }}
+          name: {{ include "common.name" . }}-aaf-config-vol
+        command: ["chown","-Rf","1000:1001", "/opt/app/"]
+#       See AAF-425 for explanation of why this is needed.
+#       This artifact is provisioned in AAF for both pks12 and jks format and apparently
+#       the cadi library is not using the jks password on the jks keystore.
+#       So, this attempts to "fix" the credential property file until this is fixed properly.
+      - name: {{ include "common.name" . }}-cred-fixer
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.aafCredsPath }}
+          name: {{ include "common.name" . }}-aaf-config-vol
+        command: ["/bin/sh"]
+        args: [ "-c", "sed -i -e '/cadi_keystore_password=/d' -e '/cadi_keystore_password_jks/p' -e 's/cadi_keystore_password_jks/cadi_keystore_password/' -e 's/dmaap-bc.p12/dmaap-bc.jks/' /opt/app/osaaf/local/org.onap.dmaap-bc.cred.props" ]
+
 {{- end }}
 {{- if .Values.PG.enabled }}
       - name: {{ include "common.name" . }}-postgres-readiness
@@ -95,7 +115,7 @@ spec:
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: "{{ .Values.repository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{ if eq .Values.liveness.enabled true -}}
@@ -118,13 +138,12 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.name" . }}-aaf-config-vol
 # NOTE: on the following several configMaps, careful to include / at end
 #       since there may be more than one file in each mountPath
           - name: {{ include "common.name" . }}-config
             mountPath: /opt/app/config/conf/
-          - name: {{ include "common.name" . }}-aaf-config
-            mountPath: /opt/app/dmaapbc/etc/org.onap.dmaap-bc.props
-            subPath: org.onap.dmaap-bc.props
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
@@ -139,8 +158,7 @@ spec:
         - name: {{ include "common.name" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}-config
-        - name: {{ include "common.name" . }}-aaf-config
-          configMap:
-            name: {{ include "common.fullname" . }}-aaf-config
+        - name: {{ include "common.name" . }}-aaf-config-vol
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
