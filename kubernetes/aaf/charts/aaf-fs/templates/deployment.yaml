@@ -31,6 +31,22 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+          - /bin/sh
+          - -c
+          - |
+            chmod -R 775 /opt/app/aaf/status
+            chown -R 1000:1000 /opt/app/aaf/status
+            chmod -R 775 /opt/app/osaaf
+            chown -R 1000:1000 /opt/app/osaaf
+        image: busybox:1.28
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: init-sysctl
+        volumeMounts:
+          - mountPath: /opt/app/osaaf
+            name: aaf-config-vol
+          - mountPath: /opt/app/aaf/status
+            name: aaf-status-vol
       - name: {{ include "common.name" . }}-config-container
         image: {{ .Values.global.repository }}/{{.Values.global.aaf.config.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
