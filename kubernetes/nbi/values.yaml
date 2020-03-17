@@ -28,6 +28,30 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
+  aafEnabled: true
+  busyBoxImage: busybox:1.30
+  busyBoxRepository: docker.io
+
+#################################################################
+# AAF part
+#################################################################
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: nbi
+  fqi: nbi@nbi.onap.org
+  public_fqdn: nbi.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  secret_uid: &aaf_secret_uid nbi-aaf-deploy-creds
+
 
 #################################################################
 # Secrets metaconfig
@@ -39,13 +63,19 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
     password: '{{ .Values.config.db.userPassword }}'
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
 
 subChartsOnly:
   enabled: true
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/externalapi/nbi:6.0.0
+image: onap/externalapi/nbi:6.0.1
 pullPolicy: IfNotPresent
 sdc_authorization: Basic YWFpOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU=
 aai_authorization: Basic QUFJOkFBSQ==
@@ -109,9 +139,8 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  httpGet:
-    path: /nbi/api/v4/status
-    port: 8080
+  path: /nbi/api/v4/status
+  port: 8443
   initialDelaySeconds: 180
   periodSeconds: 30
   # necessary to disable liveness probe when setting breakpoints
@@ -119,9 +148,8 @@ liveness:
   enabled: true
 
 readiness:
-  httpGet:
-    path: /nbi/api/v4/status
-    port: 8080
+  path: /nbi/api/v4/status
+  port: 8443
   initialDelaySeconds: 185
   periodSeconds: 30
 
@@ -130,7 +158,7 @@ service:
   portName: api
   name: nbi
   nodePort: 74
-  internalPort: 8080
+  internalPort: 8443
 
 ingress:
   enabled: false
