@@ -38,6 +38,7 @@ The OOM documentation is broken into four different areas each targeted at a dif
 - :ref:`user-guide-label` - a guide for operators of an ONAP instance
 - :ref:`developer-guide-label` - a guide for developers of OOM and ONAP
 - :ref:`cloud-setup-guide-label` - a guide for those setting up cloud environments that ONAP will use
+- :ref:`hardcoded-certiticates-label` - the list of all hardcoded certificates sets in ONAP installation
 
 The :ref:`release-notes-label` for OOM describe the incremental features per release.
 
