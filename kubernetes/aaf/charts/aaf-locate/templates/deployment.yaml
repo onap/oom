@@ -31,8 +31,26 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+          - /bin/sh
+          - -c
+          - |
+            chmod -R 775 /opt/app/aaf/status
+            chown -R 1000:1000 /opt/app/aaf/status
+            chmod -R 775 /opt/app/osaaf
+            chown -R 1000:1000 /opt/app/osaaf
+        securityContext:
+          privileged: true
+        image: busybox:1.28
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: init-sysctl
+        volumeMounts:
+          - mountPath: /opt/app/aaf/status
+            name: aaf-status-vol
+          - mountPath: /opt/app/osaaf
+            name: aaf-config-vol
       - name: {{ include "common.name" . }}-config-container
-        image: {{ .Values.global.repository }}/{{.Values.global.aaf.config.image}}
+        image: {{.Values.global.aaf.config.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c","cd /opt/app/aaf_config && bin/pod_wait.sh config aaf-service remove && bin/agent.sh"]
         volumeMounts:
@@ -76,7 +94,7 @@ spec:
       containers:
       - name: {{ include "common.name" . }}
         command: ["/bin/bash","-c","cd /opt/app/aaf && /bin/bash bin/pod_wait.sh aaf-locate aaf-service && exec bin/locate"]
-        image: {{ .Values.global.repository }}/{{.Values.global.aaf.image}}
+        image: {{.Values.global.aaf.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: "/opt/app/osaaf"

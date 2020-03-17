@@ -30,9 +30,28 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+        - command:
+            - /bin/sh
+            - -c
+            - |
+              chmod -R 775 /opt/app/aaf/status
+              chown -R 1000:1000 /opt/app/aaf/status
+              chmod -R 775 /var/lib/cassandra
+              chown -R 1000:1000 /var/lib/cassandra
+          securityContext:
+            privileged: true
+          image: busybox:1.28
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: init-sysctl
+          volumeMounts:
+            - mountPath: /opt/app/aaf/status
+              name: aaf-status-vol
+            - mountPath: /var/lib/cassandra
+              name: aaf-cass-vol
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.repository }}/{{.Values.global.aaf.cass.image}}
+        image: {{.Values.global.aaf.cass.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         # installing with cmd "onap" will not only initialize the DB, but add ONAP bootstrap data as well
         command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","onap"]
