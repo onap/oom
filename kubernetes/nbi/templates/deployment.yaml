@@ -32,6 +32,64 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.fullname" . }}
     spec:
+    {{- if .Values.global.aafEnabled }}
+      initContainers:
+      - name: {{ include "common.name" . }}-aaf-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aaf-locate
+        - --container-name
+        - aaf-cm
+        - --container-name
+        - aaf-service
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-aaf-config
+        image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+        volumeMounts:
+        - mountPath: {{ .Values.aaf.credsPath }}
+          name: {{ include "common.name" . }}-aaf-config
+        env:
+        - name: APP_FQI
+          value: "{{ .Values.aaf.fqi }}"
+        - name: aaf_locate_url
+          value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
+        - name: aaf_locator_container
+          value: "{{ .Values.global.aafLocatorContainer }}"
+        - name: aaf_locator_container_ns
+          value: "{{ .Release.Namespace }}"
+        - name: aaf_locator_fqdn
+          value: "{{ .Values.aaf.fqdn }}"
+        - name: aaf_locator_public_fqdn
+          value: "{{.Values.aaf.publicFqdn}}"
+        - name: aaf_locator_app_ns
+          value: "{{ .Values.global.aafAppNs }}"
+        - name: DEPLOY_FQI
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "aaf-deploy-creds" "key" "login") | indent 10 }}
+        - name: DEPLOY_PASSWORD
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "aaf-deploy-creds" "key" "password") | indent 10 }}
+        - name: cadi_longitude
+          value: "{{ .Values.aaf.cadiLongitude }}"
+        - name: cadi_latitude
+          value: "{{ .Values.aaf.cadiLatitude }}"
+      - name: {{ include "common.name" . }}-permission-fixer
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.aaf.credsPath }}
+          name: {{ include "common.name" . }}-aaf-config-vol
+        command: ["chown","-Rf","1000:999", "{{ .Values.aaf.credsPath }}"]
+{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -100,6 +158,10 @@ spec:
             - name: MSB_DISCOVERY_PORT
               value: "10081"
           volumeMounts:
+{{- if .Values.global.aafEnabled }}
+            - mountPath: {{ .Values.aaf.credsPath }}
+              name: {{ include "common.name" . }}-aaf-config
+{{- end }}
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
@@ -126,6 +188,11 @@ spec:
         #   - mountPath: /usr/share/filebeat/data
         #     name: esr-server-filebeat
       volumes:
+{{- if .Values.global.aafEnabled }}
+        - name: {{ include "common.name" . }}-aaf-config
+          emptyDir:
+            medium: Memory
+{{- end }}
         - name: localtime
           hostPath:
             path: /etc/localtime
