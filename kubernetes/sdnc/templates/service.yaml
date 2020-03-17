@@ -35,33 +35,29 @@ metadata:
       }
       ]'
 spec:
-  type: {{ .Values.service.type }}
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
+    - name: "{{ .Values.service.portName }}-restconf-http"
+      port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
       {{ if not .Values.global.aafEnabled }}
+      type: NodePort
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
+      {{- else -}}
+      type: ClusterIP
       {{ end }}
-      name: "{{ .Values.service.portName }}-8282"
-    - port: {{ .Values.service.externalPort2 }}
+    - name: "{{ .Values.service.portName }}-karaf"
+      type: ClusterIP
+      port: {{ .Values.service.externalPort2 }}
       targetPort: {{ .Values.service.internalPort2 }}
-      name: "{{ .Values.service.portName }}-8202"
-    - port: {{ .Values.service.externalPort3 }}
-      targetPort: {{ .Values.service.internalPort3 }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort3 }}
-      name: "{{ .Values.service.portName }}-8280"
-    - port: {{ .Values.service.externalPort4 }}
+    - name: "{{ .Values.service.portName }}-restconf-https"
+      port: {{ .Values.service.externalPort4 }}
       targetPort: {{ .Values.service.internalPort4 }}
       {{ if .Values.global.aafEnabled }}
+      type: NodePort
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
+      {{- else -}}
+      type: ClusterIP
       {{ end }}
-      name: "{{ .Values.service.portName }}-8443"
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-    {{- end}}
   selector:
     app: {{ include "common.name" . }}
     release: {{ include "common.release" . }}
