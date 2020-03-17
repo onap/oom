@@ -43,6 +43,19 @@ spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
+      - name: fix-permission
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - |
+          chmod -R /opt/app/osaaf
+          chown -R /opt/app/osaaf
+        image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: /opt/app/osaaf
+            name: aaf-hello-vol
       - name: {{ include "common.name" . }}-config
         image: {{ .Values.global.repository }}/{{.Values.aaf_init.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
