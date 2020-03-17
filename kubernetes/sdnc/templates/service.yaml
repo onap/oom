@@ -35,33 +35,45 @@ metadata:
       }
       ]'
 spec:
-  type: {{ .Values.service.type }}
+  type: NodePort
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
+    - name: "{{ .Values.service.portName }}-restconf"
       {{ if not .Values.global.aafEnabled }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
-      {{ end }}
-      name: "{{ .Values.service.portName }}-8282"
-    - port: {{ .Values.service.externalPort2 }}
-      targetPort: {{ .Values.service.internalPort2 }}
-      name: "{{ .Values.service.portName }}-8202"
-    - port: {{ .Values.service.externalPort3 }}
-      targetPort: {{ .Values.service.internalPort3 }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort3 }}
-      name: "{{ .Values.service.portName }}-8280"
-    - port: {{ .Values.service.externalPort4 }}
-      targetPort: {{ .Values.service.internalPort4 }}
-      {{ if .Values.global.aafEnabled }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
-      {{ end }}
-      name: "{{ .Values.service.portName }}-8443"
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
+      port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-    {{- end}}
+      {{- else -}}
+      port: {{ .Values.service.externalPort4 }}
+      targetPort: {{ .Values.service.internalPort4 }}
+      {{ end }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ include "common.release" . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Values.service.name }}-clusterPorts"
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: "{{ .Values.service.portName }}-restconf-alt"
+      {{ if .Values.global.aafEnabled }}
+      port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      {{- else -}}
+      port: {{ .Values.service.internalPort4 }}
+      target: {{ .Values.service.internalPort4 }}
+      {{ end }}
+    - name: "{{ .Values.service.portName }}-karaf"
+      port: {{ .Values.service.externalPort2 }}
+      targetPort: {{ .Values.service.internalPort2 }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ include "common.release" . }}
