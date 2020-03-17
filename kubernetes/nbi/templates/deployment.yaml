@@ -32,6 +32,9 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.fullname" . }}
     spec:
+{{- if .Values.global.aafEnabled }}
+      initContainers: {{ include "common.aaf-config" . | nindent 6 }}
+{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -40,16 +43,38 @@ spec:
             - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - bash
+          args:
+          - -c
+          - |
+            export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0)
+            export JAVA_OPTS="-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
+              -Dserver.ssl.key-store={{ .Values.aafConfig.credsPath }}/org.onap.nbi.p12 \
+              -Dserver.ssl.key-store-type=PKCS12 \
+              -Djavax.net.ssl.trustStore={{ .Values.aafConfig.credsPath }}/org.onap.nbi.trust.jks \
+              -Dserver.ssl.key-store-password=$cadi_keystore_password_p12 \
+              -Djava.security.egd=file:/dev/./urandom -Dserver.port=8443"
+            {{- if eq "DEBUG" .Values.config.loglevel }}
+            export JAVA_DEBUG="-Djavax.net.debug=all"
+            {{- end }}
+            exec java -XX:+UseContainerSupport $JAVA_DEBUG $JAVA_OPTS -jar /opt/onap/app.jar
+          {{- end }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            httpGet:
+              port: {{ .Values.liveness.port }}
+              path: {{ .Values.liveness.path }}
+              scheme: HTTPS
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            httpGet:
+              port: {{ .Values.readiness.port }}
+              path: {{ .Values.readiness.path }}
+              scheme: HTTPS
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -72,7 +97,7 @@ spec:
             - name: ONAP_CLOUDOWNER
               value: {{ .Values.config.cloudOwner }}
             - name: NBI_URL
-              value: "http://nbi.{{ include "common.namespace" . }}:8080/nbi/api/v4"
+              value: "https://nbi.{{ include "common.namespace" . }}:8443/nbi/api/v4"
             - name: SDC_HOST
               value: "https://sdc-be.{{ include "common.namespace" . }}:8443"
             - name: SDC_HEADER_ECOMPINSTANCEID
@@ -90,7 +115,7 @@ spec:
               value: {{ .Values.so_authorization }}
             {{- end }}
             - name: DMAAP_HOST
-              value: "https://message-router.{{ include "common.namespace" . }}:3905"
+              value: "http://message-router.{{ include "common.namespace" . }}:3904"
             - name: LOGGING_LEVEL_ORG_ONAP_NBI
               value: {{ .Values.config.loglevel }}
             - name: MSB_ENABLED
@@ -99,7 +124,7 @@ spec:
               value: "msb-discovery.{{ include "common.namespace" . }}"
             - name: MSB_DISCOVERY_PORT
               value: "10081"
-          volumeMounts:
+          volumeMounts: {{ include "common.aaf-config-volume-mountpath" . | nindent 12 }}
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
@@ -125,7 +150,7 @@ spec:
         #     name: esr-server-logs
         #   - mountPath: /usr/share/filebeat/data
         #     name: esr-server-filebeat
-      volumes:
+      volumes: {{ include "common.aaf-config-volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
