@@ -28,6 +28,10 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
+  aafAppNs: org.osaaf.aaf
+  aafLocatorContainer: oom
+  aafEnabled: true
 
 #################################################################
 # Secrets metaconfig
@@ -39,6 +43,26 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
     password: '{{ .Values.config.db.userPassword }}'
+  - uid: aaf-deploy-creds
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aaf.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aaf.aafDeployFqi }}'
+    password: '{{ .Values.aaf.aafDeployPass }}'
+    passwordPolicy: required
+
+#################################################################
+# AAF part
+#################################################################
+aaf:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: nbi
+  fqi: nbi@nbi.onap.org
+  publicFqdn: nbi.onap.org
+  cadiLatitude: 0.0
+  cadiLongitude: 0.0
+  credsPath: /opt/app/osaaf/local
 
 subChartsOnly:
   enabled: true
