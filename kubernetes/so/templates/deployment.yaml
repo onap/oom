@@ -35,7 +35,22 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-certs-importer
+        command:
+        - "/bin/sh"
+        args:
+        - "-c"
+        - "update-ca-certificates --fresh && \
+           cp -r /etc/ssl/certs /certificates"
+        volumeMounts:
+        - name: {{ include "common.name" . }}-certificates
+          mountPath: /certificates
+        - name: {{ include "common.name" . }}-onap-certificates
+          mountPath: /usr/local/share/ca-certificates/
+        image: "{{ include "common.repository" . }}/{{ .Values.soBaseImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-readiness
+        command:
         - /root/job_complete.py
         args:
         - --job-name
@@ -113,6 +128,10 @@ spec:
           readOnly: true
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /var/log/onap
+        - name: {{ include "common.name" . }}-certificates
+          mountPath: /etc/ssl/certs
+        - name: {{ include "common.name" . }}-onap-certificates
+          mountPath: /usr/local/share/ca-certificates/
 {{ include "helpers.livenessProbe" .| indent 8 }}
         ports:
         - containerPort: {{ index .Values.containerPort }}
@@ -148,5 +167,11 @@ spec:
         emptyDir: {}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name: {{ include "common.name" . }}-certificates
+        emptyDir:
+          medium: Memory
+      - name: {{ include "common.name" . }}-onap-certificates
+        secret:
+          secretName: {{ include "common.fullname" . }}-certs
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
