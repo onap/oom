@@ -22,6 +22,7 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  soBaseImage: onap/so/base-image:1.0
   mariadbGalera:
     nameOverride: mariadb-galera
     serviceName: mariadb-galera
@@ -71,6 +72,9 @@ global:
     certs:
       trustStorePassword: b25hcDRzbw==
       keyStorePassword: c280b25hcA==
+  certificates:
+    path: /etc/ssl/certs
+    share_path: /usr/local/share/ca-certificates/
 
 #################################################################
 # Secrets metaconfig
@@ -106,6 +110,13 @@ secrets:
     login: '{{ .Values.dbCreds.adminName }}'
     password: '{{ .Values.dbCreds.adminPassword }}'
     passwordPolicy: generate
+  - uid: "so-onap-certs"
+    name: &so-certs '{{ include "common.release" . }}-so-certs'
+    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
+    type: generic
+    filePaths:
+      - resources/config/certificates/onap-ca.crt
+      - resources/config/certificates/msb-ca.crt
 
 #################################################################
 # Application configuration defaults.
@@ -122,6 +133,7 @@ dbCreds:
 
 repository: nexus3.onap.org:10001
 image: onap/so/api-handler-infra:1.5.3
+
 pullPolicy: Always
 replicaCount: 1
 minReadySeconds: 10
@@ -141,6 +153,8 @@ updateStrategy:
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
+persistence:
+  certificatesPath: /certificates
 resources:
   small:
     limits:
@@ -173,7 +187,6 @@ affinity: {}
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
-
 
 #Used only if localCluster is enabled. Instantiates SO's own cassandra cluster
 #helm deploy demo local/onap --namespace onap --verbose --set so.enabled=true \
@@ -224,6 +237,7 @@ mso:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
 
 so-bpmn-infra:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   cds:
@@ -259,6 +273,7 @@ so-bpmn-infra:
         auth: Basic dm5mbTpwYXNzd29yZDEk
 
 so-catalog-db-adapter:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   mso:
@@ -272,7 +287,13 @@ so-catalog-db-adapter:
       db:
         auth: Basic YnBlbDpwYXNzd29yZDEk
 
+so-monitoring:
+  certSecret: *so-certs
+  db:
+    <<: *dbSecrets
+
 so-openstack-adapter:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   aaf:
@@ -301,6 +322,7 @@ so-openstack-adapter:
       auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-request-db-adapter:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   mso:
@@ -315,6 +337,7 @@ so-request-db-adapter:
         auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-sdc-controller:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   aai:
@@ -335,7 +358,9 @@ so-sdc-controller:
     asdc-connections:
       asdc-controller1:
         password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
+
 so-sdnc-adapter:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   org:
@@ -360,7 +385,11 @@ so-sdnc-adapter:
     rest:
       aafEncrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
 
+so-ve-vnfm-adapter:
+  certSecret: *so-certs
+
 so-vfc-adapter:
+  certSecret: *so-certs
   db:
     <<: *dbSecrets
   mso:
@@ -373,7 +402,9 @@ so-vfc-adapter:
     adapters:
       requestDb:
         auth: Basic YnBlbDpwYXNzd29yZDEk
+
 so-vnfm-adapter:
+  certSecret: *so-certs
   aaf:
     auth:
       username: so@so.onap.org
@@ -392,10 +423,6 @@ so-vnfm-adapter:
         aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
         apiEnforcement: org.onap.so.vnfmAdapterPerm
         noAuthn: /manage/health
-
-so-monitoring:
-  db:
-    <<: *dbSecrets
 
 so-mariadb:
   db:
