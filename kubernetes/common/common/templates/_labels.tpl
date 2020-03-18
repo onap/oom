@@ -18,45 +18,81 @@
 
 {{/*
 Common labels
+The function takes several arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .labels : labels to add (dict)
 */}}
 {{- define "common.labels" -}}
-app.kubernetes.io/name: {{ include "common.name" . }}
-helm.sh/chart: {{ include "common.chart" . }}
-app.kubernetes.io/instance: {{ include "common.release" . }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- $dot := default . .dot -}}
+app.kubernetes.io/name: {{ include "common.name" $dot }}
+helm.sh/chart: {{ include "common.chart" $dot }}
+app.kubernetes.io/instance: {{ include "common.release" $dot }}
+app.kubernetes.io/managed-by: {{ $dot.Release.Service }}
+{{ if .labels }}
+{{- include "common.tplValue" (dict "value" .labels "context" $dot) }}
+{{- end -}}
 {{- end -}}
 
 {{/*
 Labels to use on deploy.spec.selector.matchLabels and svc.spec.selector
+The function takes several arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .matchLabels: selectors/matchlLabels to add (dict)
 */}}
 {{- define "common.matchLabels" -}}
-app.kubernetes.io/name: {{ include "common.name" . }}
-app.kubernetes.io/instance: {{ include "common.release" . }}
+{{- $dot := default . .dot -}}
+{{- if not .matchLabels.nameNoMatch -}}
+app.kubernetes.io/name: {{ include "common.name" $dot }}
+{{- end }}
+app.kubernetes.io/instance: {{ include "common.release" $dot }}
+{{ if .matchLabels }}
+{{$_ := unset .matchLabels "nameNoMatch"}}
+{{- include "common.tplValue" (dict "value" .matchLabels "context" $dot) }}
+{{- end -}}
 {{- end -}}
 
 {{/*
   Generate "top" metadata for Deployment / StatefulSet / ...
+  The function takes several arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .labels: labels to add (dict)
+     - .suffix: suffix to name
+
 */}}
 {{- define "common.resourceMetadata" -}}
-name: {{ include "common.fullname" . }}
-namespace: {{ include "common.namespace" . }}
-labels: {{- include "common.labels" . | nindent 2 }}
+{{- $dot := default . .dot -}}
+{{- $suffix := default "" .suffix -}}
+{{- $labels := default (dict) .labels -}}
+
+name: {{ include "common.fullname" (dict "suffix" $suffix "dot" $dot )}}
+namespace: {{ include "common.namespace" $dot }}
+labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot ) | nindent 2 }}
 {{- end -}}
 
 {{/*
   Generate selectors for Deployment / StatefulSet / ...
+    The function takes several arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .matchLabels: labels to add (dict)
 */}}
 {{- define "common.selectors" -}}
-matchLabels: {{- include "common.matchLabels" . | nindent 2 }}
+{{- $dot := default . .dot -}}
+{{- $matchLabels := default (dict) .matchLabels -}}
+matchLabels: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "dot" $dot) | nindent 2 }}
 {{- end -}}
 
 {{/*
   Generate "template" metadata for Deployment / StatefulSet / ...
+    The function takes several arguments (inside a dictionary)
+     - .dot : environment (.)
+     - .labels: labels to add (dict)
 */}}
 {{- define "common.templateMetadata" -}}
-{{- if .Values.podAnnotations }}
-annotations: {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 2 }}
+{{- $dot := default . .dot -}}
+{{- $labels := default (dict) .labels -}}
+{{- if $dot.Values.podAnnotations }}
+annotations: {{- include "common.tplValue" (dict "value" $dot.Values.podAnnotations "context" $) | nindent 2 }}
 {{- end }}
-labels: {{- include "common.labels" . | nindent 2 }}
-name: {{ include "common.name" . }}
+labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 2 }}
+name: {{ include "common.name" $dot }}
 {{- end -}}
