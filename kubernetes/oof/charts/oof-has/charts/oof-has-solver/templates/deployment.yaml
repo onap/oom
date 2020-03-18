@@ -92,6 +92,22 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-solvr-sms-readiness
+      - name: {{ .Values.global.commonConfigPrefix }}-update-config
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /configinput && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: APP_KEY
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "oof-has-app-key" "key" "password") | indent 10 }}
+        volumeMounts:
+        - name: {{ .Values.global.commonConfigPrefix }}-config
+          mountPath: /configinput
+        - name: {{ .Values.global.commonConfigPrefix }}-processed
+          mountPath: /config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
@@ -125,7 +141,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: /usr/local/bin/conductor.conf
-            name: {{ .Values.global.commonConfigPrefix }}-config
+            name: {{ .Values.global.commonConfigPrefix }}-processed
             subPath: conductor.conf
           - mountPath: /usr/local/bin/log.conf
             name: {{ .Values.global.commonConfigPrefix }}-config
@@ -162,5 +178,8 @@ spec:
               path: healthy.sh
             - key: AAF_RootCA.cer
               path: AAF_RootCA.cer
+        - name: {{ .Values.global.commonConfigPrefix }}--processed
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
