@@ -36,7 +36,7 @@ spec:
         - /root/ready.py
         args:
         - --container-name
-        - pdp
+        - policy-xacml-pdp
         env:
         - name: NAMESPACE
           valueFrom:
@@ -64,6 +64,25 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-osdf-sms-readiness
+
+      - name: {{ include "common.name" . }}-update-config
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /configinput && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: APP_KEY
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "oof-osdf-app-key" "key" "password") | indent 10 }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-config
+          mountPath: /configinput
+        - name: {{ include "common.fullname" . }}-processed
+          mountPath: /config
+
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -90,7 +109,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: /opt/app/config/osdf_config.yaml
-            name: {{ include "common.fullname" . }}-config
+            name: {{ include "common.fullname" . }}-processed
             subPath: osdf_config.yaml
           - mountPath: /opt/app/ssl_cert/aaf_root_ca.cer
             name: {{ include "common.fullname" . }}-config
@@ -102,7 +121,7 @@ spec:
             name: {{ include "common.fullname" . }}-config
             subPath: org.onap.oof.key
           - mountPath: /opt/osdf/config/common_config.yaml
-            name: {{ include "common.fullname" . }}-config
+            name: {{ include "common.fullname" . }}-processed
             subPath: common_config.yaml
           resources:
 {{ include "common.resources" . | indent 12 }}
@@ -133,5 +152,8 @@ spec:
               path: org.onap.oof.crt
             - key: org.onap.oof.key
               path: org.onap.oof.key
+        - name: {{ include "common.fullname" . }}-processed
+          emptyDir:
+              medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
