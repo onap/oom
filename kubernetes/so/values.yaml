@@ -22,6 +22,7 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  soBaseImage: onap/so/base-image:1.0
   mariadbGalera:
     nameOverride: mariadb-galera
     serviceName: mariadb-galera
@@ -69,11 +70,28 @@ global:
     certs:
       trustStorePassword: b25hcDRzbw==
       keyStorePassword: c280b25hcA==
+  certificates:
+    path: /etc/ssl/certs
+    share_path: /usr/local/share/ca-certificates/
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: "onap-certs"
+    name: '{{ include "common.release" . }}-so-certs'
+    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
+    type: generic
+    filePaths:
+      - resources/config/certificates/onap-ca.crt
+      - resources/config/certificates/msb-ca.crt
+
 #################################################################
 # Application configuration defaults.
 #################################################################
 repository: nexus3.onap.org:10001
 image: onap/so/api-handler-infra:1.5.3
+
 pullPolicy: Always
 replicaCount: 1
 minReadySeconds: 10
@@ -93,6 +111,8 @@ updateStrategy:
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
+persistence:
+  certificatesPath: /certificates
 resources:
   small:
     limits:
@@ -125,7 +145,6 @@ affinity: {}
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
-
 
 #Used only if localCluster is enabled. Instantiates SO's own cassandra cluster
 #helm deploy demo local/onap --namespace onap --verbose --set so.enabled=true \
@@ -172,7 +191,9 @@ mso:
         auth: 51EA5414022D7BE536E7516C4D1A6361416921849B72C0D6FC1C7F262FD9F2BBC2AD124190A332D9845A188AD80955567A4F975C84C221EEA8243BFD92FFE6896CDD1EA16ADD34E1E3D47D4A
   health:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
+
 so-bpmn-infra:
+  certSecret: '{{ include "common.release" . }}-so-certs'
   cds:
     auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
   aai:
