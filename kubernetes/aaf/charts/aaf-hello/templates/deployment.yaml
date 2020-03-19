@@ -30,60 +30,70 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-      - name: aaf-hello-vol
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: aaf-hello-vol
       {{- if and .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ include "common.release" . }}-aaf-hello-pvc
+          persistentVolumeClaim:
+            claimName: {{ include "common.release" . }}-aaf-hello-pvc
       {{- else }}
-        emptyDir: {}
+          emptyDir: {}
       {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
-      - name: {{ include "common.name" . }}-config
-        image: {{ .Values.global.repository }}/{{.Values.aaf_init.image}}
+      - name: fix-permission
+        command: ["/bin/sh","-c","chmod -R 775 /opt/app/osaaf/local && chown -R 1000:1000 /opt/app/osaaf"]
+        image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-        - mountPath: "/opt/app/osaaf"
+        - mountPath: "/opt/app/osaaf/local"
           name: aaf-hello-vol
-# NOTE: Before this, need Liveness Attached to aaf-certman
-        command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
+      - name: {{ include "common.name" . }}-config-container
+        image: {{ .Values.global.repository }}/{{.Values.aaf_init.image}}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["bash","-c","cd /opt/app/aaf_config && bin/agent.sh"]
+#        command: ["bash","-c","cd /opt/app/aaf_config && echo Sleeping && sleep 480"]
+#        command: ["bash","-c","chown 1000:1000 /opt/app/osaaf && cd /opt/app/aaf_config && sleep 480"]
+        volumeMounts:
+        - mountPath: "/opt/app/osaaf/local"
+          name: aaf-hello-vol
         env:
           - name: APP_FQI
             value: "{{ .Values.aaf_init.fqi }}"
           - name: aaf_locate_url
-            value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
+            value: "https://aaf-locate.{{ .Release.Namespace}}:{{.Values.global.aaf.locate.internal_port}}"
           - name: aaf_locator_container
             value: "oom"
           - name: aaf_locator_container_ns
             value: "{{ .Release.Namespace }}"
+# This should the APP's FQDN to be put in Locator
+# This MUST match what is entered for AAF Certificate Artifacts
           - name: aaf_locator_fqdn
-            value: "{{ .Values.aaf_init.fqdn }}"
-          - name: aaf_locator_app_ns
-            value: "{{ .Values.aaf_init.app_ns }}"
-          - name: DEPLOY_FQI
-            value: "deployer@people.osaaf.org"
-# Note: We want to put this in Secrets or at LEAST ConfigMaps
-          - name: DEPLOY_PASSWORD
-            value: "demo123456!"
-# Note: want to put this on Nodes, evenutally
-          - name: cadi_longitude
-            value: "{{ .Values.aaf_init.cadi_longitude }}"
-          - name: cadi_latitude
-            value: "{{ .Values.aaf_init.cadi_latitude }}"
+            value: "{{.Values.aaf_init.fqdn}}"
 # Hello specific.  Clients don't don't need this, unless Registering with AAF Locator
+# This should be the APP's PUBLIC FQDN, if applicable
           - name: aaf_locator_public_fqdn
-            value: "{{.Values.global.aaf.public_fqdn}}"
+            value: "{{.Values.aaf_init.locator_public_fqdn}}"
+          - name: LATITUDE
+            value: "{{ .Values.aaf_init.cadi_latitude }}"
+          - name: LONGITUDE
+            value: "{{ .Values.aaf_init.cadi_longitude }}"
+# Note: We want to put this in Secrets or at LEAST ConfigMaps
+          - name: "DEPLOY_FQI"
+            value: "deployer@people.osaaf.org"
+# Note: want to put this on Nodes, evenutally
+          - name: "DEPLOY_PASSWORD"
+            value: "demo123456!"
+# CONTAINER Definition
       containers:
       - name: {{ include "common.name" . }}
         command: ["bash","-c","cd /opt/app/aaf && if [ ! -d /opt/app/osaaf/etc ]; then cp -Rf etc logs /opt/app/osaaf; fi && exec bin/hello"]
         image: {{ .Values.global.repository }}/{{.Values.service.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
-        - mountPath: "/opt/app/osaaf"
+        - mountPath: "/opt/app/osaaf/local"
           name: aaf-hello-vol
         - mountPath: /etc/localtime
           name: localtime

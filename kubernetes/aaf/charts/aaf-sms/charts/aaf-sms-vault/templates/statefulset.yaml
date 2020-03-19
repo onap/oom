@@ -31,11 +31,25 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              chmod -R 775 /consul/data
+              chown -R 100:1000 /consul/data
+          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /consul/data
+              name: {{ include "common.fullname" . }}-data
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image.vault }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["vault","server","-config","/vault/config/config.json"]
+        command: ["su-exec","vault:vault","vault","server","-config","/vault/config/config.json"]
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         volumeMounts:
@@ -50,7 +64,7 @@ spec:
       - image: "{{ include "common.repository" . }}/{{ .Values.image.consul }}"
         name: {{ include "common.name" . }}-backend
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["consul","agent","-server","-client","0.0.0.0","-bootstrap-expect=1","-config-file","/consul/config/config.json"]
+        args: ["agent","-server","-bind","0.0.0.0","-bootstrap-expect=1","-config-file","/consul/config/config.json"]
         ports:
         - name: http
           containerPort: 8500
