@@ -26,11 +26,11 @@
 {{-   $portsNumber := list }}
 {{-   $both_tls_and_plain:= default false .Values.service.both_tls_and_plain }}
 {{-   range $index, $port := $ports }}
-{{-     $portsNumber = append $portsNumber $port.port }}
+{{-     $portsNumber := append $portsNumber $port.port }}
 {{-   end }}
 {{-   range $index, $port := .Values.service.headlessPorts }}
 {{-     if not (has $port.port $portsNumber) }}
-{{-       $ports = append $ports $port }}
+{{-       $ports := append $ports $port }}
 {{-     end }}
 {{-   end }}
 {{- $global := . }}

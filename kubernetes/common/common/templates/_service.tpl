@@ -191,9 +191,9 @@ spec:
 {{-     if (ne $serviceType "ClusterIP") }}
 ---
 {{-       if $suffix }}
-{{-         $suffix = printf "%s-external" $suffix }}
+{{-         $suffix := printf "%s-external" $suffix }}
 {{-       else }}
-{{-         $suffix = "external" }}
+{{-         $suffix := "external" }}
 {{-       end }}
 {{        include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" . "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" $serviceType $labels "matchLabels" $matchLabels) }}
 {{-     end }}
