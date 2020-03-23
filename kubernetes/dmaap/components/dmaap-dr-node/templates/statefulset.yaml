@@ -11,24 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
-  serviceName: {{ .Values.config.dmaapDrNode.name }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
         - name: {{ include "common.name" . }}-readiness
@@ -66,7 +57,7 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
-          - mountPath: {{ .Values.persistence.aafCredsPath }}
+          - mountPath: {{ .Values.aafConfig.credsPath }}
             name: {{ include "common.fullname" . }}-aaf-props
           command: ["bash","-c","exec /opt/app/aaf_config/bin/agent.sh"]
           env:
@@ -97,12 +88,12 @@ spec:
           image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
-          - mountPath: {{ .Values.persistence.spoolPath }}
-            name: {{ include "common.fullname" . }}-data
-          - mountPath: {{ .Values.persistence.eventLogsPath }}
+          - mountPath: {{ .Values.persistence.spool.path }}
+            name: {{ include "common.fullname" . }}-spool
+          - mountPath: {{ .Values.persistence.event.path }}
             name: {{ include "common.fullname" . }}-event-logs
         {{- if .Values.global.aafEnabled }}
-          - mountPath: {{ .Values.persistence.aafCredsPath }}
+          - mountPath: {{ .Values.aafConfig.credsPath }}
             name: {{ include "common.fullname" . }}-aaf-props
         {{- end }}
           command: ["chown","-Rf","1000:1001", "/opt/app/"]
@@ -110,29 +101,28 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{.Values.config.dmaapDrNode.externalPort}}
-          - containerPort: {{.Values.config.dmaapDrNode.externalPort2}}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrNode.internalPort}}
+              port: {{.Values.liveness.port}}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{.Values.config.dmaapDrNode.internalPort}}
+              port: {{.Values.readiness.port}}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+
           volumeMounts:
           {{- if .Values.global.aafEnabled }}
-          - mountPath: {{ .Values.persistence.aafCredsPath }}
+          - mountPath: {{ .Values.aafConfig.credsPath }}
             name: {{ include "common.fullname" . }}-aaf-props
           {{- end }}
-          - mountPath: {{ .Values.persistence.spoolPath }}
-            name: {{ include "common.fullname" . }}-data
-          - mountPath: {{ .Values.persistence.eventLogsPath }}
+          - mountPath: {{ .Values.persistence.spool.path }}
+            name: {{ include "common.fullname" . }}-spool
+          - mountPath: {{ .Values.persistence.event.path }}
             name: {{ include "common.fullname" . }}-event-logs
           - mountPath: /etc/localtime
             name: localtime
@@ -145,15 +135,12 @@ spec:
             subPath: logback.xml
           - mountPath: {{ .Values.global.loggingDirectory }}
             name: {{ include "common.fullname" . }}-logs
-          resources:
-{{ include "common.resources" . }}
+          resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end -}}
         # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
@@ -189,59 +176,19 @@ spec:
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+      {{- if .Values.global.aafEnabled }}
+        - name:  {{ include "common.fullname" . }}-aaf-props
+          emptyDir:
+            medium: Memory
+      {{- end }}
       {{- if not .Values.persistence.enabled }}
         - name:  {{ include "common.fullname" . }}-event-logs
           emptyDir: {}
-        - name: {{ include "common.fullname" . }}-data
+        - name: {{ include "common.fullname" . }}-spool
           emptyDir: {}
-      {{- if .Values.global.aafEnabled }}
-        - name:  {{ include "common.fullname" . }}-aaf-props
-          emptyDir: {}
-      {{- end }}
       {{- end }}
 {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
-  - metadata:
-      name: {{ include "common.fullname" . }}-data
-      labels:
-        name: {{ include "common.fullname" . }}
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode }}
-      storageClassName: {{ include "common.storageClass" . }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.spoolSize }}
-  - metadata:
-      name: {{ include "common.fullname" . }}-event-logs
-      labels:
-        name: {{ include "common.fullname" . }}
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode }}
-      {{- if eq "True" (include "common.needPV" .) }}
-      storageClassName: "{{ include "common.fullname" . }}-data-event-logs"
-      {{- else }}
-      storageClassName: {{ include "common.storageClass" . }}
-      {{- end }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.eventLogSize }}
-{{- if .Values.global.aafEnabled }}
-  - metadata:
-      name: {{ include "common.fullname" . }}-aaf-props
-      labels:
-        name: {{ include "common.fullname" . }}
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode }}
-      {{- if eq "True" (include "common.needPV" .) }}
-      storageClassName: "{{ include "common.fullname" . }}-data-aaf-props"
-      {{- else }}
-      storageClassName: {{ include "common.storageClass" . }}
-      {{- end }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.aafCredsSize }}
-{{- end }}
+  - {{ include "common.PVCTemplate" (dict "dot" . "suffix" "spool" "persistenceInfos" .Values.persistence.spool) | indent 4 | trim }}
+  - {{ include "common.PVCTemplate" (dict "dot" . "suffix" "event-logs" "persistenceInfos" .Values.persistence.event) | indent 4 | trim }}
 {{- end }}
