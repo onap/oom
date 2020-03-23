@@ -302,3 +302,33 @@ true
 {{-     end }}
 {{-   end }}
 {{- end -}}
+
+{{- define "common.port.buildCache" -}}
+  {{- $global := . }}
+  {{- if not $global.Values._DmaapDrNodePortsCache }}
+    {{- $portCache := dict }}
+    {{- range $port := .Values.service.ports }}
+      {{- $_ := set $portCache $port.name (dict "port" $port.port "plain_port" $port.plain_port) }}
+    {{- end }}
+    {{- $_ := set $global.Values "_DmaapDrNodePortsCache" $portCache }}
+  {{- end }}
+{{- end -}}
+
+{/*
+  Get Port value according to its name and if we want tls or plain port.
+  The template takes below arguments:
+    - .global: environment (.)
+    - .name: name of the port
+    - .getPlain: boolean allowing to choose between tls (false, default) or
+                 plain (true)
+    If plain_port is not set and we ask for plain, it will return empty.
+*/}
+{{- define "common.getPort" -}}
+  {{- $global := .global }}
+  {{- $name := .name }}
+  {{- $getPlain := default false .getPlain }}
+  {{- include "common.port.buildCache" $global }}
+  {{- $portCache := $global.Values._DmaapDrNodePortsCache }}
+  {{- $port := index $portCache $name }}
+  {{- ternary $port.plain_port $port.port $getPlain }}
+{{- end -}}
