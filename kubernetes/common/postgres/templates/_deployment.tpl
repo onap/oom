@@ -49,15 +49,15 @@ spec:
         - name: PG_PRIMARY_USER
           value: primaryuser
         - name: PG_PRIMARY_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
         - name: PG_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
         - name: PG_DATABASE
           value: "{{ $dot.Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input/setup.sql
           name: config
@@ -116,15 +116,15 @@ spec:
         - name: PG_PRIMARY_PORT
           value: "{{ $dot.Values.service.internalPort }}"
         - name: PG_PRIMARY_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
         - name: PG_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
         - name: PG_DATABASE
           value: "{{ $dot.Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD
-          {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         volumeMounts:
         - name: config
           mountPath: /pgconf/pool_hba.conf
