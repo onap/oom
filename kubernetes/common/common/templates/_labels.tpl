@@ -57,16 +57,20 @@ app.kubernetes.io/instance: {{ include "common.release" $dot }}
      - .dot : environment (.)
      - .labels: labels to add (dict)
      - .suffix: suffix to name
+     - .annotations: annotations to add (dict)
 
 */}}
 {{- define "common.resourceMetadata" -}}
 {{- $dot := default . .dot -}}
 {{- $suffix := default "" .suffix -}}
 {{- $labels := default (dict) .labels -}}
-
+{{- $annotations := default (dict) .annotations -}}
 name: {{ include "common.fullname" (dict "suffix" $suffix "dot" $dot )}}
 namespace: {{ include "common.namespace" $dot }}
 labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot ) | nindent 2 }}
+{{- if $annotations }}
+annotations:  {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2}}
+{{- end -}}
 {{- end -}}
 
 {{/*
