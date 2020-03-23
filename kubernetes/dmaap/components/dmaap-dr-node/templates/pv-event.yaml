@@ -1,7 +1,7 @@
 {{/*
-  # ============LICENSE_START=======================================================
-  #  Copyright (C) 2019 Nordix Foundation.
-  # ================================================================================
+  # ============LICENSE_START===================================================
+  #  Copyright (C) 2020 Nordix Foundation, Orange.
+  # ============================================================================
   # Licensed under the Apache License, Version 2.0 (the "License");
   # you may not use this file except in compliance with the License.
   # You may obtain a copy of the License at
@@ -15,37 +15,7 @@
   # limitations under the License.
   #
   # SPDX-License-Identifier: Apache-2.0
-  # ============LICENSE_END=========================================================
+  # ============LICENSE_END=====================================================
 */}}
 
----
-{{- $global := . }}
-{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
-{{- if (include "common.needPV" .) -}}
-{{- range $i := until (int $global.Values.replicaCount)}}
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" $global }}-event-logs-{{ $i }}
-  namespace: {{ include "common.namespace" $global }}
-  labels:
-    app: {{ include "common.fullname" $global }}
-    chart: "{{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}"
-    release: "{{ include "common.release" $global }}"
-    heritage: "{{ $global.Release.Service }}"
-    name: {{ include "common.fullname" $global }}-event-logs
-spec:
-  capacity:
-    storage: {{ $global.Values.persistence.eventLogSize}}
-  accessModes:
-    - {{ $global.Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
-  storageClassName: "{{ include "common.fullname" $global }}-data-event-logs"
-  hostPath:
-    path: {{ $global.Values.global.persistence.mountPath | default $global.Values.persistence.mountPath }}/{{ include "common.release" $global }}/{{ $global.Values.persistence.eventLogsMountSubPath }}-{{$i}}
-{{if ne $i (int $global.Values.replicaCount) }}
----
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+{{ include "common.replicaPV" (dict "dot" . "suffix" "event-logs" "persistenceInfos" "persistence.event") }}
