@@ -45,29 +45,42 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: api
 
 readiness:
   initialDelaySeconds: 30
   periodSeconds: 10
+  port: api
 
 ## Persist data to a persitent volume
 persistence:
   enabled: true
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteOnce
   mountPath: /dockerdata-nfs
+  spool:
+    enabled: true
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteOnce
+    mountSubPath: data-router/dr-node/spool-data
+    size: 2Gi
+    path: /opt/app/datartr/spool
+    labels:
+      app.kubernetes.io/component: spool
 
-  spoolMountSubPath: data-router/dr-node/spool-data
-  spoolSize: 2Gi
-  spoolPath: /opt/app/datartr/spool
+  event:
+    enabled: true
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteOnce
+    mountSubPath: data-router/dr-node/event-logs
+    path: /opt/app/datartr/logs
+    size: 2Gi
+    labels:
+      app.kubernetes.io/component: event-logs
 
-  eventLogsMountSubPath: data-router/dr-node/event-logs
-  eventLogSize: 2Gi
-  eventLogsPath: /opt/app/datartr/logs
-
-  aafCredsMountSubPath: data-router/dr-node/aaf-props
-  aafCredsSize: 10M
-  aafCredsPath: /opt/app/osaaf/local
+job:
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-2"
+    "helm.sh/hook-delete-policy": hook-succeeded
 
 #AAF local config
 aafConfig:
@@ -78,7 +91,7 @@ aafConfig:
   publicFqdn: dmaap-dr.onap.org
   cadiLatitude: 0.0
   cadiLongitude: 0.0
-
+  credsPath: /opt/app/osaaf/local
 
 ingress:
   enabled: false
@@ -109,19 +122,22 @@ resources:
       memory: 2Gi
   unlimited: {}
 
+service:
+  type: NodePort
+  name: dmaap-dr-node
+  nodePortExt: true
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  ports:
+    - name: api
+      port: 8443
+      plain_port: 8080
+      port_protocol: http
+      nodePort: 94
+
 config:
   # dr node server configuration
   dmaapDrNode:
-    servicetype: NodePort
-    name: dmaap-dr-node
-    externalPort: 8080
-    externalPort2: 8443
-    internalPort: 8080
-    internalPort2: 8443
-    portName: dr-node-port
-    portName2: dr-node-port2
-    nodePort: 93
-    nodePort2: 94
     # dr uses the EELF Logging framework https://github.com/att/EELF
     # and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
     logLevel: "INFO"
