@@ -78,6 +78,38 @@ type: Opaque
   {{- end }}
 {{- end -}}
 
+{{/*
+  For internal use only!
+
+  Pick a value based on "user input" and generation policy.
+
+  The template takes below arguments:
+    - .global: environment (.)
+    - .secretName: name of the secret where the value will be placed
+    - .secretEnv: map of values which configures this secret. This can contain below keys:
+        - value: Value of secret key provided by user (can be a template inside a string)
+        - policy: What to do if value is missing or empty. Possible options are:
+            - generate: Generate a new password deriving it from master password
+            - required: Fail the deployment if value has not been provided
+          Defaults to generate.
+        - name: Name of the key to which this value should be assigned
+*/}}
+{{- define "common.secret._valueFast" -}}
+  {{- $global := .global }}
+  {{- $name := .secretName }}
+  {{- $secretEnv := .secretEnv }}
+  {{- $value := $secretEnv.value }}
+  {{- $policy := default "generate" $secretEnv.policy }}
+
+  {{- if $value }}
+    {{- $value | quote }}
+  {{- else if eq $policy "generate" }}
+    {{- include "common.createPassword" (dict "dot" $global "uid" $name) | quote }}
+  {{- else }}
+    {{- fail (printf "Value for %s secret %s key not provided" $name $secretEnv.name) }}
+  {{- end }}
+{{- end -}}
+
 
 {{/*
   Generate a secret name based on provided name or UID.
@@ -96,6 +128,14 @@ type: Opaque
   {{- $global := .global }}
   {{- $uid := tpl (default "" .uid) $global }}
   {{- $name := tpl (default "" .name) $global }}
+  {{- $fullname := ne (default "" .chartName) "" | ternary (include "common.fullnameExplicit" (dict "dot" $global "chartName" .chartName)) (include "common.fullname" $global) }}
+  {{- default (printf "%s-%s" $fullname $uid) $name }}
+{{- end -}}
+
+{{- define "common.secret.genNameFast" -}}
+  {{- $global := .global }}
+  {{- $uid := (default "" .uid) }}
+  {{- $name := (default "" .name) }}
   {{- $fullname := ne (default "" .chartName) "" | ternary (include "common.fullnameExplicit" (dict "dot" $global "chartName" .chartName)) (include "common.fullname" $global) }}
   {{- default (printf "%s-%s" $fullname $uid) $name }}
 {{- end -}}
@@ -122,13 +162,44 @@ type: Opaque
   {{- $uid := tpl (default "" .uid) $global }}
   {{- $targetName := default (include "common.secret.genName" (dict "global" $global "uid" $uid "name" .name)) $name}}
   {{- range $secret := $global.Values.secrets }}
-    {{- $givenName := tpl (default "" $secret.name) $global }}
     {{- $currUID := tpl (default "" $secret.uid) $global }}
+    {{- $givenName := tpl (default "" $secret.name) $global }}
     {{- $currName := default (include "common.secret.genName" (dict "global" $global "uid" $currUID "name" $secret.name)) $givenName }}
     {{- if or (eq $uid $currUID) (eq $currName $targetName) }}
       {{- $externalSecret := tpl (default "" $secret.externalSecret) $global }}
       {{- default $currName $externalSecret }}
     {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{- define "common.secret.getSecretNameFast" -}}
+  {{- $global := .global }}
+  {{- include "common.secret.buildCache" $global }}
+  {{- $secretsCache := $global.Values._secretsCache }}
+  {{- $uid := tpl .uid $global }}
+  {{- $secret := index $secretsCache $uid }}
+  {{- $secret.realName }}
+{{- end -}}
+
+{{- define "common.secret.buildCache" -}}
+  {{- $global := . }}
+  {{- if not $global.Values._secretsCache }}
+    {{- $secretCache := dict }}
+    {{- range $secret := .Values.secrets }}
+      {{- $entry := dict }}
+      {{- $uid := tpl (default "" $secret.uid) $global }}
+      {{- $keys := keys $secret }}
+      {{- range $key := (without $keys "annotations" )}}
+        {{- $_ := set $entry $key (tpl (index $secret $key) $global) }}
+      {{- end }}
+      {{- if $secret.annotations }}
+        {{- $_ := set $entry "annotations" $secret.annotations }}
+      {{- end }}
+      {{- $realName := default (include "common.secret.genNameFast" (dict "global" $global "uid" $uid "name" $entry.name) ) $entry.externalSecret }}
+      {{- $_ := set $entry "realName" $realName }}
+      {{- $_ := set $secretCache $uid $entry }}
+    {{- end }}
+    {{- $_ := set $global.Values "_secretsCache" $secretCache }}
   {{- end }}
 {{- end -}}
 
@@ -156,6 +227,14 @@ type: Opaque
 valueFrom:
   secretKeyRef:
     name: {{ include "common.secret.getSecretName" . }}
+    key: {{ $key }}
+{{- end -}}
+
+{{- define "common.secret.envFromSecretFast" -}}
+  {{- $key := .key }}
+valueFrom:
+  secretKeyRef:
+    name: {{ include "common.secret.getSecretNameFast" . }}
     key: {{ $key }}
 {{- end -}}
 
@@ -281,6 +360,134 @@ stringData:
         {{- $secretEnv := (dict "policy" (default "generate" $secret.passwordPolicy) "name" "password" "value" $secret.password) }}
         {{- $valueDesc := (dict "global" $global "secretName" $name "secretEnv" $secretEnv) }}
   password: {{ include "common.secret._value" $valueDesc }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+  Define secrets to be used by chart.
+  Every secret has a type which is one of:
+    - generic:
+        Generic secret template that allows to input some raw data (from files).
+        File Input can be passed as list of files (filePaths) or as a single string
+        (filePath)
+    - genericKV:
+        Type of secret which allows you to define a list of key value pairs.
+        The list is assiged to envs value. Every item may define below items:
+          - name:
+              Identifier of this value within secret
+          - value:
+              String that defines a value associated with given key.
+              This can be a simple string or a template.
+          - policy:
+              Defines what to do if value is not provided by the user.
+              Available options are:
+                - generate:
+                    Generate a value by derriving it from master password
+                - required:
+                    Fail the deployment
+    - password:
+        Type of secret that holds only the password.
+        Only two items can be defined for this type:
+          - password:
+              Equivalent of value field from genericKV
+          - policy:
+              The same meaning as for genericKV policy field
+    - basicAuth:
+        Type of secret that holds both username and password.
+        Below fields are available:
+          - login:
+              The value for login key.
+              This can be a simple string or a template.
+              Providing a value for login is always required.
+          - password:
+              The value for password key.
+              This can be a simple string or a template.
+          - passwordPolicy:
+              The same meaning as the policy field in genericKV.
+              Only the policy for password can be set.
+
+  Every secret can be identified using:
+    - uid:
+        A string to be appended to the chart fullname to generate a secret name.
+    - name:
+        Overrides default secret name generation and allows to set immutable
+        and globaly unique name
+    - annotations:
+        List of annotations to be used while defining a secret
+
+  To allow sharing a secret between the components and allow to pre-deploy secrets
+  before ONAP deployment it is possible to use already existing secret instead of
+  creating a new one. For this purpose externalSecret field can be used. If value of
+  this field is evaluated to true no new secret is created, only the name of the
+  secret is aliased to the external one.
+
+  Example usage:
+    secrets.yaml:
+      {{ include "common.secretFast" . }}
+
+    values.yaml:
+      mysqlLogin: "root"
+
+      mysqlExternalSecret: "some-other-secret-name"
+
+      secrets:
+        - uid: "mysql"
+          externalSecret: '{{ tpl .Values.passExternalSecret . }}'
+          type: basicAuth
+          login: '{{ .Values.mysqlLogin }}'
+          mysqlPassword: '{{ .Values.mysqlPassword }}'
+          passwordPolicy: generate
+
+    In the above example new secret is not going to be created.
+    Already existing one (some-other-secret-name) is going to be used.
+    To force creating a new one, just make sure that mysqlExternalSecret
+    is not set.
+
+*/}}
+{{- define "common.secretFast" -}}
+  {{- $global := . }}
+  {{- include "common.secret.buildCache" $global }}
+  {{- range $secret := .Values._secretsCache }}
+    {{- $uid := $secret.uid }}
+    {{- $externalSecret := $secret.externalSecret }}
+    {{- if not $externalSecret }}
+      {{- $name := $secret.realName }}
+      {{- $annotations := default "" $secret.annotations }}
+      {{- $type := default "generic" $secret.type }}
+---
+      {{ include "common.secret._header" (dict "global" $global "name" $name "annotations" $annotations) }}
+
+      {{- if eq $type "generic" }}
+data:
+        {{- range $curFilePath := $secret.filePaths }}
+          {{ tpl ($global.Files.Glob $curFilePath).AsSecrets $global | indent 2 }}
+        {{- end }}
+        {{- if $secret.filePath }}
+          {{ tpl ($global.Files.Glob $secret.filePath).AsSecrets $global | indent 2 }}
+        {{- end }}
+      {{- else if eq $type "genericKV" }}
+stringData:
+        {{- if $secret.envs }}
+          {{- range $secretEnv := $secret.envs }}
+            {{- $valueDesc := (dict "global" $global "secretName" $name "secretEnv" $secretEnv) }}
+    {{ $secretEnv.name }}: {{ include "common.secret._valueFast" $valueDesc }}
+          {{- end }}
+        {{- end }}
+      {{- else if eq $type "password" }}
+        {{- $secretEnv := (dict "policy" (default "generate" $secret.policy) "name" "password" "value" $secret.password) }}
+        {{- $valueDesc := (dict "global" $global "secretName" $name "secretEnv" $secretEnv) }}
+stringData:
+  password: {{ include "common.secret._valueFast" $valueDesc }}
+      {{- else if eq $type "basicAuth" }}
+stringData:
+        {{- $secretEnv := (dict "policy" "required" "name" "login" "value" $secret.login) }}
+        {{- $valueDesc := (dict "global" $global "secretName" $name "secretEnv" $secretEnv) }}
+  login: {{ include "common.secret._valueFast" $valueDesc }}
+        {{- $secretEnv := (dict "policy" (default "generate" $secret.passwordPolicy) "name" "password" "value" $secret.password) }}
+        {{- $valueDesc := (dict "global" $global "secretName" $name "secretEnv" $secretEnv) }}
+  password: {{ include "common.secret._valueFast" $valueDesc }}
       {{- end }}
     {{- end }}
   {{- end }}
