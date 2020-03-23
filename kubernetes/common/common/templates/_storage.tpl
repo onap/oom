@@ -16,9 +16,20 @@
 
 {{/*
   Give the root folder for ONAP when using host pathes
+
+  The function takes up to two arguments (inside a dictionary):
+    - .dot : environment (.)
+    - .subPath: the sub path to use, default to
+                ".Values.persistence.mountSubPath"
+
+  Example calls:
+    {{ include "common.storageClass" . }}
+    {{ include "common.storageClass" (dict "dot" . "subPath" "my-awesome-subPath") }}
 */}}
 {{- define "common.persistencePath" -}}
-{{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath }}
+{{-   $dot := default . .dot -}}
+{{-   $subPath := default $dot.Values.persistence.mountSubPath .subPath -}}
+{{ $dot.Values.global.persistence.mountPath | default $dot.Values.persistence.mountPath }}/{{ include "common.release" $dot }}/{{ $subPath }}
 {{- end -}}
 
 {{/*
@@ -26,28 +37,61 @@
   The value "common.fullname"-data is used by default,
   unless either override mechanism is used.
 
-  - .Values.global.persistence.storageClass  : override default storageClass for all charts
-  - .Values.persistence.storageClassOverride : override global and default storage class on a per chart basis
-  - .Values.persistence.storageClass         : override default storage class on a per chart basis
+  - .Values.global.persistence.storageClass  : override default storageClass for
+                                               all charts
+  - .Values.persistence.storageClassOverride : override global and default
+                                               storage class on a per chart
+                                               basis
+  - .Values.persistence.storageClass         : override default storage class on
+                                               per chart basis
+
+  The function takes up to two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix: suffix to name. if not set, default to "data" when no override
+        mechanism is used.
+     - .persistenceInfos: the persitence values to use, default to
+                          `.Values.persistence`.
+                          Need to be the dict key from `.Values` in string
+                          format.
+                          let's say you have:
+
+                              persistence:
+                                logs:
+                                  enabled: true
+                                  size: 100Mi
+                                  accessMode: ReadWriteOnce
+                                  ...
+
+                          then you have to put `.Values.persitence.logs` in
+                          order to use it.
+
+
+  Example calls:
+    {{ include "common.storageClass" . }}
+    {{ include "common.storageClass" (dict "dot" . "suffix" "my-awesome-suffix") }}
+    {{ include "common.storageClass" (dict "dot" . "suffix" "my-awesome-suffix" "persistenceInfos" .Values.persistenceLog) }}
 */}}
 {{- define "common.storageClass" -}}
-  {{- if .Values.persistence.storageClassOverride -}}
-    {{- if ne "-" .Values.persistence.storageClassOverride -}}
-      {{- printf "%s" .Values.persistence.storageClassOverride -}}
+{{-   $dot := default . .dot -}}
+{{-   $suffix := default "data" .suffix -}}
+{{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
+  {{- if $persistenceInfos.storageClassOverride -}}
+    {{- if ne "-" $persistenceInfos.storageClassOverride -}}
+      {{- $persistenceInfos.storageClassOverride -}}
     {{- else -}}
       {{- $storage_class := "" -}}
       {{- printf "%q" $storage_class -}}
     {{- end -}}
   {{- else -}}
-    {{- if or .Values.persistence.storageClass .Values.global.persistence.storageClass }}
-      {{- if ne "-" (default .Values.persistence.storageClass .Values.global.persistence.storageClass) -}}
-        {{- printf "%s" (default .Values.persistence.storageClass .Values.global.persistence.storageClass) -}}
+    {{- if or $persistenceInfos.storageClass $dot.Values.global.persistence.storageClass }}
+      {{- if ne "-" (default $persistenceInfos.storageClass $dot.Values.global.persistence.storageClass) -}}
+        {{- default $persistenceInfos.storageClass $dot.Values.global.persistence.storageClass -}}
       {{- else -}}
         {{- $storage_class := "" -}}
         {{- printf "%q" $storage_class -}}
       {{- end -}}
     {{- else -}}
-      {{- printf "%s-data" (include "common.fullname" .) -}}
+      {{- printf "%s-%s" (include "common.fullname" $dot) $suffix -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}
@@ -63,53 +107,104 @@
 
 {{/*
   Generate a PV
+
+  The function takes up to three arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix: suffix to name. if not set, default to "data".
+     - .persistenceInfos: the persitence values to use, default to
+                          `.Values.persistence`.
+                          Need to be the dict key from `.Values` in string
+                          format.
+                          let's say you have:
+
+                              persistence:
+                                logs:
+                                  enabled: true
+                                  size: 100Mi
+                                  accessMode: ReadWriteOnce
+                                  ...
+
+                          then you have to put `.Values.persitence.logs` in
+                          order to use it.
+
+  Example calls:
+    {{ include "common.PV" . }}
+    {{ include "common.PV" (dict "dot" . "suffix" "my-awesome-suffix" "persistenceInfos".Values.persistenceLog ) }}
+    {{ include "common.PV" (dict "dot" . "subPath" "persistenceInfos" .Values.persistence.log) }}
 */}}
 {{- define "common.PV" -}}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-{{- if (include "common.needPV" .) -}}
+{{- $dot := default . .dot -}}
+{{- $suffix := default "data" .suffix -}}
+{{- $metadata_suffix := ternary "" $suffix (eq $suffix "data") -}}
+{{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
+{{- if and $persistenceInfos.enabled (not $persistenceInfos.existingClaim) -}}
+{{- if (include "common.needPV" $dot) -}}
 kind: PersistentVolume
 apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data
-  namespace: {{ include "common.namespace" . }}
-  labels: {{- include "common.labels" . | nindent 4 }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $suffix "labels" $persistenceInfos.labels) | nindent 2 }}
 spec:
   capacity:
-    storage: {{ .Values.persistence.size }}
+    storage: {{ $persistenceInfos.size }}
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+    - {{ $persistenceInfos.accessMode }}
+  persistentVolumeReclaimPolicy: {{ $persistenceInfos.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $dot }}-{{ $suffix }}"
   hostPath:
-    path: {{ include "common.persistencePath" . }}
+    path: {{ include "common.persistencePath" (dict "dot" $dot "subPath" $persistenceInfos.mountSubPath) }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
   Generate N PV for a statefulset
+
+  The function takes up to two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix: suffix to name. if not set, default to "data".
+     - .persistenceInfos: the persitence values to use, default to
+                          `.Values.persistence`.
+                          Need to be the dict key from `.Values` in string
+                          format.
+                          let's say you have:
+
+                              persistence:
+                                logs:
+                                  enabled: true
+                                  size: 100Mi
+                                  accessMode: ReadWriteOnce
+                                  ...
+
+                          then you have to put `.Values.persitence.logs` in
+                          order to use it.
+
+  Example calls:
+    {{ include "common.replicaPV" . }}
+    {{ include "common.replicaPV" (dict "dot" . "suffix" "my-awesome-suffix" "persistenceInfos" .Values.persistenceLog) }}
+    {{ include "common.replicaPV" (dict dot" . "subPath" "persistenceInfos" .Values.persistence.log) }}
 */}}
 {{- define "common.replicaPV" -}}
-{{- $global := . }}
-{{- if and $global.Values.persistence.enabled (not $global.Values.persistence.existingClaim) }}
-{{- if (include "common.needPV" .) -}}
-{{- range $i := until (int $global.Values.replicaCount)}}
+{{- $dot := default . .dot -}}
+{{- $suffix := default "data" .suffix -}}
+{{- $metadata_suffix := ternary "" $suffix (eq $suffix "data") -}}
+{{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
+{{- if and $persistenceInfos.enabled (not $persistenceInfos.existingClaim) -}}
+{{- if (include "common.needPV" $dot) -}}
+{{/* TODO: see if we can use "common.PV" after branching F release */}}
+{{- range $i := until (int $dot.Values.replicaCount) }}
+{{- $range_suffix := printf "%s-%d" $metadata_suffix $i }}
 ---
 kind: PersistentVolume
 apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" $global }}-data-{{$i}}
-  namespace: {{ include "common.namespace" $global }}
-  labels: {{- include "common.labels" $global | nindent 4 }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $range_suffix "labels" $persistenceInfos.labels) | nindent 2 }}
 spec:
   capacity:
-    storage: {{ $global.Values.persistence.size}}
+    storage: {{ $persistenceInfos.size }}
   accessModes:
-    - {{ $global.Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ $global.Values.persistence.volumeReclaimPolicy }}
-  storageClassName: "{{ include "common.fullname" $global }}-data"
+    - {{ $persistenceInfos.accessMode }}
+  persistentVolumeReclaimPolicy: {{ $persistenceInfos.volumeReclaimPolicy }}
+  storageClassName: "{{ include "common.fullname" $dot }}-{{ $suffix }}"
   hostPath:
-    path: {{ include "common.persistencePath" $global }}-{{$i}}
+    path: {{ include "common.persistencePath"  (dict "dot" $dot "subPath" $persistenceInfos.mountSubPath) }}-{{ $i }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -117,22 +212,81 @@ spec:
 
 {{/*
   Generate a PVC
+
+  The function takes up to two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix: suffix to name. if not set, default to "data".
+     - .persistenceInfos: the persitence values to use, default to
+                          `.Values.persistence`.
+                          Need to be the dict key from `.Values` in string
+                          format.
+                          let's say you have:
+
+                              persistence:
+                                logs:
+                                  enabled: true
+                                  size: 100Mi
+                                  accessMode: ReadWriteOnce
+                                  ...
+
+                          then you have to put `.Values.persitence.logs` in
+                          order to use it.
+
+  Example calls:
+    {{ include "common.PVC" . }}
+    {{ include "common.PVC" (dict "dot" . "suffix" "my-awesome-suffix" "persistenceInfos" .Values.persistenceLog) }}
+    {{ include "common.PVC" (dict dot" . "subPath" "persistenceInfos" .Values.persistence.log) }}
 */}}
 {{- define "common.PVC" -}}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- $dot := default . .dot -}}
+{{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
+{{- $suffix := default "data" .suffix -}}
+{{- $metadata_suffix := ternary "" $suffix (eq $suffix "data") -}}
+{{- if and $persistenceInfos.enabled (not $persistenceInfos.existingClaim) -}}
 kind: PersistentVolumeClaim
 apiVersion: v1
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
-{{- if .Values.persistence.annotations }}
-  annotations:
-{{ toYaml .Values.persistence.annotations | indent 4 }}
-{{- end }}
+{{ include "common.PVCTemplate" (dict "dot" $dot "suffix" $suffix "persistenceInfos" $persistenceInfos) }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Generate a PVC template for a statefulset
+
+  The function takes up to two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .suffix: suffix to name. if not set, default to "data".
+     - .persistenceInfos: the persitence values to use, default to
+                          `.Values.persistence`.
+                          Need to be the dict key from `.Values` in string
+                          format.
+                          let's say you have:
+
+                              persistence:
+                                logs:
+                                  enabled: true
+                                  size: 100Mi
+                                  accessMode: ReadWriteOnce
+                                  ...
+
+                          then you have to put `.Values.persitence.logs` in
+                          order to use it.
+
+  Example calls:
+    {{ include "common.PVCTemplate" . }}
+    {{ include "common.PVCTemplate" (dict "dot" . "suffix" "my-awesome-suffix" "persistenceInfos" .Values.persistenceLog) }}
+    {{ include "common.PVCTemplate" (dict dot" . "subPath" "persistenceInfos" .Values.persistence.log) }}
+*/}}
+{{- define "common.PVCTemplate" -}}
+{{- $dot := default . .dot -}}
+{{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
+{{- $suffix := default "data" .suffix -}}
+{{- $metadata_suffix := ternary "" $suffix (eq $suffix "data") -}}
+metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $metadata_suffix "annotations" $persistenceInfos.annotations) | nindent 2 }}
 spec:
   accessModes:
-    - {{ .Values.persistence.accessMode }}
-  storageClassName: {{ include "common.storageClass" . }}
+  - {{ $persistenceInfos.accessMode }}
+  storageClassName: {{ include "common.storageClass" (dict "dot" $dot "suffix" $suffix "persistenceInfos" $persistenceInfos ) }}
   resources:
     requests:
-      storage: {{ .Values.persistence.size }}
-{{- end -}}
+      storage: {{ $persistenceInfos.size }}
 {{- end -}}
