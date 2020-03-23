@@ -1,27 +1,9 @@
 apiVersion: batch/v1
 kind: Job
-metadata:
-  name: {{ include "common.fullname" . }}-post-install
-  labels:
-    app.kubernetes.io/managed-by: {{.Release.Service | quote }}
-    app.kubernetes.io/instance: {{include "common.release" . | quote }}
-    helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
-    release: {{ include "common.release" . }}
-  annotations:
-    # This is what defines this resource as a hook. Without this line, the
-    # job is considered part of the release.
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-2"
-    "helm.sh/hook-delete-policy": hook-succeeded
+metadata: {{ include "common.resourceMetadata" (dict "dot" . "suffix" "post-install" "annotations" .Values.job.annotations) | nindent 2 }}
 spec:
   template:
-    metadata:
-      name: {{ include "common.fullname" . }}
-      labels:
-        app.kubernetes.io/managed-by: {{.Release.Service | quote }}
-        app.kubernetes.io/instance: {{include "common.release" . | quote }}
-        helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
       containers:
@@ -50,15 +32,12 @@ spec:
 # NOTE: the basename of the subdirectory is important - it matches the DBCL API URI
         - name: {{ include "common.fullname" . }}-dbc-drnodes
           mountPath: /opt/app/config/dr_nodes/
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
         {{- end }}
       volumes:
         - name: localtime
