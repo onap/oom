@@ -30,6 +30,35 @@
   {{- default $name .Values.service.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{/*
+  Resolve the prefix node port to use. We look at these different values in
+  order of priority (first found, first chosen)
+  - .Values.service.nodePortPrefixOverride: override value for nodePort which
+                                            will be use locally;
+  - .Values.global.nodePortPrefix         : global value for nodePort which will
+                                            be used for all charts (unless
+                                            previous one is used);
+  - .Values.global.nodePortPrefixExt      : global value for nodePort which will
+                                            be used for all charts (unless
+                                            previous one is used) if nodePortExt
+                                            is set to true in service or on port;
+  - .Values.service.nodePortPrefix        : value used on a pert chart basis if
+                                            no other version exists.
+
+  The function takes two arguments (inside a dictionary):
+     - .dot : environment (.)
+     - .portNodePortExt : the port informations.
+*/}}
+{{- define "common.nodePortPrefix" -}}
+{{-   $dot := default . .dot -}}
+{{-   $portNodePortExt := default false .portNodePortExt -}}
+{{-   if or $portNodePortExt $dot.Values.service.nodePortExt -}}
+{{      .Values.service.nodePortPrefixOverride | default .Values.global.nodePortPrefixExt | default .Values.service.nodePortPrefix }}
+{{-   else -}}
+{{      .Values.service.nodePortPrefixOverride | default .Values.global.nodePortPrefix | default .Values.service.nodePortPrefix }}
+{{-   end -}}
+{{- end -}}
+
 {{/* Define the metadata of Service
      The function takes from one to four arguments (inside a dictionary):
      - .dot : environment (.)
@@ -91,7 +120,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   name: {{ $port.name }}
 {{-       end }}
 {{-       if (eq $serviceType "NodePort") }}
-  nodePort: {{ $dot.Values.global.nodePortPrefix | default $dot.Values.nodePortPrefix }}{{ $port.nodePort }}
+  nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "port" $port.nodePortExt) }}{{ $port.nodePort }}
 {{-       end }}
 {{-     else }}
 - port: {{ default $port.port $port.plain_port }}
