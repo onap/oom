@@ -23,12 +23,12 @@
 
 echo "Creating catalogdb database . . ." 1>/tmp/mariadb-catalogdb.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
-DROP DATABASE IF EXISTS `catalogdb`;
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `catalogdb` /*!40100 DEFAULT CHARACTER SET latin1 */;
-DROP USER IF EXISTS 'cataloguser';
-CREATE USER 'cataloguser';
-GRANT ALL on catalogdb.* to 'cataloguser' identified by 'catalog123' with GRANT OPTION;
+mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+DROP DATABASE IF EXISTS 'catalogdb';
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ 'catalogdb' /*!40100 DEFAULT CHARACTER SET latin1 */;
+DROP USER IF EXISTS '${CATALOG_DB_USER}';
+CREATE USER '${CATALOG_DB_USER}';
+GRANT ALL on catalogdb.* to '${CATALOG_DB_USER}' identified by '${CATALOG_DB_PASSWORD}' with GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
