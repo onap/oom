@@ -23,13 +23,13 @@
 
 echo "Creating so admin user . . ." 1>/tmp/mariadb-so-admin.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
-DROP USER IF EXISTS 'so_admin';
-CREATE USER 'so_admin';
-GRANT USAGE ON *.* TO 'so_admin'@'%' IDENTIFIED BY 'so_Admin123';
-GRANT ALL PRIVILEGES ON `camundabpmn`.* TO 'so_admin'@'%' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON `requestdb`.* TO 'so_admin'@'%' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON `catalogdb`.* TO 'so_admin'@'%' WITH GRANT OPTION;
+mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+DROP USER IF EXISTS '${DB_ADMIN}';
+CREATE USER '${DB_ADMIN}';
+GRANT USAGE ON *.* TO '${DB_ADMIN}'@'%' IDENTIFIED BY '${DB_ADMIN_PASSWORD}';
+GRANT ALL PRIVILEGES ON camundabpmn.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON requestdb.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON catalogdb.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
