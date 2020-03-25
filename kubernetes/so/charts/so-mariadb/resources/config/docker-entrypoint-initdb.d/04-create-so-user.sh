@@ -23,13 +23,13 @@
 
 echo "Creating so user . . ." 1>/tmp/mariadb-so-user.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1
-DROP USER IF EXISTS 'so_user';
-CREATE USER 'so_user';
-GRANT USAGE ON *.* TO 'so_user'@'%' IDENTIFIED BY 'so_User123';
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `requestdb`.* TO 'so_user'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `catalogdb`.* TO 'so_user'@'%';
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `camundabpmn`.* TO 'so_user'@'%';
+mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+DROP USER IF EXISTS '${DB_USER}';
+CREATE USER '${DB_USER}';
+GRANT USAGE ON *.* TO '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `requestdb`.* TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `catalogdb`.* TO '${DB_USER}'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE, SHOW VIEW ON `camundabpmn`.* TO '${DB_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
 

@@ -23,12 +23,12 @@
 
 echo "Creating camundabpmn database . . ." 1>/tmp/mariadb-camundabpmn.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << 'EOF' || exit 1 
+mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP DATABASE IF EXISTS `camundabpmn`;
 CREATE DATABASE `camundabpmn`;
-DROP USER IF EXISTS 'camundauser';
-CREATE USER 'camundauser';
-GRANT ALL on camundabpmn.* to 'camundauser' identified by 'camunda123' with GRANT OPTION;
+DROP USER IF EXISTS '${CAMUNDA_DB_USER}';
+CREATE USER '${CAMUNDA_DB_USER}';
+GRANT ALL on camundabpmn.* to '${CAMUNDA_DB_USER}' identified by '${CAMUNDA_DB_PASSWORD}' with GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
