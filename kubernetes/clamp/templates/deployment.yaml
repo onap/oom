@@ -32,81 +32,81 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
-      - command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - clamp-backend
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        - command:
+            - /root/ready.py
+          args:
+            - --container-name
+            - clamp-backend
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: {{ include "common.name" . }}-readiness
       containers:
         # side car containers
-        - name: {{ include "common.name" . }}-filebeat-onap
+          - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/nginx/
-        - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/nginx/
-          - mountPath: /etc/nginx/conf.d/nginx.conf
-            name: {{ include "common.fullname" . }}-config
-            subPath: nginx.conf
-          resources:
-{{ include "common.resources" . | indent 12 }}
-        {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
-        {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
-        {{- end }}
-      volumes:
-        - name: {{ include "common.fullname" . }}-config
-          configMap:
-            name: {{ include "common.fullname" . }}
-            items:
-            - key: nginx.conf
-              path: nginx.conf
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          configMap:
-            name: {{ include "common.release" . }}-clamp-filebeat-configmap
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          emptyDir: {}
-        - name:  {{ include "common.fullname" . }}-logs
-          emptyDir: {}
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+            - name: {{ include "common.fullname" . }}-filebeat-conf
+              mountPath: /usr/share/filebeat/filebeat.yml
+              subPath: filebeat.yml
+            - name: {{ include "common.fullname" . }}-data-filebeat
+              mountPath: /usr/share/filebeat/data
+            - name: {{ include "common.fullname" . }}-logs
+              mountPath: /var/log/nginx/
+            - name: {{ include "common.name" . }}
+              image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+              imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+              ports:
+                - containerPort: {{ .Values.service.internalPort }}
+              # disable liveness probe when breakpoints set in debugger
+              # so K8s doesn't restart unresponsive container
+              {{- if eq .Values.liveness.enabled true }}
+              livenessProbe:
+                tcpSocket:
+                  port: {{ .Values.service.internalPort }}
+                initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+                periodSeconds: {{ .Values.liveness.periodSeconds }}
+              {{ end -}}
+              readinessProbe:
+                tcpSocket:
+                  port: {{ .Values.service.internalPort }}
+                initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+                periodSeconds: {{ .Values.readiness.periodSeconds }}
+              volumeMounts:
+                - name: {{ include "common.fullname" . }}-logs
+                  mountPath: /var/log/nginx/
+                - mountPath: /etc/nginx/conf.d/default.conf
+                  name: {{ include "common.fullname" . }}-config
+                  subPath: default.conf
+              resources:
+  {{ include "common.resources" . | indent 12 }}
+  {{- if .Values.nodeSelector }}
+nodeSelector:
+  {{ toYaml .Values.nodeSelector | indent 10 }}
+    {{- end -}}
+    {{- if .Values.affinity }}
+affinity:
+  {{ toYaml .Values.affinity | indent 10 }}
+    {{- end }}
+volumes:
+  - name: {{ include "common.fullname" . }}-config
+    configMap:
+      name: {{ include "common.fullname" . }}
+      items:
+        - key: default.conf
+          path: default.conf
+  - name: {{ include "common.fullname" . }}-filebeat-conf
+    configMap:
+      name: {{ include "common.release" . }}-clamp-filebeat-configmap
+  - name: {{ include "common.fullname" . }}-data-filebeat
+  emptyDir: {}
+    - name:  {{ include "common.fullname" . }}-logs
+      emptyDir: {}
+imagePullSecrets:
+  - name: "{{ include "common.namespace" . }}-docker-registry-key"
