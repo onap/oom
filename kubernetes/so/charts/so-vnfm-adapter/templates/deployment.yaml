@@ -39,17 +39,17 @@ spec:
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources:
 {{ include "common.resources" . | indent 12 }}
-         {{- if eq .Values.global.security.aaf.enabled true }}
-        env: 
+        env:
         - name: TRUSTSTORE
-          value: /app/org.onap.so.trust.jks
+          value: {{ .Values.global.app.cadi.cadiTrustStore }}
         - name: TRUSTSTORE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name}}-so-client-certs-secret
               key: trustStorePassword
+        {{ if eq .Values.global.security.aaf.enabled true }}
         - name: KEYSTORE
-          value: /app/org.onap.so.jks
+          value: /app/client/org.onap.so.jks
         - name: KEYSTORE_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -66,6 +66,9 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
+        - name: {{ include "common.fullname" . }}-truststore
+          mountPath: /app/client
+          readonly: true
         livenessProbe:
           tcpSocket:
             port: {{ index .Values.livenessProbe.port }}
@@ -83,5 +86,8 @@ spec:
       - name: config
         configMap:
             name: {{ include "common.fullname" . }}-app-configmap
+      - name:  {{ include "common.fullname" . }}-truststore
+        secret:
+          secretName: {{ include "common.release" . }}-so-truststore-secret
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
