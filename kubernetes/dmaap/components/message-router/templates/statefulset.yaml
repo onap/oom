@@ -41,6 +41,27 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:
+      {{- if .Values.prometheus.jmx.enabled }}
+        - name: prometheus-jmx-exporter
+          image: "{{ .Values.prometheus.jmx.imageRepository }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - java
+          - -XX:+UnlockExperimentalVMOptions
+          - -XX:+UseCGroupMemoryLimitForHeap
+          - -XX:MaxRAMFraction=1
+          - -XshowSettings:vm
+          - -jar
+          - jmx_prometheus_httpserver.jar
+          - {{ .Values.prometheus.jmx.port | quote }}
+          - /etc/jmx-kafka/jmx-mrservice-prometheus.yml
+          ports:
+          - containerPort: {{ .Values.prometheus.jmx.port }}
+          resources:
+          volumeMounts:
+          - name: jmx-config
+            mountPath: /etc/jmx-kafka
+      {{- end }}
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -92,6 +113,11 @@ spec:
         - name: cadi
           configMap:
             name: {{ include "common.fullname" . }}-cadi-prop-configmap
+        {{- if .Values.prometheus.jmx.enabled }}
+        - name: jmx-config
+          configMap:
+            name: {{ include "common.fullname" . }}-prometheus-configmap
+        {{- end }}
         - name: mykey
           secret:
             secretName: {{ include "common.fullname" . }}-secret

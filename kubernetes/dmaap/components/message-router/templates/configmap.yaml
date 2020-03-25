@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -79,4 +78,21 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
 {{ tpl (.Files.Glob "resources/topics/*.json").AsConfig . | indent 2 }}
+---
+{{- if  .Values.prometheus.jmx.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-prometheus-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/dmaap/jmx-mrservice-prometheus.yml").AsConfig . | indent 2 }}
+---
+{{ end }}
+
 
