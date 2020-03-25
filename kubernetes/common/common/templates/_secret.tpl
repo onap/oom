@@ -189,11 +189,14 @@ type: Opaque
       {{- $entry := dict }}
       {{- $uid := tpl (default "" $secret.uid) $global }}
       {{- $keys := keys $secret }}
-      {{- range $key := (without $keys "annotations" )}}
+      {{- range $key := (without $keys "annotations" "filePaths" )}}
         {{- $_ := set $entry $key (tpl (index $secret $key) $global) }}
       {{- end }}
       {{- if $secret.annotations }}
         {{- $_ := set $entry "annotations" $secret.annotations }}
+      {{- end }}
+      {{- if $secret.filePaths }}
+        {{- $_ := set $entry "filePaths" $secret.filePaths }}
       {{- end }}
       {{- $realName := default (include "common.secret.genNameFast" (dict "global" $global "uid" $uid "name" $entry.name) ) $entry.externalSecret }}
       {{- $_ := set $entry "realName" $realName }}
