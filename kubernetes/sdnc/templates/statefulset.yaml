@@ -15,7 +15,7 @@
 # limitations under the License.
 */}}
 
-apiVersion: apps/v1
+apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
@@ -26,9 +26,6 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   serviceName: {{ include "common.servicename" . }}-cluster
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: Parallel
@@ -96,6 +93,48 @@ spec:
         name: {{ include "common.name" . }}-readiness
 
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
+
+      {{ if .Values.global.cmpv2Enabled }}
+      - name: certs-init
+        image: "{{ .Values.global.repository }}/{{ .Values.global.aaf.certServiceClient.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: REQUEST_URL
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.requestURL | default .Values.certs_init.envs.request_url}}
+          - name: REQUEST_TIMEOUT
+            value: "30000"
+          - name: OUTPUT_PATH
+            value: {{ .Values.certs_init.envs.cert_path }}
+          - name: CA_NAME
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.caName | default .Values.certs_init.envs.ca_name}}
+          - name: COMMON_NAME
+            value: {{ .Values.certs_init.envs.common_name }}
+          - name: ORGANIZATION
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Organization | default .Values.certs_init.envs.organization}}
+          - name: ORGANIZATION_UNIT
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2OrganizationalUnit | default .Values.certs_init.envs.organization_unit}}
+          - name: LOCATION
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Location | default .Values.certs_init.envs.location}}
+          - name: STATE
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2State | default .Values.certs_init.envs.state}}
+          - name: COUNTRY
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Country | default .Values.certs_init.envs.country}}
+          - name: KEYSTORE_PATH
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.keystorePath | default .Values.certs_init.envs.keystorePath}}
+          - name: KEYSTORE_PASSWORD
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.keystorePassword | default .Values.certs_init.envs.keystorePassword}}
+          - name: TRUSTSTORE_PATH
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.truststorePath | default .Values.certs_init.envs.truststorePath}}
+          - name: TRUSTSTORE_PASSWORD
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.truststorePassword | default .Values.certs_init.envs.truststorePassword}}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: {{ .Values.certs_init.envs.cert_path }}
+            name: certs
+          - mountPath: {{ .Values.global.aaf.certServiceClient.secret.mountPath }}
+            name: certservice-tls-volume
+      {{ end }}
 
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
@@ -202,6 +241,8 @@ spec:
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
+          - mountPath: {{ .Values.certs_init.envs.cert_path }}
+            name: certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -252,6 +293,12 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        - name: certs
+          emptyDir:
+            medium: Memory
+        - name: certservice-tls-volume
+          secret:
+            secretName: {{ .Values.global.aaf.certServiceClient.secret.name }}
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
