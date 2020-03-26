@@ -59,6 +59,30 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-update-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - sh
+        args:
+          - -c
+          - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config-output/${PFILE}; chmod 0755 /config-output/${PFILE}; done"
+        env:
+          - name: KEYSTORE_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.release" . }}-sdc-cs-secrets
+                key: keystore_password
+          - name: TRUSTSTORE_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.release" . }}-sdc-cs-secrets
+                key: truststore_password
+        volumeMounts:
+          - name: {{ include "common.fullname" . }}-environments
+            mountPath: /config-input/
+          - name: sdc-environments-output
+            mountPath: /config-output/
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -89,8 +113,14 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           volumeMounts:
-          - name: {{ include "common.fullname" . }}-environments
+          - name: sdc-environments-output
             mountPath: /var/lib/jetty/chef-solo/environments/
+          - name: sdc-cert
+            mountPath: /var/lib/jetty/chef-solo/cookbooks/dcae-dt/files/default/org.onap.sdc.p12
+            subPath: org.onap.sdc.p12
+          - name: sdc-cert
+            mountPath: /var/lib/jetty/chef-solo/cookbooks/dcae-dt/files/default/org.onap.sdc.trust.jks
+            subPath: org.onap.sdc.trust.jks
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -126,6 +156,9 @@ spec:
         - name: {{ include "common.fullname" . }}-localtime
           hostPath:
             path: /etc/localtime
+        - name: sdc-cert
+          secret:
+            secretName: sdc-cert
         - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
             name: {{ include "common.release" . }}-sdc-filebeat-configmap
@@ -138,7 +171,9 @@ spec:
           configMap:
             name: {{ include "common.release" . }}-sdc-environments-configmap
             defaultMode: 0755
-        - name:  {{ include "common.fullname" . }}-logs
+        - name: sdc-environments-output
+          emptyDir: {}
+        - name: {{ include "common.fullname" . }}-logs
           emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
