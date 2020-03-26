@@ -161,6 +161,7 @@ then
 fi
 
 cp /opt/opendaylight/current/certs/* /tmp
+cp /var/custom-certs/* /tmp
 
 nohup python ${SDNC_BIN}/installCerts.py &
 
