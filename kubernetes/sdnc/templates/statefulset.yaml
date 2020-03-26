@@ -2,6 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
+        image: "{{ .Values.global.repository }}/{{ .Values.certs_init.image }}"
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -90,6 +91,38 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - name: certs-init
+        image: "{{ .Values.global.repository }}/{{ .Values.certs_init.image }}"
+        imagePullPolicy: Always
+        env:
+          - name: REQUEST_URL
+            value: {{ .Values.certs_init.envs.request_url }}
+          - name: REQUEST_TIMEOUT
+            value: {{ .Values.certs_init.envs.request_timeout }}
+          - name: OUTPUT_PATH
+            value: {{ .Values.certs_init.envs.cert_path }}
+          - name: CA_NAME
+            value: {{ .Values.certs_init.envs.ca_name}}
+          - name: COMMON_NAME
+            value: {{ .Values.certs_init.envs.common_name }}
+          - name: ORGANIZATION
+            value: {{ .Values.certs_init.envs.organization }}
+          - name: ORGANIZATION_UNIT
+            value: {{ .Values.certs_init.envs.organization_unit }}
+          - name: LOCATION
+            value: {{ .Values.certs_init.envs.location }}
+          - name: STATE
+            value: {{ .Values.certs_init.envs.state }}
+          - name: COUNTRY
+            value: {{ .Values.certs_init.envs.country }}
+          - name: SANS
+            value: {{ .Values.certs_init.envs.sans }}
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: {{ .Values.certs_init.cert_path }}
+            name: certs
       {{ if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-aaf-readiness
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -204,7 +237,6 @@ spec:
             subPath: org.ops4j.pax.logging.cfg
           - mountPath: {{ .Values.config.binDir }}/startODL.sh
             name: bin
-            subPath: startODL.sh
           - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
             name: bin
             subPath: installSdncDb.sh
@@ -244,6 +276,8 @@ spec:
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
+          - mountPath: {{ .Values.certs_init.envs.cert_path }}
+            name: certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -294,6 +328,8 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        - name: certs
+          emptyDir: {}
         - name: {{ include "common.fullname" . }}-certs
   {{ if .Values.certpersistence.enabled }}
           persistentVolumeClaim:
