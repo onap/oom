@@ -88,6 +88,38 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - name: certs-init
+        image: nexus.onap.dyn.nesc.nokia.net:10001/onap/org.onap.aaf.certservice.aaf-certservice-client:latest
+        imagePullPolicy: Always
+        env:
+          - name: REQUEST_URL
+            value: http://aaf-cert-service-service:8080/v1/certificate/
+          - name: REQUEST_TIMEOUT
+            value: "1000"
+          - name: OUTPUT_PATH
+            value: /var/custom-certs/
+          - name: CA_NAME
+            value: RA
+          - name: COMMON_NAME
+            value: onap.org
+          - name: ORGANIZATION
+            value: Linux-Foundation
+          - name: ORGANIZATION_UNIT
+            value: ONAP
+          - name: LOCATION
+            value: San-Francisco
+          - name: STATE
+            value: California
+          - name: COUNTRY
+            value: US
+          - name: SANS
+            value: gerrit.onap.org:test.onap.org
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: /var/custom-certs/
+            name: certs
       {{ if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-aaf-readiness
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -242,6 +274,8 @@ spec:
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
+          - mountPath: /var/custom-certs/
+            name: certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -292,6 +326,8 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        - name: certs
+          emptyDir: {}
         - name: {{ include "common.fullname" . }}-certs
   {{ if .Values.certpersistence.enabled }}
           persistentVolumeClaim:
