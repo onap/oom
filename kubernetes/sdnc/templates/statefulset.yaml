@@ -1,5 +1,4 @@
 {{/*
-# Copyright © 2020 Samsung Electronics
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -91,6 +90,49 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{ if .Values.global.cmpv2Enabled }}
+      - name: certs-init
+        image: "{{ .Values.global.aaf.certServiceClient.repository }}/{{ .Values.global.aaf.certServiceClient.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: REQUEST_URL
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.requestURL }}
+          - name: REQUEST_TIMEOUT
+            value: {{ .Values.certs_init.envs.request_timeout }}
+          - name: OUTPUT_PATH
+            value: {{ .Values.certs_init.envs.cert_path }}
+          - name: CA_NAME
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.caName }}
+          - name: COMMON_NAME
+            value: {{ .Values.certs_init.envs.common_name }}
+          - name: ORGANIZATION
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Organization }}
+          - name: ORGANIZATION_UNIT
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2OrganizationalUnit }}
+          - name: LOCATION
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Location }}
+          - name: STATE
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2State }}
+          - name: COUNTRY
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.cmpv2Country }}
+          - name: SANS
+            value: {{ .Values.certs_init.envs.sans }}
+          - name: KEYSTORE_PATH
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.keystorePath }}
+          - name: KEYSTORE_PASSWORD
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.keystorePassword }}
+          - name: TRUSTSTORE_PATH
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.truststorePath }}
+          - name: TRUSTSTORE_PASSWORD
+            value: {{ .Values.global.aaf.certServiceClient.envVariables.truststorePassword }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: {{ .Values.certs_init.cert_path }}
+            name: certs
+          - mountPath: {{ .Values.global.aaf.certServiceClient.secret.mountPath }}
+            name: certservice-tls-volume
+      {{ end }}
       {{ if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-aaf-readiness
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -209,9 +251,6 @@ spec:
           - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
             name: bin
             subPath: installSdncDb.sh
-          - mountPath: {{ .Values.config.ccsdkConfigDir }}/aaiclient.properties
-            name: properties
-            subPath: aaiclient.properties
           - mountPath: {{ .Values.config.configDir }}/aaiclient.properties
             name: properties
             subPath: aaiclient.properties
@@ -248,6 +287,8 @@ spec:
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
+          - mountPath: {{ .Values.certs_init.envs.cert_path }}
+            name: certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -298,6 +339,12 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        - name: certs
+          emptyDir:
+            medium: Memory
+        - name: certservice-tls-volume
+            secret:
+              secretName: {{ .Values.global.aaf.certServiceClient.secret.name }}
         - name: {{ include "common.fullname" . }}-certs
   {{ if .Values.certpersistence.enabled }}
           persistentVolumeClaim:
