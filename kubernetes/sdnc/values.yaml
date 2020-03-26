@@ -204,6 +204,29 @@ certInitializer:
     cd /opt/app/osaaf/local;
     /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1
 
+certs_init:
+  cert_path: /var/custom-certs
+  certServiceClient:
+    image: onap/org.onap.aaf.certservice.aaf-certservice-client:1.0.0
+    secret:
+      name: aaf-cert-service-client-tls-secret
+      mountPath: /etc/onap/aaf/certservice/certs/
+  envs:
+    request_url: "https://aaf-cert-service-service:8443/v1/certificate/"
+    request_timeout: "30000"
+    cert_path: /var/custom-certs
+    ca_name: "RA"
+    common_name: "sdnc.simpledemo.onap.org"
+    organization: "Linux-Foundation"
+    organization_unit: "ONAP"
+    location: "San-Francisco"
+    state: "California"
+    country: "US"
+    keystorePath: "/etc/onap/aaf/certservice/certs/certServiceClient-keystore.jks"
+    keystorePassword: "secret"
+    truststorePath: "/etc/onap/aaf/certservice/certs/truststore.jks"
+    truststorePassword: "secret"
+
 mariadb-galera: &mariadbGalera
   nameOverride: sdnc-db
   config: &mariadbGaleraConfig
@@ -397,6 +420,22 @@ persistence:
   mountPath: /dockerdata-nfs
   mountSubPath: sdnc/mdsal
   mdsalPath: /opt/opendaylight/current/daexim
+
+certpersistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 50Mi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sdnc/certs
+  certPath: /opt/app/osaaf
+  ##storageClass: "manual"
 
 ingress:
   enabled: false
