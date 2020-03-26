@@ -36,6 +36,30 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+  # Enabling CMPv2
+  cmpv2Enabled: true
+  aaf:
+    certServiceClient:
+      image: onap/org.onap.aaf.certservice.aaf-certservice-client:1.2.0
+      secret:
+        name: aaf-cert-service-client-tls-secret
+        mountPath: /etc/onap/certs/external
+      envVariables:
+        # Certificate related
+        cert_path: /var/custom-certs
+        cmpv2Organization: "Linux-Foundation"
+        cmpv2OrganizationalUnit: "ONAP"
+        cmpv2Location: "San-Francisco"
+        cmpv2Country: "US"
+        # Client configuration related
+        caName: "RA"
+        common_name: "sdnc.simpledemo.onap.org"
+        requestURL: "https://aaf-cert-service:8443/v1/certificate/"
+        requestTimeout: "20000"
+        keystorePath: "/etc/onap/certs/external/certServiceClient-keystore.jks"
+        keystorePassword: "secret"
+        truststorePath: "/etc/onap/certs/external/truststore.jks"
+        truststorePassword: "secret"
 
 #################################################################
 # Secrets metaconfig
@@ -397,6 +421,22 @@ persistence:
   mountPath: /dockerdata-nfs
   mountSubPath: sdnc/mdsal
   mdsalPath: /opt/opendaylight/current/daexim
+
+certpersistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 50Mi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sdnc/certs
+  certPath: /opt/app/osaaf
+  ##storageClass: "manual"
 
 ingress:
   enabled: false
