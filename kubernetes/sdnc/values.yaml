@@ -37,6 +37,30 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+  # Enabling CMPv2
+  cmpv2Enabled: true
+  aaf:
+    certServiceClient:
+      image: onap/org.onap.aaf.certservice.aaf-certservice-client:1.0.0
+      secret:
+        name: aaf-cert-service-client-tls-secret
+        mountPath: /etc/onap/aaf/certservice/certs/
+      envVariables:
+        # Certificate related
+        cmpv2Organization: "Linux-Foundation"
+        cmpv2OrganizationalUnit: "ONAP"
+        cmpv2Location: "San-Francisco"
+        cmpv2State: "California"
+        cmpv2Country: "US"
+        # Client configuration related
+        caName: "RA"
+        common_name: "sdnc.simpledemo.onap.org"
+        requestURL: "https://aaf-cert-service:8443/v1/certificate/"
+        requestTimeout: "20000"
+        keystorePath: "/etc/onap/aaf/certservice/certs/certServiceClient-keystore.jks"
+        keystorePassword: "secret"
+        truststorePath: "/etc/onap/aaf/certservice/certs/truststore.jks"
+        truststorePassword: "secret"
 
 #################################################################
 # Secrets metaconfig
@@ -219,6 +243,25 @@ aaf_init:
   deploy_pass: "demo123456!"
   cadi_latitude: "38.0"
   cadi_longitude: "-72.0"
+
+certs_init:
+  cert_path: /var/custom-certs
+  image: onap/org.onap.aaf.certservice.aaf-certservice-client:1.0.0
+
+  envs:
+    request_url: "https://aaf-cert-service-service:8443/v1/certificate/"
+    request_timeout: "30000"
+    cert_path: /var/custom-certs
+    ca_name: "RA"
+    organization: "Linux-Foundation"
+    organization_unit: "ONAP"
+    location: "San-Francisco"
+    state: "California"
+    country: "US"
+    keystorePath: "/etc/onap/aaf/certservice/certs/certServiceClient-keystore.jks"
+    keystorePassword: "secret"
+    truststorePath: "/etc/onap/aaf/certservice/certs/truststore.jks"
+    truststorePassword: "secret"
 
 mariadb-galera: &mariadbGalera
   nameOverride: sdnc-db
