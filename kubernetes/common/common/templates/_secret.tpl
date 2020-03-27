@@ -196,7 +196,18 @@ type: Opaque
         {{- $_ := set $entry "annotations" $secret.annotations }}
       {{- end }}
       {{- if $secret.filePaths }}
-        {{- $_ := set $entry "filePaths" $secret.filePaths }}
+        {{- if kindIs "string" $secret.filePaths }}
+          {{- $evaluated := tpl (default "" $secret.filePaths) $global }}
+          {{- if and $evaluated (ne $evaluated "\"\"") }}
+            {{- $fstr := printf "val:\n%s" ($evaluated | indent 2) }}
+            {{- $flist := (index (tpl $fstr $global | fromYaml) "val") }}
+            {{- $_ := set $entry "filePaths" $flist }}
+          {{- else }}
+            {{- $_ := set $entry "filePaths" (list) }}
+          {{- end }}
+        {{- else }}
+          {{- $_ := set $entry "filePaths" $secret.filePaths }}
+        {{- end }}
       {{- end }}
       {{- $realName := default (include "common.secret.genNameFast" (dict "global" $global "uid" $uid "name" $entry.name) ) $entry.externalSecret }}
       {{- $_ := set $entry "realName" $realName }}
@@ -465,6 +476,7 @@ stringData:
       {{- if eq $type "generic" }}
 data:
         {{- range $curFilePath := $secret.filePaths }}
+          {{- fail (printf "%s" $curFilePath) }}
           {{ tpl ($global.Files.Glob $curFilePath).AsSecrets $global | indent 2 }}
         {{- end }}
         {{- if $secret.filePath }}
