@@ -26,7 +26,8 @@ global:
     nameOverride: mariadb-galera
     serviceName: mariadb-galera
     servicePort: "3306"
-    mariadbRootPassword: secretpassword
+    # mariadbRootPassword: secretpassword
+    # rootPasswordExternalSecret: some secret
     #This flag allows SO to instantiate its own mariadb-galera cluster,
     #serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
     localCluster: false
@@ -40,6 +41,7 @@ global:
     dbPort: 3306
     dbUser: root
     dbPassword: secretpassword
+    # dbCredsExternalSecret: some secret
   msbEnabled: true
   security:
     aaf:
@@ -69,9 +71,55 @@ global:
     certs:
       trustStorePassword: b25hcDRzbw==
       keyStorePassword: c280b25hcA==
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-root-pass
+    name: &dbRootPassSecretName '{{ include "common.release" . }}-so-db-root-pass'
+    type: password
+    externalSecret: '{{ ternary .Values.global.mariadbGalera.rootPasswordExternalSecret (default (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.rootPasswordExternalSecret) .Values.global.mariadbGalera.localCluster }}'
+    password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
+  - uid: db-backup-creds
+    name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary .Values.global.migration.dbCredsExternalSecret "migrationDisabled" .Values.global.migration.enabled }}'
+    login: '{{ ternary .Values.global.migration.dbUser "migrationDisabled" .Values.global.migration.enabled }}'
+    password: '{{ ternary .Values.global.migration.dbPassword "migrationDisabled" .Values.global.migration.enabled }}'
+    passwordPolicy: required
+    annotations:
+      helm.sh/hook: pre-upgrade,pre-install
+      helm.sh/hook-weight: "0"
+      helm.sh/hook-delete-policy: before-hook-creation
+  - uid: db-user-creds
+    name: &dbUserCredsSecretName '{{ include "common.release" . }}-so-db-user-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.dbCreds.userCredsExternalSecret }}'
+    login: '{{ .Values.dbCreds.userName }}'
+    password: '{{ .Values.dbCreds.userPassword }}'
+    passwordPolicy: generate
+  - uid: db-admin-creds
+    name: &dbAdminCredsSecretName '{{ include "common.release" . }}-so-db-admin-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.dbCreds.adminCredsExternalSecret }}'
+    login: '{{ .Values.dbCreds.adminName }}'
+    password: '{{ .Values.dbCreds.adminPassword }}'
+    passwordPolicy: generate
+
 #################################################################
 # Application configuration defaults.
 #################################################################
+
+dbSecrets: &dbSecrets
+  userCredsExternalSecret: *dbUserCredsSecretName
+  adminCredsExternalSecret: *dbAdminCredsSecretName
+
+# unused in this, just to pass to subcharts
+dbCreds:
+  userName: so_user
+  adminName: so_admin
+
 repository: nexus3.onap.org:10001
 image: onap/so/api-handler-infra:1.5.3
 pullPolicy: Always
@@ -133,6 +181,8 @@ config:
 #                                                       --set so.global.mariadbGalera.nameOverride=so-mariadb-galera \
 #                                                       --set so.global.mariadbGalera.serviceName=so-mariadb-galera
 mariadb-galera:
+  config:
+    mariadbRootPasswordExternalSecret: *dbRootPassSecretName
   nameOverride: so-mariadb-galera
   replicaCount: 1
   service:
@@ -172,7 +222,10 @@ mso:
         auth: 51EA5414022D7BE536E7516C4D1A6361416921849B72C0D6FC1C7F262FD9F2BBC2AD124190A332D9845A188AD80955567A4F975C84C221EEA8243BFD92FFE6896CDD1EA16ADD34E1E3D47D4A
   health:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
+
 so-bpmn-infra:
+  db:
+    <<: *dbSecrets
   cds:
     auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
   aai:
@@ -204,7 +257,10 @@ so-bpmn-infra:
     vnfm:
       adapter:
         auth: Basic dm5mbTpwYXNzd29yZDEk
+
 so-catalog-db-adapter:
+  db:
+    <<: *dbSecrets
   mso:
     config:
       cadi:
@@ -215,7 +271,10 @@ so-catalog-db-adapter:
     adapters:
       db:
         auth: Basic YnBlbDpwYXNzd29yZDEk
+
 so-openstack-adapter:
+  db:
+    <<: *dbSecrets
   aaf:
     auth:
       encrypted: 7F182B0C05D58A23A1C4966B9CDC9E0B8BC5CD53BC8C7B4083D869F8D53E9BDC3EFD55C94B1D3F
@@ -240,7 +299,10 @@ so-openstack-adapter:
         noAuthn: /manage/health
     db:
       auth: Basic YnBlbDpwYXNzd29yZDEk
+
 so-request-db-adapter:
+  db:
+    <<: *dbSecrets
   mso:
     config:
       cadi:
@@ -251,7 +313,10 @@ so-request-db-adapter:
     adapters:
       requestDb:
         auth: Basic YnBlbDpwYXNzd29yZDEk
+
 so-sdc-controller:
+  db:
+    <<: *dbSecrets
   aai:
     auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
   mso:
@@ -271,6 +336,8 @@ so-sdc-controller:
       asdc-controller1:
         password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
 so-sdnc-adapter:
+  db:
+    <<: *dbSecrets
   org:
     onap:
       so:
@@ -292,7 +359,10 @@ so-sdnc-adapter:
         auth: Basic YnBlbDpwYXNzd29yZDEk
     rest:
       aafEncrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
+
 so-vfc-adapter:
+  db:
+    <<: *dbSecrets
   mso:
     config:
       cadi:
@@ -322,3 +392,15 @@ so-vnfm-adapter:
         aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
         apiEnforcement: org.onap.so.vnfmAdapterPerm
         noAuthn: /manage/health
+
+so-monitoring:
+  db:
+    <<: *dbSecrets
+
+so-mariadb:
+  db:
+    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
+    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    backupCredsExternalSecret: *dbBackupCredsSecretName
+    userCredsExternalSecret: *dbUserCredsSecretName
+    adminCredsExternalSecret: *dbAdminCredsSecretName
