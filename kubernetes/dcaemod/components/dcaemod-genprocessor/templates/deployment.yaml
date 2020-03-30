@@ -24,6 +24,21 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      initContainers:
+        # apps run as uid 1000, gid 1000
+        # the volume is mounted with root permissions
+        # this initContainer changes ownership to uid 1000 gid 1000
+        # (tried using a securityContext in the pod spec, but it didn't seem to work)
+          - name: set-permissions
+            image: busybox:latest
+            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+            command:
+              - sh
+              - -c
+              - chown -R 1000:1000 /genprocessor-data
+            volumeMounts:
+            - mountPath: /genprocessor-data
+              name: genprocessor-data
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
