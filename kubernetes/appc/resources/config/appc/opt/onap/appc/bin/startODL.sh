@@ -139,8 +139,6 @@ then
         if $ENABLE_AAF
         then
              cp ${APPC_HOME}/data/properties/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
-        else
-             cp ${APPC_HOME}/data/aaa-app-config.xml ${ODL_HOME}/etc/opendaylight/datastore/initial/config/aaa-app-config.xml
         fi
 
 fi
