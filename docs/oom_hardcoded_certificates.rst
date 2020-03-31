@@ -24,5 +24,7 @@ Here's the list of these certificates:
  +------------+------------------+------------------+--------------------------------------------------------------------------+
  | AAI        | No               | Yes              | aai/oom/components/aai-babel/resources/config/auth/tomcat_keystore       |
  +------------+------------------+------------------+--------------------------------------------------------------------------+
- | AAI        | Yes              | Yes              | aai/oom/components/aai-model-loaderresources/config/auth/tomcat_keystore |
+ | AAI        | No               | Yes              | aai/oom/components/aai-model-loaderresources/config/auth/tomcat_keystore |
+ +------------+------------------+------------------+--------------------------------------------------------------------------+
+ | AAI        | No               | Yes              | aai/oom/components/aai-data-router/resources/config/auth/tomcat_keystore |
  +------------+------------------+------------------+--------------------------------------------------------------------------+
