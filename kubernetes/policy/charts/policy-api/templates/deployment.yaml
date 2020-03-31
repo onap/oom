@@ -31,6 +31,28 @@ spec:
           image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           name: {{ include "common.name" . }}-readiness
+
+        - command:
+          - sh
+          args:
+          - -c
+          - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+          env:
+          - name: SQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SQL_PASSWORD_BASE64
+            value: "`echo ${SQL_PASSWORD} | base64`"
+          volumeMounts:
+          - mountPath: /config-input
+            name: apiconfig
+          - mountPath: /config
+            name: apiconfig-processed
+          image: "{{ .Values.global.envsubstImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: {{ include "common.name" . }}-update-config
+
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -58,7 +80,7 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: /opt/app/policy/api/etc/mounted
-            name: apiconfig
+            name: apiconfig-processed
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -77,5 +99,8 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
+        - name: apiconfig-processed
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
