@@ -78,8 +78,17 @@ else
 		# wait for DB up
 		# now that DB is up, invoke database upgrade
 		# (which does nothing if the db is already up-to-date)
-		dbuser=$(echo $(grep '^JDBC_USER=' base.conf | cut -f2 -d=))
-		dbpw=$(echo $(grep '^JDBC_PASSWORD=' base.conf | cut -f2 -d=))
+		if [[ -v JDBC_USER ]]; then
+			dbuser=${JDBC_USER};
+		else
+			dbuser=$(echo $(grep '^JDBC_USER=' base.conf | cut -f2 -d=))
+		fi
+
+		if [[ -v JDBC_PASSWORD ]]; then
+			dbpw=${JDBC_PASSWORD}
+		else
+			dbpw=$(echo $(grep '^JDBC_PASSWORD=' base.conf | cut -f2 -d=))
+		fi
 		db_upgrade_remote.sh $dbuser $dbpw {{.Values.global.mariadb.service.name}}
 	fi
 
