@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2020 Amdocs, Bell Canada, and TATA Communications
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
 {{- if .Values.externalConfig }}
 apiVersion: v1
 kind: ConfigMap
@@ -29,3 +28,20 @@ data:
   my_extra.cnf: |
 {{ .Values.externalConfig | indent 4 }}
 {{- end -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-upgrade-deployment
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/create-deployment.sh").AsConfig . | indent 2 }}

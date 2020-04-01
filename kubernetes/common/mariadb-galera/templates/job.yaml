@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: pre-upgrade-initcontainer
+        image: {{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c", "upgrade-scripts/create-deployment.sh"]
+        volumeMounts:
+        - mountPath: /upgrade
+          name: upgrade
+        - name: config-mariadb-upgrade
+          mountPath: /upgrade-scripts
+      containers:
+      - name: mariadb-job-pre-upgrade
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args:
+        - kubectl create -f /upgrade/mariadb-upgrade-deployment.yaml;
+          MY_TEMP_POD=$(kubectl get pod -n onap | grep {{ include "common.fullname" . }}-upgrade-deployment | awk '{print $1}');
+          FLAG_FOR_CLUSTER="";
+          while [[ $FLAG_FOR_CLUSTER == "" ]]; do FLAG_FOR_CLUSTER=$(kubectl logs -n onap $MY_TEMP_POD -c mariadb-container| grep "socket":" '/var/lib/mysql/mysql.sock'  port":" 3306  MariaDB Server"); sleep 2; echo "The new member is now configured to properly join the existing cluster"; done;
+          echo "The proof that the new member has successfully started is given from the log as --- $FLAG_FOR_CLUSTER";
+          kubectl scale statefulsets {{ include "common.fullname" . }} --replicas=0;
+          MY_REPLICA_NUMBER=$(kubectl get statefulsets {{ include "common.fullname" . }} -n onap | grep "/"| awk '{print $2}');
+          echo "The current status of the cluster is $MY_REPLICA_NUMBER";
+          while [[ ! $MY_REPLICA_NUMBER == "0/0" ]]; do echo "The cluster is not scaled to zero yet. Please wait ..."; MY_REPLICA_NUMBER=$(kubectl get statefulsets {{ include "common.fullname" . }} -n onap |grep "/"| awk '{print $2}'); echo "The current status of the cluster is $MY_REPLICA_NUMBER"; sleep 2; if [[ $MY_REPLICA_NUMBER == "0/0" ]]; then break; fi; done;
+          for ((index=0;index<{{ $.Values.replicaCount }};index+=1)); do kubectl delete pvc "{{ include "common.fullname" . }}-data-{{ include "common.fullname" . }}-$index"; done;
+          exit;
+        volumeMounts:
+        - mountPath: /upgrade
+          name: upgrade
+        - name: config-mariadb-upgrade
+          mountPath: /upgrade-scripts
+      volumes:
+      - name: upgrade
+        emptyDir: {}
+      - name: config-mariadb-upgrade
+        configMap:
+            name: {{ include "common.fullname" . }}-upgrade-deployment
+            defaultMode: 0744
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-delete
+  annotations:
+    "helm.sh/hook": "post-delete"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: mariadb-job-post-delete
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args:
+        - for ((index=0;index<{{ $.Values.replicaCount }};index+=1)); do kubectl delete pvc "{{ include "common.fullname" . }}-data-{{ include "common.fullname" . }}-$index"; done;
+          kubectl delete deployment {{ include "common.fullname" . }}-upgrade-deployment; 
+      restartPolicy: OnFailure
