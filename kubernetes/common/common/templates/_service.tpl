@@ -54,15 +54,20 @@ annotations:
 {{-   end }}
 {{-   if $msb_informations }}
   msb.onap.org/service-info: '[
+{{-     range $index, $msb_information := $msb_informations }}
+{{-       if ne $index 0 }}
+      ,
+{{-       end }}
       {
-          "serviceName": "{{ include "common.servicename" $dot }}",
-          "version": "{{ default "v1" $msb_informations.version }}",
-          "url": "{{ default "/" $msb_informations.url }}",
-          "protocol": "{{ default "REST" $msb_informations.protocol }}",
-          "port": "{{ $msb_informations.port }}",
-          "visualRange":"{{ default "1" $msb_informations.visualRange }}"
+        "serviceName": "{{ default (include "common.servicename" $dot) $msb_information.serviceName  }}",
+        "version": "{{ default "v1" $msb_information.version }}",
+        "url": "{{ default "/" $msb_information.url }}",
+        "protocol": "{{ default "REST" $msb_information.protocol }}",
+        "port": "{{ $msb_information.port }}",
+        "visualRange":"{{ default "1" $msb_information.visualRange }}"
       }
-      ]'
+{{-    end }}
+    ]'
 {{-   end}}
 {{- end }}
 name: {{ include "common.servicename" $dot }}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}

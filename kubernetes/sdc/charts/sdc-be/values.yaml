@@ -53,6 +53,7 @@ liveness:
   timeoutSeconds: 5
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
+  port: api
   enabled: true
 
 readiness:
@@ -63,22 +64,35 @@ readiness:
 service:
   type: NodePort
   name: sdc-be
-  portName: sdc-be
-  nodePort: "04"
-  internalPort: 8443
-  externalPort: 8443
-  nodePort2: "05"
-  internalPort2: 8080
-  externalPort2: 8080
+  both_tls_and_plain: true
+  msb:
+    - port: 8080
+      url: "/sdc/v1"
+      version: "v1"
+      protocol: "REST"
+      visualRange: "1"
+      serviceName: sdc
+    - port: 8080
+      url: "/sdc/v1"
+      version: "v1"
+      protocol: "REST"
+      visualRange: "1"
+      serviceName: sdc-deprecated
+  ports:
+    - name: api
+      port: 8443
+      plain_port: 8080
+      port_protocol: http
+      nodePort: '04'
 
 ingress:
   enabled: false
   service:
     - baseaddr: "sdcbe"
       name: "sdc-be"
-      port: 8080
+      port: 8443
   config:
-    ssl: "none"
+    ssl: "redirect"
 
 
 # Resource Limit flavor -By Default using small
