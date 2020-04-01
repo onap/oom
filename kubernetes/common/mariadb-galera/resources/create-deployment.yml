@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}-upgrade-deployment
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app:  {{ include "common.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app:  {{ include "common.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app:  {{ include "common.fullname" . }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+          name: {{ .Values.service.portName }}
+        - containerPort: {{ .Values.service.sstPort }}
+          name: {{ .Values.service.sstPortName }}
+        - containerPort: {{ .Values.service.replicationPort }}
+          name: {{ .Values.service.replicationName }}
+        - containerPort: {{ .Values.service.istPort }}
+          name: {{ .Values.service.istPortName }}
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        - name: MYSQL_USER
+          value: {{ default "" .Values.config.userName | quote }}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: user-password
+        - name: MYSQL_DATABASE
+          value: {{ default "" .Values.config.mysqlDatabase | quote }}
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+                secretKeyRef:
+                  name: {{ template "common.fullname" . }}
+                  key: db-root-password
+      subdomain: {{ .Values.service.name }}
+      hostname: {{ .Values.nameOverride }}-upgrade-deployment
