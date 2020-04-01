@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" (dict "suffix" "upgrade-deployment" "dot" .) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app:  {{ include "common.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app:  {{ include "common.fullname" . }}
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+          name: {{ .Values.service.portName }}
+        - containerPort: {{ .Values.service.sstPort }}
+          name: {{ .Values.service.sstPortName }}
+        - containerPort: {{ .Values.service.replicationPort }}
+          name: {{ .Values.service.replicationName }}
+        - containerPort: {{ .Values.service.istPort }}
+          name: {{ .Values.service.istPortName }}
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        - name: MYSQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.userCredentialsUID" .) "key" "login") | indent 12}}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              {{- if eq (tpl (default "" .Values.config.userCredentialsExternalSecret) .) "" }}
+              name: {{ include "common.fullname" . }}-db-user-credentials
+              {{- else }}
+              name: '{{ tpl (default "" .Values.config.userCredentialsExternalSecret) . }}'
+              {{- end }}
+        - name: MYSQL_DATABASE
+          value: {{ default "" .Values.config.mysqlDatabase | quote }}
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              {{- if eq (tpl (default "" .Values.config.mariadbRootPasswordExternalSecret) .) "" }}
+              name: {{ include "common.fullname" . }}-db-root-password
+              {{- else }}
+              name: '{{ tpl (default "" .Values.config.mariadbRootPasswordExternalSecret) . }}'
+              {{- end }}
+      subdomain: {{ .Values.service.name }}
+      hostname: {{ .Values.nameOverride }}-upgrade-deployment
