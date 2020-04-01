@@ -1,0 +1,152 @@
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: pre-install-job
+#   annotations:
+#     "helm.sh/hook": "pre-install"
+#     "helm.sh/hook-weight": "1"
+#     "helm.sh/hook-delete-policy": hook-succeeded
+# spec:
+#   template:
+#     spec:
+#       containers:
+#       - name: pre-install
+#         image: ubuntu:xenial
+#         imagePullPolicy: IfNotPresent
+#         volumeMounts:
+#         - mountPath: /test-pd2
+#           name: test-volume2
+#         - name: from-config-map
+#           mountPath: /my-entrypoint.sh
+#         command: ["/bin/sh","-c"]
+#         args:
+#         - "my-entrypoint.sh/my-entrypoint.sh;" 
+#       nodeSelector:
+#         kubernetes.io/hostname: onap-control-1
+#       tolerations:
+#       - key: "node-role.kubernetes.io/etcd"
+#         operator: "Equal"
+#         value: "true"
+#         effect: "NoExecute"
+#       - key: "node-role.kubernetes.io/controlplane"
+#         operator: "Equal"
+#         value: "true"
+#         effect: "NoSchedule"
+#       volumes:
+#       - name: test-volume2
+#         hostPath:
+#           path: /home/ubuntu/mytmp-dir
+#       - name: from-config-map
+#         configMap:
+#             name: abc-my-entrypoint
+#             defaultMode: 0744
+#       restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mariadb-galera-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: pre-upgrade-initcontainer
+        image: ubuntu:xenial
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+        - "my-entrypoint.sh/my-entrypoint.sh;"
+        volumeMounts:
+        - mountPath: /test-pd2
+          name: test-volume2
+        - name: from-config-map
+          mountPath: /my-entrypoint.sh
+      containers:
+      - name: {{ .Release.Name }}-mariadb-job-pre-upgrade
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args: 
+        - kubectl create -f /test-pd2/my-dummy-template.yaml;
+          MY_TEMP_POD=$(kubectl get pod -n onap | grep mariadb-deployment | awk '{print $1}');
+          FLAG_FOR_CLUSTER="";
+          while [[ $FLAG_FOR_CLUSTER == "" ]]; do FLAG_FOR_CLUSTER=$(kubectl logs -n onap $MY_TEMP_POD -c mariadb-container| grep "socket":" '/var/lib/mysql/mysql.sock'  port":" 3306  MariaDB Server"); sleep 2; echo "The new member is now configured to properly join the existing cluster"; done;
+          echo "The proof that the new member has successfully started is given from the log as --- $FLAG_FOR_CLUSTER";
+          kubectl scale statefulsets {{ $.Release.Name}}-mariadb-galera --replicas=0;
+          MY_REPLICA_NUMBER=$(kubectl get statefulsets {{ $.Release.Name}}-mariadb-galera -n onap | grep "/"| awk '{print $2}');
+          echo "The current status of the cluster is $MY_REPLICA_NUMBER";
+          while [[ ! $MY_REPLICA_NUMBER == "0/0" ]]; do echo "The cluster is not scaled to zero yet. Please wait ..."; MY_REPLICA_NUMBER=$(kubectl get statefulsets {{ $.Release.Name}}-mariadb-galera -n onap |grep "/"| awk '{print $2}'); echo "The current status of the cluster is $MY_REPLICA_NUMBER"; sleep 2; if [[ $MY_REPLICA_NUMBER == "0/0" ]]; then break; fi; done; 
+          kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-0; 
+          kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-1; 
+          kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-2; 
+          sleep 1; 
+          exit;
+        volumeMounts:
+        - mountPath: /test-pd2
+          name: test-volume2
+        - name: from-config-map
+          mountPath: /my-entrypoint.sh
+      nodeSelector:
+        kubernetes.io/hostname: onap-control-1
+      tolerations:
+      - key: "node-role.kubernetes.io/etcd"
+        operator: "Equal"
+        value: "true"
+        effect: "NoExecute"
+      - key: "node-role.kubernetes.io/controlplane"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      volumes:
+      - name: test-volume2
+        hostPath:
+          path: /home/ubuntu/mytmp-dir
+      - name: from-config-map
+        configMap:
+            name: {{ .Release.Name }}-my-entrypoint
+            defaultMode: 0744
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mariadb-galera-post-delete
+  annotations:
+    "helm.sh/hook": "post-delete"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: mariadb-galera-post-delete
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c","--"]
+        args:
+        - kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-0;
+          kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-1;
+          kubectl delete pvc -n onap {{ $.Release.Name}}-mariadb-galera-data-{{ $.Release.Name}}-mariadb-galera-2; 
+        volumeMounts:
+        - mountPath: /test-pd2
+          name: test-volume2
+      nodeSelector:
+        kubernetes.io/hostname: onap-control-1
+      tolerations:
+      - key: "node-role.kubernetes.io/etcd"
+        operator: "Equal"
+        value: "true"
+        effect: "NoExecute"
+      - key: "node-role.kubernetes.io/controlplane"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      volumes:
+      - name: test-volume2
+        hostPath:
+          path: /home/ubuntu/mytmp-dir   
+      restartPolicy: OnFailure
