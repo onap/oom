@@ -1,0 +1,119 @@
+# Copyright © 2017-2020 AT&T, Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers:
+        - name: {{ include "common.name" . }}-cassandra-readiness
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /root/job_complete.py
+          args:
+          - -j
+          - "{{ include "common.release" . }}-music-cassandra-job-config"
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+        - command:
+          - sh
+          args:
+          - -c
+          - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+          env:
+          - name: KEYSTORE_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "music-keystore-pw" "key" "password") | indent 12}}
+          - name: CASSA_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "login") | indent 12 }}
+          - name: CASSA_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "password") | indent 12 }}
+          volumeMounts:
+          - mountPath: /config-input
+            name: properties-music-scrubbed
+          - mountPath: /config
+            name: properties-music
+          image: "{{ .Values.global.envsubstImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: {{ include "common.name" . }}-update-config
+      containers:
+        # MUSIC Container
+        - name: "{{ include "common.name" . }}-springboot"
+          image: "{{ .Values.repository }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.liveness.port }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.readiness.port }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          env:
+          - name: SPRING_OPTS
+            value: "{{ .Values.springOpts }}"
+          - name: JAVA_OPTS
+            value: "{{ .Values.javaOpts }}"
+          - name: DEBUG
+            value: "{{ .Values.debug }}"
+          volumeMounts:
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: properties-music
+            mountPath: /opt/app/music/etc/music.properties
+            subPath: music.properties
+          - name: properties-music
+            mountPath: /opt/app/music/etc/music-sb.properties
+            subPath: music-sb.properties
+          - name: properties-music-scrubbed
+            mountPath: /opt/app/music/etc/logback.xml
+            subPath: logback.xml
+          - name: certs-aaf
+            mountPath: /opt/app/aafcertman/
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+        - name: certificate-vol
+          emptyDir: {}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: properties-music-scrubbed
+          configMap:
+            name: {{ include "common.fullname" . }}
+        - name: properties-music
+          emptyDir:
+            medium: Memory
+        - name: certs-aaf
+          secret:
+            secretName: {{ include "common.secret.getSecretNameFast" (dict "global" . "uid" "music-certs") }}
