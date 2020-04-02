@@ -61,6 +61,21 @@ Quick Links:
 
   - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
 
+Version 6.0.0 (Frankfurt)
+----------------------------------
+
+:Release Date: 2020-05-14
+
+Summary
+-------
+
+**Software Requirements**
+
+* Upgraded to Kubernetes 1.15.x and Helm 2.16.x
+
+**Hardcoded Password removal**
+
+* All mariadb galera password are not hardcoded
 
 
 Version 5.0.0 (El Alto Early Drop)
