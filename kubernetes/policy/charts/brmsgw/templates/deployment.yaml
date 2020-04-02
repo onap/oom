@@ -46,6 +46,30 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /processed-brmsgw-conf && for PFILE in `ls -1 .`; do envsubst '${PDP_HTTP_USER_ID},${PDP_HTTP_PASSWORD},${PDP_PAP_PDP_HTTP_USER_ID},${PDP_PAP_PDP_HTTP_PASSWORD},${repositoryUsername},${repositoryPassword}' <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "login") | indent 10 }}
+        - name: PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "password") | indent 10 }}
+        - name: PDP_PAP_PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: PDP_PAP_PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
+        - name: REPOSITORY_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "login") | indent 10 }}
+        - name: REPOSITORY_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config
+          name: processed-brmsgw-conf
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
       containers:
       - command:
         - /bin/bash
@@ -59,6 +83,18 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: JDBC_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "login") | indent 10 }}
+        - name: PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "password") | indent 10 }}
+        - name: PDP_PAP_PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: PDP_PAP_PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
+        - name: REPOSITORY_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "login") | indent 10 }}
+        - name: REPOSITORY_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "password") | indent 10 }}
         ports:
         - containerPort: {{ .Values.service.externalPort }}
         {{- if eq .Values.liveness.enabled true }}
@@ -81,7 +117,7 @@ spec:
           name: pe-brmsgw
           subPath: brmsgw-tweaks.sh
         - mountPath: /tmp/policy-install/config/brmsgw.conf
-          name: pe-brmsgw
+          name: processed-brmsgw-conf
           subPath: brmsgw.conf
         - mountPath: /tmp/policy-install/config/base.conf
           name: pe
@@ -115,5 +151,8 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-pe-configmap
             defaultMode: 0755
+        - name: processed-brmsgw-conf
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
