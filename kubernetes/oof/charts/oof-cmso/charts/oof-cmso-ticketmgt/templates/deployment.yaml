@@ -30,6 +30,14 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-chown
+        command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /share/"]
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /share/logs
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
