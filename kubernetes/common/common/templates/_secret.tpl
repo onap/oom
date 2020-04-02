@@ -476,7 +476,6 @@ stringData:
       {{- if eq $type "generic" }}
 data:
         {{- range $curFilePath := $secret.filePaths }}
-          {{- fail (printf "%s" $curFilePath) }}
           {{ tpl ($global.Files.Glob $curFilePath).AsSecrets $global | indent 2 }}
         {{- end }}
         {{- if $secret.filePath }}
