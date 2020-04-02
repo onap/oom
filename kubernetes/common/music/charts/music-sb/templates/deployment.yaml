@@ -1,5 +1,4 @@
-{{/*
-# Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
+# Copyright © 2017-2020 AT&T, Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
 
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -22,61 +20,30 @@ metadata:
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
+    release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  annotations:
+    healthcheckurl: {{ .Values.healthcheck.healthcheckurl }}
+    servicecheckurl: {{ .Values.healthcheck.servicecheckurl }}
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+        release: {{ .Release.Name }}
     spec:
-      initContainers:
-      - name: {{ include "common.name" . }}-zookeeper-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - zookeeper
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      - name: {{ include "common.name" . }}-cassandra-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /root/job_complete.py
-        args:
-        - -j
-        - "{{ include "common.release" . }}-music-cassandra-job-config"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-# War Container
-      - name: "{{ .Chart.Name }}-war"
-        image: "{{ include "common.repository" . }}/{{ .Values.warImage }}"
-        command: ["cp","/app/MUSIC.war","/webapps"]
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        ports:
-        volumeMounts:
-        - mountPath: /webapps
-          name: shared-data
+      imagePullSecrets:
+      - name: pullsecret
       containers:
-      # Tomcat Container
-        - name: "{{ include "common.name" . }}"
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        # MUSIC Container
+        - name: "{{ include "common.name" . }}-springboot"
+          image: "{{ .Values.repository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          #command: ["sleep","10000"]
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.dservice.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -91,19 +58,48 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          env:
+            - name: SPRING_OPTS
+              value: "{{ .Values.springOpts }}" 
+            - name: keystore_pw
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.fullname" . }}-secret
+                  key: keystore_pw
+            - name: JAVA_OPTS
+              value: "{{ .Values.javaOpts }}" 
+            - name: DEBUG
+              value: "{{ .Values.debug }}" 
+            - name: DEBUG_PORT
+              value: "{{ .Values.dservice.internalPort }}" 
           volumeMounts:
-          - mountPath: /etc/localtime
-            name: localtime
+          - name: localtime
+            mountPath: /etc/localtime
             readOnly: true
-          - mountPath: /usr/local/tomcat/webapps
-            name: shared-data
           - name: properties-music
             mountPath: /opt/app/music/etc/music.properties
             subPath: music.properties
-          resources:
-{{ include "common.resources" . | indent 12 }}
+          - name: properties-music
+            mountPath: /opt/app/music/etc/key.properties
+            subPath: key.properties
+          - name: properties-music
+            mountPath: /opt/app/music/etc/music-sb.properties
+            subPath: music-sb.properties
+          - name: properties-music
+            mountPath: /opt/app/music/etc/logback.xml
+            subPath: logback.xml
+          - name: certs-aaf
+            mountPath: /opt/app/aafcertman/{{ .Values.global.keystore }}
+            subPath: {{ .Values.global.keystore }}
+          - name: certs-aaf
+            mountPath: /opt/app/aafcertman/{{ .Values.global.truststore }}
+            subPath: {{ .Values.global.truststore }}
       volumes:
         - name: shared-data
+          emptyDir: {}
+        - name: certificate-vol
           emptyDir: {}
         - name: localtime
           hostPath:
@@ -111,5 +107,6 @@ spec:
         - name: properties-music
           configMap:
             name: {{ include "common.fullname" . }}-configmap
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+        - name: certs-aaf
+          secret:
+            secretName: {{ include "common.fullname" . }}-secret
