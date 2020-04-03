@@ -23,44 +23,41 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   persistence: {}
-  #AAF global config overrides
+  #AAF service
   aafEnabled: true
-  aafAgentImage: onap/aaf/aaf_agent:2.1.15
-  aafAppNs: org.osaaf.aaf
-  aafLocatorContainer: oom
+
 #################################################################
 # Application configuration defaults.
 #################################################################
 secrets:
-  - uid: aaf-deploy-creds
+  - uid: '{{ .Values.aafConfig.secret_uid }}'
     type: basicAuth
     externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
     login: '{{ .Values.aafConfig.aafDeployFqi }}'
     password: '{{ .Values.aafConfig.aafDeployPass }}'
     passwordPolicy: required
 
-## Persist cert data to a memory volume
-persistence:
-  aafCredsPath: /opt/app/osaaf/local
-
 # application image
 repository: nexus3.onap.org:10001
 image: onap/portal-sdk:2.6.0
 pullPolicy: Always
 
-#AAF service
-aafURL: https://aaf-service:8100/
-aafLocateUrl: https://aaf-locate:8095
-
 #AAF local config
+aafURL: https://aaf-service:8100/
 aafConfig:
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
   fqdn: portal
   fqi: portal@portal.onap.org
   publicFqdn: portal.onap.org
-  cadiLatitude: 0.0
-  cadiLongitude: 0.0
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig:  true
+  secret_uid: aaf-deploy-creds
   keystoreFile: "org.onap.portal.p12"
   truststoreFile: "org.onap.portal.trust.jks"
 
