@@ -14,7 +14,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  
+
   Modifications to this file for use in ONAP are also subject to the Apache-2.0 license.
 -->
 <!-- Note:  A "Server" is not itself a "Container", so you may not
@@ -22,7 +22,7 @@
      Documentation at /docs/config/server.html
  -->
 <Server port="8005" shutdown="SHUTDOWN">
-  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" logArgs="false"/>
   <!-- Security listener. Documentation at /docs/config/listeners.html
   <Listener className="org.apache.catalina.security.SecurityListener" />
   -->
@@ -70,7 +70,10 @@
     -->
     <Connector port="8080" protocol="HTTP/1.1"
                connectionTimeout="20000"
-               redirectPort="8443" />
+    {{ if .Values.global.aafEnabled }}
+               redirectPort="8443"
+    {{ end }}
+    />
     <!-- A "Connector" using the shared thread pool-->
     <!--
     <Connector executor="tomcatThreadPool"
@@ -88,14 +91,19 @@
                maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
                clientAuth="false" sslProtocol="TLS" />
     -->
-	
-	 <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+    {{ if .Values.global.aafEnabled }}
+    <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
                maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
-               keystoreFile="{{.Values.global.keystoreFile}}" keystorePass="{{.Values.global.keypass}}" 
+               keystoreFile="{{.Values.aafConfig.credsPath}}/{{.Values.aafConfig.keystoreFile}}"
+               keystorePass="${javax.net.ssl.keyStorePassword}"
                clientAuth="false" sslProtocol="TLS" />
-
+    {{ end }}
     <!-- Define an AJP 1.3 Connector on port 8009 -->
-    <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+    <Connector port="8009" protocol="AJP/1.3"
+    {{ if .Values.global.aafEnabled }}
+              redirectPort="8443"
+    {{ end }}
+    />
 
 
     <!-- An Engine represents the entry point (within Catalina) that processes
