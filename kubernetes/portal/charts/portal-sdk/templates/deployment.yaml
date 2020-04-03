@@ -47,71 +47,23 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       {{- if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-aaf-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-          - /root/ready.py
-        args:
-          - --container-name
-          - aaf-locate
-          - --container-name
-          - aaf-cm
-        env:
-          - name: NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-      - name: {{ include "common.name" . }}-aaf-config
-        image: "{{ include "common.repository" . }}/{{ .Values.global.aafAgentImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["bash","-c"]
-        args: ["/opt/app/aaf_config/bin/agent.sh;/opt/app/aaf_config/bin/agent.sh local showpass \
-        {{.Values.aafConfig.fqi}} {{ .Values.aafConfig.fqdn }} > {{ .Values.persistence.aafCredsPath }}/mycreds.prop"]
-        volumeMounts:
-          - mountPath: {{ .Values.persistence.aafCredsPath }}
-            name: {{ include "common.fullname" . }}-aaf-config-vol
-        env:
-          - name: APP_FQI
-            value: "{{ .Values.aafConfig.fqi }}"
-          - name: aaf_locate_url
-            value: "https://aaf-locate.{{ .Release.Namespace }}:8095"
-          - name: aaf_locator_container
-            value: "{{ .Values.global.aafLocatorContainer }}"
-          - name: aaf_locator_container_ns
-            value: "{{ .Release.Namespace }}"
-          - name: aaf_locator_fqdn
-            value: "{{ .Values.aafConfig.fqdn }}"
-          - name: aaf_locator_public_fqdn
-            value: "{{.Values.aafConfig.publicFqdn}}"
-          - name: aaf_locator_app_ns
-            value: "{{ .Values.global.aafAppNs }}"
-          - name: DEPLOY_FQI
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-deploy-creds" "key" "login") | indent 12 }}
-          - name: DEPLOY_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-deploy-creds" "key" "password") | indent 12 }}
-          - name: cadi_longitude
-            value: "{{ .Values.aafConfig.cadiLongitude }}"
-          - name: cadi_latitude
-            value: "{{ .Values.aafConfig.cadiLatitude }}"
-      {{ end }}
+{{ include "common.aaf-config" . | indent 6 }}
+      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c"]
         {{- if .Values.global.aafEnabled }}
-        args: ["export $(grep '^c' {{ .Values.persistence.aafCredsPath }}/mycreds.prop | xargs -0);\
+        args: ["export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0);\
         export _JAVA_OPTIONS=\"-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
         -Djavax.net.ssl.keyStorePassword=$cadi_keystore_password_p12\";\
-        cat /dev/null > {{ .Values.persistence.aafCredsPath }}/mycreds.prop;\
         /start-apache-tomcat.sh -b {{ .Values.global.env.tomcatDir }}"]
         env:
           - name: _CATALINA_OPTS
             value: >
-              -Djavax.net.ssl.keyStore="{{ .Values.persistence.aafCredsPath }}/{{ .Values.aafConfig.keystoreFile }}"
-              -Djavax.net.ssl.trustStore="{{ .Values.persistence.aafCredsPath }}/{{ .Values.aafConfig.truststoreFile }}"
+              -Djavax.net.ssl.keyStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
+              -Djavax.net.ssl.trustStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.truststoreFile }}"
         {{- else }}
         args: ["/start-apache-tomcat.sh -b {{ .Values.global.env.tomcatDir }}"]
         {{- end }}
@@ -131,8 +83,7 @@ spec:
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
         {{- if .Values.global.aafEnabled }}
-        - mountPath: {{ .Values.persistence.aafCredsPath }}
-          name: {{ include "common.fullname" . }}-aaf-config-vol
+{{ include "common.aaf-config-volume-mountpath" . | indent 8 }}
         {{- end }}
         - name: properties-onapportalsdk
           mountPath: "{{ .Values.global.env.tomcatDir }}/conf/server.xml"
@@ -160,7 +111,7 @@ spec:
         - name: var-log-onap
           mountPath: /var/log/onap
         resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -198,9 +149,7 @@ spec:
         - name: portal-tomcat-logs
           emptyDir: {}
         {{- if .Values.global.aafEnabled }}
-        - name: {{ include "common.fullname" . }}-aaf-config-vol
-          emptyDir:
-            medium: Memory
+{{ include "common.aaf-config-volumes" . | indent 8 }}
         {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

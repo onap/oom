@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,3 +26,17 @@ metadata:
 data:
 {{ tpl (.Files.Glob "resources/config/deliveries/properties/ONAPPORTAL/*").AsConfig . | indent 2 }}
 {{ tpl (.Files.Glob "resources/server/*").AsConfig . | indent 2 }}
+
+{{ if .Values.global.aafEnabled }}
+{{- if .Values.aafConfig.addconfig -}}
+---
+apiVersion: v1
+kind: ConfigMap
+{{- $suffix := "aaf-add-config" }}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
+data:
+  aaf-add-config.sh: |-
+    /opt/app/aaf_config/bin/agent.sh;/opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.aafConfig.fqi}} {{ .Values.aafConfig.fqdn }} > {{ .Values.aafConfig.credsPath }}/mycreds.prop
+{{- end -}}
+{{- end -}}
