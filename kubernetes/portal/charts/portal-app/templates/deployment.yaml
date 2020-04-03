@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,33 +46,27 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config" . | indent 6 }}
+      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-          - /start-apache-tomcat.sh
-          - -i
-          - ""
-          - -n
-          - ""
-          - -b
-          - "{{ .Values.global.env.tomcatDir }}"
+        command: ["bash","-c"]
+        {{- if .Values.global.aafEnabled }}
+        args: ["export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0);\
+               export _JAVA_OPTIONS=\"-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
+              -Djavax.net.ssl.keyStorePassword=$cadi_keystore_password_p12\";\
+              /start-apache-tomcat.sh -i \"\" -n \"\" -b {{ .Values.global.env.tomcatDir }}"]
         env:
-          - name: CATALINA_OPTS
+          - name: _CATALINA_OPTS
             value: >
-              -Djavax.net.ssl.keyStore={{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}
-              -Djavax.net.ssl.keyStorePassword={{ .Values.global.trustpass }}
-              -Djavax.net.ssl.trustStore={{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}
-              -Djavax.net.ssl.trustStorePassword={{ .Values.global.trustpass }}
-          - name: javax.net.ssl.keyStore
-            value: {{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}} 
-          - name: javax.net.ssl.keyStorePassword
-            value: {{ .Values.global.trustpass }}
-          - name: javax.net.ssl.trustStore
-            value: {{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}
-          - name: javax.net.ssl.trustStorePassword
-            value: {{ .Values.global.trustpass }}
+              -Djavax.net.ssl.keyStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
+              -Djavax.net.ssl.trustStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.truststoreFile }}"
+        {{- else }}
+        args: ["/start-apache-tomcat.sh -i "" -n "" -b {{ .Values.global.env.tomcatDir }}"]
+        {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -90,6 +85,9 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volume-mountpath" . | indent 8 }}
+        {{- end }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -117,16 +115,10 @@ spec:
         - name: properties-onapportal
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/web.xml"
           subPath: web.xml
-        - name: authz-onapportal
-          mountPath: "{{ .Values.global.env.tomcatDir }}/{{ .Values.global.keystoreFile}}"
-          subPath: {{ .Values.global.keystoreFile}}
-        - name: authz-onapportal
-          mountPath: "{{ .Values.global.env.tomcatDir }}/{{ .Values.global.truststoreFile}}"
-          subPath: {{ .Values.global.truststoreFile}}          
         - name: var-log-onap
           mountPath: /var/log/onap
         resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -147,6 +139,9 @@ spec:
         - name: var-log-onap
           mountPath: /var/log/onap
       volumes:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volumes" . | indent 8 }}
+        {{- end }}
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -154,9 +149,6 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-onapportal
             defaultMode: 0755
-        - name: authz-onapportal
-          secret:
-            secretName: {{ include "common.fullname" . }}-authz-onapportal
         - name: filebeat-conf
           configMap:
             name: portal-filebeat
