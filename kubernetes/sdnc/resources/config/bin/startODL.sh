@@ -4,6 +4,7 @@
 # ============LICENSE_START=======================================================
 # SDNC
 # ================================================================================
+# Copyright © 2020 Samsung Electronics
 # Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -133,17 +134,17 @@ echo "  AAF_ENABLED=$SDNC_AAF_ENABLED"
 
 
 if $SDNC_AAF_ENABLED; then
-	export SDNC_STORE_DIR=/opt/app/osaaf/local
-	export SDNC_CONFIG_DIR=/opt/app/osaaf/local
+	export SDNC_AAF_STORE_DIR=/opt/app/osaaf/local
+	export SDNC_AAF_CONFIG_DIR=/opt/app/osaaf/local
 	export SDNC_KEYPASS=`cat /opt/app/osaaf/local/.pass`
 	export SDNC_KEYSTORE=org.onap.sdnc.p12
 	sed -i '/cadi_prop_files/d' $ODL_HOME/etc/system.properties
-	echo "cadi_prop_files=$SDNC_CONFIG_DIR/org.onap.sdnc.props" >> $ODL_HOME/etc/system.properties
+	echo "cadi_prop_files=$SDNC_AAF_CONFIG_DIR/org.onap.sdnc.props" >> $ODL_HOME/etc/system.properties
 
 	sed -i '/org.ops4j.pax.web.ssl.keystore/d' $ODL_HOME/etc/custom.properties
 	sed -i '/org.ops4j.pax.web.ssl.password/d' $ODL_HOME/etc/custom.properties
 	sed -i '/org.ops4j.pax.web.ssl.keypassword/d' $ODL_HOME/etc/custom.properties
-	echo org.ops4j.pax.web.ssl.keystore=$SDNC_STORE_DIR/$SDNC_KEYSTORE >> $ODL_HOME/etc/custom.properties
+	echo org.ops4j.pax.web.ssl.keystore=$SDNC_AAF_STORE_DIR/$SDNC_KEYSTORE >> $ODL_HOME/etc/custom.properties
 	echo org.ops4j.pax.web.ssl.password=$SDNC_KEYPASS >> $ODL_HOME/etc/custom.properties
 	echo org.ops4j.pax.web.ssl.keypassword=$SDNC_KEYPASS >> $ODL_HOME/etc/custom.properties
 fi
