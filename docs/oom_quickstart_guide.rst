@@ -23,6 +23,7 @@ available), follow the following instructions to deploy ONAP.
 where <BRANCH> can be an offical release tag, such as
 4.0.0-ONAP for Dublin
 5.0.1-ONAP for El Alto
+6.0.0-ONAP for Frankfurt
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
@@ -53,6 +54,8 @@ with items like the OpenStack tenant information.
  d. Update the OpenStack parameters that will be used by robot, SO and APPC helm
     charts or use an override file to replace them.
 
+ e. Add in an override file or in the command line a value for the global master
+    password (global.masterPassword).
 
 
 
@@ -77,7 +80,7 @@ openssl algorithm that works with the python based Robot Framework.
 c. Generating SO Encrypted Password:
 The SO Encrypted Password uses a java based encryption utility since the
 Java encryption library is not easy to integrate with openssl/python that
-ROBOT uses in Dublin.
+ROBOT uses in Dublin and upper versions.
 
 .. note::
   To generate SO ``openStackEncryptedPasswordHere`` and ``openStackSoEncryptedPassword``
@@ -98,10 +101,11 @@ ROBOT uses in Dublin.
 
 d. Update the OpenStack parameters:
 
-There are assumptions in the demonstration VNF heat templates about the networking 
-available in the environment. To get the most value out of these templates and the 
-automation that can help confirm the setup is correct, please observe the following 
+There are assumptions in the demonstration VNF heat templates about the networking
+available in the environment. To get the most value out of these templates and the
+automation that can help confirm the setup is correct, please observe the following
 constraints.
+
 
 ``openStackPublicNetId:``
   This network should allow heat templates to add interfaces.
@@ -124,7 +128,7 @@ constraints.
   setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
 
 
-Example Keystone v2.0 
+Example Keystone v2.0
 
 .. literalinclude:: example-integration-override.yaml
    :language: yaml
@@ -133,7 +137,6 @@ Example Keystone v3  (required for Rocky and later releases)
 
 .. literalinclude:: example-integration-override-v3.yaml
    :language: yaml
-
 
 
 **Step 4.** To setup a local Helm server to server up the ONAP charts::
@@ -168,13 +171,18 @@ follows::
 single command
 
 .. note::
-  The ``--timeout 900`` is currently required in Dublin to address long running initialization tasks
-  for DMaaP and SO. Without this timeout value both applications may fail to deploy.
+  The ``--timeout 900`` is currently required in Dublin and up to address long
+  running initialization tasks for DMaaP and SO. Without this timeout value both
+  applications may fail to deploy.
+
+  We've added the master password on the command line but if you did it on an
+  override file, it's not necessary.
+  please don't forget to change the value to something random
 
 To deploy all ONAP applications use this command::
 
     > cd oom/kubernetes
-    > helm deploy dev local/onap --namespace onap -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
+    > helm deploy dev local/onap --namespace onap --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
 
 All override files may be customized (or replaced by other overrides) as per needs.
 
