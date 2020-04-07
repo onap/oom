@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2018,2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,45 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  #AAF service
+  aafEnabled: true
 
 #################################################################
 # Application configuration defaults.
 #################################################################
+
 # application image
 repository: nexus3.onap.org:10001
 image: onap/portal-app:2.6.0
 pullPolicy: Always
+
+#AAF local config
+
+aafURL: https://aaf-service:8100/
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: portal
+  fqi: portal@portal.onap.org
+  publicFqdn: portal.onap.org
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  secret_uid: &aaf_secret_uid portal-app-aaf-deploy-creds
+  keystoreFile: "org.onap.portal.p12"
+  truststoreFile: "org.onap.portal.trust.jks"
+
+secrets:
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
 
 # default number of instances
 replicaCount: 1
