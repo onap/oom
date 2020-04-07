@@ -95,6 +95,19 @@ spec:
             value: "{{ .Values.aafConfig.cadiLongitude }}"
           - name: cadi_latitude
             value: "{{ .Values.aafConfig.cadiLatitude }}"
+      - name: {{ include "common.name" . }}-aaf-config-fix-permissions
+        image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - |
+          chown 1000:1000 {{ .Values.persistence.aafCredsPath }}/mycreds.prop
+          chmod 775 {{ .Values.persistence.aafCredsPath }}/mycreds.prop
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.aafCredsPath }}
+            name: {{ include "common.fullname" . }}-aaf-config-vol
       {{ end }}
       containers:
       - name: {{ include "common.name" . }}
