@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dependencies:
-  - name: common
-    version: ~6.x-0
-    repository: '@local'
-  - name: netbox
-    version: ~6.x-0
-    repository: 'file://components/netbox'
-    condition: netbox.enabled
-  - name: awx
-    version: ~6.x-0
-    repository: 'file://components/awx'
-    condition: awx.enabled
+make-contrib: make-contrib-awx make-contrib-netbox make-contrib-core
+
+make-contrib-awx:
+	cd components && helm dep up awx && helm lint awx
+
+make-contrib-netbox:
+	cd components && helm dep up netbox && helm lint netbox
+
+make-contrib-core:
+	helm dep up . && helm lint .
+
+clean:
+	@find . -type f -name '*.tgz' -delete
+	@find . -type f -name '*.lock' -delete
