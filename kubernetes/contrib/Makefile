@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-make-contrib: make-contrib-awx make-contrib-netbox make-contrib-core
+make-contrib: make-contrib-awx make-contrib-netbox make-contrib-ejbca make-contrib-core
 
 make-contrib-awx:
 	cd components && helm dep up awx && helm lint awx
+
+make-contrib-ejbca:
+	cd components && helm dep up ejbca && helm lint ejbca
 
 make-contrib-netbox:
 	cd components && helm dep up netbox && helm lint netbox
