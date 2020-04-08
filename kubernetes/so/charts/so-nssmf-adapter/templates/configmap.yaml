@@ -1,4 +1,4 @@
-# Copyright © 2018 AT&T USA
+# Copyright © 2020 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,44 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 apiVersion: v1
-kind: Secret
+data:
+  LOG_PATH: {{ index .Values.logPath }}
+  APP: {{ index .Values.app }}
+  ACTIVE_PROFILE: {{ include "helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" "aaf" "value2" "basic")}}
+kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-so-client-certs-secret
+  name: {{ include "common.fullname" . }}-configmap
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
-data:
-  trustStorePassword: {{ .Values.global.client.certs.trustStorePassword }}
-  keyStorePassword: {{ .Values.global.client.certs.keyStorePassword}}
-type: Opaque
 ---
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
-  name: {{ include "common.release" . }}-so-truststore-secret
+  name: {{ include "common.fullname" . }}-app-configmap
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
+    release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 data:
-{{ tpl (.Files.Glob "resources/certs/*").AsSecrets . | indent 2 }}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ .Release.Name }}-so-server-spring-secret
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
-data:
-  actuatorPassword: {{ .Values.global.server.actuator.password}}
-  bpelPassword: {{ .Values.global.server.bpel.password}}
-type: Opaque
+{{ tpl (.Files.Glob "resources/config/overrides/*").AsConfig . | indent 2 }}
