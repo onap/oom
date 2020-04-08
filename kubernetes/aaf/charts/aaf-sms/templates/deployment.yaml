@@ -1,4 +1,5 @@
 # Copyright 2018 Intel Corporation, Inc
+# Modifications © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,22 +32,35 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
-      - image:  "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - "aaf-sms-vault"
-        - --container-name
-        - "aaf-sms-vault-backend"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              chmod -R 775 /sms/auth
+              chown -R 1000:1000 /sms/auth
+          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /sms/auth
+              name: {{ include "common.fullname" . }}-auth
+        - name: {{ include "common.name" . }}-readiness
+          image:  "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /root/ready.py
+          args:
+          - --container-name
+          - "aaf-sms-vault"
+          - --container-name
+          - "aaf-sms-vault-backend"
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
