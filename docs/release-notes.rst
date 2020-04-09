@@ -3,6 +3,7 @@
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2017 Bell Canada & Amdocs Intellectual Property.  All rights
 .. reserved.
+.. _release_notes:
 
 .. Links
 .. _release-notes-label:
@@ -120,7 +121,7 @@ Summary
   * Automated rolling upgrades for applications
   * In-place schema and data migrations
   * Blue-Green deployment environment migration (e.g. Pre-prod to Prod)
-  * Upgrades from embedded database instance into shared database instance
+  * Upgrades from embedded database instance into shared database instance
 
 * Release-to-release upgrade support delivered for the following projects
 
@@ -268,7 +269,7 @@ Story
 * [`OOM-52 <https://jira.onap.org/browse/OOM-52>`_] - OOM ONAP Configuration Management - Parameterization of docker images
 * [`OOM-53 <https://jira.onap.org/browse/OOM-53>`_] - OOM ONAP Configuration Management - Parameterization for Sizing
 * [`OOM-63 <https://jira.onap.org/browse/OOM-63>`_] - Kubernetes cluster created by TOSCA description
-* [`OOM-85 <https://jira.onap.org/browse/OOM-85>`_] - Test the code in the “Lab” project environment
+* [`OOM-85 <https://jira.onap.org/browse/OOM-85>`_] - Test the code in the "Lab" project environment
 * [`OOM-86 <https://jira.onap.org/browse/OOM-86>`_] - Monitoring the health status of ONAP components
 * [`OOM-87 <https://jira.onap.org/browse/OOM-87>`_] - Configure TOSCA description via dashboard
 * [`OOM-88 <https://jira.onap.org/browse/OOM-88>`_] - Deploy Holmes on K8S cluster by TOSCA description
