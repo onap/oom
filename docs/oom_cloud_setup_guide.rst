@@ -2,6 +2,7 @@
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2019 Amdocs, Bell Canada
+.. _oom_cloud_setup_guide:
 
 .. Links
 .. _Microsoft Azure: https://wiki.onap.org/display/DW/Cloud+Native+Deployment#CloudNativeDeployment-MicrosoftAzure
