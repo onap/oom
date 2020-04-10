@@ -2,7 +2,7 @@
 .. Creative Commons Attribution 4.0 International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2019 Amdocs, Bell Canada
-
+.. _oom_quickstart_guide:
 .. _quick-start-label:
 
 OOM Quick Start Guide
