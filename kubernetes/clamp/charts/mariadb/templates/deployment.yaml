@@ -52,11 +52,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: db-root-password
+            - name: MYSQL_USER
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "clamp-db-user-secret" "key" "login") | indent 14 }}
+            - name: MYSQL_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "clamp-db-user-secret" "key" "password") | indent 14 }}
           volumeMounts:
           - mountPath: /docker-entrypoint-initdb.d/bootstrap-database.sh
             name: docker-entrypoint-initdb
