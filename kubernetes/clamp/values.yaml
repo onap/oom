@@ -24,6 +24,33 @@ global: # global defaults
   loggingImage: beats/filebeat:5.5.0
   centralizedLoggingEnabled: false
 
+secrets:
+  - uid: db-root-pass
+    name: &dbRootPass '{{ include "common.release" . }}-db-root-pass'
+    type: password
+    password: '{{ .Values.db.rootPass }}'
+  - uid: db-secret
+    name: &dbUserPass '{{ include "common.release" . }}-db-user-pass'
+    type: basicAuth
+    login: '{{ .Values.db.user }}'
+    password: '{{ .Values.db.password }}'
+    passwordPolicy: required
+db:
+  user: clds  
+  password: sidnnd83K
+  databaseName: &dbName cldsdb4
+#    rootPass: emrys  user: testos
+
+clamp-backend:
+  db:
+    userCredsExternalSecret: *dbUserPass
+    databaseName: *dbName
+mariadb:
+  db:
+    rootCredsExternalSecret: *dbRootPass
+    userCredsExternalSecret: *dbUserPass
+    databaseName: *dbName
+
 subChartsOnly:
   enabled: true
 
@@ -31,7 +58,7 @@ flavor: small
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/clamp-frontend:5.0.3
+image: onap/clamp-frontend:5.0.6
 pullPolicy: Always
 
 # flag to enable debugging - application support required
