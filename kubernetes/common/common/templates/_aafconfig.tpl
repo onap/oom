@@ -76,6 +76,13 @@
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
+  resources:
+    limits:
+      cpu: 100m
+      memory: 100Mi
+    requests:
+      cpu: 3m
+      memory: 20Mi
 - name: {{ include "common.name" $dot }}-aaf-config
   image: {{ (default $dot.Values.repository $dot.Values.global.repository) }}/{{ $dot.Values.global.aafAgentImage }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
@@ -121,6 +128,13 @@
   #Hello specific.  Clients don't don't need this, unless Registering with AAF Locator
     - name: aaf_locator_public_fqdn
       value: "{{ $aafRoot.public_fqdn | default "" }}"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 100Mi
+    requests:
+      cpu: 3m
+      memory: 20Mi
 {{-   end -}}
 {{- end -}}
 
