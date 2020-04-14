@@ -20,6 +20,13 @@ flavor: small
 # application image
 pullPolicy: Always
 
+replicaCount: 1
+
+binary: gui
+
+sequence_order:
+  - service
+  - locate
 
 nodeSelector: {}
 
@@ -27,25 +34,26 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 30
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: gui
 
 readiness:
   initialDelaySeconds: 5
   periodSeconds: 10
+  port: gui
 
 service:
   name: aaf-gui
   type: NodePort
-  portName: aaf-gui
-  #targetPort
-  internalPort: 8200
-  #port
-  externalPort: 8200
-  nodePort: 51
+  ports:
+    - name: gui
+      protocol: http
+      port: 8200
+      nodePort: 51
 
 ingress:
   enabled: false
@@ -58,18 +66,18 @@ ingress:
 
 # Configure resource requests and limits
 resources:
- small:
-   limits:
-     cpu: 200m
-     memory: 280Mi
-   requests:
-     cpu: 1m
-     memory: 170Mi
- large:
-   limits:
-     cpu: 200m
-     memory: 1Gi
-   requests:
-     cpu: 100m
-     memory: 500Mi
- unlimited: {}
+  small:
+    limits:
+      cpu: 200m
+      memory: 280Mi
+    requests:
+      cpu: 1m
+      memory: 170Mi
+  large:
+    limits:
+      cpu: 200m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 500Mi
+  unlimited: {}

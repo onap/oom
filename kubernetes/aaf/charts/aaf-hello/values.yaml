@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+global:
+  aafEnabled: true
 
 flavor: small
 
@@ -22,47 +24,58 @@ flavor: small
 aaf_init:
   # You might want this in your own app.  For AAF, we store in global
   # replicas: 1
-  image: onap/aaf/aaf_agent:2.1.20
-  fqi: "aaf@aaf.osaaf.org"
+  fqi: aaf@aaf.osaaf.org
 # This MUST match what is put in AAF's "Artifact" for Certificates
-  fqdn: "aaf-hello"
+  fqdn: aaf-hello
 # What is put in Locator for External Access
-  locator_public_fqdn: "aaf.osaaf.org"
-  app_ns: "org.osaaf.aaf"
-  deploy_fqi: "deployer@people.osaaf.org"
+  public_fqdn: aaf.osaaf.org
   cadi_latitude: "38.0"
   cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  secret_uid: &aaf_secret_uid nbi-aaf-deploy-creds
+  permission_user: 1000
+  permission_group: 999
+
+replicaCount: 0
+
+image: onap/aaf/aaf_hello:2.1.20
 
 service:
-  image: onap/aaf/aaf_hello:2.1.20
-  port: "8130"
-  public_port: "31119"
-
-persistence:
-  enabled: false
-    #existingClaim:
-    # You will want "Reatan" in non-Hello Example.
-  volumeReclaimPolicy: Delete
-  accessMode: ReadWriteMany
-  size: 40M
-  mountPath: /dockerdata-nfs
-  mountSubPath: aaf/hello
+  name: aaf-hello
+  type: ClusterIP
+  ports:
+    - name: api
+      protocol: http
+      port: 8130
 
 nodeSelector: {}
 
 affinity: {}
 
+secrets:
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aaf_init.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aaf_init.aafDeployFqi }}'
+    password: '{{ .Values.aaf_init.aafDeployPass }}'
+    passwordPolicy: required
+
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 30
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: api
 
 readiness:
   initialDelaySeconds: 5
   periodSeconds: 10
+  port: api
 
 ingress:
   enabled: false
@@ -75,18 +88,18 @@ ingress:
 
 # Configure resource requests and limits
 resources:
- small:
-   limits:
-     cpu: 200m
-     memory: 500Mi
-   requests:
-     cpu: 10m
-     memory: 200Mi
- large:
-   limits:
-     cpu: 400m
-     memory: 1Gi
-   requests:
-     cpu: 20m
-     memory: 500Mi
- unlimited: {}
+  small:
+    limits:
+      cpu: 200m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 200Mi
+  large:
+    limits:
+      cpu: 400m
+      memory: 1Gi
+    requests:
+      cpu: 20m
+      memory: 500Mi
+  unlimited: {}
