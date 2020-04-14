@@ -1,5 +1,5 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications © 2020 Orange
+{*/
+# Copyright © 2020 AT&T, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}
+
+{{- define "aaf.deployment" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -20,26 +23,27 @@ spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
-    spec:
-      initContainers: {{ include "common.aaf-config" (dict "aafRoot" .Values.aaf_init "dot" .) | nindent 6 }}
-# CONTAINER Definition
+    spec: {{ include "aaf.initContainers" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
-        command: ["bash","-c","cd /opt/app/aaf && if [ ! -d /opt/app/osaaf/etc ]; then cp -Rf etc logs /opt/app/osaaf; fi && exec bin/hello"]
-        image: {{ .Values.global.repository }}/{{.Values.image }}
+        workingDir: /opt/app/aaf
+        command: ["bin/{{ .Values.binary }}"]
+        image: {{ include "common.repository" . }}/{{.Values.global.aaf.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports: {{ include "common.containerPorts" . | nindent 10  }}
-        volumeMounts:  {{ include "common.aaf-config-volume-mountpath" . | nindent 12 }}
+        volumeMounts:
+        - mountPath: "/opt/app/osaaf"
+          name: aaf-config-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{ .Values.liveness.port }}
+            port: {{.Values.liveness.port }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{- end }}
+        {{ end -}}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.readiness.port }}
@@ -52,9 +56,12 @@ spec:
       {{- if .Values.affinity }}
       affinity: {{ toYaml .Values.affinity | nindent 10 }}
       {{- end }}
-      volumes: {{ include "common.aaf-config-volumes" . | nindent 8 }}
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: aaf-config-vol
+        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+{{- end -}}

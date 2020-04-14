@@ -16,21 +16,11 @@
 
 apiVersion: batch/v1
 kind: Job
-metadata:
-  name: {{ include "common.fullname" . }}-preload
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" . "suffix" "preload") | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - image:  "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
@@ -60,7 +50,7 @@ spec:
           - "-jsondir"
           - "/preload/config"
           - "-serviceport"
-          - "{{ .Values.service.internalPort }}"
+          - "10443"
           - "-serviceurl"
           - "https://aaf-sms.{{ include "common.namespace" . }}"
         workingDir: /sms
@@ -70,15 +60,12 @@ spec:
             readOnly: true
           - mountPath: /preload/config
             name: {{ include "common.name" . }}-preload
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
       volumes:
       - name: localtime

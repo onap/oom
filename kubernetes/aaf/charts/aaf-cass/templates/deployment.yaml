@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  replicas: {{ .Values.global.aaf.cass.replicas }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - name: fix-permission
@@ -50,34 +42,22 @@ spec:
             name: aaf-cass-vol
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.repository }}/{{.Values.global.aaf.cass.image}}
+        image: {{ include "common.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         # installing with cmd "onap" will not only initialize the DB, but add ONAP bootstrap data as well
         command: ["/bin/bash","/opt/app/aaf/cass_init/cmd.sh","onap"]
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh","-c","rm /opt/app/aaf/status/aaf-cass"]
-        ports:
-        - name: storage
-          containerPort: {{.Values.global.aaf.cass.storage_port}}
-        - name: ssl-storage
-          containerPort: {{.Values.global.aaf.cass.ssl_storage_port}}
-        - name: native-trans
-          containerPort: {{.Values.global.aaf.cass.native_trans_port}}
-        - name: rpc
-          containerPort: {{.Values.global.aaf.cass.rpc_port}}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
         env:
         - name: CASSANDRA_CLUSTER_NAME
-          value: {{.Values.global.aaf.cass.cluster_name}}
+          value: {{ .Values.config.cluster_name }}
         - name: CASSANDRA_DC
-          value: {{.Values.global.aaf.cass.dc}}
+          value: {{ .Values.config.dc }}
         - name: CQLSH
           value: "/opt/cassandra/bin/cqlsh"
         - name: HEAP_NEWSIZE
-          value: {{.Values.global.aaf.cass.heap_new_size}}
+          value: {{ .Values.config.heap_new_size }}
         - name: MAX_HEAP_SIZE
-          value: {{.Values.global.aaf.cass.max_heap_size}}
+          value: {{ .Values.config.max_heap_size }}
         - name: MY_POD_NAME
           valueFrom:
             fieldRef:
@@ -93,40 +73,32 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/cassandra
           name: aaf-cass-vol
-        - mountPath: /opt/app/aaf/status
-          name: aaf-status-vol
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{.Values.global.aaf.cass.native_trans_port}}
+            port: tcp-cql
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
           tcpSocket:
-            port: {{.Values.global.aaf.cass.native_trans_port}}
+            port: tcp-cql
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
       {{- end -}}
       {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity: {{ toYaml .Values.affinity | nindent 10 }}
       {{- end }}
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aaf-status-vol
-        persistentVolumeClaim:
-          claimName: {{ include "common.release" . }}-aaf-status
       - name: aaf-cass-vol
       {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:

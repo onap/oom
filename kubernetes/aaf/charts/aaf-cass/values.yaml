@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications © 2020 AT&T
+# Modifications © 2020 AT&T, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ flavor: small
 # Application configuration defaults.
 #################################################################
 # application configuration
-config: {}
+replicaCount: 1
 
 nodeSelector: {}
 
@@ -32,6 +32,15 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: tcp-cql
+
+image: onap/aaf/aaf_cass:2.1.20
+
+config:
+  cluster_name: osaaf
+  heap_new_size: 512M
+  max_heap_size: 1024M
+  dc: dc1
 
 readiness:
   initialDelaySeconds: 5
@@ -40,39 +49,36 @@ readiness:
 service:
   name: aaf-cass
   type: ClusterIP
-  portName: aaf-cass
-  #targetPort
-  internalPort: 7000
-  #port
-  externalPort: 7000
-
-  internalPort2: 7001
-  externalPort2: 7001
-  internalPort3: 9042
-  externalPort3: 9042
-  internalPort4: 9160
-  externalPort4: 9160
+  ports:
+    - name: tcp-intra
+      port: 7000
+    - name: tls
+      port: 7001
+    - name: tcp-cql
+      port: 9042
+    - name: tcp-thrift
+      port: 9160
 
 ingress:
   enabled: false
 
 # Configure resource requests and limits
 resources:
- small:
-   limits:
-     cpu: 2100m
-     memory: 1792Mi
-   requests:
-     cpu: 30m
-     memory: 1280Mi
- large:
-   limits:
-     cpu: 4
-     memory: 12000Mi
-   requests:
-     cpu: 40m
-     memory: 9000Mi
- unlimited: {}
+  small:
+    limits:
+      cpu: 2100m
+      memory: 1792Mi
+    requests:
+      cpu: 30m
+      memory: 1280Mi
+  large:
+    limits:
+      cpu: 4
+      memory: 12000Mi
+    requests:
+      cpu: 40m
+      memory: 9000Mi
+  unlimited: {}
 
 persistence:
   enabled: true
