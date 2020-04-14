@@ -14,27 +14,4 @@
 # limitations under the License.
 */}}
 
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
-{{- if eq "True" (include "common.needPV" .) }}
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ include "common.release" . }}"
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}-data
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.dataMountSubPath }}
-{{- end -}}
-{{- end -}}
+{{ include "common.PV" (dict "dot" . "persistenceInfos" .Values.persistence.data) }}
