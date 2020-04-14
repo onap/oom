@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications © 2020 AT&T
+# Modifications © 2020 AT&T, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,13 @@ flavor: small
 # application image
 pullPolicy: Always
 
+replicaCount: 1
+
+binary: fs
+
+sequence_order:
+  - service
+  - locate
 
 nodeSelector: {}
 
@@ -33,19 +40,20 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: api
 
 readiness:
   initialDelaySeconds: 5
   periodSeconds: 10
+  port: api
 
 service:
   name: aaf-fs
   type: ClusterIP
-  portName: aaf-fs
-  #targetPort
-  internalPort: 8096
-  #port
-  externalPort: 8096
+  ports:
+    - name: api
+      port: 8096
+      protocol: http
 
 ingress:
   enabled: false
@@ -58,18 +66,18 @@ ingress:
 
 # Configure resource requests and limits
 resources:
- small:
-   limits:
-     cpu: 200m
-     memory: 110Mi
-   requests:
-     cpu: 1m
-     memory: 80Mi
- large:
-   limits:
-     cpu: 500m
-     memory: 700Mi
-   requests:
-     cpu: 100m
-     memory: 400Mi
- unlimited: {}
+  small:
+    limits:
+      cpu: 200m
+      memory: 110Mi
+    requests:
+      cpu: 1m
+      memory: 80Mi
+  large:
+    limits:
+      cpu: 500m
+      memory: 700Mi
+    requests:
+      cpu: 100m
+      memory: 400Mi
+  unlimited: {}
