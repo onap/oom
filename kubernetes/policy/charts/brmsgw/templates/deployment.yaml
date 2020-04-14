@@ -33,6 +33,24 @@ spec:
     spec:
       initContainers:
       - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: JDBC_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: JDBC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: pe
+        - mountPath: /config
+          name: pe-processed
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+      - command:
         - /root/ready.py
         args:
         - --container-name
@@ -84,7 +102,7 @@ spec:
           name: pe-brmsgw
           subPath: brmsgw.conf
         - mountPath: /tmp/policy-install/config/base.conf
-          name: pe
+          name: pe-processed
           subPath: base.conf
         - mountPath: /tmp/policy-install/do-start.sh
           name: pe-scripts
@@ -115,5 +133,8 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-pe-configmap
             defaultMode: 0755
+        - name: pe-processed
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -22,6 +22,7 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  envsubstImage: dibi/envsubst
   ubuntuImage: ubuntu:16.04
   pdp:
     nameOverride: pdp
@@ -37,14 +38,29 @@ global:
     # '&mariadbConfig' means we "store" the values for  later use in the file
     # with '*mariadbConfig' pointer.
     config: &mariadbConfig
-      userName: policy_user
-      userPassword: policy_user
-      mariadbRootPassword: secret
       mysqlDatabase: policyadmin
     service: &mariadbService
       name: policy-mariadb
       portName: mysql-policy
       internalPort: 3306
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-root-password
+    name: &dbRootPassSecretName '{{ include "common.release" . }}-policy-db-root-password'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret")) .) (hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret"))}}'
+    password: '{{ (index .Values "mariadb-galera" "config" "mariadbRootPassword") }}'
+    policy: generate
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    passwordPolicy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -58,14 +74,26 @@ pullPolicy: Always
 subChartsOnly:
   enabled: true
 
+db: &dbSecretsHook
+  credsExternalSecret: *dbSecretName
+
 pap:
   nameOverride: pap
+  db: *dbSecretsHook
 pdp:
   nameOverride: pdp
+  db: *dbSecretsHook
 drools:
   nameOverride: drools
-brmwgw:
+  db: *dbSecretsHook
+brmsgw:
   nameOverride: brmsgw
+  db: *dbSecretsHook
+policy-api:
+  db: *dbSecretsHook
+policy-xacml-pdp:
+  db: *dbSecretsHook
+
 nexus:
   nameOverride: nexus
 
@@ -112,7 +140,11 @@ ingress:
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals
-  config: *mariadbConfig
+  config:
+    <<: *mariadbConfig
+    userName: policy_user
+    mariadbRootPasswordExternalSecret: *dbRootPassSecretName
+    userCredentialsExternalSecret: *dbSecretName
   nameOverride: policy-mariadb
   # mariadb-galera.service and global.mariadb.service must be equals
   service: *mariadbService
