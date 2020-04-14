@@ -13,23 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
         - name: fix-permission
@@ -67,12 +58,11 @@ spec:
         name: {{ include "common.name" . }}
         command: ["/sms/bin/sms"]
         workingDir: /sms/
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
+        ports: {{ include "common.containerPorts" . | nindent 8  }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           httpGet:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.liveness.port }}
             scheme: HTTPS
             path: /v1/sms/quorum/status
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
@@ -80,7 +70,7 @@ spec:
         {{ end -}}
         readinessProbe:
           httpGet:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.readiness.port }}
             scheme: HTTPS
             path: /v1/sms/quorum/status
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
@@ -94,15 +84,12 @@ spec:
             subPath: smsconfig.json
           - mountPath: /sms/auth
             name: {{ include "common.fullname" . }}-auth
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
       volumes:
       - name: localtime
