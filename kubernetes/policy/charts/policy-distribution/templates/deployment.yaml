@@ -16,6 +16,46 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd //opt/app/policy/distribution/etc/mounted-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/opt/app/policy/distribution/etc/mounted/${PFILE}; done"
+        env:
+        - name: RESTSERVER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restServer-secret" "key" "login") | indent 10 }}
+        - name: RESTSERVER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restServer-secret" "key" "password") | indent 10 }}
+        - name: API_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "apiparameters-secret" "key" "login") | indent 10 }}
+        - name: API_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "apiparameters-secret" "key" "password") | indent 10 }}
+        - name: PAP_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "papparameters-secret" "key" "login") | indent 10 }}
+        - name: PAP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "papparameters-secret" "key" "password") | indent 10 }}
+        - name: SDCBE_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdcbe-secret" "key" "login") | indent 10 }}
+        - name: SDCBE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdcbe-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+          - mountPath: /opt/app/policy/distribution/etc/mounted-input
+            name: distributionconfig
+          - mountPath: /opt/app/policy/distribution/etc/mounted
+            name: distributionconfig-processed
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
