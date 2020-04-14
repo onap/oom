@@ -13,24 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   serviceName:
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -49,6 +39,13 @@ spec:
           volumeMounts:
             - mountPath: /quorumclient/auth
               name: {{ include "common.fullname" . }}-data
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 3m
+              memory: 20Mi
 {{- end }}
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -67,15 +64,12 @@ spec:
           - mountPath: /quorumclient/auth
             name: {{ include "common.fullname" . }}-data
 {{- end }}
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
       volumes:
       - name: localtime
@@ -90,18 +84,5 @@ spec:
             mode: 0755
 {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
-  - metadata:
-      name: {{ include "common.fullname" . }}-data
-      labels:
-        name: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ include "common.release" . }}"
-        heritage: "{{ .Release.Service }}"
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode | quote }}
-      storageClassName: {{ include "common.storageClass" . }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size | quote }}
+  - {{ include "common.PVCTemplate" . | nindent 4 }}
 {{- end }}
