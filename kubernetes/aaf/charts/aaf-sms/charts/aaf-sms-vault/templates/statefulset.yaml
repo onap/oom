@@ -13,24 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   serviceName:
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
 {{- if .Values.persistence.enabled }}
       initContainers:
@@ -46,15 +36,21 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
             - mountPath: /consul/data
-              name: {{ include "common.fullname" . }}-data
+              name: {{ include "common.fullname" . }}
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 3m
+              memory: 20Mi
 {{- end }}
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image.vault }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         args: ["server"]
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
         volumeMounts:
         - mountPath: /vault/config/config.json
           name: {{ include "common.fullname" . }}-vault
@@ -62,8 +58,20 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path: "/v1/sys/health?standbyok=true"
+            port: http-api
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-ec", "vault status -tls-skip-verify"]
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources: {{ include "common.resources" . | nindent 10 }}
       - image: "{{ include "common.repository" . }}/{{ .Values.image.consul }}"
         name: {{ include "common.name" . }}-backend
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -74,7 +82,7 @@ spec:
         volumeMounts:
 {{- if .Values.persistence.enabled }}
         - mountPath: /consul/data
-          name: {{ include "common.fullname" . }}-data
+          name: {{ include "common.fullname" . }}
 {{- end }}
         - mountPath: /consul/config/config.json
           name: {{ include "common.fullname" . }}-consulconfiguration
@@ -82,8 +90,25 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        resources:
-{{ include "common.resources" . | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8500
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          exec:
+            command:
+              - "/bin/sh"
+              - "-ec"
+              - |
+                curl http://127.0.0.1:8500/v1/status/leader \
+                2>/dev/null | grep -E '".+"'
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
       volumes:
         - name: {{ include "common.fullname" . }}-consulconfiguration
           configMap:
@@ -93,23 +118,10 @@ spec:
             name: {{ include "common.fullname" . }}-vault
         - name: localtime
           hostPath:
-            path: /etc/localtime
+            path: /etc/localtimegst
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
-  - metadata:
-      name: {{ include "common.fullname" . }}-data
-      labels:
-        name: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ include "common.release" . }}"
-        heritage: "{{ .Release.Service }}"
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode | quote }}
-      storageClassName: {{ include "common.storageClass" . }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size | quote }}
+  - {{ include "common.PVCTemplate" . | indent 4 | trim }}
 {{- end }}

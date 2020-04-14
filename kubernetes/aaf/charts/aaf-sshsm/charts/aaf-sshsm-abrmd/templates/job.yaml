@@ -18,21 +18,11 @@
 
 apiVersion: batch/v1
 kind: Job
-metadata:
-  name: {{ include "common.fullname" . }}-init
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}-job
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   backoffLimit: 2
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}-job
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
       containers:
@@ -58,19 +48,17 @@ spec:
         - name: {{ include "common.fullname" . }}-tpmconfig
           mountPath: "/abrmd/cred/"
           readOnly: true
-        resources:
-{{ toYaml .Values.resources | indent 10 }}
-      nodeSelector:
-        {{- if .Values.nodeSelector }}
-{{ toYaml .Values.nodeSelector | indent 8 }}
+        resources: {{ toYaml .Values.resources | nindent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
         {{- end -}}
         {{- if .Values.global.tpm.enabled }}
         {{ (printf "%s: \"%s\"" .Values.global.tpm.nodeLabel .Values.global.tpm.nodeLabelValue) }}
         {{- end -}}
         {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
         {{- end }}
+      resources: {{ include "common.resources" . | nindent 10 }}
       volumes:
       - name: {{ include "common.fullname" . }}-data
         persistentVolumeClaim:
