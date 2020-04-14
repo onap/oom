@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,27 +15,4 @@
 # limitations under the License.
 */}}
 
-{{- if and .Values.global.persistence.enabled (not .Values.persistence.existingClaim) }}
-{{- if eq "True" (include "common.needPV" .) }}
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ include "common.fullname" . }}-data
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: {{ include "common.release" . }}
-    heritage: "{{ .Release.Service }}"
-    name: {{ include "common.fullname" . }}
-spec:
-  capacity:
-    storage: {{ .Values.persistence.size}}
-  accessModes:
-    - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
-  hostPath:
-    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath }}
-  storageClassName: "{{ include "common.fullname" . }}-data"
-{{- end -}}
-{{- end -}}
+{{ include "common.PV" . }}

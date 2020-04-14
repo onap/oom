@@ -18,22 +18,12 @@
 
 apiVersion: batch/v1
 kind: Job
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   serviceName:
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
       initContainers:
@@ -52,6 +42,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
 {{ else }}
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -69,6 +66,13 @@ spec:
           readOnly: true
         - name: {{ include "common.fullname" . }}-data
           mountPath: /distcenter/data
+        resources:
+          limits:
+            cpu: 1
+            memory: 100Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
 {{- end }}
       containers:
       - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -82,15 +86,12 @@ spec:
           readOnly: true
         - name: {{ include "common.fullname" . }}-data
           mountPath: /distcenter/data
-        resources:
-{{ toYaml .Values.resources | indent 10 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+        affinity: {{ toYaml .Values.affinity | nindent 8 }}
         {{- end }}
       volumes:
       - name: localtime
