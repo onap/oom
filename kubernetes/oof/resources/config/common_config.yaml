@@ -11,9 +11,11 @@ osdf_temp:  # special configuration required for "workarounds" or testing
     local_policies:
         global_disabled: True
         local_placement_policies_enabled: True
+        local_slice_selection_policies_enabled: True
         placement_policy_dir_vcpe: "./test/policy-local-files/"
         placement_policy_files_vcpe: # workaroud for policy platform glitches (or "work-arounds" for other components)
             - Affinity_vCPE_1.json
+            - Attribute_vNS_1.json
             #- Capacity_vGMuxInfra.json
             #- Capacity_vG_1.json
             - Distance_vG_1.json
@@ -38,6 +40,14 @@ osdf_temp:  # special configuration required for "workarounds" or testing
             - vnfPolicy_vPGN_TD.json
             - affinity_vFW_TD.json
             - QueryPolicy_vFW_TD.json
+
+        slice_selection_policy_dir_urllc_1: "./test/policy-local-files/"
+        slice_selection_policy_files_urllc_1:
+            - vnfPolicy_URLLC_Core_1.json
+            - thresholdPolicy_URLLC_Core_1_reliability.json
+            - thresholdPolicy_URLLC_Core_1_latency.json
+            - subscriber_policy_URLLC_1.json
+
 service_info:
     vCPE:
         vcpeHostName: requestParameters.vcpeHostName
@@ -50,30 +60,44 @@ references:
     service_name:
         source: request
         value: serviceInfo.serviceName
+    resource:
+        source: request
+        value: placementInfo.placementDemands.resourceModuleName
     subscriber_role:
-        source: SubscriberPolicy
-        value: content.properties.subscriberRole
+        source: onap.policies.optimization.SubscriberPolicy
+        value: properties.properties.subscriberRole
 
 policy_info:
     prioritization_attributes:
         policy_type:
-            - content.policyType
+            - type
         resources:
-            - content.resources
-            - content.objectiveParameter.parameterAttributes.resources
+            - properties.resources
+            - properties.objectiveParameter.parameterAttributes.resources
         service_name:
-            - content.serviceName
+            - properties.services
+
+    slice_selection:
+        policy_fetch: by_scope
+        policy_scope:
+            -
+                scope:
+                  - OSDF_FRANKFURT
+                services:
+                    - get_param: service_name
 
     placement:
         policy_fetch: by_scope
         policy_scope:
-            default_scope: OSDF_DUBLIN
-            vcpe_scope: OSDF_DUBLIN
-            vfw_scope: OSDF_DUBLIN
-            secondary_scopes:
-                -
-                    - get_param: service_name
+            -
+                scope:
+                    - OSDF_FRANKFURT
+                geography:
                     - US
+                services:
+                    - get_param: service_name
+                resources:
+                    - get_param: resource
     #            -
     #                - get_param: service_name
     #                - get_param: subscriber_role
