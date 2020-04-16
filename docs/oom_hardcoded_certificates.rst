@@ -20,6 +20,8 @@ Here's the list of these certificates:
  +------------------+------------------+------------------+--------------------------------------------------------------------------------------------+
  | AAI/SEARCH-DATA  | Yes              | No               | No              | aai/oom/components/aai-search-data/resources/config/auth/tomcat_keystore |
  +------------------+------------------+------------------+--------------------------------------------------------------------------------------------+
+ | AAI/SPARKY-BE    | Yes              | No               | No              | aai/oom/components/aai-spary-be/resources/config/auth/org.onap.aai.p12   |
+ +------------------+------------------+------------------+--------------------------------------------------------------------------------------------+
  | AAI/BABEL        | No               | Yes              | No              | aai/oom/components/aai-babel/resources/config/auth/tomcat_keystore       |
  +------------------+------------------+------------------+--------------------------------------------------------------------------------------------+
  | AAI/MODEL-LOADER | Yes              | Yes              | No              | aai/oom/components/aai-model-loaderresources/config/auth/tomcat_keystore |
