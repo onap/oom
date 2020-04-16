@@ -32,7 +32,8 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-readiness
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -47,8 +48,9 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-      - command:
+
+      - name: {{ include "common.name" . }}-onboard-readiness
+        command:
         - /root/job_complete.py
         args:
         - -j
@@ -61,8 +63,9 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-onboard-readiness
-      - command:
+
+      - name: {{ include "common.name" . }}-cont-sms-readiness
+        command:
         - sh
         - -c
         - resp="FAILURE";
@@ -79,7 +82,6 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-cont-sms-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
