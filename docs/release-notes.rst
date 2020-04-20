@@ -5,14 +5,66 @@
 .. reserved.
 .. _release_notes:
 
-.. Links
-.. _release-notes-label:
-
 ONAP Operations Manager Release Notes
 =====================================
 
+Version 6.0.0 (Frankfurt Release)
+---------------------------------
+
+:Release Date: 2020-xx-xx
+
+Summary
+-------
+
+The focus of this release is to strengthen the foundation of OOM installer.
+A list of issues resolved in this release can be found here: https://jira.onap.org/projects/OOM/versions/10826
+
+**Software Requirements**
+
+* Upgraded to Kubernetes 1.15.x and Helm 2.16.x
+
+**Hardcoded Password removal**
+
+* All mariadb galera password are not hardcoded
+
+**New Features**
+
+* Ingress deployment is getting more and more usable
+* Use of dynamic Persistent Volume is available
+
+**Bug Fixes**
+
+**Known Issues**
+
+The following known issues will be addressed in a future release:
+
+* [`OOM-2075 <https://jira.onap.org/browse/OOM-2075>`_] - https://jira.onap.org/browse/OOM-2075
+
+**Security Notes**
+
+*Fixed Security Issues*
+
+* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://jira.onap.org/browse/OJSI-134>`_]
+* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://jira.onap.org/browse/OJSI-202>`_]
+
+*Known Security Issues*
+
+* Hard coded password used for all oom deployments [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
+
+*Known Vulnerabilities in Used Modules*
+
+OOM code has been formally scanned during build time using NexusIQ and no
+Critical vulnerability was found.
+
+Quick Links:
+
+  - `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+
+  - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
+
+
 Version 5.0.1 (El Alto Release)
-----------------------------------
+-------------------------------
 
 :Release Date: 2019-10-10
 
@@ -61,22 +113,6 @@ Quick Links:
   - `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
 
   - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
-
-Version 6.0.0 (Frankfurt)
-----------------------------------
-
-:Release Date: 2020-05-14
-
-Summary
--------
-
-**Software Requirements**
-
-* Upgraded to Kubernetes 1.15.x and Helm 2.16.x
-
-**Hardcoded Password removal**
-
-* All mariadb galera password are not hardcoded
 
 
 Version 5.0.0 (El Alto Early Drop)
