@@ -267,15 +267,11 @@ Configure Rancher Kubernetes Engine (RKE)
 Install RKE
 -----------
 Download and install RKE on a VM, desktop or laptop.
-Binaries can be found here for Linux and Mac: https://github.com/rancher/rke/releases/tag/v0.2.1
+Binaries can be found here for Linux and Mac: https://github.com/rancher/rke/releases/tag/v1.0.6
 
 RKE requires a *cluster.yml* as input. An example file is show below that
 describes a Kubernetes cluster that will be mapped onto the OpenStack VMs
 created earlier in this guide.
-
-Example: **cluster.yml**
-
-.. image:: images/rke/rke_1.png
 
 Click :download:`cluster.yml <cluster.yml>` to download the
 configuration file.
@@ -341,8 +337,8 @@ Install Kubectl
 
 Download and install kubectl. Binaries can be found here for Linux and Mac:
 
-https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/linux/amd64/kubectl
-https://storage.googleapis.com/kubernetes-release/release/v1.15.2/bin/darwin/amd64/kubectl
+https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/linux/amd64/kubectl
+https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/darwin/amd64/kubectl
 
 You only need to install kubectl where you'll launch kubernetes command. This
 can be any machines of the kubernetes cluster or a machine that has IP access
@@ -388,9 +384,9 @@ Install Helm
 
 Example Helm client install on Linux::
 
-  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.14.2-linux-amd64.tar.gz
+  > wget https://get.helm.sh/helm-v2.16.6-linux-amd64.tar.gz
 
-  > tar -zxvf helm-v2.14.2-linux-amd64.tar.gz
+  > tar -zxvf helm-v2.16.6-linux-amd64.tar.gz
 
   > sudo mv linux-amd64/helm /usr/local/bin/helm
 
