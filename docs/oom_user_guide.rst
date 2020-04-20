@@ -404,6 +404,7 @@ below::
   10.12.6.155 msb.api.simpledemo.onap.org
   10.12.6.155 clamp.api.simpledemo.onap.org
   10.12.6.155 so.api.simpledemo.onap.org
+  10.12.6.155 sdc.workflow.plugin.simpledemo.onap.org
 
 Ensure you've disabled any proxy settings the browser you are using to access
 the portal and then simply access now the new ssl-encrypted URL:
