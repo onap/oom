@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2020 Samsung Electronics
+# Copyright © 2020 Samsung Electronics, highstreet technologies GmbH
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +15,16 @@
 # limitations under the License.
 */}}
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   serviceName: {{ include "common.servicename" . }}-cluster
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   podManagementPolicy: Parallel
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -80,8 +71,14 @@ spec:
       - command:
         - /root/ready.py
         args:
+        {{ if .Values.dgbuilder.enabled -}}
         - --container-name
         - {{ include "common.mariadbService" . }}
+        {{ end -}}
+        {{ if .Values.config.sdnr.enabled -}}
+        - --container-name
+        - {{ include "common.name" . }}-sdnrdb-init-job
+        {{ end -}}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -96,7 +93,11 @@ spec:
 
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
+        {{ if .Values.global.aafEnabled }}
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}"]
+        {{ else }}
+        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} "]
+        {{ end }}
         volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: {{ .Values.persistence.mdsalPath }}
@@ -105,8 +106,13 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if not .Values.config.sdnr.enabled }}
           command: ["/bin/bash"]
           args: ["-c", "/opt/onap/sdnc/bin/startODL.sh"]
+          {{ else }}
+          command: ["/bin/bash"]
+          args: ["-c", "{{ .Values.config.binDir }}/startODL.oom.sh"]
+          {{ end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
@@ -148,6 +154,22 @@ spec:
             value: {{ include "common.mariadbService" . }}
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
+          - name: SDNRWT
+            value: "{{ .Values.config.sdnr.enabled | default "false"}}"
+          {{- if eq .Values.config.sdnr.mode "web" }}
+          - name: SDNRDM
+            value: "true"
+          {{- end }}
+          - name: SDNRONLY
+            value: "{{ .Values.config.sdnr.sdnronly | default "false" }}"
+          - name: SDNRDBURL
+            {{- $prefix := ternary "https" "http" .Values.global.aafEnabled}}
+            value: "{{$prefix}}://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+          {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
+          - name: SDNRDBTRUSTALLCERTS
+            value: "true"
+          {{ end }}
+
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
@@ -199,6 +221,12 @@ spec:
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
+          - mountPath: {{ .Values.config.odl.etcDir }}/mountpoint-registrar.properties
+            name: properties
+            subPath: mountpoint-registrar.properties
+          - mountPath: {{ .Values.config.odl.etcDir }}/mountpoint-state-provider.properties
+            name: properties
+            subPath: mountpoint-state-provider.properties
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
