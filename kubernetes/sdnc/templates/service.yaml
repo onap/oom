@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2020 highstreet technologies GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,9 +49,12 @@ spec:
       targetPort: {{ .Values.service.internalPort4 }}
       {{ end }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
+      {{ if .Values.config.sdnr.enabled }}
+      Session Affinity:  ClientIP
+      {{ end }}
   selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}
 ---
 apiVersion: v1
 kind: Service
@@ -77,8 +81,8 @@ spec:
       port: {{ .Values.service.externalPort2 }}
       targetPort: {{ .Values.service.internalPort2 }}
   selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}
 ---
 apiVersion: v1
 kind: Service
@@ -96,8 +100,8 @@ spec:
      port: {{ .Values.service.clusterPort }}
   clusterIP: None
   selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}
   sessionAffinity: None
   type: ClusterIP
 
