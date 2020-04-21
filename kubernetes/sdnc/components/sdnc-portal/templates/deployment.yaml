@@ -14,20 +14,14 @@
 # limitations under the License.
 */}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
@@ -43,14 +37,16 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: SDNC_DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: UEB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "login") | indent 10 }}
-        - name: UEB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "password") | indent 10 }}
+        - name: DB_FABRIC_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "fabric-db-creds" "key" "login") | indent 10 }}
+        - name: DB_FABRIC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "fabric-db-creds" "key" "password") | indent 10 }}
         - name: ODL_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
         - name: ODL_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
+        - name: KEYSTORE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input
           name: config-input
@@ -59,6 +55,7 @@ spec:
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
+
       - command:
         - /root/ready.py
         args:
@@ -66,10 +63,6 @@ spec:
         - {{ include "common.mariadbService" . }}
         - --container-name
         - {{ .Values.config.sdncChartName }}
-        - --container-name
-        - {{ .Values.config.sdcbeChartName }}
-        - --container-name
-        - {{ .Values.config.msgRouterContainerName }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -80,27 +73,52 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:
-      - command:
-        - /opt/onap/sdnc/ueb-listener/bin/start-ueb-listener.sh
-        name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: PROPERTY_DIR
-          value: "{{ .Values.config.configDir }}"
-        - name: SDNC_CONFIG_DIR
-          value: "{{ .Values.config.configDir }}"
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
-        - mountPath: {{ .Values.config.configDir }}/dblib.properties
-          name: properties
-          subPath: dblib.properties
-        - mountPath: {{ .Values.config.configDir }}/ueb-listener.properties
-          name: properties
-          subPath: ueb-listener.properties
-        resources:
+        - name: {{ include "common.name" . }}
+          command: ["/bin/bash"]
+          args: ["-c", "cd /opt/onap/sdnc/admportal/shell && ./start_portal.sh"]
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 14 }}
+            - name: SDNC_CONFIG_DIR
+              value: "{{ .Values.config.configDir }}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: {{ .Values.config.configDir }}/admportal.json
+            name: properties
+            subPath: admportal.json
+          - mountPath: {{ .Values.config.configDir }}/dblib.properties
+            name: properties
+            subPath: dblib.properties
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties.sdnctldb01
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties.sdnctldb02
+            name: properties
+            subPath: svclogic.properties.sdnctldb02
+          resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -110,7 +128,6 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-
       volumes:
         - name: localtime
           hostPath:

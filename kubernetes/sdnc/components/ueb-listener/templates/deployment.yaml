@@ -14,23 +14,14 @@
 # limitations under the License.
 */}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -39,28 +30,37 @@ spec:
         - -c
         - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
-        - name: DB_USER
+        - name: SDNC_DB_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: DB_PASSWORD
+        - name: SDNC_DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: REST_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "login") | indent 10 }}
-        - name: REST_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "password") | indent 10 }}
+        - name: UEB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "login") | indent 10 }}
+        - name: UEB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "password") | indent 10 }}
+        - name: ODL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
+        - name: ODL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input
           name: config-input
         - mountPath: /config
-          name: config
+          name: properties
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-
       - command:
         - /root/ready.py
         args:
         - --container-name
+        - {{ include "common.mariadbService" . }}
+        - --container-name
         - {{ .Values.config.sdncChartName }}
+        - --container-name
+        - {{ .Values.config.sdcbeChartName }}
+        - --container-name
+        - {{ .Values.config.msgRouterContainerName }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -71,36 +71,27 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:
-        - name: {{ include "common.name" . }}
-          command: ["/bin/bash"]
-          args: ["-c", "cd /opt/onap/ccsdk && ./startAnsibleServer.sh"]
-
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{ if .Values.liveness.enabled }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts:
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: true
-          - mountPath: {{ .Values.config.configDir }}/RestServer_config
-            name: config
-            subPath: RestServer_config
-          resources:
+      - command:
+        - /opt/onap/sdnc/ueb-listener/bin/start-ueb-listener.sh
+        name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: PROPERTY_DIR
+          value: "{{ .Values.config.configDir }}"
+        - name: SDNC_CONFIG_DIR
+          value: "{{ .Values.config.configDir }}"
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: {{ .Values.config.configDir }}/dblib.properties
+          name: properties
+          subPath: dblib.properties
+        - mountPath: {{ .Values.config.configDir }}/ueb-listener.properties
+          name: properties
+          subPath: ueb-listener.properties
+        resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -110,6 +101,7 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
+
       volumes:
         - name: localtime
           hostPath:
@@ -118,7 +110,7 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}
             defaultMode: 0644
-        - name: config
+        - name: properties
           emptyDir:
             medium: Memory
       imagePullSecrets:
