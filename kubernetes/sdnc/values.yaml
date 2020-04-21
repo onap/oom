@@ -1,4 +1,4 @@
-# Copyright © 2020 Samsung Electronics
+# Copyright © 2020 Samsung Electronics, highstreet technologies GmbH
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,7 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
 
 #################################################################
 # Secrets metaconfig
@@ -105,14 +106,13 @@ secrets:
     login: '{{ .Values.config.scaleoutUser }}'
     password: '{{ .Values.config.scaleoutPassword }}'
     passwordPolicy: required
-
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application images
 repository: nexus3.onap.org:10001
 pullPolicy: Always
-image: onap/sdnc-image:1.8.2
+image: onap/sdnc-image:1.8.3
 
 
 # flag to enable debugging - application support required
@@ -167,7 +167,7 @@ config:
     etcDir: /opt/opendaylight/etc
     binDir: /opt/opendaylight/bin
     salConfigDir: /opt/opendaylight/system/org/opendaylight/controller/sal-clustering-config
-    salConfigVersion: 1.8.2
+    salConfigVersion: 1.9.1
     akka:
       seedNodeTimeout: 15s
       circuitBreaker:
@@ -186,6 +186,19 @@ config:
       maxGCPauseMillis: 100
       parallelGCThreads : 3
       numberGGLogFiles: 10
+        # enables sdnr functionality
+  sdnr:
+    enabled: true
+    # mode: web - SDNC contains device manager only plus dedicated webserver service for ODLUX (default),
+    # mode: dm - SDNC contains sdnr device manager + ODLUX components
+    mode: web
+    # sdnronly: true starts sdnc container with odl and sdnrwt features only
+    sdnronly: false
+    sdnrdbTrustAllCerts: true
+    mountpointRegistrarEnabled: false
+    mountpointStateProviderEnabled: false
+
+
 
 # dependency / sub-chart configuration
 certInitializer:
@@ -204,6 +217,9 @@ certInitializer:
     cd /opt/app/osaaf/local;
     /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1
 
+# dependency / sub-chart configuration
+network-name-gen:
+  enabled: true
 mariadb-galera: &mariadbGalera
   nameOverride: sdnc-db
   config: &mariadbGaleraConfig
@@ -223,6 +239,7 @@ cds:
   enabled: false
 
 dmaap-listener:
+  enabled: true
   nameOverride: sdnc-dmaap-listener
   mariadb-galera:
     <<: *mariadbGalera
@@ -237,6 +254,7 @@ dmaap-listener:
     odlCredsExternalSecret: *odlCredsSecretName
 
 ueb-listener:
+  enabled: true
   mariadb-galera:
     <<: *mariadbGalera
     config:
@@ -250,6 +268,7 @@ ueb-listener:
     odlCredsExternalSecret: *odlCredsSecretName
 
 sdnc-portal:
+  enabled: true
   mariadb-galera:
     <<: *mariadbGalera
     config:
@@ -261,6 +280,7 @@ sdnc-portal:
     odlCredsExternalSecret: *odlCredsSecretName
 
 sdnc-ansible-server:
+  enabled: true
   config:
     restCredsExternalSecret: *ansibleSecretName
   mariadb-galera:
@@ -273,6 +293,7 @@ sdnc-ansible-server:
     internalPort: 8000
 
 dgbuilder:
+  enabled: true
   nameOverride: sdnc-dgbuilder
   config:
     db:
@@ -294,8 +315,13 @@ dgbuilder:
       - baseaddr: "sdnc-dgbuilder"
         name: "sdnc-dgbuilder"
         port: 3000
+      - baseaddr: "sdnc-web-service"
+        name: "sdnc-web-service"
+        port: 8443
     config:
       ssl: "redirect"
+
+
 
 # local elasticsearch cluster
 localElasticCluster: true
@@ -308,7 +334,6 @@ elasticsearch:
     fqi: "sdnc@sdnc.onap.org"
   service:
     name: sdnrdb
-
   master:
     replicaCount: 3
     # dedicatednode: "yes"
@@ -317,16 +342,9 @@ elasticsearch:
     # handles master and data node functionality
     dedicatednode: "no"
     nameOverride: sdnrdb
-
-  curator:
-    enabled: true
-    nameOverride: sdnrdb
-  data:
-    enabled: true
-    replicaCount: 1
-    nameOverride: sdnrdb
-
-
+# enable
+sdnc-web:
+  enabled: true
 # default number of instances
 replicaCount: 1
 
