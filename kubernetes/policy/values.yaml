@@ -26,8 +26,14 @@ global:
   ubuntuImage: ubuntu:16.04
   pdp:
     nameOverride: pdp
+    http: &pdphttp
+      userid: testpap
+      password: alpha123
   pap:
     nameOverride: pap
+    http: &paphttp
+      userid: testpap
+      password: alpha123
   drools:
     nameOverride: drools
   brmwgw:
@@ -61,6 +67,18 @@ secrets:
     login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
     password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
     passwordPolicy: generate
+  - uid: pdp-http-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.pdp.http.pdpCredsExternalSecret) . }}'
+    login: '{{ .Values.pdp.http.userid }}'
+    password: '{{ .Values.pdp.http.password }}'
+    passwordPolicy: required
+  - uid: pap-http-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.pap.http.papCredsExternalSecret) . }}'
+    login: '{{ .Values.pap.http.userid }}'
+    password: '{{ .Values.pap.http.password }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -80,9 +98,11 @@ db: &dbSecretsHook
 pap:
   nameOverride: pap
   db: *dbSecretsHook
+  http: *paphttp
 pdp:
   nameOverride: pdp
   db: *dbSecretsHook
+  http: *pdphttp
 drools:
   nameOverride: drools
   db: *dbSecretsHook
