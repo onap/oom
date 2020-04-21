@@ -14,23 +14,14 @@
 # limitations under the License.
 */}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -43,10 +34,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: SDNC_DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: UEB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "login") | indent 10 }}
-        - name: UEB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "password") | indent 10 }}
         - name: ODL_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
         - name: ODL_PASSWORD
@@ -59,6 +46,7 @@ spec:
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
+
       - command:
         - /root/ready.py
         args:
@@ -66,8 +54,6 @@ spec:
         - {{ include "common.mariadbService" . }}
         - --container-name
         - {{ .Values.config.sdncChartName }}
-        - --container-name
-        - {{ .Values.config.sdcbeChartName }}
         - --container-name
         - {{ .Values.config.msgRouterContainerName }}
         env:
@@ -81,7 +67,7 @@ spec:
         name: {{ include "common.name" . }}-readiness
       containers:
       - command:
-        - /opt/onap/sdnc/ueb-listener/bin/start-ueb-listener.sh
+        - /opt/onap/sdnc/dmaap-listener/bin/start-dmaap-listener.sh
         name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -97,9 +83,24 @@ spec:
         - mountPath: {{ .Values.config.configDir }}/dblib.properties
           name: properties
           subPath: dblib.properties
-        - mountPath: {{ .Values.config.configDir }}/ueb-listener.properties
+        - mountPath: {{ .Values.config.configDir }}/dhcpalert.properties
           name: properties
-          subPath: ueb-listener.properties
+          subPath: dhcpalert.properties
+        - mountPath: {{ .Values.config.configDir }}/lcm.properties
+          name: properties
+          subPath: lcm.properties
+        - mountPath: {{ .Values.config.configDir }}/aai.properties
+          name: properties
+          subPath: aai.properties
+        - mountPath: {{ .Values.config.configDir }}/dmaap-consumer-CMNotify.properties
+          name: properties
+          subPath: dmaap-consumer-CMNotify.properties
+        - mountPath: {{ .Values.config.configDir }}/dmaap-consumer-a1Adapter-policy.properties
+          name: properties
+          subPath: dmaap-consumer-a1Adapter-policy.properties
+        - mountPath: {{ .Values.config.configDir }}/dmaap-consumer-oofpcipoc.properties
+          name: properties
+          subPath: dmaap-consumer-oofpcipoc.properties
         resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
