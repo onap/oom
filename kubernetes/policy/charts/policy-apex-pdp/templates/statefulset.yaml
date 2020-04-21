@@ -38,6 +38,27 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "export TRUSTSTOREPASSWORD_BASE64=`echo -n ${TRUSTSTOREPASSWORD} | base64`; cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: TRUSTSTOREPASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "javaproperties-creds" "key" "password") | indent 10 }}
+        - name: RESTSERVER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
+        - name: RESTSERVER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: apexconfig
+        - mountPath: /config
+          name: apexconfig-processed
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -70,7 +91,9 @@ spec:
           - mountPath: /var/log/onap
             name: policy-logs
           - mountPath: /home/apexuser/config
-            name: apexconfig
+            name: apexconfig-processed
+            emptyDir:
+              medium: Memory
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -89,7 +112,10 @@ spec:
           emptyDir: {}
         - name: apexconfig
           configMap:
-            name: {{ include "common.fullname" . }}-configmap
+            name: {{ include "common.fullname" . }}-apexconfig-configmap
             defaultMode: 0755
+        - name: apexconfig-processed
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
