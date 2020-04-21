@@ -1,0 +1,125 @@
+# Copyright © 2020 highstreet technologies GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  aafEnabled: true
+  nodePortPrefix: 322
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  k8scluster: svc.cluster.local
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: "onap/sdnc-web-image:1.8.3"
+pullPolicy: Always
+
+config:
+  sdncChartName: sdnc
+  webProtocol: HTTPS
+  webPort: 8443
+  #sdnrProtocol: HTTPS
+  sdnrProtocol: HTTPS
+  #sdnrHost: "sdnc.onap"
+  sdnrHost: "sdnc"
+  sdnrPort: "8443"
+  sslCertDir: "/opt/app/osaaf/local/certs"
+  sslCertiticate: "cert.pem"
+  sslCertKey: "key.pem"
+
+
+#################################################################
+# aaf configuration defaults.
+#################################################################
+certInitializer:
+  nameOverride: sdnc-web-cert-initializer
+  fqdn: "sdnc"
+  app_ns: "org.osaaf.aaf"
+  fqi: "sdnc@sdnc.onap.org"
+  fqi_namespace: "org.onap.sdnc"
+  public_fqdn: "sdnc.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    cd /opt/app/osaaf/local;
+    mkdir -p certs;
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass | grep '^c' | xargs -0);
+    keytool -exportcert -rfc -file certs/cacert.pem -keystore {{ .Values.fqi_namespace }}.trust.jks -alias ca_local_0 -storepass $cadi_truststore_password;
+    openssl pkcs12 -in {{ .Values.fqi_namespace }}.p12 -out certs/cert.pem -passin pass:$cadi_keystore_password_p12 -passout pass:$cadi_keystore_password_p12;
+    cp {{ .Values.fqi_namespace }}.key certs/key.pem;
+    chmod -R 755 certs;
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 180
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+service:
+  name: sdnc-web
+  suffix: service
+  type: NodePort
+  sessionAffinity: ClientIP
+  # for liveness and readiness probe only
+  # internalPort:
+  internalPort: 8443
+  ports:
+  - name: "sdnc-web"
+    port: "8443"
+    nodePort: "05"
+
+#ingress:
+#  enabled: false
+
+#Resource limit flavor -By default using small
+flavor: small
+#segregation for different environment (small and large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 0.5
+      memory: 500Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  unlimited: {}
