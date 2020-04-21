@@ -1,0 +1,116 @@
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: DB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: DB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: REST_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "login") | indent 10 }}
+        - name: REST_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ .Values.config.sdncChartName }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+        - name: {{ include "common.name" . }}
+          command: ["/bin/bash"]
+          args: ["-c", "cd /opt/onap/ccsdk && ./startAnsibleServer.sh"]
+
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{ if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: {{ .Values.config.configDir }}/RestServer_config
+            name: config
+            subPath: RestServer_config
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: config-input
+          configMap:
+            name: {{ include "common.fullname" . }}
+            defaultMode: 0644
+        - name: config
+          emptyDir:
+            medium: Memory
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
