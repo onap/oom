@@ -36,17 +36,33 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input-pap && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config-pap/${PFILE}; cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
         - name: JDBC_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: JDBC_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: PAP_PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "login") | indent 10 }}
+        - name: PAP_PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "password") | indent 10 }}
+        - name: PAP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: PAP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
+        - name: CONSOLE_PAP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: CONSOLE_PAP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input
           name: pe
         - mountPath: /config
           name: pe-processed
+        - mountPath: /config-input-pap
+          name: pe-pap
+        - mountPath: /config-pap
+          name: pe-pap-processed
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
@@ -97,25 +113,25 @@ spec:
             name: localtime
             readOnly: true
           - mountPath: /tmp/policy-install/config/push-policies.sh
-            name: pe-pap
+            name: pe-pap-processed
             subPath: push-policies.sh
           - mountPath: /tmp/policy-install/config/pap-tweaks.sh
-            name: pe-pap
+            name: pe-pap-processed
             subPath: pap-tweaks.sh
           - mountPath: /tmp/policy-install/config/paplp.conf
-            name: pe-pap
+            name: pe-pap-processed
             subPath: paplp.conf
           - mountPath: /tmp/policy-install/config/pap.conf
-            name: pe-pap
+            name: pe-pap-processed
             subPath: pap.conf
           - mountPath: /tmp/policy-install/config/mysql.conf
-            name: pe-pap
+            name: pe-pap-processed
             subPath: mysql.conf
           - mountPath: /tmp/policy-install/config/elk.conf
-            name: pe-pap
+            name: pe-pap-processed
             subPath: elk.conf
           - mountPath: /tmp/policy-install/config/console.conf
-            name: pe-pap
+            name: pe-pap-processed
             subPath: console.conf
           - mountPath: /tmp/policy-install/config/base.conf
             name: pe-processed
@@ -167,13 +183,17 @@ spec:
           configMap:
             name: {{ include "common.release" . }}-pe-configmap
             defaultMode: 0755
+        - name: pe-pap
+          configMap:
+            name: {{ include "common.release" . }}-pe-pap-configmap
+            defaultMode: 0755
         - name: pe-scripts
           configMap:
             name: {{ include "common.release" . }}-pe-scripts-configmap
             defaultMode: 0777
-        - name: pe-pap
+        - name: pe-pap-processed
           configMap:
-            name: {{ include "common.fullname" . }}-pe-configmap
+            name: {{ include "common.fullname" . }}-pe-pap-processed-configmap
             defaultMode: 0755
         - name: pe-processed
           emptyDir:
