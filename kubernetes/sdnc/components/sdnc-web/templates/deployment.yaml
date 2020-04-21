@@ -1,5 +1,4 @@
-{{/*
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2020 highstreet technologies GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,51 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  serviceName: "sdnc-web"
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: DB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: REST_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "login") | indent 10 }}
-        - name: REST_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "rest-creds" "key" "password") | indent 10 }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: config-input
-        - mountPath: /config
-          name: config
-        image: "{{ .Values.global.envsubstImage }}"
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
+      - name: {{ include "common.name" . }}-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-
-      - command:
+        command:
         - /root/ready.py
         args:
         - --container-name
@@ -67,18 +38,12 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+
       containers:
         - name: {{ include "common.name" . }}
-          command: ["/bin/bash"]
-          args: ["-c", "cd /opt/onap/ccsdk && ./startAnsibleServer.sh"]
-
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          ports: {{- include "common.containerPorts" . | indent 10 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
@@ -93,13 +58,31 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: WEBPROTOCOL
+            value: {{ .Values.config.webProtocol }}
+          - name: WEBPORT
+            value: {{ .Values.config.webPort | quote }}
+          - name: SDNRPROTOCOL
+            value: {{ .Values.config.sdnrProtocol }}
+          - name: SDNRHOST
+            value: {{ .Values.config.sdnrHost }}.{{ include "common.namespace" . }}.{{ .Values.global.k8scluster }}
+          - name: SDNRPORT
+            value: {{ .Values.config.sdnrPort | quote }}
+          - name: SSL_CERT_DIR
+            value: {{ .Values.config.sslCertDir }}
+          - name: SSL_CERTIFICATE
+            value: {{ .Values.config.sslCertiticate }}
+          - name: SSL_CERTIFICATE_KEY
+            value: {{ .Values.config.sslCertKey }}
+          - name: LOCALDNS
+            value: kube-dns.kube-system.{{ .Values.global.k8scluster }}
+
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: {{ .Values.config.configDir }}/RestServer_config
-            name: config
-            subPath: RestServer_config
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -111,15 +94,9 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: config-input
-          configMap:
-            name: {{ include "common.fullname" . }}
-            defaultMode: 0644
-        - name: config
-          emptyDir:
-            medium: Memory
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+{{ include "common.certInitializer.volumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

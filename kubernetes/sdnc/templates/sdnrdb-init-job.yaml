@@ -1,0 +1,106 @@
+# Copyright © 2020 highstreet technologies GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata: {{- include "common.resourceMetadata" (dict "suffix" "sdnrdb-init-job" "dot" . )| nindent 2 }}
+spec:
+  backoffLimit: 20
+  template:
+    metadata: {{ include "common.templateMetadata" . |indent 6}}
+    spec:
+      initContainers:
+      {{ include "common.certInitializer.initContainer" . | indent 6 }}
+      {{ if .Values.global.aafEnabled }}
+      - name: {{ include "common.name" . }}-chown
+        image: "busybox"
+        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}"]
+        volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
+      {{ end }}
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{.Values.elasticsearch.nameOverride}}-elasticsearch
+        - --container-name
+        - {{.Values.elasticsearch.nameOverride}}-nginx
+        - --container-name
+        - {{.Values.elasticsearch.nameOverride}}-master
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+      - name: {{ include "common.name" . }}-sdnrdb-init-job
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", "{{ .Values.config.binDir }}/startODL.oom.sh"]
+        env:
+          - name: SDNC_AAF_ENABLED
+            value: "{{ .Values.global.aafEnabled}}"
+          - name: SDNC_HOME
+            value: "{{.Values.config.sdncHome}}"
+          - name: ETC_DIR
+            value: "{{.Values.config.etcDir}}"
+          - name: BIN_DIR
+            value: "{{.Values.config.binDir}}"
+          ## start sdnrdb parameter
+          - name: SDNRINIT
+            value: "true"
+          - name: SDNRDBURL
+            {{ if .Values.global.aafEnabled -}}
+            value: "https://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+            {{- else -}}
+            value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+            {{- end }}
+          - name: SDNRDBPARAMETER
+            value: "-k"
+        volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
+        resources:
+{{ include "common.resources" . | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: docker-entrypoint-initdb-d
+        emptyDir: {}
+      - name: bin
+        configMap:
+          name: {{ include "common.fullname" . }}-bin
+          defaultMode: 0755
+      - name: properties
+        configMap:
+          name: {{ include "common.fullname" . }}-properties
+          defaultMode: 0644
+{{ include "common.certInitializer.volumes" . | nindent 6 }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
