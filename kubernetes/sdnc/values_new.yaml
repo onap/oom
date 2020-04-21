@@ -1,4 +1,3 @@
-# Copyright © 2020 Samsung Electronics, highstreet technologies GmbH
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +35,6 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
-  aafAgentImage: onap/aaf/aaf_agent:2.1.15
 #################################################################
 # aaf configuration defaults.
 #################################################################
@@ -50,7 +48,8 @@ aafConfig:
   deploy_pass: "demo123456!"
   cadi_latitude: "38.0"
   cadi_longitude: "-72.0"
-  secret_uid: &aaf_secret_uid aaf-creds
+  secret_uid: &aaf_secret_uid sdnc-aaf-deploy-creds
+
 
 #################################################################
 # Secrets metaconfig
@@ -84,7 +83,7 @@ secrets:
     password: '{{ .Values.config.odlPassword }}'
     # For now this is left hardcoded but should be revisited in a future
     passwordPolicy: required
-  - uid: *aaf_secret_uid
+  - uid: aaf-creds
     type: basicAuth
     externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
     login: '{{ .Values.aafConfig.deploy_fqi }}'
@@ -126,13 +125,24 @@ secrets:
     login: '{{ .Values.config.scaleoutUser }}'
     password: '{{ .Values.config.scaleoutPassword }}'
     passwordPolicy: required
+  - uid: sdnc-admin-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.odlAdminUser }}'
+    password: '{{ .Values.config.odlPassword }}'
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application images
 repository: nexus3.onap.org:10001
 pullPolicy: Always
-image: onap/sdnc-image:1.8.1
+image: onap/sdnc-image:1.8.0
 
 
 # flag to enable debugging - application support required
@@ -143,6 +153,7 @@ config:
   odlUid: 100
   odlGid: 101
   odlUser: admin
+  odlAdminUser: admin
   odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
   # odlCredsExternalSecret: some secret
   netboxApikey: onceuponatimeiplayedwithnetbox20180814
@@ -174,7 +185,6 @@ config:
   peerODLCluster: 127.0.0.1
   isPrimaryCluster: true
   configDir: /opt/onap/sdnc/data/properties
-  ccsdkConfigDir: /opt/onap/ccsdk/data/properties
   dmaapTopic: SUCCESS
   dmaapPort: 3904
   logstashServiceName: log-ls
@@ -187,7 +197,7 @@ config:
     etcDir: /opt/opendaylight/etc
     binDir: /opt/opendaylight/bin
     salConfigDir: /opt/opendaylight/system/org/opendaylight/controller/sal-clustering-config
-    salConfigVersion: 1.9.1
+    salConfigVersion: 1.8.2
     akka:
       seedNodeTimeout: 15s
       circuitBreaker:
@@ -206,21 +216,31 @@ config:
       maxGCPauseMillis: 100
       parallelGCThreads : 3
       numberGGLogFiles: 10
-        # enables sdnr functionality
+    # enables sdnr functionality
   sdnr:
     enabled: true
     # mode: web - SDNC contains device manager only plus dedicated webserver service for ODLUX (default),
     # mode: dm - SDNC contains sdnr device manager + ODLUX components
     mode: web
     # sdnronly: true starts sdnc container with odl and sdnrwt features only
-    sdnronly: false
+    sdnronly: true
     mountpointRegistrarEnabled: false
     mountpointStateProviderEnabled: false
 
 
 
+  #local Mariadb-galera cluster
+  localDBCluster: false
+
+  #Shared mariadb-galera details
+  mariadbGalera:
+    chartName: mariadb-galera
+    serviceName: mariadb-galera
+    internalPort: 3306
 
 # dependency / sub-chart configuration
+
+
 mariadb-galera: &mariadbGalera
   nameOverride: sdnc-db
   config: &mariadbGaleraConfig
@@ -281,7 +301,6 @@ sdnc-portal:
     odlCredsExternalSecret: *odlCredsSecretName
 
 sdnc-ansible-server:
-  enabled: true
   config:
     restCredsExternalSecret: *ansibleSecretName
   mariadb-galera:
@@ -289,6 +308,7 @@ sdnc-ansible-server:
     config:
       <<: *mariadbGaleraConfig
       mysqlDatabase: ansible
+  enabled: true
   service:
     name: sdnc-ansible-server
     internalPort: 8000
@@ -321,7 +341,7 @@ elasticsearch:
     fqi: "sdnc@sdnc.onap.org"
   service:
     name: sdnrdb
-  master:
+  elasticsearch-master:
     replicaCount: 3
     # dedicatednode: "yes"
     # working as master node only, in this case increase replicaCount for elasticsearch-data
@@ -329,9 +349,11 @@ elasticsearch:
     # handles master and data node functionality
     dedicatednode: "no"
     nameOverride: sdnrdb
-# enable
+
+
 sdnc-web:
   enabled: true
+
 # default number of instances
 replicaCount: 1
 

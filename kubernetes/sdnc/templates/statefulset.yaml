@@ -1,5 +1,4 @@
 {{/*
-# Copyright © 2020 Samsung Electronics
 # Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +14,16 @@
 # limitations under the License.
 */}}
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   serviceName: {{ include "common.servicename" . }}-cluster
   replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   podManagementPolicy: Parallel
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -80,8 +70,14 @@ spec:
       - command:
         - /root/ready.py
         args:
+        {{ if .Values.dgbuilder.enabled -}}
         - --container-name
         - {{ include "common.mariadbService" . }}
+        {{ end -}}
+        {{ if .Values.config.sdnr.enabled -}}
+        - --container-name
+        - {{ include "common.name" . }}-sdnrdb-init-job
+        {{ end -}}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -107,7 +103,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       - name: {{ include "common.name" . }}-aaf
-        image: {{ .Values.global.repository }}/{{ .Values.aaf_init.agentImage }}
+        image: {{ .Values.global.repository }}/{{ .Values.aafConfig.agentImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
           - mountPath: {{ .Values.certpersistence.certPath }}
@@ -121,7 +117,7 @@ spec:
           /opt/app/aaf_config/bin/agent.sh local showpass | grep cadi_keystore_password= | cut -d= -f 2 > /opt/app/osaaf/local/.pass 2>&1
         env:
           - name: APP_FQI
-            value: "{{ .Values.aaf_init.fqi }}"
+            value: "{{ .Values.aafConfig.fqi }}"
           - name: aaf_locate_url
             value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
           - name: aaf_locator_container
@@ -129,17 +125,17 @@ spec:
           - name: aaf_locator_container_ns
             value: "{{ .Release.Namespace }}"
           - name: aaf_locator_fqdn
-            value: "{{ .Values.aaf_init.fqdn }}"
+            value: "{{ .Values.aafConfig.fqdn }}"
           - name: aaf_locator_app_ns
-            value: "{{ .Values.aaf_init.app_ns }}"
+            value: "{{ .Values.aafConfig.app_ns }}"
           - name: DEPLOY_FQI
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "login") | indent 12 }}
           - name: DEPLOY_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "password") | indent 12 }}
           - name: cadi_longitude
-            value: "{{ .Values.aaf_init.cadi_longitude }}"
+            value: "{{ .Values.aafConfig.cadi_longitude }}"
           - name: cadi_latitude
-            value: "{{ .Values.aaf_init.cadi_latitude }}"
+            value: "{{ .Values.aafConfig.cadi_latitude }}"
       {{ end }}
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
@@ -196,6 +192,21 @@ spec:
             value: {{ include "common.mariadbService" . }}
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
+          - name: SDNRWT
+            value: "{{ .Values.config.sdnr.enabled | default "false"}}"
+          {{- if eq .Values.config.sdnr.mode "web" }}
+          - name: SDNRDM
+            value: "true"
+          {{- end }}
+          - name: SDNRONLY
+            value: "{{ .Values.config.sdnr.sdnronly | default "false" }}"
+          - name: SDNRDBURL
+            {{ if .Values.global.aafEnabled -}}
+            value: "https://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+            {{- else -}}
+            value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+            {{- end }}
+
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
