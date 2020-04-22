@@ -38,7 +38,7 @@ update fn_app set app_url = 'https://{{.Values.config.aaiSparkyHostName}}:{{.Val
 --cli => 8080:30260
 update fn_app set app_url = 'https://{{.Values.config.cliHostName}}:{{.Values.config.cliPort}}/', app_type = 1 where app_name = 'CLI';
 --msb-iag => 80:30280
-update fn_app set app_url = 'http://{{.Values.config.msbHostName}}:{{.Values.config.msbPort}}/iui/microservices/default.html' where app_name = 'MSB';
+update fn_app set app_url = 'https://{{.Values.config.msbHostName}}:{{.Values.config.msbPort}}/iui/microservices/default.html' where app_name = 'MSB';
 
 
 /*
