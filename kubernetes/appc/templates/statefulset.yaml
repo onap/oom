@@ -185,7 +185,7 @@ spec:
             subPath: installSdncDb.sh
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
-          - mountPath: /var/log/onap
+          - mountPath: {{ .Values.log.path }}
             name: logs
           - mountPath: /opt/onap/appc/data/org.ops4j.pax.logging.cfg
             name: log-config
@@ -208,17 +208,7 @@ spec:
         {{- end }}
 
         # side car containers
-        - name: filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - mountPath: /usr/share/filebeat/filebeat.yml
-            name: filebeat-conf
-            subPath: filebeat.yml
-          - mountPath: /var/log/onap
-            name: logs
-          - mountPath: /usr/share/filebeat/data
-            name: data-filebeat
+        {{ include "common.log.sidecar" . | nindent 8 }}
       volumes:
         - name: keyfile-certs
           secret:
@@ -229,16 +219,12 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: filebeat-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-filebeat
         - name: log-config
           configMap:
             name: {{ include "common.fullname" . }}-logging-cfg
         - name: logs
           emptyDir: {}
-        - name: data-filebeat
-          emptyDir: {}
+        {{ include "common.log.volumes" . | nindent 8 }}
         - name: onap-appc-data-properties-input
           configMap:
             name: {{ include "common.fullname" . }}-onap-appc-data-properties
