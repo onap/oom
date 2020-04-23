@@ -40,7 +40,7 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
         env:
         - name: JDBC_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
@@ -55,10 +55,14 @@ spec:
         - name: PDP_PAP_PDP_HTTP_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
         volumeMounts:
-        - mountPath: /config-input
+        - mountPath: /config-input/pe
+          name: pe-input
+        - mountPath: /config-input/pe-pdp
+          name: pe-pdp-input
+        - mountPath: /config/pe
           name: pe
-        - mountPath: /config
-          name: pe-processed
+        - mountPath: /config/pe-pdp
+          name: pe-pdp
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
@@ -89,14 +93,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: JDBC_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: PDP_HTTP_USER_ID
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "login") | indent 10 }}
-        - name: PDP_HTTP_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "password") | indent 10 }}
-        - name: PDP_PAP_PDP_HTTP_USER_ID
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
-        - name: PDP_PAP_PDP_HTTP_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
         resources:
 {{ include "common.resources" . | indent 12 }}
         ports:
@@ -118,10 +114,10 @@ spec:
           name: localtime
           readOnly: true
         - mountPath: /tmp/policy-install/config/base.conf
-          name: pe-processed
+          name: pe
           subPath: base.conf
         - mountPath: /tmp/policy-install/config/pdp-tweaks.sh
-          name: pe-pdp
+          name: pe-pdp-input
           subPath: pdp-tweaks.sh
         - mountPath: /tmp/policy-install/config/pdplp.conf
           name: pe-pdp
@@ -166,7 +162,7 @@ spec:
       - name: policy-logback
         configMap:
           name: {{ include "common.fullname" . }}-log-configmap
-      - name: pe
+      - name: pe-input
         configMap:
           name: {{ include "common.release" . }}-pe-configmap
           defaultMode: 0755
@@ -174,11 +170,14 @@ spec:
         configMap:
           name: {{ include "common.release" . }}-pe-scripts-configmap
           defaultMode: 0777
-      - name: pe-pdp
+      - name: pe-pdp-input
         configMap:
           name: {{ include "common.fullname" . }}-pe-configmap
           defaultMode: 0755
-      - name: pe-processed
+      - name: pe
+        emptyDir:
+          medium: Memory
+      - name: pe-pdp
         emptyDir:
           medium: Memory
       imagePullSecrets:
