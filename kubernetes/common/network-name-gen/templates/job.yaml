@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}-job-pre-upgrade
+{{- if .Values.global.mariadbGalera.localCluster }}
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: NAMESPACE_ENV
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        command: ["/bin/bash", "-c", "--"]
+        args: ["/upgrade/upgrade-scripts.sh"]
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}
+          mountPath: /upgrade
+      volumes:
+      - name: config-{{ include "common.name" . }}
+        configMap:
+            name: {{ include "common.fullname" . }}-upgrade-deployment
+            defaultMode: 0777
+{{- else }}
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: IfNotPresent
+        command: 
+        - /bin/sh
+        - -c
+        - echo "The update involves in data migration from local nengdb to mariadb-galera. Disruption of network name gen is expected."
+{{- end }}
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-upgrade
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}-job-post-upgrade
+{{- if .Values.global.mariadbGalera.localCluster }}
+        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: 
+        - /bin/sh
+        - -c
+        - echo "New release continues to apply local nengdb."
+{{- else }}
+        image: mariadb
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: NENG_DB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "neng-db-secret" "key" "login") | indent 10}}
+        - name: NENG_DB_PASS
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "neng-db-secret" "key" "password") | indent 10}}
+        - name: NENG_DB_NAME
+          value: {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+        - name: MARIADB_SERVICE
+          value: {{ include "common.mariadbService" . }}
+        - name: NENGDB_SERVICE
+          value: {{ index .Values "mariadb-galera" "service" "name" }}
+        securityContext:
+          runAsUser: 0
+        command:
+        - /bin/bash
+        - -c
+        - mysqldump -h$NENGDB_SERVICE $NENG_DB_NAME > nengdb-backup.sql;
+          mysql -h$MARIADB_SERVICE -u$NENG_DB_USER -p$NENG_DB_PASS $NENG_DB_NAME < nengdb-backup.sql;
+          sleep 1;
+{{- end}}
+      restartPolicy: OnFailure
