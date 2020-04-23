@@ -1,0 +1,91 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ include "common.name" . }}
+    release: {{ include "common.release" . }}
+  name: {{ include "common.fullname" . }}-backup
+  namespace: {{ include "common.namespace" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+      release: {{ include "common.release" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      containers:
+      - args:
+        - -c
+        - cd /opt/onap/ccsdk/dgbuilder/ && ./start.sh sdnc1.0 && wait
+        command:
+        - /bin/bash
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: db-root-password
+              name: {{ template "common.fullname" . }}
+        - name: SDNC_CONFIG_DIR
+          value: /opt/onap/sdnc/data/properties
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        name: {{ include "common.name" . }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        readinessProbe:
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/app/application.properties
+          name: config
+          subPath: application.properties
+        - mountPath: /opt/onap/ccsdk/dgbuilder/releases/sdnc1.0/conf/svclogic.properties
+          name: config
+          subPath: svclogic.properties
+        - mountPath: /opt/onap/ccsdk/dgbuilder/svclogic/svclogic.properties
+          name: config
+          subPath: svclogic.properties
+        - mountPath: /opt/onap/ccsdk/dgbuilder/createReleaseDir.sh
+          name: scripts
+          subPath: createReleaseDir.sh
+        - mountPath: /opt/onap/ccsdk/dgbuilder/releases/sdnc1.0/customSettings.js
+          name: scripts
+          subPath: customSettings.js
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      initContainers:
+      - args:
+        - --container-name
+        - {{ .Values.config.dbPodName }}
+        command:
+        - /root/ready.py
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
+      - configMap:
+          defaultMode: 420
+          name: {{ include "common.fullname" . }}-config
+        name: config
+      - configMap:
+          defaultMode: 493
+          name: {{ include "common.fullname" . }}-scripts
+        name: scripts
