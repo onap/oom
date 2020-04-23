@@ -1,0 +1,144 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      volumes:
+      - name: config-{{ include "common.name" . }}
+        configMap:
+            name: {{ include "common.fullname" . }}-upgrade-deployment
+            defaultMode: 0777
+      - name: vol-data-backup
+        hostPath:
+          path: /dockerdata-nfs/{{ include "common.release" . }}/nengdb-backup
+      containers:
+      - name: {{ include "common.name" . }}-job-pre-upgrade
+        image: {{ .Values.global.kubectlImage}}
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}
+          mountPath: /upgrade
+        - name: vol-data-backup
+          mountPath: /my-data
+        securityContext:
+          runAsUser: 0
+        env:
+          - name: NAMESPACE_ENV
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        command: ["/bin/bash", "-c", "--"]
+{{- if .Values.global.mariadbGalera.localCluster }}
+        args: ["/upgrade/upgrade-scripts-localdb.sh"]
+{{- else }}
+        args: ["/upgrade/upgrade-scripts-shareddb.sh"]
+{{- end }}
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-upgrade-config-secret
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      volumes:
+      - name: config-{{ include "common.name" . }}-2
+        configMap:
+            name: {{ include "common.fullname" . }}-post-upgrade-2
+            defaultMode: 0777
+      containers:
+      - name: {{ include "common.name" . }}-job-post-upgrade
+        image: {{ .Values.global.kubectlImage}}
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}-2
+          mountPath: /upgrade
+        securityContext:
+          runAsUser: 0
+        env:
+          - name: NAMESPACE_ENV
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        command: ["/bin/bash", "-c", "--"]
+        args: ["/upgrade/post-upgrade-config-secret.sh"]
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-upgrade
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      initContainers:
+      - image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        name: network-name-readiness-check
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ include "common.release" . }}-{{ index .Values "mariadb-init" "nameOverride" }}-config-job
+      containers:
+      - name: {{ include "common.name" . }}-job-post-upgrade
+        image: {{ .Values.global.mariadbClientImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+        - name: MYSQL_ROOT_PWD
+          valueFrom:
+            secretKeyRef:
+              name: '{{ include "common.fullname" . }}-db-root-password'
+              key: password
+        - name: MARIADB_HOST
+          value: {{ include "common.mariadbService" . }}
+        - name: NENG_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "neng-db-secret" "key" "login") | indent 10}}
+        - name: NENG_PASS
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "neng-db-secret" "key" "password") | indent 10}}
+        - name: NENG_DB
+          value: "{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}"
+        - name: NENG_HOST
+          value: "{{ index .Values "mariadb-galera" "service" "name" }}"
+        securityContext:
+          runAsUser: 0
+        command:
+        - /bin/bash
+        - -c
+        - /upgrade/post-upgrade-scripts.sh
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}
+          mountPath: /upgrade
+        - name: vol-data-backup
+          mountPath: /my-data
+      volumes:
+      - name: config-{{ include "common.name" . }}
+        configMap:
+            name: {{ include "common.fullname" . }}-post-upgrade
+            defaultMode: 0777
+      - name: vol-data-backup
+        hostPath:
+          path: /dockerdata-nfs/{{ include "common.release" . }}/nengdb-backup
+      restartPolicy: OnFailure
