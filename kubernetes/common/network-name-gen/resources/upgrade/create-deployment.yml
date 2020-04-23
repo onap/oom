@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" (dict "suffix" "backup" "dot" .) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+      release: {{ include "common.release" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      initContainers:
+      - image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+        args:
+        - --container-name
+        - {{ index .Values "mariadb-galera" "nameOverride" }}
+        command:
+        - /root/ready.py
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - env:
+        - name: SPRING_PROFILE
+          value: "{{ .Values.config.springProfile }}"
+        - name: NENG_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: '{{ include "common.release" . }}-neng-db-secret'
+              key: login
+        - name: NENG_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: '{{ include "common.release" . }}-neng-db-secret'
+              key: password
+        - name: NENG_DB_URL
+          value: jdbc:mysql://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
+        - name: POL_CLIENT_AUTH
+          value: "{{ .Values.config.polClientAuth }}"
+        - name: POL_BASIC_AUTH
+          value: "{{ .Values.config.polBasicAuth }}"
+        - name: POL_URL
+          value: "{{ .Values.config.polUrl }}"
+        - name: POL_ENV
+          value: "{{ .Values.config.polEnv }}"
+        - name: POL_REQ_ID
+          value: "{{ .Values.config.polReqId }}"
+        - name: AAI_CERT_PASS
+          value: "{{ .Values.config.aaiCertPass }}"
+        - name: AAI_CERT_PATH
+          value: "{{ .Values.config.aaiCertPath }}"
+        - name: AAI_URI
+          value: "{{ .Values.config.aaiUri }}"
+        - name: AAI_AUTH
+          value: "{{ .Values.config.aaiAuth }}"
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        name: {{ include "common.name" . }}
+        resources: {}
+        volumeMounts:
+        - mountPath: /opt/etc/config/aai_keystore
+          name: certs
+          readOnly: true
+          subPath: aai_keystore
+      imagePullSecrets:
+      - name: {{ include "common.namespace" . }}-docker-registry-key
+      volumes:
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: {{ include "common.release" . }}-aai-keystore
