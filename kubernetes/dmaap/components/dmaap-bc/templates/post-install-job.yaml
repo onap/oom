@@ -4,17 +4,27 @@ metadata:
   name: {{ include "common.fullname" . }}-post-install
   namespace: {{ include "common.namespace" . }}
   labels: {{- include "common.labels" . | nindent 4 }}
-  annotations:
-    # This is what defines this resource as a hook. Without this line, the
-    # job is considered part of the release.
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  backoffLimit: {{ .Values.global.backOffLimit }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
+      initContainers:
+      - name: {{ include "common.name" . }}-init-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - dmaap-bc
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - name: post-install-job
         image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
@@ -22,16 +32,12 @@ spec:
         env:
         - name: DELAY
           value: "0"
+    {{- if .Values.global.allow_http }}
         - name: PROTO
-{{- if (include "common.needTLS" .) }}
-          value: "https"
-        - name: PORT
-          value: "8443"
-{{- else }}
           value: "http"
         - name: PORT
           value: "8080"
-{{- end }}
+    {{ end }}
         - name: REQUESTID
           value: "{{.Chart.Name}}-post-install"
         volumeMounts:

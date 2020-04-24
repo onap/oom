@@ -7,13 +7,8 @@ metadata:
     app.kubernetes.io/instance: {{include "common.release" . | quote }}
     helm.sh/chart: "{{.Chart.Name}}-{{.Chart.Version}}"
     release: {{ include "common.release" . }}
-  annotations:
-    # This is what defines this resource as a hook. Without this line, the
-    # job is considered part of the release.
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-3"
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  backoffLimit: {{ .Values.global.backOffLimit }}
   template:
     metadata:
       name: {{ include "common.fullname" . }}
@@ -24,6 +19,23 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       restartPolicy: Never
+      initContainers:
+      - name: {{ include "common.name" . }}-init-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - dmaap-bc
+        - --container-name
+        - dmaap-dr-prov
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
       - name: post-install-job
         image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
