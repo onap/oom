@@ -1,0 +1,139 @@
+# Copyright 2020 Samsung Electronics Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# This override file is used to deploy a core configuration. It is based on
+# minimal-onap.yaml and Orange accomplishments [1][2][3].
+# It includes the following components:
+# AAI, DMAAP, SDC, SDNC, SO (+ Cassandra)
+#
+# Minimal resources are also reviewed for the various containers
+# AAI: no override => to be fixed
+# DMAAP: no override # SO: no override
+# SDC: new values
+# SDNC: no override
+#
+# Replicas are set to:
+# AAI Cassandra: 1
+# Cassandra: 3 (to allow reaching quorum)
+#
+# In addition, some parameters are set to limit the memory footprint.
+#
+# It overrides the default ONAP parent chart behaviour to deploy
+# all of ONAP.
+#
+# helm deploy core local/onap --namespace onap -f core-onap.yaml
+#
+# [1] https://gitlab.com/Orange-OpenSource/lfn/onap/onap_oom_automatic_installation
+# [2] https://wiki.lfnetworking.org/display/LN/Call%20for%20ONAP%20DDF%20Topics%20-%20Prague%202020#CallforONAPDDFTopics-Prague2020-OOM-IntroductionofServicemesh
+# [3] https://wiki.lfnetworking.org/download/attachments/25364127/OOM%20Service%20Mesh%20Prague.pptx
+
+#######################
+# Core ONAP deployment
+#######################
+global:
+  aafEnabled: false
+aai:
+  enabled: true
+  global:
+    cassandra:
+      replicas: 1
+  aai-cassandra:
+    replicaCount: 1
+aaf:
+  enabled: false
+appc:
+  enabled: false
+cassandra:
+  enabled: true
+  replicaCount: 3
+clamp:
+  enabled: false
+cli:
+  enabled: false
+consul:
+  enabled: false
+contrib:
+  enabled: false
+dcaegen2:
+  enabled: false
+dmaap:
+  enabled: true
+esr:
+  enabled: false
+log:
+  enabled: false
+mariadb-galera:
+  enabled: true
+msb:
+  enabled: false
+multicloud:
+  enabled: false
+nbi:
+  enabled: false
+oof:
+  enabled: false
+policy:
+  enabled: false
+pomba:
+  enabled: false
+portal:
+  enabled: false
+robot:
+  enabled: false
+sdc:
+  enabled: true
+  sdc-be:
+    config:
+      javaOptions: "-Xdebug -agentlib:jdwp=transport=dt_socket,address=4000,server=y,suspend=n -Xmx512m -Xms256m"
+  sdc-fe:
+    resources:
+      small:
+        limits:
+          cpu: 1
+          memory: 2Gi
+        requests:
+          cpu: 10m
+          memory: 500Mi
+  sdc-cs:
+    config:
+      maxHeapSize: "512M"
+      heapNewSize: "256M"
+sdnc:
+  enabled: true
+sniro-emulator:
+  enabled: false
+so:
+  enabled: true
+  config:
+    # openstack configuration
+    openStackUserName: "$OPENSTACK_USER_NAME"
+    openStackRegion: "$OPENSTACK_REGION"
+    openStackKeyStoneUrl: "$OPENSTACK_KEYSTONE_URL"
+    openStackServiceTenantName: "$OPENSTACK_TENANT_NAME"
+    openStackEncryptedPasswordHere: "$OPENSTACK_ENCRYPTED_PASSWORD"
+uui:
+  enabled: false
+vid:
+  enabled: false
+vfc:
+  enabled: false
+vnfsdk:
+  enabled: false
+cds:
+  enabled: true
+dmaap:
+  enabled: true
+  dmaap-bc:
+    enabled: false
