@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}-job-pre-upgrade
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args: ["/upgrade/upgrade-scripts.sh"]
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}
+          mountPath: /upgrade
+      volumes:
+      - name: config-{{ include "common.name" . }}
+        configMap:
+            name: {{ include "common.fullname" . }}-upgrade-deployment
+            defaultMode: 0777
+      restartPolicy: OnFailure

@@ -165,3 +165,58 @@ spec:
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}-job-pre-upgrade
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args: ["/upgrade/upgrade-scripts.sh"]
+        volumeMounts:
+        - name: config-{{ include "common.name" . }}-scripts
+          mountPath: /upgrade
+      volumes:
+      - name: config-{{ include "common.name" . }}-scripts
+        configMap:
+            name: {{ include "common.fullname" . }}-upgrade-scripts
+            defaultMode: 0777
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-upgrade
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ include "common.name" . }}-job-post-upgrade
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-c", "--"]
+        args:
+        - kubectl replace configmaps devsdnc-sdnc-bin -f /upgrade-scripts/reconfigure-odl-cluster-script.sh;
+        volumeMounts:
+        - mountPath: /upgrade-scripts
+          name: config-{{ include "common.name" . }}-scripts
+      volumes:
+      - name: config-{{ include "common.name" . }}-scripts
+        configMap:
+            name: {{ include "common.fullname" . }}-post-upgrade-scripts
+            defaultMode: 0744 
+      restartPolicy: OnFailure

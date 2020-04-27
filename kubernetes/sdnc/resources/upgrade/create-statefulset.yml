@@ -1,0 +1,193 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+  name: {{ include "common.fullname" . }}-backup
+  namespace: {{ include "common.namespace" . }}
+spec:
+  podManagementPolicy: Parallel
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+      release: {{ include "common.release" . }}
+  serviceName: {{ include "common.servicename" . }}-cluster
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      containers:
+      - args:
+        - -c
+        - /opt/sdnc/bin/startODL.sh
+        command:
+        - /bin/bash
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: db-root-password
+              name: {{ template "common.fullname" . }}
+        - name: ODL_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: odl-password
+              name: {{ template "common.fullname" . }}-odl
+        - name: SDNC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: db-sdnctl-password
+              name: {{ template "common.fullname" . }}-sdnctl
+        - name: SDNC_CONFIG_DIR
+          value: "{{ .Values.config.configDir }}"
+        - name: ENABLE_ODL_CLUSTER
+          value: "{{ .Values.config.enableClustering }}"
+        - name: MY_ODL_CLUSTER
+          value: "{{ .Values.config.myODLCluster }}"
+        - name: PEER_ODL_CLUSTER
+          value: "{{ .Values.config.peerODLCluster }}"
+        - name: IS_PRIMARY_CLUSTER
+          value: "{{ .Values.config.isPrimaryCluster }}"
+        - name: GEO_ENABLED
+          value: "{{ .Values.config.geoEnabled}}"
+        - name: SDNC_REPLICAS
+          value: "{{ .Values.replicaCount }}"
+        - name: MYSQL_HOST
+          value: {{ include "common.mariadbService" . }}
+        - name: JAVA_HOME
+          value: "{{ .Values.config.javaHome}}"
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.internalPort2 }}
+        - containerPort: {{ .Values.service.internalPort3 }}
+        - containerPort: {{ .Values.service.clusterPort }}
+        readinessProbe:
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: /opt/opendaylight/current/etc/org.ops4j.pax.logging.cfg
+          name: sdnc-logging-cfg-config
+          subPath: org.ops4j.pax.logging.cfg
+        - mountPath: {{ .Values.config.binDir }}/startODL.sh
+          name: bin
+          subPath: startODL.sh
+        - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+          name: bin
+          subPath: installSdncDb.sh
+        - mountPath: {{ .Values.config.configDir }}/aaiclient.properties
+          name: properties
+          subPath: aaiclient.properties
+        - mountPath: {{ .Values.config.configDir }}/dblib.properties
+          name: properties
+          subPath: dblib.properties
+        - mountPath: {{ .Values.config.configDir }}/lcm-dg.properties
+          name: properties
+          subPath: lcm-dg.properties
+        - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+          name: properties
+          subPath: svclogic.properties
+        - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+          name: properties
+          subPath: svclogic.properties
+        - mountPath: {{ .Values.config.configDir }}/netbox.properties
+          name: properties
+          subPath: netbox.properties
+        - mountPath: {{ .Values.config.configDir }}/blueprints-processor-adaptor.properties
+          name: properties
+          subPath: blueprints-processor-adaptor.properties
+        - mountPath: {{ .Values.persistence.mdsalPath }}
+          name: {{ include "common.fullname" . }}-mdsal-back-back
+        - mountPath: /var/log/onap
+          name: logs
+        - mountPath: {{ .Values.certpersistence.certPath }}
+          name: {{ include "common.fullname" . }}-certs
+        - mountPath: {{ .Values.config.odl.salConfigDir }}/{{ .Values.config.odl.salConfigVersion}}/sal-clustering-config-{{ .Values.config.odl.salConfigVersion}}-akkaconf.xml
+          name: properties
+          subPath: akka.conf
+        - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.controller.cluster.datastore.cfg
+          name: properties
+          subPath: org.opendaylight.controller.cluster.datastore.cfg
+        - mountPath: {{ .Values.config.odl.binDir }}/setenv
+          name: properties
+          subPath: setenv
+      - image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: filebeat-onap
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: filebeat-conf
+          subPath: filebeat.yml
+        - mountPath: /var/log/onap
+          name: logs
+        - mountPath: /usr/share/filebeat/data
+          name: data-filebeat
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      initContainers:
+      - args:
+        - --container-name
+        - mariadb-galera
+        command:
+        - /root/ready.py
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      - command:
+        - sh
+        - -c
+        - "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certpersistence.certPath }}"
+        image: busybox
+        name: {{ include "common.name" . }}-chown
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.mdsalPath }}
+          name: {{ include "common.fullname" . }}-mdsal-back-back
+        - mountPath: {{ .Values.certpersistence.certPath }}
+          name: {{ include "common.fullname" . }}-certs
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+        name: localtime
+      - name: devsdnc-sdnc-mdsal-back-back
+        emptyDir: {}
+      - emptyDir: {}
+        name: logs
+      - emptyDir: {}
+        name: data-filebeat
+      - configMap:
+          name: {{ include "common.fullname" . }}-filebeat-configmap
+        name: filebeat-conf
+      - configMap:
+          name: {{ include "common.fullname" . }}-log-configmap
+        name: sdnc-logging-cfg-config
+      - configMap:
+          defaultMode: 0755
+          name: {{ include "common.fullname" . }}-bin
+        name: bin
+      - configMap:
+          defaultMode: 0644
+          name: {{ include "common.fullname" . }}-properties
+        name: properties
+      - name: {{ include "common.fullname" . }}-certs
+        emptyDir: {}
+  updateStrategy:
+    type: OnDelete

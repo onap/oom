@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    heritage: {{ .Release.Service }}
+    release: {{ include "common.release" . }}
+  name: {{ include "common.fullname" . }}-backup
+  namespace: {{ include "common.namespace" . }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      containers:
+      - args:
+        - -c
+        - cd /opt/onap/ccsdk && ./startAnsibleServer.sh
+        command:
+        - /bin/bash
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end }}
+        name: {{ include "common.name" . }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: {{ .Values.config.configDir }}/RestServer_config
+          name: config
+          subPath: RestServer_config
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      initContainers:
+      - args:
+        - --container-name
+        - {{ .Values.config.sdncChartName }}
+        command:
+        - /root/ready.py
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+          type: ""
+        name: localtime
+      - configMap:
+          defaultMode: 0644
+          name: {{ include "common.fullname" . }}
+        name: config
