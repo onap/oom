@@ -56,14 +56,18 @@ spec:
         command: ["bash","-c"]
         {{- if .Values.global.aafEnabled }}
         args: ["export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0);\
-               export _JAVA_OPTIONS=\"-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
-              -Djavax.net.ssl.keyStorePassword=$cadi_keystore_password_p12\";\
+               export _JAVA_OPTIONS=\"-Djavax.net.ssl.trustStorePassword=$TRUSTSTORE_PASSWORD \
+              -DkeyStorePassword=$cadi_keystore_password_p12\";\
               /start-apache-tomcat.sh -i \"\" -n \"\" -b {{ .Values.global.env.tomcatDir }}"]
         env:
-          - name: _CATALINA_OPTS
+          - name: CATALINA_OPTS
             value: >
-              -Djavax.net.ssl.keyStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
+              -DkeyStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
               -Djavax.net.ssl.trustStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.truststoreFile }}"
+          - name: AAF_API_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-api-pass" "key" "password") | indent 12 }}
+          - name: TRUSTSTORE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-truststore-pass" "key" "password") | indent 12 }}
         {{- else }}
         args: ["/start-apache-tomcat.sh -i "" -n "" -b {{ .Values.global.env.tomcatDir }}"]
         {{- end }}
