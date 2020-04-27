@@ -20,9 +20,9 @@
 # limitations under the License.
 # ============LICENSE_END============================================
 # ===================================================================
-# 
+#
 ###
 
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < /docker-entrypoint-initdb.d/bulkload/create-db.sql
-## New model creation 
+## New model creation
 mysql -uroot -p$MYSQL_ROOT_PASSWORD -f cldsdb4 < /docker-entrypoint-initdb.d/bulkload/create-tables.sql
