@@ -1,4 +1,7 @@
+#!/bin/bash
+
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
+# Modifications Copyright © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
 
 # Script to configure and start the Policy components that are to run in the designated container,
 # It is intended to be used as the entrypoint in the Dockerfile, so the last statement of the
@@ -65,7 +67,7 @@ else
 	fi
 
 	if [[ -f config/policy-truststore ]]; then
-		cp -f config/policy-truststore $[POLICY_HOME]/etc/ssl
+		cp -f config/policy-truststore $POLICY_HOME/etc/ssl
 	fi
 
 	if [[ -f config/$container-tweaks.sh ]] ; then
@@ -95,13 +97,4 @@ else
 fi
 
 policy.sh start
-
-# on pap, wait for pap, pdp, brmsgw, nexus and drools up,
-# then push the initial default policies
-if [[ $container == pap ]]; then
-	# wait addional 1 minute for all processes to get fully initialized and synched up
-	sleep 60
-	bash -xv config/push-policies.sh
-fi
-
 sleep 1000d
