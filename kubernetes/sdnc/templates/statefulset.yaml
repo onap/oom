@@ -92,54 +92,7 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       {{ if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-aaf-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /root/ready.py
-        args:
-        - --container-name
-        - aaf-locate
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      - name: {{ include "common.name" . }}-aaf
-        image: {{ .Values.global.repository }}/{{ .Values.aaf_init.agentImage }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-          - mountPath: {{ .Values.certpersistence.certPath }}
-            name: {{ include "common.fullname" . }}-certs
-        command:
-        - bash
-        - -c
-        - |
-          /opt/app/aaf_config/bin/agent.sh &&
-          cd /opt/app/osaaf/local &&
-          /opt/app/aaf_config/bin/agent.sh local showpass | grep cadi_keystore_password= | cut -d= -f 2 > /opt/app/osaaf/local/.pass 2>&1
-        env:
-          - name: APP_FQI
-            value: "{{ .Values.aaf_init.fqi }}"
-          - name: aaf_locate_url
-            value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
-          - name: aaf_locator_container
-            value: "oom"
-          - name: aaf_locator_container_ns
-            value: "{{ .Release.Namespace }}"
-          - name: aaf_locator_fqdn
-            value: "{{ .Values.aaf_init.fqdn }}"
-          - name: aaf_locator_app_ns
-            value: "{{ .Values.aaf_init.app_ns }}"
-          - name: DEPLOY_FQI
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "login") | indent 12 }}
-          - name: DEPLOY_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "password") | indent 12 }}
-          - name: cadi_longitude
-            value: "{{ .Values.aaf_init.cadi_longitude }}"
-          - name: cadi_latitude
-            value: "{{ .Values.aaf_init.cadi_latitude }}"
+{{ include "common.aaf-config" . | indent 6 }}
       {{ end }}
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
@@ -197,6 +150,9 @@ spec:
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
           volumeMounts:
+          {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volume-mountpath" . | indent 10 }}
+          {{- end }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -309,6 +265,9 @@ spec:
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
   {{ else }}
+  {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volumes" . | indent 8 }}
+  {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data
