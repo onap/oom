@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
+# Modifications Copyright © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,13 +96,5 @@ else
 fi
 
 policy.sh start
-
-# on pap, wait for pap, pdp, brmsgw, nexus and drools up,
-# then push the initial default policies
-if [[ $container == pap ]]; then
-	# wait addional 1 minute for all processes to get fully initialized and synched up
-	sleep 60
-	bash -xv config/push-policies.sh
-fi
 
 sleep 1000d
