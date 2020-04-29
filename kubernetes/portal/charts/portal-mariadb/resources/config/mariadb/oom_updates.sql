@@ -23,7 +23,7 @@ while the OOM K8s version has these service split up.
 */
 -- app_url is the FE, app_rest_endpoint is the BE
 --portal-sdk => TODO: doesn't open a node port yet
-update fn_app set app_url = 'http://{{.Values.config.portalSdkHostName}}:{{.Values.config.portalSdkPort}}/ONAPPORTALSDK/welcome.htm', app_rest_endpoint = 'http://portal-sdk:8080/ONAPPORTALSDK/api/v3' where app_name = 'xDemo App';
+update fn_app set app_url = 'https://{{.Values.config.portalSdkHostName}}:{{.Values.config.portalSdkPort}}/ONAPPORTALSDK/welcome.htm', app_rest_endpoint = 'https://portal-sdk:8080/ONAPPORTALSDK/api/v3' where app_name = 'xDemo App';
 --dmaap-bc => the dmaap-bc doesn't open a node port..
 update fn_app set app_url = 'http://{{.Values.config.dmaapBcHostName}}:{{.Values.config.dmaapBcPort}}/ECOMPDBCAPP/dbc#/dmaap', app_rest_endpoint = 'http://dmaap-bc:8989/ECOMPDBCAPP/api/v2' where app_name = 'DMaaP Bus Ctrl';
 --sdc-be => 8443:30204
