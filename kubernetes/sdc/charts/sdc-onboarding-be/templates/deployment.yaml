@@ -70,6 +70,19 @@ spec:
             mountPath: /config-input/
           - name: sdc-environments-output
             mountPath: /config-output/
+      - name: volume-permissions
+        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /bin/sh
+          - -c
+          - |
+            chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.fsGroup }} //onboard/cert
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+          - name: {{ include "common.fullname" . }}-cert-storage
+            mountPath: "/onboard/cert"
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
