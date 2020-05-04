@@ -22,6 +22,22 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  envsubstImage: dibi/envsubst
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-vnfsdk-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "vnfsdk-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-vnfsdk-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "vnfsdk-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -50,9 +66,8 @@ postgres:
   config:
     pgUserName: postgres
     pgDatabase: postgres
-    pgPrimaryPassword: postgres
-    pgUserPassword: postgres
-    pgRootPassword: postgres
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
 
 # flag to enable debugging - application support required
 debugEnabled: false

@@ -51,13 +51,15 @@ spec:
         image: "{{ .Values.postgresRepository }}/{{ .Values.postgresImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
+        - name: PGUSER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
         - name: PGPASSWORD
-          value: "{{ .Values.postgres.config.pgUserPassword }}"
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
         command:
         - /bin/sh
         - -c
         - |
-          psql -U {{ .Values.postgres.config.pgUserName }} -h $(VNFSDK_DBPRI_SERVICE_HOST) -f /aaa/init/marketplace_tables_postgres.sql
+          psql -h $(VNFSDK_DBPRI_SERVICE_HOST) -f /aaa/init/marketplace_tables_postgres.sql
         volumeMounts:
         - name: init-data
           mountPath: /aaa/init/marketplace_tables_postgres.sql
