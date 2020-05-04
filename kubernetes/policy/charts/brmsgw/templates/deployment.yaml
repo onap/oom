@@ -36,7 +36,7 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
         env:
         - name: JDBC_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
@@ -55,10 +55,14 @@ spec:
         - name: REPOSITORY_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "password") | indent 10 }}
         volumeMounts:
-        - mountPath: /config-input
+        - mountPath: /config-input/pe
+          name: pe-input
+        - mountPath: /config-input/pe-brmsgw
+          name: pe-brmsgw-input
+        - mountPath: /config/pe
           name: pe
-        - mountPath: /config
-          name: pe-processed
+        - mountPath: /config/pe-brmsgw
+          name: pe-brmsgw
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
@@ -101,7 +105,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "login") | indent 10 }}
         - name: REPOSITORY_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nexus-creds" "key" "password") | indent 10 }}
-        volumeMounts:
         ports:
         - containerPort: {{ .Values.service.externalPort }}
         {{- if eq .Values.liveness.enabled true }}
@@ -127,7 +130,7 @@ spec:
           name: pe-brmsgw
           subPath: brmsgw.conf
         - mountPath: /tmp/policy-install/config/base.conf
-          name: pe-processed
+          name: pe
           subPath: base.conf
         - mountPath: /tmp/policy-install/do-start.sh
           name: pe-scripts
@@ -146,7 +149,7 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: pe
+        - name: pe-input
           configMap:
             name: {{ include "common.release" . }}-pe-configmap
             defaultMode: 0755
@@ -154,11 +157,14 @@ spec:
           configMap:
             name: {{ include "common.release" . }}-pe-scripts-configmap
             defaultMode: 0777
-        - name: pe-brmsgw
+        - name: pe-brmsgw-input
           configMap:
             name: {{ include "common.fullname" . }}-pe-configmap
             defaultMode: 0755
-        - name: pe-processed
+        - name: pe
+          emptyDir:
+            medium: Memory
+        - name: pe-brmsgw
           emptyDir:
             medium: Memory
       imagePullSecrets:
