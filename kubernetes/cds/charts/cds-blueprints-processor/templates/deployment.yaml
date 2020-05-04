@@ -85,6 +85,17 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - name: fix-permission
+        command:
+        - chown
+        - -R
+        - 100:101
+        - /opt/app/onap/blueprints/deploy
+        image: busybox:latest
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: {{ .Values.persistence.deployedBlueprint }}
+          name: {{ include "common.fullname" . }}-blueprints
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
