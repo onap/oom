@@ -30,6 +30,15 @@ global:
     user: docker
     password: docker
 
+secrets:
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-dcae-inventory-api-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "dcae-inventory-api-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
@@ -82,24 +91,11 @@ postgres:
       replica: dcae-inv-pg-replica
   config:
     pgUserName: dcae_inv
+    pgUserExternalSecret: *pgUserCredsSecretName
     pgDatabase: dcae_inventory
-    pgPrimaryPassword: onapdemodb
-    pgUserPassword: onapdemodb
-    pgRootPassword: onapdemodb
   persistence:
     mountSubPath: dcae-inv/data
     mountInitPath: dcae-inv
-  pgpool:
-    nameOverride: dcae-inv-pgpool
-    service:
-      name: dcae-inv-pgpool
-    credentials:
-      pgusername: ddcae_inv
-      pgpassword: onapdemodb
-    container:
-      name:
-        primary: dcae-inv-pgpool-primary
-        replica: dcae-inv-pgpool-replica
 
 # Resource Limit flavor -By Default using small
 flavor: small

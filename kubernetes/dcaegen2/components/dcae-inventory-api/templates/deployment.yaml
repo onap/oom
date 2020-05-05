@@ -34,6 +34,25 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+        - command:
+          - sh
+          args:
+          - -c
+          - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+          env:
+          - name: PG_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: PG_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+          volumeMounts:
+          - mountPath: /config-input
+            name: {{ include "common.fullname" . }}-inv-config-input
+          - mountPath: /config
+            name: {{ include "common.fullname" . }}-inv-config
+          image: "{{ .Values.global.envsubstImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: {{ include "common.name" . }}-update-config
+
         - name: {{ include "common.name" . }}-readiness
           image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -135,11 +154,13 @@ spec:
             defaultMode: 420
             name: {{ include "common.fullname" . }}-filebeat-configmap
           name: filebeat-conf
-        - name: {{ include "common.fullname" . }}-inv-config
+        - name: {{ include "common.fullname" . }}-inv-config-input
           configMap:
             name: {{ include "common.fullname" . }}-configmap
+        - name: {{ include "common.fullname" . }}-inv-config
+          emptyDir:
+            medium: Memory
         - emptyDir: {}
           name: tls-info
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-
