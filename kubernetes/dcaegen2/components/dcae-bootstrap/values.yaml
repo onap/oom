@@ -28,6 +28,15 @@ global:
   loggingImage: beats/filebeat:5.5.0
   tlsRepository: nexus3.onap.org:10001
   tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+  envsubstImage: dibi/envsubst
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-dcae-bootstrap-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "dcae-bootstrap-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
 
 config:
   logstashServiceName: log-ls
@@ -77,21 +86,10 @@ postgres:
       primary: dcae-pg-primary
       replica: dcae-pg-replica
   config:
-    pgPrimaryPassword: onapdemodb
-    pgRootPassword: onapdemodb
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
   persistence:
     mountSubPath: dcae/data
     mountInitPath: dcae
-  pgpool:
-    nameOverride: dcae-pgpool
-    service:
-      name: dcae-pgpool
-    credentials:
-      pgpassword: onapdemodb
-    container:
-      name:
-        primary: dcae-pgpool-primary
-        replica: dcae-pgpool-replica
 
 mongo:
   nameOverride: dcae-mongo
