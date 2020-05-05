@@ -23,6 +23,25 @@ spec:
     spec:
 {{- if or .Values.global.aafEnabled .Values.PG.enabled }}
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: PG_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: PG_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: {{ include "common.name" . }}-config-input
+        - mountPath: /config
+          name: {{ include "common.name" . }}-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
 {{- if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-aaf-readiness
         command:
@@ -155,10 +174,13 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.name" . }}-config
+        - name: {{ include "common.name" . }}-config-input
           configMap:
             name: {{ include "common.fullname" . }}-config
         - name: {{ include "common.name" . }}-aaf-config-vol
           emptyDir: {}
+        - name: {{ include "common.name" . }}-config
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

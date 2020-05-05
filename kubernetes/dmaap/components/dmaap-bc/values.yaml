@@ -22,6 +22,22 @@ global:
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  envsubstImage: dibi/envsubst
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-dmaap-bc-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "dmaap-bc-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-dmaap-bc-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "dmaap-bc-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -114,9 +130,8 @@ postgres:
   config:
     pgUserName: dmaap_admin
     pgDatabase: dmaap
-    pgPrimaryPassword: onapdemodb
-    pgUserPassword: onapdemodb
-    pgRootPassword: onapdemodb
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
   persistence:
     mountSubPath: dbc/data
     mountInitPath: dbc
