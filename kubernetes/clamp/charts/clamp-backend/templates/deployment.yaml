@@ -78,11 +78,17 @@ spec:
             name: {{ include "common.fullname" . }}-config
             subPath: sdc-controllers-config.json
           env:
-            - name: SPRING_APPLICATION_JSON
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: spring_application_json
+          - name: MYSQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: MYSQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: MYSQL_DATABASE
+            value: {{ tpl .Values.db.databaseName .}}
+          - name: SPRING_APPLICATION_JSON
+            valueFrom:
+              configMapKeyRef:
+                name: {{ template "common.fullname" . }}
+                key: spring_application_json
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}

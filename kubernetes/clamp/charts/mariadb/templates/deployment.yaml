@@ -52,19 +52,19 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}
-                  key: db-root-password
+          - name: MYSQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: MYSQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 12 }}
+          - name: MYSQL_DATABASE
+            value: {{ tpl .Values.db.databaseName .}}
           volumeMounts:
-          - mountPath: /docker-entrypoint-initdb.d/bootstrap-database.sh
-            name: docker-entrypoint-initdb
-            subPath: bootstrap-database.sh
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /docker-entrypoint-initdb.d/bulkload/
+          - mountPath: /docker-entrypoint-initdb.d/
             name: docker-entrypoint-bulkload
           - mountPath: /etc/mysql/conf.d/conf1/
             name:  clamp-mariadb-conf
@@ -88,9 +88,6 @@ spec:
       {{- else }}
           emptyDir: {}
       {{- end }}
-        - name: docker-entrypoint-initdb
-          configMap:
-            name: clamp-entrypoint-initdb-configmap
         - name: docker-entrypoint-bulkload
           configMap:
             name: clamp-entrypoint-bulkload-configmap
