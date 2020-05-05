@@ -27,6 +27,15 @@ global:
   tlsRepository: nexus3.onap.org:10001
   tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
 
+secrets:
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-dcae-dashboard-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "dcae-dashboard-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
@@ -81,10 +90,8 @@ postgres:
       replica: dcae-dashboard-pg-replica
   config:
     pgUserName: dashboard_pg_admin
+    pgUserExternalSecret: *pgUserCredsSecretName
     pgDatabase: dashboard_pg_db_common
-    pgPrimaryPassword: onapdemodb
-    pgUserPassword: onapdemodb
-    pgRootPassword: onapdemodb
     pgPort: "5432"
   persistence:
     mountSubPath: dcae-dashboard/data
