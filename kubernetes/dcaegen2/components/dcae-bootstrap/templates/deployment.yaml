@@ -35,6 +35,23 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: PG_ROOT_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-root-pass" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: {{ include "common.fullname" . }}-dcae-inputs-input
+        - mountPath: /config
+          name: {{ include "common.fullname" . }}-dcae-inputs
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
       - name: {{ include "common.name" . }}-readiness
         image: {{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -115,9 +132,12 @@ spec:
             - name: ONAP_NAMESPACE
               value: {{ include "common.namespace" . }}
       volumes:
-        - name: {{ include "common.fullname" . }}-dcae-inputs
+        - name: {{ include "common.fullname" . }}-dcae-inputs-input
           configMap:
             name: {{ include "common.fullname" . }}-dcae-inputs
+        - name: {{ include "common.fullname" . }}-dcae-inputs
+          emptyDir:
+            medium: Memory
         - name: {{ include "common.fullname" . }}-dcae-config
           configMap:
             name: {{ include "common.fullname" . }}-dcae-config
