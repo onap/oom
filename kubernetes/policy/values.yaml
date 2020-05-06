@@ -26,8 +26,14 @@ global:
   ubuntuImage: ubuntu:16.04
   pdp:
     nameOverride: pdp
+    http: &pdphttp
+      userid: testpap
+      password: alpha123
   pap:
     nameOverride: pap
+    http: &paphttp
+      userid: testpap
+      password: alpha123
   drools:
     nameOverride: drools
   brmwgw:
@@ -61,6 +67,20 @@ secrets:
     login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
     password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
     passwordPolicy: generate
+  - uid: pdp-http-creds
+    name: &pdpCredsSecretName '{{ include "common.release" . }}-pdp-http-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.pdpCreds.externalSecret) . }}'
+    login: '{{ .Values.pdpCreds.user }}'
+    password: '{{ .Values.pdpCreds.password }}'
+    passwordPolicy: required
+  - uid: pap-http-creds
+    name: &papCredsSecretName '{{ include "common.release" . }}-pap-http-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.papCreds.externalSecret) . }}'
+    login: '{{ .Values.papCreds.user }}'
+    password: '{{ .Values.papCreds.password }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -77,22 +97,51 @@ subChartsOnly:
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
 
+papCreds:
+  user: healthcheck
+  password: zb!XztG34
+
+pdpCreds:
+  user: healthcheck
+  password: zb!XztG34
+
 pap:
   nameOverride: pap
   db: *dbSecretsHook
+  restServer:
+    credsExternalSecret: *papCredsSecretName
+  healthCheckRestClient:
+    api:
+      credsExternalSecret: *papCredsSecretName
+    distribution:
+      credsExternalSecret: *papCredsSecretName
 pdp:
   nameOverride: pdp
   db: *dbSecretsHook
+  http:
+    externalSecret: *pdpCredsSecretName
+  papHttp:
+    externalSecret: *papCredsSecretName
 drools:
   nameOverride: drools
   db: *dbSecretsHook
 brmsgw:
   nameOverride: brmsgw
   db: *dbSecretsHook
+  pdp:
+    credsExternalSecret: *pdpCredsSecretName
+  pap:
+    credsExternalSecret: *papCredsSecretName
 policy-api:
   db: *dbSecretsHook
+  restServer:
+    credsExternalSecret: *papCredsSecretName
 policy-xacml-pdp:
   db: *dbSecretsHook
+  restServer:
+    credsExternalSecret: *pdpCredsSecretName
+  apiServer:
+    credsExternalSecret: *pdpCredsSecretName
 
 nexus:
   nameOverride: nexus

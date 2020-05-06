@@ -36,17 +36,33 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 *.conf`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
         env:
         - name: JDBC_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: JDBC_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: PAP_PDP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "login") | indent 10 }}
+        - name: PAP_PDP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pdp-http-creds" "key" "password") | indent 10 }}
+        - name: PAP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: PAP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
+        - name: CONSOLE_PAP_HTTP_USER_ID
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "login") | indent 10 }}
+        - name: CONSOLE_PAP_HTTP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pap-http-creds" "key" "password") | indent 10 }}
         volumeMounts:
-        - mountPath: /config-input
+        - mountPath: /config-input/pe
+          name: pe-input
+        - mountPath: /config-input/pe-pap
+          name: pe-pap-input
+        - mountPath: /config/pe
           name: pe
-        - mountPath: /config
-          name: pe-processed
+        - mountPath: /config/pe-pap
+          name: pe-pap
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
@@ -115,7 +131,7 @@ spec:
             name: pe-pap
             subPath: console.conf
           - mountPath: /tmp/policy-install/config/base.conf
-            name: pe-processed
+            name: pe
             subPath: base.conf
           - mountPath: /tmp/policy-install/do-start.sh
             name: pe-scripts
@@ -160,7 +176,7 @@ spec:
         - name: policy-sdk-logback
           configMap:
             name: {{ include "common.fullname" . }}-sdk-log-configmap
-        - name: pe
+        - name: pe-input
           configMap:
             name: {{ include "common.release" . }}-pe-configmap
             defaultMode: 0755
@@ -168,11 +184,14 @@ spec:
           configMap:
             name: {{ include "common.release" . }}-pe-scripts-configmap
             defaultMode: 0777
-        - name: pe-pap
+        - name: pe-pap-input
           configMap:
             name: {{ include "common.fullname" . }}-pe-configmap
             defaultMode: 0755
-        - name: pe-processed
+        - name: pe
+          emptyDir:
+            medium: Memory
+        - name: pe-pap
           emptyDir:
             medium: Memory
       imagePullSecrets:
