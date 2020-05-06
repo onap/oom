@@ -65,6 +65,19 @@ spec:
         volumeMounts:
             - mountPath: /opt/app/osaaf
               name: tls-info
+      {{- if .Values.persistence.enabled }}
+      - name: remove-lost-found
+        image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /cfy-persist
+          name: cm-persistent
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - "rm -rf '/cfy-persist/lost+found';"
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
