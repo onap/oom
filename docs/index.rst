@@ -16,3 +16,4 @@ OOM Documentation Repository
   oom_cloud_setup_guide.rst
   release-notes.rst
   oom_setup_kubernetes_rancher.rst
+  oom_setup_ingress_controller.rst
