@@ -1,0 +1,140 @@
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada, AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-dbinit-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-job
+        release: {{ include "common.release" . }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: SDNC_DB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SDNC_DB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: properties
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ include "common.mariadbService" . }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
+          - name: SDNC_DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SDNC_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: MYSQL_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: SDNC_HOME
+            value: "{{.Values.config.sdncHome}}"
+          - name: SDNC_DB_DATABASE
+            value: "{{.Values.config.dbSdnctlDatabase}}"
+        volumeMounts:
+          - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+            name: bin
+            subPath: installSdncDb.sh
+          - mountPath: {{ .Values.config.configDir }}/application.properties
+            name: properties
+            subPath: application.properties
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/config/schema.sql
+            name: properties
+            subPath: schema.sql
+        command:
+          - /bin/bash
+        args:
+          - {{.Values.config.binDir }}/installSdncDb.sh
+        resources:
+{{ include "common.resources" . | indent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: docker-entrypoint-initdb-d
+        emptyDir: {}
+      - name: bin
+        configMap:
+          name: {{ include "common.fullname" . }}-bin
+          defaultMode: 0755
+      - name: config-input
+        configMap:
+          name: {{ include "common.fullname" . }}-properties
+          defaultMode: 0644
+      - name: properties
+        emptyDir:
+          medium: Memory
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
