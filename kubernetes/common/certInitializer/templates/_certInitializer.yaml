@@ -1,0 +1,152 @@
+{{/*
+# Copyright © 2020 Samsung Electronics
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+
+
+{{- define "common.certInitializer._aafConfigVolumeName" -}}
+  {{ include "common.fullname" . }}-aaf-config
+{{- end -}}
+
+{{- define "common.certInitializer._aafAddConfigVolumeName" -}}
+  {{ print "aaf-add-config" }}
+{{- end -}}
+
+{{/*
+  common templates to enable cert initialization for applictaions
+
+  In deployments/jobs/stateful include:
+  initContainers:
+    {{ include "common.certInitializer.initContainer" . | nindent XX }}
+
+  containers:
+    volumeMounts:
+      {{- include "common.certInitializer.volumeMount" . | nindent XX }}
+    volumes:
+      {{- include "common.certInitializer.volume" . | nindent XX}}
+*/}}
+{{- define "common.certInitializer._initContainer" -}}
+{{-   $dot := default . .dot -}}
+{{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
+{{-   $initName := default "certInitializer" -}}
+{{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
+{{- $subchartDot := mergeOverwrite (fromJson (toJson $dot)) (dict "Chart" (set (fromJson (toJson .Chart)) "Name" $initRoot.nameOverride) "Values" $initRoot) }}
+- name: {{ include "common.name" $dot }}-aaf-readiness
+  image: "{{ $dot.Values.global.readinessRepository }}/{{ $dot.Values.global.readinessImage }}"
+  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  command:
+  - /root/ready.py
+  args:
+  - --container-name
+  - aaf-locate
+  - --container-name
+  - aaf-cm
+  - --container-name
+  - aaf-service
+  env:
+  - name: NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace
+- name: {{ include "common.name" $dot }}-aaf-config
+  image: {{ (default $dot.Values.repository $dot.Values.global.repository) }}/{{ $dot.Values.global.aafAgentImage }}
+  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  volumeMounts:
+  - mountPath: {{ $initRoot.mountPath }}
+    name: {{ include "common.certInitializer._aafConfigVolumeName" $dot }}
+{{-     if $initRoot.aaf_add_config }}
+  - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
+    mountPath: /opt/app/aaf_config/bin/aaf-add-config.sh
+    subPath: aaf-add-config.sh
+{{-     end }}
+  command:
+    - sh
+    - -c
+    - |
+      #!/usr/bin/env bash
+      /opt/app/aaf_config/bin/agent.sh
+{{-     if $initRoot.aaf_add_config }}
+      /opt/app/aaf_config/bin/aaf-add-config.sh
+{{-     end }}
+  env:
+    - name: APP_FQI
+      value: "{{ $initRoot.fqi }}"
+    - name: aaf_locate_url
+      value: "https://aaf-locate.{{ $dot.Release.Namespace}}:8095"
+    - name: aaf_locator_container
+      value: "oom"
+    - name: aaf_locator_container_ns
+      value: "{{ $dot.Release.Namespace }}"
+    - name: aaf_locator_fqdn
+      value: "{{ $initRoot.fqdn }}"
+    - name: aaf_locator_app_ns
+      value: "{{ $initRoot.app_ns }}"
+    - name: DEPLOY_FQI
+    {{- include "common.secret.envFromSecretFast" (dict "global" $subchartDot "uid" "deployer-creds" "key" "login") | indent 6 }}
+    - name: DEPLOY_PASSWORD
+    {{- include "common.secret.envFromSecretFast" (dict "global" $subchartDot "uid" "deployer-creds" "key" "password") | indent 6 }}
+  #Note: want to put this on Nodes, eventually
+    - name: cadi_longitude
+      value: "{{ default "52.3" $initRoot.cadi_longitude }}"
+    - name: cadi_latitude
+      value: "{{ default "13.2" $initRoot.cadi_latitude }}"
+  #Hello specific.  Clients don't don't need this, unless Registering with AAF Locator
+    - name: aaf_locator_public_fqdn
+      value: "{{ $initRoot.public_fqdn | default "" }}"
+{{- end -}}
+
+{{- define "common.certInitializer._volumeMount" -}}
+{{-   $dot := default . .dot -}}
+{{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
+- mountPath: {{ $initRoot.mountPath }}
+  name: {{ include "common.certInitializer._aafConfigVolumeName" $dot }}
+{{- end -}}
+
+{{- define "common.certInitializer._volumes" -}}
+{{-   $dot := default . .dot -}}
+{{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
+{{- $subchartDot := mergeOverwrite (fromJson (toJson $dot)) (dict "Chart" (set (fromJson (toJson .Chart)) "Name" $initRoot.nameOverride) "Values" $initRoot) }}
+- name: {{ include "common.certInitializer._aafConfigVolumeName" $dot }}
+  emptyDir:
+    medium: Memory
+{{-     if $initRoot.aaf_add_config }}
+- name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
+  configMap:
+    name: {{ include "common.fullname" $subchartDot }}-add-config
+    defaultMode: 0700
+{{-     end -}}
+{{- end -}}
+
+{{- define "common.certInitializer.initContainer" -}}
+{{-   $dot := default . .dot -}}
+  {{- if $dot.Values.global.aafEnabled }}
+    {{ include "common.certInitializer._initContainer" . }}
+  {{- end -}}
+{{- end -}}
+
+{{- define "common.certInitializer.volumeMount" -}}
+{{-   $dot := default . .dot -}}
+  {{- if $dot.Values.global.aafEnabled }}
+    {{- include "common.certInitializer._volumeMount" . }}
+  {{- end -}}
+{{- end -}}
+
+{{- define "common.certInitializer.volumes" -}}
+{{-   $dot := default . .dot -}}
+  {{- if $dot.Values.global.aafEnabled }}
+    {{- include "common.certInitializer._volumes" . }}
+  {{- end -}}
+{{- end -}}

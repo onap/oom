@@ -33,7 +33,7 @@ spec:
       name: {{ include "common.fullname" . }}
     spec:
 {{- if .Values.global.aafEnabled }}
-      initContainers: {{ include "common.aaf-config" . | nindent 6 }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}
@@ -49,11 +49,11 @@ spec:
           args:
           - -c
           - |
-            export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0)
+            export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
             export JAVA_OPTS="-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
-              -Dserver.ssl.key-store={{ .Values.aafConfig.credsPath }}/org.onap.nbi.p12 \
+              -Dserver.ssl.key-store={{ .Values.certInitializer.credsPath }}/org.onap.nbi.p12 \
               -Dserver.ssl.key-store-type=PKCS12 \
-              -Djavax.net.ssl.trustStore={{ .Values.aafConfig.credsPath }}/org.onap.nbi.trust.jks \
+              -Djavax.net.ssl.trustStore={{ .Values.certInitializer.credsPath }}/org.onap.nbi.trust.jks \
               -Dserver.ssl.key-store-password=$cadi_keystore_password_p12  \
               -Djavax.net.ssl.trustStoreType=jks\
               -Djava.security.egd=file:/dev/./urandom -Dserver.port=8443"
@@ -122,7 +122,7 @@ spec:
               value: "msb-discovery.{{ include "common.namespace" . }}"
             - name: MSB_DISCOVERY_PORT
               value: "10081"
-          volumeMounts: {{ include "common.aaf-config-volume-mountpath" . | nindent 12 }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 12 }}
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
@@ -148,7 +148,7 @@ spec:
         #     name: esr-server-logs
         #   - mountPath: /usr/share/filebeat/data
         #     name: esr-server-filebeat
-      volumes: {{ include "common.aaf-config-volumes" . | nindent 8 }}
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
