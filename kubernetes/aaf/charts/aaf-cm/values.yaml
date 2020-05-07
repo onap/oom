@@ -19,6 +19,13 @@ flavor: small
 # Application configuration defaults.
 #################################################################
 # application image
+replicaCount: 1
+
+binary: cm
+
+sequence_order:
+  - service
+  - locate
 
 nodeSelector: {}
 
@@ -26,24 +33,25 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 30
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: api
 
 readiness:
   initialDelaySeconds: 5
   periodSeconds: 10
+  port: api
 
 service:
   name: aaf-cm
   type: ClusterIP
-  portName: aaf-cm
-  #targetPort
-  internalPort: 8150
-  #port
-  externalPort: 8150
+  ports:
+    - name: api
+      protocol: http
+      port: 8150
 
 ingress:
   enabled: false
@@ -56,18 +64,18 @@ ingress:
 
 # Configure resource requests and limits
 resources:
- small:
-   limits:
-     cpu: 400m
-     memory: 300Mi
-   requests:
-     cpu: 1m
-     memory: 200Mi
- large:
-   limits:
-     cpu: 400m
-     memory: 1Gi
-   requests:
-     cpu: 40m
-     memory: 600Mi
- unlimited: {}
+  small:
+    limits:
+      cpu: 400m
+      memory: 300Mi
+    requests:
+      cpu: 1m
+      memory: 200Mi
+  large:
+    limits:
+      cpu: 400m
+      memory: 1Gi
+    requests:
+      cpu: 40m
+      memory: 600Mi
+  unlimited: {}
