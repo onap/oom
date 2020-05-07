@@ -193,6 +193,10 @@ All override files may be customized (or replaced by other overrides) as per nee
 `onap-all.yaml`
   Enables the modules in the ONAP deployment. As ONAP is very modular, it is possible to customize ONAP and disable some components through this configuration file.
 
+`onap-all-ingress-nginx-vhost.yaml`
+  Alternative version of the `onap-all.yaml` but with global ingress controller enabled. It requires the cluster configured with the nginx ingress controller and load balancer.
+  Please use this file instad `onap-all.yaml` if you want to use experimental ingress controller feature.
+
 `environment.yaml`
   Includes configuration values specific to the deployment environment.
 
