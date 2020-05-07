@@ -1,0 +1,238 @@
+# Copyright © 2020 Samsung Electronics
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  repository: nexus3.onap.org:10001
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  aafAgentImage: onap/aaf/aaf_agent:2.1.15
+  persistence:
+    mountPath: /dockerdata-nfs
+  aafEnabled: true
+  # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-root-password
+    type: password
+    externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
+      ternary (default (include "common.mariadb.secret.rootPassSecretName"
+      (dict "dot" . "chartName"
+      (index .Values "mariadb-galera" "nameOverride")))
+      (index .Values "mariadb-galera" "config"
+      "mariadbRootPasswordExternalSecret"))
+      (include "common.mariadb.secret.rootPassSecretName"
+      (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+    password: '{{ index .Values "mariadb-galera" "config" "mariadbRootPassword" }}'
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-sdnc-sliboot-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+  - uid: &aaf_secret_uid aaf-creds
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aaf_init.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aaf_init.deploy_fqi }}'
+    password: '{{ .Values.aaf_init.deploy_pass }}'
+    passwordPolicy: required
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application images
+repository: nexus3.onap.org:10001
+pullPolicy: Always
+image: onap/ccsdk-sliboot-alpine-image:latest
+
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+config:
+  sliUid: 100
+  sliGid: 101
+  sdnsbUser: admin
+  sdnsbPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  dbSdnctlDatabase: sdnctlsli
+  enableClustering: true
+  sdncHome: /opt/onap/sdnc
+  binDir: /opt/onap/sdnc/bin
+  configDir: /opt/onap/sdnc/config
+  svclogicProps: /opt/onap/sdnc/config/svclogic.properties
+  logstashServiceName: log-ls
+  logstashPort: 5044
+  javaHome: /usr/lib/jvm/java-1.8-openjdk
+
+# dependency / sub-chart configuration
+aafConfig:
+  addconfig: true
+  fqdn: "sdnc"
+  app_ns: "org.osaaf.aaf"
+  fqi: "sdnc@sdnc.onap.org"
+  fqi_namespace: org.onap.sdnc
+  public_fqdn: "sdnc.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  secret_uid: *aaf_secret_uid
+  credsPath: /opt/app/osaaf/local
+
+aaf_init:
+  agentImage: onap/aaf/aaf_agent:2.1.15
+  app_ns: "org.osaaf.aaf"
+  fqi: "sdnc@sdnc.onap.org"
+  fqdn: "sdnc"
+  public_fqdn: "sdnc.onap.org"
+  deploy_fqi: "deployer@people.osaaf.org"
+  deploy_pass: "demo123456!"
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+
+mariadb-galera:
+  config:
+    nameOverride: sdnc-sliboot-dbgalera
+    rootPasswordExternalSecret: '{{ ternary (include "common.release" .)-sdnc-db-root-password "" .Values.global.mariadbGalera.localCluster }}'
+    userName: sdnctl
+    #userPassword: gamma
+    userCredentialsExternalSecret: *dbSecretName
+    mysqlDatabase: sdnctl
+  service:
+    name: sdnc-sliboot-dbgalera
+    portName: sdnc-sliboot-dbgalera
+    internalPort: 3306
+  sdnctlPrefix: sdnc
+  persistence:
+    mountSubPath: sdnc-sliboot/mariadb-galera
+    enabled: true
+  replicaCount: 1
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  name: sdnc-sliboot
+  portName: sdnc-sliboot
+  internalPort: 8081
+  externalPort: 8082
+  internalPort4: 8443
+  externalPort4: 8443
+  nodePort4: "02"
+
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+  volumeReclaimPolicy: Retain
+
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sdnc-sliboot/tbd
+  mdsalPath: /opt/tbd
+
+certpersistence:
+  enabled: true
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 50Mi
+  mountPath: /dockerdata-nfs
+  mountSubPath: sdnc-sliboot/certs
+  certPath: /opt/app/osaaf
+  ##storageClass: "manual"
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "sdnc-sliboot.api"
+      name: "sdnc-sliboot"
+      port: 8443
+  config:
+    ssl: "redirect"
+
+#Resource Limit flavor -By Default using small
+flavor: small
+#segregation for different envionment (Small and Large)
+
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  unlimited: {}
