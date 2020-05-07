@@ -1,0 +1,49 @@
+filebeat.prospectors:
+#it is mandatory, in our case it's log
+- input_type: log
+  #This is the canolical path as mentioned in logback.xml, *.* means it will monitor all files in the directory.
+  paths:
+    - /var/log/onap/*/*/*/*.log
+    - /var/log/onap/*/*/*.log
+    - /var/log/onap/*/*.log
+
+  # The below commented properties are for time-based rolling policy. But as the log4j 1.2x does not support time-based rolling these properties are not set
+  #Files older than this should be ignored.In our case it will be 48 hours i.e. 2 days. It is a helping flag for clean_inactive
+  #ignore_older: 48h
+  # Remove the registry entry for a file that is more than the specified time. In our case it will be 96 hours, i.e. 4 days. It will help to keep registry records with in limit
+  #clean_inactive: 96h
+
+  #Multiline properties for log4j xml log events
+  multiline.pattern: '</log4j:event>'
+  multiline.negate: true
+  multiline.match: before
+  #multiline.max_lines: 500
+  #multiline.timeout: 5s
+
+# Name of the registry file. If a relative path is used, it is considered relative to the
+# data path. Else full qualified file name.
+#filebeat.registry_file: ${path.data}/registry
+
+
+output.logstash:
+  #List of logstash server ip addresses with port number.
+  #But, in our case, this will be the loadbalancer IP address.
+  #For the below property to work the loadbalancer or logstash should expose 5044 port to listen the filebeat events or port in the property should be changed appropriately.
+  hosts: ["{{.Values.config.logstashServiceName}}.{{.Release.Namespace}}:{{.Values.config.logstashPort}}"]
+  #If enable will do load balancing among availabe Logstash, automatically.
+  loadbalance: true
+
+  #The list of root certificates for server verifications.
+  #If certificate_authorities is empty or not set, the trusted
+  #certificate authorities of the host system are used.
+  #ssl.certificate_authorities: $ssl.certificate_authorities
+
+  #The path to the certificate for SSL client authentication. If the certificate is not specified,
+  #client authentication is not available.
+  #ssl.certificate: $ssl.certificate
+
+  #The client certificate key used for client authentication.
+  #ssl.key: $ssl.key
+
+  #The passphrase used to decrypt an encrypted key stored in the configured key file
+  #ssl.key_passphrase: $ssl.key_passphrase

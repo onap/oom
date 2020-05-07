@@ -1,0 +1,243 @@
+{{/*
+# Copyright © 2020 Samsung Electronics
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ include "common.servicename" . }}-cluster
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: SDNC_DB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SDNC_DB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: properties
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - {{ include "common.mariadbService" . }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      {{ if .Values.global.aafEnabled }}
+      - name: {{ include "common.name" . }}-aaf-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - aaf-locate
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-aaf
+        image: {{ .Values.global.repository }}/{{ .Values.aaf_init.agentImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
+        command:
+        - bash
+        - -c
+        - |
+          /opt/app/aaf_config/bin/agent.sh &&
+          cd /opt/app/osaaf/local &&
+          /opt/app/aaf_config/bin/agent.sh local showpass | grep cadi_keystore_password= | cut -d= -f 2 > /opt/app/osaaf/local/.pass 2>&1
+        env:
+          - name: APP_FQI
+            value: "{{ .Values.aaf_init.fqi }}"
+          - name: aaf_locate_url
+            value: "https://aaf-locate.{{ .Release.Namespace}}:8095"
+          - name: aaf_locator_container
+            value: "oom"
+          - name: aaf_locator_container_ns
+            value: "{{ .Release.Namespace }}"
+          - name: aaf_locator_fqdn
+            value: "{{ .Values.aaf_init.fqdn }}"
+          - name: aaf_locator_app_ns
+            value: "{{ .Values.aaf_init.app_ns }}"
+          - name: DEPLOY_FQI
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "login") | indent 12 }}
+          - name: DEPLOY_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-creds" "key" "password") | indent 12 }}
+          - name: cadi_longitude
+            value: "{{ .Values.aaf_init.cadi_longitude }}"
+          - name: cadi_latitude
+            value: "{{ .Values.aaf_init.cadi_latitude }}"
+      {{ end }}
+      - name: {{ include "common.name" . }}-chown
+        image: "busybox"
+        command: ["sh", "-c", "chown -R {{ .Values.config.sliUid }}:{{ .Values.config.sliGid}} {{ .Values.certpersistence.certPath }}"]
+        volumeMounts:
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "/opt/onap/sdnc/bin/startSliboot.sh"]
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort4 }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort4 }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
+          - name: SDNC_DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SDNC_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SDNC_CONFIG_DIR
+            value: "{{ .Values.config.configDir }}"
+          - name: SDNC_AAF_ENABLED
+            value: "{{ .Values.global.aafEnabled}}"
+          - name: SDNC_REPLICAS
+            value: "{{ .Values.replicaCount }}"
+          - name: MYSQL_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: JAVA_HOME
+            value: "{{ .Values.config.javaHome}}"
+          - name: SVCLOGIC_PROPERTIES
+            value: "{{ .Values.config.svclogicProps}}"
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath:  {{ .Values.config.configDir }}/log4j2.properties
+            name: properties
+            subPath: log4j2.properties
+          - mountPath: {{ .Values.config.binDir }}/startSliboot.sh
+            name: bin
+            subPath: startSliboot.sh
+          - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
+            name: bin
+            subPath: installSdncDb.sh
+          - mountPath: {{ .Values.config.configDir }}/application.properties
+            name: properties
+            subPath: application.properties
+          - mountPath: {{ .Values.config.configDir }}/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
+            name: properties
+            subPath: svclogic.properties
+          - mountPath: /var/log/onap
+            name: logs
+          - mountPath: {{ .Values.certpersistence.certPath }}
+            name: {{ include "common.fullname" . }}-certs
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+
+        # side car containers
+        - name: filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - mountPath: /usr/share/filebeat/filebeat.yml
+            name: filebeat-conf
+            subPath: filebeat.yml
+          - mountPath: /var/log/onap
+            name: logs
+          - mountPath: /usr/share/filebeat/data
+            name: data-filebeat
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: logs
+          emptyDir: {}
+        - name: data-filebeat
+          emptyDir: {}
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-filebeat-configmap
+        - name: sdnc-logging-cfg-config
+          configMap:
+            name: {{ include "common.fullname" . }}-log-configmap
+        - name: bin
+          configMap:
+            name: {{ include "common.fullname" . }}-bin
+            defaultMode: 0755
+        - name: config-input
+          configMap:
+            name: {{ include "common.fullname" . }}-properties
+            defaultMode: 0644
+        - name: properties
+          emptyDir:
+            medium: Memory
+        - name: {{ include "common.fullname" . }}-certs
+  {{ if .Values.certpersistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-certs
+  {{ else }}
+          emptyDir: {}
+  {{ end }}
