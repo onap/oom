@@ -25,7 +25,7 @@ global:
 #################################################################
 secrets:
   - uid: dmaap-dr-db-user-secret
-    name: '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
+    name: &dbSecretName '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.dmaapDrDb.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.dmaapDrDb.userName }}'
@@ -69,10 +69,6 @@ persistence:
   accessMode: ReadWriteOnce
   mountPath: /dockerdata-nfs
 
-  aafCredsMountSubPath: data-router/dr-prov/aaf-props
-  aafCredsSize: 10M
-  aafCredsPath: /opt/app/osaaf/local
-
 ingress:
   enabled: false
   service:
@@ -111,7 +107,7 @@ mariadb:
   nameOverride: dmaap-dr-db
   replicaCount: 2
   config:
-    userCredentialsExternalSecret: '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
+    userCredentialsExternalSecret: *dbSecretName
     mysqlDatabase: datarouter
   service:
     name: dmaap-dr-db-svc
@@ -122,15 +118,22 @@ mariadb:
     mountSubPath: data-router/dr-db-data
   disableNfsProvisioner: true
 
-#AAF local config
-aafConfig:
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: dmaap-dr-prov-cert-initializer
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
+# aafDeployCredsExternalSecret: some secret
   fqdn: dmaap-dr-prov
   fqi: dmaap-dr-prov@dmaap-dr.onap.org
   publicFqdn: dmaap-dr.onap.org
   cadiLatitude: 0.0
   cadiLongitude: 0.0
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+
 
 # Resource Limit flavor -By Default using small
 flavor: small
