@@ -78,7 +78,7 @@ update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7ML
 /*
 Replace spaces with underscores for role names to match AAF role names
 */
-UPDATE fn_role SET role_name= REPLACE(role_name, ' ', '_') WHERE active_yn= 'Y';
+UPDATE fn_role SET role_name= REPLACE(role_name, ' ', '_') WHERE active_yn= 'Y' AND role_id NOT IN (999);
 
 
 /*
