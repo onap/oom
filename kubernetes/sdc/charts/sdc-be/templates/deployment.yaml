@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -126,10 +126,13 @@ spec:
           - name: {{ include "common.fullname" . }}-logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: {{ include "common.fullname" . }}-configuration
+            mountPath: /tmp/configuration.yaml
+            subPath: configuration.yaml
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; export SRC=/tmp/configuration.yaml; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
@@ -165,5 +168,9 @@ spec:
         emptyDir: { medium: "Memory" }
       - name: {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name: {{ include "common.fullname" . }}-configuration
+        configMap:
+          name: {{ include "common.fullname" . }}-configuration-configmap
+          defaultMode: 0755
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
