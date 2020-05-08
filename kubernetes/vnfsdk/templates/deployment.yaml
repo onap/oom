@@ -35,6 +35,25 @@ spec:
     spec:
       initContainers:
       - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: PG_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: PG_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: init-data-input
+        - mountPath: /config
+          name: init-data
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
         - /root/ready.py
         args:
         - --container-name
@@ -54,9 +73,10 @@ spec:
         name: {{ include "common.name" . }}
         resources:
 {{ include "common.resources" . | indent 12 }}
-        env:
-        - name: POSTGRES_SERVICE_HOST
-          value: "$(VNFSDK_DBSET_SERVICE_HOST)"
+        volumes:
+        - mountPath: /service/webapps/ROOT/WEB-INF/classes/mybatis/configuration/configuration.xml
+          name: init-data
+          subPath: configuration.xml
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -64,3 +84,10 @@ spec:
           periodSeconds: {{ .Values.readiness.periodSeconds }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      volumes:
+      - name: init-data-input
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: init-data
+        emptyDir:
+          medium: Memory
