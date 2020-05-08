@@ -35,7 +35,7 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "export SQL_PASSWORD_BASE64=`echo -n ${SQL_PASSWORD} | base64`; cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
         - name: RESTSERVER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
@@ -45,6 +45,10 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "login") | indent 10 }}
         - name: API_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "password") | indent 10 }}
+        - name: SQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input
           name: pdpxconfig
@@ -59,11 +63,6 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/opt/app/policy/pdpx/bin/policy-pdpx.sh"]
           args: ["/opt/app/policy/pdpx/etc/mounted/config.json"]
-          env:
-          - name: SQL_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
-          - name: SQL_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
