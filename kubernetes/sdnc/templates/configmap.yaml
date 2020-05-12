@@ -78,16 +78,3 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
 {{ tpl (.Files.Get "resources/env.yaml") . | indent 2 }}
-
-{{ if .Values.global.aafEnabled }}
-{{- if .Values.aafConfig.addconfig -}}
----
-apiVersion: v1
-kind: ConfigMap
-{{- $suffix := "aaf-add-config" }}
-metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
-data:
-  aaf-add-config.sh: |-
-    cd /opt/app/osaaf/local && /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.aafConfig.fqi}} {{ .Values.aafConfig.fqdn }} | grep cadi_keystore_password= | cut -d= -f 2 > {{ .Values.aafConfig.credsPath }}/.pass 2>&1
-{{- end -}}
-{{- end -}}
