@@ -28,9 +28,9 @@ endif
 
 SUBMODS := robot aai
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(SUBMODS) $(PARENT_CHART)
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS) $(SUBMODS)
+.PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) plugins
 
