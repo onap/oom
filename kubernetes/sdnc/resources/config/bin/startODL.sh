@@ -123,6 +123,7 @@ ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 GEO_ENABLED=${GEO_ENABLED:-false}
 SDNC_AAF_ENABLED=${SDNC_AAF_ENABLED:-false}
 SDNRWT=${SDNRWT:-false}
+SDNR_A1_ADAPTER=${SDNR_A1_ADAPTER}
 SDNRWT_BOOTFEATURES=${SDNRWT_BOOTFEATURES:-sdnr-wt-feature-aggregator}
 export ODL_ADMIN_PASSWORD ODL_ADMIN_USERNAME
 
@@ -130,6 +131,7 @@ echo "Settings:"
 echo "  ENABLE_ODL_CLUSTER=$ENABLE_ODL_CLUSTER"
 echo "  SDNC_REPLICAS=$SDNC_REPLICAS"
 echo "  SDNRWT=$SDNRWT"
+echo "  SDNR_A1_ADAPTER=$SDNR_A1_ADAPTER"
 echo "  AAF_ENABLED=$SDNC_AAF_ENABLED"
 
 
@@ -158,7 +160,12 @@ then
 
 	if $SDNRWT ; then install_sdnrwt_features ; fi
 
-        echo "Installed at `date`" > ${SDNC_HOME}/.installed
+	if [ "$SDNR_A1_ADAPTER" != "" ]
+	then
+	  addToFeatureBoot $SDNR_A1_ADAPTER
+	fi
+
+  echo "Installed at `date`" > ${SDNC_HOME}/.installed
 fi
 
 cp /opt/opendaylight/current/certs/* /tmp
