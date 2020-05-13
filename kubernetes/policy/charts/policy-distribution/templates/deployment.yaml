@@ -16,6 +16,37 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: RESTSERVER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
+        - name: RESTSERVER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
+        - name: API_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "apiparameters-creds" "key" "login") | indent 10 }}
+        - name: API_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "apiparameters-creds" "key" "password") | indent 10 }}
+        - name: PAP_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "papparameters-creds" "key" "login") | indent 10 }}
+        - name: PAP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "papparameters-creds" "key" "password") | indent 10 }}
+        - name: SDCBE_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdcbe-creds" "key" "login") | indent 10 }}
+        - name: SDCBE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdcbe-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: distributionconfig-input
+        - mountPath: /config
+          name: distributionconfig
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -58,9 +89,12 @@ spec:
         - name: localtime
           hostPath:
              path: /etc/localtime
-        - name: distributionconfig
+        - name: distributionconfig-input
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
+        - name: distributionconfig
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
