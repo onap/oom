@@ -31,6 +31,27 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1001
+        fsGroup: 1001
+      initContainers:
+      - command:
+        - cp
+        args:
+        - -r
+        - -T
+        - /home/esr/conf
+        - /opt/conf
+        securityContext:
+          privileged: true
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: create-conf-dir
+        volumeMounts:
+        - name: conf-dir
+          mountPath: /opt/conf
+
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -60,6 +81,8 @@ spec:
             readOnly: true
           - mountPath: /home/esr/works/logs
             name: {{ include "common.fullname" . }}-logs
+          - mountPath: /home/esr/conf
+            name: conf-dir
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -72,6 +95,9 @@ spec:
         {{- end }}
         # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
@@ -99,5 +125,8 @@ spec:
           emptyDir: {}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        - name: conf-dir
+          emptyDir: {}
+
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
