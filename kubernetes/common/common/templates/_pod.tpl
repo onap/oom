@@ -47,3 +47,13 @@
 {{-     end }}
 {{-   end }}
 {{- end -}}
+
+{{/*
+   Generate securityContext for pod
+*/}}
+{{- define "common.securityContext" -}}
+securityContext:
+  runAsUser: {{ .Values.securityContext.user_id }}
+  runAsGroup: {{ .Values.securityContext.group_id }}
+  fsGroup: {{ .Values.securityContext.group_id }}
+{{- end }}
