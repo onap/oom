@@ -151,9 +151,6 @@ deploy() {
   # clear previously cached charts
   rm -rf $CACHE_DIR
 
-  # create log driectory
-  mkdir -p $LOG_DIR
-
   # fetch umbrella chart (parent chart containing subcharts)
   if [[ -d "$CHART_URL" ]]; then
     mkdir -p $CHART_DIR
@@ -168,6 +165,9 @@ deploy() {
     echo "fetching $CHART_URL"
     helm fetch $CHART_URL --untar --untardir $CACHE_DIR $VERSION
   fi
+
+  # create log driectory
+  mkdir -p $LOG_DIR
 
   # move out subcharts to process separately
   mkdir -p $CACHE_SUBCHART_DIR
