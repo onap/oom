@@ -13,153 +13,114 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
+
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim}}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       initContainers:
-      - command:
-        - /root/job_complete.py
-        args:
-        - --job-name
-        - {{ include "common.fullname" . }}-galera-config
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for.deployment ) | indent 6 | trim }}
+      {{ include "common.certInitializer.initContainer" . | nindent 6 | trim }}
       containers:
-        - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
-            - name: ASDC_CLIENT_REST_HOST
-              value: sdc-be.{{ include "common.namespace" . }}
-            - name: ASDC_CLIENT_REST_AUTH
-              value: "{{ .Values.config.asdcclientrestauth }}"
-            - name: ASDC_CLIENT_REST_PORT
-              value: "{{ .Values.config.asdcclientrestport }}"
-            - name: ASDC_CLIENT_REST_PROTOCOL
-              value: "https"
-            - name: VID_AAI_URL
-              value: https://aai.{{ include "common.namespace" . }}:{{ .Values.config.vidaaiport }}
-            - name: VID_ECOMP_SHARED_CONTEXT_REST_URL
-              value: http://portal-app.{{ include "common.namespace" . }}:{{ .Values.config.onapport }}/ONAPPORTAL/context
-            - name: VID_MSO_SERVER_URL
-              value: http://so.{{ include "common.namespace" . }}:{{ .Values.config.msoport }}/onap/so/infra
-            - name: VID_MSO_PASS
-              value: "{{ .Values.config.vidmsopass }}"
-            - name: MSO_DME2_SERVER_URL
-              value: "{{ .Values.config.msodme2serverurl }}"
-            - name: MSO_DME2_ENABLED
-              value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
-            - name: VID_ECOMP_REDIRECT_URL
-              value: https://{{ .Values.config.portalhost }}:{{ .Values.config.onapport }}/ONAPPORTAL/login.htm
-            - name: VID_ECOMP_REST_URL
-              value: https://portal-app:{{ .Values.config.onapportrest }}/ONAPPORTAL/auxapi
-            - name: VID_ROLE_ACCESS_CENTRALIZED
-              value: "{{ .Values.config.roleaccesscentralized }}"
-            - name: VID_CONTACT_US_LINK
-              value: "{{ .Values.config.vidcontactuslink }}"
-            - name: VID_KEYSTORE_PASSWORD
-              value: {{ .Values.config.vidkeystorepassword | quote }}
-            - name: VID_UEB_URL_LIST
-              value: message-router.{{ include "common.namespace" . }}
-            - name: VID_MYSQL_HOST
-              value: {{ index .Values "mariadb-galera" "service" "name" }}
-            - name: VID_MYSQL_PORT
-              value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
-            - name: VID_MYSQL_DBNAME
-              value: {{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
-            - name: VID_MYSQL_USER
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "login") | indent 14 }}
-            - name: VID_MYSQL_PASS
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 14 }}
-            - name: VID_MYSQL_MAXCONNECTIONS
-              value: "{{ .Values.config.vidmysqlmaxconnections }}"
-          volumeMounts:
-          - mountPath: /opt/app/vid/etc
-            name: vid-certs
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: true
-          - mountPath: /var/log/onap
-            name: vid-logs
-          - mountPath: /tmp/logback.xml
-            name: vid-logback
-            subPath: logback.xml
-          resources:
-{{ include "common.resources" . | indent 12 }}
-        {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
-        {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
-        {{- end }}
-      # side car containers
-        - name: filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - mountPath: /usr/share/filebeat/filebeat.yml
-            name: filebeat-conf
-            subPath: filebeat.yml
-          - mountPath: /var/log/onap
-            name: vid-logs
-          - mountPath: /usr/share/filebeat/data
-            name: vid-data-filebeat
-      volumes:
-        - name: vid-certs
-          secret:
-            secretName: {{ include "common.fullname" . }}-certs
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-        - name: filebeat-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-filebeat-configmap
-        - name: vid-logs
-          emptyDir: {}
-        - name: vid-data-filebeat
-          emptyDir: {}
-        - name: vid-logback
-          configMap:
-            name: {{ include "common.fullname" . }}-log-configmap
+      - name: {{ include "common.name" . }}
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{ include "common.containerPorts" . | nindent 8  }}
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.liveness.port }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.readiness.port }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        env:
+        - name: ASDC_CLIENT_REST_HOST
+          value: sdc-be.{{ include "common.namespace" . }}
+        - name: ASDC_CLIENT_REST_AUTH
+          value: "{{ .Values.config.asdcclientrestauth }}"
+        - name: ASDC_CLIENT_REST_PORT
+          value: "{{ .Values.config.asdcclientrestport }}"
+        - name: ASDC_CLIENT_REST_PROTOCOL
+          value: "https"
+        - name: VID_AAI_URL
+          value: https://aai.{{ include "common.namespace" . }}:{{ .Values.config.vidaaiport }}
+        - name: VID_ECOMP_SHARED_CONTEXT_REST_URL
+          value: http://portal-app.{{ include "common.namespace" . }}:{{ .Values.config.onapport }}/ONAPPORTAL/context
+        - name: VID_MSO_SERVER_URL
+          value: http://so.{{ include "common.namespace" . }}:{{ .Values.config.msoport }}/onap/so/infra
+        - name: VID_MSO_PASS
+          value: "{{ .Values.config.vidmsopass }}"
+        - name: MSO_DME2_SERVER_URL
+          value: "{{ .Values.config.msodme2serverurl }}"
+        - name: MSO_DME2_ENABLED
+          value: {{ .Values.global.debugEnabled | default .Values.debugEnabled | quote }}
+        - name: VID_ECOMP_REDIRECT_URL
+          value: https://{{ .Values.config.portalhost }}:{{ .Values.config.onapport }}/ONAPPORTAL/login.htm
+        - name: VID_ECOMP_REST_URL
+          value: https://portal-app:{{ .Values.config.onapportrest }}/ONAPPORTAL/auxapi
+        - name: VID_ROLE_ACCESS_CENTRALIZED
+          value: "{{ .Values.config.roleaccesscentralized }}"
+        - name: VID_CONTACT_US_LINK
+          value: "{{ .Values.config.vidcontactuslink }}"
+        - name: VID_KEYSTORE_PASSWORD
+          value: {{ .Values.config.vidkeystorepassword | quote }}
+        - name: VID_UEB_URL_LIST
+          value: message-router.{{ include "common.namespace" . }}
+        - name: VID_MYSQL_HOST
+          value: {{ .Values.mariadb.service.name }}
+        - name: VID_MYSQL_PORT
+          value: "{{ .Values.mariadb.service.internalPort }}"
+        - name: VID_MYSQL_DBNAME
+          value: {{ .Values.mariadb.service.mysqlDatabase }}
+        - name: VID_MYSQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "login") | indent 10 }}
+        - name: VID_MYSQL_PASS
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 10 }}
+        - name: VID_MYSQL_MAXCONNECTIONS
+          value: "{{ .Values.config.vidmysqlmaxconnections }}"
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+        - mountPath: /opt/app/vid/etc
+          name: certs
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - mountPath: {{ .Values.log.path }}
+          name: logs
+        - mountPath: /tmp/logback.xml
+          name: logback
+          subPath: logback.xml
+        resources: {{ include "common.resources" . | nindent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
+      {{ include "common.log.sidecar" . | indent 6 }}
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      - name: certs
+        secret:
+          secretName: {{ include "common.fullname" . }}-certs
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: logs
+        emptyDir: {}
+      {{ include "common.log.volumes" . | indent 6 }}
+      - name: logback
+        configMap:
+          name: {{ include "common.fullname" . }}-log
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

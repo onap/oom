@@ -13,15 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Default values for vid.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+#################################################################
+# Global configuration defaults.
+#################################################################
 global:
   nodePortPrefix: 302
-  readinessRepository: oomk8s
-  readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  centralizedLoggingEnabled: false
 
 #################################################################
 # Secrets metaconfig
@@ -34,16 +33,50 @@ secrets:
     login: '{{ .Values.config.db.userName }}'
     password: '{{ .Values.config.db.userPassword }}'
 
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: vid-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: vid
+  fqi: vid@vid.onap.org
+  public_fqdn: vid.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh;
+    /opt/app/aaf_config/bin/agent.sh local showpass
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+
+aafConfig:
+  permission_user: 1000
+  permission_group: 999
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
 subChartsOnly:
   enabled: true
 
-# application image
 repository: nexus3.onap.org:10001
 image: onap/vid:6.0.4
 pullPolicy: Always
 
 # mariadb image for initializing
 mariadb_image: library/mariadb:10
+
+# log configuration
+log:
+  path: /var/log/onap
+
+
+debugEnabled: false
 
 # application configuration
 config:
@@ -67,7 +100,7 @@ config:
   logstashPort: 5044
   roleaccesscentralized: remote
 
-mariadb-galera:
+mariadb:
   config:
     userCredentialsExternalSecret: '{{ include "common.release" . }}-vid-db-user-secret'
     mysqlDatabase: vid_openecomp_epsdk
@@ -98,20 +131,44 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: gui
 
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+  port: gui
+
+securityContext:
+  user_id: 10000
+  group_id: 10001
+
+readinessCheck:
+  wait_for:
+    deployment:
+      name: config
+      containers:
+        - '{{ include "common.name" . }}-job'
+    job:
+      name: database
+      containers:
+        - "{{ .Values.mariadb.service.name }}"
+
+serviceAccount:
+  nameOverride: vid
+  roles:
+    - read
 
 service:
   type: NodePort
   name: vid
+  both_tls_and_plain: true
+  ports:
+    - name: gui
+      port: 8443
+      plain_port: 8080
+      port_protocol: http
+      nodePort: "00"
   portName: vid
-  externalPort: 8443
-  internalPort: 8443
-  nodePort: "00"
-  externalHttpPort: 8080
-  internalHttpPort: 8080
 
 ingress:
   enabled: false
