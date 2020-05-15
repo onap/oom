@@ -20,8 +20,20 @@ OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
+<<<<<<< HEAD   (1ba556 [POLICY] new elato images)
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(patsubst %/.,%,$(wildcard */.))) $(PARENT_CHART)
+=======
+ifneq ($(SKIP_LINT),TRUE)
+	HELM_LINT_CMD := helm lint
+else
+	HELM_LINT_CMD := echo "Skipping linting of"
+endif
+
+SUBMODS := robot aai
+EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PARENT_CHART)
+>>>>>>> CHANGE (613343 Fix: make all - returns multiple warnings)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
