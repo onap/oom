@@ -15,34 +15,13 @@
 
 apiVersion: batch/v1
 kind: Job
-metadata:
-  name: {{ include "common.fullname" . }}-galera-config
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}-job
-    release: {{ include "common.release" . }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" . "suffix" "galera-config") | nindent 2 }}
 spec:
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}-job
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-#This container checks that all galera instances are up before initializing it.
-      - name: {{ include "common.name" . }}-readiness
-        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /root/ready.py
-        - --container-name
-        - {{ index .Values "mariadb-galera" "service" "name" }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+      {{ include "common.securityContext" . | indent 6 | trim }}
+      initContainers: {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.wait_for.job ) | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ .Values.mariadb_image }}
@@ -63,18 +42,18 @@ spec:
         - name: MYSQL_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 10 }}
         - name: MYSQL_HOST
-          value: {{ index .Values "mariadb-galera" "service" "name" }}
+          value: {{ .Values.mariadb.service.name }}
         - name: MYSQL_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "login") | indent 10 }}
         - name: MYSQL_PORT
-          value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
+          value: "{{ .Values.mariadb.service.internalPort }}"
       restartPolicy: Never
       volumes:
-        - name: {{ include "common.fullname" . }}-config
-          configMap:
-            name: {{ include "common.fullname" . }}
-            items:
-              - key: db_cmd.sh
-                path: db_cmd.sh
-              - key: vid-pre-init.sql
-                path: vid-pre-init.sql
+      - name: {{ include "common.fullname" . }}-config
+        configMap:
+          name: {{ include "common.fullname" . }}
+          items:
+          - key: db_cmd.sh
+            path: db_cmd.sh
+          - key: vid-pre-init.sql
+            path: vid-pre-init.sql
