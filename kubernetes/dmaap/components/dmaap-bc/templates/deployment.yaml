@@ -41,11 +41,7 @@ spec:
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-
-{{- if .Values.global.aafEnabled }}
-
 {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-
       - name: {{ include "common.name" . }}-permission-fixer
         image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -61,15 +57,16 @@ spec:
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         command: ["/bin/sh"]
         args: [ "-c", "sed -i -e '/cadi_keystore_password=/d' -e '/cadi_keystore_password_jks/p' -e 's/cadi_keystore_password_jks/cadi_keystore_password/' -e 's/dmaap-bc.p12/dmaap-bc.jks/' /opt/app/osaaf/local/org.onap.dmaap-bc.cred.props" ]
-
-{{- end }}
-{{- if .Values.PG.enabled }}
       - name: {{ include "common.name" . }}-postgres-readiness
         command:
         - /root/ready.py
         args:
         - --container-name
         - {{ .Values.postgres.nameOverride }}
+        - --container-name
+        - message-router
+        - --container-name
+        - dmaap-dr-node
         env:
         - name: NAMESPACE
           valueFrom:
@@ -78,7 +75,6 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- end }}
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}

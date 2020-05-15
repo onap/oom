@@ -1,44 +1,49 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-post-install
+  name: {{ include "common.fullname" . }}-dmaap-provisioning
   namespace: {{ include "common.namespace" . }}
   labels: {{- include "common.labels" . | nindent 4 }}
-  annotations:
-    # This is what defines this resource as a hook. Without this line, the
-    # job is considered part of the release.
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  backoffLimit: 5
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       restartPolicy: Never
+      initContainers:
+      - name: {{ include "common.name" . }}-init-readiness
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - dmaap-bc
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       containers:
-      - name: post-install-job
+      - name: dmaap-provisioning-job
         image: "{{ include "common.repository" . }}/{{ .Values.global.clientImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DELAY
           value: "0"
+    {{- if .Values.global.allow_http }}
         - name: PROTO
-{{- if (include "common.needTLS" .) }}
-          value: "https"
-        - name: PORT
-          value: "8443"
-{{- else }}
           value: "http"
         - name: PORT
           value: "8080"
-{{- end }}
+    {{ end }}
         - name: REQUESTID
-          value: "{{.Chart.Name}}-post-install"
+          value: "{{.Chart.Name}}-dmaap-provisioning"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-
 # NOTE: on the following several configMaps, careful to include / at end
 #       since there may be more than one file in each mountPath
 # NOTE: the basename of the subdirectory of mountPath is important - it matches the DBCL API URI
@@ -46,6 +51,14 @@ spec:
           mountPath: /opt/app/config/dmaap/
         - name:  {{ include "common.fullname" . }}-dbc-dcaelocations
           mountPath: /opt/app/config/dcaeLocations/
+        - name:  {{ include "common.fullname" . }}-dr-nodes
+          mountPath: /opt/app/config/dr-nodes/
+        - name:  {{ include "common.fullname" . }}-feeds
+          mountPath: /opt/app/config/feeds/
+        - name:  {{ include "common.fullname" . }}-mr-clusters
+          mountPath: /opt/app/config/mr-clusters/
+        - name:  {{ include "common.fullname" . }}-topics
+          mountPath: /opt/app/config/topics/
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
@@ -63,5 +76,17 @@ spec:
         - name: {{ include "common.fullname" . }}-dbc-dcaelocations
           configMap:
             name: {{ include "common.fullname" . }}-dbc-dcaelocations
+        - name: {{ include "common.fullname" . }}-dr-nodes
+          configMap:
+            name: {{ include "common.fullname" . }}-dr-nodes
+        - name: {{ include "common.fullname" . }}-feeds
+          configMap:
+            name: {{ include "common.fullname" . }}-feeds
+        - name: {{ include "common.fullname" . }}-mr-clusters
+          configMap:
+            name: {{ include "common.fullname" . }}-mr-clusters
+        - name: {{ include "common.fullname" . }}-topics
+          configMap:
+            name: {{ include "common.fullname" . }}-topics
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
