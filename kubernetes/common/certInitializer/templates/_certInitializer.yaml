@@ -41,8 +41,7 @@
 {{-   $dot := default . .dot -}}
 {{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
 {{-   $initName := default "certInitializer" -}}
-{{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
-{{- $subchartDot := mergeOverwrite (deepCopy (omit $dot "Values")) (dict "Chart" (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) }}
+{{- $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
 - name: {{ include "common.name" $dot }}-aaf-readiness
   image: "{{ $subchartDot.Values.global.readinessRepository }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
