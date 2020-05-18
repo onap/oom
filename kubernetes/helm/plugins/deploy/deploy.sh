@@ -2,7 +2,7 @@
 
 usage() {
 cat << EOF
-Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases 
+Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases
 
 The umbrella Helm Chart is broken apart into a parent release and subchart releases.
 Subcharts the are disabled (<chart>.enabled=false) will not be installed or upgraded.
@@ -101,7 +101,7 @@ deploy() {
   CACHE_DIR=~/.helm/plugins/deploy/cache
   CHART_DIR=$CACHE_DIR/$CHART_NAME
   CACHE_SUBCHART_DIR=$CHART_DIR-subcharts
-  LOG_DIR=$CHART_DIR/logs
+  LOG_DIR=$CHART_DIR-logs
 
   # determine if verbose output is enabled
   VERBOSE="false"
@@ -114,7 +114,7 @@ deploy() {
   if [[ $FLAGS = *"--delay"* ]]; then
     FLAGS="$(echo $FLAGS| sed -n 's/--delay//p')"
     DELAY="true"
-  fi	
+  fi
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
   if [[ $FLAGS = *"--set-last-applied"* ]]; then
@@ -240,13 +240,13 @@ deploy() {
         if [[ $SET_LAST_APPLIED == "true" ]]; then
           helm get manifest "${RELEASE}-${subchart}" \
           | kubectl apply set-last-applied --create-annotation -n onap -f - \
-	      > $LOG_FILE.log 2>&1
+        > $LOG_FILE.log 2>&1
         fi
       fi
-	  if [[ $DELAY == "true" ]]; then
+		if [[ $DELAY == "true" ]]; then
 		echo sleep 3m
 		sleep 3m
-	  fi						  
+		fi
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
