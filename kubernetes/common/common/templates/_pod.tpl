@@ -47,3 +47,24 @@
 {{-     end }}
 {{-   end }}
 {{- end -}}
+
+{{/*
+   Generate securityContext for pod
+*/}}
+{{- define "common.podSecurityContext" -}}
+securityContext:
+  runAsUser: {{ .Values.securityContext.user_id }}
+  runAsGroup: {{ .Values.securityContext.group_id }}
+  fsGroup: {{ .Values.securityContext.group_id }}
+{{- end }}
+
+{{/*
+   Generate securityContext for container
+*/}}
+{{- define "common.containerSecurityContext" -}}
+securityContext:
+  readOnlyRootFilesystem: true
+  privileged: false
+  allowPrivilegeEscalation: false
+{{- end }}
+
