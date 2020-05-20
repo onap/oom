@@ -38,6 +38,27 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "export TRUSTSTORE_PASSWORD_BASE64=`echo -n ${TRUSTSTORE_PASSWORD} | base64`; cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: TRUSTSTORE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-pass" "key" "password") | indent 10 }}
+        - name: RESTSERVER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
+        - name: RESTSERVER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: apexconfig-input
+        - mountPath: /config
+          name: apexconfig
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -87,9 +108,12 @@ spec:
             path: /etc/localtime
         - name: policy-logs
           emptyDir: {}
-        - name: apexconfig
+        - name: apexconfig-input
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
+        - name: apexconfig
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
