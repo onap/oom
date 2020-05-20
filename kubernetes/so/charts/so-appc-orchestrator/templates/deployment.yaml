@@ -1,0 +1,83 @@
+# Copyright © 2020 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ index .Values.replicaCount }}
+  minReadySeconds: {{ index .Values.minReadySeconds }}
+  strategy:
+    type: {{ index .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ index .Values.updateStrategy.maxSurge }}
+  template:
+    metadata:
+      labels: {{- include "common.labels" . | nindent 8 }}
+    spec:
+      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
+      - name: {{ include "common.name" . }}-pass-encoder
+        command:
+        - sh
+        args:
+        {{/* bcrypt plain text and convert to OpenBSD variant using sed */}}
+        - -c
+        - htpasswd -bnBC 10 "" "${ACTUATOR_PASSWORD}" | tr -d ':\n' | sed 's/\$2y/\$2a/' 1>/tmp/app/encoded;
+        env:
+        - name: ACTUATOR_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 10 }}
+        image: {{ .Values.global.dockerHubRepository }}/{{ .Values.global.htpasswdImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - name: encoder
+          mountPath: /tmp/app
+      containers:
+      - name: {{ include "common.name" . }}
+        command:
+          - sh
+        args:
+          - -c
+          - export ACTUATOR_PASSWORD="$(cat /tmp/app/encoded)"; ./start-app.sh
+        image: {{ include "common.repository" . }}/{{ .Values.image }}
+        resources: {{ include "common.resources" . | nindent 12 }}
+        env:
+        - name: ACTUATOR_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 10 }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "common.fullname" . }}-configmap
+        imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{- include "common.containerPorts" . | nindent 10 }}
+        volumeMounts: {{ include "so.certificate.volume-mounts" . | nindent 8 }}
+        - name: logs
+          mountPath: /app/logs
+        - name: encoder
+          mountPath: /tmp/app
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+{{ include "helpers.livenessProbe" .| indent 8 }}
+      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      - name: logs
+        emptyDir: {}
+      - name: encoder
+        emptyDir:
+          medium: Memory
+      - name: config
+        configMap:
+            name: {{ include "common.fullname" . }}-app-configmap
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
