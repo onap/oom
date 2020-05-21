@@ -46,24 +46,22 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-      {{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config" . | indent 6 }}
-      {{- end }}
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["bash","-c"]
         {{- if .Values.global.aafEnabled }}
-        args: ["export $(grep '^c' {{ .Values.aafConfig.credsPath }}/mycreds.prop | xargs -0);\
+        args: ["export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0);\
                export _JAVA_OPTIONS=\"-Djavax.net.ssl.trustStorePassword=$cadi_truststore_password \
               -Djavax.net.ssl.keyStorePassword=$cadi_keystore_password_p12\";\
               /start-apache-tomcat.sh -i \"\" -n \"\" -b {{ .Values.global.env.tomcatDir }}"]
         env:
           - name: CATALINA_OPTS
             value: >
-              -Djavax.net.ssl.keyStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
-              -Djavax.net.ssl.trustStore="{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.truststoreFile }}"
+              -Djavax.net.ssl.keyStore="{{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.keystoreFile }}"
+              -Djavax.net.ssl.trustStore="{{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.truststoreFile }}"
         {{- else }}
         args: ["/start-apache-tomcat.sh -i "" -n "" -b {{ .Values.global.env.tomcatDir }}"]
         {{- end }}
@@ -85,9 +83,7 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
-        {{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config-volume-mountpath" . | indent 8 }}
-        {{- end }}
+{{ include "common.certInitializer.volumeMount" . | indent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -139,9 +135,7 @@ spec:
         - name: var-log-onap
           mountPath: /var/log/onap
       volumes:
-        {{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config-volumes" . | indent 8 }}
-        {{- end }}
+{{ include "common.certInitializer.volumes" . | indent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
