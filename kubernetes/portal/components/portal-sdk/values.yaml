@@ -27,7 +27,6 @@ global:
   persistence: {}
   #AAF service
   aafEnabled: true
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
 
 #################################################################
 # Application configuration defaults.
@@ -40,30 +39,25 @@ pullPolicy: Always
 
 #AAF local config
 aafURL: https://aaf-service:8100/authz/
-aafConfig:
+certInitializer:
+  nameOverride: portal-sdk-cert-initializer
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
   fqdn: portal
   fqi: portal@portal.onap.org
-  publicFqdn: portal.onap.org
+  public_fqdn: portal.onap.org
   cadi_latitude: "38.0"
   cadi_longitude: "-72.0"
   credsPath: /opt/app/osaaf/local
   app_ns: org.osaaf.aaf
   permission_user: 1000
   permission_group: 999
-  addconfig:  true
-  secret_uid: &aaf_secret_uid portal-sdk-aaf-deploy-creds
   keystoreFile: "org.onap.portal.p12"
   truststoreFile: "org.onap.portal.trust.jks"
-
-secrets:
-  - uid: *aaf_secret_uid
-    type: basicAuth
-    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
-    login: '{{ .Values.aafConfig.aafDeployFqi }}'
-    password: '{{ .Values.aafConfig.aafDeployPass }}'
-    passwordPolicy: required
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh;
+    /opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
 
 # flag to enable debugging - application support required
 debugEnabled: false
