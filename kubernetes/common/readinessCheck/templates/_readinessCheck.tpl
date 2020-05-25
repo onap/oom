@@ -40,8 +40,8 @@
 {{-   $dot := default . .dot -}}
 {{-   $initRoot := default $dot.Values.readinessCheck .initRoot -}}
 {{/*  Our version of helm doesn't support deepCopy so we need this nasty trick */}}
-{{-   $subchartDot := include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot) }}
-{{-   $wait_for := default $dot.Values.wait_for .wait_for -}}
+{{-   $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
+{{-   $wait_for := default $initRoot.wait_for .wait_for -}}
 - name: {{ include "common.name" $dot }}-{{ $wait_for.name }}-readiness
   image: "{{ $subchartDot.Values.global.readinessRepository }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
