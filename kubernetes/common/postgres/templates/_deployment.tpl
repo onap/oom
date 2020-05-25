@@ -44,19 +44,26 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - |
+          function prepare_password {
+            echo -n $1 | sed -e "s/'/''/g"
+          }
+          export PG_PRIMARY_PASSWORD=`prepare_password $PG_PRIMARY_PASSWORD_INPUT`;
+          export PG_PASSWORD=`prepare_password $PG_PASSWORD_INPUT`;
+          export PG_ROOT_PASSWORD=`prepare_password $PG_ROOT_PASSWORD_INPUT`;
+          cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done
         env:
         - name: PG_PRIMARY_USER
           value: primaryuser
-        - name: PG_PRIMARY_PASSWORD
+        - name: PG_PRIMARY_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
-        - name: PG_PASSWORD
+        - name: PG_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
         - name: PG_DATABASE
           value: "{{ $dot.Values.config.pgDatabase }}"
-        - name: PG_ROOT_PASSWORD
+        - name: PG_ROOT_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /config-input/setup.sql
