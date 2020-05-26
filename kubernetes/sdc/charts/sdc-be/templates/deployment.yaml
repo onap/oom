@@ -75,6 +75,38 @@ spec:
           mountPath: /config-input/
         - name: sdc-environments-output
           mountPath: /config-output/
+      - name: {{ include "common.name" . }}-update-configuration
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /configuration-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/configuration-output/${PFILE}; chmod 0644 /configuration-output/${PFILE}; done"
+        env:
+        - name: AAF_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-user-creds" "key" "login") | indent 10 }}
+        - name: AAF_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aaf-user-creds" "key" "password") | indent 10 }}
+        - name: CS_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cs-user-creds" "key" "login") | indent 10 }}
+        - name: CS_TRUSTSTORE_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cs-truststore-password" "key" "password") | indent 10 }}
+        - name: CS_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cs-user-creds" "key" "password") | indent 10 }}
+        - name: DPC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-user-creds" "key" "login") | indent 10 }}
+        - name: DPC_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-user-creds" "key" "password") | indent 10 }}
+        - name: SOD_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sod-user-creds" "key" "login") | indent 10 }}
+        - name: SOD_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sod-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-configuration
+          mountPath: /configuration-input/
+        - name: sdc-configuration-output
+          mountPath: /configuration-output/
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -124,12 +156,12 @@ spec:
           - name: {{ include "common.fullname" . }}-logs
             mountPath: /var/log/onap
           - name: {{ include "common.fullname" . }}-logback
-            mountPath: /tmp/logback.xml
+            mountPath: /var/lib/jetty/config/catalog-be/logback.xml
             subPath: logback.xml
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+          - name: sdc-configuration-output
+            mountPath: /var/lib/jetty/config/catalog-be/configuration.yaml
+            subPath: configuration.yaml
+
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
@@ -165,5 +197,11 @@ spec:
         emptyDir: { medium: "Memory" }
       - name: {{ include "common.fullname" . }}-logs
         emptyDir: {}
-      imagePullSecrets:
+      - name: {{ include "common.fullname" . }}-configuration
+        configMap:
+          name: {{ include "common.fullname" . }}-configuration-configmap
+          defaultMode: 0644
+      - name: sdc-configuration-output
+        emptyDir: { medium: "Memory" }
+    imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
