@@ -60,10 +60,8 @@ def wait_for_statefulset_complete(statefulset_name):
     try:
         response = api.read_namespaced_stateful_set(statefulset_name, namespace)
         s = response.status
-        if (s.updated_replicas == response.spec.replicas and
-                s.replicas == response.spec.replicas and
+        if (s.replicas == response.spec.replicas and
                 s.ready_replicas == response.spec.replicas and
-                s.current_replicas == response.spec.replicas and
                 s.observed_generation == response.metadata.generation):
             log.info("Statefulset " + statefulset_name + "  is ready")
             return True
