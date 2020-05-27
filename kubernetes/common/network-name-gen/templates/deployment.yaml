@@ -57,6 +57,11 @@ spec:
         name: {{ include "common.name" . }}-readiness
       containers:
       - name: {{ include "common.name" . }}
+        command:
+          - bash
+        args:
+          - '-c'
+          - 'export POL_BASIC_AUTH=`echo -n $POL_BASIC_AUTH_USER:$POL_BASIC_AUTH_PASSWORD | base64`; /startService.sh'
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
@@ -70,8 +75,10 @@ spec:
           value: jdbc:mysql://{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}/{{ index .Values "mariadb-galera" "config" "mysqlDatabase" }}
         - name: POL_CLIENT_AUTH
           value: "{{ .Values.config.polClientAuth }}"
-        - name: POL_BASIC_AUTH
-          value: "{{ .Values.config.polBasicAuth }}"
+        - name: POL_BASIC_AUTH_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pol-basic-auth-secret" "key" "login") | indent 10}}
+        - name: POL_BASIC_AUTH_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pol-basic-auth-secret" "key" "password") | indent 10}}
         - name: POL_URL
           value: "{{ .Values.config.polUrl }}"
         - name: POL_ENV
