@@ -140,14 +140,6 @@ deploy() {
   # actual upgrade/install of parent and subcharts.
   DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
 
-  # determine if upgrading individual subchart or entire parent + subcharts
-  SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
-  # update specified subchart without parent
-  RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
-  if [[ $SUBCHART_RELEASE == $RELEASE ]]; then
-    SUBCHART_RELEASE=
-  fi
-
   # clear previously cached charts
   rm -rf $CACHE_DIR
 
@@ -165,6 +157,22 @@ deploy() {
     echo "fetching $CHART_URL"
     helm fetch $CHART_URL --untar --untardir $CACHE_DIR $VERSION
   fi
+
+
+  # get list of all possible subcharts
+  SUBCHARTS=$(ls $CHART_DIR/charts/)
+
+  # make sure that variable SUBCHART_RELEASE is empty
+  SUBCHART_RELEASE=
+
+  # determine if upgrading individual subchart or entire parent + subcharts
+  for subchart in $SUBCHARTS; do
+    if [[ *"$subchart" == $RELEASE ]]; then
+      SUBCHART_RELEASE=$subchart
+      RELEASE=${RELEASE%"-$SUBCHART_RELEASE"}
+      break
+    fi
+  done
 
   # create log driectory
   mkdir -p $LOG_DIR
