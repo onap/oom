@@ -1,0 +1,150 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018,2020 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  env:
+    tomcatDir: "/usr/local/tomcat"
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.0
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  #AAF service
+  aafEnabled: true
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+# application image
+repository: nexus3.onap.org:10001
+image: onap/portal-app:3.2.3
+pullPolicy: Always
+
+#AAF local config
+
+aafURL: https://aaf-service:8100/authz/
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: portal
+  fqi: portal@portal.onap.org
+  publicFqdn: portal.onap.org
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  secret_uid: &aaf_secret_uid portal-app-aaf-deploy-creds
+  keystoreFile: "org.onap.portal.p12"
+  truststoreFile: "org.onap.portal.trust.jks"
+
+secrets:
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+service:
+  type: LoadBalancer
+  name: portal-app
+  portName: portal-app
+  externalPort: 8989
+  internalPort: 8080
+  nodePort: 15
+  externalPort2: 8006
+  internalPort2: 8005
+  nodePort2: 13
+  externalPort3: 8010
+  internalPort3: 8009
+  nodePort3: 14
+  externalPort4: 8443
+  internalPort4: 8443
+  nodePort4: 25
+
+mariadb:
+  service:
+    name: portal-db
+widget:
+  service:
+    name: portal-widget
+cassandra:
+  service:
+    name: portal-cassandra
+  config:
+    cassandraUsername: root
+    cassandraPassword: Aa123456
+zookeeper:
+  service:
+    name: portal-zookeeper
+messageRouter:
+  service:
+    name: message-router
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: portal.api
+      name: "portal-app"
+      port: 8443
+  config:
+    ssl: "redirect"
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2.2
+      memory: 800Mi
+    requests:
+      cpu: 30m
+      memory: 460Mi
+  large:
+    limits:
+      cpu: 4
+      memory: 15Gi
+    requests:
+      cpu: 2
+      memory: 8Gi
+  unlimited: {}
