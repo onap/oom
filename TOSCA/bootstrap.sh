@@ -19,7 +19,7 @@
 
 # this script will init a community version Cloudify manager
 # 1.environment ubuntu 16.04
-# 2. git clone oom project into that ubuntu environment
+# 2. git clone --depth 1 oom project into that ubuntu environment
 # 3. provide the Openstack information in /TOSCA/cloudify-environment-setup/input/openstack.yaml
 # 4. execute this script with sudo
 
