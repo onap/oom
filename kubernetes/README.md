@@ -14,7 +14,7 @@ Pre-requisites:
 Step 1. Clone the OOM repository from ONAP gerrit:
 
 ```
-> git clone http://gerrit.onap.org/r/oom
+> git clone --depth 1 http://gerrit.onap.org/r/oom
 > cd oom/kubernetes
 ```
 

@@ -115,7 +115,7 @@ stable which should be removed to avoid confusion::
 
 To prepare your system for an installation of ONAP, you'll need to::
 
-  > git clone -b frankfurt http://gerrit.onap.org/r/oom
+  > git clone --depth 1 -b frankfurt http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 

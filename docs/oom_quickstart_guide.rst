@@ -17,7 +17,7 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone -b <BRANCH> http://gerrit.onap.org/r/oom --recurse-submodules
+  > git clone --depth 1 -b <BRANCH> http://gerrit.onap.org/r/oom --recurse-submodules
   > cd oom/kubernetes
 
 where <BRANCH> can be an offical release tag, such as
@@ -92,7 +92,7 @@ ROBOT uses in Dublin and upper versions.
     SO_ENCRYPTION_KEY=`cat ~/oom/kubernetes/so/resources/config/mso/encryption.key`
     OS_PASSWORD=XXXX_OS_CLEARTESTPASSWORD_XXXX
 
-    git clone http://gerrit.onap.org/r/integration
+    git clone --depth 1 http://gerrit.onap.org/r/integration
     cd integration/deployment/heat/onap-rke/scripts
 
     javac Crypto.java
