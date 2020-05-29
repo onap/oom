@@ -91,18 +91,16 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-      {{ if .Values.global.aafEnabled }}
-{{ include "common.aaf-config" . | indent 6 }}
-      {{ end }}
+
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
+
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
-        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certpersistence.certPath }}"]
+        command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}"]
         volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
-{{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config-volume-mountpath" . | indent 10 }}
-{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -151,9 +149,7 @@ spec:
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
           volumeMounts:
-          {{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config-volume-mountpath" . | indent 10 }}
-          {{- end }}
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -257,9 +253,7 @@ spec:
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
   {{ else }}
-  {{- if .Values.global.aafEnabled }}
-{{ include "common.aaf-config-volumes" . | indent 8 }}
-  {{- end }}
+{{ include "common.certInitializer.volumes" . | nindent 8 }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data

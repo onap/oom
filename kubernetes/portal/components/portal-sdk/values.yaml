@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018,2020 AT&T
+# Modifications Copyright © 2018, 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
 # Global configuration defaults.
 #################################################################
 global:
+  env:
+    tomcatDir: "/usr/local/tomcat"
   nodePortPrefix: 302
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  persistence: {}
   #AAF service
   aafEnabled: true
   aafAgentImage: onap/aaf/aaf_agent:2.1.20
@@ -32,11 +35,10 @@ global:
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/portal-app:3.2.3
+image: onap/portal-sdk:3.2.0
 pullPolicy: Always
 
 #AAF local config
-
 aafURL: https://aaf-service:8100/authz/
 aafConfig:
   aafDeployFqi: deployer@people.osaaf.org
@@ -50,8 +52,8 @@ aafConfig:
   app_ns: org.osaaf.aaf
   permission_user: 1000
   permission_group: 999
-  addconfig: true
-  secret_uid: &aaf_secret_uid portal-app-aaf-deploy-creds
+  addconfig:  true
+  secret_uid: &aaf_secret_uid portal-sdk-aaf-deploy-creds
   keystoreFile: "org.onap.portal.p12"
   truststoreFile: "org.onap.portal.trust.jks"
 
@@ -62,6 +64,9 @@ secrets:
     login: '{{ .Values.aafConfig.aafDeployFqi }}'
     password: '{{ .Values.aafConfig.aafDeployPass }}'
     passwordPolicy: required
+
+# flag to enable debugging - application support required
+debugEnabled: false
 
 # default number of instances
 replicaCount: 1
@@ -83,21 +88,12 @@ readiness:
   periodSeconds: 10
 
 service:
-  type: LoadBalancer
-  name: portal-app
-  portName: portal-app
-  externalPort: 8989
-  internalPort: 8080
-  nodePort: 15
-  externalPort2: 8006
-  internalPort2: 8005
-  nodePort2: 13
-  externalPort3: 8010
-  internalPort3: 8009
-  nodePort3: 14
-  externalPort4: 8443
-  internalPort4: 8443
-  nodePort4: 25
+  type: NodePort
+  name: portal-sdk
+  portName: portal-sdk
+  internalPort: 8443
+  externalPort: 8443
+  nodePort: 12
 
 mariadb:
   service:
@@ -121,8 +117,8 @@ messageRouter:
 ingress:
   enabled: false
   service:
-    - baseaddr: portal.api
-      name: "portal-app"
+    - baseaddr: portal-sdk
+      name: "portal-sdk"
       port: 8443
   config:
     ssl: "redirect"
@@ -133,16 +129,16 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: 2.2
-      memory: 800Mi
+      cpu: 600m
+      memory: 1.6Gi
     requests:
-      cpu: 30m
-      memory: 460Mi
+      cpu: 10m
+      memory: 1.3Gi
   large:
     limits:
-      cpu: 4
-      memory: 15Gi
+      cpu: 8
+      memory: 20Gi
     requests:
-      cpu: 2
-      memory: 8Gi
+      cpu: 4
+      memory: 10Gi
   unlimited: {}

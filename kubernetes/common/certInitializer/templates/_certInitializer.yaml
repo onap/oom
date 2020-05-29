@@ -42,10 +42,10 @@
 {{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
 {{-   $initName := default "certInitializer" -}}
 {{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
-{{- $subchartDot := mergeOverwrite (fromJson (toJson $dot)) (dict "Chart" (set (fromJson (toJson .Chart)) "Name" $initRoot.nameOverride) "Values" $initRoot) }}
+{{- $subchartDot := mergeOverwrite (deepCopy (omit $dot "Values")) (dict "Chart" (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) }}
 - name: {{ include "common.name" $dot }}-aaf-readiness
-  image: "{{ $dot.Values.global.readinessRepository }}/{{ $dot.Values.global.readinessImage }}"
-  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  image: "{{ $subchartDot.Values.global.readinessRepository }}/{{ $subchartDot.Values.global.readinessImage }}"
+  imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   command:
   - /root/ready.py
   args:
@@ -62,11 +62,17 @@
         apiVersion: v1
         fieldPath: metadata.namespace
 - name: {{ include "common.name" $dot }}-aaf-config
-  image: {{ (default $dot.Values.repository $dot.Values.global.repository) }}/{{ $dot.Values.global.aafAgentImage }}
-  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  image: {{ (default $subchartDot.Values.repository $subchartDot.Values.global.repository) }}/{{ $subchartDot.Values.global.aafAgentImage }}
+  imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   volumeMounts:
   - mountPath: {{ $initRoot.mountPath }}
     name: {{ include "common.certInitializer._aafConfigVolumeName" $dot }}
+  - mountPath: /opt/app/aaf_config/cert/truststoreONAPall.jks.b64
+    name: aaf-agent-certs
+    subPath: truststoreONAPall.jks.b64
+  - mountPath: /opt/app/aaf_config/cert/truststoreONAP.p12.b64
+    name: aaf-agent-certs
+    subPath: truststoreONAP.p12.b64
 {{-     if $initRoot.aaf_add_config }}
   - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
     mountPath: /opt/app/aaf_config/bin/aaf-add-config.sh
@@ -118,10 +124,14 @@
 {{- define "common.certInitializer._volumes" -}}
 {{-   $dot := default . .dot -}}
 {{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
-{{- $subchartDot := mergeOverwrite (fromJson (toJson $dot)) (dict "Chart" (set (fromJson (toJson .Chart)) "Name" $initRoot.nameOverride) "Values" $initRoot) }}
+{{- $subchartDot := mergeOverwrite (deepCopy (omit $dot "Values")) (dict "Chart" (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) }}
 - name: {{ include "common.certInitializer._aafConfigVolumeName" $dot }}
   emptyDir:
     medium: Memory
+- name: aaf-agent-certs
+  configMap:
+    name: {{ include "common.fullname" $subchartDot }}-certs
+    defaultMode: 0700
 {{-     if $initRoot.aaf_add_config }}
 - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
   configMap:
