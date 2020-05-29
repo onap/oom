@@ -137,7 +137,12 @@ To get a list of all of the available Helm chart repositories::
 
 Then build your local Helm repository::
 
-  > make all
+  > make SKIP_LINT=TRUE all
+
+.. caution::
+  If you have changed one of the chart, you should do the same command without 
+  "SKIP_LINT" part in order to verify it's still valid.
+  This tasks can last more than 1h so be patient.
 
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::

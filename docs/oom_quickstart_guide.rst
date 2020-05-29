@@ -155,7 +155,12 @@ follows::
 
 **Step 6.** Build a local Helm repository (from the kubernetes directory)::
 
-  > make all; make onap
+  > make SKIP_LINT=TRUE all
+
+.. caution::
+  If you have changed one of the chart, you should do the same command without 
+  "SKIP_LINT" part in order to verify it's still valid.
+  This tasks can last more than 1h so be patient.
 
 **Step 7.** Display the onap charts that available to be deployed::
 
