@@ -155,7 +155,7 @@ follows::
 
 **Step 6.** Build a local Helm repository (from the kubernetes directory)::
 
-  > make all; make onap
+  > make SKIP_LINT=TRUE all; make SKIP_LINT=TRUE onap
 
 **Step 7.** Display the onap charts that available to be deployed::
 
