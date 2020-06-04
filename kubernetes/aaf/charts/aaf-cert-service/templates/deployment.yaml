@@ -1,0 +1,123 @@
+# Copyright © 2020, Nokia
+# Modifications Copyright  © 2020, Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if .Values.global.cmpv2Enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      volumes:
+{{- if .Values.global.addTestingComponents }}
+        - name: cmp-servers-template-volume
+          secret:
+            secretName: {{ .Values.cmpServers.secret.name }}
+        - name: {{ .Values.cmpServers.volume.name }}
+          emptyDir:
+            medium: Memory
+{{- else }}
+        - name: {{ .Values.cmpServers.volume.name }}
+          secret:
+            secretName: {{ .Values.cmpServers.secret.name }}
+{{- end }}
+        - name: {{ .Values.tls.server.volume.name }}
+          secret:
+            secretName: {{ .Values.tls.server.secret.name }}
+{{- if .Values.global.addTestingComponents }}
+      initContainers:
+        - name: wait-for-ejbca
+          command:
+          - /root/ready.py
+          args:
+          - --container-name
+          - ejbca-ejbca
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        - name: subsitute-envs
+          image: "{{ .Values.global.envsubstImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ['sh', '-c', "cd /config-input &&  envsubst < cmpServers.json > {{ .Values.cmpServers.volume.mountPath }}/cmpServers.json"]
+          volumeMounts:
+            - name: cmp-servers-template-volume
+              mountPath: /config-input
+              readOnly: true
+            - name: {{ .Values.cmpServers.volume.name }}
+              mountPath: {{ .Values.cmpServers.volume.mountPath }}
+              readOnly: false
+          env:
+            - name: CLIENT_IAK
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ejbca-server-client-iak" "key" "password") | indent 14 }}
+            - name: CLIENT_RV
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmp-config-client-rv" "key" "password") | indent 14 }}
+            - name: RA_IAK
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ejbca-server-ra-iak" "key" "password") | indent 14 }}
+            - name: RA_RV
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmp-config-ra-rv" "key" "password") | indent 14 }}
+{{- end }}
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ .Values.repository }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports: {{ include "common.containerPorts" . | nindent 10 }}
+          env:
+            - name: HTTPS_PORT
+              value: "{{ .Values.envs.httpsPort }}"
+            - name: KEYSTORE_PATH
+              value: "{{ .Values.tls.server.volume.mountPath }}/{{ .Values.envs.keystore.jksName }}"
+            - name: KEYSTORE_P12_PATH
+              value: "{{ .Values.tls.server.volume.mountPath }}/{{ .Values.envs.keystore.p12Name }}"
+            - name: TRUSTSTORE_PATH
+              value: "{{ .Values.tls.server.volume.mountPath }}/{{ .Values.envs.truststore.jksName }}"
+            - name: ROOT_CERT
+              value: "{{ .Values.tls.server.volume.mountPath }}/{{ .Values.envs.truststore.crtName }}"
+            - name: KEYSTORE_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 14 }}
+            - name: TRUSTSTORE_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 14 }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - {{ .Values.liveness.command }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - {{ .Values.readiness.command }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+            - name: {{ .Values.cmpServers.volume.name }}
+              mountPath: {{ .Values.cmpServers.volume.mountPath }}
+              readOnly: false
+            - name: {{ .Values.tls.server.volume.name }}
+              mountPath: {{ .Values.tls.server.volume.mountPath }}
+              readOnly: true
+          resources: {{ include "common.resources" . | nindent 12 }}
+{{ end -}}
