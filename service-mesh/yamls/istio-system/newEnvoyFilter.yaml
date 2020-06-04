@@ -1,0 +1,65 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: authn-filter
+  namespace: istio-system
+spec:
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.http_connection_manager"
+            subFilter:
+              name: "envoy.router"
+      patch:
+        # For some reason, INSERT_FIRST doesn't work
+        operation: INSERT_BEFORE
+        value:
+          name: "envoy.filters.http.ext_authz"
+          config:
+            http_service:
+              server_uri:
+                uri: http://oauthproxy-service.auth-proxy.svc.cluster.local
+                cluster: outbound|4180||oauthproxy-service.auth-proxy.svc.cluster.local
+                timeout: 10s
+              authorization_request:
+                allowed_headers:
+                  patterns:
+                  - exact: "cookie"
+                  - exact: "x-forwarded-access-token"
+                  - exact: "x-forwarded-user"
+                  - exact: "x-forwarded-email"
+                  - exact: "authorization"
+                  - exact: "x-forwarded-proto"
+                  - exact: "proxy-authorization"
+                  - exact: "user-agent"
+                  - exact: "x-forwarded-host"
+                  - exact: "from"
+                  - exact: "x-forwarded-for"
+                  - exact: "accept"
+                  - prefix: "x-forwarded"
+                  - prefix: "x-auth-request"
+              authorization_response:
+                allowedClientHeaders:
+                  patterns:
+                  - exact: "location"
+                  - exact: "proxy-authenticate"
+                  - exact: "set-cookie"
+                  - exact: "authorization"
+                  - exact: "www-authenticate"
+                  - prefix: "x-forwarded"
+                  - prefix: "x-auth-request"
+                allowedUpstreamHeaders:
+                  patterns:
+                  - exact: "location"
+                  - exact: "proxy-authenticate"
+                  - exact: "set-cookie"
+                  - exact: "authorization"
+                  - exact: "www-authenticate"
+                  - prefix: "x-forwarded"
+                  - prefix: "x-auth-request"
+
+
