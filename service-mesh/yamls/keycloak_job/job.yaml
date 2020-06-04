@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloakjob
+  namespace: keycloak
+spec:
+  template:
+    spec:
+      containers:
+      - name: keycloakjob
+        image: alpine:latest
+        command:
+          - "sh"
+          - "-c"
+          - >
+            echo Start;
+            export TOKEN=$(curl -d "client_id=admin-cli" -d "username=keycloak" -d "password=PDBcEE214IYX0OUX" -d "grant_type=password" "https://keycloak.mesh.onap.eu/auth/realms/master/protocol/openid-connect/token" | jq -r '.access_token');
+            echo Token $TOKEN;
+            curl -H "Authorization: bearer "$TOKEN "https://keycloak.mesh.onap.eu/auth/admin/realms/Breizh";
+            echo done;
+      restartPolicy: Never
