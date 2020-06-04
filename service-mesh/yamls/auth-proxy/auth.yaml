@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: oauth2-proxy
+  name: oauth2-proxy
+  namespace: auth-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        k8s-app: oauth2-proxy
+    spec:
+      containers:
+        - args:
+            - --email-domain='*'
+            - --provider=oidc
+            - --provider-display-name="Keycloak"
+            - --pass-access-token=true
+            - --pass-authorization-header=true
+            - --set-authorization-header=true
+            - --oidc-issuer-url=http://keycloak.mesh.onap.eu/auth/realms/testing
+            - --login-url=https://http://keycloak.mesh.onap.eu/auth/realms/testing/protocol/openid-connect/auth
+            - --redeem-url=https://http://keycloak.mesh.onap.eu/auth/realms/testing/protocol/openid-connect/token
+            - --validate-url=https://http://keycloak.mesh.onap.eu/auth/realms/testing/protocol/openid-connect/userinfo
+            - --http-address=0.0.0.0:4180
+            - --cookie-expire=4h0m0s
+            - --whitelist-domain=".mesh.onap.eu"
+            - --cookie-domain=".mesh.onap.eu"
+            - --standard-logging=true
+            - --auth-logging=true
+            - --request-logging=true
+            - --skip-provider-button=true
+            - --upstream=static://
+            - --redis-connection-url=redis://auth-redis-master.auth-proxy.svc.cluster.local:6379
+            - --session-store-type=redis
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              value: test
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              value: 6101504d-5997-416e-afec-db0caa2ea0b1
+              # to generate use: python -c 'import os,base64; print base64.b64encode(os.urandom(18))'
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              value: fyygFB7P57XFEZo6mnvJeT8X9WOW7lkT
+            - name: OAUTH2_PROXY_COOKIE_DOMAIN
+              value: ".mesh.onap.eu"
+          image: quay.io/pusher/oauth2_proxy:v4.1.0
+          imagePullPolicy: Always
+          name: oauth2-proxy
+          ports:
+            - containerPort: 4180
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: oauth2-proxy
+  name: oauthproxy-service
+  namespace: auth-proxy
+spec:
+  ports:
+    - name: http
+      port: 4180
+      protocol: TCP
+      targetPort: 4180
+  selector:
+    k8s-app: oauth2-proxy
+
+
+
+
