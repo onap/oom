@@ -5,7 +5,7 @@ ENV no_proxy "localhost,127.0.0.1,.cluster.local,$KUBERNETES_SERVICE_HOST"
 ENV https_proxy ${HTTPS_PROXY}
 ENV http_proxy ${HTTP_PROXY}
 
-RUN pip install requests pyyaml kubernetes
+RUN pip install --no-cache-dir requests pyyaml kubernetes
 
 ENV CERT="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 ENV TOKEN="/var/run/secrets/kubernetes.io/serviceaccount/token"
