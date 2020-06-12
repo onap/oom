@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-make-dcaemod: make-dcaemod-distributor-api make-dcaemod-genprocessor make-dcaemod-designtool make-dcaemod-onboarding-api make-dcaemod-runtime-api make-dcaemod-nifi-registry
+make-dcaemod: make-dcaemod-distributor-api make-dcaemod-genprocessor make-dcaemod-designtool make-dcaemod-onboarding-api make-dcaemod-runtime-api make-dcaemod-nifi-registry make-dcaemod-healthcheck
 
 make-dcaemod-distributor-api:
 	cd components && helm dep up dcaemod-genprocessor && helm lint dcaemod-genprocessor
@@ -30,6 +30,9 @@ make-dcaemod-runtime-api:
 
 make-dcaemod-nifi-registry:
 	cd components && helm dep up dcaemod-nifi-registry && helm lint dcaemod-nifi-registry
+
+make-dcaemod-healthcheck:
+	cd components && helm dep up dcaemod-healthcheck && helm lint dcaemod-healthcheck
 
 clean:
 	@find . -type f -name '*.tgz' -delete
