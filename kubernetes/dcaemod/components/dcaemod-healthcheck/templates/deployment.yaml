@@ -1,7 +1,6 @@
 #============LICENSE_START========================================================
 # ================================================================================
-# Copyright (c) 2018-2020 AT&T Intellectual Property. All rights reserved.
-# Modifications Copyright © 2018 Amdocs, Bell Canada
+# Copyright (c) 2020 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,23 +15,14 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: 1
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       containers:
         - name: {{ include "common.name" . }}
@@ -41,19 +31,20 @@ spec:
           resources:
 {{ include "common.resources" . | indent 12 }}
           ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          - name: {{ ( index .Values.service.ports 0).name }}
+            containerPort: {{ ( index .Values.service.ports 0).containerPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ ( index .Values.service.ports 0).containerPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ ( index .Values.service.ports 0).containerPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
@@ -67,11 +58,9 @@ spec:
               value: {{ include "common.namespace" . }}
             - name: HELM_RELEASE
               value: {{ include "common.release" . }}
-            - name: DEPLOY_LABEL
-              value: cfydeployment
       volumes:
         - name: {{ include "common.fullname" . }}-expected-components
           configMap:
-            name: {{ include "common.release" . }}-dcae-expected-components
+            name: {{ include "common.release" . }}-dcaemod-expected-components
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

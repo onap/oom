@@ -1,6 +1,6 @@
 #============LICENSE_START========================================================
-# ================================================================================
-# Copyright (c) 2018-2019 AT&T Intellectual Property. All rights reserved.
+#=================================================================================
+# Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
 # Modifications Copyright © 2018 Amdocs, Bell Canada
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,42 +21,18 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  persistence: {}
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
-  tlsRepository: nexus3.onap.org:10001
-  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
-  repositoryCred:
-    user: docker
-    password: docker
 
-config:
-  logstashServiceName: log-ls
-  logstashPort: 5044
-  # Addresses of other ONAP entities
-  address:
-    consul:
-      host: consul-server
-      port: 8500
-
-#################################################################
-# Application configuration defaults.
-#################################################################
-# application image
-repository: nexus3.onap.org:10001
-image: onap/org.onap.dcaegen2.deployments.cm-container:3.0.0
-pullPolicy: Always
-
-# name of shared ConfigMap with kubeconfig for multiple clusters
-multisiteConfigMapName: multisite-kubeconfig-configmap
-
-# image for init container to initialize shared ConfigMap
-multisiteInitImage: onap/org.onap.dcaegen2.deployments.multisite-init-container:1.0.0
-
-# image for cleanup job container
-cleanupImage: onap/org.onap.dcaegen2.deployments.dcae-k8s-cleanup-container:1.0.0
+service:
+  name: dcaemod-healthcheck
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    containerPort: 8080
 
 # probe configuration parameters
 liveness:
@@ -64,18 +40,14 @@ liveness:
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  # liveness not desirable for Cloudify Manager container
-  enabled: false
+  enabled: true
 
 readiness:
-  initialDelaySeconds: 60
+  initialDelaySeconds: 10
   periodSeconds: 10
-
-service:
-  type: ClusterIP
-  name: dcae-cloudify-manager
-  externalPort: 443
-  internalPort: 443
+# application image
+repository: nexus3.onap.org:10001
+image: onap/org.onap.dcaegen2.deployments.healthcheck-container:2.0.0
 
 # Resource Limit flavor -By Default using small
 flavor: small
@@ -98,13 +70,5 @@ resources:
   unlimited: {}
 # Kubernetes namespace for components deployed via Cloudify manager
 # If empty, use the common namespace
-# dcae_ns: "dcae"
+# dcae_ns: "onap"
 
-# Parameters for persistent storage
-persistence:
-  enabled: true
-  accessMode: ReadWriteOnce
-  size: 4Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: dcae-cm/data
-  volumeReclaimPolicy: Retain
