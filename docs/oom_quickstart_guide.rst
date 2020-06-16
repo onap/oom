@@ -21,9 +21,10 @@ available), follow the following instructions to deploy ONAP.
   > cd oom/kubernetes
 
 where <BRANCH> can be an offical release tag, such as
-4.0.0-ONAP for Dublin
-5.0.1-ONAP for El Alto
-6.0.0-ONAP for Frankfurt
+
+* 4.0.0-ONAP for Dublin
+* 5.0.1-ONAP for El Alto
+* 6.0.0 for Frankfurt
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
