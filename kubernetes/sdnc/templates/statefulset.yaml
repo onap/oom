@@ -92,8 +92,8 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
 
+{{ if .Values.global.aafEnabled }}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
-
       - name: {{ include "common.name" . }}-chown
         image: "busybox"
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }} ; chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}"]
@@ -101,6 +101,7 @@ spec:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
+{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
