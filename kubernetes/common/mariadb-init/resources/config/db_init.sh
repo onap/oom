@@ -14,11 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# make sure the script fails if any of commands failed
+set -e
+
 while read DB ; do
     USER_VAR="MYSQL_USER_${DB^^}"
     PASS_VAR="MYSQL_PASSWORD_${DB^^}"
     USER=${!USER_VAR}
-    PASS=${!PASS_VAR}
+    PASS=`echo -n ${!PASS_VAR} | sed -e "s/'/''/g"`
     MYSQL_OPTS=( -h ${DB_HOST} -P ${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} )
 
     echo "Creating database ${DB} and user ${USER}..."
