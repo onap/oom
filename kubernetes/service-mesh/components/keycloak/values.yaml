@@ -1,0 +1,68 @@
+# Copyright © 2020 Samsung Electronics
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+image: onap/platform/keycloak:1.0.0
+
+global:
+  passwordStrength: long
+  masterPassword: admin
+
+secrets:
+  - uid: keycloak-secret
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.keycloak.credsExternalSecret) . }}'
+    login: '{{ .Values.keycloak.username }}'
+    password: '{{ .Values.keycloak.password }}'
+    passwordPolicy: required
+  - uid: demo
+    type: basicAuth
+    login: '{{ .Values.demoCreds.username }}'
+    password: '{{ .Values.demoCreds.password }}'
+    passwordPolicy: required
+
+demoCreds:
+  username: demo
+  password: demo123456!
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+keycloak:
+  namespace: keycloak
+  domain: http://192.168.49.1:8080/auth
+  username: admin
+  password: admin
+  realm: onap
+
+flavor: small
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 8Gi
+    requests:
+      cpu: 200m
+      memory: 2Gi
+  unlimited: {}
