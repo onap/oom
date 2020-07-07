@@ -32,7 +32,7 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) plugins
+all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) plugins
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -42,6 +42,18 @@ $(HELM_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
 
+$(SUBMODS):
+	@echo "\n[$@]"
+	@make submod-$@
+	@make package-$@
+
+submod-%:
+	@make $*/requirements.yaml
+
+%/requirements.yaml:
+	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
+
+
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
 
@@ -49,7 +61,7 @@ dep-%: make-%
 	@if [ -f $*/requirements.yaml ]; then helm dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then helm lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
