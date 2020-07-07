@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kcadmjob
+  namespace: keycloak
+spec:
+  template:
+    spec:
+      containers:
+      - name: kcadmjob
+        image: ubuntu
+        command:
+          - "sh"
+          - "-c"
+          - >
+            apt update && apt upgrade;
+            apt install -y wget;
+            apt-get install -y default-jdk;
+            apt update && apt upgrade;
+            wget https://downloads.jboss.org/keycloak/6.0.1/keycloak-6.0.1.tar.gz;
+            tar -xvzf keycloak-6.0.1.tar.gz;
+            mv keycloak-6.0.1 /keycloak;
+            chown -R keycloak: keycloak;
+            chmod o+x /keycloak/bin/;
+            /keycloak/bin/kcadm.sh config credentials --server http://{{Values.keycloak.domain}}/auth --realm master --user {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keycloak-secret" "key" "login")}} --password {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keycloak-secret" "key" "password")}};
+            echo realms;
+            /keycloak/bin/kcadm.sh get realms;
+      restartPolicy: Never
