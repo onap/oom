@@ -18,7 +18,7 @@
 {{- define "common.postgres.deployment" -}}
   {{- $dot := .dot }}
   {{- $pgMode := .pgMode }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "common.fullname" $dot }}-{{ $pgMode }}
@@ -32,6 +32,9 @@ metadata:
 spec:
   serviceName: {{ $dot.Values.service.name }}
   replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "common.name" $dot }}-{{ $pgMode }}
   template:
     metadata:
       labels:
