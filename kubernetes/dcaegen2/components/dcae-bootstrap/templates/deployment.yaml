@@ -74,7 +74,6 @@ spec:
           - dcae-inventory-api
           - "-t"
           - "15"
-
         env:
         - name: NAMESPACE
           valueFrom:
@@ -96,6 +95,15 @@ spec:
         volumeMounts:
         - mountPath: /opt/app/osaaf
           name: tls-info
+      - name: init-consul
+        image: {{ .Values.global.consulLoaderRepository }}/{{ .Values.global.consulLoaderImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        args:
+        - --service
+        - "config-binding-service|config-binding-service.{{ include "common.namespace" . }}|10000"
+        - --service
+        - "config_binding_service|config-binding-service.{{ include "common.namespace" . }}|10000"
+        resources: {}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
