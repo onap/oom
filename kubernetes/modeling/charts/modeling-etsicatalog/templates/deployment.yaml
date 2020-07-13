@@ -47,6 +47,18 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      - command:
+        - /bin/sh
+        - -c
+        - addgroup -g 1000 -S onap;adduser onap -D -G onap -u 1000;chown -R onap:onap
+          /service/modeling/etsicatalog/static;ls -l /service/modeling/etsicatalog;echo
+          'chown static done'
+        image: "{{ include "common.repository" . }}/{{ .Values.initImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-init
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-etsicatalog
+          mountPath: /service/modeling/etsicatalog/static
       containers:
         - name: {{ include "common.name" . }}
           command:
