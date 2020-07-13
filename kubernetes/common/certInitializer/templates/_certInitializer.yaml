@@ -113,6 +113,27 @@
       value: "{{ $initRoot.public_fqdn | default "" }}"
 {{- end -}}
 
+{{- define "common.certInitializer._initImportCustomCertsContainer" -}}
+{{-   $dot := default . .dot -}}
+{{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
+{{-   $initName := default "certInitializer" -}}
+{{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
+{{- $subchartDot := mergeOverwrite (deepCopy (omit $dot "Values")) (dict "Chart" (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) }}
+- name: {{ include "common.name" $dot }}-import-custom-certs
+  image: "{{ $subchartDot.Values.global.initImportCustomCertsImage }}"
+  imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
+  command:
+    - /root/import-custom-certs.sh
+  volumeMounts:
+    - mountPath: /certs
+      name: aaf-agent-certs
+    - mountPath: /root/import-custom-certs.sh
+      name: aaf-agent-certs
+      subPath: import-custom-certs.sh
+    - mountPath: /updatedTruststore
+      name: updated-truststore
+{{- end -}}
+
 {{- define "common.certInitializer._volumeMount" -}}
 {{-   $dot := default . .dot -}}
 {{-   $initRoot := default $dot.Values.certInitializer .initRoot -}}
@@ -138,10 +159,17 @@
     name: {{ include "common.fullname" $subchartDot }}-add-config
     defaultMode: 0700
 {{-     end -}}
+{{-     if $dot.Values.global.importCustomCertsEnabled }}
+- name: updated-truststore
+  emptyDir: {}
+{{-     end -}}
 {{- end -}}
 
 {{- define "common.certInitializer.initContainer" -}}
 {{-   $dot := default . .dot -}}
+  {{- if $dot.Values.global.importCustomCertsEnabled }}
+    {{ include "common.certInitializer._initImportCustomCertsContainer" . }}
+  {{- end -}}
   {{- if $dot.Values.global.aafEnabled }}
     {{ include "common.certInitializer._initContainer" . }}
   {{- end -}}
@@ -156,7 +184,7 @@
 
 {{- define "common.certInitializer.volumes" -}}
 {{-   $dot := default . .dot -}}
-  {{- if $dot.Values.global.aafEnabled }}
+  {{- if or ($dot.Values.global.aafEnabled ) ($dot.Values.global.importCustomCertsEnabled) }}
     {{- include "common.certInitializer._volumes" . }}
   {{- end -}}
 {{- end -}}
