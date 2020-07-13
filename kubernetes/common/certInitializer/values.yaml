@@ -1,4 +1,4 @@
-# Copyright © 2020 Samsung Electronics
+# Copyright © 2020 Bell Canada, Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ global:
   repository: nexus3.onap.org:10001
   aafAgentImage: onap/aaf/aaf_agent:2.1.20
   aafEnabled: true
+  jreImage: openjdk:11.0.8-jre-slim-buster
 
 pullPolicy: Always
 
@@ -25,6 +26,11 @@ secrets:
     externalSecret: '{{ ternary (tpl (default "" .Values.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
     login: '{{ .Values.aafDeployFqi }}'
     password: '{{ .Values.aafDeployPass }}'
+    passwordPolicy: required
+  - uid: truststore-creds
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.truststoreCredsExternalSecret) . }}'
+    password: '{{ .Values.truststorePassword }}'
     passwordPolicy: required
 
 readinessCheck:
@@ -45,3 +51,7 @@ cadi_latitude: "38.0"
 cadi_longitude: "-72.0"
 aaf_add_config: ""
 mountPath: "/opt/app/osaaf"
+importCustomCertsEnabled: false
+truststoreMountpath: ""
+truststoreOutputFileName: truststore.jks
+truststorePassword: changeit
