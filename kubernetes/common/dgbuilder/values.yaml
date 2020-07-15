@@ -158,21 +158,46 @@ ingress:
   config:
     ssl: "redirect"
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  #
-  # Example:
-  # Configure resource requests and limits
-  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  # Minimum memory for development is 2 CPU cores and 4GB memory
-  # Minimum memory for production is 4 CPU cores and 8GB memory
-#resources:
-#  limits:
-#    cpu: 2
-#    memory: 4Gi
-#  requests:
-#    cpu: 2
-#    memory: 4Gi
+ # dependency / sub-chart configuration
+certInitializer:
+  nameOverride: dgbuilder-cert-initializer
+  truststoreMountpath: /opt/onap/ccsdk/dgbuilder/certs
+  fqdn: "sdnc"
+  app_ns: "org.osaaf.aaf"
+  fqi: "sdnc@sdnc.onap.org"
+  fqi_namespace: org.onap.sdnc
+  public_fqdn: "dgbuilder.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    cd /opt/app/osaaf/local;
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1 ;
+    
+    cp {{ .Values.fqi_namespace }}.crt node-cert.pem;
+    cp {{ .Values.fqi_namespace }}.key node-key.pem;
+    chmod go+r node-*.pem
+
+#Resource Limit flavor -By Default using small
+flavor: small
+#segregation for different envionment (Small and Large)
+
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  unlimited: {}
+
