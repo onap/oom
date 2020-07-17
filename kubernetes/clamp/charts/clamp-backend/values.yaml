@@ -22,6 +22,28 @@ global: # global defaults
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   persistence: {}
+  #AAF service
+  aafEnabled: true
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  publicFqdn: clamp.onap.org
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  secret_uid: &aaf_secret_uid clamp-app-aaf-deploy-creds
+  keystoreFile: "org.onap.clamp.p12"
+  truststoreFile: "org.onap.clamp.trust.jks"
+  keyFile: "org.onap.clamp.keyfile"
+  truststoreFileONAP: "truststoreONAPall.jks"
 
 secrets:
   - uid: db-secret
@@ -30,6 +52,13 @@ secrets:
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
     passwordPolicy: required
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
+
 
 flavor: small
 
@@ -76,6 +105,22 @@ config:
         "clamp.config.policy.pap.userName": "healthcheck",
         "clamp.config.policy.pap.password": "zb!XztG34",
         "clamp.config.cadi.aafLocateUrl": "https://aaf-locate.{{ include "common.namespace" . }}:8095"
+        {{- if .Values.global.aafEnabled }}
+        "server.ssl.key-store": "file:{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
+        "server.ssl.key-store-password": "file:{{ .Values.aafConfig.credsPath }}/cadi_keystore_password_p12"
+        "server.ssl.key-password": "file:{{ .Values.aafConfig.credsPath }}/cadi_key_password.pwd"
+        "server.ssl.key-store-type": "PKCS12"
+        "server.ssl.key-alias": "{{ .Values.aafConfig.fqi }}"
+
+# The key file used to decode the key store and trust store password
+# If not defined, the key store and trust store password will not be decrypted
+        "clamp.config.keyFile": "file:{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keyFile }}"
+
+## Config part for Client certificates
+        "server.ssl.client-auth": "want
+        "server.ssl.trust-store": "file:{{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.truststoreFileONAP }}"
+##        "server.ssl.trust-store-password": =enc:iDnPBBLq_EMidXlMa1FEuBR8TZzYxrCg66vq_XfLHdJ
+        {{- end }}
         }
 
 # default number of instances

@@ -23,6 +23,32 @@ global: # global defaults
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   centralizedLoggingEnabled: false
+  #AAF service
+  aafEnabled: true
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+
+aafConfig:
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  publicFqdn: clamp.onap.org
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  secret_uid: &aaf_secret_uid clamp-app-aaf-deploy-creds
+  keystoreFile: "org.onap.clamp.p12"
+  truststoreFile: "org.onap.clamp.trust.jks"
+  keyFile: "org.onap.clamp.keyfile"
+  truststoreFileONAP: "truststoreONAPall.jks"
+  clamp_key: "clamp.key"
+  clamp_pem: "clamp.pem"
+  clamp_ca_certs_pem: "clamp-ca-certs.pem"
+
 
 secrets:
   - uid: db-root-pass
@@ -34,6 +60,13 @@ secrets:
     type: basicAuth
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
+  - uid: *aaf_secret_uid
+    type: basicAuth
+    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDiabled" .Values.global.aafEnabled }}'
+    login: '{{ .Values.aafConfig.aafDeployFqi }}'
+    password: '{{ .Values.aafConfig.aafDeployPass }}'
+    passwordPolicy: required
+
 
 db:
   user: clds

@@ -46,6 +46,9 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config" . | indent 6 }}
+      {{- end }}
       containers:
         # side car containers
         {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.sidecar" . | nindent 8 }}{{ end }}
@@ -70,6 +73,9 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volume-mountpath" . | indent 8 }}
+        {{- end }}
           - name: logs
             mountPath: {{ .Values.log.path }}
           - mountPath: /etc/nginx/conf.d/default.conf
@@ -86,6 +92,9 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.aaf-config-volumes" . | indent 8 }}
+        {{- end }}
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}

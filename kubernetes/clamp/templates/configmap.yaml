@@ -26,4 +26,24 @@ metadata:
 data:
 {{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
 
+{{ if .Values.global.aafEnabled }}
+{{- if .Values.aafConfig.addconfig -}}
+---
+apiVersion: v1
+kind: ConfigMap
+{{- $suffix := "aaf-add-config" }}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
+data:
+  aaf-add-config.sh: |-
+    /opt/app/aaf_config/bin/agent.sh;/opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.aafConfig.fqi}} {{ .Values.aafConfig.fqdn }} > {{ .Values.aafConfig.credsPath }}/mycreds.prop; \
+    openssl pkcs12 -in {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -nocerts -nodes \
+     > {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.clamp_key }}; \
+     openssl pkcs12 -in {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -clcerts -nokeys \
+     > {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.clamp_pem }}; \
+     openssl pkcs12 -in {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -cacerts -nokeys -chain \
+     > {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.clamp_ca_certs_pem }};
+{{- end -}}
+{{- end -}}
+
 {{ include "common.log.configMap" . }}
