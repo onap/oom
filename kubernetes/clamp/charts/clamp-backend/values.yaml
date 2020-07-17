@@ -22,6 +22,42 @@ global: # global defaults
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.0
   persistence: {}
+  #AAF service
+  aafEnabled: true
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: clamp-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  public_fqdn: clamp.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh;
+    /opt/app/aaf_config/bin/agent.sh local showpass
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;\
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_truststore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_truststore_password.pwd;\
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_key_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_key_password.pwd;\
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password.pwd;\
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password_p12=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
+
+
+aafConfig:
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  keystoreFile: "org.onap.clamp.p12"
+  truststoreFile: "org.onap.clamp.trust.jks"
+  keyFile: "org.onap.clamp.keyfile"
+  truststoreFileONAP: "truststoreONAPall.jks"
 
 secrets:
   - uid: db-secret
@@ -30,6 +66,7 @@ secrets:
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
     passwordPolicy: required
+
 
 flavor: small
 
@@ -76,6 +113,22 @@ config:
         "clamp.config.policy.pap.userName": "healthcheck",
         "clamp.config.policy.pap.password": "zb!XztG34",
         "clamp.config.cadi.aafLocateUrl": "https://aaf-locate.{{ include "common.namespace" . }}:8095"
+        {{- if .Values.global.aafEnabled }}
+        "server.ssl.key-store": "file:{{ .Values.certInitializer.credsPath }}/{{ .Values.aafConfig.keystoreFile }}"
+        "server.ssl.key-store-password": "file:{{ .Values.certInitializer.credsPath }}/cadi_keystore_password_p12"
+        "server.ssl.key-password": "file:{{ .Values.certInitializer.credsPath }}/cadi_key_password.pwd"
+        "server.ssl.key-store-type": "PKCS12"
+        "server.ssl.key-alias": "{{ .Values.certInitializer.fqi }}"
+
+# The key file used to decode the key store and trust store password
+# If not defined, the key store and trust store password will not be decrypted
+        "clamp.config.keyFile": "file:{{ .Values.certInitializer.credsPath }}/{{ .Values.aafConfig.keyFile }}"
+
+## Config part for Client certificates
+        "server.ssl.client-auth": "want
+        "server.ssl.trust-store": "file:{{ .Values.certInitializer.credsPath }}/{{ .Values.aafConfig.truststoreFileONAP }}"
+##        "server.ssl.trust-store-password": =enc:iDnPBBLq_EMidXlMa1FEuBR8TZzYxrCg66vq_XfLHdJ
+        {{- end }}
         }
 
 # default number of instances

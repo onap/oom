@@ -46,6 +46,9 @@ spec:
         image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{- if .Values.global.aafEnabled }}
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
+      {{- end }}
       containers:
         # side car containers
         {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.sidecar" . | nindent 8 }}{{ end }}
@@ -72,6 +75,9 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.certInitializer.volumeMount" . | nindent 12 }}
+        {{- end }}
           - name: logs
             mountPath: {{ .Values.log.path }}
           - mountPath: /opt/clamp/sdc-controllers-config.json
@@ -100,6 +106,9 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+        {{- if .Values.global.aafEnabled }}
+{{ include "common.certInitializer.volumes" . | nindent 8 }}
+        {{- end }}
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}

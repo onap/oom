@@ -23,6 +23,47 @@ global: # global defaults
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   centralizedLoggingEnabled: false
+  #AAF service
+  aafEnabled: true
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: clamp-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  public_fqdn: clamp.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh;
+    /opt/app/aaf_config/bin/agent.sh local showpass
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop; \
+    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -nocerts -nodes \
+     > {{ .Values.credsPath }}/{{ .Values.aafConfig.clamp_key }}; \
+     openssl pkcs12 -in {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -clcerts -nokeys \
+     > {{ .Values.credsPath }}/{{ .Values.aafConfig.clamp_pem }}; \
+     openssl pkcs12 -in {{ .Values.aafConfig.credsPath }}/{{ .Values.aafConfig.keystoreFile }} -cacerts -nokeys -chain \
+     > {{ .Values.credsPath }}/{{ .Values.aafConfig.clamp_ca_certs_pem }};
+
+aafConfig:
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  keystoreFile: "org.onap.clamp.p12"
+  truststoreFile: "org.onap.clamp.trust.jks"
+  keyFile: "org.onap.clamp.keyfile"
+  truststoreFileONAP: "truststoreONAPall.jks"
+  clamp_key: "clamp.key"
+  clamp_pem: "clamp.pem"
+  clamp_ca_certs_pem: "clamp-ca-certs.pem"
+
 
 secrets:
   - uid: db-root-pass
@@ -34,6 +75,7 @@ secrets:
     type: basicAuth
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
+
 
 db:
   user: clds
