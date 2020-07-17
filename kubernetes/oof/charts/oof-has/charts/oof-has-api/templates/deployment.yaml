@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Copyright (C) 2020 Wipro Limited.
 # Modifications Copyright © 2018 AT&T,VMware
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -88,11 +89,44 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash","-c"]
-          args: ["nginx && /usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port=8080 --die-on-term --exit-on-reload --logto /var/log/conductor/conductor-uwsgi.log --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --logfile-chown --logfile-chmod 664 --protocol=uwsgi --socket 0.0.0.0:8080"]
+          args: ["/usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port={{ .Values.uwsgi.internalPort }} --die-on-term --exit-on-reload --logto /var/log/conductor/conductor-uwsgi.log --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --logfile-chown --logfile-chmod 664 --protocol=uwsgi --socket 0.0.0.0:{{ .Values.uwsgi.internalPort }}"]
           ports:
-          - containerPort: {{ .Values.liveness.periodSeconds }}
+          - containerPort: {{ .Values.uwsgi.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
+          {{- if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.uwsgi.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.uwsgi.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /usr/local/etc/conductor/conductor.conf
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: conductor.conf
+          - mountPath: /usr/local/bin/log.conf
+            name: {{ .Values.global.commonConfigPrefix  }}-config
+            subPath: log.conf
+          - mountPath: /usr/local/bin/AAF_RootCA.cer
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: AAF_RootCA.cer
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        - name: {{ include "common.name" . }}-nginx
+          image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.nginx.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
           {{- if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
@@ -105,27 +139,17 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /etc/nginx/nginx.conf
+          - mountPath: /opt/bitnami/nginx/conf/nginx.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: nginx.conf
-          - mountPath: /usr/local/etc/conductor/conductor.conf
-            name: {{ .Values.global.commonConfigPrefix }}-config
-            subPath: conductor.conf
-          - mountPath: /usr/local/bin/log.conf
-            name: {{ .Values.global.commonConfigPrefix  }}-config
-            subPath: log.conf
-          - mountPath: /usr/local/bin/AAF_RootCA.cer
-            name: {{ .Values.global.commonConfigPrefix }}-config
-            subPath: AAF_RootCA.cer
-          - mountPath: /etc/nginx/ssl/org.onap.oof.crt
+          - mountPath: /opt/bitnami/nginx/ssl/org.onap.oof.crt
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: org.onap.oof.crt
-          - mountPath: /etc/nginx/ssl/org.onap.oof.key
+          - mountPath: /opt/bitnami/nginx/ssl/org.onap.oof.key
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: org.onap.oof.key
           resources:
