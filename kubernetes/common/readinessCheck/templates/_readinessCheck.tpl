@@ -17,18 +17,29 @@
 {{/*
   Generate readiness part for a pod
   Will look by default to .Values.wait_for
+  There are two formats available.
 
-  Value of wait_for is an array of all pods /jobs to wait:
-
-  Example:
+  The simple one (where wait_for is just list of containers):
 
   wait_for:
     - aaf-locate
     - aaf-cm
     - aaf-service
 
-  The function can takes two arguments (inside a dictionary):
+  The powerful one (where wait_for is a map):
+
+  wait_for:
+    name: myname
+    containers:
+      - aaf-locate
+      - aaf-cm
+      - aaf-service
+
+
+  The function can takes below arguments (inside a dictionary):
      - .dot : environment (.)
+     - .initRoot : the root dictionary of readinessCheck submodule
+                   (default to .Values.readinessCheck)
      - .wait_for : list of containers / jobs to wait for (default to
                    .Values.wait_for)
 
@@ -42,13 +53,15 @@
 {{/*  Our version of helm doesn't support deepCopy so we need this nasty trick */}}
 {{-   $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
 {{-   $wait_for := default $initRoot.wait_for .wait_for -}}
-- name: {{ include "common.name" $dot }}-{{ $wait_for.name }}-readiness
+{{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
+{{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
+- name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: "{{ $subchartDot.Values.global.readinessRepository }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   command:
   - /root/ready.py
   args:
-  {{- range $container := $wait_for.containers }}
+  {{- range $container := $containers }}
   - --container-name
   - {{ tpl $container $dot }}
   {{- end }}
