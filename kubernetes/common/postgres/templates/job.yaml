@@ -1,0 +1,85 @@
+# Copyright © 2020 TATA Communications
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-upgrade
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 0
+      containers:
+      - name: dmaap-bc-job-pre-upgrade
+        image: {{ .Values.global.kubectlImage}}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: NAMESPACE_ENV
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+        command: ["/bin/bash", "-c"]
+        args: ["/upgrade-config/upgrade-script.sh"]
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-preupgrade-deployment
+          mountPath: /upgrade-config                              
+      volumes:
+      - name: {{ include "common.fullname" . }}-preupgrade-deployment
+        configMap:
+            name: {{ include "common.fullname" . }}-preupgrade-deployment
+            defaultMode: 0777      
+      restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-upgrade
+  annotations:
+    "helm.sh/hook": "post-upgrade"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 0
+      containers:
+      - name: dmaap-bc-job-post-upgrade
+        image: {{ .Values.global.kubectlImage}}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: NAMESPACE_ENV
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace        
+        command: ["/bin/bash", "-c"]
+        args: ["/upgrade-config/post-upgrade-script.sh"]
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-postupgrade-deployment
+          mountPath: /upgrade-config           
+      volumes:
+      - name: {{ include "common.fullname" . }}-postupgrade-deployment
+        configMap:
+            name: {{ include "common.fullname" . }}-postupgrade-deployment
+            defaultMode: 0777
+      restartPolicy: OnFailure
