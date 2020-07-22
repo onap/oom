@@ -81,6 +81,7 @@ plugins:
 repo:
 	@mkdir -p $(PACKAGE_DIR)
 	@helm serve --repo-path $(PACKAGE_DIR) &
+	@sleep 3
 	@helm repo index $(PACKAGE_DIR)
 	@helm repo add local http://127.0.0.1:8879
 
