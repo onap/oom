@@ -24,7 +24,7 @@ where <BRANCH> can be an offical release tag, such as
 
 * 4.0.0-ONAP for Dublin
 * 5.0.1-ONAP for El Alto
-* 6.0.0 for Frankfurt
+* 6.0.1 for Frankfurt
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
