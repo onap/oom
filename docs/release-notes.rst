@@ -20,6 +20,54 @@ Previous Release Notes
 Abstract
 ========
 
+This document provides the release notes for the Frankfurt Maintenance release
+1.
+
+Summary
+=======
+
+The focus of this release is to correct issues found on Frankfurt release of OOM
+installer.
+
+Release Data
+============
+
++--------------------------------------+--------------------------------------+
+| **Project**                          | OOM                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Docker images**                    | N/A                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release designation**              | Frankfurt  Maintenance Release 1     |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release date**                     | 2020/07/24                           |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+
+New features
+------------
+
+None
+
+**Bug fixes**
+
+- `OOM-2400 <https://jira.onap.org/browse/OOM-2400>`_ Fix SDNC DMAAP consumer
+   properties in HELM charts
+- `INT-1633 <https://jira.onap.org/browse/INT-1633>`_ Revert "[COMMON] add pre
+   upgrade script for mariadb-galera"
+- `OOM-2436 <https://jira.onap.org/browse/OOM-2436>`_ [COMMON] Allow to use ' in
+   mariadb-init
+
+**Known Issues**
+
+Same as Frankfurt Release
+
+
+Abstract
+========
+
 This document provides the release notes for the Frankfurt release.
 
 Summary
