@@ -63,7 +63,7 @@ spec:
             - bash
           args:
             - -c
-            - 'MYSQL_AUTH=root:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
+            - 'MYSQL_AUTH=${MYSQL_ROOT_USER}:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
@@ -83,16 +83,11 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-          - name: MSB_PROTO
-            value: "{{ .Values.global.config.msbProtocol }}"
-          - name: SSL_ENABLED
-            value: "{{ .Values.global.config.ssl_enabled }}"
-          - name: MSB_ADDR
-            value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-          - name: MYSQL_ADDR
-            value: {{ (index .Values "mariadb-galera" "service" "name") }}:{{ (index .Values "mariadb-galera" "service" "internalPort") }}
           - name: MYSQL_ROOT_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 12}}
+          envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-environment-configmap
           volumeMounts:
           - name: {{ include "common.fullname" . }}-etsicatalog
             mountPath: /service/modeling/etsicatalog/static
