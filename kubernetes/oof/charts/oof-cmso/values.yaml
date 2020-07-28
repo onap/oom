@@ -1,4 +1,5 @@
 # Copyright © 2018 AT&T
+# Copyright (C) 2020 Wipro Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,6 +62,19 @@ global:
   authentication: aaf-auth
   busyBoxImage: busybox:1.30
   busyBoxRepository: docker.io
+  mariadb-galera:
+    nameOverride: cmso-db
+    servicePort: 3306
+    userRootSecretKey: '{{ include "common.release" . }}-cmso-db-root-password'
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+    mysqlDatabase: cmso
+    mysqlAdditionalDatabases:
+      optimizer:
+        userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+  nameOverride: cmso-db-config
 
 flavor: small
 
@@ -77,7 +91,6 @@ oof-cmso-service:
   config:
     db:
       userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
-      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: cmso
@@ -86,7 +99,6 @@ oof-cmso-optimizer:
   config:
     db:
       userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
-      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: optimizer
