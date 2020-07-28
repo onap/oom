@@ -1,4 +1,5 @@
 # Copyright © 2018 AT&T
+# Copyright (C) 2020 Wipro Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +18,12 @@
 #################################################################
 secrets:
   - uid: cmso-db-root-password
-    name: '{{ include "common.release" . }}-cmso-db-root-password'
+    name: &rootPassword' {{ include "common.release" . }}-cmso-db-root-password'
     type: password
     password: ''
     policy: generate
   - uid: cmso-db-secret
-    name: '{{ include "common.release" . }}-cmso-db-secret'
+    name: &dbCreds '{{ include "common.release" . }}-cmso-db-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
@@ -43,8 +44,8 @@ mariadb-galera:
     enabled: true
   disableNfsProvisioner: true
   config:
-    mariadbRootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
-    userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+    mariadbRootPasswordExternalSecret: *rootPassword
+    userCredentialsExternalSecret: *dbCreds
     mysqlDatabase: cmso
   externalConfig: |
     [mysqld]
@@ -62,6 +63,20 @@ global:
   busyBoxImage: busybox:1.30
   busyBoxRepository: docker.io
 
+mariadb-init:
+  global:
+    mariadb-galera:
+      nameOverride: cmso-db
+      servicePort: 3306
+      userRootSecretKey: *rootPassword
+  config:
+    userCredentialsExternalSecret: *dbCreds
+    mysqlDatabase: cmso
+    mysqlAdditionalDatabases:
+      optimizer:
+        userCredentialsExternalSecret: *dbCreds
+  nameOverride: cmso-db-config
+
 flavor: small
 
 config:
@@ -76,8 +91,7 @@ config:
 oof-cmso-service:
   config:
     db:
-      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
-      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+      userCredentialsExternalSecret: *dbCreds
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: cmso
@@ -85,8 +99,7 @@ oof-cmso-service:
 oof-cmso-optimizer:
   config:
     db:
-      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
-      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+      userCredentialsExternalSecret: *dbCreds
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: optimizer
