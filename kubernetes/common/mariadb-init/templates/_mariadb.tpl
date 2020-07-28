@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2019 Orange
+# Copyright (C) 2020 Wipro Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,5 +19,5 @@
   Choose the name of the mariadb secret to use.
 */}}
 {{- define "mariadbInit.mariadbClusterSecret" -}}
-  {{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (default "mariadb-galera" .Values.global.mariadbGalera.nameOverride)) -}}
+  {{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (default "mariadb-galera" .Values.mariadbGalera.nameOverride)) -}}
 {{- end -}}
