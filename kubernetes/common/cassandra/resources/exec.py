@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import getopt
 import logging
 import os
@@ -7,7 +7,7 @@ import time
 
 from kubernetes import config
 from kubernetes.client import Configuration
-from kubernetes.client.apis import core_v1_api
+from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 

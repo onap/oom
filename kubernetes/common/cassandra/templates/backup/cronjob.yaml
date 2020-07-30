@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+{{- $global := . }}
 {{- if .Values.backup.enabled }}
 apiVersion: batch/v1beta1
 kind: CronJob
@@ -52,7 +53,7 @@ spec:
               image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
               imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
               command:
-              - /bin/bash
+              - /bin/sh
               - -c
               - |
                 clearSnapshot(){
@@ -237,7 +238,7 @@ spec:
           {{- range $i := until (int .Values.replicaCount)}}
           - name: data-dir-{{ $i }}
             persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-data-{{ $i }}
+              claimName: {{ include "common.fullname" $global }}-data-{{ include "common.fullname" $global }}-{{ $i }} 
           {{- end }}
           - name: backup-dir
             persistentVolumeClaim:
