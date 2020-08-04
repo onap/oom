@@ -27,5 +27,10 @@ docker login -u docker -p docker nexus3.onap.org:10001
 
 sudo apt-get install make -y
 
+#nfs server
+sudo apt-get install nfs-kernel-server -y
+sudo mkdir -p /dockerdata-nfs
+sudo chown nobody:nogroup /dockerdata-nfs/
+
 
 exit 0
