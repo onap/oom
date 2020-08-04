@@ -289,6 +289,12 @@ Run RKE
 -------
 From within the same directory as the cluster.yml file, simply execute::
 
+  > mv rke_linux-amd64 rke
+
+  > sudo chmod +x rke
+
+  > sudo mv ./rke /usr/local/bin/rke
+
   > rke up
 
 The output will look something like::
@@ -350,6 +356,8 @@ Validate deployment
 -------------------
 
 ::
+
+  > mkdir -p ~/.kube
 
   > cp kube_config_cluster.yml ~/.kube/config.onap
 
