@@ -1,5 +1,6 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
+#   Modifications Copyright © 2020 Nokia
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -42,7 +43,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
+      initContainers: 
       - name: so-chown
         image: alpine:3.6
         volumeMounts:
@@ -55,7 +56,6 @@ spec:
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources:
-{{ include "common.resources" . | indent 12 }}
         env:
         - name: DB_HOST
           valueFrom:
@@ -75,11 +75,33 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "login") | indent 10 }}
         - name: DB_ADMIN_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "password") | indent 10 }}
+        - name: KEYSTORE
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-secrets-config
+              key: KEYSTORE         
+        - name: KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-secrets-config
+              key: KEYSTORE_PASSWORD
+        - name: TRUSTSTORE
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-secrets-config
+              key: TRUSTSTORE
+        - name: TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "common.fullname" . }}-secrets-config
+              key: TRUSTSTORE_PASSWORD
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "so.certificate.volume-mounts" . | nindent 8 }}
+        volumeMounts:
+        - name: certificates
+          mountPath: /app/certificates
         - name: logs
           mountPath: /app/logs
         - name: config
@@ -102,7 +124,10 @@ spec:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
           protocol: TCP
-      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      volumes:
+      - name: certificates
+        secret:
+          secretName: {{ include "common.fullname" . }}-secrets
       - name: logs
         emptyDir: {}
       - name: config
