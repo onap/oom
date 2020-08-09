@@ -1,5 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018-2020 AT&T
+# Modifications Copyright © 2018-2020 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,23 +17,9 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
   readinessRepository: oomk8s
   readinessImage: readiness-check:2.0.2
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  envsubstImage: dibi/envsubst
-  ubuntuImage: ubuntu:16.04
-  pdp:
-    nameOverride: pdp
-  pap:
-    nameOverride: pap
-  drools:
-    nameOverride: drools
-  brmwgw:
-    nameOverride: brmsgw
-  nexus:
-    nameOverride: nexus
+  aafEnabled: true
   mariadb:
     # '&mariadbConfig' means we "store" the values for  later use in the file
     # with '*mariadbConfig' pointer.
@@ -62,48 +48,43 @@ secrets:
     password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
     passwordPolicy: generate
 
+db: &dbSecretsHook
+  credsExternalSecret: *dbSecretName
+
+policy-api:
+  enabled: true
+  db: *dbSecretsHook
+policy-pap:
+  enabled: true
+  db: *dbSecretsHook
+policy-xacml-pdp:
+  enabled: true
+  db: *dbSecretsHook
+policy-apex-pdp:
+  enabled: true
+  db: *dbSecretsHook
+policy-drools-pdp:
+  enabled: true
+  db: *dbSecretsHook
+policy-distribution:
+  enabled: true
+  db: *dbSecretsHook
+policy-nexus:
+  enabled: true
+
 #################################################################
-# Application configuration defaults.
+# DB configuration defaults.
 #################################################################
-# application image
+
 repository: nexus3.onap.org:10001
-image: onap/policy-pe:1.6.4
 mariadb_image: library/mariadb:10
 pullPolicy: Always
 
 subChartsOnly:
   enabled: true
 
-db: &dbSecretsHook
-  credsExternalSecret: *dbSecretName
-
-pap:
-  nameOverride: pap
-  db: *dbSecretsHook
-pdp:
-  nameOverride: pdp
-  db: *dbSecretsHook
-drools:
-  nameOverride: drools
-  db: *dbSecretsHook
-brmsgw:
-  nameOverride: brmsgw
-  db: *dbSecretsHook
-policy-api:
-  db: *dbSecretsHook
-policy-xacml-pdp:
-  db: *dbSecretsHook
-
-nexus:
-  nameOverride: nexus
-
 # flag to enable debugging - application support required
 debugEnabled: false
-
-# application configuration
-config:
-  preloadPolicies: false
-  pdpPort: 8081
 
 # default number of instances
 replicaCount: 1
@@ -124,26 +105,6 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-service:
-  type: NodePort
-  name: pap
-  portName: pap
-  internalPort: 8443
-  externalPort: 8443
-  nodePort: 19
-  internalPort2: 9091
-  externalPort2: 9091
-  nodePort2: 18
-
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "policy.api"
-      name: "pap"
-      port: 8443
-  config:
-    ssl: "redirect"
-
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals
   config:
@@ -162,22 +123,3 @@ mariadb-galera:
     [mysqld]
     lower_case_table_names = 1
 
-# Resource Limit flavor -By Default using small
-flavor: small
-# Segregation for Different environment (Small and Large)
-resources:
-  small:
-    limits:
-      cpu: 1
-      memory: 4Gi
-    requests:
-      cpu: 10m
-      memory: 1Gi
-  large:
-    limits:
-      cpu: 2
-      memory: 8Gi
-    requests:
-      cpu: 20m
-      memory: 2Gi
-  unlimited: {}
