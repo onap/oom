@@ -1,5 +1,6 @@
+#!/bin/bash -x
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
-# Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2018, 2020 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash -xv
 mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
+
 for db in support onap_sdk log migration operationshistory10 pooling policyadmin operationshistory
 do
 	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
