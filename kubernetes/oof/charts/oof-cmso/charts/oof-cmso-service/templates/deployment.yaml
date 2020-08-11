@@ -90,6 +90,7 @@ spec:
           mountPath: /share/etc/config
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
       # side car containers
       - name: filebeat-onap
@@ -130,15 +131,15 @@ spec:
         - name: DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmso-db-user-secret" "key" "password") | indent 10}}
         - name: JAVA_TRUSTSTORE
-          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
+          value: /opt/app/osaaf/local/{{ .Values.global.truststoreFile }}
         - name: SSL_KEYSTORE
-          value: /share/etc/certs/{{ .Values.global.keystoreFile }}
+          value: /opt/app/osaaf/local/{{ .Values.global.keystoreFile }}
         - name: JAVA_TRUSTSTORE_PASSWORD
           value: {{ .Values.global.truststorePassword }}
-        - name: SSL_KEYSTORE_PASSWORD
-          value: {{ .Values.global.keystorePassword }}
         - name: AUTHENTICATION
           value: {{ .Values.global.authentication }}
+        command: ["/bin/sh"]
+        args: ["-c", "export SSL_KEYSTORE_PASSWORD=$(cat /opt/app/osaaf/local/.pass) && ./startService.sh"]
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -156,6 +157,7 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 8 }}
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
         - name: {{ include "common.fullname" . }}-logs
