@@ -41,21 +41,26 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: JAVA_TRUSTSTORE
-          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
+          value: /share/etc/osaaf/local/{{ .Values.global.truststoreFile }}
         - name: SSL_KEYSTORE
-          value: /share/etc/certs/{{ .Values.global.keystoreFile }}
-        - name: JAVA_TRUSTSTORE_PASSWORD
-          value: {{ .Values.global.truststorePassword }}
-        - name: SSL_KEYSTORE_PASSWORD
-          value: {{ .Values.global.keystorePassword }}
+          value: /share/etc/osaaf/local/{{ .Values.global.keystoreFile }}
         - name: AUTHENTICATION
           value: {{ .Values.global.authentication }}
+        command:
+        - /bin/sh
+        args:
+        - "-c"
+        - |
+          export SSL_KEYSTORE_PASSWORD=$(cat /share/etc/osaaf/local/.pass)
+          export JAVA_TRUSTSTORE_PASSWORD=$(cat /share/etc/osaaf/local/.trustpass)
+          ./startService.sh
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -73,6 +78,7 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 8 }}
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
         - name: {{ include "common.fullname" . }}-logs
@@ -94,6 +100,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+        {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
