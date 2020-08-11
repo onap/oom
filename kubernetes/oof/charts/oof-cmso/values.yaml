@@ -64,7 +64,6 @@ global:
   keystoreFile: "org.onap.oof.jks"
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
-  keystorePassword: OA7*y0PEGTma?$be2z#0$:L]
   truststorePassword:
   authentication: aaf-auth
   busyBoxImage: busybox:1.30
@@ -98,7 +97,27 @@ config:
     optimizer:
       userName: cmso-optimizer
 
+#sub-charts configuration
+certInitializer: &certInitConfig
+  fqdn: "oof"
+  app_ns: "org.osaaf.aaf"
+  fqi: "oof@oof.onap.org"
+  fqi_namespace: org.onap.oof
+  public_fqdn: "oof.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "0.0"
+  cadi_longitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /share/etc/osaaf
+  aaf_add_config: >
+    cd {{ .Values.credsPath }};
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password_jks= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1
+
 oof-cmso-service:
+  certInitializer:
+    << : *certInitConfig
+    nameOverride: oof-cmso-service-cert-initializer
   config:
     db:
       userCredentialsExternalSecret: *serviceDbCreds
@@ -107,9 +126,22 @@ oof-cmso-service:
       mysqlDatabase: cmso
 
 oof-cmso-optimizer:
+  certInitializer:
+    << : *certInitConfig
+    nameOverride: oof-cmso-optimizer-cert-initializer
   config:
     db:
       userCredentialsExternalSecret: *optimizerDbCreds
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: optimizer
+
+oof-cmso-topology:
+  certInitializer:
+    << : *certInitConfig
+    nameOverride: oof-cmso-topology-cert-initializer
+
+oof-cmso-ticketmgt:
+  certInitializer:
+    << : *certInitConfig
+    nameOverride: oof-cmso-ticketmgt-cert-initializer
