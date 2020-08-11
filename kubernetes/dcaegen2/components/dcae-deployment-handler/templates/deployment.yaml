@@ -15,7 +15,7 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ include "common.fullname" . }}
@@ -27,9 +27,6 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
@@ -115,6 +112,8 @@ spec:
               name: component-log
             - mountPath: /opt/app/dh/etc/cert/
               name: tls-info
+            - mountPath: /opt/app/dh/etc/
+              name: log4js-conf
           env:
             - name: CONSUL_HOST
               value: consul-server.{{ include "common.namespace" . }}
@@ -164,5 +163,9 @@ spec:
             defaultMode: 422
             name: {{ include "common.fullname" . }}-configmap
           name: dh-config
+        - configMap:
+            defaultMode: 420
+            name: {{include "common.fullname" . }}-log4js-configmap
+          name: log4js-conf      
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
