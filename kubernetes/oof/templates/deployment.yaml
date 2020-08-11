@@ -67,7 +67,7 @@ spec:
         image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.global.curlImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-osdf-sms-readiness
-
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -90,6 +90,7 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -99,12 +100,6 @@ spec:
           - mountPath: /opt/app/ssl_cert/aaf_root_ca.cer
             name: {{ include "common.fullname" . }}-config
             subPath: aaf_root_ca.cer
-          - mountPath: /opt/app/ssl_cert/org.onap.oof.crt
-            name: {{ include "common.fullname" . }}-config
-            subPath: org.onap.oof.crt
-          - mountPath: /opt/app/ssl_cert/org.onap.oof.key
-            name: {{ include "common.fullname" . }}-config
-            subPath: org.onap.oof.key
           - mountPath: /opt/osdf/config/common_config.yaml
             name: {{ include "common.fullname" . }}-config
             subPath: common_config.yaml
@@ -120,6 +115,7 @@ spec:
         {{- end }}
 
       volumes:
+       {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -133,9 +129,5 @@ spec:
               path: aaf_root_ca.cer
             - key: common_config.yaml
               path: common_config.yaml
-            - key: org.onap.oof.crt
-              path: org.onap.oof.crt
-            - key: org.onap.oof.key
-              path: org.onap.oof.key
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
