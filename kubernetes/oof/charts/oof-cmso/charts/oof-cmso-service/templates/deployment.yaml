@@ -35,6 +35,7 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -64,10 +65,16 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - name: {{ include "common.name" . }}-chown
-        command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /share/"]
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - chown -Rf 1000:1000 /share/
+        - chown -Rf 1000:1000 {{ .Values.certInitializer.credsPath }}
         image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 8 }}
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
       - name: db-init
@@ -130,15 +137,20 @@ spec:
         - name: DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmso-db-user-secret" "key" "password") | indent 10}}
         - name: JAVA_TRUSTSTORE
-          value: /share/etc/certs/{{ .Values.global.truststoreFile }}
+          value: /share/etc/osaaf/local/{{ .Values.global.truststoreFile }}
         - name: SSL_KEYSTORE
-          value: /share/etc/certs/{{ .Values.global.keystoreFile }}
+          value: /share/etc/osaaf/local/{{ .Values.global.keystoreFile }}
         - name: JAVA_TRUSTSTORE_PASSWORD
           value: {{ .Values.global.truststorePassword }}
-        - name: SSL_KEYSTORE_PASSWORD
-          value: {{ .Values.global.keystorePassword }}
         - name: AUTHENTICATION
           value: {{ .Values.global.authentication }}
+        command:
+        - /bin/sh
+        args:
+        - "-c"
+        - |
+          export SSL_KEYSTORE_PASSWORD=$(cat /share/etc/osaaf/local/.pass)
+          ./startService.sh
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -156,6 +168,7 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 8 }}
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
         - name: {{ include "common.fullname" . }}-logs
@@ -177,6 +190,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+        {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
