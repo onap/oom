@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-redis make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard
+make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard
 
 make-dcae-bootstrap:
 	cd components && helm dep up dcae-bootstrap && helm lint dcae-bootstrap
@@ -24,9 +24,6 @@ make-dcae-config-binding-service:
 
 make-dcae-healthcheck:
 	cd components && helm dep up dcae-healthcheck && helm lint dcae-healthcheck
-
-make-dcae-redis:
-	cd components && helm dep up dcae-redis && helm lint dcae-redis
 
 make-dcae-servicechange-handler:
 	cd components && helm dep up dcae-servicechange-handler && helm lint dcae-servicechange-handler
