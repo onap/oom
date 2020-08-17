@@ -1,0 +1,116 @@
+# Copyright © 2019 Nordix Foundation
+# Copyright © 2020 Huawei
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefixExt: 304
+  repository: nexus3.onap.org:10001
+  readinessImage: onap/oom/readiness:3.0.1
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+  envsubstImage: dibi/envsubst
+  persistence:
+    mountPath: /dockerdata-nfs
+  security:
+    aaf:
+      enabled: false
+  aaf:
+    auth:
+      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+repository: nexus3.onap.org:10001
+image: onap/so/vnfm-adapter:1.7.1
+pullPolicy: Always
+
+aaf:
+  auth:
+    username: so@so.onap.org
+    password: 8DB1C939BFC6A35C3832D0E52E452D0E05AE2537AF142CECD125FF827C05A972FDD0F4700547DA
+aai:
+  auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
+mso:
+  key: 07a7159d3bf51a0e53be7a8f89699be7
+sdc:
+  username: mso
+  password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
+  key: 566B754875657232314F5548556D3665
+
+replicaCount: 1
+minReadySeconds: 10
+containerPort: &containerPort 9092
+logPath: ./logs/vnfm-adapter/
+app: vnfm-adapter
+service:
+    type: NodePort
+    internalPort: *containerPort
+    externalPort: *containerPort
+    nodePort: "06"
+    portName: so-vnfm-port
+updateStrategy:
+    type: RollingUpdate
+    maxUnavailable: 1
+    maxSurge: 1
+
+#################################################################
+# soHelpers part
+#################################################################
+soHelpers:
+  nameOverride: so-vnfm-cert-init
+  certInitializer:
+    nameOverride: so-vnfm-cert-init
+    credsPath: /opt/app/osaaf/local
+  cadi:
+    apiEnforcement: org.onap.so.vnfmAdapterPerm
+  containerPort: *containerPort
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+    requests:
+      memory: 1Gi
+      cpu: 500m
+  large:
+    limits:
+      memory: 8Gi
+      cpu: 4000m
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+  unlimited: {}
+livenessProbe:
+    port: 9092
+    initialDelaySeconds: 600
+    periodSeconds: 60
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+ingress:
+  enabled: false
+  service:
+      - baseaddr: "sovnfmadapter"
+        name: "so-vnfm-adapter"
+        port: 9092
+  config:
+    ssl: "redirect"
+nodeSelector: {}
+tolerations: []
+affinity: {}
