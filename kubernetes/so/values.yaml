@@ -1,5 +1,5 @@
 # Copyright © 2018 AT&T USA
-#
+# Copyright © 2020 Huawei
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,6 +22,7 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   soBaseImage: onap/so/base-image:1.0
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
   mariadbGalera:
     nameOverride: mariadb-galera
     serviceName: mariadb-galera
@@ -57,18 +58,6 @@ global:
     siteName: onapheat
     auth: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
     defaultCloudOwner: onap
-    cadi:
-      cadiLoglevel: DEBUG
-      cadiKeyFile: /app/client/org.onap.so.keyfile
-      cadiTrustStore: /app/client/org.onap.so.trust.jks
-      cadiTruststorePassword: enc:MFpuxKeYK6Eo6QXjDUjtOBbp0FthY7SB4mKSIJm_RWC
-      cadiLatitude: 38.4329
-      cadiLongitude: -90.43248
-      aafEnv: IST
-      aafApiVersion: 2.1
-      aafRootNs: org.onap.so
-      aafLocateUrl: https://aaf-locate.onap:8095
-      aafUrl: https://aaf-locate.onap:8095/locate/org.osaaf.aaf.service:2.1
     msoKey: 07a7159d3bf51a0e53be7a8f89699be7
   client:
     certs:
@@ -119,8 +108,14 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
     type: generic
     filePaths:
-      - resources/config/certificates/onap-ca.crt
       - resources/config/certificates/msb-ca.crt
+
+aafConfig:
+  permission_user: 1000
+  permission_group: 999
+
+aaf:
+  trustore: org.onap.so.trust.jks
 
 #################################################################
 # Application configuration defaults.
@@ -140,19 +135,31 @@ image: onap/so/api-handler-infra:1.6.4
 pullPolicy: Always
 replicaCount: 1
 minReadySeconds: 10
-containerPort: 8080
+containerPort: &containerPort 8080
 logPath: ./logs/apih/
 app: api-handler-infra
 service:
-    type: NodePort
-    nodePort: 77
-    internalPort: 8080
-    externalPort: 8080
-    portName: so-apih-port
+  type: NodePort
+  nodePort: 77
+  internalPort: *containerPort
+  externalPort: *containerPort
+  portName: so-apih-port
 updateStrategy:
-    type: RollingUpdate
-    maxUnavailable: 1
-    maxSurge: 1
+  type: RollingUpdate
+  maxUnavailable: 1
+  maxSurge: 1
+
+#################################################################
+# soHelpers part
+#################################################################
+soHelpers:
+  nameOverride: so-apih-cert-init
+  certInitializer:
+    nameOverride: so-apih-cert-init
+  credsPath: /opt/app/osaaf/local
+  certSecret: *so-certs
+  containerPort: *containerPort
+
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
@@ -174,14 +181,6 @@ resources:
       cpu: 1000m
       memory: 2Gi
   unlimited: {}
-livenessProbe:
-    path: /manage/health
-    scheme: HTTP
-    initialDelaySeconds: 600
-    periodSeconds: 60
-    timeoutSeconds: 10
-    successThreshold: 1
-    failureThreshold: 3
 
 nodeSelector: {}
 affinity: {}
@@ -220,12 +219,6 @@ mso:
   adapters:
     requestDb:
       auth: Basic YnBlbDpwYXNzd29yZDEk
-  config:
-    cadi:
-      aafId: so@so.onap.org
-      aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-      apiEnforcement: org.onap.so.apihPerm
-      noAuthn: /manage/health
   camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
   sdc:
     client:
@@ -239,215 +232,58 @@ mso:
   health:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
 
-so-bpmn-infra:
-  certSecret: *so-certs
+so-appc-orchestrator:
+  enabled: true
   db:
     <<: *dbSecrets
-  cds:
-    auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-  aai:
-    auth: 221187EFA3AD4E33600DE0488F287099934CE65C3D0697BCECC00BB58E784E07CD74A24581DC31DBC086FF63DF116378776E9BE3D1325885
-  mso:
-    key: 07a7159d3bf51a0e53be7a8f89699be7
-    adapters:
-      requestDb:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
-      db:
-        auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
-        password: wLg4sjrAFUS8rfVfdvTXeQ==
-      po:
-        auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aaafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.bpmnPerm
-        noAuthn: /manage/health
-    sdnc:
-      password: 1D78CFC35382B6938A989066A7A7EAEF4FE933D2919BABA99EB4763737F39876C333EE5F
-    sniro:
-      auth: test:testpwd
-      endpoint: http://replaceme:28090/optimizationInstance/V1/create
-    oof:
-      auth: test:testpwd
-  so:
-    vnfm:
-      adapter:
-        auth: Basic dm5mbTpwYXNzd29yZDEk
+
+so-bpmn-infra:
+  db:
+    <<: *dbSecrets
 
 so-catalog-db-adapter:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
-  mso:
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.catalogDbAdapterPerm
-        noAuthn: /manage/health
-    adapters:
-      db:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-monitoring:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
 
 so-openstack-adapter:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
-  aaf:
-    auth:
-      encrypted: 7F182B0C05D58A23A1C4966B9CDC9E0B8BC5CD53BC8C7B4083D869F8D53E9BDC3EFD55C94B1D3F
-  aai:
-    auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
-  org:
-    onap:
-      so:
-        adapters:
-          bpelauth: D1A67FA93B6A6419132D0F83CC771AF774FD3C60853C50C22C8C6FC5088CC79E9E81EDE9EA39F22B2F66A0068E
-          valet:
-            basic_auth: bXNvOkphY2tkYXdzIGxvdmUgbXkgYmlnIHNwaGlueCBvZiBxdWFydHouCg==
-  mso:
-    msoKey: 07a7159d3bf51a0e53be7a8f89699be7
-    auth: BEA8637716A7EB617DF472BA6552D22F68C1CB17B0D094D77DDA562F4ADAAC4457CAB848E1A4
-    basicUser: poBpmn
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.openStackAdapterPerm
-        noAuthn: /manage/health
-    db:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-request-db-adapter:
-  certSecret: *so-certs
   db:
     <<: *dbSecrets
-  mso:
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.requestDbAdapterPerm
-        noAuthn: /manage/health
-    adapters:
-      requestDb:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-sdc-controller:
-  certSecret: *so-certs
   db:
     <<: *dbSecrets
-  aai:
-    auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
-  mso:
-    msoKey: 07a7159d3bf51a0e53be7a8f89699be7
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.sdcControllerPerm
-        noAuthn: /manage/health
-    asdc:
-      config:
-        key: 566B754875657232314F5548556D3665
-    requestDb:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
-    asdc-connections:
-      asdc-controller1:
-        password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
 
 so-sdnc-adapter:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
-  org:
-    onap:
-      so:
-        adapters:
-          sdnc:
-            bpelauth: 4C18603C5AE7E3A42A6CED95CDF9C0BA9B2109B3725747662E5D34E5FDF63DA9ADEBB08185098F14699195FDE9475100
-            sdncauth: ED07A7EE5F099FA53369C3DF2240AD68A00154676EEDBC6F8C16BAA83B1912941B8941ABD48683D2C1072DA7040659692DE936A59BBF42A038CF71DE67B4A375190071EC76EA657801B033C135
-            network:
-                encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
-  mso:
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.sdncAdapterPerm
-        noAuthn: /manage/health
-    adapters:
-      requestDb:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
-    rest:
-      aafEncrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
 
 so-ve-vnfm-adapter:
-  certSecret: *so-certs
+  enabled: true
 
 so-vfc-adapter:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
-  mso:
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.vfcAdapterPerm
-        noAuthn: /manage/health
-    adapters:
-      requestDb:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-nssmf-adapter:
-  certSecret: *so-certs
+  enabled: true
   db:
     <<: *dbSecrets
-  aaf:
-    auth:
-      username: so@so.onap.org
-      password: 8DB1C939BFC6A35C3832D0E52E452D0E05AE2537AF142CECD125FF827C05A972FDD0F4700547DA
-  aai:
-    auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
-  mso:
-    key: 07a7159d3bf51a0e53be7a8f89699be7
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.nssmfAdapterPerm
-        noAuthn: /manage/health
-    adapters:
-      requestDb:
-        auth: Basic YnBlbDpwYXNzd29yZDEk
 
 so-vnfm-adapter:
-  certSecret: *so-certs
-  aaf:
-    auth:
-      username: so@so.onap.org
-      password: 8DB1C939BFC6A35C3832D0E52E452D0E05AE2537AF142CECD125FF827C05A972FDD0F4700547DA
-  aai:
-    auth: 2A11B07DB6214A839394AA1EC5844695F5114FC407FF5422625FB00175A3DCB8A1FF745F22867EFA72D5369D599BBD88DA8BED4233CF5586
-  sdc:
-    username: mso
-    password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
-    key: 566B754875657232314F5548556D3665
-  mso:
-    key: 07a7159d3bf51a0e53be7a8f89699be7
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.vnfmAdapterPerm
-        noAuthn: /manage/health
+  enabled: true
 
 so-mariadb:
   db:
@@ -456,35 +292,3 @@ so-mariadb:
     backupCredsExternalSecret: *dbBackupCredsSecretName
     userCredsExternalSecret: *dbUserCredsSecretName
     adminCredsExternalSecret: *dbAdminCredsSecretName
-so-appc-orchestrator:
-  certSecret: *so-certs
-  db:
-    <<: *dbSecrets
-  mso:
-    basicUser: poBpmn
-    auth: BEA8637716A7EB617DF472BA6552D22F68C1CB17B0D094D77DDA562F4ADAAC4457CAB848E1A4
-    config:
-      cadi:
-        aafId: so@so.onap.org
-        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
-        apiEnforcement: org.onap.so.openStackAdapterPerm
-        noAuthn: /manage/health
-  appc:
-    client:
-      topic:
-        read:
-          name: APPC-LCM-WRITE
-          timeout: 360000
-        write: APPC-LCM-READ
-        sdnc:
-          read: SDNC-LCM-WRITE
-          write: SDNC-LCM-READ
-      response:
-        timeout: 3600000
-      key: VIlbtVl6YLhNUrtU
-      secret: 64AG2hF4pYeG2pq7CT6XwUOT
-      service: ueb
-  auth:
-    rest:
-      aaf: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
-      aafEncrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456

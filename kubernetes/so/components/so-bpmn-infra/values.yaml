@@ -1,0 +1,164 @@
+# Copyright © 2018 AT&T USA
+# Copyright © 2020 Huawei
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  repository: nexus3.onap.org:10001
+  readinessImage: onap/oom/readiness:3.0.1
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+  envsubstImage: dibi/envsubst
+  persistence:
+    mountPath: /dockerdata-nfs
+  #This configuration specifies Service and port for SDNC OAM interface
+  sdncOamService: sdnc-oam
+  sdncOamPort: 8282
+  security:
+    aaf:
+      enabled: false
+  aaf:
+    auth:
+      encrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-user-creds
+    name: '{{ include "common.release" . }}-so-bpmn-infra-db-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.userCredsExternalSecret) . }}'
+    login: '{{ .Values.db.userName }}'
+    password: '{{ .Values.db.userPassword }}'
+    passwordPolicy: required
+  - uid: db-admin-creds
+    name: '{{ include "common.release" . }}-so-bpmn-infra-db-admin-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.adminCredsExternalSecret) . }}'
+    login: '{{ .Values.db.adminName }}'
+    password: '{{ .Values.db.adminPassword }}'
+    passwordPolicy: required
+
+#secretsFilePaths: |
+#  - 'my file 1'
+#  - '{{ include "templateThatGeneratesFileName" . }}'
+
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+repository: nexus3.onap.org:10001
+image: onap/so/bpmn-infra:1.6.4
+pullPolicy: Always
+
+db:
+  userName: so_user
+  userPassword: so_User123
+  # userCredsExternalSecret: some secret
+  adminName: so_admin
+  adminPassword: so_Admin123
+  # adminCredsExternalSecret: some secret
+
+aai:
+  auth: 221187EFA3AD4E33600DE0488F287099934CE65C3D0697BCECC00BB58E784E07CD74A24581DC31DBC086FF63DF116378776E9BE3D1325885
+
+cds:
+  auth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+
+mso:
+  key: 07a7159d3bf51a0e53be7a8f89699be7
+  adapters:
+    requestDb:
+      auth: Basic YnBlbDpwYXNzd29yZDEk
+    db:
+      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
+      password: wLg4sjrAFUS8rfVfdvTXeQ==
+    po:
+      auth: A3745B5DBE165EFCF101D85A6FC81C211AB8BF604F8861B6C413D5DC90F8F30E0139DE44B8A342F4EF70AF
+  sdnc:
+    password: 1D78CFC35382B6938A989066A7A7EAEF4FE933D2919BABA99EB4763737F39876C333EE5F
+  sniro:
+    auth: test:testpwd
+  oof:
+    auth: test:testpwd
+so:
+  vnfm:
+    adapter:
+      auth: Basic dm5mbTpwYXNzd29yZDEk
+sniro:
+  endpoint: http://replaceme:28090/optimizationInstance/V1/create
+
+replicaCount: 1
+minReadySeconds: 10
+containerPort: &containerPort 8081
+logPath: ./logs/bpmn/
+app: so-bpmn-infra
+service:
+  type: ClusterIP
+  internalPort: *containerPort
+  externalPort: 8081
+  portName: so-bpmn-port
+updateStrategy:
+  type: RollingUpdate
+  maxUnavailable: 1
+  maxSurge: 1
+
+#################################################################
+# soHelper part
+#################################################################
+soHelpers:
+  nameOverride: so-bpmn-cert-init
+  certInitializer:
+    nameOverride: so-bpmn-cert-init
+    credsPath: /opt/app/osaaf/local
+  cadi:
+    apiEnforcement: org.onap.so.bpmnPerm
+  containerPort: *containerPort
+
+
+# Resource Limit flavor -By Default using small
+flavor: large
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+    requests:
+      memory: 1Gi
+      cpu: 500m
+  large:
+    limits:
+      memory: 8Gi
+      cpu: 4000m
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+  unlimited: {}
+livenessProbe:
+    path: /manage/health
+    scheme: HTTP
+    initialDelaySeconds: 600
+    periodSeconds: 60
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+ingress:
+  enabled: false
+nodeSelector: {}
+tolerations: []
+affinity: {}
