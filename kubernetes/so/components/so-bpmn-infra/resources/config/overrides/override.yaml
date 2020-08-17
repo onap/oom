@@ -1,0 +1,383 @@
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+aai:
+  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
+  dme2:
+    timeout: '30000'
+  endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  workflowAaiDistributionDelay: PT30S
+  pnfEntryNotificationTimeout: P14D
+cds:
+  endpoint: cds-blueprints-processor-grpc
+  port: 9111
+  auth: {{ .Values.cds.auth }}
+  timeout: 600
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+    history-level: full
+    job-execution:
+      max-pool-size: 30
+      core-pool-size: 3
+entitymanager:
+  packagesToScan: com
+pnf:
+  dmaap:
+    host: message-router
+    port: 3904
+    protocol: http
+    uriPathPrefix: events
+    topicName: unauthenticated.PNF_READY
+    consumerGroup: consumerGroup
+    consumerId: consumerId
+    topicListenerDelayInSeconds: 5
+bpelURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081
+msb-ip: msb-iag
+msb-port: 80
+mso:
+  rainyDay:
+    retryDurationMultiplier: 2
+    maxRetries: 5
+  msoKey: {{ .Values.mso.key }}
+  correlation:
+    timeout: 60
+  logPath: logs
+  config:
+    cadi: {{ include "so.cadi.keys" . | nindent 8}}
+  async:
+    core-pool-size: 50
+    max-pool-size: 50
+    queue-capacity: 500
+  adapters:
+    completemsoprocess:
+      endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/CompleteMsoProcess
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.adapters.requestDb.auth )}}
+    db:
+      auth: {{ .Values.mso.adapters.db.auth }}
+      password: {{ .Values.mso.adapters.db.password }}
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
+      spring:
+        endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+    network:
+      endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/NetworkAdapter
+      rest:
+        endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/rest/v1/networks
+    openecomp:
+      db:
+        endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
+    po:
+      auth: {{ .Values.mso.adapters.po.auth }}
+    sdnc:
+      endpoint: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/SDNCAdapter
+      rest:
+        endpoint: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/rest/v1/sdnc
+      timeout: PT60M
+    tenant:
+      endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/TenantAdapter
+    vnf:
+      endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/VnfAdapter
+      rest:
+        endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/rest/v1/vnfs
+    volume-groups:
+      rest:
+        endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/rest/v1/volume-groups
+    vnf-async:
+      endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/services/VnfAsync
+    vfc:
+      rest:
+        endpoint: http://so-vfc-adapter.{{ include "common.namespace" . }}:8084/services/v1/vfcadapter
+    workflow:
+      message:
+        endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
+    nssmf:
+      endpoint: http://so-nssmf-adapter.{{ include "common.namespace" . }}:8088
+  bpmn:
+    process:
+      historyTimeToLive: '30'
+  callbackRetryAttempts: '5'
+  catalog:
+    db:
+      endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082/ecomp/mso/catalog
+      spring:
+        endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+  db:
+    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
+  default:
+    adapter:
+      namespace: http://org.onap.mso
+  healthcheck:
+    log:
+      debug: 'false'
+  infra:
+    endpoint:
+      url: http://so.{{ include "common.namespace" . }}:8080/onap/so/infra
+    customer:
+      id: testCustIdInfra
+  po:
+    timeout: PT60M
+  request:
+    db:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/
+  rollback: 'true'
+  sdnc:
+    password: {{ .Values.mso.sdnc.password }}
+  service:
+    agnostic:
+      sniro:
+        endpoint: /sniro/api/v2/placement
+        host: http://sniro-emulator:80
+  site-name: CamundaEngine
+  sniro:
+    auth: {{ .Values.mso.sniro.auth }}
+    callback: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/adapters/rest/SDNCNotify
+    endpoint: {{ .Values.mso.sniro.endpoint }}
+    timeout: PT30M
+  oof:
+    auth: {{ .Values.mso.oof.auth }}
+    callbackEndpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
+    endpoint: https://oof-osdf.{{ include "common.namespace" . }}:8698
+    timeout: PT30M
+  workflow:
+    CreateGenericVNFV1:
+      aai:
+        volume-group:
+          uri: /aai/v6/cloud-infrastructure/volume-groups/volume-group
+    default:
+      aai:
+        version: '14'
+        cloud-region:
+          version: '14'
+        generic-vnf:
+          version: '14'
+        v14:
+          customer:
+            uri: /aai/v14/business/customers/customer
+          generic-query:
+            uri: /aai/v14/search/generic-query
+          generic-vnf:
+            uri: /aai/v14/network/generic-vnfs/generic-vnf
+          l3-network:
+            uri: /aai/v14/network/l3-networks/l3-network
+          network-policy:
+            uri: /aai/v14/network/network-policies/network-policy
+          nodes-query:
+            uri: /aai/v14/search/nodes-query
+          route-table-reference:
+            uri: /aai/v14/network/route-table-references/route-table-reference
+          tenant:
+            uri: /aai/v14/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
+          vce:
+            uri: /aai/v14/network/vces/vce
+          vpn-binding:
+            uri: /aai/v14/network/vpn-bindings/vpn-binding
+          sp-partner:
+            uri: /aai/v14/business/sp-partners/sp-partner
+          device:
+            uri: /aai/v14/network/devices/device
+        v11:
+          customer:
+            uri: /aai/v11/business/customers/customer
+          generic-query:
+            uri: /aai/v11/search/generic-query
+          generic-vnf:
+            uri: /aai/v11/network/generic-vnfs/generic-vnf
+          l3-network:
+            uri: /aai/v11/network/l3-networks/l3-network
+          network-policy:
+            uri: /aai/v11/network/network-policies/network-policy
+          nodes-query:
+            uri: /aai/v11/search/nodes-query
+          route-table-reference:
+            uri: /aai/v11/network/route-table-references/route-table-reference
+          tenant:
+            uri: /aai/v11/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
+          vce:
+            uri: /aai/v11/network/vces/vce
+          vpn-binding:
+            uri: /aai/v11/network/vpn-bindings/vpn-binding
+        v8:
+          configuration:
+            uri: /aai/v11/network/configurations/configuration
+          customer:
+            uri: /aai/v8/business/customers/customer
+          generic-query:
+            uri: /aai/v8/search/generic-query
+          l3-network:
+            uri: /aai/v8/network/l3-networks/l3-network
+          network-policy:
+            uri: /aai/v8/network/network-policies/network-policy
+          nodes-query:
+            uri: /aai/v8/search/nodes-query
+          route-table-reference:
+            uri: /aai/v8/network/route-table-references/route-table-reference
+          tenant:
+            uri: /aai/v8/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner/RegionOne/tenants/tenant
+          vce:
+            uri: /aai/v8/network/vces/vce
+          vpn-binding:
+            uri: /aai/v8/network/vpn-bindings/vpn-binding
+        v9:
+          cloud-region:
+            uri: /aai/v9/cloud-infrastructure/cloud-regions/cloud-region/CloudOwner
+          generic-vnf:
+            uri: /aai/v9/network/generic-vnfs/generic-vnf
+      retry:
+        attempts: '1'
+    deleteCinderVolumeV1:
+      aai:
+        volume-group:
+          uri: /aai/v6/cloud-infrastructure/volume-groups/volume-group
+    global:
+      default:
+        aai:
+          namespace: http://org.onap.aai.inventory/
+          version: 14
+    message:
+      endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
+    notification:
+      name: GenericNotificationServiceATT
+    sdnc:
+      replication:
+        delay: PT60S
+    sdncadapter:
+      callback: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
+    vnfadapter:
+      create:
+        callback: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/vnfAdapterNotify
+      delete:
+        callback: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/vnfAdapterNotify
+      query:
+        callback: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/vnfAdapterNotify
+      rollback:
+        callback: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/vnfAdapterNotify
+  use:
+    qualified:
+      host: false
+  global:
+    dmaap:
+      username: testuser
+      password: alRyMzJ3NUNeakxl
+      host: http://10.42.111.36:904
+      publisher:
+        topic: replaceme
+  naming:
+    endpoint: http://naming.demo.onap.com:8081/web/service/v1/genNetworkElementName
+    auth: Basic bTA0NzY4QG5vbi1wcm9kLm1zby5lY29tcC5hdHQuY29tOkF0dG0wNDc2OExpZmUhQA==
+policy:
+  auth: Basic dGVzdHBkcDphbHBoYTEyMw==
+  default:
+    disposition: Skip
+  client:
+    auth: Basic bTAzNzQzOnBvbGljeVIwY2sk
+  endpoint: http://pdp.{{ include "common.namespace" . }}:8081/pdp/api/
+  environment: TEST
+sdnc:
+  auth: Basic YWRtaW46S3A4Yko0U1hzek0wV1hsaGFrM2VIbGNzZTJnQXc4NHZhb0dHbUp2VXkyVQ==
+  host: http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}
+  path: /restconf/operations/GENERIC-RESOURCE-API
+  si:
+    svc:
+      types: PORT-MIRROR,PPROBE
+  dmaap:
+    host: http://message-router.{{ include "common.namespace" . }}:3904
+    timeout: 30000
+  lcm:
+    path: '/restconf/operations/LCM:'
+    actionTimeout: 300000
+    dmapp:
+      readTopic: SDNC-LCM-WRITE
+      writeTopic: SDNC-LCM-READ
+appc:
+  client:
+    topic:
+      read:
+        name: APPC-LCM-WRITE
+        timeout: 360000
+      write: APPC-LCM-READ
+      sdnc:
+        read: SDNC-LCM-WRITE
+        write: SDNC-LCM-READ
+    response:
+      timeout: 360000
+    key: VIlbtVl6YLhNUrtU
+    secret: 64AG2hF4pYeG2pq7CT6XwUOT
+    service: ueb
+    poolMembers: message-router.{{ include "common.namespace" . }}:3904,message-router.{{ include "common.namespace" . }}:3904
+sniro:
+  conductor:
+    enabled: true
+    host: http://sniro-emulator:80
+    uri: /v1/release-orders
+    headers.auth: Basic dGVzdDp0ZXN0cHdk
+  manager:
+    timeout: PT30M
+    host: http://sniro-emulator:80
+    uri.v1: /sniro/api/v2/placement
+    uri.v2: /sniro/api/placement/v2
+    headers.auth: Basic dGVzdDp0ZXN0cHdk
+    headers.patchVersion: 1
+    headers.minorVersion: 1
+    headers.latestVersion: 2
+server:
+  port: {{ index .Values.containerPort }}
+  tomcat:
+    max-threads: 50
+spring:
+  datasource:
+    hikari:
+      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/camundabpmn
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.mariadb.jdbc.Driver
+      pool-name: bpmn-pool
+      registerMbeans: true
+  security:
+    usercredentials:
+    -
+      username: apihBpmn
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPMN-Client
+    -
+      username: sdncaBpmn
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPMN-Client
+    -
+      username: poBpmn
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPMN-Client
+    -
+      username: wmaBpmn
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPMN-Client
+    -
+      username: sniro
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SNIRO-Client
+    -
+      username: mso_admin
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: ACTUATOR
+so:
+  vnfm:
+    adapter:
+      url: https://so-vnfm-adapter.{{ include "common.namespace" . }}:9092/so/vnfm-adapter/v1/
+      auth: {{ .Values.so.vnfm.adapter.auth }}
+org:
+  onap:
+    so:
+      cloud-owner: CloudOwner

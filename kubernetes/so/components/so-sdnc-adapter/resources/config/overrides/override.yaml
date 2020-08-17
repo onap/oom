@@ -1,0 +1,204 @@
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+server:
+    port: {{ index .Values.containerPort }}
+mso:
+    async:
+        core-pool-size: 50
+        max-pool-size: 50
+        queue-capacity: 500
+    logPath: ./logs/sdnc
+    config:
+        cadi: {{ include "so.cadi.keys" . | nindent 14}}
+    catalog:
+        db:
+          spring:
+            endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+    db:
+      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
+    site-name: onapheat
+org:
+    onap:
+        so:
+            adapters:
+                sdnc:
+                    '.':
+                        put: PUT|60000|sdncurl5|
+                        query: GET|60000|sdncurl2|
+                        restdelete: DELETE|60000|sdncurl5|
+                    '':
+                        brg-topology-operation:
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        contrail-route-topology-operation:
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        network-topology-operation:
+                            activate: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            assign: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            changeassign: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            reserve: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                        port-mirror-topology-operation:
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            disable: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            enable: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        security-zone-topology-operation:
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        service-homing-operation:
+                            homing: POST|60000|sdncurl3|sdnc-homing-header|com:att:sdnctl:aicHoming
+                        service-topology-operation:
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            rollback: POST|270000|sdncur10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        svc-topology-operation:
+                            activate: POST|285000|sdncurl8|sdnc-request-header|com:att:sdnctl:nbncapi
+                            assign: POST|285000|sdncurl8|sdnc-request-header|com:att:sdnctl:nbncapi
+                            delete: POST|285000|sdncurl8|sdnc-request-header|com:att:sdnctl:nbncapi
+                        vnf-topology-aic-operation:
+                            activate: POST|270000|sdncurl11|sdnc-request-header|com:att:sdnctl:vnftopologyaic
+                            assign: POST|270000|sdncurl11|sdnc-request-header|com:att:sdnctl:vnftopologyaic
+                        tunnelxconn-topology-operation:
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        vnf-topology-operation:
+                            activate: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            assign: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            changeassign: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                            rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
+                    bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.bpelauth )}}
+                    bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
+                    opticalservice:
+                        optical-service-create:
+                            create: POST|270000|sdncurl13|sdnc-request-header|org:onap:sdnc:northbound:optical-service
+                        optical-service-delete:
+                            delete: POST|270000|sdncurl13|sdnc-request-header|org:onap:sdnc:northbound:optical-service
+                    generic-resource:
+                        network-topology-operation:
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        vf-module-topology-operation:
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            changeassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            changedelete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            rollback: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                        vnf-topology-operation:
+                            create: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            activate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            assign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            changeassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            changedelete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            deactivate: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            delete: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            rollback: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                            unassign: POST|270000|sdncurl10|sdnc-request-header|org:onap:sdnc:northbound:generic-resource
+                    infra:
+                        '':
+                            query: GET|60000|sdncurl5|
+                    mobility:
+                        '':
+                            query: GET|60000|sdncurl5|
+                    myurl: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/rest/SDNCNotify
+                    rest:
+                        bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
+                    sdncauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.sdncauth )}}
+                    sdncconnecttime: 5000
+                    sdncurl10: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/GENERIC-RESOURCE-API:'
+                    sdncurl11: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/VNFTOPOLOGYAIC-API:'
+                    sdncurl12: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/'
+                    sdncurl13: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/opticalservice:'
+                    sdncurl5: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/config'
+                    sdncurl6: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/VNF-API:'
+                    sdncurl7: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/L3UCPE-API:'
+                    sdncurl8: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/NBNC-API:'
+                    sdncurl9: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/NORTHBOUND-API:service-topology-operation'
+                    sdncurl20: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/LCM:'
+                    service:
+                        infra:
+                            service-topology-infra-activate-operation: POST|90000|sdncurl9|sdnc-request-header|com:att:sdnctl:northbound-api:v1
+                            service-topology-infra-assign-operation: POST|120000|sdncurl9|sdnc-request-header|com:att:sdnctl:northbound-api:v1
+                            service-topology-infra-delete-operation: POST|90000|sdncurl9|sdnc-request-header|com:att:sdnctl:northbound-api:v1
+                            service-topology-infra-release-operation: POST|90000|sdncurl9|sdnc-request-header|com:att:sdnctl:northbound-api:v1
+                    vfmodule:
+                        '':
+                            query: GET|60000|sdncurl12|
+                    lcm:
+                      download-n-e-sw: POST|1800000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+                      activate-n-e-sw: POST|300000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+                      upgrade-pre-check: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+                      upgrade-post-check: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+                      default: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+                network:
+                    encryptionKey: {{ index .Values.org.onap.so.adapters.sdnc.network.encryptionKey }}
+spring:
+  security:
+    usercredentials:
+    -
+      username: sdnc
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SDNC-Client
+    -
+      username: sitecontrol
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SiteControl-Client
+    -
+      username: bpel
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPEL-Client
+    -
+      username: sniro
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SNIRO-Client
+    -
+      username: apih
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: MSO-Client
+    -
+      username: mso_admin
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: ACTUATOR
