@@ -77,6 +77,8 @@ openssl algorithm that works with the python based Robot Framework.
     cd so/resources/config/mso/
     /oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
 
+  Use OS_PASSWORD value from openstack .RC file for "openstack tenant password"    
+
 c. Generating SO Encrypted Password:
 The SO Encrypted Password uses a java based encryption utility since the
 Java encryption library is not easy to integrate with openssl/python that
@@ -86,7 +88,7 @@ ROBOT uses in Dublin and upper versions.
   To generate SO ``openStackEncryptedPasswordHere`` and ``openStackSoEncryptedPassword``
   ensure `default-jdk` is installed::
 
-    apt-get update; apt-get install default-jdk
+    sudo apt-get update; sudo apt-get install default-jdk
 
   Then execute::
 
@@ -127,6 +129,10 @@ constraints.
   robot scripts for demonstration. A production deployment need not worry about this
   setting but for the demonstration VNFs the ip asssignment strategy assumes 10.0 ip prefix.
 
+.. note::
+  Copy below required openstack.yaml file and update the parameters for the variables 
+  accordingly from openstack environment (openrc file) and replace  
+  ~/oom/kubernetes/onap/resources/overrides/openstack.yaml with this updated openstack.yaml file
 
 Example Keystone v2.0
 
@@ -222,5 +228,18 @@ Use the following to monitor your deployment and determine when ONAP is ready fo
 **Step 10.** Undeploy ONAP::
 
   > helm undeploy dev --purge
+
+.. note::
+  After undeploy follow the below steps to cleanup everything before redeplying ONAP 
+
+::
+  
+  > kubectl delete namespace onap
+
+  > kubectl delete pv -n onap --all
+   
+  > kubectl delete pvc -n onap --all
+   
+  > sudo rm -rf /dockerdata-nfs/*
 
 More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
