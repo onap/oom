@@ -26,10 +26,12 @@ Summary
 **Platform Resiliency**
 
 * Documenation of a Highly-Available Kubernetes Cluster Deployment
-* Availability of a Default Storage Class Provisioner for improved Persistent Storage resiliency
+* Availability of a Default Storage Class Provisioner for improved Persistent
+  Storage resiliency
 * Availability of a CNI reference integration for Multi-site support
 
-  * applications can take advantage of multi-site by using POD and/or Node (anti)affinity, taints/tolerations, labels per application
+  * applications can take advantage of multi-site by using POD and/or Node
+    (anti)affinity, taints/tolerations, labels per application
 
 **Footprint Optimization**
 

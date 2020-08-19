@@ -1,7 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2019 Amdocs, Bell Canada
+.. Copyright 2019-2020 Amdocs, Bell Canada, Orange, Samsung
 .. _oom_cloud_setup_guide:
 
 .. Links
@@ -92,9 +92,9 @@ Cloud Installation
 ..    - IBM, and
 ..    - `Openstack`_.
 ..
-.. #. Alternatively, OOM can be deployed on a private set of physical hosts or VMs
-..    (or even a combination of the two). The following guides describe how to
-..    create a Kubernetes cluster with popular tools:
+.. #. Alternatively, OOM can be deployed on a private set of physical hosts or
+..    VMs (or even a combination of the two). The following guides describe how
+..    to create a Kubernetes cluster with popular tools:
 ..
 ..    - `Setting up Kubernetes with Rancher`_ (recommended)
 ..    - `Setting up Kubernetes with Kubeadm`_
@@ -104,4 +104,5 @@ OOM can be deployed on a private set of physical hosts or VMs (or even a
 combination of the two). The following guide describe the recommended method to
 setup a Kubernetes cluster: :ref:`onap-on-kubernetes-with-rancher`.
 
-There are alternative deployment methods described on the `Cloud Native Deployment Wiki`_
+There are alternative deployment methods described on the
+`Cloud Native Deployment Wiki`_

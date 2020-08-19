@@ -133,7 +133,7 @@ Workarounds
   version 2.2.2 in global part of override file if the new check is needed.
 - `OOM-2421 <https://jira.onap.org/browse/OOM-2421>`_ Workaround is to
   undeploy/redeploy NBI.
-- `OOM-2422 <https://jira.onap.org/browse/OOM-2421>`_ Workaround is to create
+- `OOM-2422 <https://jira.onap.org/browse/OOM-2422>`_ Workaround is to create
   first portal app service with service type Cluster IP then changing it to
   NodePort or LoadBalancer so all the port are available.
 
