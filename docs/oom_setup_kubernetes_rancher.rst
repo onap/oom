@@ -1,6 +1,7 @@
-.. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. This work is licensed under a Creative Commons Attribution 4.0
+.. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
 
 .. Links
 .. _HELM Best Practices Guide: https://docs.helm.sh/chart_best_practices/#requirements
@@ -19,9 +20,9 @@
 ONAP on HA Kubernetes Cluster
 #############################
 
-This guide provides instructions on how to setup a Highly-Available Kubernetes Cluster.
-For this, we are hosting our cluster on OpenStack VMs and using the Rancher Kubernetes Engine (RKE)
-to deploy and manage our Kubernetes Cluster.
+This guide provides instructions on how to setup a Highly-Available Kubernetes
+Cluster. For this, we are hosting our cluster on OpenStack VMs and using the
+Rancher Kubernetes Engine (RKE) to deploy and manage our Kubernetes Cluster.
 
 .. contents::
    :depth: 1
@@ -40,12 +41,14 @@ The result at the end of this tutorial will be:
 
 #. Installation and configuration of kubectl
 
-#. Installation and configuration of helm
+#. Installation and configuration of Helm
 
 #. Creation of an NFS Server to be used by ONAP as shared persistance
 
-There are many ways one can execute the above steps. Including automation through the use of HEAT to setup the OpenStack VMs.
-To better illustrate the steps involved, we have captured the manual creation of such an environment using the ONAP Wind River Open Lab.
+There are many ways one can execute the above steps. Including automation
+through the use of HEAT to setup the OpenStack VMs. To better illustrate the
+steps involved, we have captured the manual creation of such an environment
+using the ONAP Wind River Open Lab.
 
 Create Key Pair
 ===============
@@ -57,10 +60,12 @@ Use an existing key pair, import one or create a new one to assign.
 .. image:: images/keys/key_pair_1.png
 
 .. Note::
-  If you're creating a new Key Pair, ensure to create a local copy of the Private Key through the use of "Copy Private Key to Clipboard".
+  If you're creating a new Key Pair, ensure to create a local copy of the
+  Private Key through the use of "Copy Private Key to Clipboard".
 
 For the purpose of this guide, we will assume a new local key called "onap-key"
-has been downloaded and is copied into **~/.ssh/**, from which it can be referenced.
+has been downloaded and is copied into **~/.ssh/**, from which it can be
+referenced.
 
 Example::
 
@@ -175,16 +180,17 @@ Launch Instance
 Create Kubernetes Worker VMs
 ============================
 The following instructions describe how to create OpenStack VMs to host the
-Highly-Available Kubernetes Workers. ONAP workloads will only be scheduled on these nodes.
+Highly-Available Kubernetes Workers. ONAP workloads will only be scheduled on
+these nodes.
 
 Launch new VM instances
 -----------------------
 
-The number and size of Worker VMs is depenedent on the size of the ONAP deployment.
-By default, all ONAP applications are deployed. It's possible to customize the deployment
-and enable a subset of the ONAP applications. For the purpose of this guide, however,
-we will deploy 12 Kubernetes Workers that have been sized to handle the entire ONAP
-application workload.
+The number and size of Worker VMs is dependent on the size of the ONAP
+deployment. By default, all ONAP applications are deployed. It's possible to
+customize the deployment and enable a subset of the ONAP applications. For the
+purpose of this guide, however, we will deploy 12 Kubernetes Workers that have
+been sized to handle the entire ONAP application workload.
 
 .. image:: images/wk_vms/worker_1.png
 
@@ -223,8 +229,8 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for Kubernetes VM(s)
 -----------------------------------------------
 
-Click :download:`openstack-k8s-workernode.sh <openstack-k8s-workernode.sh>` to download the
-script.
+Click :download:`openstack-k8s-workernode.sh <openstack-k8s-workernode.sh>` to
+download the script.
 
 .. literalinclude:: openstack-k8s-workernode.sh
    :language: bash
@@ -340,8 +346,8 @@ Download and install kubectl. Binaries can be found here for Linux and Mac:
 https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/linux/amd64/kubectl
 https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/darwin/amd64/kubectl
 
-You only need to install kubectl where you'll launch kubernetes command. This
-can be any machines of the kubernetes cluster or a machine that has IP access
+You only need to install kubectl where you'll launch Kubernetes command. This
+can be any machines of the Kubernetes cluster or a machine that has IP access
 to the APIs.
 Usually, we use the first controller as it has also access to internal
 Kubernetes services, which can be convenient.
@@ -451,8 +457,8 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for NFS Server VM
 --------------------------------------------
 
-Click :download:`openstack-nfs-server.sh <openstack-nfs-server.sh>` to download the
-script.
+Click :download:`openstack-nfs-server.sh <openstack-nfs-server.sh>` to download
+the script.
 
 .. literalinclude:: openstack-nfs-server.sh
    :language: bash
@@ -507,7 +513,7 @@ the NFS Master node as input, e.g.::
 
 ONAP Deployment via OOM
 =======================
-Now that kubernetes and Helm are installed and configured you can prepare to
+Now that Kubernetes and Helm are installed and configured you can prepare to
 deploy ONAP. Follow the instructions in the README.md_ or look at the official
 documentation to get started:
 

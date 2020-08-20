@@ -1,6 +1,7 @@
-.. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. This work is licensed under a Creative Commons Attribution 4.0
+.. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
 .. _oom_project_description:
 
 ONAP Operations Manager Project
@@ -23,23 +24,28 @@ In summary OOM provides the following capabilities:
 
 - **Deploy** - with built-in component dependency management
 - **Configure** - unified configuration across all ONAP components
-- **Monitor** - real-time health monitoring feeding to a Consul UI and Kubernetes
+- **Monitor** - real-time health monitoring feeding to a Consul UI and
+  Kubernetes
 - **Heal**- failed ONAP containers are recreated automatically
 - **Scale** - cluster ONAP services to enable seamless scaling
-- **Upgrade** - change-out containers or configuration with little or no service impact
+- **Upgrade** - change-out containers or configuration with little or no
+  service impact
 - **Delete** - cleanup individual containers or entire deployments
 
 OOM supports a wide variety of Kubernetes private clouds - built with Rancher,
-Kubeadm or Cloudify - and public cloud infrastructures such as: Microsoft Azure,
-Amazon AWS, Google GCD, VMware VIO, and Openstack.
+Kubeadm or Cloudify - and public cloud infrastructures such as: Microsoft
+Azure, Amazon AWS, Google GCD, VMware VIO, and OpenStack.
 
-The OOM documentation is broken into four different areas each targeted at a different user:
+The OOM documentation is broken into four different areas each targeted at a
+different user:
 
 - :ref:`quick-start-label` - deploy ONAP on an existing cloud
 - :ref:`user-guide-label` - a guide for operators of an ONAP instance
 - :ref:`developer-guide-label` - a guide for developers of OOM and ONAP
-- :ref:`cloud-setup-guide-label` - a guide for those setting up cloud environments that ONAP will use
-- :ref:`hardcoded-certiticates-label` - the list of all hardcoded certificates sets in ONAP installation
+- :ref:`cloud-setup-guide-label` - a guide for those setting up cloud
+  environments that ONAP will use
+- :ref:`hardcoded-certificates-label` - the list of all hardcoded certificates
+  set in ONAP installation
 
 The :ref:`release_notes` for OOM describe the incremental features per release.
 

@@ -1,6 +1,7 @@
-.. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. This work is licensed under a Creative Commons Attribution 4.0
+.. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
 
 .. Links
 .. _Helm: https://docs.helm.sh/
@@ -164,7 +165,8 @@ components and in themselves can be quite complex.
 You can use either `charts` or `components` folder for your subcomponents.
 `charts` folder means that the subcomponent will always been deployed.
 
-`components` folders means we can choose if we want to deploy the sub component.
+`components` folders means we can choose if we want to deploy the
+subcomponent.
 
 This choice is done in root `values.yaml`:
 
@@ -451,10 +453,10 @@ It would render the following Service Resource (for a component named
       app.kubernetes.io/instance:  my-deployment-name-of-my-component
     type: NodePort
 
-In the deployment or statefulSet file, you needs to set the good labels in order
-for the service to match the pods.
+In the deployment or statefulSet file, you needs to set the good labels in
+order for the service to match the pods.
 
-here's an example to be sure it matchs (for a statefulSet):
+here's an example to be sure it matches (for a statefulSet):
 
 .. code-block:: yaml
 
@@ -1010,7 +1012,7 @@ MSB service discovery. The following is a brief description of how this
 integration will be done:
 
 A registrator to push the service endpoint info to MSB service
-discovery. 
+discovery.
 
 -  The needed service endpoint info is put into the kubernetes yaml file
    as annotation, including service name, Protocol,version, visual

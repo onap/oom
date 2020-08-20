@@ -1,6 +1,7 @@
-.. This work is licensed under a Creative Commons Attribution 4.0 International License.
+.. This work is licensed under a Creative Commons Attribution 4.0
+.. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018 Amdocs, Bell Canada
+.. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
 .. _oom_user_guide:
 
 .. Links
@@ -36,7 +37,8 @@ The following sections describe the life-cycle operations:
 - Monitor_ - real-time health monitoring feeding to a Consul UI and Kubernetes
 - Heal_- failed ONAP containers are recreated automatically
 - Scale_ - cluster ONAP services to enable seamless scaling
-- Upgrade_ - change-out containers or configuration with little or no service impact
+- Upgrade_ - change-out containers or configuration with little or no service
+  impact
 - Delete_ - cleanup individual containers or entire deployments
 
 .. figure:: oomLogoV2-Deploy.png
@@ -365,19 +367,19 @@ Accessing the ONAP Portal using OOM and a Kubernetes Cluster
 ------------------------------------------------------------
 
 The ONAP deployment created by OOM operates in a private IP network that isn't
-publicly accessible (i.e. Openstack VMs with private internal network) which
+publicly accessible (i.e. OpenStack VMs with private internal network) which
 blocks access to the ONAP Portal. To enable direct access to this Portal from a
 user's own environment (a laptop etc.) the portal application's port 8989 is
 exposed through a `Kubernetes LoadBalancer`_ object.
 
 Typically, to be able to access the Kubernetes nodes publicly a public address
-is assigned. In Openstack this is a floating IP address.
+is assigned. In OpenStack this is a floating IP address.
 
 When the `portal-app` chart is deployed a Kubernetes service is created that
 instantiates a load balancer.  The LB chooses the private interface of one of
 the nodes as in the example below (10.0.0.4 is private to the K8s cluster only).
 Then to be able to access the portal on port 8989 from outside the K8s &
-Openstack environment, the user needs to assign/get the floating IP address that
+OpenStack environment, the user needs to assign/get the floating IP address that
 corresponds to the private IP as follows::
 
   > kubectl -n onap get services|grep "portal-app"
@@ -386,7 +388,7 @@ corresponds to the private IP as follows::
 
 In this example, use the 10.0.0.4 private address as a key find the
 corresponding public address which in this example is 10.12.6.155. If you're
-using OpenStack you'll do the lookup with the horizon GUI or the Openstack CLI
+using OpenStack you'll do the lookup with the horizon GUI or the OpenStack CLI
 for your tenant (openstack server list).  That IP is then used in your
 `/etc/hosts` to map the fixed DNS aliases required by the ONAP Portal as shown
 below::
@@ -451,8 +453,8 @@ Monitor
 
 All highly available systems include at least one facility to monitor the
 health of components within the system.  Such health monitors are often used as
-inputs to distributed coordination systems (such as etcd, zookeeper, or consul)
-and monitoring systems (such as nagios or zabbix). OOM provides two mechanisms
+inputs to distributed coordination systems (such as etcd, Zookeeper, or Consul)
+and monitoring systems (such as Nagios or Zabbix). OOM provides two mechanisms
 to monitor the real-time health of an ONAP deployment:
 
 - a Consul GUI for a human operator or downstream monitoring systems and
@@ -609,7 +611,7 @@ Kubernetes and replaced with a new container with the new environment value.
 
 To upgrade a component to a new version with a new configuration file enter::
 
-  > helm deploy onbap onap/so --version 2.0.2 -f environments/demo.yaml
+  > helm deploy onap onap/so --version 2.0.2 -f environments/demo.yaml
 
 To fetch release history enter::
 
