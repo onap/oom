@@ -10,6 +10,69 @@
 ONAP Operations Manager Release Notes
 =====================================
 
+Version 5.0.2 (El Alto Maintenance Release 1)
+---------------------------------------------
+
+:Release Date: 2020-09-01
+
+Summary
+-------
+
+The focus of this release is to make El Alto to continue to work. No new
+features are delivered but only bug fixes.
+
+**New Features**
+
+**Bug Fixes**
+
+
+* [`OOM-2156 <https://jira.onap.org/browse/OOM-2156>`_] - Fixing missing apiVersion in etcd chart
+* [`OOM-2203 <https://jira.onap.org/browse/OOM-2203>`_] - docs: Replace include directives for non existent file
+* [`OOM-1612 <https://jira.onap.org/browse/OOM-1612>`_] - docs: Ensure literalinclude directive rendering
+* [`OOM-2336 <https://jira.onap.org/browse/OOM-2336>`_] - Update CDS image version for elalto to 0.6.5
+* [`OOM-2364 <https://jira.onap.org/browse/OOM-2364>`_] - [GENERIC] follow elalto branches for submodules
+* [`OOM-2364 <https://jira.onap.org/browse/OOM-2364>`_] - [AAI|ROBOT] track latest commits on submodules
+* [`OOM-2412 <https://jira.onap.org/browse/OOM-2412>`_] - Fix: make all - returns multiple warnings
+* [`OOM-2407 <https://jira.onap.org/browse/OOM-2407>`_] - deploy.sh does not work on Mac os x because untar directory is create…
+* [`OOM-2412 <https://jira.onap.org/browse/OOM-2412>`_] - [COMMON] Align Makefile with last changes
+
+**Known Issues**
+
+The following known issues will be addressed in a future release:
+
+* [`OOM-1480 <https://jira.onap.org/browse/OOM-1480>`_] - postgres chart does not set root password when installing on an existing database instances
+* [`OOM-1966 <https://jira.onap.org/browse/OOM-1966>`_] - ONAP on HA Kubernetes Cluster - Documentation update
+* [`OOM-1995 <https://jira.onap.org/browse/OOM-1995>`_] - Mariadb Galera cluster pods keep failing
+* [`OOM-2061 <https://jira.onap.org/browse/OOM-2061>`_] - Details Missing for installing the kubectl section
+* [`OOM-2075 <https://jira.onap.org/browse/OOM-2075>`_] - Invalid MTU for Canal CNI interfaces
+* [`OOM-2080 <https://jira.onap.org/browse/OOM-2080>`_] - Need for "ReadWriteMany" access on storage when deploying on Kubernetes?
+* [`OOM-2091 <https://jira.onap.org/browse/OOM-2091>`_] - incorrect release deployed
+* [`OOM-2132 <https://jira.onap.org/browse/OOM-2132>`_] - Common Galera server.cnf does not contain Camunda required settings
+
+**Security Notes**
+
+*Fixed Security Issues*
+
+*Known Security Issues*
+
+* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://jira.onap.org/browse/OJSI-134>`_]
+* Hard coded password used for all oom deployments [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
+* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://jira.onap.org/browse/OJSI-202>`_]
+
+*Known Vulnerabilities in Used Modules*
+
+OOM code has been formally scanned during build time using NexusIQ and no
+Critical vulnerability was found.
+
+Quick Links:
+
+  - `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+
+  - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
+
+
+
+
 Version 5.0.1 (El Alto Release)
 ----------------------------------
 
