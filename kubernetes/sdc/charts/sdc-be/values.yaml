@@ -22,6 +22,7 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  aafEnabled: true
 
 #################################################################
 # Application configuration defaults.
@@ -34,7 +35,34 @@ pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: sdc-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: sdc
+  fqi: sdc@sdc.onap.org
+  public_fqdn: sdc.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  addconfig: true
+  keystoreFile: "org.onap.sdc.p12"
+  truststoreFile: "org.onap.sdc.trust.jks"
+  permission_user: 352070
+  permission_group: 35953
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh;
+    /opt/app/aaf_config/bin/agent.sh local showpass
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
 
+#################################################################
+# SDC Config part
+#################################################################
 config:
   javaOptions: "-Xmx1536m -Xms1536m"
   cassandraSslEnabled: "false"
