@@ -56,10 +56,10 @@
 {{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
-  image: "{{ $subchartDot.Values.global.readinessRepository }}/{{ $subchartDot.Values.global.readinessImage }}"
+  image: "{{ include "common.repository" $subchartDot }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   command:
-  - /root/ready.py
+  - /app/ready.py
   args:
   {{- range $container := $containers }}
   - --container-name
