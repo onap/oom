@@ -1,5 +1,6 @@
 # Copyright © 2018 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2019 AT&T
+# Modifications Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,22 +26,43 @@ global:
   busyboxRepository: docker.io
   busyboxImage: library/busybox:1.30
 
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+- name: &cmPassSecretName '{{ include "common.release" . }}-dcaegen2-cm-pass'
+  type: password
+  externalSecret: '{{ tpl (default "" .Values.config.cloudifyManagerPasswordExternalSecret) . }}'
+  password: '{{ .Values.config.cloudifyManagerPassword }}'
+
+config: {}
+
 # Enable all DCAE components by default
 dcae-bootstrap:
   enabled: true
+  config:
+    cloudifyManagerPasswordExternalSecret: *cmPassSecretName
 dcae-cloudify-manager:
   enabled: true
+  config:
+    cloudifyManagerPasswordExternalSecret: *cmPassSecretName
 dcae-config-binding-service:
   enabled: true
 dcae-dashboard:
   enabled: true
+  config:
+    cloudifyManagerPasswordExternalSecret: *cmPassSecretName
 dcae-deployment-handler:
   enabled: true
+  config:
+    cloudifyManagerPasswordExternalSecret: *cmPassSecretName
 dcae-healthcheck:
   enabled: true
 dcae-inventory-api:
   enabled: true
 dcae-policy-handler:
   enabled: true
+  config:
+    cloudifyManagerPasswordExternalSecret: *cmPassSecretName
 dcae-servicechange-handler:
   enabled: true
