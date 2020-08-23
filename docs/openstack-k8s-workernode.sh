@@ -25,10 +25,10 @@ echo "$IP_ADDR $HOSTNAME" >> /etc/hosts
 
 docker login -u docker -p docker nexus3.onap.org:10001
 
-sudo apt-get install make -y
+sudo apt-get install -y -qq --no-install-recommends make -y
 
 # install nfs
-sudo apt-get install nfs-common -y
+sudo apt-get install -y -qq --no-install-recommends nfs-common -y
 
 
 exit 0

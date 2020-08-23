@@ -25,7 +25,7 @@
 
 
 apt-get update
-apt-get install build-essential libssl-dev libffi-dev python-dev gcc -y
+apt-get install -y -qq --no-install-recommends build-essential libssl-dev libffi-dev python-dev gcc -y
 wget http://repository.cloudifysource.org/cloudify/18.3.23/community-release/cloudify-cli-community-18.3.23.deb
 dpkg -i cloudify-cli-community-18.3.23.deb
 cfy install cloudify-environment-setup/openstack.yaml -i cloudify-environment-setup/inputs/openstack.yaml --install-plugins --task-retries=30 --task-retry-interval=5

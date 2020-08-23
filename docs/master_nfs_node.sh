@@ -13,7 +13,7 @@ fi
 
 #Install NFS kernel
 sudo apt-get update
-sudo apt-get install -y nfs-kernel-server
+sudo apt-get install -y -qq --no-install-recommends nfs-kernel-server
 
 #Create /dockerdata-nfs and set permissions
 sudo mkdir -p /dockerdata-nfs

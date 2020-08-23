@@ -15,7 +15,7 @@ MASTER_IP=$1
 
 #Install NFS common
 sudo apt-get update
-sudo apt-get install -y nfs-common
+sudo apt-get install -y -qq --no-install-recommends nfs-common
 
 #Create NFS directory
 sudo mkdir -p /dockerdata-nfs

@@ -7,10 +7,10 @@ HOSTNAME=`hostname`
 
 echo "$IP_ADDR $HOSTNAME" >> /etc/hosts
 
-sudo apt-get install make -y
+sudo apt-get install -y -qq --no-install-recommends make -y
 
 # nfs server
-sudo apt-get install nfs-kernel-server -y
+sudo apt-get install -y -qq --no-install-recommends nfs-kernel-server -y
 
 sudo mkdir -p /nfs_share
 sudo chown nobody:nogroup /nfs_share/
