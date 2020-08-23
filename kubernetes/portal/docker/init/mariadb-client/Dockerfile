@@ -43,8 +43,8 @@ ENV portal_repo=http://gerrit.onap.org/r/portal.git
 RUN mkdir -p /onap-sources
 WORKDIR /onap-sources
 
-RUN git clone -b $branch $portal_repo && cd portal && git checkout HEAD
-RUN git clone -b $branch $so_repo && cd docker-config && git checkout HEAD
+RUN git clone --depth 1 -b $branch $portal_repo && cd portal && git checkout HEAD
+RUN git clone --depth 1 -b $branch $so_repo && cd docker-config && git checkout HEAD
 
 VOLUME /onap-sources
 

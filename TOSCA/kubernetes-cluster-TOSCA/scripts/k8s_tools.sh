@@ -20,7 +20,7 @@
 # this script will install dashboard on k8s master.
 
 #install heapster
-git clone -b release-1.5 https://github.com/kubernetes/heapster.git
+git clone --depth 1 -b release-1.5 https://github.com/kubernetes/heapster.git
 
 kubectl create -f heapster/deploy/kube-config/influxdb/
 kubectl create -f heapster/deploy/kube-config/rbac/heapster-rbac.yaml
