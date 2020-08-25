@@ -37,6 +37,18 @@
   {{ end }}
 {{- end -}}
 
+{{- define "common._defaultPasswordStrength" -}}
+  {{ if .Values.passwordStrengthOverride }}
+    {{- printf "%s" .Values.passwordStrengthOverride -}}
+  {{ else if .Values.global.passwordStrength }}
+    {{- printf "%s" .Values.global.passwordStrength -}}
+  {{ else if .Values.passwordStrength }}
+    {{- printf "%s" .Values.passwordStrength -}}
+  {{ else }}
+    {{- printf "long" }}
+  {{ end }}
+{{- end -}}
+
 {{/*
   Generate a new password based on masterPassword. The new password is not
   random, it is derived from masterPassword, fully qualified chart name and
@@ -59,7 +71,8 @@
 {{- define "common.createPassword" -}}
   {{- $dot := default . .dot -}}
   {{- $uid := default "onap" .uid -}}
-  {{- $strength := default "long" .strength -}}
+  {{- $defaultStrength := include "common._defaultPasswordStrength" $dot | trim -}}
+  {{- $strength := default $defaultStrength .strength -}}
   {{- $mp := include "common.masterPassword" $dot -}}
   {{- derivePassword 1 $strength $mp (include "common.fullname" $dot) $uid -}}
 {{- end -}}
