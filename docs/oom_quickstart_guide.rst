@@ -235,6 +235,10 @@ for use::
 
     > ~/oom/kubernetes/robot/ete-k8s.sh onap health
 
+  Launch Robot distribute health checks to verify whether ONAP runtime components are healthy::
+
+    > ~/oom/kubernetes/robot/ete-k8s.sh onap healthdist
+
 **Step 10.** Undeploy ONAP
 ::
 
