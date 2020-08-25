@@ -23,6 +23,13 @@
 
 echo "Creating so admin user . . ." 1>/tmp/mariadb-so-admin.log 2>&1
 
+prepare_password()
+{
+	echo "$1" | sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
+}
+
+DB_ADMIN_PASSWORD=`prepare_password $DB_ADMIN_PASSWORD`
+
 mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP USER IF EXISTS '${DB_ADMIN}';
 CREATE USER '${DB_ADMIN}';
