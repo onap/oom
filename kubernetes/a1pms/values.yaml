@@ -1,0 +1,111 @@
+################################################################################
+#   Copyright (c) 2020 Nordix Foundation.                                      #
+#                                                                              #
+#   Licensed under the Apache License, Version 2.0 (the "License");            #
+#   you may not use this file except in compliance with the License.           #
+#   You may obtain a copy of the License at                                    #
+#                                                                              #
+#       http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                              #
+#   Unless required by applicable law or agreed to in writing, software        #
+#   distributed under the License is distributed on an "AS IS" BASIS,          #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   #
+#   See the License for the specific language governing permissions and        #
+#   limitations under the License.                                             #
+################################################################################
+
+# Default values for Policy Management Service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  pullPolicy: IfNotPresent
+  image:
+    registry: nexus3.onap.org:10001
+    name: onap/ccsdk-oran-a1policymanagementservice:1.0.0
+replicaCount: 1
+service:
+  name: a1pms
+  type: NodePort
+  allowHttp: true
+  httpName: http
+  internalPort1: 9080
+  targetPort1: 8081
+  externalPort1: 30093
+  httpsName: https
+  internalPort2: 9081
+  targetPort2: 8433
+  externalPort2: 30094
+
+liveness:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+readiness:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+
+controllers: |
+  [
+       {
+          "name": "controller1",
+          "baseUrl": "https://sdnc.onap:8443",
+          "userName": "admin",
+          "password": "Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U"
+       }
+  ]
+ric: |
+  [
+        {
+           "name":"ric1",
+           "baseUrl":"https://a1-sim-osc-0.a1-sim:8185",
+           "controller": "controller1",
+           "managedElementIds":[
+              "kista_1",
+              "kista_2"
+           ]
+        },
+        {
+          "name":"ric2",
+          "baseUrl":"https://a1-sim-osc-1.a1-sim:8185",
+          "controller": "controller1",
+          "managedElementIds":[
+             "kista_1",
+             "kista_2"
+          ]
+        },
+        {
+          "name":"ric3",
+          "baseUrl":"https://a1-sim-std-0.a1-sim:8185",
+          "controller": "controller1",
+          "managedElementIds":[
+             "kista_1",
+             "kista_2"
+          ]
+        },
+        {
+          "name":"ric4",
+          "baseUrl":"https://a1-sim-std-1.a1-sim:8185",
+          "controller": "controller1",
+          "managedElementIds":[
+             "kista_1",
+             "kista_2"
+          ]
+        }
+  ]
+streams_publishes: |
+  {
+        "dmaap_publisher":{
+           "type":"message_router",
+           "dmaap_info":{
+              "topic_url":"http://message-router:3904/events/A1-POLICY-AGENT-WRITE"
+           }
+        }
+  }
+streams_subscribes: |
+  {
+        "dmaap_subscriber":{
+           "type":"message_router",
+           "dmaap_info":{
+              "topic_url":"http://message-router:3904/events/A1-POLICY-AGENT-READ/users/policy-agent?timeout=15000&limit=100"
+           }
+        }
+  }
