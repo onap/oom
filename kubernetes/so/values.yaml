@@ -122,6 +122,16 @@ secrets:
     filePaths:
       - resources/config/certificates/onap-ca.crt
       - resources/config/certificates/msb-ca.crt
+  - uid: "mso-key"
+    name: &mso-key '{{ include "common.release" . }}-mso-key'
+    type: password
+    password: '{{ .Values.global.app.msoKey }}'
+  - uid: mso-oof-auth
+    name: &mso-oof-auth '{{ include "common.release" . }}-mso-oof-auth'
+    type: basicAuth
+    login: '{{ .Values.mso.oof.login }}'
+    password: '{{ .Values.mso.oof.password }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -233,6 +243,9 @@ mso:
       auth: 878785F4F31BC9CFA5AB52A172008212D8845ED2DE08AD5E56AF114720A4E49768B8F95CDA2EB971765D28EDCDAA24
   aai:
     auth: 6E081E10B1CA43A843E303733A74D9B23B601A6E22A21C7EF2C7F15A42F81A1A4E85E65268C2661F71321052C7F3E55B96A8E1E951F8BF6F
+  oof:
+    login: test
+    password: testpwd
   so:
     operationalEnv:
       dmaap:
@@ -428,6 +441,26 @@ so-nssmf-adapter:
     adapters:
       requestDb:
         auth: Basic YnBlbDpwYXNzd29yZDEk
+
+so-oof-adapter:
+  certSecret: *so-certs
+  db:
+    <<: *dbSecrets
+  aaf:
+    auth:
+      username: so@so.onap.org
+      password: 8DB1C939BFC6A35C3832D0E52E452D0E05AE2537AF142CECD125FF827C05A972FDD0F4700547DA
+  mso:
+    msoKeySecret: *mso-key
+    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
+    oof:
+      authSecret: *mso-oof-auth
+    config:
+      cadi:
+        aafId: so@so.onap.org
+        aafPassword: enc:EME-arXn2lx8PO0f2kEtyK7VVGtAGWavXorFoxRmPO9
+        apiEnforcement: org.onap.so.oofAdapterPerm
+        noAuthn: /manage/health
 
 so-vnfm-adapter:
   certSecret: *so-certs
