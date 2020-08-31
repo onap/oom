@@ -33,8 +33,8 @@ global:
 secrets:
   - uid: root-password
     type: password
-    externalSecret: '{{ tpl (default (include "mariadbInit.mariadbClusterSecret" .) .Values.global.mariadbGalera.userRootSecret) . }}'
-    password: '{{ tpl (default "" .global.mariadbGalera.userRootPassword) . }}'
+    externalSecret: '{{ tpl (ternary (default "" .Values.mariadbGalera.userRootSecret) (default (include "mariadbInit.mariadbClusterSecret" .) .Values.global.mariadbGalera.userRootSecret) (not (empty (default "" .Values.mariadbGalera.serviceName)))) . }}'
+    password: '{{ tpl (ternary (default "" .Values.mariadbGalera.userRootPassword) (default "" .Values.global.mariadbGalera.userRootPassword) (not (empty (default "" .Values.mariadbGalera.serviceName)))) . }}'
   - uid: '{{ .Values.config.mysqlDatabase }}'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.userCredentialsExternalSecret) . }}'
@@ -51,6 +51,15 @@ pullPolicy: IfNotPresent
 
 # Set it if you want to change the name of the different components
 # nameOverride:
+
+mariadbGalera: {}
+#  serviceName: some-name
+#  containerName: some-name
+#  servicePort: 3306
+#  userRootPassword: some-password
+#  userRootSecret: some-secret-name
+#  userRootSecretKey: password
+
 
 config:
   userPassword: Ci@shsOd3pky1Vji
