@@ -15,35 +15,38 @@
 # limitations under the License.
 -->
 
-<configuration scan="false" debug="true">
-    <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
-    <property name="p_lvl" value="%level"/>
-    <property name="p_log" value="%logger"/>
-    <property name="p_mdc" value="%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}"/>
-    <property name="p_msg" value="%replace(%replace(%msg){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-    <property name="p_exc" value="%replace(%replace(%rootException){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-    <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-    <property name="p_thr" value="%thread"/>
-    <property name="pattern" value="%nopexception${p_tim}\t${p_thr}\t${p_lvl}\t${p_log}\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n"/>
+<configuration scan="{{ .Values.log.scan.enabled }}" debug="{{ .Values.log.debug }}">
 
-  <property name="logDir" value="/var/log/onap" />
-  <property name="debugDir" value="/var/log/onap" />
+  <property name="componentName" value='{{default "UNSET_COMPONENT" .Values.log.componentName}}'/>
+  <property name="subcomponentName" value='{{default "UNSET_SUBCOMPONENT" .Values.log.subcomponentName}}'/>
 
-  <property name="componentName" value="esr"></property>
-  <property name="subComponentName" value="esr-server"></property>
+  <property name="logDir" value="{{ .Values.log.logDir }}" />
+  <property name="queueSize" value="{{ .Values.log.queueSize }}"/>
+
+  <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
+  <property name="p_lvl" value="%level"/>
+  <property name="p_log" value="%logger"/>
+  <property name="p_mdc" value="%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}"/>
+  <property name="p_msg" value="%replace(%replace(%msg){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_exc" value="%replace(%replace(%rootException){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_thr" value="%thread"/>
+  <property name="pattern" value="%nopexception${p_tim}\t${p_thr}\t${p_lvl}\t${p_log}\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n"/>
 
   <property name="errorLogName" value="error" />
   <property name="metricsLogName" value="metrics" />
   <property name="auditLogName" value="audit" />
   <property name="debugLogName" value="debug" />
 
-  <property name="errorPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n" />
-  <property name="debugPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%msg%n\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n" />
-
+  <property name="errorPattern" value="${p_tim}|%X{RequestId}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n" />
+  <property name="debugPattern" value="${p_tim}|%X{RequestId}|%msg%n\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n" />
   <property name="auditPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||||||%msg%n" />
   <property name="metricPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|||||%msg%n" />
+
   <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
-  <property name="debugLogDirectory" value="${debugDir}/${componentName}/${subComponentName}" />
+
+  <!-- Console (human-readable) logging -->
+  <property name="consolePattern" value="%nopexception${p_log}\t${p_tim}\t${p_lvl}\t%message\t${p_mdc}\t%rootException\t${p_mak}\t${p_thr}%n"/>
 
   <appender name="EELFAudit"
             class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -57,7 +60,7 @@
   </appender>
 
   <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
+    <queueSize>${queueSize}</queueSize>
     <appender-ref ref="EELFAudit" />
   </appender>
 
@@ -73,7 +76,7 @@
   </appender>
 
   <appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
+    <queueSize>${queueSize}</queueSize>
     <appender-ref ref="EELFMetrics"/>
   </appender>
 
@@ -93,16 +96,16 @@
   </appender>
 
   <appender name="asyncEELFError" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
+    <queueSize>${queueSize}</queueSize>
     <appender-ref ref="EELFError"/>
   </appender>
 
   <appender name="EELFDebug"
             class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${debugLogDirectory}/${debugLogName}.log</file>
+    <file>${logDirectory}/${debugLogName}.log</file>
     <rollingPolicy
             class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${debugLogDirectory}/${debugLogName}.log.%d</fileNamePattern>
+      <fileNamePattern>${logDirectory}/${debugLogName}.log.%d</fileNamePattern>
     </rollingPolicy>
     <encoder>
       <pattern>${debugPattern}</pattern>
@@ -110,9 +113,15 @@
   </appender>
 
   <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
+    <queueSize>${queueSize}</queueSize>
     <appender-ref ref="EELFDebug" />
     <includeCallerData>true</includeCallerData>
+  </appender>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${consolePattern}</pattern>
+    </encoder>
   </appender>
 
   <logger name="com.att.eelf.audit" level="info" additivity="false">
@@ -127,9 +136,9 @@
     <appender-ref ref="asyncEELFError" />
   </logger>
 
-  <root level="INFO">
+  <root level="{{ .Values.log.root.level }}">
     <appender-ref ref="asyncEELFDebug" />
+    <appender-ref ref="STDOUT" />
   </root>
 
 </configuration>
-
