@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2019 Orange
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,4 +20,16 @@
 */}}
 {{- define "mariadbInit.mariadbClusterSecret" -}}
   {{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (default "mariadb-galera" .Values.global.mariadbGalera.nameOverride)) -}}
+{{- end -}}
+
+{{- define "mariadbInit._updateSecrets" -}}
+  {{- if not .Values.secretsUpdated }}
+    {{- $global := . }}
+    {{- range $db, $dbInfos := .Values.config.mysqlAdditionalDatabases }}
+      {{- $item := dict "uid" $db "type" "basicAuth" "externalSecret" (default "" $dbInfos.externalSecret) "login" (default "" $dbInfos.user) "password" (default "" $dbInfos.password) "passwordPolicy" "required" }}
+      {{- $newList := append $global.Values.secrets $item }}
+      {{- $_ := set $global.Values "secrets" $newList }}
+    {{- end -}}
+    {{ $_ := set $global.Values "secretsUpdated" true }}
+  {{- end -}}
 {{- end -}}
