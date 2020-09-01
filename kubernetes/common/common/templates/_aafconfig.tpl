@@ -117,9 +117,9 @@
     - name: aaf_locator_app_ns
       value: "{{ $aafRoot.app_ns }}"
     - name: DEPLOY_FQI
-    {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" $aafRoot.secret_uid "key" "login") | indent 6 }}
+    {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" $aafRoot.secret_uid "key" "login") | indent 6 }}
     - name: DEPLOY_PASSWORD
-    {{- include "common.secret.envFromSecret" (dict "global" $dot "uid" $aafRoot.secret_uid "key" "password") | indent 6 }}
+    {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" $aafRoot.secret_uid "key" "password") | indent 6 }}
   #Note: want to put this on Nodes, eventually
     - name: cadi_longitude
       value: "{{ default "52.3" $aafRoot.cadi_longitude }}"
