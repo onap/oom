@@ -21,9 +21,24 @@ global:
   portalFEPort: "30225"
   # application's front end hostname.  Must be resolvable on the client side environment
   portalHostName: "portal.api.simpledemo.onap.org"
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - name: &dbSecretName '{{ include "common.release" . }}-portal-cass-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.casandraCredsExternalSecret) . }}'
+    login: '{{ .Values.config.cassandraUsername }}'
+    password: '{{ .Values.config.cassandraPassword }}'
+
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
+  cassandraUsername: root
+# cassandraPassword: Aa123456
+# casandraCredsExternalSecret: some secret
+
 portal-mariadb:
   nameOverride: portal-db
 mariadb:
@@ -36,8 +51,15 @@ cassandra:
   service:
     name: portal-cassandra
   config:
-    cassandraUsername: root
-    cassandraPassword: Aa123456
+    cassandraCredsExternalSecret: *dbSecretName
+portal-app:
+  cassandra:
+    config:
+      cassandraExternalSecret: *dbSecretName
+portal-app:
+  cassandra:
+    config:
+      cassandraExternalSecret: *dbSecretName
 messageRouter:
   service:
     name: message-router

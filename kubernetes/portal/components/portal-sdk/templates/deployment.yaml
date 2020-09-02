@@ -49,6 +49,23 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-portalsdk-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["/bin/sh"]
+        args: [ "-c", "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"]
+        env:
+          - name: CASSA_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "login") | indent 12 }}
+          - name: CASSA_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "password") | indent 12 }}
+          - name: CIPHER_ENC_KEY
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cipherEncKey-secret" "key" "password") | indent 12 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: properties-onapportalsdk-scrubbed
+        - mountPath: /config
+          name: properties-onapportalsdk
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
       - name: {{ include "common.name" . }}
@@ -99,6 +116,9 @@ spec:
         - name: properties-onapportalsdk
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTALSDK/WEB-INF/classes/portal.properties"
           subPath: portal.properties
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/key.properties"
+          subPath: key.properties
         - name: properties-onapportalsdk
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTALSDK/WEB-INF/classes/music.properties"
           subPath: music.properties
@@ -126,7 +146,7 @@ spec:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
           subPath: filebeat.yml
-        - name: portal-data-filebeat
+        - name: portal-data-filebeat`
           mountPath: /usr/share/filebeat/data
         - name: var-log-onap
           mountPath: /var/log/onap
@@ -135,6 +155,9 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: properties-onapportalsdk
+          emptyDir:
+            medium: Memory
+        - name: properties-onapportalsdk-scrubbed
           configMap:
             name: {{ include "common.fullname" . }}-onapportalsdk
             defaultMode: 0755
