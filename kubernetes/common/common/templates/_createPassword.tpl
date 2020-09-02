@@ -24,11 +24,11 @@
 */}}
 {{- define "common.masterPassword" -}}
   {{ if .Values.masterPasswordOverride }}
-    {{- printf "%d" .Values.masterPasswordOverride -}}
+    {{- printf "%s" .Values.masterPasswordOverride -}}
   {{ else if .Values.global.masterPassword }}
-    {{- printf "%d" .Values.global.masterPassword -}}
+    {{- printf "%s" .Values.global.masterPassword -}}
   {{ else if .Values.masterPassword }}
-    {{- printf "%d" .Values.masterPassword -}}
+    {{- printf "%s" .Values.masterPassword -}}
   {{ else if eq "testRelease" (include "common.release" .) }}
     {{/* Special case for chart liniting. DON"T NAME YOUR PRODUCTION RELEASE testRelease */}}
     {{- printf "testRelease" -}}
