@@ -18,6 +18,11 @@ for arg; do
 	esac
 done
 
+prepare_password()
+{
+	echo "$1" | sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
+}
+
 # usage: file_env VAR [DEFAULT]
 #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
@@ -36,7 +41,7 @@ file_env() {
 	elif [ "${!fileVar:-}" ]; then
 		val="$(< "${!fileVar}")"
 	fi
-	val=`echo -n $val | sed -e "s/'/''/g"`
+	val=`prepare_password $val`
 	export "$var"="$val"
 	unset "$fileVar"
 }
