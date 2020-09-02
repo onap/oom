@@ -49,6 +49,23 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-portal-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["/bin/sh"]
+        args: [ "-c", "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"]
+        env:
+          - name: CASSA_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass-secret" "key" "login") | indent 12 }}
+          - name: CASSA_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass-secret" "key" "password") | indent 12 }}
+          - name: CIPHER_ENC_KEY
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cipherEncKey-secret" "key" "password") | indent 12 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: properties-onapportal-scrubbed
+        - mountPath: /config
+          name: properties-onapportal
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
       - name: {{ include "common.name" . }}
@@ -103,6 +120,9 @@ spec:
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/portal.properties"
           subPath: portal.properties
         - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/key.properties"
+          subPath: key.properties
+        - name: properties-onapportal
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/classes/music.properties"
           subPath: music.properties
         - name: properties-onapportal
@@ -114,6 +134,8 @@ spec:
         - name: properties-onapportal
           mountPath: "{{ .Values.global.env.tomcatDir }}/webapps/ONAPPORTAL/WEB-INF/web.xml"
           subPath: web.xml
+        - name: properties-onapportal
+          mountPath: "{{ .Values.global.env.tomcatDir }}/temp"
         - name: var-log-onap
           mountPath: /var/log/onap
         resources:
@@ -122,7 +144,7 @@ spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
       {{- end -}}
-      {{- if .Values.affinity }}
+{{- if .Values.affinity }}
       affinity:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
@@ -143,6 +165,9 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: properties-onapportal
+          emptyDir:
+            medium: Memory
+        - name: properties-onapportal-scrubbed
           configMap:
             name: {{ include "common.fullname" . }}-onapportal
             defaultMode: 0755
