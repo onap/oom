@@ -14,13 +14,29 @@
   <property name="auditLogName" value="audit" />
   <property name="debugLogName" value="debug" />
 
-  <property name="errorPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n" />
-  <property name="debugPattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}|%X{RequestId}|%msg%n" />
+  <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
+  <property name="p_lvl" value="%level"/>
+  <property name="p_log" value="%logger"/>
+  <property name="p_mdc" value="%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}"/>
+  <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_thr" value="%thread"/>
 
-  <property name="auditPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||||||%msg%n" />
-  <property name="metricPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|%thread||%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|||||%msg%n" />
+  <property name="errorPattern" value="${p_tim}|%X{RequestId}|${p_thr}|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n" />
+  <property name="debugPattern" value="${p_tim}|%X{RequestId}|%msg%n" />
+
+  <property name="auditPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|${p_thr}||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||||||%msg%n" />
+  <property name="metricPattern" value="%X{BeginTimestamp}|%X{EndTimestamp}|%X{RequestId}|%X{ServiceInstanceId}|${p_thr}||%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{Timer}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|||||%msg%n" />
   <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
   <property name="debugLogDirectory" value="${debugDir}/${componentName}/${subComponentName}" />
+
+  <!-- Console (human-readable) logging -->
+  <property name="consolePattern" value="%nopexception${p_log}\t${p_tim}\t${p_lvl}\t%message\t${p_mdc}\t%rootException\t${p_mak}\t${p_thr}%n"/>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${consolePattern}</pattern>
+    </encoder>
+  </appender>
 
   <!-- ============================================================================ -->
   <!-- EELF Appenders -->
@@ -127,6 +143,7 @@
   </logger>
   <root level="INFO">
     <appender-ref ref="asyncEELFDebug" />
+    <appender-ref ref="STDOUT" />
   </root>
 
 </configuration>
