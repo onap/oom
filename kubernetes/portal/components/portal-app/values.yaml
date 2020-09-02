@@ -23,8 +23,26 @@ global:
   readinessImage: onap/oom/readiness:3.0.1
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  envsubstImage: dibi/envsubst
   #AAF service
   aafEnabled: true
+
+################################################################
+# Secrets metaconfig
+#################################################################
+
+secrets:
+  - uid: cassa-secret
+    type: basicAuth
+    externalSecret: '{{ .Values.cassandra.config.cassandraExternalSecret}}'
+    login: '{{ .Values.cassandra.config.cassandraUsername }}'
+    password: '{{ .Values.cassandra.config.cassandraPassword }}'
+    passwordPolicy: required
+  - uid: cipherEncKey-secret
+    type: password
+    externalSecret: '{{ .Values.config.cipherEncKeyExternalSecret}}'
+    password: '{{ .Values.config.cipherEncKey }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -34,6 +52,11 @@ global:
 repository: nexus3.onap.org:10001
 image: onap/portal-app:3.2.3
 pullPolicy: Always
+
+# application configuration
+config:
+  # cipherEncKeyExternalSecret: some secret
+  cipherEncKey: AGLDdG4D04BKm2IxIWEr8o==!
 
 #AAF local config
 
@@ -104,6 +127,7 @@ cassandra:
   service:
     name: portal-cassandra
   config:
+    # cassandraExternalSecret: some secret
     cassandraUsername: root
     cassandraPassword: Aa123456
 messageRouter:
