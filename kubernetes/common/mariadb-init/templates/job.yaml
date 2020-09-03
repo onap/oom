@@ -52,8 +52,13 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - bash
-        - /db_init/db_init.sh
+          - /bin/sh
+          - -c   
+          - |
+            bash /db_init/db_init.sh
+{{-       if .Values.dbScriptConfigMap  }}
+            bash /db_config/db_cmd.sh
+{{-      end }}
         env:
         - name: DB_HOST
           value: "{{ .Values.global.mariadbGalera.nameOverride }}"
@@ -79,6 +84,11 @@ spec:
         - name: mariadb-conf
           mountPath: /db_init/
           readOnly: true
+{{- if .Values.dbScriptConfigMap }}
+        - name: {{ include "common.fullname" . }}-configdb 
+          mountPath: /db_config/
+          readOnly: true
+{{- end }}
         resources:
 {{ include "common.resources" . | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -90,12 +100,17 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
       volumes:
-      - name: mariadb-conf
-        configMap:
-          name: {{ include "mariadbInit.configMap" . }}
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+{{- if .Values.dbScriptConfigMap }}
+        - name: {{ include "common.fullname" . }}-configdb
+          configMap:
+            name: {{ tpl .Values.dbScriptConfigMap . }}
+{{- end }} 
+        - name: mariadb-conf
+          configMap:
+            name: {{ include "mariadbInit.configMap" . }}
       restartPolicy: Never
       imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"

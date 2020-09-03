@@ -22,6 +22,12 @@ global:
   readinessImage: readiness-check:2.0.2
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
+  mariadbGalera: &mariadbGalera
+    #This flag allows VID to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -41,9 +47,6 @@ subChartsOnly:
 repository: nexus3.onap.org:10001
 image: onap/vid:6.0.4
 pullPolicy: Always
-
-# mariadb image for initializing
-mariadb_image: library/mariadb:10
 
 # application configuration
 config:
@@ -68,7 +71,9 @@ config:
   roleaccesscentralized: remote
 
 mariadb-galera:
-  config:
+ # '&mariadbConfig' means we "store" the values for  later use in the file
+ # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
     userCredentialsExternalSecret: '{{ include "common.release" . }}-vid-db-user-secret'
     mysqlDatabase: vid_openecomp_epsdk
   nameOverride: vid-galera
@@ -83,6 +88,13 @@ mariadb-galera:
   externalConfig: |-
     [mysqld]
     lower_case_table_names = 1
+
+mariadb-init:
+  config: *mariadbConfig
+  nameOverride: vid-mariadb
+  # A configMap of same name is created. It points to file that will be run after 
+  # The DB has been created.
+  dbScriptConfigMap: '{{ include "common.release" . }}-vid-configmap'
 
 # default number of instances
 replicaCount: 1
