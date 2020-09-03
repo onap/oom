@@ -34,7 +34,27 @@ limitations under the License.
     <property name="maxFileSize" value="50MB" />
     <property name="maxHistory" value="30" />
     <property name="totalSizeCap" value="10GB" />
-    <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+
+    <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
+    <property name="p_lvl" value="%level"/>
+    <property name="p_log" value="%logger"/>
+    <property name="p_mdc" value="%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}"/>
+    <property name="p_msg" value="%replace(%replace(%msg){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+    <property name="p_exc" value="%replace(%replace(%rootException){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+    <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+    <property name="p_thr" value="%thread"/>
+
+    <property name="pattern" value="%${p_tim}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+
+    <!-- Console (human-readable) logging -->
+    <property name="consolePattern" value="%nopexception${p_log}\t${p_tim}\t${p_lvl}\t%message\t${p_mdc}\t%rootException\t${p_mak}\t${p_thr}%n"/>
+
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+        <encoder>
+            <pattern>${consolePattern}</pattern>
+        </encoder>
+    </appender>
+
     <!-- All log -->
     <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
         <then>
@@ -194,6 +214,7 @@ limitations under the License.
         <appender-ref ref="ASYNC_DEBUG" />
         <appender-ref ref="ASYNC_AUDIT" />
         <appender-ref ref="ASYNC_TRANSACTION" />
+        <appender-ref ref="STDOUT" />
         <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
             <then>
                 <appender-ref ref="ALL_ROLLING" />
