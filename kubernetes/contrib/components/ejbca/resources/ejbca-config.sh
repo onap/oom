@@ -12,6 +12,9 @@ configureEjbca() {
     ejbca.sh config cmp updatealias --alias cmpRA --key operationmode --value ra
     ejbca.sh ca editca --caname ManagementCA --field cmpRaAuthSecret --value ${RA_IAK}
     ejbca.sh config cmp updatealias --alias cmpRA --key responseprotection --value pbe
+    ejbca.sh ca importprofiles -d /opt/primekey/custom_profiles                                         #Custom EJBCA cert profile and endentity are imported to allow issuing certificates with correct extended usage (containing serverAuth)
+    ejbca.sh config cmp updatealias --alias cmpRA --key ra.certificateprofile --value CUSTOM_ENDUSER    #Profile name taken from certprofile filename (certprofile_<profile-name>-<id>.xml)
+    ejbca.sh config cmp updatealias --alias cmpRA --key ra.endentityprofileid --value 1356531849        #ID taken from entityprofile filename (entityprofile_<profile-name>-<id>.xml)
     ejbca.sh config cmp dumpalias --alias cmpRA
     ejbca.sh config cmp addalias --alias cmp
     ejbca.sh config cmp updatealias --alias cmp --key allowautomatickeyupdate --value true
