@@ -19,14 +19,14 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 COMMON_CHARTS_DIR := common
 
-EXCLUDES :=
+EXCLUDES := 
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 HELM_VER := $(shell helm version --template "{{.Version}}")
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS)
+.PHONY: $(HELM_CHARTS) $(EXCLUDES)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
+all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS) $(EXCLUDES)
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
