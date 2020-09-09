@@ -36,10 +36,15 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+{{ include "common.podSecurityContext" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.dockerHubRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - docker-entrypoint.sh
+          args:
+          - --nounixsocket
           env:
             - name: MONGO_INITDB_DATABASE
               value: "{{ .Values.config.dbName }}"
@@ -68,6 +73,7 @@ spec:
             mountPath: /var/lib/mongo
           resources:
 {{ include "common.resources" . | indent 12 }}
+{{ include "common.containerSecurityContext" . | indent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
