@@ -20,12 +20,14 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
+PROCESSED_LAST := cert-wrapper
+TO_FILTER := $(EXCLUDES) $(PROCESSED_LAST)
 
 HELM_BIN := helm
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
+HELM_CHARTS := $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PROCESSED_LAST)
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS)
+.PHONY: $(HELM_CHARTS) $(TO_FILTER)
 
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
