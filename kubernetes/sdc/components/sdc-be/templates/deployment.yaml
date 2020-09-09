@@ -78,6 +78,12 @@ spec:
         - name: sdc-environments-output
           mountPath: /config-output/
       {{- end }}
+      - name: {{ include "common.name" . }}-plugins-etsi-nfv-nsd-csar
+        image: "{{ include "common.repository" . }}/{{ index . "Values" "plugins" "etsi-nfv-nsd-csar" "image" }}"
+        command: [ "/bin/sh", "-c", "/bin/cp /plugins/* /pl/.; chown -R {{.Values.jetty.user.uid}}:{{.Values.jetty.group.gid}} /pl;" ]
+        volumeMounts:
+          - name: {{ include "common.fullname" . }}-plugins
+            mountPath: "/pl"
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -138,6 +144,8 @@ spec:
           - name: {{ include "common.fullname" . }}-logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: {{ include "common.fullname" . }}-plugins
+            mountPath: /var/lib/jetty/plugins
           lifecycle:
             postStart:
               exec:
@@ -173,6 +181,8 @@ spec:
       - name: sdc-environments-output
         emptyDir: { medium: "Memory" }
       - name: {{ include "common.fullname" . }}-logs
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-plugins
         emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
