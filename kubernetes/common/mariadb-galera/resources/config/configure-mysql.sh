@@ -32,9 +32,8 @@ if [ -z "$MYSQL_INITDB_SKIP_TZINFO" ]; then
 	mysql_tzinfo_to_sql /usr/share/zoneinfo | sed 's/Local time zone must be set--see zic manual page/FCTY/' | "${mysql[@]}" mysql
 fi
 
-prepare_password()
-{
-	echo "$1" | sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
+function prepare_password {
+	echo -n $1 | sed -e "s/'/''/g"
 }
 
 mysql_root_password=`prepare_password $MYSQL_ROOT_PASSWORD`

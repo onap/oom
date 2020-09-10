@@ -1,0 +1,169 @@
+# Copyright © 2017 Amdocs, AT&T, Bell Canada
+# Modifications Copyright © 2018 ZTE
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /root/ready.py
+        args:
+        - --container-name
+        - "sdc-onboarding-be"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      - name: {{ include "common.name" . }}-job-completion
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
+        command:
+        - /root/job_complete.py
+        args:
+        - --job-name
+        - {{ include "common.release" . }}-sdc-onboarding-be-cassandra-init
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-update-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config-output/${PFILE}; chmod 0755 /config-output/${PFILE}; done"
+        env:
+        - name: KEYSTORE_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.release" . }}-sdc-cs-secrets
+              key: keystore_password
+        - name: TRUSTSTORE_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.release" . }}-sdc-cs-secrets
+              key: truststore_password
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-environments
+          mountPath: /config-input/
+        - name: sdc-environments-output
+          mountPath: /config-output/
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports: {{ include "common.containerPorts" . | nindent 10  }}
+          {{ if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            httpGet:
+              path: /sdc2/rest/healthCheck
+              port: {{ .Values.liveness.port }}
+              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          {{ end }}
+          readinessProbe:
+            exec:
+              command:
+              - "/var/lib/jetty/ready-probe.sh"
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+          env:
+          - name: ENVNAME
+            value: {{ .Values.global.env.name }}
+          - name: JAVA_OPTIONS
+            value: {{ .Values.config.javaOptions }}
+          - name: cassandra_ssl_enabled
+            value: {{ .Values.config.cassandraSslEnabled | quote }}
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          volumeMounts:
+          - name: sdc-environments-output
+            mountPath: /var/lib/jetty/chef-solo/environments/
+          - name: sdc-cert
+            mountPath: /var/lib/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.p12
+            subPath: org.onap.sdc.p12
+          - name: sdc-cert
+            mountPath: /var/lib/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.trust.jks
+            subPath: org.onap.sdc.trust.jks
+          - name: {{ include "common.fullname" . }}-localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-logback
+            mountPath: /tmp/logback.xml
+            subPath: logback.xml
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+        # side car containers
+        - name: {{ include "common.name" . }}-filebeat-onap
+          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-filebeat-conf
+            mountPath: /usr/share/filebeat/filebeat.yml
+            subPath: filebeat.yml
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-data-filebeat
+            mountPath: /usr/share/filebeat/data
+      volumes:
+      - name: {{ include "common.fullname" . }}-localtime
+        hostPath:
+          path: /etc/localtime
+      - name: sdc-cert
+        secret:
+          secretName: sdc-cert
+      - name: {{ include "common.fullname" . }}-filebeat-conf
+        configMap:
+          name: {{ include "common.release" . }}-sdc-filebeat-configmap
+      - name: {{ include "common.fullname" . }}-data-filebeat
+        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-logback
+        configMap:
+          name : {{ include "common.fullname" . }}-logging-configmap
+      - name: {{ include "common.fullname" . }}-environments
+        configMap:
+          name: {{ include "common.release" . }}-sdc-environments-configmap
+          defaultMode: 0755
+      - name: sdc-environments-output
+        emptyDir: { medium: "Memory" }
+      - name: {{ include "common.fullname" . }}-logs
+        emptyDir: {}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

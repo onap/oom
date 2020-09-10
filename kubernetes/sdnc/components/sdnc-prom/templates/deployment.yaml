@@ -16,19 +16,28 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
 spec:
   selector:
     matchLabels:
       app: {{ include "common.name" . }}
   replicas: 1
-  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
     spec:
       initContainers:
       - command:
-        - /app/ready.py
+        - /root/ready.py
         args:
         - --container-name
         - sdnc
@@ -40,7 +49,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:

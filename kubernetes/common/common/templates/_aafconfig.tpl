@@ -59,10 +59,10 @@
 {{-   $aafRoot := default $dot.Values.aafConfig .aafRoot -}}
 {{-   if $dot.Values.global.aafEnabled -}}
 - name: {{ include "common.name" $dot }}-aaf-readiness
-  image: "{{ include "common.repository" $dot }}/{{ $dot.Values.global.readinessImage }}"
+  image: "{{ $dot.Values.global.readinessRepository }}/{{ $dot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
   command:
-  - /app/ready.py
+  - /root/ready.py
   args:
   - --container-name
   - aaf-locate
