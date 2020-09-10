@@ -36,14 +36,16 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /app/ready.py
-        args:
 {{- if .Values.global.mariadbGalera.localCluster }}
+      - command:
+        - /root/ready.py
+        args:
         - --container-name
         - {{ index .Values "mariadb-galera" "nameOverride" }}
 {{- else }}
+      - command:
+        - /root/job_complete.py
+        args:
         - --job-name
         - {{ include "common.release" . }}-{{ index .Values "mariadb-init" "nameOverride" }}-config-job
 {{- end }}
@@ -53,8 +55,9 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
       - name: {{ include "common.name" . }}
         command:

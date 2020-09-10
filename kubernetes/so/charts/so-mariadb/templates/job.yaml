@@ -51,7 +51,7 @@ spec:
         command:
         - /bin/bash
         - -c
-        - mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb nfvo > /var/data/mariadb/backup-`date +%s`.sql
+        - mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb > /var/data/mariadb/backup-`date +%s`.sql
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
@@ -96,7 +96,7 @@ spec:
       initContainers:
       - name: {{ include "common.name" . }}-readiness
         command:
-        - /app/ready.py
+        - /root/ready.py
         args:
         - --container-name
         - {{ .Values.global.mariadbGalera.nameOverride }}
@@ -106,7 +106,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
       - name: {{ include "common.name" . }}
@@ -156,10 +156,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "catalog-db-creds" "key" "login") | indent 10 }}
         - name: CATALOG_DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "catalog-db-creds" "key" "password") | indent 10 }}
-        - name: NFVO_DB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nfvo-db-creds" "key" "login") | indent 10 }}
-        - name: NFVO_DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "nfvo-db-creds" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime

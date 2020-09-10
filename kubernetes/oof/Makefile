@@ -15,7 +15,3 @@
 make-has:
 	cd charts && helm dep up oof-has
 	cd charts && helm dep up oof-cmso
-
-clean:
-	@find . -type f -name '*.tgz' -delete
-	@find . -type f -name '*.lock' -delete

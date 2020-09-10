@@ -1,0 +1,136 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-sdnc-dmaap-listener-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-dmaap-listener-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    passwordPolicy: required
+  - uid: odl-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.odlCredsExternalSecret) . }}'
+    login: '{{ .Values.config.odlUser }}'
+    password: '{{ .Values.config.odlPassword }}'
+    passwordPolicy: required
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/sdnc-dmaap-listener-image:1.8.4
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+config:
+  dmaapPort: 3904
+  sdncChartName: sdnc
+  sdncPort: 8282
+  msgRouterContainerName: message-router
+  configDir: /opt/onap/sdnc/data/properties
+  odlUser: admin
+  odlPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  # odlCredsExternalSecret: some secret
+
+mariadb-galera:
+  config:
+    userCredentialsExternalSecret: *dbSecretName
+    userName: sdnctl
+    userPassword: gamma
+    mysqlDatabase: sdnctl
+  nameOverride: dmaap-listener-galera
+  service:
+    name: dmaap-listener-galera
+    portName: dmaap-listener-galera
+    internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: dmaap-listener/maria/data
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+ingress:
+  enabled: false
+
+service:
+  name: sdnc-dmaap-listener
+
+#Resource limit flavor -By default using small
+flavor: small
+#Segregation for different environment (small and large)
+
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  unlimited: {}

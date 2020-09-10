@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{ include "mariadbInit._updateSecrets" . -}}
-
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -37,17 +35,17 @@ spec:
       initContainers:
       - name: {{ include "common.name" . }}-readiness
         command:
-        - /app/ready.py
+        - /root/ready.py
         args:
         - --container-name
-        - {{ default .Values.global.mariadbGalera.nameOverride .Values.mariadbGalera.containerName }}
+        - {{ .Values.global.mariadbGalera.nameOverride }}
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
       - name: {{ include "common.name" . }}
@@ -58,21 +56,21 @@ spec:
         - /db_init/db_init.sh
         env:
         - name: DB_HOST
-          value: "{{ default .Values.global.mariadbGalera.nameOverride .Values.mariadbGalera.serviceName }}"
+          value: "{{ .Values.global.mariadbGalera.nameOverride }}"
         - name: DB_PORT
-          value: "{{ default .Values.global.mariadbGalera.servicePort .Values.mariadbGalera.servicePort }}"
+          value: "{{ .Values.global.mariadbGalera.servicePort }}"
         - name: MYSQL_ROOT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "root-password" "key" (default "password" .Values.global.mariadbGalera.userRootSecretKey)) | indent 10 }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "root-password" "key" (default "password" .Values.global.mariadbGalera.userRootSecretKey)) | indent 10 }}
         - name: {{ printf "MYSQL_USER_%s" .Values.config.mysqlDatabase | upper }}
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "login") | indent 10 }}
         - name: {{ printf "MYSQL_PASSWORD_%s" .Values.config.mysqlDatabase | upper }}
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" .Values.config.mysqlDatabase "key" "password") | indent 10 }}
 {{- $root := . }}
 {{ range $db, $_values := .Values.config.mysqlAdditionalDatabases }}
         - name: {{ printf "MYSQL_USER_%s" $db | upper }}
-          {{- include "common.secret.envFromSecretFast" (dict "global" $root "uid" $db "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecret" (dict "global" $root "uid" $db "key" "login") | indent 10 }}
         - name: {{ printf "MYSQL_PASSWORD_%s" $db | upper }}
-          {{- include "common.secret.envFromSecretFast" (dict "global" $root "uid" $db "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecret" (dict "global" $root "uid" $db "key" "password") | indent 10 }}
 {{ end }}
         volumeMounts:
         - mountPath: /etc/localtime

@@ -1,0 +1,97 @@
+# Copyright © 2018 Amdocs, AT&T, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/dcae-be:1.3.4
+pullPolicy: Always
+backendInitImage: onap/dcae-tools:1.3.4
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+config:
+  javaOptions: -XX:MaxPermSize=256m -Xmx1024m -Dconfig.home=config -Dlog.home=/var/lib/jetty/logs/ -Dlogging.config=config/dcae-be/logback-spring.xml
+  cassandraSslEnabled: "false"
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 240
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: false
+
+readiness:
+  initialDelaySeconds: 240
+  periodSeconds: 10
+
+service:
+  type: ClusterIP
+  name: sdc-dcae-be
+  portName: sdc-dcae-be-8082
+  externalPort: 8082
+  internalPort: 8082
+  portName2: sdc-dcae-be-8444
+  externalPort2: 8444
+  internalPort2: 8444
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "sdc.dcae.plugin"
+      name: "sdc-dcae-be"
+      port: 8282
+  config:
+    ssl: "none"
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 10m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 8Gi
+    requests:
+      cpu: 20m
+      memory: 2Gi
+  unlimited: {}

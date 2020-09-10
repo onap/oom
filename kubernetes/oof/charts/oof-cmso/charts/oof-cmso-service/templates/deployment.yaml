@@ -1,5 +1,4 @@
 # Copyright (c) 2018 AT&T
-# Copyright (C) 2020 Wipro Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +35,7 @@ spec:
     spec:
       initContainers:
       - command:
-        - /app/ready.py
+        - /root/ready.py
         args:
         - --container-name
         - {{ .Values.config.db.container }}
@@ -46,23 +45,9 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-      - name: {{ include "common.name" . }}-db-config-readiness
-        command:
-        - /app/ready.py
-        args:
-        - -j
-        - "{{ include "common.release" . }}-cmso-db-config-config-job"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - name: {{ include "common.name" . }}-chown
         command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /share/"]
         image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
@@ -79,11 +64,11 @@ spec:
         - name: DB_PORT
           value: {{ .Values.config.db.port | quote}}
         - name: DB_USERNAME
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmso-db-user-secret" "key" "login") | indent 10}}
+          value: {{ .Values.config.db.root }}
         - name: DB_SCHEMA
           value: {{ .Values.config.db.mysqlDatabase }}
         - name: DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmso-db-user-secret" "key" "password") | indent 10}}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmso-db-root-password" "key" "password") | indent 10}}
         terminationMessagePolicy: File
         volumeMounts:
         - name: {{ include "common.fullname" . }}-config

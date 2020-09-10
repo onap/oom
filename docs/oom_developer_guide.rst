@@ -639,7 +639,7 @@ SO deployment specification excerpt:
       spec:
         initContainers:
         - command:
-          - /app/ready.py
+          - /root/ready.py
           args:
           - --container-name
           - so-mariadb

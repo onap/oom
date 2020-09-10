@@ -1,0 +1,113 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018 AT&T, ZTE
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/workflow-backend:1.6.4
+configInitImage: onap/workflow-init:1.6.4
+pullPolicy: Always
+
+initJob:
+  enabled: true
+
+config:
+  javaOptions: "-Xmx1536m -Xms1536m"
+  cassandraAuthenticationEnabled: true
+  cassandraClientPort: 9042
+
+  sdcProtocol: HTTPS
+  sdcEndpoint: sdc-be:8443
+  sdcExternalUser: workflow
+
+  serverSSLEnabled: true
+
+  serverSSLKeyStoreType: jks
+  serverSSLKeyStorePath: /home/sdc/etc/keystore
+
+  serverSSLTrustStoreType: jks
+  serverSSLTrustStorePath: /home/sdc/etc/truststore
+
+  cassandraSSLEnabled: false
+  cassandraTrustStorePath: /home/sdc/etc/truststore
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+service:
+  type: NodePort
+  portName: sdc-wfd-be
+  internalPort: 8080
+  externalPort: 8080
+  internalPort2: 8443
+  externalPort2: 8443
+  nodePort: "57" # only one node port. set to http or https port depending on isHttpsEnabled property
+
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "sdcwfdbe"
+      name: "sdc-wfd-be"
+      port: 8443
+  config:
+    ssl: "redirect"
+    
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+#resources:
+#  limits:
+#    cpu: 2
+#    memory: 4Gi
+#  requests:
+#    cpu: 2
+#    memory: 4Gi

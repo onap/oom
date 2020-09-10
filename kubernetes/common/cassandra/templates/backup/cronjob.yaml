@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+{{- $global := . }}
 {{- if .Values.backup.enabled }}
 apiVersion: batch/v1beta1
 kind: CronJob
@@ -35,7 +36,7 @@ spec:
           restartPolicy: Never
           initContainers:
             - command:
-              - /app/ready.py
+              - /root/ready.py
               args:
               - --container-name
               - {{ include "common.name" . }}
@@ -45,21 +46,21 @@ spec:
                   fieldRef:
                     apiVersion: v1
                     fieldPath: metadata.namespace
-              image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+              image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
               imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
               name: {{ include "common.name" . }}-readiness
             - name: "cassandra-backup-init"
-              image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+              image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
               imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
               command:
-              - /bin/bash
+              - /bin/sh
               - -c
               - |
                 clearSnapshot(){
                   curr_time=$1
                   echo "Clearing snapshots!!!"
                   command="nodetool clearsnapshot -t $curr_time"
-                  /app/exec.py -p "cassandra" -c "$command"
+                  /root/exec.py -p "cassandra" -c "$command"
                 }
                 {{ $root := . }}
                 curr_time=`date +%s`
@@ -75,11 +76,11 @@ spec:
 
                 echo "Executing cleanup!!"
                 command="nodetool cleanup"
-                /app/exec.py -p "cassandra" -c "$command"
+                /root/exec.py -p "cassandra" -c "$command"
                 echo "Cleaned Node!! Backing up database now!!!"
 
                 command="nodetool snapshot -t $curr_time"
-                /app/exec.py -p "cassandra" -c "$command"
+                /root/exec.py -p "cassandra" -c "$command"
                 retCode=$?
                 if [ $retCode -ne 0 ]; then
                   echo "Backup Failed!!!"
@@ -95,7 +96,7 @@ spec:
                     d=$(echo $d | sed 's:/*$::')
                     keyspace_name=$(echo "$d" | awk -F/ '{ print $NF }')
                     if [ 1 ] {{- range $t, $keyspace := $root.Values.backup.keyspacesToSkip }} && [ "{{ $keyspace.name }}" != "$keyspace_name" ] {{- end }}; then
-                      /app/restore.sh -b $backup_dir/cassandra-{{ $i }}/data -s  /onap-data/cassandra-{{ $i }}/data/$keyspace_name -k $keyspace_name -t $curr_time &
+                      /root/restore.sh -b $backup_dir/cassandra-{{ $i }}/data -s  /onap-data/cassandra-{{ $i }}/data/$keyspace_name -k $keyspace_name -t $curr_time &
                       pids="$pids $!"
                     fi
                   done
@@ -142,10 +143,10 @@ spec:
               - mountPath: /backup
                 name: backup-dir
               - name: scripts
-                mountPath: /app/restore.sh
+                mountPath: /root/restore.sh
                 subPath: restore.sh
               - name: scripts
-                mountPath: /app/exec.py
+                mountPath: /root/exec.py
                 subPath: exec.py
           containers:
             - name: cassandra-backup-validate
@@ -237,7 +238,7 @@ spec:
           {{- range $i := until (int .Values.replicaCount)}}
           - name: data-dir-{{ $i }}
             persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-data-{{ $i }}
+              claimName: {{ include "common.fullname" $global }}-data-{{ include "common.fullname" $global }}-{{ $i }} 
           {{- end }}
           - name: backup-dir
             persistentVolumeClaim:

@@ -96,7 +96,7 @@ initContainers:
 {{-   if .Values.sequence_order }}
 - name: {{ include "common.name" . }}-aaf-readiness
   command:
-  - /app/ready.py
+  - /root/ready.py
   args:
   {{- range $container := .Values.sequence_order }}
   - --container-name
@@ -108,7 +108,7 @@ initContainers:
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
-  image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+  image: "{{ .Values.global.readinessRepository }}/{{ .Values.global.readinessImage }}"
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   resources:
     limits:

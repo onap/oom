@@ -1,0 +1,138 @@
+# Copyright © 2017 Amdocs, Bell Canada
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  readinessRepository: oomk8s
+  readinessImage: readiness-check:2.0.2
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  # envsusbt
+  envsubstImage: dibi/envsubst
+  mariadbGalera:
+    #This flag allows SO to instantiate its own mariadb-galera cluster
+    #If shared instance is used, this chart assumes that DB already exists
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-sdnc-ansible-server-db-secret'
+    type: basicAuth
+    # This is a nasty trick that allows you override this secret using external one
+    # with the same field that is used to pass this to subchart
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-ansible-server-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
+    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    passwordPolicy: required
+  - uid: rest-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.restCredsExternalSecret) . }}'
+    login: '{{ .Values.config.restUser }}'
+    password: '{{ .Values.config.restPassword }}'
+    passwordPolicy: required
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+repository: nexus3.onap.org:10001
+image: onap/sdnc-ansible-server-image:1.8.4
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+config:
+  sdncChartName: sdnc
+  configDir: /opt/onap/sdnc
+  restUser: sdnc
+  restPassword: sdnc
+  # restCredsExternalSecret: some secret
+
+mariadb-galera:
+  config:
+    userCredentialsExternalSecret: *dbSecretName
+    userName: sdnc
+    userPassword: sdnc
+    mysqlDatabase: ansible
+  nameOverride: ansible-server-galera
+  service:
+    name: ansible-server-galera
+    portName: ansible-server-galera
+    internalPort: 3306
+  replicaCount: 1
+  persistence:
+    enabled: true
+    mountSubPath: ansible-server/maria/data
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 180
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+service:
+  type: ClusterIP
+  name: sdnc-ansible-server
+  portName: sdnc-ansible-server
+  internalPort: 8000
+  externalPort: 8000
+
+ingress:
+  enabled: false
+
+#Resource Limit flavor -By default using small
+flavor: small
+
+#Segregation for Different environment (Small and Large)
+
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 0.5
+      memory: 500Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  unlimited: {}

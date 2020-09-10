@@ -1,5 +1,4 @@
 # Copyright © 2018 AT&T
-# Copyright (C) 2020 Wipro Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,31 +17,24 @@
 #################################################################
 secrets:
   - uid: cmso-db-root-password
-    name: &rootPassword '{{ include "common.release" . }}-cmso-db-root-password'
+    name: '{{ include "common.release" . }}-cmso-db-root-password'
     type: password
     password: ''
     policy: generate
-  - uid: cmso-service-db-secret
-    name: &serviceDbCreds '{{ include "common.release" . }}-cmso-service-db-secret'
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.db.service.userCredentialsExternalSecret) . }}'
-    login: '{{ .Values.config.db.service.userName }}'
-    password: '{{ .Values.config.db.service.userPassword }}'
-    passwordPolicy: generate
   - uid: cmso-db-secret
-    name: &optimizerDbCreds '{{ include "common.release" . }}-cmso-optimizer-db-secret'
+    name: '{{ include "common.release" . }}-cmso-db-secret'
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.db.optimizer.userCredentialsExternalSecret) . }}'
-    login: '{{ .Values.config.db.optimizer.userName }}'
-    password: '{{ .Values.config.db.optimizer.userPassword }}'
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
     passwordPolicy: generate
 
 mariadb-galera:
   replicaCount: 1
-  nameOverride: &containerName cmso-db
+  nameOverride: cmso-db
   service:
     type: ClusterIP
-    name: &serviceName oof-cmso-dbhost
+    name: oof-cmso-dbhost
     portName: cmso-dbhost
   nfsprovisionerPrefix: cmso
   sdnctlPrefix: cmso
@@ -51,9 +43,9 @@ mariadb-galera:
     enabled: true
   disableNfsProvisioner: true
   config:
-    mariadbRootPasswordExternalSecret: *rootPassword
-    #    userCredentialsExternalSecret: *dbCreds
-    #    mysqlDatabase: cmso
+    mariadbRootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+    mysqlDatabase: cmso
   externalConfig: |
     [mysqld]
     lower_case_table_names = 1
@@ -70,20 +62,6 @@ global:
   busyBoxImage: busybox:1.30
   busyBoxRepository: docker.io
 
-mariadb-init:
-  mariadbGalera:
-    containerName: *containerName
-    serviceName: *serviceName
-    servicePort: 3306
-    userRootSecret: *rootPassword
-  config:
-    userCredentialsExternalSecret: *serviceDbCreds
-    mysqlDatabase: cmso
-    mysqlAdditionalDatabases:
-      optimizer:
-        externalSecret: *optimizerDbCreds
-  nameOverride: cmso-db-config
-
 flavor: small
 
 config:
@@ -91,17 +69,15 @@ config:
     logstashServiceName: log-ls
     logstashPort: 5044
   db:
-    service:
-      # userCredentialsExternalsecret: some secret
-      userName: cmso-admin
-      # userPassword: password
-    optimizer:
-      userName: cmso-optimizer
+    # userCredentialsExternalsecret: some secret
+    userName: cmso-admin
+    # userPassword: password
 
 oof-cmso-service:
   config:
     db:
-      userCredentialsExternalSecret: *serviceDbCreds
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: cmso
@@ -109,7 +85,8 @@ oof-cmso-service:
 oof-cmso-optimizer:
   config:
     db:
-      userCredentialsExternalSecret: *optimizerDbCreds
+      userCredentialsExternalSecret: '{{ include "common.release" . }}-cmso-db-secret'
+      rootPasswordExternalSecret: '{{ include "common.release" . }}-cmso-db-root-password'
       host: oof-cmso-dbhost
       container: cmso-db
       mysqlDatabase: optimizer
