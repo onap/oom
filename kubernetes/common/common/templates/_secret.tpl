@@ -137,6 +137,10 @@ type: Opaque
   {{- $uid := (default "" .uid) }}
   {{- $name := (default "" .name) }}
   {{- $fullname := ne (default "" .chartName) "" | ternary (include "common.fullnameExplicit" (dict "dot" $global "chartName" .chartName)) (include "common.fullname" $global) }}
+  {{- if eq "test-release" $global.Release.Name -}}
+  {{/* Special case for chart liniting in helm3. DON"T NAME YOUR PRODUCTION RELEASE test-release */}}
+  {{- $uid = lower $uid -}}
+  {{- end -}}
   {{- default (printf "%s-%s" $fullname $uid) $name }}
 {{- end -}}
 
