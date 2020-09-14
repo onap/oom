@@ -51,6 +51,10 @@
 {{- $dot := default . .dot -}}
 {{- $suffix := default "" .suffix -}}
   {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
+  {{- if eq "test-release" $dot.Release.Name -}}
+  {{/* Special case for chart liniting in helm3. DON"T NAME YOUR PRODUCTION RELEASE test-release */}}
+  {{- $name = lower $name -}}
+  {{- end -}}
   {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name "suffix" $suffix) }}
 {{- end -}}
 
