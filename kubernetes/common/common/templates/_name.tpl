@@ -51,6 +51,7 @@
 {{- $dot := default . .dot -}}
 {{- $suffix := default "" .suffix -}}
   {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
+  {{- $name = lower $name -}}
   {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name "suffix" $suffix) }}
 {{- end -}}
 
