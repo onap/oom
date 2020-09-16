@@ -1,0 +1,182 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Copyright (C) 2020 Wipro Limited.
+# Modifications Copyright © 2018 AT&T,VMware
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - oof-has-controller
+        - --container-name
+        - aaf-service
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+
+      - name: {{ include "common.name" . }}-onboard-readiness
+        command:
+        - /app/ready.py
+        args:
+        - -j
+        - "{{ include "common.release" . }}-oof-has-onboard"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+
+      - name: {{ include "common.name" . }}-has-sms-readiness
+        command:
+        - sh
+        - -c
+        - resp="FAILURE";
+          until [ $resp = "200" ]; do
+          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/has/secret);
+          echo $resp;
+          sleep 2;
+          done
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.global.curlImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
+
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/bash","-c"]
+          args: ["/usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port={{ .Values.uwsgi.internalPort }} --die-on-term --exit-on-reload --logto /var/log/conductor/conductor-uwsgi.log --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --logfile-chown --logfile-chmod 664 --protocol=uwsgi --socket 0.0.0.0:{{ .Values.uwsgi.internalPort }}"]
+          ports:
+          - containerPort: {{ .Values.uwsgi.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.uwsgi.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.uwsgi.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /usr/local/etc/conductor/conductor.conf
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: conductor.conf
+          - mountPath: /usr/local/bin/log.conf
+            name: {{ .Values.global.commonConfigPrefix  }}-config
+            subPath: log.conf
+          - mountPath: /usr/local/bin/AAF_RootCA.cer
+            name: {{ .Values.global.commonConfigPrefix }}-config
+            subPath: AAF_RootCA.cer
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        - name: {{ include "common.name" . }}-nginx
+          image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.nginx.image }}"
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          {{- if .Values.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+{{ include "common.certInitializer.volumeMount" . | indent 10 }}
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /opt/bitnami/nginx/conf/nginx.conf
+            name: {{ .Values.global.commonConfigPrefix  }}-config
+            subPath: nginx.conf
+          resources:
+{{ include "common.resources" . | indent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+        {{ include "common.certInitializer.volumes" . | nindent 8 }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: {{ .Values.global.commonConfigPrefix }}-config
+          configMap:
+            name: {{ .Values.global.commonConfigPrefix  }}-configmap
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+            - key: conductor.conf
+              path: conductor.conf
+            - key: log.conf
+              path: log.conf
+            - key: AAF_RootCA.cer
+              path: AAF_RootCA.cer
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
