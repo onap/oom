@@ -30,7 +30,6 @@ metadata:
     heritage: {{ $dot.Release.Service }}
     name: "{{ index $dot.Values "container" "name" $pgMode }}"
 spec:
-  serviceName: {{ $dot.Values.service.name }}
   replicas: 1
   selector:
     matchLabels:
