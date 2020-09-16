@@ -32,6 +32,9 @@
   {{ else if eq "testRelease" (include "common.release" .) }}
     {{/* Special case for chart liniting. DON"T NAME YOUR PRODUCTION RELEASE testRelease */}}
     {{- printf "testRelease" -}}
+  {{ else if eq "test-release" .Release.Name }}
+    {{/* Special case for chart linting in helm3. DON"T NAME YOUR PRODUCTION RELEASE test-release */}}
+    {{- printf "testRelease" -}}
   {{ else }}
     {{ fail "masterPassword not provided" }}
   {{ end }}
