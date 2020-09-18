@@ -74,6 +74,9 @@ update fn_app set app_username='Default', app_password='2VxipM8Z3SETg32m3Gp0FvKS
 -- aai sparky
 update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7MLhzo03aoOx7dTvdjKQ=', ueb_key='ueb_key_7' where app_id = 7;
 
+-- Disabled Policy APP
+UPDATE fn_app fa SET fa.enabled = 'N' WHERE app_name = 'Policy';
+
 
 /*
 Replace spaces with underscores for role names to match AAF role names
