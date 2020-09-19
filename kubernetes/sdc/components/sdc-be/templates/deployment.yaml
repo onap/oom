@@ -86,7 +86,7 @@ spec:
           for PFILE in `find . -not -type d | grep -v -F ..`
           do
             envsubst <${PFILE} >/config-output/${PFILE}
-            chmod 0755 /config-output/${PFILE}
+            chmod 0644 /config-output/${PFILE}
           done
         resources:
           limits:
@@ -101,6 +101,63 @@ spec:
         - name: sdc-environments-output
           mountPath: /config-output/
       {{- end }}
+      - name: {{ include "common.name" . }}-update-configuration
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /configuration-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/configuration-output/${PFILE}; chmod 0644 /configuration-output/${PFILE}; done"
+        env:
+        - name: AAF_USERNAME
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: aaf_username}
+        - name: AAF_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: aaf_password}
+        - name: CS_USERNAME
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: sdc_user}
+        - name: CS_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: sdc_password}
+        - name: CS_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: cs_truststore_password}
+        - name: DPC_USERNAME
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: dpc_username}
+        - name: DPC_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: dpc_password}
+        - name: SOD_USERNAME
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: sod_username}
+        - name: SOD_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: sod_password}
+        - name: CADI_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: cadi_truststore_password}
+        - name: DMAAP_TRUSTSTORE_PWD
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: dmaap_truststore_pwd}
+        - name: SDC_ACCESS_RESTRICTION_SECURITY_KEY
+          valueFrom:
+            secretKeyRef: {name: {{ include "common.release" . }}-sdc-secrets, key: sdc_access_restriction_security_key}
+        volumeMounts:
+        - name: {{ include "common.fullname" . }}-configuration
+          mountPath: /configuration-input/
+        - name: sdc-configuration-output
+          mountPath: /configuration-output/
+      - name: {{ include "common.fullname" . }}-change-folder-permissions
+        image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
+        command: ["/bin/sh", "-c", "chown -Rf 352070:35953 /var/lib/jetty/config/catalog-be"]
+        volumeMounts:
+        - name: sdc-configuration-output
+          mountPath: /var/lib/jetty/config/catalog-be/
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -158,13 +215,11 @@ spec:
             readOnly: true
           - name: {{ include "common.fullname" . }}-logs
             mountPath: /var/log/onap
+          - name: sdc-configuration-output
+            mountPath: /var/lib/jetty/config/catalog-be/
           - name: {{ include "common.fullname" . }}-logback
-            mountPath: /tmp/logback.xml
+            mountPath: /var/lib/jetty/config/catalog-be/logback.xml
             subPath: logback.xml
-          lifecycle:
-            postStart:
-              exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: {{ include "repositoryGenerator.image.logging" . }}
@@ -196,13 +251,22 @@ spec:
       - name: {{ include "common.fullname" . }}-logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
+          defaultMode: 0644
       - name: {{ include "common.fullname" . }}-environments
         configMap:
           name: {{ include "common.release" . }}-sdc-environments-configmap
-          defaultMode: 0755
+          defaultMode: 0644
       - name: sdc-environments-output
-        emptyDir: { medium: "Memory" }
+        emptyDir:
+          medium: "Memory"
       - name: {{ include "common.fullname" . }}-logs
         emptyDir: {}
-      imagePullSecrets:
+      - name: {{ include "common.fullname" . }}-configuration
+        configMap:
+          name: {{ include "common.fullname" . }}-configuration-configmap
+          defaultMode: 0644
+      - name: sdc-configuration-output
+        emptyDir:
+          medium: "Memory"
+    imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
