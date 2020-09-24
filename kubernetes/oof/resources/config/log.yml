@@ -1,0 +1,101 @@
+version: 1
+disable_existing_loggers: True
+
+loggers:
+  error:
+    handlers: [error_handler, console_handler]
+    level: "WARN"
+    propagate: True
+  debug:
+    handlers: [debug_handler, console_handler]
+    level: "DEBUG"
+    propagate: True
+  metrics:
+    handlers: [metrics_handler, console_handler]
+    level: "INFO"
+    propagate: True
+  audit:
+    handlers: [audit_handler, console_handler]
+    level: "INFO"
+    propagate: True
+handlers:
+  debug_handler:
+    level: "DEBUG"
+    class: "logging.handlers.TimedRotatingFileHandler"
+    filename: "logs/debug.log"
+    formatter: "debugFormat"
+    when: midnight
+    interval: 1
+    utc: True
+    delay: False
+    backupCount: 10
+  error_handler:
+    level: "WARN"
+    class: "logging.handlers.TimedRotatingFileHandler"
+    filename: "logs/error.log"
+    formatter: "errorFormat"
+    when: midnight
+    interval: 1
+    utc: True
+    delay: False
+    backupCount: 10
+  metrics_handler:
+    level: "INFO"
+    class: "logging.handlers.TimedRotatingFileHandler"
+    filename: "logs/metrics.log"
+    formatter: "metricsFormat"
+    when: midnight
+    interval: 1
+    utc: True
+    delay: False
+    backupCount: 10
+  audit_handler:
+    level: "INFO"
+    class: "logging.handlers.TimedRotatingFileHandler"
+    filename: "logs/audit.log"
+    formatter: "auditFormat"
+    when: midnight
+    interval: 1
+    utc: True
+    delay: False
+    backupCount: 10
+  console_handler:
+    level: "DEBUG"
+    class: "logging.StreamHandler"
+    formatter: "metricsFormat"
+
+formatters:
+  standard:
+    format: "%(asctime)s|||||%(name)s||%(thread)||%(funcName)s||%(levelname)s||%(message)s"
+  debugFormat:
+    format: "%(mdc)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S"
+    mdcfmt: "%(asctime)s.%(msecs)03d+00:00|{requestID}|%(threadName)s|{server}|%(levelname)s|%(message)s"
+    (): osdf.logging.oof_mdc_formatter.OOFMDCFormatter
+  errorFormat:
+    format: "%(mdc)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S"
+    mdcfmt: "%(asctime)s.%(msecs)03d+00:00|{requestID}|%(threadName)s|{serviceName}|{partnerName}\
+    |{targetEntity}|{targetServiceName}|%(levelname)s|{errorCode}|{errorDescription}|%(message)s"
+    (): osdf.logging.oof_mdc_formatter.OOFMDCFormatter
+  auditFormat:
+    format: "%(mdc)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S"
+    mdcfmt: "{entryTimestamp}+00:00|%(asctime)s.%(msecs)03d+00:00|{requestID}|{serviceInstanceID}\
+        |%(threadName)s|{server}|{serviceName}|{partnerName}|{statusCode}|{responseCode}|{responseDescription}\
+        |{instanceUUID}|%(levelname)s|{severity}|{serverIPAddress}|{timer}|{server}|{IPAddress}||{unused}\
+        |{processKey}|{customField1}|{customField2}|{customField3}|{customField4}|%(message)s"
+    (): osdf.logging.oof_mdc_formatter.OOFMDCFormatter
+  metricsFormat:
+    format: "%(mdc)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S"
+    mdcfmt: "{entryTimestamp}+00:00|%(asctime)s.%(msecs)03d+00:00|{requestID}|{serviceInstanceID}\
+        |%(threadName)s|{server}|{serviceName}|{partnerName}|{targetEntity}|{targetServiceName}|{statusCode}|{responseCode}|{responseDescription}\
+        |{instanceUUID}|%(levelname)s|{severity}|{serverIPAddress}|{timer}|{server}|{IPAddress}||{unused}\
+        |{processKey}|{TargetVirtualEntity}|{customField1}|{customField2}|{customField3}|{customField4}|%(message)s"
+    (): osdf.logging.oof_mdc_formatter.OOFMDCFormatter
+  mdcFormat:
+    format: "%(asctime)s.%(msecs)03d+00:00|||||%(name)s||%(thread)s||%(funcName)s||%(levelname)s||%(message)s||||%(mdc)s"
+    mdcfmt: "{requestID} {invocationID} {serviceName} {serverIPAddress}"
+    (): osdf.logging.oof_mdc_formatter.OOFMDCFormatter
+
