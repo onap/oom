@@ -22,7 +22,7 @@ COMMON_CHARTS_DIR := common
 EXCLUDES :=
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
-HELM_VER != helm version --template "{{.Version}}"
+HELM_VER := $(shell helm version --template "{{.Version}}")
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
