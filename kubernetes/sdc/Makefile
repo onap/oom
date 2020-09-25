@@ -20,6 +20,8 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 EXCLUDES := dist resources templates charts docker
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
+HELM_VER := $(shell helm version --template "{{.Version}}")
+
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(HELM_CHARTS)
@@ -39,7 +41,12 @@ lint-%: dep-%
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
+ifeq "$(findstring v3,$(HELM_VER))" "v3"
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$(helm package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && helm push -f $$PACKAGE_NAME local; fi
+else
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+endif
+
 	@helm repo index $(PACKAGE_DIR)
 
 clean:
