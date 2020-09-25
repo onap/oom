@@ -182,6 +182,13 @@ if [ "$1" = 'mysqld' -a -z "$wantHelp" ]; then
 			echo
 		done
 
+		file_env 'PORTAL_DB_TABLES'
+		for i in $(echo $PORTAL_DB_TABLES | sed "s/,/ /g")
+			do
+			    echo "Granting portal user ALL PRIVILEGES for table $i"
+					echo "GRANT ALL ON \`$i\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+			done
+
 		if ! kill -s TERM "$pid" || ! wait "$pid"; then
 			echo >&2 'MySQL init process failed.'
 			exit 1
