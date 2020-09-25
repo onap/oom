@@ -59,10 +59,22 @@ spec:
           mountPath: /usr/share/elasticsearch/logs/
         - name: {{ include "common.fullname" . }}-data
           mountPath: /usr/share/elasticsearch/data/
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.clamp_key }} /usr/share/elasticsearch/config/{{ .Values.certInitializer.clamp_key }}
+            cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.clamp_pem }} /usr/share/elasticsearch/config/{{ .Values.certInitializer.clamp_pem }}
+            cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.clamp_ca_certs_pem }} /usr/share/elasticsearch/config/{{ .Values.certInitializer.clamp_ca_certs_pem }}
+            /usr/local/bin/docker-entrypoint.sh
+          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ include "common.servicename" . }}
@@ -85,7 +97,7 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -104,7 +116,7 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime

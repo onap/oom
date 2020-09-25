@@ -49,6 +49,7 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -73,7 +74,7 @@ spec:
           env:
           - name: elasticsearch_base_url
             value: "{{ternary "https" "http" .Values.security.ssl.enabled}}://{{.Values.config.elasticsearchServiceName}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.config.elasticsearchPort}}"
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -90,7 +91,7 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
