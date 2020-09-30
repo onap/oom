@@ -21,29 +21,43 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
 
-  config:
-    ssl_enabled: false
-    msbProtocol: https
-    msbServiceName: msb-iag
-    msbPort: 443
-
   persistence:
     mountPath: /dockerdata-nfs
+
+  mariadbGalera:
+    #This flag allows Modeling to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
+readinessCheck:
+  wait_for:
+    msb:
+      name: msb
+      containers:
+          - msb-iag
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: "db-root-pass"
-    externalSecret: '{{- include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" (index .Values "mariadb-galera" "nameOverride")) }}'
-    type: password
+  - uid: modeling-db-secret
+    name: &dbSecretName '{{ include "common.release" . }}-modeling-db-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.db.userName }}'
+    password: '{{ .Values.config.db.userPassword }}'
 
 #################################################################
 # Dependencies configuration
 #################################################################
 
 mariadb-galera:
-  nameOverride: modeling-mariadb
+  config: &mariadbConfig
+    userCredentialsExternalSecret: *dbSecretName
+    mysqlDatabase: etsicatalog
+  nameOverride: modeling-db
   service:
     name: modeling-db
     portName: modeling-db
@@ -54,14 +68,31 @@ mariadb-galera:
     enabled: true
   disableNfsProvisioner: true
 
+mariadb-init:
+  config: *mariadbConfig
+  # nameOverride should be the same with common.name
+  nameOverride: modeling-etsicatalog
+
 #################################################################
 # Application configuration defaults.
 #################################################################
+config:
+  #application configuration about  msb
+  ssl_enabled: false
+  msbProtocol: https
+  msbServiceName: msb-iag
+  msbPort: 443
+  #application configuration user password about mariadb
+  db:
+    userName: etsicatalog
+    # userPassword: password
+    # userCredentialsExternalSecret: some-secret
+
 # application image
 flavor: small
 
 repository: nexus3.onap.org:10001
-image: onap/modeling/etsicatalog:1.0.6
+image: onap/modeling/etsicatalog:1.0.7
 initImage: busybox:latest
 pullPolicy: Always
 

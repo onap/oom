@@ -39,8 +39,8 @@ spec:
       - command:
         - /app/ready.py
         args:
-        - --container-name
-        - modeling-mariadb
+        - -j
+        - "{{ include "common.release" . }}-{{ include "common.name" . }}-config-job"
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,7 +49,8 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        name: {{ include "common.name" . }}-job-readiness
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for.msb ) | indent 6 | trim }}
       - command:
         - /bin/sh
         - -c
@@ -62,11 +63,6 @@ spec:
           mountPath: /service/modeling/etsicatalog/static
       containers:
         - name: {{ include "common.name" . }}
-          command:
-            - bash
-          args:
-            - -c
-            - 'MYSQL_AUTH=root:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
@@ -87,15 +83,19 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: MSB_PROTO
-            value: "{{ .Values.global.config.msbProtocol }}"
+            value: "{{ .Values.config.msbProtocol }}"
           - name: SSL_ENABLED
-            value: "{{ .Values.global.config.ssl_enabled }}"
+            value: "{{ .Values.config.ssl_enabled }}"
           - name: MSB_ADDR
-            value: "{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
-          - name: MYSQL_ADDR
-            value: {{ (index .Values "mariadb-galera" "service" "name") }}:{{ (index .Values "mariadb-galera" "service" "internalPort") }}
-          - name: MYSQL_ROOT_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 12}}
+            value: "{{ .Values.config.msbServiceName }}:{{ .Values.config.msbPort }}"
+          - name: DB_IP
+            value: "{{ include "common.mariadbService" . }}"
+          - name: DB_PORT
+            value: "{{ include "common.mariadbPort" . }}"
+          - name: DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "modeling-db-secret" "key" "login") | indent 12 }}
+          - name: DB_PASSWD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "modeling-db-secret" "key" "password") | indent 12 }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-etsicatalog
             mountPath: /service/modeling/etsicatalog/static
