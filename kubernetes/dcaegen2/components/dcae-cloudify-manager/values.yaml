@@ -2,6 +2,7 @@
 # ================================================================================
 # Copyright (c) 2018-2020 AT&T Intellectual Property. All rights reserved.
 # Modifications Copyright © 2018 Amdocs, Bell Canada
+# Copyright (c) 2020 J. F. Lucas.  All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +54,7 @@ config:
 #################################################################
 # application image
 repository: nexus3.onap.org:10001
-image: onap/org.onap.dcaegen2.deployments.cm-container:3.3.2
+image: onap/org.onap.dcaegen2.deployments.cm-container:3.3.3
 pullPolicy: Always
 
 # name of shared ConfigMap with kubeconfig for multiple clusters
@@ -69,6 +70,7 @@ cleanupImage: onap/org.onap.dcaegen2.deployments.dcae-k8s-cleanup-container:1.0.
 liveness:
   initialDelaySeconds: 10
   periodSeconds: 10
+  timeoutSeconds: 5
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   # liveness not desirable for Cloudify Manager container
@@ -76,7 +78,13 @@ liveness:
 
 readiness:
   initialDelaySeconds: 60
-  periodSeconds: 10
+  # In some environments we see CM coming up
+  # properly but readiness probe timing out.
+  # Increasing the timeout and adjusting the
+  # period so it's longer than the timeout.
+  # (DCAEGEN2-2465)
+  periodSeconds: 30
+  timeoutSeconds: 10
 
 service:
   type: ClusterIP
