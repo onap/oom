@@ -52,8 +52,23 @@ spec:
       - name: {{ include "common.name" . }}-portal-config
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["/bin/sh"]
-        args: [ "-c", "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"]
+        command:
+        - sh
+        args:
+        - "-c"
+        - |
+          cd /config-input && \
+          for PFILE in `ls -1 *.xml`
+          do
+            cp ${PFILE} /config
+            chmod 0755 /config/${PFILE}
+          done
+          cd /config-input && \
+          for PFILE in `ls -1 *.properties`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+            chmod 0755 /config/${PFILE}
+          done
         env:
           - name: CASSA_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass" "key" "login") | indent 12 }}
@@ -61,6 +76,10 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass" "key" "password") | indent 12 }}
           - name: CIPHER_ENC_KEY
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cipher-enc-key" "key" "password") | indent 12 }}
+          - name: PORTAL_DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-backend-db" "key" "login") | indent 12 }}
+          - name: PORTAL_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-backend-db" "key" "password") | indent 12 }}
         volumeMounts:
         - mountPath: /config-input
           name: properties-onapportal-scrubbed
