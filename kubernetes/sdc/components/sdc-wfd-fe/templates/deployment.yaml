@@ -48,6 +48,13 @@ spec:
               fieldPath: metadata.namespace
         image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
       {{- if .Values.global.aafEnabled }}
       - name: {{ include "common.fullname" . }}-move-cert
         command:
@@ -63,6 +70,13 @@ spec:
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - name: sdc-certs
             mountPath: /sdc-certs
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
       {{- end }}
       containers:
         - name: {{ include "common.name" . }}
@@ -123,8 +137,7 @@ spec:
             mountPath: /var/lib/jetty/etc/{{ .Values.certInitializer.truststoreFile }}
             subPath: {{ .Values.certInitializer.truststoreFile }}
           {{ end }}
-          resources:
-{{ include "common.resources" . | indent 12 }}
+          resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -145,6 +158,13 @@ spec:
             mountPath: /var/log/onap
           - name: {{ include "common.fullname" . }}-data-filebeat
             mountPath: /usr/share/filebeat/data
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 3m
+              memory: 20Mi
       volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-localtime
           hostPath:
