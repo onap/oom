@@ -45,25 +45,12 @@ spec:
         prometheus.io/port: {{ .Values.prometheus.jmx.port | quote }}
       {{- end }}
     spec:
-      podAntiAffinity:
-         preferredDuringSchedulingIgnoredDuringExecution:
-         - weight: 1
-           podAffinityTerm:
-             labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - {{ include "common.name" . }}
-                  - key: "release"
-                    operator: In
-                    values:
-                    - {{ include "common.release" . }}
-             topologyKey: "kubernetes.io/hostname"
       {{- if .Values.nodeAffinity }}
       nodeAffinity:
         {{ toYaml .Values.nodeAffinity | indent 10 }}
       {{- end }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
       - name: {{ include "common.name" . }}-permission-fixer
         command:
@@ -234,5 +221,3 @@ spec:
           requests:
             storage: {{ .Values.persistence.size | quote }}
 {{ end }}
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
