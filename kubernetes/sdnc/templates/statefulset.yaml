@@ -55,7 +55,11 @@ spec:
         - name: SCALEOUT_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "scaleout-creds" "key" "login") | indent 10 }}
         - name: SCALEOUT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "scaleout-creds" "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "85           {{ if .Values.global.cmpv2Enabled }}
+286           - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
+287             name: certs
+288           {{- end }}
+uid" "scaleout-creds" "key" "password") | indent 10 }}
         - name: NETBOX_APIKEY
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "netbox-apikey" "key" "password") | indent 10 }}
         - name: SDNC_DB_USER
@@ -282,8 +286,10 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/mountpoint-state-provider.properties
             name: properties
             subPath: mountpoint-state-provider.properties
+          {{ if .Values.global.cmpv2Enabled }}
           - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
             name: certs
+          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -334,12 +340,14 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        {{ if .Values.global.cmpv2Enabled }}
         - name: certs
           emptyDir:
             medium: Memory
         - name: certservice-tls-volume
           secret:
             secretName: {{ .Values.global.platform.certServiceClient.secret.name }}
+        {{- end }}
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
