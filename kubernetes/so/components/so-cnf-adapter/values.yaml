@@ -1,5 +1,4 @@
-# Copyright © 2020 AT&T USA
-# Copyright © 2020 Huawei
+# Copyright © 2020 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +14,21 @@
 #################################################################
 # Global configuration defaults.
 #################################################################
-
 global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
   repository: nexus3.onap.org:10001
-  readinessImage: onap/oom/readiness:3.0.1
-  envsubstImage: dibi/envsubst
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+  readinessImage: oomk8s/readiness-check:2.2.2
+  soCryptoImage: sdesbure/so_crypto:latest
+  dockerHubRepository: docker.io
   persistence:
     mountPath: /dockerdata-nfs
-  htpasswdImage: xmartlabs/htpasswd
-  dockerHubRepository: docker.io
   security:
     aaf:
       enabled: false
+  aaf:
+    auth:
+      header: ${AAF_AUTH}
 
 #################################################################
 # Secrets metaconfig
@@ -48,12 +47,31 @@ secrets:
     password: '{{ .Values.db.adminPassword }}'
     passwordPolicy: required
   - uid: server-actuator-creds
-    name: '{{ include "common.release" . }}-so-appc-actuator-creds'
+    name: '{{ include "common.release" . }}-so-cnf-actuator-creds'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.server.actuatorCredsExternalSecret) . }}'
     login: '{{ .Values.server.actuator.username }}'
     password: '{{ .Values.server.actuator.password }}'
     passwordPolicy: required
+  - uid: so-aaf-creds
+    name: '{{ include "common.release" . }}-so-cnf-aaf-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.aafCredsExternalSecret) . }}'
+    login: '{{ .Values.server.aaf.username }}'
+    password: '{{ .Values.server.aaf.password }}'
+    passwordPolicy: required
+  - uid: so-aai-creds
+    name: '{{ include "common.release" . }}-so-cnf-aai-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.aaiCredsExternalSecret) . }}'
+    login: '{{ .Values.server.aai.username }}'
+    password: '{{ .Values.server.aai.password }}'
+    passwordPolicy: required
+  - uid: cnf-adapter-mso-key
+    name: '{{ include "common.release" . }}-so-cnf-mso-key'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.mso.msoKeySecret) . }}'
+    password: '{{ .Values.mso.msoKey }}'
 
 #secretsFilePaths: |
 #  - 'my file 1'
@@ -63,7 +81,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 repository: nexus3.onap.org:10001
-image: onap/so/so-appc-orchestrator:1.6.4
+image: onap/so/mso-cnf-adapter:1.7.1
 pullPolicy: Always
 
 db:
@@ -75,40 +93,53 @@ db:
   # adminCredsExternalSecret: some secret
 
 server:
+  aaf:
+    username: so@so.onap.org
+    password: demo123456
+  # aafCredsExternalSecret: some secret
+  aai:
+    username: aai@aai.onap.org
+    password: demo123456!
+    auth: ${AAI_AUTH}
+  # aaiCredsExternalSecret: some secret
   actuator:
     username: mso_admin
     password: password1$
+  # actuatorCredsExternalSecret: some secret
+
+mso:
+  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+  # msoKeySecret: some secret
+  adapters:
+    requestDb:
+      auth: ${REQUEST_AUTH}
+
 replicaCount: 1
 minReadySeconds: 10
-containerPort: &containerPort 8080
-logPath: ./logs/soappcorch
-app: appc-orchestrator
+containerPort: &containerPort 8090
+logPath: ./logs/cnf/
+app: cnf-adapter
 service:
-  name: so-appc-orchestrator
   type: ClusterIP
   ports:
-    - port: *containerPort
-      name: http
+    - name: http-api
+      port: *containerPort
 updateStrategy:
   type: RollingUpdate
   maxUnavailable: 1
   maxSurge: 1
-# Resource Limit flavor -By Default using small
-flavor: small
-
-#################################################################
-# soHelper part
-#################################################################
 
 soHelpers:
-  nameOverride: so-appc-cert-init
+  nameOverride: so-cnf-cert-init
   certInitializer:
-    nameOverride: so-appc-cert-init
+    nameOverride: so-cnf-cert-init
     credsPath: /opt/app/osaaf/local
   cadi:
     apiEnforcement: org.onap.so.openStackAdapterPerm
   containerPort: *containerPort
 
+# Resource Limit flavor -By Default using small
+flavor: small
 # Segregation for Different environment (Small and Large)
 resources:
   small:
@@ -126,42 +157,22 @@ resources:
       memory: 2Gi
       cpu: 1000m
   unlimited: {}
+
 livenessProbe:
   path: /manage/health
-  port: 8083
+  port: 8090
   scheme: HTTP
   initialDelaySeconds: 600
   periodSeconds: 60
   timeoutSeconds: 10
   successThreshold: 1
   failureThreshold: 3
+
 ingress:
   enabled: false
+
 nodeSelector: {}
+
 tolerations: []
+
 affinity: {}
-
-auth:
-  rest:
-    encrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
-
-mso:
-  auth: BEA8637716A7EB617DF472BA6552D22F68C1CB17B0D094D77DDA562F4ADAAC4457CAB848E1A4
-  basicUser: poBpmn
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
-
-appc:
-  client:
-    topic:
-      read:
-        name: APPC-LCM-WRITE
-        timeout: 360000
-      write: APPC-LCM-READ
-      sdnc:
-        read: SDNC-LCM-WRITE
-        write: SDNC-LCM-READ
-    response:
-      timeout: 3600000
-    key: VIlbtVl6YLhNUrtU
-    secret: 64AG2hF4pYeG2pq7CT6XwUOT
-    service: ueb
