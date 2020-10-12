@@ -77,7 +77,7 @@ secrets:
     name: &dbRootPassSecretName '{{ include "common.release" . }}-so-db-root-pass'
     type: password
     externalSecret: '{{ ternary .Values.global.mariadbGalera.rootPasswordExternalSecret (default (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.rootPasswordExternalSecret) .Values.global.mariadbGalera.localCluster }}'
-    password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
+    password: "{{ .Values.global.mariadbGalera.mariadbRootpassword }}"
   - uid: db-backup-creds
     name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
     type: basicAuth
@@ -92,16 +92,16 @@ secrets:
   - uid: db-user-creds
     name: &dbUserCredsSecretName '{{ include "common.release" . }}-so-db-user-creds'
     type: basicAuth
-    externalSecret: '{{ .Values.dbCreds.userCredsExternalSecret }}'
-    login: '{{ .Values.dbCreds.userName }}'
-    password: '{{ .Values.dbCreds.userPassword }}'
+    externalSecret: "{{ .Values.dbCreds.userCredsExternalSecret }}"
+    login: "{{ .Values.dbCreds.userName }}"
+    password: "{{ .Values.dbCreds.userPassword }}"
     passwordPolicy: generate
   - uid: db-admin-creds
     name: &dbAdminCredsSecretName '{{ include "common.release" . }}-so-db-admin-creds'
     type: basicAuth
-    externalSecret: '{{ .Values.dbCreds.adminCredsExternalSecret }}'
-    login: '{{ .Values.dbCreds.adminName }}'
-    password: '{{ .Values.dbCreds.adminPassword }}'
+    externalSecret: "{{ .Values.dbCreds.adminCredsExternalSecret }}"
+    login: "{{ .Values.dbCreds.adminName }}"
+    password: "{{ .Values.dbCreds.adminPassword }}"
     passwordPolicy: generate
   - uid: "so-onap-certs"
     name: &so-certs '{{ include "common.release" . }}-so-certs'
@@ -246,10 +246,28 @@ so-catalog-db-adapter:
   db:
     <<: *dbSecrets
 
+so-cnf-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+
 so-etsi-nfvo-ns-lcm:
   enabled: true
 
+so-mariadb:
+  db:
+    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
+    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    backupCredsExternalSecret: *dbBackupCredsSecretName
+    userCredsExternalSecret: *dbUserCredsSecretName
+    adminCredsExternalSecret: *dbAdminCredsSecretName
+
 so-monitoring:
+  enabled: true
+  db:
+    <<: *dbSecrets
+
+so-nssmf-adapter:
   enabled: true
   db:
     <<: *dbSecrets
@@ -280,18 +298,6 @@ so-vfc-adapter:
   db:
     <<: *dbSecrets
 
-so-nssmf-adapter:
-  enabled: true
-  db:
-    <<: *dbSecrets
-
 so-vnfm-adapter:
   enabled: true
 
-so-mariadb:
-  db:
-    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
-    backupCredsExternalSecret: *dbBackupCredsSecretName
-    userCredsExternalSecret: *dbUserCredsSecretName
-    adminCredsExternalSecret: *dbAdminCredsSecretName
