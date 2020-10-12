@@ -1,3 +1,4 @@
+{{/*
 # Copyright © 2018 AT&T USA
 # Copyright © 2020 Huawei
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
+
 #################################################################
 # Global configuration defaults.
 #################################################################
@@ -109,7 +112,7 @@ secrets:
     type: generic
     filePaths:
       - resources/config/certificates/msb-ca.crt
-  - uid: "mso-key"
+  - uid: 'mso-key'
     name: &mso-key '{{ include "common.release" . }}-mso-key'
     type: password
     password: '{{ .Values.global.app.msoKey }}'
@@ -259,15 +262,43 @@ so-catalog-db-adapter:
   db:
     <<: *dbSecrets
 
+so-cnf-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+
 so-etsi-nfvo-ns-lcm:
   enabled: true
   db:
     <<: *dbSecrets
 
+so-mariadb:
+  db:
+    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
+    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    backupCredsExternalSecret: *dbBackupCredsSecretName
+    userCredsExternalSecret: *dbUserCredsSecretName
+    adminCredsExternalSecret: *dbAdminCredsSecretName
+
 so-monitoring:
   enabled: true
   db:
     <<: *dbSecrets
+
+so-nssmf-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+
+so-oof-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+  mso:
+    msoKeySecret: *mso-key
+    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
+    oof:
+      authSecret: *mso-oof-auth
 
 so-openstack-adapter:
   enabled: true
@@ -295,28 +326,5 @@ so-vfc-adapter:
   db:
     <<: *dbSecrets
 
-so-nssmf-adapter:
-  enabled: true
-  db:
-    <<: *dbSecrets
-
-so-oof-adapter:
-  enabled: true
-  db:
-    <<: *dbSecrets
-  mso:
-    msoKeySecret: *mso-key
-    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
-    oof:
-      authSecret: *mso-oof-auth
-
 so-vnfm-adapter:
   enabled: true
-
-so-mariadb:
-  db:
-    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
-    backupCredsExternalSecret: *dbBackupCredsSecretName
-    userCredsExternalSecret: *dbUserCredsSecretName
-    adminCredsExternalSecret: *dbAdminCredsSecretName

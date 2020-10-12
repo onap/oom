@@ -1,0 +1,121 @@
+{{/*
+# Copyright © 2020 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ index .Values.replicaCount }}
+  minReadySeconds: {{ index .Values.minReadySeconds }}
+  strategy:
+    type: {{ index .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ index .Values.updateStrategy.maxSurge }}
+  template:
+    metadata:
+      labels: {{- include "common.labels" . | nindent 8 }}
+    spec:
+      initContainers: {{ include "so.certificate.container_importer" . | nindent 8 }}
+        - name: {{ include "common.name" . }}-readiness
+          command:
+            - /app/ready.py
+          args:
+            - --job-name
+            - {{ include "common.release" . }}-so-mariadb-config-job
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: {{ include "common.repository" . }}/{{ .Values.global.readinessImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "common.repository" . }}/{{ .Values.image }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+          ports: {{- include "common.containerPorts" . | nindent 12  }}
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-so-db-secrets
+                  key: mariadb.readwrite.host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-so-db-secrets
+                  key: mariadb.readwrite.port
+            - name: DB_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "login") | indent 14 }}
+            - name: DB_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "password") | indent 14 }}
+            - name: DB_ADMIN_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "login") | indent 14 }}
+            - name: DB_ADMIN_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "password") | indent 14 }}
+            {{- if eq .Values.global.security.aaf.enabled true }}
+            - name: TRUSTSTORE
+              value: {{ .Values.global.client.certs.truststore }}
+            - name: TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-so-client-certs-secret
+                  key: trustStorePassword
+            - name: KEYSTORE
+              value: {{ .Values.global.client.certs.keystore }}
+            - name: KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name}}-so-client-certs-secret
+                  key: keyStorePassword
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-env
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+            - name: logs
+              mountPath: /app/logs
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: {{ include "common.fullname" . }}-truststore
+              mountPath: /app/client
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: {{ index .Values.livenessProbe.path}}
+              port: {{ index .Values.containerPort }}
+              scheme: {{ index .Values.livenessProbe.scheme}}
+            initialDelaySeconds: {{ index .Values.livenessProbe.initialDelaySeconds}}
+            periodSeconds: {{ index .Values.livenessProbe.periodSeconds}}
+            timeoutSeconds: {{ index .Values.livenessProbe.timeoutSeconds}}
+            successThreshold: {{ index .Values.livenessProbe.successThreshold}}
+            failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
+      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+        - name: logs
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}
+        - name:  {{ include "common.fullname" . }}-truststore
+          secret:
+            secretName: {{ include "common.release" . }}-so-truststore-secret
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
