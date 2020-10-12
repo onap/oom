@@ -19,6 +19,7 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
+HELM_VER := $(shell helm version --template "{{.Version}}")
 
 ifneq ($(SKIP_LINT),TRUE)
 	HELM_LINT_CMD := helm lint
@@ -65,7 +66,12 @@ lint-%: dep-%
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
+ifeq "$(findstring v3,$(HELM_VER))" "v3"
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$(helm package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && helm push -f $$PACKAGE_NAME local; fi
+else
 	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+endif
+
 	@helm repo index $(PACKAGE_DIR)
 
 clean:
