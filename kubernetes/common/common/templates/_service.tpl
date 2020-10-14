@@ -94,6 +94,7 @@ annotations:
         "version": "{{ default "v1" $msb_information.version }}",
         "url": "{{ default "/" $msb_information.url }}",
         "protocol": "{{ default "REST" $msb_information.protocol }}",
+        "enable_ssl": {{ default false $msb_information.enable_ssl }},
         "port": "{{ $msb_information.port }}",
         "visualRange":"{{ default "1" $msb_information.visualRange }}"
       }
