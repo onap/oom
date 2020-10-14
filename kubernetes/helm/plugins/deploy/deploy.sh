@@ -98,7 +98,12 @@ deploy() {
   FLAGS=${@:3}
   CHART_REPO="$(cut -d'/' -f1 <<<"$CHART_URL")"
   CHART_NAME="$(cut -d'/' -f2 <<<"$CHART_URL")"
-  CACHE_DIR=~/.helm/plugins/deploy/cache
+  if [[ $HELM_VER == "v3."* ]]; then
+    CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
+  else
+    CACHE_DIR=~/.helm/plugins/deploy/cache
+  fi
+  echo "Use cache dir: $CACHE_DIR"
   CHART_DIR=$CACHE_DIR/$CHART_NAME
   CACHE_SUBCHART_DIR=$CHART_DIR-subcharts
   LOG_DIR=$CHART_DIR/logs
@@ -114,7 +119,7 @@ deploy() {
   if [[ $FLAGS = *"--delay"* ]]; then
     FLAGS="$(echo $FLAGS| sed -n 's/--delay//p')"
     DELAY="true"
-  fi	
+  fi
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
   if [[ $FLAGS = *"--set-last-applied"* ]]; then
@@ -246,12 +251,16 @@ deploy() {
 	  if [[ $DELAY == "true" ]]; then
 		echo sleep 3m
 		sleep 3m
-	  fi						  
+	  fi
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
-        helm del "${array[i]}" --purge
+        if [[ $HELM_VER == "v3."* ]]; then
+          helm del "${array[i]}" 
+        else
+          helm del "${array[i]}" --purge
+        fi
       done
     fi
   done
@@ -259,6 +268,8 @@ deploy() {
   # report on success/failures of installs/upgrades
   helm ls | grep FAILED | grep $RELEASE
 }
+HELM_VER=$(helm version --template "{{.Version}}")
+echo $HELM_VER
 
 case "${1:-"help"}" in
   "help")
