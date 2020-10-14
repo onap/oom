@@ -1,0 +1,146 @@
+# Copyright © 2018 AT&T USA
+# Copyright © 2020 Huawei
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  repository: nexus3.onap.org:10001
+  readinessImage: onap/oom/readiness:3.0.1
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+  envsubstImage: dibi/envsubst
+  persistence:
+    mountPath: /dockerdata-nfs
+  #This configuration specifies Service and port for SDNC OAM interface
+  sdncOamService: sdnc-oam
+  sdncOamPort: 8282
+  security:
+    aaf:
+      enabled: false
+  aaf:
+    auth:
+      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: db-user-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.userCredsExternalSecret) . }}'
+    login: '{{ .Values.db.userName }}'
+    password: '{{ .Values.db.userPassword }}'
+    passwordPolicy: required
+  - uid: db-admin-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.adminCredsExternalSecret) . }}'
+    login: '{{ .Values.db.adminName }}'
+    password: '{{ .Values.db.adminPassword }}'
+    passwordPolicy: required
+
+#secretsFilePaths: |
+#  - 'my file 1'
+#  - '{{ include "templateThatGeneratesFileName" . }}'
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+repository: nexus3.onap.org:10001
+image: onap/so/sdnc-adapter:1.6.4
+pullPolicy: Always
+
+org:
+  onap:
+    so:
+      adapters:
+        sdnc:
+          bpelauth: 4C18603C5AE7E3A42A6CED95CDF9C0BA9B2109B3725747662E5D34E5FDF63DA9ADEBB08185098F14699195FDE9475100
+          sdncauth: ED07A7EE5F099FA53369C3DF2240AD68A00154676EEDBC6F8C16BAA83B1912941B8941ABD48683D2C1072DA7040659692DE936A59BBF42A038CF71DE67B4A375190071EC76EA657801B033C135
+          network:
+            encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
+mso:
+  adapters:
+    requestDb:
+      auth: Basic YnBlbDpwYXNzd29yZDEk
+
+db:
+  userName: so_user
+  userPassword: so_User123
+  # userCredsExternalSecret: some secret
+  adminName: so_admin
+  adminPassword: so_Admin123
+  # adminCredsExternalSecret: some secret
+
+replicaCount: 1
+minReadySeconds: 10
+containerPort: &containerPort 8086
+logPath: ./logs/sdnc/
+app: sdnc-adapter
+service:
+    type: ClusterIP
+    internalPort: *containerPort
+    externalPort: *containerPort
+    portName: so-sdnc-port
+updateStrategy:
+    type: RollingUpdate
+    maxUnavailable: 1
+    maxSurge: 1
+
+
+#################################################################
+# soHelpers part
+#################################################################
+soHelpers:
+  nameOverride: so-sdnc-cert-init
+  certInitializer:
+    nameOverride: so-sdnc-cert-init
+    credsPath: /opt/app/osaaf/local
+  cadi:
+    apiEnforcement: org.onap.so.sdncAdapterPerm
+  containerPort: *containerPort
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+    requests:
+      memory: 1Gi
+      cpu: 500m
+  large:
+    limits:
+      memory: 8Gi
+      cpu: 4000m
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+  unlimited: {}
+livenessProbe:
+    path: /manage/health
+    port: 8086
+    scheme: HTTP
+    initialDelaySeconds: 600
+    periodSeconds: 60
+    timeoutSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+ingress:
+  enabled: false
+nodeSelector: {}
+tolerations: []
+affinity: {}

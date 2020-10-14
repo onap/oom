@@ -1,0 +1,128 @@
+# Copyright © 2018 AT&T USA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+aai:
+  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
+  endpoint: https://aai.{{ include "common.namespace" . }}:8443
+server:
+  port: {{ index .Values.containerPort }}
+spring:
+  datasource:
+    hikari:
+      jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.mariadb.jdbc.Driver
+      pool-name: catdb-pool
+      registerMbeans: false
+  security:
+    usercredentials:
+    -
+      username: sdnc
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SDNC-Client
+    -
+      username: sitecontrol
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SiteControl-Client
+    -
+      username: bpel
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: BPEL-Client
+    -
+      username: sniro
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: SNIRO-Client
+    -
+      username: apih
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: MSO-Client
+    -
+      username: mso_admin
+      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
+      role: ACTUATOR
+org:
+  onap:
+    so:
+      adapters:
+        default_keystone_url_version: /v2.0
+        default_keystone_reg_ex: "/[vV][0-9]"
+        vnf:
+          bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
+          checkRequiredParameters: true
+          addGetFilesOnVolumeReq: false
+          sockettimeout: 30
+          connecttimeout: 30
+          retrycount: 5
+          retryinterval: -15
+          retrylist: 408,429,500,502,503,504,900
+          valet_enabled: false
+          fail_requests_on_valet_failure: false
+        network:
+          bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
+          sockettimeout: 5
+          connecttimeout: 5
+          retrycount: 5
+          retryinterval: -15
+          retrylist: 408,429,500,502,503,504,900
+          encryptionKey: 07a7159d3bf51a0e53be7a8f89699be7
+        tenant:
+          default_keystone_url_version: /v2.0
+          default_keystone_reg_ex: "/[vV][0-9]"
+          default_tenant_description: Tenant
+          default_region_type: single
+          default_user_role: admin
+          default_success_status_string: Success
+          default_no_regions_status_string: no regions
+          default_quota_value: 10
+          set_default_quota: false
+ecomp:
+  mso:
+    adapters:
+      po:
+        retryCodes: 504
+        retryDelay: 5
+        retryCount: 3
+        pollTimeout: 7500
+        pollInterval: 15
+mso:
+  adapters:
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
+  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.encrypted "value2" .Values.mso.auth )}}
+  logPath: ./logs/openstack
+  msb-ip: msb-iag
+  msb-port: 443
+  msb-scheme: https
+  workflow:
+    endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
+  msoKey: {{ .Values.mso.msoKey }}
+  config:
+    {{ if eq .Values.global.security.aaf.enabled true }}
+    cadi: {{ include "so.cadi.keys" . | nindent 8}}
+    {{- else }}
+    cadi:
+      aafId: {{ .Values.mso.basicUser }}
+    {{- end }}
+  catalog:
+    db:
+      spring:
+        endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+  db:
+    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
+  site-name: localDevEnv
+  async:
+    core-pool-size: 50
+    max-pool-size: 50
+    queue-capacity: 500
