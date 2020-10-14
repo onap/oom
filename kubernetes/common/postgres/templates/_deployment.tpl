@@ -147,7 +147,7 @@ spec:
           name: {{ include "common.fullname" $dot }}-backup
           readOnly: true
         resources:
-{{ include "common.resources" $dot | indent 12 }}
+{{ toYaml $dot.Values.resources  | indent 12 }}
         {{- if $dot.Values.nodeSelector }}
         nodeSelector:
 {{ toYaml $dot.Values.nodeSelector | indent 10 }}
