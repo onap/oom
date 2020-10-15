@@ -11,20 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+HELM_BIN := helm
 
 make-dmaap: make-dmaap-bc make-message-router make-dmaap-dr-node make-dmaap-dr-prov
 
 make-dmaap-bc:
-	cd components && helm dep up dmaap-bc && helm lint dmaap-bc
+	cd components && $(HELM_BIN) dep up dmaap-bc && $(HELM_BIN) lint dmaap-bc
 
 make-message-router:
-	cd components && helm dep up message-router && helm lint message-router
+	cd components && $(HELM_BIN) dep up message-router && $(HELM_BIN) lint message-router
 
 make-dmaap-dr-node:
-	cd components && helm dep up dmaap-dr-node && helm lint dmaap-dr-node
+	cd components && $(HELM_BIN) dep up dmaap-dr-node && $(HELM_BIN) lint dmaap-dr-node
 
 make-dmaap-dr-prov:
-	cd components && helm dep up dmaap-dr-prov && helm lint dmaap-dr-prov
+	cd components && $(HELM_BIN) dep up dmaap-dr-prov && $(HELM_BIN) lint dmaap-dr-prov
 
 clean:
 	@find . -type f -name '*.tgz' -delete

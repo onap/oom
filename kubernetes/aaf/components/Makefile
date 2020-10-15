@@ -18,6 +18,7 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES :=
+HELM_BIN := helm
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
@@ -32,15 +33,15 @@ make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then helm dep up $*; fi
+	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then helm lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
-	@helm repo index $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock

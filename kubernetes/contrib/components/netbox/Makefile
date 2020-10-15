@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+HELM_BIN := helm
 
 make-netbox:
-	cd charts && helm dep up netbox-postgres && helm dep up netbox-nginx && helm dep up netbox-app
+	cd charts && $(HELM_BIN) dep up netbox-postgres && $(HELM_BIN) dep up netbox-nginx && $(HELM_BIN) dep up netbox-app
