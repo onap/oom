@@ -1,5 +1,6 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
+#   Modifications Copyright © 2020 Nokia
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -42,7 +43,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
       - name: so-chown
         image: alpine:3.6
         volumeMounts:
@@ -55,6 +56,20 @@ spec:
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         resources: {{ include "common.resources" . | nindent 12 }}
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - |
+          export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/org.onap.so.cred.props | xargs -0)
+          export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          export TRUSTSTORE=file://$cadi_truststore
+          export TRUSTSTORE_PASSWORD=$cadi_truststore_password
+          {{- if .Values.global.security.aaf.enabled }}
+          export KEYSTORE=file://$cadi_keystore
+          export KEYSTORE_PASSWORD=$cadi_keystore_password_p12
+          {{- end }}
+          /app/start-app.sh
         env:
         - name: DB_HOST
           valueFrom:
@@ -78,7 +93,7 @@ spec:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
+        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
         - name: logs
           mountPath: /app/logs
         - name: config
@@ -101,7 +116,7 @@ spec:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
           protocol: TCP
-      volumes:
+      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
       - name: logs
         emptyDir: {}
       - name: config
