@@ -11,20 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+HELM_BIN := helm
 
 make-contrib: make-contrib-awx make-contrib-netbox make-contrib-ejbca make-contrib-core
 
 make-contrib-awx:
-	cd components && helm dep up awx && helm lint awx
+	cd components && $(HELM_BIN) dep up awx && $(HELM_BIN) lint awx
 
 make-contrib-ejbca:
-	cd components && helm dep up ejbca && helm lint ejbca
+	cd components && $(HELM_BIN) dep up ejbca && $(HELM_BIN) lint ejbca
 
 make-contrib-netbox:
-	cd components && helm dep up netbox && helm lint netbox
+	cd components && $(HELM_BIN) dep up netbox && $(HELM_BIN) lint netbox
 
 make-contrib-core:
-	helm dep up . && helm lint .
+	$(HELM_BIN) dep up . && $(HELM_BIN) lint .
 
 clean:
 	@find . -type f -name '*.tgz' -delete
