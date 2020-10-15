@@ -1,0 +1,86 @@
+# Copyright © 2020 Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ index .Values.replicaCount }}
+  minReadySeconds: {{ index .Values.minReadySeconds }}
+  strategy:
+    type: {{ index .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ index .Values.updateStrategy.maxSurge }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers: {{ include "so.certificate.container_importer" . | nindent 8 }}
+      containers:
+        - name: {{ include "common.name" . }}
+          command:
+            - sh
+          args:
+            - -c
+            - |
+              export ETSI_NFVO_PASSWORD=`htpasswd -bnBC 10 "" $ETSI_NFVO_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
+              {{- if .Values.global.aafEnabled }}
+              export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+              export TRUSTSTORE_PASSWORD="${cadi_truststore_password}"
+              {{- if .Values.global.security.aaf.enabled }}
+              export KEYSTORE_PASSWORD="${cadi_keystore_password}"
+              {{- end }}
+              {{- end }}
+              ./start-app.sh
+          image: {{ include "common.repository" . }}/{{ .Values.image }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+          env:
+            - name: ETSI_NFVO_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "etsi-nfvo-nslcm-creds" "key" "login") | indent 14 }}
+            - name: ETSI_NFVO_PASSWORD_INPUT
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "etsi-nfvo-nslcm-creds" "key" "password") | indent 14 }}
+            {{ include "so.certificates.env" . | indent 12 | trim }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-configmap
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+            - name: logs
+              mountPath: /app/logs
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: {{ include "common.fullname" . }}-truststore
+              mountPath: /app/client
+              readonly: true
+          livenessProbe:
+            tcpSocket:
+              port: {{ index .Values.livenessProbe.port }}
+            initialDelaySeconds: {{ index .Values.livenessProbe.initialDelaySeconds}}
+            periodSeconds: {{ index .Values.livenessProbe.periodSeconds}}
+            successThreshold: {{ index .Values.livenessProbe.successThreshold}}
+            failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
+      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+        - name: logs
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}-app-configmap
+        - name: {{ include "common.fullname" . }}-truststore
+          secret:
+            secretName: {{ include "common.release" . }}-so-truststore-secret
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
