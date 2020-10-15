@@ -1,6 +1,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #   Copyright (C) 2020 Huawei
+#   Modifications Copyright © 2020 Nokia
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -29,6 +30,12 @@ global:
   envsubstImage: dibi/envsubst
   persistence:
     mountPath: /dockerdata-nfs
+  security:
+    aaf:
+      enabled: false
+  aaf:
+    auth:
+      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
 
 #################################################################
 # Secrets metaconfig
@@ -46,25 +53,21 @@ secrets:
     login: '{{ .Values.db.adminName }}'
     password: '{{ .Values.db.adminPassword }}'
     passwordPolicy: required
+  - uid: app-user-creds
+    type: basicAuth
+    login: '{{ .Values.server.monitoring.username }}'
+    password: '{{ .Values.server.monitoring.password }}'
+    passwordPolicy: required
 
 #secretsFilePaths: |
 #  - 'my file 1'
 #  - '{{ include "templateThatGeneratesFileName" . }}'
 
 #################################################################
-# AAF part
-#################################################################
-soHelpers:
-  nameOverride: so-monitoring-cert-init
-  certInitializer:
-    nameOverride: so-monitoring-cert-init
-    credsPath: /opt/app/osaaf/local
-
-#################################################################
 # Application configuration defaults.
 #################################################################
 repository: nexus3.onap.org:10001
-image: onap/so/so-monitoring:1.6.4
+image: onap/so/so-monitoring:1.7.5
 pullPolicy: Always
 
 db:
@@ -77,15 +80,33 @@ db:
 
 replicaCount: 1
 minReadySeconds: 10
-containerPort: 9091
+containerPort: &containerPort 9091
 logPath: app/logs/
 app: so-monitoring
+
+#################################################################
+# soHelpers part
+#################################################################
+soHelpers:
+  nameOverride: so-monitoring-cert-init
+  certInitializer:
+    nameOverride: so-monitoring-cert-init
+    credsPath: /opt/app/osaaf/local
+  cadi:
+    apiEnforcement: org.onap.so.monitoringPerm
+  containerPort: *containerPort
+
+server:
+  monitoring:
+    username: demo
+    password: demo123456!
+
 service:
 #Since this is a feature for monitoring the service type is changed to internal, users can change it to NodePort on need basis...
-    type: ClusterIP
+    type: NodePort
     nodePort: 24
-    internalPort: 9091
-    externalPort: 9091
+    internalPort: *containerPort
+    externalPort: *containerPort
     portName: so-monitor-port
 updateStrategy:
     type: RollingUpdate
