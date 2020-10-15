@@ -53,7 +53,7 @@
   {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
   {{/* when linted, the name must be lower cased. When used from a component,
        name should be overriden in order to avoid collision so no need to do it */}}
-  {{- if eq (printf "common/%s/templates" $name) $dot.Template.BasePath -}}
+  {{- if eq (printf "%s/templates" $name) $dot.Template.BasePath -}}
   {{- $name = lower $name -}}
   {{- end -}}
   {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name "suffix" $suffix) }}
