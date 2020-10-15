@@ -1,8 +1,17 @@
 server:
   port: {{ index .Values.containerPort }}
+  {{- if .Values.global.aafEnabled }}
+  ssl:
+    keyStore: ${KEYSTORE}
+    keyStorePassword: ${KEYSTORE_PASSWORD}
+    trustStore: ${TRUSTSTORE}
+    trustStorePassword: ${TRUSTSTORE_PASSWORD}
+  {{- end }}
   tomcat:
     max-threads: 50
+  {{- if not .Values.global.aafEnabled }}
 ssl-enable: false
+  {{- end }}
 camunda:
   rest:
     api:
@@ -15,3 +24,12 @@ mso:
       api:
         url: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/infraActiveRequests/
         auth: Basic YnBlbDpwYXNzd29yZDEk
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  security:
+    usercredentials:
+      -
+        username: ${SO_MONITORING_USERNAME}
+        password: ${SO_MONITORING_PASSWORD}
+        role: GUI-Client
