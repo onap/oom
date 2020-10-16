@@ -1,4 +1,5 @@
 #!/bin/bash -x
+{{/*
 
 ###
 # ============LICENSE_START=======================================================
@@ -27,6 +28,7 @@
 #  if not already installed, and starts the APPC Docker Container
 #
 #set -x
+*/}}
 
 function enable_odl_cluster(){
   if [ -z $APPC_REPLICAS ]; then

@@ -1,4 +1,5 @@
 #!/bin/bash
+{{/*
 #
 # ============LICENSE_START==========================================
 # org.onap.music
@@ -19,6 +20,7 @@
 #
 # ============LICENSE_END=============================================
 # ====================================================================
+*/}}
 
 echo "Running startup script to get password from certman"
 PWFILE=/opt/app/aafcertman/.password

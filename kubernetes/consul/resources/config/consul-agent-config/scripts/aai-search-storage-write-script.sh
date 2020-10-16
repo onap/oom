@@ -1,3 +1,4 @@
+{{/*
 # Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 if curl -s -X PUT http://aai-elasticsearch:9200/searchhealth/stats/testwrite -d @/consul/scripts/aai-search-storage-write-doc.txt | grep '\"created\":true'; then
    if curl -s -X DELETE http://aai-elasticsearch:9200/searchhealth/stats/testwrite | grep '\"failed\":0'; then
