@@ -1,4 +1,5 @@
 #!/bin/sh
+{{/*
 #
 # ============LICENSE_START==========================================
 # ===================================================================
@@ -20,6 +21,7 @@
 # ECOMP and OpenECOMP are trademarks
 # and service marks of AT&T Intellectual Property.
 #
+*/}}
 
 echo "Creating requestdb database . . ." 1>/tmp/mariadb-requestdb.log 2>&1
 
