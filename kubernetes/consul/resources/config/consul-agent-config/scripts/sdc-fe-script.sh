@@ -1,3 +1,4 @@
+{{/*
 # Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 ## Query the health check API.
 HEALTH_CHECK_ENDPOINT="http://sdc-fe:8181/sdc1/rest/healthCheck"

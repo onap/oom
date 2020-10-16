@@ -1,9 +1,11 @@
 #!/bin/sh
+{{/*
 # Copyright 2015 AT&T Intellectual Properties
 ##############################################################################
 #       Script to initialize the chef-repo branch and.chef
 #
 ##############################################################################
+*/}}
 # Copy the certificates
 echo 'Copying the *.crt provided in /shared folder'
 cp --verbose /shared/*.crt /usr/local/share/ca-certificates

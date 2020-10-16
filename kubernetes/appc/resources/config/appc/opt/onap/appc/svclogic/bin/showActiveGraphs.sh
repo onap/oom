@@ -1,3 +1,4 @@
+{{/*
 ###
 # ============LICENSE_START=======================================================
 # APPC
@@ -19,6 +20,7 @@
 # ============LICENSE_END=========================================================
 # ECOMP is a trademark and service mark of AT&T Intellectual Property.
 ###
+*/}}
 
 MYSQL_USER=${SDNC_DB_USER}
 MYSQL_PWD=${SDNC_DB_PASSWD}
