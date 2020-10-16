@@ -12,7 +12,9 @@ OOM Documentation Repository
 
   oom_project_description.rst
   oom_quickstart_guide.rst
+  oom_quickstart_guide_helm3.rst
   oom_user_guide.rst
+  oom_user_guide_helm3.rst
   oom_developer_guide.rst
   oom_cloud_setup_guide.rst
   release-notes.rst
