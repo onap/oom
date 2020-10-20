@@ -22,6 +22,20 @@ global:
   loggingRepository: docker.elastic.co
   loggingImage: beats/filebeat:5.5.0
   ubuntuInit: ubuntu-init:1.0.0
+  envsubstImage: dibi/envsubst
+
+################################################################
+# Secrets metaconfig
+#################################################################
+
+secrets:
+
+  - uid: portal-backend-db
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.mariadb.config.backendDbExternalSecret) . }}'
+    login: '{{ .Values.mariadb.config.backendUserName }}'
+    password: '{{ .Values.mariadb.config.backendPassword }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -56,6 +70,10 @@ readiness:
 mariadb:
   service:
     name: portal-db
+  config:
+    # backendDbExternalSecret: some secret
+    backendUserName: portal
+    backendPassword: portal
 
 service:
   type: ClusterIP
