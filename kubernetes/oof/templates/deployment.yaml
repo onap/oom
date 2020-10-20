@@ -73,6 +73,14 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /bin/sh
+          args:
+          - "-c"
+          - |
+            grep -v '^$'  /opt/osdf/osaaf/local/org.onap.oof.crt > /tmp/oof.crt
+            cat /tmp/oof.crt /opt/app/ssl_cert/intermediate_root_ca.pem /opt/app/ssl_cert/aaf_root_ca.cer >> /opt/osdf/org.onap.oof.crt
+            ./osdfapp.sh -x osdfapp.py
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -99,8 +107,11 @@ spec:
             name: {{ include "common.fullname" . }}-config
             subPath: osdf_config.yaml
           - mountPath: /opt/app/ssl_cert/aaf_root_ca.cer
-            name: {{ include "common.fullname" . }}-config
+            name: {{ include "common.fullname" . }}-onap-certs
             subPath: aaf_root_ca.cer
+          - mountPath: /opt/app/ssl_cert/intermediate_root_ca.pem
+            name: {{ include "common.fullname" . }}-onap-certs
+            subPath: intermediate_root_ca.pem
           - mountPath: /opt/osdf/config/common_config.yaml
             name: {{ include "common.fullname" . }}-config
             subPath: common_config.yaml
@@ -129,11 +140,10 @@ spec:
             items:
             - key: osdf_config.yaml
               path: osdf_config.yaml
-            - key: aaf_root_ca.cer
-              path: aaf_root_ca.cer
             - key: common_config.yaml
               path: common_config.yaml
             - key: log.yml
               path: log.yml
+{{ include "oof.certificate.volume" . | indent 8 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

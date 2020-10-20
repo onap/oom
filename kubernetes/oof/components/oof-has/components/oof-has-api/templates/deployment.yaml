@@ -122,13 +122,21 @@ spec:
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: log.conf
           - mountPath: /usr/local/bin/AAF_RootCA.cer
-            name: {{ .Values.global.commonConfigPrefix }}-config
-            subPath: AAF_RootCA.cer
+            name: {{ include "common.fullname" . }}-onap-certs
+            subPath: aaf_root_ca.cer
           resources:
 {{ include "common.resources" . | indent 12 }}
         - name: {{ include "common.name" . }}-nginx
           image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.nginx.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /bin/sh
+          args:
+          - "-c"
+          - |
+            grep -v '^$'  /opt/bitnami/nginx/ssl/local/org.onap.oof.crt > /tmp/oof.crt
+            cat /tmp/oof.crt /tmp/intermediate_root_ca.pem /tmp/AAF_RootCA.cer >> /opt/bitnami/nginx/org.onap.oof.crt
+            /opt/bitnami/scripts/nginx/entrypoint.sh /opt/bitnami/scripts/nginx/run.sh
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           {{- if .Values.liveness.enabled }}
@@ -151,6 +159,12 @@ spec:
           - mountPath: /opt/bitnami/nginx/conf/nginx.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: nginx.conf
+          - mountPath: /tmp/AAF_RootCA.cer
+            name: {{ include "common.fullname" . }}-onap-certs
+            subPath: aaf_root_ca.cer
+          - mountPath: /tmp/intermediate_root_ca.pem
+            name: {{ include "common.fullname" . }}-onap-certs
+            subPath: intermediate_root_ca.pem
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -176,7 +190,6 @@ spec:
               path: conductor.conf
             - key: log.conf
               path: log.conf
-            - key: AAF_RootCA.cer
-              path: AAF_RootCA.cer
+{{ include "oof.certificate.volume" . | indent 8 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
