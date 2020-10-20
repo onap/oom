@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+HELM_BIN := helm
 
 make-modeling: make-modeling-etsicatalog
 
 make-modeling-etsicatalog:
-	cd charts && helm dep up modeling-etsicatalog && helm lint modeling-etsicatalog
+	cd charts && $(HELM_BIN) dep up modeling-etsicatalog && $(HELM_BIN) lint modeling-etsicatalog
 clean:
 	@find . -type f -name '*.tgz' -delete
 	@find . -type f -name '*.lock' -delete

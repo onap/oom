@@ -18,8 +18,9 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES := dist resources templates charts
+HELM_BIN := helm
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
-HELM_VER := $(shell helm version --template "{{.Version}}")
+HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
@@ -33,19 +34,19 @@ make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then helm dep up $*; fi
+	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then helm lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$(helm package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && helm push -f $$PACKAGE_NAME local; fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
 else
-	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
 endif
-	@helm repo index $(PACKAGE_DIR)
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock

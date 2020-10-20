@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+HELM_BIN := helm
 
 make-multicloud: make-multicloud-k8s
 
 make-multicloud-k8s:
-	cd charts && helm dep up multicloud-k8s && helm lint multicloud-k8s
+	cd charts && $(HELM_BIN) dep up multicloud-k8s && $(HELM_BIN) lint multicloud-k8s

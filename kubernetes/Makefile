@@ -19,10 +19,11 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
-HELM_VER := $(shell helm version --template "{{.Version}}")
+HELM_BIN := helm
+HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 
 ifneq ($(SKIP_LINT),TRUE)
-	HELM_LINT_CMD := helm lint
+	HELM_LINT_CMD := $(HELM_BIN) lint
 else
 	HELM_LINT_CMD := echo "Skipping linting of"
 endif
@@ -59,7 +60,7 @@ make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then helm dep up $*; fi
+	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
@@ -67,12 +68,12 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$(helm package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && helm push -f $$PACKAGE_NAME local; fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
 else
-	@if [ -f $*/Chart.yaml ]; then helm package -d $(PACKAGE_DIR) $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
 endif
 
-	@helm repo index $(PACKAGE_DIR)
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock
@@ -81,19 +82,19 @@ clean:
 
 # publish helm plugins via distrubtion directory
 plugins:
-	@cp -R helm $(PACKAGE_DIR)/
+	@cp -R $(HELM_BIN) $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
 repo:
 	@mkdir -p $(PACKAGE_DIR)
-	@helm serve --repo-path $(PACKAGE_DIR) &
+	@$(HELM_BIN) serve --repo-path $(PACKAGE_DIR) &
 	@sleep 3
-	@helm repo index $(PACKAGE_DIR)
-	@helm repo add local http://127.0.0.1:8879
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+	@$(HELM_BIN) repo add local http://127.0.0.1:8879
 
 # stop local helm repo
 repo-stop:
-	@pkill helm
-	@helm repo remove local
+	@pkill $(HELM_BIN)
+	@$(HELM_BIN) repo remove local
 %:
 	@:

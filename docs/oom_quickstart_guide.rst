@@ -157,7 +157,11 @@ follows::
 
 **Step 6.** Build a local Helm repository (from the kubernetes directory)::
 
-  > make SKIP_LINT=TRUE all; make SKIP_LINT=TRUE onap
+  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all ; make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] onap
+
+`HELM_BIN`
+  Sets the helm binary to be used. The default value use helm from PATH. Allow the user to have
+  multiple version of helm in operating system and choose which one to use.
 
 **Step 7.** Display the onap charts that available to be deployed::
 
