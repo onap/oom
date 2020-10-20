@@ -146,8 +146,7 @@ spec:
         - mountPath: /backup
           name: {{ include "common.fullname" $dot }}-backup
           readOnly: true
-        resources:
-{{ include "common.resources" $dot | indent 12 }}
+        resources: {{ include "common.resources" $dot | nindent 12 }}
         {{- if $dot.Values.nodeSelector }}
         nodeSelector:
 {{ toYaml $dot.Values.nodeSelector | indent 10 }}
