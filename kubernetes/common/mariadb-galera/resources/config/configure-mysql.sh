@@ -1,8 +1,10 @@
 #!/bin/bash
+{{/*
 #
 # Adfinis SyGroup AG
 # openshift-mariadb-galera: mysql setup script
 #
+*/}}
 
 set -eox pipefail
 
