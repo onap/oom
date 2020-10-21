@@ -1,4 +1,5 @@
 #!/bin/sh
+{{/*
 # ================================================================================
 # Copyright (c) 2018 Cisco Systems. All rights reserved.
 # ================================================================================
@@ -14,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============LICENSE_END=========================================================
+*/}}
 
 # Install PNDA in Openstack with Heat templates
 # Expects:
