@@ -1,4 +1,5 @@
 #!/bin/bash
+{{/*
 
 ###
 # ============LICENSE_START=======================================================
@@ -25,6 +26,7 @@
 # Install SDN-C platform components if not already installed and start container
 
 # List of used constants, that are provided during container initialization
+*/}}
 
 ODL_HOME=${ODL_HOME:-/opt/opendaylight/current}
 ODL_FEATURES_BOOT_FILE=$ODL_HOME/etc/org.apache.karaf.features.cfg
