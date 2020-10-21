@@ -1,3 +1,4 @@
+{{/*
 ###
 # ============LICENSE_START=======================================================
 # openECOMP : SDN-C
@@ -19,6 +20,7 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 ###
+*/}}
 
 MYSQL_USER=${SDNC_DB_USER}
 MYSQL_PWD=${SDNC_DB_PASSWD}

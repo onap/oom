@@ -1,3 +1,4 @@
+{{/*
 ###
 # ============LICENSE_START=======================================================
 # APPC
@@ -18,6 +19,7 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 ###
+*/}}
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 APPC_HOME=${APPC_HOME:-/opt/onap/appc}
