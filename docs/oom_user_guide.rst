@@ -138,7 +138,11 @@ To get a list of all of the available Helm chart repositories::
 
 Then build your local Helm repository::
 
-  > make SKIP_LINT=TRUE all
+  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all
+
+`HELM_BIN`
+  Sets the helm binary to be used. The default value use helm from PATH. Allow the user to have
+  multiple version of helm in operating system and choose which one to use.
 
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::
@@ -490,7 +494,7 @@ where a GUI much like the following will be found:
 
 .. note::
 
-   If the Consule UI is not accessible then please run the below command::
+   If the Consul UI is not accessible then please run the below command::
 
    > kubectl get svc consul-server-ui -n onap -o json | jq '.spec.ports[0] |= .+ {"nodePort" : 30270}' | jq '.spec.type = "NodePort"' | kubectl replace  -f -
 
