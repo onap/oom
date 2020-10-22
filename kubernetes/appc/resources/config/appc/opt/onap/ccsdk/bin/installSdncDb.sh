@@ -1,4 +1,5 @@
 #!/bin/bash
+{{/*
 
 ###
 # ============LICENSE_START=======================================================
@@ -21,6 +22,7 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 ###
+*/}}
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/ccsdk}
 MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
