@@ -1,4 +1,5 @@
 #!/bin/sh
+{{/*
 
 # Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
 #
@@ -13,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 SEARCH_SERVICE_NAME="search-data-service.{{ include "common.namespace" . }}"
 SEARCH_SERVICE_PORT=9509
