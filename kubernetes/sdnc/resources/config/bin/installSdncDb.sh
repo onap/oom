@@ -1,4 +1,5 @@
 #!/bin/bash
+{{/*
 
 ###
 # ============LICENSE_START=======================================================
@@ -20,6 +21,7 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 ###
+*/}}
 
 SDNC_HOME=${SDNC_HOME:-/opt/onap/sdnc}
 ETC_DIR=${ETC_DIR:-${SDNC_HOME}/data}

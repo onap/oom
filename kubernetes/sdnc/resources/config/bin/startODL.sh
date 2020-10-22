@@ -1,4 +1,5 @@
 #!/bin/bash
+{{/*
 
 ###
 # ============LICENSE_START=======================================================
@@ -24,6 +25,7 @@
 # Append features to karaf boot feature configuration
 # $1 additional feature to be added
 # $2 repositories to be added (optional)
+*/}}
 function addToFeatureBoot() {
   CFG=$ODL_HOME/etc/org.apache.karaf.features.cfg
   ORIG=$CFG.orig
