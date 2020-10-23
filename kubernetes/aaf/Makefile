@@ -20,6 +20,9 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 EXCLUDES := dist resources templates charts
 HELM_BIN := helm
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
+PACKAGE_NAME :=
+VERSION :=
+DEP :=
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
@@ -27,25 +30,43 @@ all: $(HELM_CHARTS)
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
-	@make package-$@
+	@if [ -f $@/Makefile ]; then\
+		$(MAKE) -C $@; \
+	elif [ -f $@/Chart.yaml ]; then\
+	    VERSION=$$(cat $@/Chart.yaml | grep version | cut -d " " -f2);\
+		md5sum $@/charts/* > /tmp/$@.sum;\
+		DEP_LOCAL=$$(helm dep list $@ | grep file:// | cut -f1 | tr "\n" " " | sed -e 's/\s*$$//g' -e 's/ /|/g');\
+		DEP_LOCAL_DIR=$$(helm dep list aaf-locate | grep file:// | cut -f3 | sed -e 's/file:\/\///g');\
+		DEP_LOCAL_FILES=$$(find $@/$$DEP_LOCAL_DIR -type f);\
+		grep -E "$$list" /tmp/$@.sum > /tmp/$@.sum.filtered;\
+		$(HELM_BIN) dep up $@ ;\
+		if md5sum -c /tmp/$@.sum.filtered; then \
+			DEP=$$(find $@ -type f -not -name "*.tgz");\
+		else \
+			DEP=$$(find $@ -type f);\
+		fi;\
+		$(MAKE) $(PACKAGE_DIR)/$@-$$VERSION.tgz \
+			PACKAGE_NAME=$@ \
+			VERSION=$$VERSION \
+			DEP="$$DEP $$DEP_LOCAL_FILES";\
+	fi
 
-make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
-
-dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
-
-lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
-
-package-%: lint-%
+$(PACKAGE_DIR)/%-$(VERSION).tgz: $(DEP)
+	@echo make $@
+	@$(HELM_BIN) lint $*
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+ifeq "$(findstring v3,$(HELM_VER))" "v3"
+	@PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local
+else
+	@$(HELM_BIN) package -d $(PACKAGE_DIR) $*
+endif
 	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
+
 %:
 	@:
+
