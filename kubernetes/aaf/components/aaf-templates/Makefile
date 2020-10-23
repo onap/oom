@@ -1,4 +1,4 @@
-# Copyright © 2020 Samsung Electronics, Orange
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,25 +13,15 @@
 # limitations under the License.
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-OUTPUT_DIR := $(ROOT_DIR)/../dist
-PACKAGE_DIR := $(OUTPUT_DIR)/packages
-SECRET_DIR := $(OUTPUT_DIR)/secrets
-PACKAGE_NAME := aaf
+OUTPUT_DIR := $(ROOT_DIR)/../../../dist
+PACKAGE_NAME := $(shell basename $(ROOT_DIR))
 
-EXCLUDES := dist resources templates charts
-HELM_BIN := helm
-HELM_CHARTS := components $(PACKAGE_NAME)
+.PHONY: all clean
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS)
+all: $(PACKAGE_NAME)
 
-all: $(HELM_CHARTS)
-
-$(HELM_CHARTS):
-	@if [ -f $@/Makefile ]; then\
-		$(MAKE) -C $@;\
-	fi
+include ../../../common/common.mk
 
 %:
 	@:
 
-include ../common/common.mk
