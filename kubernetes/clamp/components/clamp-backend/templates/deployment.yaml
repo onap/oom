@@ -59,19 +59,16 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
           command:
           - sh
           workingDir: "/opt/clamp/"
           args:
           - -c
           - |
+          {{- if .Values.global.aafEnabled }}
             export $(grep '^cadi_' {{ .Values.certInitializer.credsPath }}/org.onap.clamp.cred.props | xargs -0)
-            java -Djava.security.egd=file:/dev/./urandom -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=75 -jar ./app.jar
-          {{- else }}
-          args:
-          - ""
           {{- end }}
+            java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./app.jar
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -104,6 +101,12 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           - name: MYSQL_DATABASE
             value: {{ tpl .Values.db.databaseName .}}
+          - name: JAVA_RAM_CONFIGURATION
+            {{-  if eq "unlimited" (include "common.flavor" .) }}
+            value: -Xms256m -Xmx1g
+            {{- else }}
+            value: -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=75
+            {{-  end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
