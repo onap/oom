@@ -42,6 +42,14 @@ spec:
       initContainers:
       {{ include "so.certificate.container_importer" . | indent 6 | trim }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      - name: {{ include "common.name" . }}-so-ingress-certs
+        command:
+          - /ingress/onboard.sh
+        image: {{ .Values.global.kubectlImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
+        - name: ingress-scripts
+          mountPath: /ingress
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -120,5 +128,9 @@ spec:
         emptyDir: {}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name: ingress-scripts
+        configMap:
+          name: {{ include "common.fullname" . }}-ingress
+          defaultMode: 0777
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
