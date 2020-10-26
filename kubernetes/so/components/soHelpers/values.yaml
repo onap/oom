@@ -37,7 +37,7 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: "so-onap-certs"
+  - uid: 'so-onap-certs'
     name: '{{ include "common.release" . }}-so-certs'
     externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
     type: generic
@@ -54,13 +54,24 @@ certInitializer:
   fqdn: so
   fqi: so@so.onap.org
   public_fqdn: so.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
+  fqi_namespace: org.onap.so
+  cadi_longitude: '0.0'
+  cadi_latitude: '0.0'
   app_ns: org.osaaf.aaf
   credsPath: /opt/app/osaaf/local
-  aaf_add_config: >
-    /opt/app/aaf_config/bin/agent.sh local showpass
-    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+  aaf_add_config: |
+    /opt/app/aaf_config/bin/agent.sh local showpass \
+      {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+    export $(grep '^c' {{ .Values.credsPath }}/mycreds.prop | xargs -0)
+    mkdir -p {{ .Values.credsPath }}/certs
+    keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
+      -keystore {{ .Values.fqi_namespace }}.trust.jks -alias ca_local_0 \
+      -storepass $cadi_truststore_password
+    openssl pkcs12 -in {{ .Values.fqi_namespace }}.p12 \
+      -out {{ .Values.credsPath }}/certs/tls.crt \
+      -passin pass:$cadi_keystore_password_p12 \
+      -passout pass:$cadi_keystore_password_p12
+    cp {{ .Values.fqi_namespace }}.key {{ .Values.credsPath }}/certs/tls.key
 
 aafConfig:
   permission_user: 1000
