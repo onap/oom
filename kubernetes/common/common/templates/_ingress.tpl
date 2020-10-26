@@ -1,19 +1,28 @@
+{{- define "ingress.config.host" -}}
+{{-   $dot := default . .dot -}}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   $burl := (required "'baseurl' param, set to the generic part of the fqdn, is required." $dot.Values.global.ingress.virtualhost.baseurl) -}}
+{{ printf "%s.%s" $baseaddr $burl }}
+{{- end -}}
+
 {{- define "ingress.config.port" -}}
+{{-   $dot := default . .dot -}}
 {{- if .Values.ingress -}}
 {{- if .Values.global.ingress -}}
 {{- if or (not .Values.global.ingress.virtualhost) (not .Values.global.ingress.virtualhost.enabled) -}}
   - http:
       paths:
 {{- range .Values.ingress.service }}
-        - path: {{  printf "/%s" (required "baseaddr" .baseaddr) }}
+{{ $baseaddr := required "baseaddr" .baseaddr }}
+        - path: {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
           backend:
             serviceName: {{ .name }}
             servicePort: {{ .port }}
 {{- end -}}
 {{- else if .Values.ingress.service -}}
-{{- $burl := (required "baseurl" .Values.global.ingress.virtualhost.baseurl) -}}
 {{ range .Values.ingress.service }}
-  - host: {{ printf "%s.%s" (required "baseaddr" .baseaddr) $burl }}
+{{ $baseaddr := required "baseaddr" .baseaddr }}
+  - host: {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
     http:
       paths:
       - backend:
@@ -95,7 +104,18 @@ spec:
 {{- if .Values.ingress.tls }}
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
-  {{- end -}}
+{{- end -}}
+{{- if .Values.ingress.config -}}
+{{- if .Values.ingress.config.tls -}}
+{{-   $dot := default . .dot -}}
+  tls:
+    - hosts:
+    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+        - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+    {{- end }}
+    secretName: {{ required "secret" (tpl (default "" .Values.ingress.config.tls.secret) $dot) }}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
