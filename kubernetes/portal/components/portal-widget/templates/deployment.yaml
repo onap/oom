@@ -51,6 +51,40 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+      - name: {{ include "common.name" . }}-portal-widget-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - "-c"
+        - |
+          cd /config-input && \
+          for PFILE in `ls -1 *.*`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+            chmod 0755 /config/${PFILE}
+          done
+        env:
+          - name: PORTAL_DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-backend-db" "key" "login") | indent 12 }}
+          - name: PORTAL_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-backend-db" "key" "password") | indent 12 }}
+          - name: WIDGET_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-widget" "key" "login") | indent 12 }}
+          - name: WIDGET_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-widget" "key" "password") | indent 12 }}
+          - name: ACC_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-account" "key" "login") | indent 12 }}
+          - name: ACC_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-account" "key" "password") | indent 12 }}
+          - name: JASYPT_ENC_KEY
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "jasypt-enc-key" "key" "password") | indent 12 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: properties-onapwidgetms-scrubbed
+        - mountPath: /config
+          name: properties-onapwidgetms
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
@@ -96,6 +130,9 @@ spec:
           hostPath:
             path: /etc/localtime
         - name: properties-onapwidgetms
+          emptyDir:
+            medium: Memory
+        - name: properties-onapwidgetms-scrubbed
           configMap:
             name: {{ include "common.fullname" . }}-onapwidgetms
             defaultMode: 0755
