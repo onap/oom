@@ -16,7 +16,11 @@
     keytool -import -trustcacerts -alias msb_root -file \
       /certificates/msb-ca.crt -keystore \
       "{{ $subchartDot.Values.certInitializer.credsPath }}/{{ $subchartDot.Values.aaf.trustore }}" \
-      -keypass $cadi_truststore_password -noprompt
+      -storepass $cadi_truststore_password -noprompt
+    keytool -importkeystore -srckeystore "{{ $subchartDot.Values.certInitializer.credsPath }}/truststoreONAPall.jks" \
+      -srcstorepass {{ $subchartDot.Values.certInitializer.trustStoreAllPass }} \
+      -destkeystore "{{ $subchartDot.Values.certInitializer.credsPath }}/{{ $subchartDot.Values.aaf.trustore }}" \
+      -deststorepass $cadi_truststore_password -noprompt
   volumeMounts:
   {{ include "common.certInitializer.volumeMount" $subchartDot | indent 2 | trim }}
   - name: {{ include "common.name" $dot }}-msb-certificate
