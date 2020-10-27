@@ -167,7 +167,11 @@ spec:
               apiVersion: v1
               fieldPath: status.hostIP
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value: {{ include "common.release" . }}-{{.Values.zookeeper.name}}-0.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-1.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-2.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}}
+          {{- $zkpods := list -}}
+          {{- range $i, $e := until (int $.Values.replicaCount | default 3) -}}
+          {{- $zkpods = print (include "common.release" $) "-" $.Values.zookeeper.name "-" $i "." $.Values.zookeeper.name "." $.Release.Namespace ".svc.cluster.local:" $.Values.zookeeper.port | append $zkpods -}}
+          {{- end }}
+          value: "{{ $zkpods | join "," }}"
         - name: KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE
           value: "{{ .Values.kafka.enableSupport }}"
         - name: KAFKA_OPTS
