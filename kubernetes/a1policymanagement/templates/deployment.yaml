@@ -1,6 +1,7 @@
 {{/*
 ################################################################################
 #   Copyright (c) 2020 Nordix Foundation.                                      #
+#   Copyright © 2020 Samsung Electronics                                       #
 #                                                                              #
 #   Licensed under the Apache License, Version 2.0 (the "License");            #
 #   you may not use this file except in compliance with the License.           #
@@ -26,7 +27,7 @@ spec:
     metadata:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
-      initContainers:
+      containers:
       - name: {{ include "common.name" . }}-update-config
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -34,6 +35,27 @@ spec:
         - sh
         args:
         - -c
+        - |
+          terminate() {
+            local pids="$(jobs -p)"
+            if [ "$pids" != "" ]; then
+              kill -TERM $pids >/dev/null 2>/dev/null
+            fi
+          }
+          observe() {
+            while sleep 1m; do
+              if [ "$1" -nt "/config/$1" ]; then
+                envsubst <$1 >/config/$1
+              fi
+            done
+          }
+          trap terminate TERM
+          cd /config-input || exit 1
+          for PFILE in `ls -1`; do
+            envsubst <$PFILE >/config/$PFILE
+            observe $PFILE &
+          done
+          wait
         - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
         - name: A1CONTROLLER_USER
@@ -45,7 +67,6 @@ spec:
           name: {{ include "common.fullname" . }}-policy-conf-input
         - mountPath: /config
           name: config
-      containers:
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
