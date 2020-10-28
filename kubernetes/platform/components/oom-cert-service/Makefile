@@ -5,6 +5,7 @@ DOCKER_EXEC = docker exec ${DOCKER_CONTAINER}
 
 all: start_docker \
      clear_all \
+     test_create_file \
      root_generate_keys \
      root_create_certificate \
      root_self_sign_certificate \
@@ -27,7 +28,10 @@ all: start_docker \
 # Starts docker container for generating certificates - deletes first, if already running
 start_docker:
 	@make stop_docker
-	docker run -d --rm --name ${DOCKER_CONTAINER}  --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/certs -w /certs docker.io/openjdk:11-jre-slim tail -f /dev/null
+	$(eval REPOSITORY := $(shell cat ./values.yaml | grep -i "^[ \t]*repository" -m1 | xargs | cut -d ' ' -f2))
+	$(eval JAVA_IMAGE := $(shell cat ./values.yaml | grep -i "^[ \t]*certificateGenerationImage" -m1 | xargs | cut -d ' ' -f2))
+	$(eval FULL_JAVA_IMAGE := $(REPOSITORY)/$(JAVA_IMAGE))
+	docker run --rm --name ${DOCKER_CONTAINER} --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/tmp -w /tmp --entrypoint "sh" -td $(FULL_JAVA_IMAGE)
 
 # Stops docker container for generating  certificates. 'true' is used to return 0 status code, if container is already deleted
 stop_docker:
@@ -43,6 +47,12 @@ clear_existing_certificates:
 	@echo "Clear certificates"
 	${DOCKER_EXEC} rm -f certServiceClient-keystore.jks certServiceServer-keystore.jks root.crt truststore.jks certServiceServer-keystore.p12
 	@echo "#####done#####"
+
+
+#Test Step - check create file permissions
+test_create_file:
+	@echo "Creating test file"
+	${DOCKER_EXEC} touch test.txt
 
 #Generate root private and public keys
 root_generate_keys:
@@ -89,7 +99,7 @@ client_sign_certificate_by_root:
 #Import root certificate into client
 client_import_root_certificate:
 	@echo "Import root certificate into intermediate"
-	${DOCKER_EXEC} bash -c "cat root.crt >> certServiceClientByRoot.crt"
+	${DOCKER_EXEC} sh -c "cat root.crt >> certServiceClientByRoot.crt"
 	@echo "####done####"
 
 #Import signed certificate into certService's client
@@ -124,7 +134,7 @@ server_sign_certificate_by_root:
 #Import root certificate into server
 server_import_root_certificate:
 	@echo "Import root certificate into intermediate(server)"
-	${DOCKER_EXEC} bash -c "cat root.crt >> certServiceServerByRoot.crt"
+	${DOCKER_EXEC} sh -c "cat root.crt >> certServiceServerByRoot.crt"
 	@echo "####done####"
 
 #Import signed certificate into certService
