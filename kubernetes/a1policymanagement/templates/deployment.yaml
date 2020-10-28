@@ -1,6 +1,7 @@
 {{/*
 ################################################################################
 #   Copyright (c) 2020 Nordix Foundation.                                      #
+#   Copyright © 2020 Samsung Electronics, Modifications                        #
 #                                                                              #
 #   Licensed under the Apache License, Version 2.0 (the "License");            #
 #   you may not use this file except in compliance with the License.           #
@@ -27,7 +28,7 @@ spec:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-update-config
+      - name: {{ include "common.name" . }}-bootstrap-config
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
@@ -46,6 +47,43 @@ spec:
         - mountPath: /config
           name: config
       containers:
+      - name: {{ include "common.name" . }}-update-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          terminate() {
+            local pids="$(jobs -p)"
+            if [ "$pids" != "" ]; then
+              kill -TERM $pids >/dev/null 2>/dev/null
+            fi
+          }
+          observe() {
+            while sleep 1m; do
+              if [ "$1" -nt "/config/$1" ]; then
+                envsubst <$1 >/config/$1
+              fi
+            done
+          }
+          trap terminate TERM
+          cd /config-input || exit 1
+          for PFILE in `ls -1`; do
+            observe $PFILE &
+          done
+          wait
+        env:
+        - name: A1CONTROLLER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
+        - name: A1CONTROLLER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: {{ include "common.fullname" . }}-policy-conf-input
+        - mountPath: /config
+          name: config
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
