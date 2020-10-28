@@ -31,23 +31,38 @@ all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
-	@make package-$@
+	@if [ -f $@/Makefile ]; then\
+		$(MAKE) -C $@; \
+	elif [ -f $@/Chart.yaml ]; then\
+	    VERSION=$$(cat $@/Chart.yaml | grep version | cut -d " " -f2 | tr -d "\n" | tr -d "\r");\
+		md5sum $@/charts/* > /tmp/$@.sum;\
+		DEP_LOCAL=$$(helm dep list $@ | grep file:// | cut -f1 | tr "\n" " " | sed -e 's/\s*$$//g' -e 's/\s\+/ /g' -e 's/ /|/g');\
+		DEP_LOCAL_DIR=$$(helm dep list $@ | grep file:// | cut -f3 | sed -e 's/file:\/\//$@\//g');\
+		echo DEP LOCAL: $$DEP_LOCAL;\
+		grep -vE "$$DEP_LOCAL" /tmp/$@.sum > /tmp/$@.sum.filtered;\
+		$(HELM_BIN) dep up $@ ;\
+		if [ ! -s /tmp/$@.sum.filtered ] || md5sum -c /tmp/$@.sum.filtered; then \
+			DEP=$$(find $@ -type f -not -name "*.tgz" | tr "\n" " ");\
+		else \
+			DEP=$$(find $@ -type f  | tr "\n" " ");\
+		fi;\
+		if [ -n "$$DEP_LOCAL_DIR" ]; then \
+			DEP_LOCAL_FILES=$$(find $$DEP_LOCAL_DIR -type f | tr "\n" " ");\
+		fi;\
+		$(MAKE) $(PACKAGE_DIR)/$@-$$VERSION.tgz \
+			PACKAGE_NAME=$@ \
+			VERSION=$$VERSION \
+			DEP="$$DEP $$DEP_LOCAL_FILES";\
+	fi
 
-make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
-
-dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
-
-lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
-
-package-%: lint-%
+$(PACKAGE_DIR)/%-$(VERSION).tgz: $(DEP)
+	@echo make $@
+	@$(HELM_BIN) lint $*
 	@mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
+	@PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local
 else
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+	@$(HELM_BIN) package -d $(PACKAGE_DIR) $*
 endif
 	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
@@ -55,5 +70,6 @@ clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
+
 %:
 	@:
