@@ -27,7 +27,10 @@ all: start_docker \
 # Starts docker container for generating certificates - deletes first, if already running
 start_docker:
 	@make stop_docker
-	docker run -d --rm --name ${DOCKER_CONTAINER}  --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/certs -w /certs docker.io/openjdk:11-jre-slim tail -f /dev/null
+	$(eval JAVA_IMAGE := $(shell cat ./values.yaml | grep -i "^[ \t]*certifcateGenerationImage" -m1 | xargs | cut -d ' ' -f2))
+	$(eval REPOSITORY := $(shell cat ./values.yaml | grep -i "^[ \t]*repository" -m1 | xargs | cut -d ' ' -f2))
+	$(eval FULL_JAVA_IMAGE := $(REPOSITORY)/$(JAVA_IMAGE))
+	docker run -d --rm --name ${DOCKER_CONTAINER}  --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/certs -w /certs $(FULL_JAVA_IMAGE) tail -f /dev/null
 
 # Stops docker container for generating  certificates. 'true' is used to return 0 status code, if container is already deleted
 stop_docker:
