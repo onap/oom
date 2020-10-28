@@ -55,6 +55,24 @@
     },
     {
       "key": {
+        "uuid": "e3b26d1a_e2969738",
+        "filename": "kubernetes/clamp/components/clamp-backend/templates/deployment.yaml",
+        "patchSetId": 7
+      },
+      "lineNbr": 106,
+      "author": {
+        "id": 23
+      },
+      "writtenOn": "2020-10-28T09:30:02Z",
+      "side": 1,
+      "message": "Sylvain,\n\nIn fact, I would tend to agree with Krzysztof on that point, if it\u0027s \"unlimited\" we do not set anything and we let the JVM default values.\n\nFrom the web: \"\nFor Java 11 and above\nThe Xmx value is 25% of the available memory with a maximum of 25 GB. However, where there is 2 GB or less of physical memory, the value set is 50% of available memory with a minimum value of 16 MB and a maximum value of 512 MB.\"\n--\u003e So without limitation it could be huge because it takes the memory of your node as a reference.\n\n\nBut i think we should go further than that by removing all the hardcoded/hidden java memory settings everywhere.\nCurrently the \"flavor\" settings is kind of a broken feature in ONAP, because some compos have hidden those parameters somewhere. So changing the flavor does not impact the memory settings at all, which is in my opinion just sad. \nIt\u0027s even worst than that, if you reduce the K8S memory limit under the minimal hardcoded HEAP settings, your pod is never going to start !\nI think if we want to reduce the footprint taken by ONAP this is not going to help :-(\n\nI think we should repair that feature, and make our apps more dynamic. That\u0027s the goal of the new params introduced in Java 11: -XX:MaxRAMPercentage and -XX:MinRAMPercentage\n\n\nSo to recap here (that could be a trial), i would say we remove the memory settings so that \"unlimited\" is JVM controlled.\nAnd we keep the flexibility (-XX:MinRAMPercentage\u003d50 -XX:MaxRAMPercentage\u003d75) when flavor is set so that user can really control the memory in the override file for instance.\n\n\nDoes it sound reasonable ?",
+      "parentUuid": "46e259b3_050c7f54",
+      "revId": "4e86a4b1e339747556573cf38e227dd05d0b072d",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "07729e03_85599142",
         "filename": "kubernetes/clamp/components/clamp-backend/templates/deployment.yaml",
         "patchSetId": 7
@@ -102,6 +120,24 @@
       "side": 1,
       "message": "I believe @Krzysztof question is why max 75% and not 95% or even 100%. \nIs there any reason to keep 25% out of Java?",
       "parentUuid": "db7557d9_74fb865a",
+      "revId": "4e86a4b1e339747556573cf38e227dd05d0b072d",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "561a1af6_0a2a6fca",
+        "filename": "kubernetes/clamp/components/clamp-backend/templates/deployment.yaml",
+        "patchSetId": 7
+      },
+      "lineNbr": 108,
+      "author": {
+        "id": 23
+      },
+      "writtenOn": "2020-10-28T09:30:02Z",
+      "side": 1,
+      "message": "It sounds counterintuitive, but both -XX:MaxRAMPercentage and -XX:MinRAMPercentage are used to calculate maximum HEAP size when MaxHeapSize / -Xmx are not set. There are others type of memories managed by the JVM, so set it to 95% is very risky.\nAnd if the limits defined in the flavor are reached, I think k8s is going to kill it.",
+      "parentUuid": "37e09657_07664c50",
       "revId": "4e86a4b1e339747556573cf38e227dd05d0b072d",
       "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
       "unresolved": true
