@@ -1,6 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
+#   Modifications © 2020 Nokia
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -29,9 +30,13 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+  {{if .Values.global.aafEnabled -}}
   type: {{ .Values.service.type }}
+  {{- else -}}
+  type: ClusterIP
+  {{- end }}
   ports:
-    {{if eq .Values.service.type "NodePort" -}}
+    {{if and (eq .Values.service.type "NodePort") (.Values.global.aafEnabled) -}}
     - port: {{ .Values.service.internalPort }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
       name: {{ .Values.service.portName }}
