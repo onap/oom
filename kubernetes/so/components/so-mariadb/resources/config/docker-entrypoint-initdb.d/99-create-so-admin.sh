@@ -1,4 +1,5 @@
 #!/bin/sh
+{{/*
 #
 # ============LICENSE_START==========================================
 # ===================================================================
@@ -20,6 +21,7 @@
 # ECOMP and OpenECOMP are trademarks
 # and service marks of AT&T Intellectual Property.
 #
+*/}}
 
 echo "Creating so admin user . . ." 1>/tmp/mariadb-so-admin.log 2>&1
 
