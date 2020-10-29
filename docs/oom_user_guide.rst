@@ -64,7 +64,7 @@ Enter the following to install kubectl (on Ubuntu, there are slight differences
 on other O/Ss), the Kubernetes command line interface used to manage a
 Kubernetes cluster::
 
-  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.8.10/bin/linux/amd64/kubectl
+  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/linux/amd64/kubectl
   > chmod +x ./kubectl
   > sudo mv ./kubectl /usr/local/bin/kubectl
   > mkdir ~/.kube
@@ -76,24 +76,24 @@ Verify that the Kubernetes config is correct::
 
   > kubectl get pods --all-namespaces
 
-At this point you should see six Kubernetes pods running.
+At this point you should see Kubernetes pods running.
 
 Install Helm
 ~~~~~~~~~~~~
 Helm is used by OOM for package and configuration management. To install Helm,
 enter the following::
 
-  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-linux-amd64.tar.gz
-  > tar -zxvf helm-v2.9.1-linux-amd64.tar.gz
+  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.16.6-linux-amd64.tar.gz
+  > tar -zxvf helm-v2.16.6-linux-amd64.tar.gz
   > sudo mv linux-amd64/helm /usr/local/bin/helm
-
-Verify the Helm version with::
-
-  > helm version
 
 Install the Helm Tiller application and initialize with::
 
   > helm init
+
+Verify the Helm version with::
+
+  > helm version
 
 Install the Helm Repo
 ---------------------
@@ -123,7 +123,6 @@ To prepare your system for an installation of ONAP, you'll need to::
 
 To setup a local Helm server to server up the ONAP charts::
 
-  > helm init
   > helm serve &
 
 Note the port number that is listed and use it in the Helm repo add as
@@ -150,43 +149,46 @@ system, and looks for matches::
 
   > helm search -l
   NAME                    VERSION    DESCRIPTION
-  local/appc              2.0.0      Application Controller
-  local/clamp             2.0.0      ONAP Clamp
-  local/common            2.0.0      Common templates for inclusion in other charts
-  local/onap              2.0.0      Open Network Automation Platform (ONAP)
-  local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                2.0.0      ONAP Service Orchestrator
+  local/appc              6.0.0      Application Controller
+  local/clamp             6.0.0      ONAP Clamp
+  local/common            6.0.0      Common templates for inclusion in other charts
+  local/onap              6.0.0      Open Network Automation Platform (ONAP)
+  local/robot             6.0.0      A helm Chart for kubernetes-ONAP Robot
+  local/so                6.0.0      ONAP Service Orchestrator
 
 In any case, setup of the Helm repository is a one time activity.
 
-Next, install Helm Plugins required to deploy the ONAP Casablanca release::
+Next, install Helm Plugins required to deploy the ONAP release::
 
-  > cp -R helm/plugins/ ~/.helm
+  > cp -R oom/kubernetes/helm/plugins/ ~/.helm
 
 Once the repo is setup, installation of ONAP can be done with a single
 command::
 
-  > helm deploy development local/onap --namespace onap
+  > helm deploy development local/onap --namespace onap --set global.masterPassword=password
 
 This will install ONAP from a local repository in a 'development' Helm release.
 As described below, to override the default configuration values provided by
 OOM, an environment file can be provided on the command line as follows::
 
-  > helm deploy development local/onap --namespace onap -f overrides.yaml
+
+
+  > helm deploy development local/onap --namespace onap -f overrides.yaml --set global.masterPassword=password
+
+.. note::
+  Refer the Configure_ section on how to update overrides.yaml and values.yaml
 
 To get a summary of the status of all of the pods (containers) running in your
 deployment::
 
-  > kubectl get pods --all-namespaces -o=wide
+  > kubectl get pods --namespace onap -o=wide
 
 .. note::
   The Kubernetes namespace concept allows for multiple instances of a component
   (such as all of ONAP) to co-exist with other components in the same
   Kubernetes cluster by isolating them entirely.  Namespaces share only the
   hosts that form the cluster thus providing isolation between production and
-  development systems as an example.  The OOM deployment of ONAP in Beijing is
-  now done within a single Kubernetes namespace where in Amsterdam a namespace
-  was created for each of the ONAP components.
+  development systems as an example.
 
 .. note::
   The Helm `--name` option refers to a release name and not a Kubernetes namespace.
@@ -195,7 +197,11 @@ deployment::
 To install a specific version of a single ONAP component (`so` in this example)
 with the given release name enter::
 
-  > helm deploy so onap/so --version 3.0.1
+  > helm deploy so onap/so --version 6.0.0 --set global.masterPassword=password --set global.flavor=unlimited --namespace onap
+
+.. note::
+   The dependent components should be installed for component being installed
+
 
 To display details of a specific resource or group of resources type::
 
@@ -301,7 +307,7 @@ value for the vnfDeployment/openstack/oam_network_cidr key as shown below.
 
 To deploy ONAP with this environment file, enter::
 
-  > helm deploy local/onap -n onap -f environments/onap-production.yaml
+  > helm deploy local/onap -n onap -f onap/resources/environments/onap-production.yaml --set global.masterPassword=password
 
 .. include:: environments_onap_demo.yaml
    :code: yaml
@@ -319,17 +325,17 @@ file:
   dependencies:
   <...>
     - name: so
-      version: ~2.0.0
+      version: ~6.0.0
       repository: '@local'
       condition: so.enabled
   <...>
 
-The ~ operator in the `so` version value indicates that the latest "2.X.X"
+The ~ operator in the `so` version value indicates that the latest "6.X.X"
 version of `so` shall be used thus allowing the chart to allow for minor
-upgrades that don't impact the so API; hence, version 2.0.1 will be installed
+upgrades that don't impact the so API; hence, version 6.0.1 will be installed
 in this case.
 
-The onap/resources/environment/onap-dev.yaml (see the excerpt below) enables
+The onap/resources/environment/dev.yaml (see the excerpt below) enables
 for fine grained control on what components are included as part of this
 deployment. By changing this `so` line to `enabled: false` the `so` component
 will not be deployed.  If this change is part of an upgrade the existing `so`
@@ -481,9 +487,12 @@ have been created - a sample from the ONAP Integration labs follows:
 .. figure:: consulHealth.png
    :align: center
 
-To see the real-time health of a deployment go to: http://<kubernetes IP>:30270/ui/
+To see the real-time health of a deployment go to: http://<kubernetes IP:30270/ui/
 where a GUI much like the following will be found:
 
+.. note::
+  If Consul GUI is not accessible, you can refer this
+  `kubectl port-forward <https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/>`_ method to access an application
 
 .. figure:: oomLogoV2-Heal.png
    :align: right
@@ -535,7 +544,45 @@ component.  Here is an excerpt that shows this parameter:
 In order to change the size of a cluster, an operator could use a helm upgrade
 (described in detail in the next section) as follows::
 
-  > helm upgrade --set replicaCount=3 onap/so/mariadb
+   > helm upgrade [RELEASE] [CHART] [flags]
+
+The RELEASE argument can be obtained from the following command::
+
+   > helm list
+
+Below is the example for the same::
+
+  > helm list
+    NAME                    REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE
+    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-6.0.0              Frankfurt       onap
+    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-6.0.0                         onap
+    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-6.0.0                           onap
+    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-6.0.0                    onap
+
+Here the Name column shows the RELEASE NAME, In our case we want to try the scale operation on cassandra, thus the RELEASE NAME would be dev-cassandra.
+
+Now we need to obtain the chart name for casssandra. Use the below command to get the chart name::
+
+  > helm search cassandra
+
+Below is the example for the same::
+
+  > helm search cassandra
+    NAME                    CHART VERSION   APP VERSION     DESCRIPTION
+    local/cassandra         6.0.0                           ONAP cassandra
+    local/portal-cassandra  6.0.0                           Portal cassandra
+    local/aaf-cass          6.0.0                           ONAP AAF cassandra
+    local/sdc-cs            6.0.0                           ONAP Service Design and Creation Cassandra
+
+Here the Name column shows the chart name. As we want to try the scale operation for cassandra, thus the correponding chart name is local/cassandra.
+
+
+Now we have both the command's arguments, thus we can perform the scale opeartion for cassandra as follows::
+
+  > helm upgrade dev-cassandra local/cassandra --set replicaCount=3
+
+Using this command we can scale up or scale down the cassadra db instances.
+
 
 The ONAP components use Kubernetes provided facilities to build clustered,
 highly available systems including: Services_ with load-balancers, ReplicaSet_,
@@ -585,7 +632,7 @@ Prior to doing an upgrade, determine of the status of the deployed charts::
 
   > helm list
   NAME REVISION UPDATED                  STATUS    CHART     NAMESPACE
-  so   1        Mon Feb 5 10:05:22 2018  DEPLOYED  so-2.0.1  default
+  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-6.0.0  onap
 
 When upgrading a cluster a parameter controls the minimum size of the cluster
 during the upgrade while another parameter controls the maximum number of nodes
@@ -608,21 +655,21 @@ sequence of events described in the previous paragraph would be initiated.
 For example, to upgrade a container by changing configuration, specifically an
 environment value::
 
-  > helm deploy onap onap/so --version 2.0.1 --set enableDebug=true
+  > helm upgrade so onap/so --version 6.0.1 --set enableDebug=true
 
 Issuing this command will result in the appropriate container being stopped by
 Kubernetes and replaced with a new container with the new environment value.
 
 To upgrade a component to a new version with a new configuration file enter::
 
-  > helm deploy onap onap/so --version 2.0.2 -f environments/demo.yaml
+  > helm upgrade so onap/so --version 6.0.1 -f environments/demo.yaml
 
 To fetch release history enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Feb 5 10:05:22 2018  SUPERSEDED so-2.0.1  Install complete
-  2        Mon Feb 5 10:10:55 2018  DEPLOYED   so-2.0.2  Upgrade complete
+  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-6.0.0  Install complete
+  2        Mon Feb 5 10:10:55 2020  DEPLOYED   so-6.0.1  Upgrade complete
 
 Unfortunately, not all upgrades are successful.  In recognition of this the
 lineup of pods within an ONAP deployment is tagged such that an administrator
@@ -644,9 +691,9 @@ For example, to roll-back back to previous system revision enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Feb 5 10:05:22 2018  SUPERSEDED so-2.0.1  Install complete
-  2        Mon Feb 5 10:10:55 2018  SUPERSEDED so-2.0.2  Upgrade complete
-  3        Mon Feb 5 10:14:32 2018  DEPLOYED   so-2.0.1  Rollback to 1
+  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-6.0.0  Install complete
+  2        Mon Feb 5 10:10:55 2020  SUPERSEDED so-6.0.1  Upgrade complete
+  3        Mon Feb 5 10:14:32 2020  DEPLOYED   so-6.0.0  Rollback to 1
 
 .. note::
 
@@ -715,6 +762,16 @@ deployment.
 To completely delete a release and remove it from the internal store enter::
 
   > helm undeploy onap --purge
+
+Once complete undeploy is done then delete the namespace as well using following command::
+
+  >  kubectl delete namespace <name of namespace>
+
+.. note::
+   You need to provide the namespace name which you used during deployment,
+   below is the example::
+
+   >  kubectl delete namespace onap
 
 One can also remove individual components from a deployment by changing the
 ONAP configuration values.  For example, to remove `so` from a running
