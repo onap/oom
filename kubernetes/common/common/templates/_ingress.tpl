@@ -83,12 +83,12 @@ spec:
 {{- end -}}
 {{- if .Values.ingress.config -}}
 {{- if .Values.ingress.config.tls -}}
-{{-   $dot := default . .dot -}}
+{{-   $dot := default . .dot }}
   tls:
-    - hosts:
-    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
-        - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- end }}
+  - hosts:
+  {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+  {{- end }}
     secretName: {{ required "secret" (tpl (default "" .Values.ingress.config.tls.secret) $dot) }}
 {{- end -}}
 {{- end -}}
