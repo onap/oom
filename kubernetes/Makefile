@@ -32,7 +32,7 @@ SUBMODS := robot aai
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PARENT_CHART)
 
-.PHONY: $(EXCLUDES) $(HELM_CHARTS)
+.PHONY: $(EXCLUDES) $(HELM_CHARTS) check-for-staging-images
 
 all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) plugins
 
@@ -96,5 +96,10 @@ repo:
 repo-stop:
 	@pkill $(HELM_BIN)
 	@$(HELM_BIN) repo remove local
+
+check-for-staging-images:
+	$(ROOT_DIR)/contrib/tools/check-for-staging-images.sh
+
 %:
 	@:
+
