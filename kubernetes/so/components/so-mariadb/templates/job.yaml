@@ -95,23 +95,9 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - {{ .Values.global.mariadbGalera.nameOverride }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
-      - name: {{ include "common.name" . }}
+      - name: {{ include "common.name" . }}-config
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
