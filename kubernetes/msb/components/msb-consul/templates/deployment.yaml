@@ -1,5 +1,9 @@
 {{/*
+<<<<<<< HEAD
 # Copyright © 2018 Amdocs, Bell Canada , ZTE
+=======
+# Copyright © 2017 Amdocs, Bell Canada
+>>>>>>> [MSB] Use certInitializer for MSB
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +17,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+<<<<<<< HEAD
+=======
+
+>>>>>>> [MSB] Use certInitializer for MSB
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,15 +32,23 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+<<<<<<< HEAD
   selector:
     matchLabels:
       app: {{ include "common.name" . }}
   replicas: {{ .Values.replicaCount }}
+=======
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+>>>>>>> [MSB] Use certInitializer for MSB
   template:
     metadata:
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
+<<<<<<< HEAD
       annotations:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
@@ -53,6 +69,16 @@ spec:
             - "0.0.0.0"
           ports:
           - containerPort: {{ .Values.service.internalPort }}
+=======
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          - containerPort: {{ .Values.service.internalPort1 }}
+>>>>>>> [MSB] Use certInitializer for MSB
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -67,6 +93,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+<<<<<<< HEAD
           env:
           volumeMounts:
           - mountPath: /etc/localtime
@@ -75,6 +102,16 @@ spec:
           - mountPath: /usr/local/bin/docker-entrypoint.sh
             name: entrypoint
             subPath: docker-entrypoint.sh
+=======
+          volumeMounts:
+          - name: ocomp-pem
+            mountPath: "/etc/lighttpd/ocomp.pem"
+            subPath: ocomp.pem
+            readOnly: true
+          env:
+            - name: OPEN_CLI_MODE
+              value: "{{ .Values.config.climode }}"
+>>>>>>> [MSB] Use certInitializer for MSB
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -86,6 +123,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
+<<<<<<< HEAD
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -93,5 +131,10 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-entrypoint
             defaultMode: 0777
+=======
+      - name: ocomp-pem
+        secret:
+          secretName: ocomp-pem
+>>>>>>> [MSB] Use certInitializer for MSB
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
