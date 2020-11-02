@@ -1,4 +1,5 @@
 # Copyright © 2018 Amdocs, Bell Canada , ZTE
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +17,36 @@
 #################################################################
 global:
   nodePortPrefix: 302
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: msb-eag-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: msb-eag
+  fqi: msb-eag@msb-eag.onap.org
+  fqi_namespace: org.onap.msb-eag
+  public_fqdn: msb-eag.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /usr/local/openresty/nginx/ssl/cert/
+  aaf_add_config: |
+    /opt/app/aaf_config/bin/agent.sh local showpass \
+      {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+    export $(grep '^c' {{ .Values.credsPath }}/mycreds.prop | xargs -0)
+    mkdir -p {{ .Values.credsPath }}/certs
+    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
+      -out {{ .Values.credsPath }}/certs/cert.crt -nokeys \
+      -passin pass:$cadi_keystore_password_p12 \
+      -passout pass:$cadi_keystore_password_p12
+    cp {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key {{ .Values.credsPath }}/certs/cert.key
+    chmod 755 {{ .Values.credsPath }}/certs/cert.crt
+    chmod 755 {{ .Values.credsPath }}/certs/cert.key
 
 #################################################################
 # Application configuration defaults.
