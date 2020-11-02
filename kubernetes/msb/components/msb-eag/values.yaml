@@ -19,6 +19,32 @@ global:
   readinessImage: onap/oom/readiness:3.0.1
 
 #################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: msb-eag-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: msb
+  fqi: msb@msb.onap.org
+  public_fqdn: msb.onap.org
+  fqi_namespace: org.onap.msb
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /usr/local/openresty/nginx/ssl/cert/
+  aaf_add_config: >
+    cd {{ .Values.credsPath }};
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass | grep '^c' | xargs -0);
+    keytool -exportcert -rfc -file certs/cacert.pem -keystore {{ .Values.fqi_namespace }}.trust.jks -alias ca_local_0 -storepass $cadi_truststore_password;
+    openssl pkcs12 -in {{ .Values.fqi_namespace }}.p12 -out ../cert.crt -passin pass:$cadi_keystore_password_p12 -passout pass:$cadi_keystore_password_p12;
+    cp {{ .Values.fqi_namespace }}.key ../cert.key;
+    chmod 755 ../cert.crt;
+    chmod 755 ../cert.key;
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
@@ -29,7 +55,7 @@ istioSidecar: true
 
 # application configuration
 config:
-  routeLabels: "visualRange:1"
+  routeLabels: "visualRange:0"
 
 # default number of instances
 replicaCount: 1
@@ -52,19 +78,18 @@ readiness:
 
 service:
   type: NodePort
-  name: msb-iag
+  name: msb-eag
   externalPort: 80
   internalPort: 80
-  nodePort: 80
   externalPortHttps: 443
   internalPortHttps: 443
-  nodePortHttps: 83
+  nodePortHttps: 84
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "msbiag"
-      name: "msb-iag"
+    - baseaddr: "msbeag"
+      name: "msb-eag"
       port: 443
   config:
     ssl: "redirect"
@@ -75,16 +100,16 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: 100m
-      memory: 400Mi
+      cpu: 200m
+      memory: 500Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 200Mi
   large:
     limits:
-      cpu: 200m
+      cpu: 400m
       memory: 800Mi
     requests:
-      cpu: 100m
+      cpu: 200m
       memory: 400Mi
   unlimited: {}
