@@ -5,7 +5,7 @@
 {{ include "common.certInitializer.initContainer" $subchartDot }}
 {{- if $dot.Values.global.aafEnabled }}
 - name: {{ include "common.name" $dot }}-msb-cert-importer
-  image: "{{ include "common.repository" $dot }}/{{ $dot.Values.global.aafAgentImage }}"
+  image: "{{ include "common.repository" $subchartDot }}/{{ $dot.Values.global.aafAgentImage }}"
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   command:
   - "/bin/sh"
