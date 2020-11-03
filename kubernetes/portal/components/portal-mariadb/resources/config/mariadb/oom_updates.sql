@@ -76,7 +76,8 @@ update fn_app set app_username='aaiui', app_password='4LK69amiIFtuzcl6Gsv97Tt7ML
 
 -- Disabled Policy APP
 UPDATE fn_app fa SET fa.enabled = 'N' WHERE app_name = 'Policy';
-
+-- Disabled AAIUI APP
+UPDATE fn_app fa SET fa.enabled = 'N' WHERE app_name = 'A&AI UI';
 
 /*
 Replace spaces with underscores for role names to match AAF role names
