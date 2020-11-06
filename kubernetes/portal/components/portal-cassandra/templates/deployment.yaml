@@ -1,6 +1,7 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright (c) 2017 Amdocs, Bell Canada
+# Modifications Copyright (c) 2018 AT&T
+# Modifications Copyright (c) 2020 Nokia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +41,11 @@ spec:
       - name: {{ include "common.name" . }}
         image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          /opt/bitnami/scripts/cassandra/entrypoint.sh /opt/bitnami/scripts/cassandra/run.sh
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -51,30 +57,57 @@ spec:
           exec:
             command:
             - /bin/bash
-            - -c
-            - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
+            - -ec
+            - |
+              nodetool status
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
         {{ end }}
         readinessProbe:
           exec:
             command:
             - /bin/bash
-            - -c
-            - nodetool status | grep $POD_IP | awk '$1!="UN" { exit 1; }'
+            - -ec
+            - |
+              nodetool status | grep -E "^UN\\s+${POD_IP}"
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+          successThreshold: {{ .Values.readiness.successThreshold }}
+          failureThreshold: {{ .Values.readiness.failureThreshold }}
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - bash
+              - -ec
+              - nodetool decommission
         env:
-          - name: CASSUSER
+          - name: CASSANDRA_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12}}
-          - name: CASSPASS
+          - name: CASSANDRA_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 12}}
-          - name: JVM_OPTS
-            value: "{{ .Values.config.cassandraJvmOpts }}"
           - name: POD_IP
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+          - name: CASSANDRA_PASSWORD_SEEDER
+            value: "yes"
+          - name: BITNAMI_DEBUG
+            value: "true"
+          - name: CASSANDRA_CLUSTER_NAME
+            value: cassandra
+          - name: CASSANDRA_NUM_TOKENS
+            value: "256"
+          - name: CASSANDRA_DATACENTER
+            value: dc1
+          - name: CASSANDRA_ENDPOINT_SNITCH
+            value: SimpleSnitch
+          - name: CASSANDRA_RACK
+            value: rack1
+          - name: CASSANDRA_ENABLE_RPC
+            value: "true"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
