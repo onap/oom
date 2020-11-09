@@ -87,3 +87,4 @@ For more information on OOM project documentation, refer to:
 
  -  [Quick Start Guide on Wiki](https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project#ONAPOperationsManagerProject-QuickStartGuide)
  -  [Quick Start Guide on readthedocs](http://onap.readthedocs.io/en/latest/submodules/oom.git/docs/OOM%20Project%20Description/oom_project_description.html#quick-start-guide)
+
