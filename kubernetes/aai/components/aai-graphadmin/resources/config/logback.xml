@@ -1,0 +1,958 @@
+<?xml version="1.0"?>
+<!--
+
+    ============LICENSE_START=======================================================
+    org.onap.aai
+    ================================================================================
+    Copyright 2019 AT&T Intellectual Property. All rights reserved.
+    ================================================================================
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+    ============LICENSE_END=========================================================
+
+-->
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+  <property resource="application.properties"/>
+  <property name="namespace" value="graph-admin"/>
+  <property name="AJSC_HOME" value="${AJSC_HOME:-.}"/>
+  <property name="logDirectory" value="${AJSC_HOME}/logs"/>
+  <!-- Old patterns
+	<property name="eelfLogPattern" value="%ecompStartTime|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{requestId}|%X{serviceInstanceId}|%-10t|%X{serverName}|%X{serviceName}|%X{partnerName}|%ecompStatusCode|%X{responseCode}|%replace(%replace(%X{responseDescription}){'\\|', '!'}){'\r|\n', '^'}|%X{instanceUUID}|%level|%X{severity}|%X{serverIpAddress}|%ecompElapsedTime|%X{server}|%X{clientIpAddress}|%eelfClassOfCaller|%X{unused}|%X{processKey}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{component}:%replace(%replace(%m){'\\|', '!'}){'\r|\n', '^'}%n"/>
+	<property name="eelfAuditLogPattern" value="%ecompStartTime|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{requestId}|%X{serviceInstanceId}|%-10t|%X{serverName}|%X{serviceName}|%X{partnerName}|%ecompStatusCode|%X{responseCode}|%replace(%replace(%X{responseDescription}){'\\|', '!'}){'\r|\n|\r\n', '^'}|%X{instanceUUID}|%level|%X{severity}|%X{serverIpAddress}|%ecompElapsedTime|%X{server}|%X{clientIpAddress}|%eelfClassOfCaller|%X{unused}|%X{processKey}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{component}:%replace(%replace(%m){'\\|', '!'}){'\r|\n', '^'}%n"/>
+	<property name="eelfMetricLogPattern" value="%ecompStartTime|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{requestId}|%X{serviceInstanceId}|%-10t|%X{serverName}|%X{serviceName}|%X{partnerName}|%X{targetEntity}|%X{targetServiceName}|%ecompStatusCode|%X{responseCode}|%replace(%replace(%X{responseDescription}){'\\|', '!'}){'\r|\n', '^'}|%X{instanceUUID}|%level|%X{severity}|%X{serverIpAddress}|%ecompElapsedTime|%X{server}|%X{clientIpAddress}|%eelfClassOfCaller|%X{unused}|%X{processKey}|%X{targetVirtualEntity}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{component}:%replace(%replace(%m){'\\|', '!'}){'\r|\n', '^'}%n"/>
+	<property name="eelfErrorLogPattern" value="%ecompStartTime|%X{requestId}|%-10t|%X{serviceName}|%X{partnerName}|%X{targetEntity}|%X{targetServiceName}|%ecompErrorCategory|%X{responseCode}|%replace(%replace(%X{responseDescription}){'\\|', '!'}){'\r|\n|\r\n', '^'}|co=%X{component}:%replace(%replace(%m){'\\|', '!'}){'\r|\n', '^'}%n"/>
+	<property name="eelfErrorLogPattern" value="%ecompStartTime|%X{requestId}|%-10t|%X{serviceName}|%X{partnerName}|%X{targetEntity}|%X{targetServiceName}|%ecompErrorCategory|%ecompResponseCode|%ecompResponseDescription|co=%X{component}:%replace(%replace(%m){'\\|', '!'}){'\r|\n', '^'}%n"/>
+    <property name="eelfTransLogPattern" value="%ecompStartTime|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{requestId}|%X{serviceInstanceId}|%-10t|%X{serverName}|%X{serviceName}|%X{partnerName}|%ecompStatusCode|%X{responseCode}|%replace(%replace(%X{responseDescription}){'\\|', '!'}){'\r|\n', '^'}|%X{instanceUUID}|%level|%X{severity}|%X{serverIpAddress}|%ecompElapsedTime|%X{server}|%X{clientIpAddress}|%eelfClassOfCaller|%X{unused}|%X{processKey}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{partnerName}:%m%n"/>
+	-->
+  <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
+  <property name="p_lvl" value="%level"/>
+  <property name="p_log" value="%logger"/>
+  <property name="p_mdc" value="%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}"/>
+  <property name="p_msg" value="%replace(%replace(%msg){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_exc" value="%replace(%replace(%rootException){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
+  <property name="p_thr" value="%thread"/>
+  <property name="pattern" value="%nopexception${p_tim}\t${p_thr}\t${p_lvl}\t${p_log}\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n"/>
+  <!-- Patterns from onap demo -->
+  <property name="errorPattern" value="%X{LogTimestamp}|%X{RequestID}|%thread|%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n"/>
+  <property name="debugPattern" value="%X{LogTimestamp}|%X{RequestID}|%msg\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t|^%n"/>
+  <property name="auditPattern" value="%X{EntryTimestamp}|%X{LogTimestamp}|%X{RequestID}|%X{ServiceInstanceID}|%thread||%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}||||${p_mak}|${p_mdc}|||%msg%n"/>
+  <property name="metricPattern" value="%X{InvokeTimestamp}|%X{LogTimestamp}|%X{RequestID}|%X{ServiceInstanceID}|%thread||%X{ServiceName}|%X{PartnerName}|%X{TargetEntity}|%X{TargetServiceName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|${p_mak}|${p_mdc}|||%msg%n"/>
+  <property name="transLogPattern" value="%X{LogTimestamp}|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{RequestID}|%X{ServiceInstanceID}|%-10t|%X{ServerFQDN}|%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%replace(%replace(%X{ResponseDesc}){'\\|', '!'}){'\r|\n', '^'}|%X{InstanceUUID}|%level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{clientIpAddress}||%X{unused}|%X{processKey}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{PartnerName}:%m%n"/>
+  <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+  <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+  <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>
+				%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}
+			</pattern>
+    </encoder>
+  </appender>
+  <appender name="SANE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/rest/sane.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/sane.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1024} - %msg%n
+			</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncSANE" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <includeCallerData>true</includeCallerData>
+    <appender-ref ref="SANE"/>
+  </appender>
+  <appender name="METRIC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/rest/metrics.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/metrics.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${metricPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncMETRIC" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <includeCallerData>true</includeCallerData>
+    <appender-ref ref="METRIC"/>
+  </appender>
+  <appender name="DEBUG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <file>${logDirectory}/rest/debug.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncDEBUG" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <appender-ref ref="DEBUG"/>
+    <includeCallerData>true</includeCallerData>
+  </appender>
+  <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/rest/error.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncERROR" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <appender-ref ref="ERROR"/>
+  </appender>
+  <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDirectory}/rest/audit.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/audit.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncAUDIT" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <includeCallerData>true</includeCallerData>
+    <appender-ref ref="AUDIT"/>
+  </appender>
+  <appender name="translog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <file>${logDirectory}/rest/translog.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/rest/translog.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${transLogPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="asynctranslog" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <includeCallerData>true</includeCallerData>
+    <appender-ref ref="translog"/>
+  </appender>
+  <appender name="dmaapAAIEventConsumer" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dmaapAAIEventConsumer/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dmaapAAIEventConsumer/error.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${"errorPattern"}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dmaapAAIEventConsumerInfo" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dmaapAAIEventConsumer/dmaap-transaction.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dmaapAAIEventConsumer/dmaap-transaction.log.%d{yyyy-MM-dd}
+            </fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dmaapAAIEventConsumerDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dmaapAAIEventConsumer/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dmaapAAIEventConsumer/debug.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dmaapAAIEventConsumerMetric" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dmaapAAIEventConsumer/metrics.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dmaapAAIEventConsumer/metrics.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${metricPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="external" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <file>${logDirectory}/external/external.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/external/external.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- DataGrooming logs started -->
+  <appender name="dataGrooming" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dataGrooming/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataGrooming/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataGroomingdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataGrooming/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataGrooming/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataGroomingaudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataGrooming/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataGrooming/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- DataGrooming logs ended -->
+  <!-- DataSnapshot logs started -->
+  <appender name="dataSnapshot" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dataSnapshot/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataSnapshot/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataSnapshotdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataSnapshot/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataSnapshot/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataSnapshotaudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataSnapshot/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataSnapshot/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- DataSnapshot logs ended -->
+  <!-- HistoryTruncate logs started -->
+  <appender name="historyTruncate" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/historyTruncate/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/historyTruncate/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="historyTruncatedebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/historyTruncate/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/historyTruncate/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="historyTruncateaudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/historyTruncate/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/historyTruncate/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- historyTruncate logs ended -->
+  <!-- CreateDBSchema logs started  -->
+  <appender name="createDBSchema" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/createDBSchema/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/createDBSchema/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${"errorPattern"}</pattern>
+    </encoder>
+  </appender>
+  <appender name="createDBSchemadebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/createDBSchema/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/createDBSchema/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="createDBSchemametric" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/createDBSchema/metrics.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/createDBSchema/metrics.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${metricPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- CreateDBSchema logs ended  -->
+  <!-- DataCleanupTasks logs started  -->
+  <appender name="dataCleanuperror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/misc/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/misc/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${"errorPattern"}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataCleanupdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/misc/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/misc/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataCleanupaudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/misc/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/misc/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- DataCleanupTasks logs ended  -->
+  <!-- dupeTool logs started -->
+  <appender name="dupeTooldebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dupetool/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dupetool/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dupeToolerror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>WARN</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dupeTool/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dupeTool/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- dupeTool logs ended -->
+  <!-- dynamicPayloadGenerator log starts here -->
+  <appender name="dynamicPayloadGeneratorError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dynamicPayloadGenerator/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dynamicPayloadGeneratorDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dynamicPayloadGenerator/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dynamicPayloadGeneratorAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataExport/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- dynamicPayloadGenerator log ends here -->
+  <!-- forceDelete logs started -->
+  <appender name="forceDeletedebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/forceDelete/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/forceDelete/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="forceDeleteerror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>WARN</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/forceDelete/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/forceDelete/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- forceDelete logs ended -->
+  <!-- migration logs started -->
+  <appender name="migrationdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/migration/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/migration/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="migrationerror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>WARN</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/migration/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/migration/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- migration logs ended -->
+  <!-- DataGrooming logs started -->
+  <appender name="dataExportError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dataExport/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataExport/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataExportDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataExport/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataExport/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dataExportAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataExport/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dataExport/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- schemaMod log starts -->
+  <appender name="schemaModdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/schemaMod/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/schemaMod/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="schemaModerror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>WARN</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/schemaMod/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/schemaMod/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- schemaMod log ends -->
+  <!-- uniquePropertyCheck log starts here -->
+  <appender name="uniquePropertyCheckdebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/uniquePropertyCheck/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/uniquePropertyCheck/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="uniquePropertyCheckmetric" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/uniquePropertyCheck/metrics.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/uniquePropertyCheck/metrics.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${metricPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="uniquePropertyCheckerror" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>WARN</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/uniquePropertyCheck/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/uniquePropertyCheck/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- uniquePropertyCheck log ends here -->
+  <!-- dynamicPayloadGenerator log starts here -->
+  <appender name="dynamicPayloadGeneratorError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <File>${logDirectory}/dynamicPayloadGenerator/error.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${errorPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dynamicPayloadGeneratorDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>DEBUG</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dynamicPayloadGenerator/debug.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/debug.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${debugPattern}</pattern>
+    </encoder>
+  </appender>
+  <appender name="dynamicPayloadGeneratorAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>INFO</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <File>${logDirectory}/dataExport/audit.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/dynamicPayloadGenerator/audit.log.%d{yyyy-MM-dd}</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${auditPattern}</pattern>
+    </encoder>
+  </appender>
+  <!-- dynamicPayloadGenerator log ends here -->
+  <logger name="org.onap.aai" level="DEBUG" additivity="false">
+    <appender-ref ref="asyncDEBUG"/>
+    <appender-ref ref="asyncSANE"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <!-- Spring related loggers -->
+  <logger name="org.springframework" level="WARN"/>
+  <logger name="org.springframework.beans" level="WARN"/>
+  <logger name="org.springframework.web" level="WARN"/>
+  <logger name="com.blog.spring.jms" level="WARN"/>
+  <logger name="com.jayway.jsonpath" level="WARN"/>
+  <!-- AJSC Services (bootstrap services) -->
+  <logger name="ajsc" level="WARN"/>
+  <logger name="ajsc.RouteMgmtService" level="WARN"/>
+  <logger name="ajsc.ComputeService" level="WARN"/>
+  <logger name="ajsc.VandelayService" level="WARN"/>
+  <logger name="ajsc.FilePersistenceService" level="WARN"/>
+  <logger name="ajsc.UserDefinedJarService" level="WARN"/>
+  <logger name="ajsc.UserDefinedBeansDefService" level="WARN"/>
+  <logger name="ajsc.LoggingConfigurationService" level="WARN"/>
+  <!-- AJSC related loggers (DME2 Registration, csi logging, restlet, servlet 
+		logging) -->
+  <logger name="org.codehaus.groovy" level="WARN"/>
+  <logger name="com.att.scamper" level="WARN"/>
+  <logger name="ajsc.utils" level="WARN"/>
+  <logger name="ajsc.utils.DME2Helper" level="WARN"/>
+  <logger name="ajsc.filters" level="WARN"/>
+  <logger name="ajsc.beans.interceptors" level="WARN"/>
+  <logger name="ajsc.restlet" level="WARN"/>
+  <logger name="ajsc.servlet" level="WARN"/>
+  <logger name="com.att.ajsc" level="WARN"/>
+  <logger name="com.att.ajsc.csi.logging" level="WARN"/>
+  <logger name="com.att.ajsc.filemonitor" level="WARN"/>
+  <logger name="com.netflix.loadbalancer" level="WARN"/>
+  <logger name="org.apache.zookeeper" level="WARN"/>
+  <!-- Other Loggers that may help troubleshoot -->
+  <logger name="net.sf" level="WARN"/>
+  <logger name="org.apache.commons.httpclient" level="WARN"/>
+  <logger name="org.apache.commons" level="WARN"/>
+  <logger name="org.apache.coyote" level="WARN"/>
+  <logger name="org.apache.jasper" level="WARN"/>
+  <!-- Camel Related Loggers (including restlet/servlet/jaxrs/cxf logging. 
+		May aid in troubleshooting) -->
+  <logger name="org.apache.camel" level="WARN"/>
+  <logger name="org.apache.cxf" level="WARN"/>
+  <logger name="org.apache.camel.processor.interceptor" level="WARN"/>
+  <logger name="org.apache.cxf.jaxrs.interceptor" level="WARN"/>
+  <logger name="org.apache.cxf.service" level="WARN"/>
+  <logger name="org.restlet" level="WARN"/>
+  <logger name="org.apache.camel.component.restlet" level="WARN"/>
+  <logger name="org.hibernate.validator" level="WARN"/>
+  <logger name="org.hibernate" level="WARN"/>
+  <logger name="org.hibernate.ejb" level="OFF"/>
+  <!-- logback internals logging -->
+  <logger name="ch.qos.logback.classic" level="WARN"/>
+  <logger name="ch.qos.logback.core" level="WARN"/>
+  <logger name="org.eclipse.jetty" level="WARN"/>
+  <!-- logback jms appenders & loggers definition starts here -->
+  <appender name="auditLogs" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter"/>
+    <file>${logDirectory}/perf-audit/Audit-${lrmRVer}-${lrmRO}-${Pid}.log
+		</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/perf-audit/Audit-${lrmRVer}-${lrmRO}-${Pid}.%i.log.zip
+			</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>auditPattern</pattern>
+    </encoder>
+  </appender>
+  <appender name="perfLogs" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter"/>
+    <file>${logDirectory}/perf-audit/Perform-${lrmRVer}-${lrmRO}-${Pid}.log
+		</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>${logDirectory}/perf-audit/Perform-${lrmRVer}-${lrmRO}-${Pid}.%i.log.zip
+			</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>9</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>"%d [%thread] %-5level %logger{1024} - %msg%n"</pattern>
+    </encoder>
+  </appender>
+  <appender name="auth" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>
+    <file>${logDirectory}/auth/auth.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDirectory}/auth/auth.log.%d{yyyy-MM-dd}
+			</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}[%thread] %-5level %logger{1024} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="asyncAUTH" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>1000</queueSize>
+    <includeCallerData>true</includeCallerData>
+    <appender-ref ref="auth"/>
+  </appender>
+  <logger name="AuditRecord" level="INFO" additivity="false">
+    <appender-ref ref="auditLogs"/>
+  </logger>
+  <logger name="AuditRecord_DirectCall" level="INFO" additivity="false">
+    <appender-ref ref="auditLogs"/>
+  </logger>
+  <logger name="PerfTrackerRecord" level="INFO" additivity="false">
+    <appender-ref ref="perfLogs"/>
+  </logger>
+  <!-- logback jms appenders & loggers definition ends here -->
+  <logger name="org.onap.aai.aaf" level="DEBUG" additivity="false">
+    <appender-ref ref="asyncAUTH"/>
+  </logger>
+  <logger name="org.onap.aai.aailog.filter.RestClientLoggingInterceptor" level="INFO">
+    <appender-ref ref="asyncMETRIC"/>
+  </logger>
+  <logger name="org.onap.logging.filter.base.AbstractMetricLogFilter" level="INFO">
+    <appender-ref ref="asyncMETRIC"/>
+  </logger>
+  <logger name="org.onap.aai.aailog.logs.AaiScheduledTaskAuditLog" level="INFO">
+    <appender-ref ref="asyncAUDIT"/>
+  </logger>
+  <logger name="org.onap.logging.filter.base.AbstractAuditLogFilter" level="INFO">
+    <appender-ref ref="asyncAUDIT"/>
+  </logger>
+  <logger name="org.onap.aai.aailog.logs.AaiDBMetricLog" level="INFO">
+    <appender-ref ref="asyncMETRIC"/>
+  </logger>
+  <logger name="org.onap.aai.logging.ErrorLogHelper" level="WARN">
+    <appender-ref ref="asyncERROR"/>
+  </logger>
+  <logger name="org.onap.aai.interceptors.post" level="DEBUG" additivity="false">
+    <appender-ref ref="asynctranslog"/>
+  </logger>
+  <logger name="org.onap.aai.dmaap" level="DEBUG" additivity="false">
+    <appender-ref ref="dmaapAAIEventConsumer"/>
+    <appender-ref ref="dmaapAAIEventConsumerDebug"/>
+    <appender-ref ref="dmaapAAIEventConsumerMetric"/>
+  </logger>
+  <logger name="org.onap.aai.datasnapshot" level="DEBUG" additivity="false">
+    <appender-ref ref="dataSnapshot"/>
+    <appender-ref ref="dataSnapshotdebug"/>
+    <appender-ref ref="dataSnapshotaudit"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <logger name="org.onap.aai.historytruncate" level="DEBUG" additivity="false">
+    <appender-ref ref="historyTruncate"/>
+    <appender-ref ref="historyTruncatedebug"/>
+    <appender-ref ref="historyTruncateaudit"/>
+  </logger>
+  <logger name="org.onap.aai.datagrooming" level="DEBUG" additivity="false">
+    <appender-ref ref="dataGrooming"/>
+    <appender-ref ref="dataGroomingdebug"/>
+    <appender-ref ref="dataGroomingaudit"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <logger name="org.onap.aai.schema" level="DEBUG" additivity="false">
+    <appender-ref ref="createDBSchema"/>
+    <appender-ref ref="createDBSchemadebug"/>
+    <appender-ref ref="createDBSchemametric"/>
+  </logger>
+  <logger name="org.onap.aai.dbgen.DupeTool" level="DEBUG" additivity="false">
+    <appender-ref ref="dupeTooldebug"/>
+    <appender-ref ref="dupeToolerror"/>
+  </logger>
+  <logger name="org.onap.aai.dbgen.DynamicPayloadGenerator" level="DEBUG" additivity="false">
+    <appender-ref ref="dynamicPayloadGeneratorAudit"/>
+    <appender-ref ref="dynamicPayloadGeneratorError"/>
+    <appender-ref ref="dynamicPayloadGeneratorDebug"/>
+  </logger>
+  <logger name="org.onap.aai.dbgen" level="DEBUG" additivity="false">
+    <appender-ref ref="createDBSchema"/>
+    <appender-ref ref="createDBSchemadebug"/>
+    <appender-ref ref="createDBSchemametric"/>
+  </logger>
+  <logger name="org.onap.aai.datacleanup" level="DEBUG" additivity="false">
+    <appender-ref ref="dataCleanuperror"/>
+    <appender-ref ref="dataCleanupdebug"/>
+    <appender-ref ref="dataCleanupaudit"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <logger name="org.onap.aai.migration" level="DEBUG" additivity="false">
+    <appender-ref ref="migrationdebug"/>
+    <appender-ref ref="migrationerror"/>
+  </logger>
+  <logger name="org.onap.aai.util.SendMigrationNotifications" level="DEBUG" additivity="false">
+    <appender-ref ref="migrationdebug"/>
+    <appender-ref ref="migrationerror"/>
+  </logger>
+  <logger name="org.onap.aai.util.SendDeleteMigrationNotifications" level="DEBUG" additivity="false">
+    <appender-ref ref="migrationdebug"/>
+    <appender-ref ref="migrationerror"/>
+  </logger>
+  <logger name="org.onap.aai.dataexport" level="DEBUG" additivity="false">
+    <appender-ref ref="dataExportError"/>
+    <appender-ref ref="dataExportDebug"/>
+    <appender-ref ref="dataExportAudit"/>
+    <appender-ref ref="STDOUT"/>
+  </logger>
+  <logger name="org.apache" level="WARN"/>
+  <logger name="org.zookeeper" level="WARN"/>
+  <logger name="com.netflix" level="WARN"/>
+  <logger name="org.janusgraph" level="WARN"/>
+  <logger name="com.att.aft.dme2" level="WARN"/>
+  <!-- ============================================================================ -->
+  <!-- General EELF logger -->
+  <!-- ============================================================================ -->
+  <logger name="com.att.eelf" level="WARN" additivity="false">
+    <appender-ref ref="asyncDEBUG"/>
+    <appender-ref ref="asyncERROR"/>
+    <appender-ref ref="asyncMETRIC"/>
+  </logger>
+  <root level="DEBUG">
+    <appender-ref ref="external"/>
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>

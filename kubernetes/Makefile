@@ -28,7 +28,7 @@ else
 	HELM_LINT_CMD := echo "Skipping linting of"
 endif
 
-SUBMODS := robot aai
+SUBMODS := robot
 EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PARENT_CHART)
 
@@ -102,4 +102,3 @@ check-for-staging-images:
 
 %:
 	@:
-
