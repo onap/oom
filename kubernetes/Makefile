@@ -21,6 +21,10 @@ PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 HELM_BIN := helm
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
+# use this if you would like to push onap charts to repo with other name
+# WARNING: Helm v3+ only
+# WARNING: Make sure to edit also requirements files
+HELM_REPO := local
 
 ifneq ($(SKIP_LINT),TRUE)
 	HELM_LINT_CMD := $(HELM_BIN) lint
@@ -34,7 +38,7 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS) check-for-staging-images
 
-all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) plugins
+all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -68,12 +72,11 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
 else
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-endif
-
 	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+endif
 
 clean:
 	@rm -f */requirements.lock
@@ -85,6 +88,7 @@ plugins:
 	@cp -R $(HELM_BIN) $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
+# WARNING: Only helm < v3 supported
 repo:
 	@mkdir -p $(PACKAGE_DIR)
 	@$(HELM_BIN) serve --repo-path $(PACKAGE_DIR) &
@@ -93,6 +97,7 @@ repo:
 	@$(HELM_BIN) repo add local http://127.0.0.1:8879
 
 # stop local helm repo
+# WARNING: Only helm < v3 supported
 repo-stop:
 	@pkill $(HELM_BIN)
 	@$(HELM_BIN) repo remove local
@@ -100,6 +105,10 @@ repo-stop:
 check-for-staging-images:
 	$(ROOT_DIR)/contrib/tools/check-for-staging-images.sh
 
+helm-repo-update:
+ifeq "$(findstring v3,$(HELM_VER))" "v3"
+	@$(HELM_BIN) repo update $(HELM_REPO)
+endif
+
 %:
 	@:
-
