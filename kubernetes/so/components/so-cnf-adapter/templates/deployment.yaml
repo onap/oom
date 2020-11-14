@@ -1,0 +1,132 @@
+{{/*
+# Copyright © 2020 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ index .Values.replicaCount }}
+  minReadySeconds: {{ index .Values.minReadySeconds }}
+  strategy:
+    type: {{ index .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ index .Values.updateStrategy.maxSurge }}
+  template:
+    metadata:
+      labels: {{- include "common.labels" . | nindent 8 }}
+    spec:
+      initContainers: {{ include "so.certificate.container_importer" . | nindent 8 }}
+        - name: {{ include "common.name" . }}-encrypter
+          command:
+            - sh
+          args:
+            - -c
+            - |
+              java Crypto "${AAI_USERNAME}:${AAI_PASSWORD}" "${MSO_KEY}" > /output/.aai_creds
+          env:
+            - name: AAI_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "login") | indent 14 }}
+            - name: AAI_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "password") | indent 14 }}
+            - name: MSO_KEY
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cnf-adapter-mso-key" "key" "password") | indent 14 }}
+          image: {{ .Values.global.dockerHubRepository }}/{{ .Values.global.soCryptoImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - name: encoder
+              mountPath: /output
+        - name: {{ include "common.name" . }}-readiness
+          command:
+            - /app/ready.py
+          args:
+            - --job-name
+            - {{ include "common.release" . }}-so-mariadb-config-job
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: {{ include "common.repository" . }}/{{ .Values.global.readinessImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "common.repository" . }}/{{ .Values.image }}
+          command:
+            - sh
+          args:
+            - -c
+            - |
+              export AAF_BASE64=$(echo -n "${AAF_USERNAME}:${AAF_PASSWORD}" | base64)
+              export AAF_AUTH=$(echo "Basic ${AAF_BASE64}")
+              export AAI_AUTH=$(cat /input/.aai_creds)
+              {{- if .Values.global.aafEnabled }}
+              export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+              export TRUSTSTORE_PASSWORD="${cadi_truststore_password}"
+              {{- if .Values.global.security.aaf.enabled }}
+              export KEYSTORE_PASSWORD="${cadi_keystore_password}"
+              {{- end }}
+              {{- end }}
+              ./start-app.sh
+          resources: {{ include "common.resources" . | nindent 12 }}
+          ports: {{- include "common.containerPorts" . | nindent 12  }}
+          env:
+            - name: AAF_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aaf-creds" "key" "login") | indent 14 }}
+            - name: AAF_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aaf-creds" "key" "password") | indent 14 }}
+            - name: ACTUATOR_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 14 }}
+            - name: ACTUATOR_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 14 }}
+            {{ include "so.certificates.env" . | indent 12 | trim }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-env
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+            - name: logs
+              mountPath: /app/logs
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+              readOnly: true
+            - name: encoder
+              mountPath: /input
+          livenessProbe:
+            httpGet:
+              path: {{ index .Values.livenessProbe.path}}
+              port: {{ index .Values.containerPort }}
+              scheme: {{ index .Values.livenessProbe.scheme}}
+            initialDelaySeconds: {{ index .Values.livenessProbe.initialDelaySeconds}}
+            periodSeconds: {{ index .Values.livenessProbe.periodSeconds}}
+            timeoutSeconds: {{ index .Values.livenessProbe.timeoutSeconds}}
+            successThreshold: {{ index .Values.livenessProbe.successThreshold}}
+            failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
+      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+        - name: logs
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}
+        - name: encoder
+          emptyDir:
+            medium: Memory
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
