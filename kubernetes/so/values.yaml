@@ -60,7 +60,7 @@ global:
     siteName: onapheat
     auth: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
     defaultCloudOwner: onap
-    msoKey: 07a7159d3bf51a0e53be7a8f89699be7
+
   client:
     certs:
       truststore: /app/client/org.onap.so.trust.jks
@@ -115,15 +115,43 @@ secrets:
     type: generic
     filePaths:
       - resources/config/certificates/msb-ca.crt
-  - uid: "mso-key"
+  - uid: 'mso-key'
     name: &mso-key '{{ include "common.release" . }}-mso-key'
     type: password
-    password: '{{ .Values.global.app.msoKey }}'
+    password: '{{ .Values.mso.msoKey }}'
   - uid: mso-oof-auth
     name: &mso-oof-auth '{{ include "common.release" . }}-mso-oof-auth'
     type: basicAuth
     login: '{{ .Values.mso.oof.login }}'
     password: '{{ .Values.mso.oof.password }}'
+    passwordPolicy: required
+  - uid: server-actuator-creds
+    name: &actuator-secrets '{{ include "common.release" . }}-so-server-actuator-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.actuatorCredsExternalSecret) . }}'
+    login: '{{ .Values.server.actuator.username }}'
+    password: '{{ .Values.server.actuator.password }}'
+    passwordPolicy: required
+  - uid: server-bpel-creds
+    name: &bpel-secrets '{{ include "common.release" . }}-so-server-bpel-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.bpelCredsExternalSecret) . }}'
+    login: '{{ .Values.server.bpel.username }}'
+    password: '{{ .Values.server.bpel.password }}'
+    passwordPolicy: required
+  - uid: so-aaf-creds
+    name: &aaf-secrets '{{ include "common.release" . }}-so-server-aaf-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.aafCredsExternalSecret) . }}'
+    login: '{{ .Values.server.aaf.username }}'
+    password: '{{ .Values.server.aaf.password }}'
+    passwordPolicy: required
+  - uid: so-aai-creds
+    name: &aai-secrets '{{ include "common.release" . }}-so-server-aai-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.server.aaiCredsExternalSecret) . }}'
+    login: '{{ .Values.server.aai.username }}'
+    password: '{{ .Values.server.aai.password }}'
     passwordPolicy: required
 
 aafConfig:
@@ -148,6 +176,25 @@ dbCreds:
 
 repository: nexus3.onap.org:10001
 image: onap/so/api-handler-infra:1.7.10
+
+server:
+  aaf:
+    username: so@so.onap.org
+    password: demo123456
+  # aafCredsExternalSecret: some secret
+  aai:
+    username: aai@aai.onap.org
+    password: demo123456!
+  # aaiCredsExternalSecret: some secret
+  actuator:
+    username: mso_admin
+    password: password1$
+  # actuatorCredsExternalSecret: some secret
+  bpel:
+    username: bpel
+    password: password1$
+  # bpelCredsExternalSecret: some secret
+
 pullPolicy: Always
 replicaCount: 1
 minReadySeconds: 10
@@ -236,6 +283,7 @@ mso:
     requestDb:
       auth: Basic YnBlbDpwYXNzd29yZDEk
   camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
+  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
   sdc:
     client:
       auth: 878785F4F31BC9CFA5AB52A172008212D8845ED2DE08AD5E56AF114720A4E49768B8F95CDA2EB971765D28EDCDAA24
@@ -253,6 +301,8 @@ mso:
 
 so-appc-orchestrator:
   enabled: false
+  server:
+    actuatorCredsExternalSecret: *actuator-secrets
   db:
     <<: *dbSecrets
 
@@ -265,15 +315,52 @@ so-catalog-db-adapter:
   db:
     <<: *dbSecrets
 
+so-cnf-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+  server:
+    aafCredsExternalSecret: *aaf-secrets
+    aaiCredsExternalSecret: *aai-secrets
+    actuatorCredsExternalSecret: *actuator-secrets
+  mso:
+    msoKeySecret: *mso-key
+
 so-etsi-nfvo-ns-lcm:
   enabled: true
   db:
     <<: *dbSecrets
 
+so-mariadb:
+  db:
+    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
+    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    backupCredsExternalSecret: *dbBackupCredsSecretName
+    userCredsExternalSecret: *dbUserCredsSecretName
+    adminCredsExternalSecret: *dbAdminCredsSecretName
+
 so-monitoring:
   enabled: true
   db:
     <<: *dbSecrets
+
+so-nssmf-adapter:
+  enabled: true
+  server:
+    actuatorCredsExternalSecret: *actuator-secrets
+    bpelCredsExternalSecret: *bpel-secrets
+  db:
+    <<: *dbSecrets
+
+so-oof-adapter:
+  enabled: true
+  db:
+    <<: *dbSecrets
+  mso:
+    msoKeySecret: *mso-key
+    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
+    oof:
+      authSecret: *mso-oof-auth
 
 so-openstack-adapter:
   enabled: true
@@ -301,28 +388,6 @@ so-vfc-adapter:
   db:
     <<: *dbSecrets
 
-so-nssmf-adapter:
-  enabled: true
-  db:
-    <<: *dbSecrets
-
-so-oof-adapter:
-  enabled: true
-  db:
-    <<: *dbSecrets
-  mso:
-    msoKeySecret: *mso-key
-    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
-    oof:
-      authSecret: *mso-oof-auth
-
 so-vnfm-adapter:
   enabled: true
 
-so-mariadb:
-  db:
-    rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
-    backupCredsExternalSecret: *dbBackupCredsSecretName
-    userCredsExternalSecret: *dbUserCredsSecretName
-    adminCredsExternalSecret: *dbAdminCredsSecretName
