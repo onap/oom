@@ -1,0 +1,138 @@
+# ============LICENSE_START=======================================================
+# Copyright (c) 2020 Nokia
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: cmpv2issuers.certmanager.onap.org
+spec:
+  group: certmanager.onap.org
+  names:
+    kind: CMPv2Issuer
+    listKind: CMPv2IssuerList
+    plural: cmpv2issuers
+    singular: cmpv2issuer
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: CMPv2Issuer is the Schema for the cmpv2issuers API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/cmpv2api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/cmpv2api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: CMPv2IssuerSpec defines the desired state of CMPv2Issuer
+              properties:
+                url:
+                  description: URL to CertService API.
+                  type: string
+                healthEndpoint:
+                  description: Path of health check endpoint.
+                  type: string
+                certEndpoint:
+                  description: Path of cerfificate signing enpoint.
+                  type: string
+                caName:
+                  description: Name of the external CA server configured on CertService API side.
+                  type: string
+                certSecretRef:
+                  description: Reference to K8s secret which contains certificate, private key and CA certificate
+                    needed to connect to CertService API (which requires client certificate authentication)
+                  properties:
+                    name:
+                      description: The name of K8s secret to select certificates from. Secret must be in the same
+                        namespace as CMPv2Issuer.
+                      type: string
+                    keyRef:
+                      description: The key of the secret to select private key from. Must be a
+                        valid secret key.
+                      type: string
+                    certRef:
+                      description: The key of the secret to select cert from. Must be a
+                        valid secret key.
+                      type: string
+                    cacertRef:
+                      description: The key of the secret to select cacert from. Must be a
+                        valid secret key.
+                      type: string
+                  required:
+                    - name
+                    - keyRef
+                    - certRef
+                    - cacertRef
+                  type: object
+              required:
+                - url
+                - healthEndpoint
+                - certEndpoint
+                - caName
+                - certSecretRef
+              type: object
+            status:
+              description: CMPv2IssuerStatus defines the observed state of CMPv2Issuer
+              properties:
+                conditions:
+                  items:
+                    description: CMPv2IssuerCondition contains condition information for
+                      the certservice issuer.
+                    properties:
+                      lastTransitionTime:
+                        description: LastTransitionTime is the timestamp corresponding
+                          to the last status change of this condition.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message is a human readable description of the details
+                          of the last transition, complementing reason.
+                        type: string
+                      reason:
+                        description: Reason is a brief machine readable explanation for
+                          the condition's last transition.
+                        type: string
+                      status:
+                        allOf:
+                          - enum:
+                              - "True"
+                              - "False"
+                              - Unknown
+                        description: Status of the condition, one of ('True', 'False',
+                          'Unknown').
+                        type: string
+                      type:
+                        description: Type of the condition, currently ('Ready').
+                        enum:
+                          - Ready
+                        type: string
+                    required:
+                      - status
+                      - type
+                    type: object
+                  type: array
+              type: object
+          type: object

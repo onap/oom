@@ -1,0 +1,79 @@
+# Copyright © 2020, Nokia
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Global
+global:
+  nodePortPrefix: 302
+  readinessImage: onap/oom/readiness:3.0.1
+  loggingRepository: docker.elastic.co
+  loggingImage: beats/filebeat:5.5.0
+  busyboxRepository: registry.hub.docker.com
+  busyboxImage: library/busybox:latest
+  repository: "nexus3.onap.org:10001"
+  CMPv2CertManagerIntegration: false
+
+namespace: onap
+
+# Service configuration
+service:
+  name: oom-certservice-cmpv2issuer-metrics-service
+  type: ClusterIP
+  ports:
+    name: https
+    port: 8443
+    targetPort: https
+
+# Deployment configuration
+deployment:
+  name: oom-certservice-cmpv2issuer
+  image: onap/org.onap.oom.platform.cert-service.oom-certservice-k8s-external-provider:2.2.0
+  proxyImage: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.0
+  # fol local development use IfNotPresent
+  pullPolicy: Always
+  logLevel: debug
+  resources:
+    limits:
+      cpu: 250m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+deploymentProxy:
+  name: kube-rbac-proxy
+  image: gcr.io/kubebuilder/kube-rbac-proxy:v0.4.0
+  pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 250m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi
+
+# CMPv2Issuer
+cmpv2issuer:
+  name: cmpv2-issuer-onap
+  url: https://oom-cert-service:8443
+  healthcheckEndpoint: actuator/health
+  certEndpoint: v1/certificate
+  caName: RA
+  certSecretRef:
+    name: cmpv2-issuer-secret
+    certRef: certServiceServer-cert.pem
+    keyRef: certServiceServer-key.pem
+    cacertRef: truststore.pem
+
+
+
+
