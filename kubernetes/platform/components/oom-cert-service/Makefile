@@ -19,6 +19,10 @@ all: start_docker \
      server_import_root_certificate \
      server_convert_certificate_to_jks \
      server_convert_certificate_to_p12 \
+     convert_truststore_to_p12 \
+     convert_truststore_to_pem \
+     server_export_certificate_to_pem \
+     server_export_key_to_pem \
      clear_unused_files \
      stop_docker
 
@@ -146,8 +150,43 @@ server_convert_certificate_to_p12:
         -destkeystore certServiceServer-keystore.p12 -deststoretype PKCS12 -deststorepass secret
 	@echo "#####done#####"
 
+#Convert truststore(.jks) to PCKS12 format(.p12)
+convert_truststore_to_p12:
+	@echo "Convert certServiceServer-keystore(.jks) to PCKS12 format(.p12)"
+	${DOCKER_EXEC} keytool -importkeystore -srckeystore truststore.jks -srcstorepass secret \
+        -destkeystore truststore.p12 -deststoretype PKCS12 -deststorepass secret
+	@echo "#####done#####"
+
+#Convert truststore(.p12) to PEM format(.pem)
+convert_truststore_to_pem:
+	@echo "Convert certServiceServer-keystore(.p12) to PEM format(.pem)"
+	${DOCKER_EXEC} openssl pkcs12 -nodes -in truststore.p12 -out truststore.pem -passin pass:secret
+	${DOCKER_EXEC} chown root truststore.pem
+	${DOCKER_EXEC} chgrp root truststore.pem
+	${DOCKER_EXEC} chmod +r truststore.pem
+	@echo "#####done#####"
+
+#Export certificates from certServiceServer-keystore(.p12) to PEM format(.pem)
+server_export_certificate_to_pem:
+	@echo "Export certificates from certServiceClient-keystore(.p12) to PEM format(.pem)"
+	${DOCKER_EXEC} openssl pkcs12 -in certServiceServer-keystore.p12 -passin 'pass:secret' -nodes -nokeys -out certServiceServer-cert.pem
+	${DOCKER_EXEC} chown root certServiceServer-cert.pem
+	${DOCKER_EXEC} chgrp root certServiceServer-cert.pem
+	${DOCKER_EXEC} chmod +r certServiceServer-cert.pem
+	@echo "#####done#####"
+
+#Export keys from certServiceServer-keystore(.p12) to PEM format(.pem)
+server_export_key_to_pem:
+	@echo "Export keys from certServiceClient-keystore(.p12) to PEM format(.pem)"
+	${DOCKER_EXEC} openssl pkcs12 -in certServiceServer-keystore.p12 -passin 'pass:secret' -nodes -nocerts -out certServiceServer-key.pem
+	${DOCKER_EXEC} chown root certServiceServer-key.pem
+	${DOCKER_EXEC} chgrp root certServiceServer-key.pem
+	${DOCKER_EXEC} chmod +r certServiceServer-key.pem
+	@echo "#####done#####"
+
+
 #Clear unused certificates
 clear_unused_files:
 	@echo "Clear unused certificates"
-	${DOCKER_EXEC} rm -f certServiceClientByRoot.crt certServiceClient.csr root-keystore.jks certServiceServerByRoot.crt  certServiceServer.csr
+	${DOCKER_EXEC} rm -f certServiceClientByRoot.crt certServiceClient.csr root-keystore.jks certServiceServerByRoot.crt  certServiceServer.csr truststore.p12
 	@echo "#####done#####"
