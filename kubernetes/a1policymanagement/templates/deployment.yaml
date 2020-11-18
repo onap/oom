@@ -1,6 +1,7 @@
 {{/*
 ################################################################################
 #   Copyright (c) 2020 Nordix Foundation.                                      #
+#   Copyright © 2020 Samsung Electronics, Modifications                        #
 #                                                                              #
 #   Licensed under the Apache License, Version 2.0 (the "License");            #
 #   you may not use this file except in compliance with the License.           #
@@ -27,14 +28,14 @@ spec:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-update-config
+      - name: {{ include "common.name" . }}-bootstrap-config
         image: "{{ .Values.global.envsubstImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; chmod o+w /config/${PFILE}; done"
         env:
         - name: A1CONTROLLER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
@@ -46,6 +47,29 @@ spec:
         - mountPath: /config
           name: config
       containers:
+      - name: {{ include "common.name" . }}-update-config
+        image: "{{ .Values.global.envsubstImage }}"
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        securityContext:
+          runAsGroup: {{ .Values.groupID }}
+          runAsUser: {{ .Values.userID }}
+          runAsNonRoot: true
+        command:
+        - sh
+        args:
+        - /tmp/scripts/daemon.sh
+        env:
+        - name: A1CONTROLLER_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
+        - name: A1CONTROLLER_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /tmp/scripts
+          name: {{ include "common.fullname" . }}-envsubst-scripts
+        - mountPath: /config-input
+          name: {{ include "common.fullname" . }}-policy-conf-input
+        - mountPath: /config
+          name: config
       - name: {{ include "common.name" . }}
         image: {{ include "common.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -70,6 +94,10 @@ spec:
         - name: {{ include "common.fullname" . }}-policy-conf-input
           configMap:
             name: {{ include "common.fullname" . }}-policy-conf
+            defaultMode: 0555
+        - name: {{ include "common.fullname" . }}-envsubst-scripts
+          configMap:
+            name: {{ include "common.fullname" . }}-envsubst-scripts
         - name: config
           emptyDir:
             medium: Memory
