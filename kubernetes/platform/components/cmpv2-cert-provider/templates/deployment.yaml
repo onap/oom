@@ -1,0 +1,71 @@
+{{ if .Values.global.CMPv2CertManagerIntegration }}
+
+# ============LICENSE_START=======================================================
+# Copyright (c) 2020 Nokia
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - name: {{ .Values.deploymentProxy.name }}
+        image: {{ .Values.deploymentProxy.image }}
+        imagePullPolicy: {{ .Values.deploymentProxy.pullPolicy }}
+        args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        ports:
+        - containerPort: 8443
+          name: https
+        resources:
+          limits:
+            cpu: {{ .Values.deploymentProxy.resources.limits.cpu }}
+            memory: {{ .Values.deploymentProxy.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.deploymentProxy.resources.requests.cpu }}
+            memory: {{ .Values.deploymentProxy.resources.requests.memory }}
+      - name: provider
+        image: {{ .Values.global.repository }}{{if .Values.global.repository }}/{{ end }}{{ .Values.deployment.image }}
+        imagePullPolicy: {{ .Values.deployment.pullPolicy }}
+        command:
+        - /oom-certservice-cmpv2issuer
+        args:
+        - --metrics-addr=127.0.0.1:8080
+        - --log-level={{ .Values.deployment.logLevel }}
+        resources:
+          limits:
+            cpu: {{ .Values.deployment.resources.limits.cpu }}
+            memory: {{ .Values.deployment.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.deployment.resources.requests.cpu }}
+            memory: {{ .Values.deployment.resources.requests.memory }}
+      terminationGracePeriodSeconds: 10
+{{ end }}
