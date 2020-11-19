@@ -73,7 +73,7 @@ spec:
           subPath: setup.sql
         - mountPath: /config
           name: pgconf
-        image: "{{ $dot.Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" $dot }}
         imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
         name: {{ include "common.name" $dot }}-update-config
 
@@ -84,14 +84,14 @@ spec:
         - |
           chown 26:26 /podroot/;
           chmod 700 /podroot/;
-        image: {{ $dot.Values.global.busyboxRepository | default $dot.Values.busyboxRepository }}/{{ $dot.Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.busybox" $dot }}
         imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
         volumeMounts:
         - name: {{ include "common.fullname" $dot }}-data
           mountPath: /podroot/
       containers:
       - name: {{ include "common.name" $dot }}
-        image: "{{ $dot.Values.postgresRepository }}/{{ $dot.Values.image }}"
+        image: {{ include "repositoryGenerator.image.postgres" $dot }}
         imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
         ports:
         - containerPort: {{ $dot.Values.service.internalPort }}
