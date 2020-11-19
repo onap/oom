@@ -26,7 +26,7 @@ spec:
       {{ include "common.certInitializer.initContainer" . | indent 6 }}
       {{ if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-chown
-        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         command: ["sh", "-c", "chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}"]
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
       {{ end }}
@@ -46,11 +46,11 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
       - name: {{ include "common.name" . }}-sdnrdb-init-job
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["/bin/bash"]
         args: ["-c", "{{ .Values.config.binDir }}/startODL.sh"]
