@@ -30,7 +30,8 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" (dict "labels" $labels "dot" .) | nindent 6 }}
     spec:
-{{- include "elasticsearch.imagePullSecrets" . | nindent 6 }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplValue" (dict "value" .Values.affinity "context" $) | nindent 8 }}
       {{- end }}
@@ -50,7 +51,7 @@ spec:
       initContainers:
       {{- if .Values.sysctlImage.enabled }}
         - name: sysctl
-          image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /bin/sh
@@ -67,7 +68,7 @@ spec:
 
       containers:
         - name: {{ include "common.name" . }}-nginx
-          image: {{printf "%s/%s:%s" (include "common.repository" .)  .Values.nginx.imageName  .Values.nginx.tag }}
+          image: {{ include "repositoryGenerator.image.nginx" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.nginx.pullPolicy | quote }}
           ports: {{- include "common.containerPorts" . | indent 12 -}}
           {{- if .Values.nginx.livenessProbe }}
@@ -87,7 +88,7 @@ spec:
           {{- include "common.certInitializer.volumeMount" . | nindent 10 }}
 
         - name: {{ include "common.name" . }}-elasticsearch
-          image: {{ printf "%s/%s" (include "common.repository" .)  .Values.image }}
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
           {{- if .Values.securityContext.enabled }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           securityContext:

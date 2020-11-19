@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 {{ $role := "data" -}}
 {{ $suffix := $role -}}
-{{ $labels := (dict "role" $role "discovery" (include "elasticsearch.clustername" .)) -}}
+{{ $labels := (dict "role" $role "discovery" .Values.cluster_name) -}}
 metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "labels" $labels "dot" . )| nindent 2 }}
 spec:
   updateStrategy:
@@ -34,7 +34,8 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" (dict "labels" $labels "dot" .) | nindent 6 }}
     spec:
-{{- include "elasticsearch.imagePullSecrets" . | nindent 6 }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplValue" (dict "value" .Values.affinity "context" $) | nindent 8 }}
       {{- end }}
@@ -44,7 +45,6 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- include "common.tplValue" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ template "elasticsearch.data.serviceAccountName" . }}
       {{- if .Values.securityContext.enabled }}
       securityContext:
         fsGroup: {{ .Values.securityContext.fsGroup }}
@@ -54,7 +54,7 @@ spec:
         {{- if .Values.sysctlImage.enabled }}
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
-          image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /bin/sh
@@ -69,7 +69,7 @@ spec:
         {{- end }}
         {{- if and .Values.volumePermissions.enabled .Values.persistence.enabled }}
         - name: volume-permissions
-          image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /bin/sh
@@ -88,7 +88,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ include "common.name" . }}-data
-          image: {{ printf "%s/%s" (include "common.repository" .)  .Values.image }}
+          image: {{ printf "%s/%s" (include "repositoryGenerator.dockerHubRepository" .)  .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           {{- if .Values.securityContext.enabled }}
           securityContext:
@@ -98,7 +98,7 @@ spec:
             - name: BITNAMI_DEBUG
               value: {{ ternary "true" "false" .Values.debug | quote }}
             - name: ELASTICSEARCH_CLUSTER_NAME
-              value: {{include "elasticsearch.clustername" .}}
+              value: {{ .Values.cluster_name }}
             - name: ELASTICSEARCH_CLUSTER_HOSTS
               value: {{ include "common.name" . }}-discovery
             {{- if .Values.plugins }}
