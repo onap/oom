@@ -37,25 +37,9 @@ spec:
       annotations:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
-      initContainers:
-#Example init container for dependency checking
-#      - command:
-#        - /app/ready.py
-#        args:
-#        - --container-name
-#        - mariadb
-#        env:
-#        - name: NAMESPACE
-#          valueFrom:
-#            fieldRef:
-#              apiVersion: v1
-#              fieldPath: metadata.namespace
-#        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
-#        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-#        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -102,7 +86,7 @@ spec:
 
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-filebeat-conf
