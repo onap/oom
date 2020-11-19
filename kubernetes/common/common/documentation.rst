@@ -77,8 +77,6 @@ only give an overview.
   +----------------------------------------------------+-----------------------+
   | `common.repository`                                | `_repository.tpl`     |
   +----------------------------------------------------+-----------------------+
-  | `common.repository.secret`                         | `_repository.tpl`     |
-  +----------------------------------------------------+-----------------------+
   | `common.flavor`                                    | `_resources.tpl`      |
   +----------------------------------------------------+-----------------------+
   | `common.resources`                                 | `_resources.tpl`      |
@@ -289,7 +287,7 @@ taken on mariadb-galera):
         ...
         containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         ...
 
 Namespace
