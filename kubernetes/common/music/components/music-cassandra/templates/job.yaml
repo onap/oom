@@ -34,13 +34,13 @@ spec:
       restartPolicy: Never
       initContainers:
       - name: {{ include "common.name" . }}-readiness
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /app/ready.py
         args:
         - --timeout
-        - "{{ .Values.global.readinessTimeout }}"
+        - "{{ .Values.readinessTimeout }}"
         - --container-name
         - music-cassandra
         env:
@@ -51,7 +51,7 @@ spec:
               fieldPath: metadata.namespace
       containers:
       - name: {{ include "common.name" . }}-update-job
-        image: "{{ .Values.global.repository }}/{{ .Values.job.cassandra.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.job.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: CASS_HOSTNAME
@@ -64,7 +64,7 @@ spec:
           value: "{{ .Values.cql.adminUser.password }}"
         - name: TIMEOUT
           value: "{{ .Values.job.timeout }}"
-        - name: DELAY 
+        - name: DELAY
           value: "{{ .Values.job.delay }}"
         volumeMounts:
         # Admin cql Files that setup Admin Keyspace and Change Admin user.
