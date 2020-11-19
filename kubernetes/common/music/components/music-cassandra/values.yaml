@@ -16,16 +16,7 @@
 # Declare variables to be passed into your templates.
 global:
   nodePortPrefix: 302
-
-  pullPolicy: Always
-  repository: nexus3.onap.org:10001
-
-  # readiness check
-  readinessImage: onap/oom/readiness:3.0.1
-
-  # logging agent
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
+  persistence: {}
 
 replicaCount: 3
 
@@ -33,9 +24,8 @@ replicaCount: 3
 # Docker Hub where the Security has been turned on.
 # When logging into DB the default username and password are 'cassandra'
 # kubectl exec -it <cassandra-n> -n <namespace> cqlsh -u cassandra -p cassandra
-image:
-  image: onap/music/cassandra_3_11:3.0.24
-  pullPolicy: Always
+image: onap/music/cassandra_3_11:3.0.24
+pullPolicy: Always
 
 # Cassandra ENV configuration
 config:
@@ -48,21 +38,37 @@ config:
   rackName: Rack1
   autoBootstrap: true
   ports:
-    cql: 9042
-    thrift: 9160
+    cql: &cqlPort 9042
+    thrift: &thriftPort 9160
     # If a JVM Agent is in place
     # agent: 61621
 
 service:
   expose: true
   type: ClusterIP
-  name: music-cassandra
-  internalPort: 9042
+  name: &cassandraService music-cassandra
+  internalPort: *cqlPort
   portName: cql
-  internalPort2: 9160
+  internalPort2: *thriftPort
   portName2: thrift
   internalPort3: 61621
   portName3: agent
+
+job:
+  host: *cassandraService
+  port: *cqlPort
+  timeout: 30
+  delay: 120
+  image: onap/music/cassandra_job:3.0.24
+
+cql:
+  keyspace:
+    replicationClass: "SimpleStrategy"
+    replicationFactor: 3
+  adminUser:
+    username: nelson24
+    password: nelson24
+    passwordReplace: A2C4E6G8I0J2L4O6Q8S0U2W4Y6
 
 # probe configuration parameters
 liveness:
@@ -71,6 +77,8 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+
+readinessTimeout: 240
 
 readiness:
   initialDelaySeconds: 10
