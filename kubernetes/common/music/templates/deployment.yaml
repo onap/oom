@@ -25,13 +25,13 @@ spec:
     spec:
       initContainers:
         - name: {{ include "common.name" . }}-cassandra-readiness
-          image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+          image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /app/ready.py
           args:
           - -j
-          - "{{ include "common.release" . }}-music-cassandra-job-config"
+          - "{{ include "common.release" . }}-music-cassandra-config"
           env:
           - name: NAMESPACE
             valueFrom:
@@ -55,13 +55,13 @@ spec:
             name: properties-music-scrubbed
           - mountPath: /config
             name: properties-music
-          image: "{{ .Values.global.envsubstImage }}"
+          image: {{ include "repositoryGenerator.image.envsubst" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           name: {{ include "common.name" . }}-update-config
       containers:
         # MUSIC Container
         - name: "{{ include "common.name" . }}-springboot"
-          image: "{{ .Values.repository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
