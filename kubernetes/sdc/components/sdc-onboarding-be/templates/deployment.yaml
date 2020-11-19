@@ -38,7 +38,7 @@ spec:
     spec:
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}-job-completion
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
         command:
         - /app/ready.py
@@ -60,7 +60,7 @@ spec:
             memory: 20Mi
       {{- if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-update-config
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - sh
@@ -115,7 +115,7 @@ spec:
             memory: 20Mi
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -183,7 +183,7 @@ spec:
                 command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/onboarding-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-filebeat-conf
