@@ -71,35 +71,3 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 
-{{/*
-Return the proper Docker Image Registry Secret Names
-*/}}
-{{- define "elasticsearch.imagePullSecrets" -}}
-{{- if .Values.global }}
-{{- if .Values.global.imagePullSecrets }}
-imagePullSecrets:
-{{- range .Values.global.imagePullSecrets }}
-  - name: {{ . }}
-{{- end }}
-{{- end }}
-{{- else }}
-{{- $imagePullSecrets := coalesce .Values.image.pullSecrets .Values.metrics.image.pullSecrets .Values.curator.image.pullSecrets .Values.sysctlImage.pullSecrets .Values.volumePermissions.image.pullSecrets -}}
-{{- if $imagePullSecrets }}
-imagePullSecrets:
-{{- range $imagePullSecrets }}
-  - name: {{ . }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "elasticsearch.curator.serviceAccountName" -}}
-{{- if .Values.curator.serviceAccount.create -}}
-    {{ default (include "common.fullname" (dict "suffix" "currator" "dot" .)) .Values.curator.serviceAccount.name }}
-{{- else -}}
-    {{ default "default" .Values.curator.serviceAccount.name }}
-{{- end -}}
-{{- end -}}
