@@ -40,34 +40,73 @@ global:
   addTestingComponents: &testing false
 
   # ONAP Repository
-  # Uncomment the following to enable the use of a single docker
-  # repository but ONLY if your repository mirrors all ONAP
-  # docker images. This includes all images from dockerhub and
-  # any other repository that hosts images for ONAP components.
-  #repository: nexus3.onap.org:10001
+  # Four different repositories are used
+  # You can change individually these repositories to ones that will serve the
+  # right images. If credentials are needed for one of them, see below.
+  repository: nexus3.onap.org:10001
+  dockerHubRepository: &dockerHubRepository docker.io
+  elasticRepository: &elasticRepository docker.elastic.co
+  googleK8sRepository: k8s.gcr.io
+ 
+
+  #/!\ DEPRECATED /!\
+  # Legacy repositories which will be removed at the end of migration.
+  # Please don't use
+  loggingRepository: *elasticRepository
+  busyboxRepository: *dockerHubRepository
+
+  # Default credentials
+  # they're optional. If the target repository doesn't need them, comment them
   repositoryCred:
     user: docker
     password: docker
-  dockerHubRepository: docker.io
+  # If you want / need authentication on the repositories, please set
+  # Don't set them if the target repo is the same than others
+  # so id you've set repository to value `my.private.repo` and same for
+  # dockerHubRepository, you'll have to configure only repository (exclusive) OR
+  # dockerHubCred.
+  # dockerHubCred:
+  #   user: myuser
+  #   password: mypassord
+  # elasticCred:
+  #   user: myuser
+  #   password: mypassord
+  # googleK8sCred:
+  #   user: myuser
+  #   password: mypassord
 
-  # readiness check
-  readinessImage: onap/oom/readiness:3.0.1
+
+  # common global images
+  # Busybox for simple shell manipulation
+  busyboxImage: busybox:1.32
 
   # curl image
   curlImage: curlimages/curl:7.69.1
 
-  # logging agent - temporary repo until images migrated to nexus3
-  loggingRepository: docker.elastic.co
+  # env substitution image
+  envsubstImage: dibi/envsubst:1
 
-  # dockerHub main repository
-  dockerHubRepository: docker.io
+  # generate htpasswd files image
+  # there's only latest image for htpasswd
+  htpasswdImage: xmartlabs/htpasswd:latest
 
-  # busybox repo and image
-  busyboxRepository: docker.io
-  busyboxImage: busybox:1.30
+  # kubenretes client image
+  kubectlImage: bitnami/kubectl:1.19
 
-  # kubeclt image
-  kubectlImage: "bitnami/kubectl:1.15"
+  # logging agent
+  loggingImage: beats/filebeat:5.5.0
+
+  # mariadb client image
+  mariadbImage: mariadb:10.1.48
+
+  # nginx server image
+  nginxImage: bitnami/nginx:1.18-debian-10
+
+  # postgreSQL client and server image
+  postgresImage: crunchydata/crunchy-postgres:centos7-10.11-4.2.1
+
+  # readiness check image
+  readinessImage: onap/oom/readiness:3.0.1
 
   # image pull policy
   pullPolicy: Always
@@ -323,4 +362,6 @@ a1policymanagement:
   enabled: false
 
 cert-wrapper:
+  enabled: true
+repository-wrapper:
   enabled: true
