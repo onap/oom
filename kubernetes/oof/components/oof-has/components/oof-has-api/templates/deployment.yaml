@@ -52,7 +52,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 
       - name: {{ include "common.name" . }}-onboard-readiness
@@ -67,7 +67,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 
       - name: {{ include "common.name" . }}-has-sms-readiness
@@ -86,13 +86,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.global.curlImage }}"
+        image: {{ include "repositoryGenerator.image.curl" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
 
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.global.image.optf_has }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.image.optf_has }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash","-c"]
           args: ["/usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port={{ .Values.uwsgi.internalPort }} --die-on-term --exit-on-reload --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --protocol=uwsgi --socket 0.0.0.0:{{ .Values.uwsgi.internalPort }}"]
@@ -129,7 +129,7 @@ spec:
           resources:
 {{ include "common.resources" . | indent 12 }}
         - name: {{ include "common.name" . }}-nginx
-          image: "{{ .Values.global.dockerHubRepository }}/{{ .Values.nginx.image }}"
+          image: {{ include "repositoryGenerator.image.nginx" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /bin/sh
