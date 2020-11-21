@@ -12,28 +12,100 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#################################################################
-# Global configuration defaults.
-#################################################################
-global:
-  readinessRepository: nexus3.onap.org:10001
+# Default values for mariadb.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global: # global defaults
   nodePortPrefixExt: 304
   commonConfigPrefix: awx
-  readinessImage: onap/oom/readiness:3.0.1
+  persistence: {}
 
-#################################################################
-# Application configuration defaults.
-#################################################################
 # application image
-repository: hub.docker.io
+image:
+  web: ansible/awx_web:9.0.1
+  task: ansible/awx_task:9.0.1
+  rabbitmq: ansible/awx_rabbitmq:3.7.4
+  memcached: memcached:1.5.20
 pullPolicy: Always
 
-# default number of instances
-replicaCount: 1
-nodeSelector: {}
-affinity: {}
+# application configuration
+config:
+  postgresUser: awx
+  postgresPassword: awx
+  postgresDB: awx
+# RabbitMQ Configuration
+  rabbitmqUser: awx
+  rabbitmqPassword: awxpass
+  rabbitmqVhost: awx
+  rabbitmqErlangCookie: cookiemonster3
+# This will create or update a default admin (superuser) account in AWX, if not provided
+# then these default values are used
+  awxAdminUser: admin
+  awxAdminPassword: password
+  awxAdminEmail: cds@onap.org
+# AWX Secret key
+# It's *very* important that this stay the same between upgrades or you will lose the ability to decrypt
+# your credentials
+  secretKey: awxsecret
 
 ingress:
   enabled: false
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  enabled: true
+
+## Persist data to a persitent volume
+persistence:
+  enabled: true
+  volumeReclaimPolicy: Retain
+
+  # Uncomment the storageClass parameter to use an existing PV
+  # that will match the following class.
+  # When uncomment the storageClass, the PV is not created anymore.
+
+  # storageClass: "nfs-dev-sc"
+
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+  # When using storage class, mountPath and mountSubPath are
+  # simply ignored.
+
+  mountPath: /dockerdata-nfs
+  mountSubPath: awx/pgdata
+
+service:
+  rmqmgmt:
+    type: ClusterIP
+    portName: rmqmgmt
+    internalPort: 15672
+    externalPort: 15672
+  web:
+    type: NodePort
+    portName: web
+    internalPort: 8052
+    externalPort: 80
+    nodePort: 78
+  rabbitmq:
+    type: ClusterIP
+    http:
+      portName: http
+      internalPort: 15672
+      externalPort: 15672
+    amqp:
+      portName: amqp
+      internalPort: 5672
+      externalPort: 5672
 
 resources: {}

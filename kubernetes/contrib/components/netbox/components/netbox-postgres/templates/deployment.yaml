@@ -37,20 +37,23 @@ spec:
     spec:
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["nginx"]
-        args: ["-c", "/etc/netbox-nginx/nginx.conf","-g", "daemon off;"]
         ports:
         - containerPort: {{ .Values.service.internalPort }}
+        env:
+          - name: POSTGRES_USER
+            value: "{{ .Values.config.postgresUser }}"
+          - name: POSTGRES_PASSWORD
+            value: "{{ .Values.config.postgresPassword }}"
+          - name: POSTGRES_DB
+            value: "{{ .Values.config.postgresDB }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - name: {{ include "common.fullname" . }}
-          mountPath: /opt/netbox/netbox/static
-        - name: {{ include "common.fullname" . }}-config
-          mountPath: /etc/netbox-nginx
+        - name: {{ include "common.fullname" . }}-data
+          mountPath: /var/lib/postgresql/
         resources:
 {{ include "common.resources" . | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -65,11 +68,12 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-config
-          configMap:
-            name: {{ include "common.fullname" . }}-config-configmap
-        - name: {{ include "common.fullname" . }}
+      {{- if .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
           persistentVolumeClaim:
-            claimName: {{ include "common.release" . }}-{{ .Values.persistence.staticPvName }}
+            claimName: {{ include "common.fullname" . }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
