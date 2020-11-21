@@ -60,7 +60,7 @@ spec:
         - -exec
         - >
           chown -R 1000:0 /tmp/zookeeper/apikeys;
-        image: "{{ .Values.busyBoxRepository }}/{{ .Values.busyBoxImage }}"
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /tmp/zookeeper/apikeys
@@ -80,13 +80,13 @@ spec:
           name: jaas-config
         - mountPath: /config-input
           name: jaas
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
       containers:
       {{- if .Values.prometheus.jmx.enabled }}
       - name: prometheus-jmx-exporter
-        image: "{{ .Values.prometheus.jmx.imageRepository }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}"
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - java
@@ -107,7 +107,7 @@ spec:
           mountPath: /etc/jmx-zookeeper
       {{- end }}
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         resources:
 {{ include "common.resources" . | indent 12 }}
