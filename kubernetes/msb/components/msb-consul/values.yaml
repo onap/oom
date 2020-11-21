@@ -16,22 +16,17 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/oom/kube2msb:1.2.6
+image: library/consul:1.4.3
 pullPolicy: Always
 istioSidecar: true
 
 # application configuration
-config:
-  routeLabels: "visualRange:1"
-  kubeMasterUrl: https://kubernetes.default:443
-  discoveryUrl: http://msb-discovery.{{include "common.namespace" .}}:10081
+config: {}
 
 # default number of instances
 replicaCount: 1
@@ -41,32 +36,54 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
-liveness: {}
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
 
-readiness: {}
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
 
-service: {}
+service:
+  type: ClusterIP
+  name: msb-consul
+  externalPort: 8500
+  internalPort: 8500
+  nodePort: 85
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: "msbconsul"
+      name: "msb-consul"
+      port: 8500
+  config:
+    ssl: "none"
 
-# Resource Limit flavor -By Default using small
 flavor: small
 
 # Configure resource requests and limits
 resources:
   small:
     limits:
-      cpu: 1
-      memory: 1Gi
+      cpu: 20m
+      memory: 100Mi
     requests:
-      cpu: 500m
-      memory: 500Mi
+      cpu: 10m
+      memory: 50Mi
   large:
     limits:
-      cpu: 2
-      memory: 2Gi
+      cpu: 40m
+      memory: 200Mi
     requests:
-      cpu: 1
-      memory: 1Gi
+      cpu: 20m
+      memory: 100Mi
   unlimited: {}
+
+securityContext:
+  fsGroup: 1000
+  runAsUser: 100
+  runAsGroup: 1000

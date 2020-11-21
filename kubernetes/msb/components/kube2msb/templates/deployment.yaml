@@ -37,44 +37,34 @@ spec:
         sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
     spec:
       serviceAccountName: msb
+      initContainers:
+      - command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - msb-discovery
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.dockerHubRepository | default .Values.dockerHubRepository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-            runAsGroup: {{ .Values.securityContext.runAsGroup }}
-          command:
-            - docker-entrypoint.sh
-          args:
-            - "agent"
-            - "-dev"
-            - "-client"
-            - "0.0.0.0"
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{- if eq .Values.liveness.enabled true }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          - name: KUBE_MASTER_URL
+            value: {{ .Values.config.kubeMasterUrl }}
+          - name: MSB_URL
+            value: {{tpl $.Values.config.discoveryUrl .}}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/local/bin/docker-entrypoint.sh
-            name: entrypoint
-            subPath: docker-entrypoint.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -89,9 +79,5 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: entrypoint
-          configMap:
-            name: {{ include "common.fullname" . }}-entrypoint
-            defaultMode: 0777
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
