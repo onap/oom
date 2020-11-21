@@ -28,7 +28,7 @@ spec:
       - name: {{ include "common.name" . }}
         workingDir: /opt/app/aaf
         command: ["bin/{{ .Values.binary }}"]
-        image: {{ include "common.repository" . }}/{{.Values.global.aaf.image}}
+        image: {{ include "repositoryGenerator.repository" . }}/{{.Values.global.aaf.image}}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports: {{ include "common.containerPorts" . | nindent 10  }}
         volumeMounts:
