@@ -16,20 +16,17 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/msb/msb_apigateway:1.2.8
+image: library/consul:1.4.3
 pullPolicy: Always
 istioSidecar: true
 
 # application configuration
-config:
-  routeLabels: "visualRange:0"
+config: {}
 
 # default number of instances
 replicaCount: 1
@@ -51,39 +48,37 @@ readiness:
   periodSeconds: 10
 
 service:
-  type: NodePort
-  name: msb-eag
-  externalPort: 80
-  internalPort: 80
-  externalPortHttps: 443
-  internalPortHttps: 443
-  nodePortHttps: 84
+  type: ClusterIP
+  name: msb-consul
+  externalPort: 8500
+  internalPort: 8500
+  nodePort: 85
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "msbeag"
-      name: "msb-eag"
-      port: 443
+    - baseaddr: "msbconsul"
+      name: "msb-consul"
+      port: 8500
   config:
-    ssl: "redirect"
+    ssl: "none"
 
-# Resource Limit flavor -By Default using small
 flavor: small
-# Segregation for Different environment (Small and Large)
+
+# Configure resource requests and limits
 resources:
   small:
     limits:
-      cpu: 200m
-      memory: 500Mi
+      cpu: 20m
+      memory: 100Mi
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 10m
+      memory: 50Mi
   large:
     limits:
-      cpu: 400m
-      memory: 800Mi
+      cpu: 40m
+      memory: 200Mi
     requests:
-      cpu: 200m
-      memory: 400Mi
+      cpu: 20m
+      memory: 100Mi
   unlimited: {}
