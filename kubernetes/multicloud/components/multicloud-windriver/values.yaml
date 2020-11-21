@@ -19,36 +19,17 @@
 global:
   nodePortPrefix: 302
   artifactImage: onap/multicloud/framework-artifactbroker:1.6.0
-  prometheus:
-    enabled: false
   persistence: {}
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/multicloud/framework:1.6.0
+image: onap/multicloud/openstack-windriver:1.5.5
 pullPolicy: Always
 
 #Istio sidecar injection policy
 istioSidecar: true
-
-multicloud-azure:
-  enabled: true
-multicloud-fcaps:
-  enabled: true
-multicloud-k8s:
-  enabled: true
-multicloud-pike:
-  enabled: true
-multicloud-prometheus:
-  enabled: false
-multicloud-starlingx:
-  enabled: true
-multicloud-vio:
-  enabled: true
-multicloud-windriver:
-  enabled: true
 
 # application configuration
 config:
@@ -56,13 +37,19 @@ config:
   msbprotocol: https
   msbgateway: msb-iag
   msbPort: 443
-  logstashServiceName: log-ls
-  logstashPort: 5044
   aai:
     port: 8443
     schemaVersion: v13
     username: AAI
     password: AAI
+
+service:
+  type: ClusterIP
+  name: multicloud-titaniumcloud
+  portName: multicloud-titaniumcloud
+  externalPort: 9005
+  internalPort: 9005
+  nodePort: 94
 
 # default number of instances
 replicaCount: 1
@@ -80,16 +67,16 @@ liveness:
   failureThreshold: 5
   enabled: true
 
-service:
-  type: ClusterIP
-  name: multicloud
-  portName: multicloud-framework
-  externalPort: 9001
-  internalPort: 9001
-  nodePort: 91
-
 ingress:
   enabled: false
+
+persistence:
+  enabled: true
+  mountPath: /dockerdata-nfs
+  mountSubPath: multicloud-windriver/data
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 5Gi
 
 # Resource Limit flavor -By Default using small
 flavor: small
