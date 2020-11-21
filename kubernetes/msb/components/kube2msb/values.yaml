@@ -16,20 +16,20 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/msb/msb_apigateway:1.2.7
+image: onap/oom/kube2msb:1.2.6
 pullPolicy: Always
 istioSidecar: true
 
 # application configuration
 config:
-  routeLabels: "visualRange:0"
+  routeLabels: "visualRange:1"
+  kubeMasterUrl: https://kubernetes.default:443
+  discoveryUrl: http://msb-discovery.{{include "common.namespace" .}}:10081
 
 # default number of instances
 replicaCount: 1
@@ -39,51 +39,32 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
-liveness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+liveness: {}
 
-readiness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
+readiness: {}
 
-service:
-  type: NodePort
-  name: msb-eag
-  externalPort: 80
-  internalPort: 80
-  externalPortHttps: 443
-  internalPortHttps: 443
-  nodePortHttps: 84
+service: {}
 
 ingress:
   enabled: false
-  service:
-    - baseaddr: "msbeag"
-      name: "msb-eag"
-      port: 443
-  config:
-    ssl: "redirect"
 
 # Resource Limit flavor -By Default using small
 flavor: small
-# Segregation for Different environment (Small and Large)
+
+# Configure resource requests and limits
 resources:
   small:
     limits:
-      cpu: 200m
-      memory: 500Mi
+      cpu: 1
+      memory: 1Gi
     requests:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 500m
+      memory: 500Mi
   large:
     limits:
-      cpu: 400m
-      memory: 800Mi
+      cpu: 2
+      memory: 2Gi
     requests:
-      cpu: 200m
-      memory: 400Mi
+      cpu: 1
+      memory: 1Gi
   unlimited: {}

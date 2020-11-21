@@ -16,19 +16,18 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/msb/msb_discovery:1.2.6
+image: onap/msb/msb_apigateway:1.2.7
 pullPolicy: Always
 istioSidecar: true
 
 # application configuration
-config: {}
+config:
+  routeLabels: "visualRange:0"
 
 # default number of instances
 replicaCount: 1
@@ -50,20 +49,22 @@ readiness:
   periodSeconds: 10
 
 service:
-  type: ClusterIP
-  name: msb-discovery
-  externalPort: 10081
-  internalPort: 10081
-  nodePort: 81
+  type: NodePort
+  name: msb-eag
+  externalPort: 80
+  internalPort: 80
+  externalPortHttps: 443
+  internalPortHttps: 443
+  nodePortHttps: 84
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "msb.api.discovery"
-      name: "msb-discovery"
-      port: 10081
+    - baseaddr: "msbeag"
+      name: "msb-eag"
+      port: 443
   config:
-    ssl: "none"
+    ssl: "redirect"
 
 # Resource Limit flavor -By Default using small
 flavor: small
@@ -71,16 +72,16 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: 400m
-      memory: 400Mi
-    requests:
       cpu: 200m
+      memory: 500Mi
+    requests:
+      cpu: 100m
       memory: 200Mi
   large:
     limits:
-      cpu: 800m
+      cpu: 400m
       memory: 800Mi
     requests:
-      cpu: 400m
+      cpu: 200m
       memory: 400Mi
   unlimited: {}
