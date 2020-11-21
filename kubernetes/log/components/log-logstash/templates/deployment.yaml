@@ -45,70 +45,58 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-      - args:
-        - --input=/config/kibana-onboarding.json
-        - --output=http://{{.Values.config.elasticsearchServiceName}}.{{ include "common.namespace" . }}:{{.Values.config.elasticsearchPort}}/.kibana
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.elasticdumpRepository }}/{{ .Values.elasticdumpImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-elasticdump
-        volumeMounts:
-          - mountPath: /config/kibana-onboarding.json
-            name: {{ include "common.fullname" . }}
-            subPath: kibana-onboarding.json
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.elasticRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources:
 {{ include "common.resources" . | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+            name: {{ .Values.service.name2 }}
           readinessProbe:
-            httpGet:
-              path: "/"
+            tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            httpGet:
-              path: "/"
+            tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
           env:
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/kibana/config/
-            name: {{ include "common.fullname" . }}
+          - mountPath: /usr/share/logstash/config/
+            name: {{ include "common.fullname" . }}-config
+          - mountPath: /usr/share/logstash/pipeline/
+            name: {{ include "common.fullname" . }}-pipeline
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}
+        - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
             items:
-            - key: kibana.yml
-              path: kibana.yml
-            - key: kibana-onboarding.json
-              path: kibana-onboarding.json
+            - key: logstash.yml
+              path: logstash.yml
+        - name: {{ include "common.fullname" . }}-pipeline
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
+            - key: onap-pipeline.conf
+              path: onap-pipeline.conf
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
