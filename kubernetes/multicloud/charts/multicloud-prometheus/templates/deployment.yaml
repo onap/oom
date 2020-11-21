@@ -39,7 +39,7 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      - image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+      - image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-chown-init
         command: ["chown", "-R", "65534:65534", "{{ .Values.persistence.containerMountPath }}"]
@@ -48,7 +48,7 @@ spec:
           mountPath: {{ .Values.persistence.containerMountPath }}
       containers:
       - name: {{ include "common.name" . }}-configmap-reload
-        image: "{{ .Values.global.configmapReload.image.repository }}:{{ .Values.global.configmapReload.image.tag }}"
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.global.configmapReload.image.repository }}:{{ .Values.global.configmapReload.image.tag }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         args:
           - --volume-dir=/etc/config
@@ -59,7 +59,7 @@ spec:
             readOnly: true
 
       - name: {{ include "common.name" . }}-server
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         args:
           - --config.file=/etc/config/prometheus.yml
