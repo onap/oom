@@ -47,7 +47,7 @@ spec:
             - -c
             - |
               cat /int-certs/intermediate_root_ca.pem >> {{ .Values.certInitializer.mountPath }}/local/org.onap.aaf-sms.crt
-          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 12 }}
             - mountPath: /int-certs
@@ -62,13 +62,13 @@ spec:
             - |
               chmod -R 775 /sms/auth
               chown -R 1000:1000 /sms/auth
-          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
             - mountPath: /sms/auth
               name: {{ include "common.fullname" . }}-auth
         - name: {{ include "common.name" . }}-readiness
-          image:  "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+          image:  {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /app/ready.py
@@ -84,7 +84,7 @@ spec:
                 apiVersion: v1
                 fieldPath: metadata.namespace
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
         command: ["/sms/bin/sms"]

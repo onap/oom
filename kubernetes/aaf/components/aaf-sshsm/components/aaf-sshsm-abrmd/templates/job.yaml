@@ -14,76 +14,61 @@
 # limitations under the License.
 */}}
 
-{{- if and .Values.global.tpm.enabled .Values.global.abrmd.enabled -}}
+{{- if .Values.global.tpm.enabled -}}
 
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector: {{- include "common.selectors" . | nindent 4 }}
-  replicas: {{ .Values.replicaCount }}
-  serviceName:
+  backoffLimit: 2
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-      - image:  "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-job-complete
-        command:
-        - /app/ready.py
-        args:
-        - -j
-        - "{{ include "common.fullname" . }}-init"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
+      restartPolicy: Never
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
-        name: {{ include "common.name" . }}
+      - name: {{ include "common.name" . }}-job
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["/abrmd/bin/run_abrmd.sh"]
+        command: ["/abrmd/bin/initialize_tpm.sh"]
         workingDir: /abrmd/bin
         securityContext:
           privileged: true
+        env:
+        - name: TPM_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ABRMD_DATA
+          value: /abrmd/data
         volumeMounts:
-        - name: {{ include "common.fullname" . }}-dbus
-          mountPath: /var/run/dbus
+        - name: {{ include "common.fullname" . }}-data
+          mountPath: /abrmd/data
         - name: {{ include "common.fullname" . }}-tpm-device
           mountPath: /dev/tpm0
-        - mountPath: /etc/localtime
-          name: localtime
+        - name: {{ include "common.fullname" . }}-tpmconfig
+          mountPath: "/abrmd/cred/"
           readOnly: true
         resources: {{ include "common.resources" . | nindent 10 }}
-      nodeSelector:
-        {{- if .Values.nodeSelector }}
-{{ toYaml .Values.nodeSelector | indent 8 }}
-        {{- end -}}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
         {{- if .Values.global.tpm.enabled }}
         {{ (printf "%s: \"%s\"" .Values.global.tpm.nodeLabel .Values.global.tpm.nodeLabelValue) }}
         {{- end -}}
+      {{- end -}}
         {{- if .Values.affinity }}
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
         {{- end }}
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-dbus
+      - name: {{ include "common.fullname" . }}-data
         persistentVolumeClaim:
-          claimName: {{ include "common.release" . }}-aaf-sshsm-dbus
+          claimName: {{ include "common.release" . }}-aaf-sshsm-data
       - name: {{ include "common.fullname" . }}-tpm-device
         hostPath:
           path: /dev/tpm0
+      - name: {{ include "common.fullname" . }}-tpmconfig
+        secret:
+          secretName: {{ include "common.release" . }}-aaf-sshsm
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
 
 {{- end -}}
