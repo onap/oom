@@ -49,9 +49,6 @@ spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers:
-      - name: {{ include "common.name" . }}-initcontainer
-        image: "{{ .Values.global.ubuntuInitRepository }}/{{ .Values.ubuntuInitImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - command:
         - /app/ready.py
         args:
@@ -63,7 +60,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - command:
@@ -72,7 +69,7 @@ spec:
         - |
           rm -rf '/var/lib/kafka/data/lost+found';
           chown -R 1000:0 /var/lib/kafka/data;
-        image: "{{ .Values.busyBoxRepository }}/{{ .Values.busyBoxImage }}"
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /var/lib/kafka/data
@@ -97,13 +94,13 @@ spec:
           name: jaas-config
         - mountPath: /config-input
           name: jaas
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
       containers:
       {{- if .Values.prometheus.jmx.enabled }}
       - name: prometheus-jmx-exporter
-        image: "{{ .Values.prometheus.jmx.imageRepository }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}"
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - java
@@ -124,7 +121,7 @@ spec:
           mountPath: /etc/jmx-kafka
       {{- end }}
       - name: {{ include "common.name" .  }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - sh
