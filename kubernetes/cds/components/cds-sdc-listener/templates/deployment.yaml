@@ -1,6 +1,5 @@
 {{/*
-# Copyright © 2018 Orange
-# Modifications Copyright © 2018  Amdocs, Bell Canada
+# Copyright (c) 2019 Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,51 +34,56 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
-        name: {{ include "common.fullname" . }}
     spec:
+      initContainers:
+        - command:
+          - /app/ready.py
+          args:
+            - --container-name
+            - sdc-be
+            - --container-name
+            - message-router
+            - --container-name
+            - cds-blueprints-processor
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          image: {{ include "repositoryGenerator.image.readiness" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          env:
+          - name: APP_CONFIG_HOME
+            value: {{ .Values.config.appConfigDir }}
           ports:
-            - containerPort: {{ .Values.service.internalPort }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
+          - containerPort: {{ .Values.service.http.internalPort }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            httpGet:
+              path: /api/v1/sdclistener/healthcheck
+              port: {{ .Values.service.http.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end }}
-          env:
-            - name: HOST
-              value: 0.0.0.0
-            - name: APP_ACTION_DEPLOY_BLUEPRINT_GRPC_ENABLED
-              value: "{{ .Values.config.app.action.deployBlueprint.grpcEnabled }}"
-            - name: API_BLUEPRINT_CONTROLLER_HTTP_BASE_URL
-              value: {{ .Values.config.api.controller.http.baseUrl }}
-            - name: API_BLUEPRINT_CONTROLLER_HTTP_AUTH_TOKEN
-              value: {{ .Values.config.api.controller.http.authToken }}
-            - name: API_BLUEPRINT_PROCESSOR_HTTP_BASE_URL
-              value: {{ .Values.config.api.processor.http.baseUrl }}
-            - name: API_BLUEPRINT_PROCESSOR_HTTP_AUTH_TOKEN
-              value: {{ .Values.config.api.processor.http.authToken }}
-            - name: API_BLUEPRINT_PROCESSOR_GRPC_HOST
-              value: {{ .Values.config.api.processor.grpc.host }}
-            - name: API_BLUEPRINT_PROCESSOR_GRPC_PORT
-              value: "{{ .Values.config.api.processor.grpc.port }}"
-            - name: API_BLUEPRINT_PROCESSOR_GRPC_AUTH_TOKEN
-              value: {{ .Values.config.api.processor.grpc.authToken }}
+          {{end}}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            httpGet:
+              path: /api/v1/sdclistener/healthcheck
+              port: {{ .Values.service.http.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
-            - mountPath: /etc/localtime
-              name: localtime
-              readOnly: true
+          - mountPath: {{ .Values.config.appConfigDir }}/application.yaml
+            name: {{ include "common.fullname" . }}-config
+            subPath: application.yaml
+          - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
+            name: {{ include "common.fullname" . }}-config
+            subPath: logback.xml
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -91,8 +95,13 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+            - key: application.yaml
+              path: application.yaml
+            - key: logback.xml
+              path: logback.xml
       imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      - name: {{ include "common.namespace" . }}-docker-registry-key
