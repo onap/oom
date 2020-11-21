@@ -15,7 +15,7 @@
 # limitations under the License.
 */}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "common.fullname" . }}
@@ -35,31 +35,22 @@ spec:
     spec:
       initContainers:
       - command:
-        - /bin/sh
-        - -c
-        - |
-          sysctl -w vm.max_map_count=262144
-          mkdir -p /logroot/elasticsearch/logs
-          mkdir -p /logroot/elasticsearch/data
-          chmod -R 777 /logroot/elasticsearch
-          chown -R root:root /logroot
+        - /app/ready.py
+        args:
+        - --container-name
+        - log-elasticsearch
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        securityContext:
-          privileged: true
-        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: init-sysctl
-        volumeMounts:
-        - name: {{ include "common.fullname" . }}-logs
-          mountPath: /logroot/
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.elasticRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources:
 {{ include "common.resources" . | indent 12 }}
@@ -68,6 +59,11 @@ spec:
             name: {{ .Values.service.name }}
           - containerPort: {{ .Values.service.internalPort2 }}
             name: {{ .Values.service.name2 }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
@@ -77,36 +73,30 @@ spec:
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort2 }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          - mountPath: /usr/share/logstash/config/
             name: {{ include "common.fullname" . }}-config
-            subPath: elasticsearch.yml
-          - mountPath: /usr/share/elasticsearch/data/
-            name: {{ include "common.fullname" . }}-data
+          - mountPath: /usr/share/logstash/pipeline/
+            name: {{ include "common.fullname" . }}-pipeline
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
         - name: {{ include "common.fullname" . }}-config
           configMap:
-            name: {{ include "common.fullname" . }}-configmap
+            name: {{ include "common.fullname" . }}
             items:
-            - key: elasticsearch.yml
-              path: elasticsearch.yml
-        - name: {{ include "common.fullname" . }}-data
-          persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
-        - name: {{ include "common.fullname" . }}-logs
-          hostPath:
-            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPathLogs }}
+            - key: logstash.yml
+              path: logstash.yml
+        - name: {{ include "common.fullname" . }}-pipeline
+          configMap:
+            name: {{ include "common.fullname" . }}
+            items:
+            - key: onap-pipeline.conf
+              path: onap-pipeline.conf
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

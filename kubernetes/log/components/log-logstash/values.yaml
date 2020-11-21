@@ -18,24 +18,14 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
   persistence: {}
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 
-# Elasticdump image
-elasticdumpRepository: docker.io
-elasticdumpImage: taskrabbit/elasticsearch-dump
-
-# BusyBox image
-busyboxRepository: docker.io
-busyboxImage: library/busybox:latest
-
 # application image
-loggingRepository: docker.elastic.co
-image: kibana/kibana:5.5.0
+image: logstash/logstash:5.4.3
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -47,7 +37,8 @@ config:
   elasticsearchPort: 9200
 
 # default number of instances
-replicaCount: 1
+# 30+ logs/sec will saturate a single node to 6+ vCores
+replicaCount: 3
 
 nodeSelector: {}
 
@@ -55,34 +46,38 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 300
+  initialDelaySeconds: 120
   periodSeconds: 10
-  timeoutSeconds: 1
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 300
+  initialDelaySeconds: 10
   periodSeconds: 10
-  timeoutSeconds: 1
 
 service:
   #Example service definition with external, internal and node ports.
   #Services may use any combination of ports depending on the 'type' of
   #service being defined.
   type: NodePort
-  name: log-kibana
-  externalPort: 5601
-  internalPort: 5601
-  nodePort: 53
-
+  name: log-ls
+  externalPort: 5044
+  internalPort: 5044
+  nodePort: 55
+  type2: ClusterIP
+  name2: log-ls-http
+  externalPort2: 9600
+  internalPort2: 9600
 ingress:
   enabled: false
   service:
-    - baseaddr: "kibana.api"
-      name: "log-kibana"
-      port: 5601
+    - baseaddr: "logls"
+      name: "log-ls"
+      port: 5044
+    - baseaddr: "loglshttp"
+      name: "log-ls"
+      port: 9600
   config:
     ssl: "none"
 
@@ -92,15 +87,15 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: 2
-      memory: 4Gi
-    requests:
       cpu: 1
       memory: 2Gi
+    requests:
+      cpu: 0.5
+      memory: 1Gi
   large:
     limits:
-      cpu: 4
-      memory: 8Gi
+      cpu: 2
+      memory: 4Gi
     requests:
       cpu: 2
       memory: 4Gi
