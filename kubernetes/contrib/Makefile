@@ -1,4 +1,4 @@
-# Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,22 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+OUTPUT_DIR := $(ROOT_DIR)/../../dist
+PACKAGE_DIR := $(OUTPUT_DIR)/packages
+SECRET_DIR := $(OUTPUT_DIR)/secrets
+
+EXCLUDES := dns-server-for-vhost-ingress-testing ingress-nginx-post-inst metallb-loadbalancer-inst tools
 HELM_BIN := helm
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
-make-contrib: make-contrib-awx make-contrib-netbox make-contrib-ejbca make-contrib-core
+.PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-make-contrib-awx:
-	cd components && $(HELM_BIN) dep up awx && $(HELM_BIN) lint awx
+all: $(HELM_CHARTS)
 
-make-contrib-ejbca:
-	cd components && $(HELM_BIN) dep up ejbca && $(HELM_BIN) lint ejbca
+$(HELM_CHARTS):
+	@echo "\n[$@]"
+	@make package-$@
 
-make-contrib-netbox:
-	cd components && $(HELM_BIN) dep up netbox && $(HELM_BIN) lint netbox
+make-%:
+	@if [ -f $*/Makefile ]; then make -C $*; fi
 
-make-contrib-core:
-	$(HELM_BIN) dep up . && $(HELM_BIN) lint .
+dep-%: make-%
+	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+
+lint-%: dep-%
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+
+package-%: lint-%
+	@mkdir -p $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
-	@find . -type f -name '*.tgz' -delete
-	@find . -type f -name '*.lock' -delete
+	@rm -f */requirements.lock
+	@rm -f *tgz */charts/*tgz
+	@rm -rf $(PACKAGE_DIR)
+%:
+	@:
