@@ -54,12 +54,12 @@ spec:
             name: {{ include "common.fullname" . }}-inv-config-input
           - mountPath: /config
             name: {{ include "common.fullname" . }}-inv-config
-          image: "{{ .Values.global.envsubstImage }}"
+          image: {{ include "repositoryGenerator.image.envsubst" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           name: {{ include "common.name" . }}-update-config
 
         - name: {{ include "common.name" . }}-readiness
-          image: {{ include "common.repository" . }}/{{ .Values.global.readinessImage }}
+          image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /app/ready.py
@@ -85,7 +85,7 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
-          image: {{ .Values.global.tlsRepository }}/{{ .Values.global.tlsImage }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.tlsImage }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources: {}
           volumeMounts:
@@ -93,7 +93,7 @@ spec:
               name: tls-info
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           # Assumes that the Docker image is built with ENTRYPOINT set to
           # ["java", "-jar", "/opt/inventory-api-x.y.z.jar", "server"]
@@ -141,7 +141,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: status.podIP
-          image: {{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: IfNotPresent
           resources: {}
           volumeMounts:
