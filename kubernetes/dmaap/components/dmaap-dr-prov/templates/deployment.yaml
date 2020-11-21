@@ -37,7 +37,7 @@ spec:
       hostname: {{ .Values.global.dmaapDrProvName }}
       initContainers:
         - name: {{ include "common.name" . }}-readiness
-          image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+          image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /app/ready.py
@@ -55,7 +55,7 @@ spec:
         {{ include "common.certInitializer.initContainer" . | nindent 8 }}
 
         - name: {{ include "common.name" . }}-permission-fixer
-          image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           command: ["chown","-Rf","1000:1001", "/opt/app/"]
@@ -63,7 +63,7 @@ spec:
         {{ end }}
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.config.dmaapDrProv.internalPort }}
@@ -108,7 +108,7 @@ spec:
         {{- end -}}
       # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-filebeat-conf
