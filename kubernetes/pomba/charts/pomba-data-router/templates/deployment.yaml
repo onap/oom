@@ -48,7 +48,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - command:
@@ -66,7 +66,7 @@ spec:
               fieldPath: metadata.namespace
         securityContext:
           privileged: true
-        image: {{ .Values.global.dockerhubRepository | default .Values.dockerhubRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: init-sysctl
         volumeMounts:
@@ -74,7 +74,7 @@ spec:
           mountPath: /logroot/
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: SERVICE_BEANS
@@ -132,7 +132,7 @@ spec:
 
       # Filebeat sidecar container
       - name: {{ include "common.name" . }}-filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - name: {{ include "common.fullname" . }}-filebeat-conf
