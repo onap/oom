@@ -69,7 +69,7 @@ spec:
           subPath: application.properties
         - mountPath: /config
           name: processed-config
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
 
@@ -88,7 +88,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - name: fix-permission
@@ -97,14 +97,14 @@ spec:
         - -R
         - 1000:1000
         - /opt/app/onap/blueprints/deploy
-        image: busybox:latest
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: {{ .Values.persistence.deployedBlueprint }}
           name: {{ include "common.fullname" . }}-blueprints
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
           - name: APP_CONFIG_HOME

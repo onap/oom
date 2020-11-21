@@ -1,4 +1,5 @@
-# Copyright (c) 2019 Bell Canada
+# Copyright © 2018 Orange
+# Modifications Copyright © 2018  Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,41 +12,39 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 #################################################################
 # Global configuration defaults.
 #################################################################
 global:
-  # Change to an unused port prefix range to prevent port conflicts
-  # with other instances running within the same k8s cluster
-  nodePortPrefix: 302
+  nodePortPrefixExt: 304
 
-  # image repositories
-  repository: nexus3.onap.org:10001
+subChartsOnly:
+  enabled: true
 
-  # readiness check
-  readinessImage: onap/oom/readiness:3.0.1
-
-  # image pull policy
-  pullPolicy: Always
-
-  persistence:
-    mountPath: /dockerdata-nfs
-
-#################################################################
-# Application configuration defaults.
-#################################################################
 # application image
-repository: nexus3.onap.org:10001
-image: onap/ccsdk-sdclistener:1.0.1
-name: sdc-listener
+image: onap/ccsdk-cds-ui-server:1.0.1
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
 
 # application configuration
 config:
-  appConfigDir: /opt/app/onap/config
+  app:
+    action:
+      deployBlueprint:
+        grpcEnabled: true
+  api:
+    controller:
+      http:
+       baseUrl: http://cds-blueprints-processor-http:8081/api/v1
+       authToken: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+    processor:
+      http:
+       baseUrl: http://cds-blueprints-processor-http:8080/api/v1
+       authToken: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+      grpc:
+        host: cds-blueprints-processor-grpc
+        port: 9111
+        authToken: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
 
 # default number of instances
 replicaCount: 1
@@ -56,53 +55,54 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 30
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  httpGet:
+    path: /ping
+    port: 3000
+  initialDelaySeconds: 30
   periodSeconds: 10
 
 service:
-  type: ClusterIP
-  http:
-    portName: cds-sdc-listener-http
-    internalPort: 8080
-    externalPort: 8080
-
-persistence:
-  enabled: true
+  type: NodePort
+  portName: cds-ui
+  name: cds-ui
+  nodePort: 97
+  internalPort: 3000
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: "cdsui"
+      name: "cds-ui"
+      port: 3000
+  config:
+    ssl: "redirect"
 
-logback:
-  rootLogLevel: INFO
-  logger:
-    springframework: INFO
-    springframeworkWeb: INFO
-    springframeworkSecurityWebauthentication: INFO
-    hibernate: INFO
-    onapCcsdkCds: INFO
-
+# Resource Limit flavor -By Default using small
 flavor: small
-
+# Segregation for Different environment (Small and Large)
 resources:
   small:
     limits:
-      cpu: 2
-      memory: 4Gi
-    requests:
       cpu: 1
       memory: 1Gi
+    requests:
+      cpu: 10m
+      memory: 100Mi
   large:
     limits:
-      cpu: 4
-      memory: 8Gi
-    requests:
       cpu: 2
-      memory: 4Gi
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 200Mi
   unlimited: {}
