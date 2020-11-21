@@ -47,14 +47,14 @@ spec:
             - |
               chmod -R 775 /consul/data
               chown -R 100:1000 /consul/data
-          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
             - mountPath: /consul/data
               name: {{ include "common.fullname" . }}-data
 {{- end }}
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image.vault }}"
+      - image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.vault }}
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         args: ["server"]
@@ -69,7 +69,7 @@ spec:
           readOnly: true
         resources:
 {{ include "common.resources" . | indent 10 }}
-      - image: "{{ include "common.repository" . }}/{{ .Values.image.consul }}"
+      - image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.consul }}
         name: {{ include "common.name" . }}-backend
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         args: ["agent","-server","-bind","0.0.0.0","-bootstrap-expect=1","-config-file","/consul/config/config.json"]
