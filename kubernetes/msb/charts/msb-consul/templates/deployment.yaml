@@ -41,6 +41,16 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.global.dockerHubRepository | default .Values.dockerHubRepository }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+          command:
+            - docker-entrypoint.sh
+          args:
+            - "agent"
+            - "-dev"
+            - "-client"
+            - "0.0.0.0"
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -62,6 +72,9 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: /usr/local/bin/docker-entrypoint.sh
+            name: entrypoint
+            subPath: docker-entrypoint.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -76,5 +89,9 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: entrypoint
+          configMap:
+            name: {{ include "common.fullname" . }}-entrypoint
+            defaultMode: 0777
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
