@@ -48,7 +48,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - name: {{ include "common.name" . }}-db-config-readiness
@@ -63,17 +63,17 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       - name: {{ include "common.name" . }}-chown
         command: ["/bin/sh", "-c", "chown -Rf 1000:1000 /share/"]
-        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /share/logs
       - name: db-init
-        image: "{{ include "common.repository" . }}/{{ .Values.dbinit.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbinit.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DB_HOST
@@ -96,7 +96,7 @@ spec:
       containers:
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
@@ -109,7 +109,7 @@ spec:
         resources:
 {{ include "common.resources" . }}
       - name: mso-simulator
-        image: "{{ include "common.repository" . }}/{{ .Values.robotimage }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.robotimage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - name: {{ include "common.fullname" . }}-config
@@ -119,7 +119,7 @@ spec:
         resources:
 {{ include "common.resources" . }}
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DB_HOST
