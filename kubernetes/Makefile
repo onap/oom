@@ -107,7 +107,7 @@ check-for-staging-images:
 
 helm-repo-update:
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@$(HELM_BIN) repo update $(HELM_REPO)
+	@$(HELM_BIN) repo update
 endif
 
 %:
