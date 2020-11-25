@@ -15,7 +15,7 @@
 # limitations under the License.
 */}}
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "common.fullname" . }}
@@ -35,80 +35,78 @@ spec:
     spec:
       initContainers:
       - command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - log-elasticsearch
+        - /bin/sh
+        - -c
+        - |
+          sysctl -w vm.max_map_count=262144
+          mkdir -p /logroot/elasticsearch/logs
+          mkdir -p /logroot/elasticsearch/data
+          chmod -R 777 /logroot/elasticsearch
+          chown -R root:root /logroot
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        securityContext:
+          privileged: true
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-      - args:
-        - --input=/config/kibana-onboarding.json
-        - --output=http://{{.Values.config.elasticsearchServiceName}}.{{ include "common.namespace" . }}:{{.Values.config.elasticsearchPort}}/.kibana
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: "{{ .Values.elasticdumpRepository }}/{{ .Values.elasticdumpImage }}"
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-elasticdump
+        name: init-sysctl
         volumeMounts:
-          - mountPath: /config/kibana-onboarding.json
-            name: {{ include "common.fullname" . }}
-            subPath: kibana-onboarding.json
+        - name: {{ include "common.fullname" . }}-logs
+          mountPath: /logroot/
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.global.loggingRepository | default .Values.loggingRepository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.elasticRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources:
 {{ include "common.resources" . | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
             name: {{ .Values.service.name }}
-          readinessProbe:
-            httpGet:
-              path: "/"
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          - containerPort: {{ .Values.service.internalPort2 }}
+            name: {{ .Values.service.name2 }}
 # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            httpGet:
-              path: "/"
+            tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort2 }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /usr/share/kibana/config/
-            name: {{ include "common.fullname" . }}
+          - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+            name: {{ include "common.fullname" . }}-config
+            subPath: elasticsearch.yml
+          - mountPath: /usr/share/elasticsearch/data/
+            name: {{ include "common.fullname" . }}-data
       volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}
+        - name: {{ include "common.fullname" . }}-config
           configMap:
-            name: {{ include "common.fullname" . }}
+            name: {{ include "common.fullname" . }}-configmap
             items:
-            - key: kibana.yml
-              path: kibana.yml
-            - key: kibana-onboarding.json
-              path: kibana-onboarding.json
+            - key: elasticsearch.yml
+              path: elasticsearch.yml
+        - name: {{ include "common.fullname" . }}-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}
+        - name: {{ include "common.fullname" . }}-logs
+          hostPath:
+            path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPathLogs }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

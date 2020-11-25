@@ -18,29 +18,26 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
   persistence: {}
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 
-# BusyBox image
-busyboxRepository: docker.io
-busyboxImage: library/busybox:latest
+# Elasticdump image
+elasticdumpImage: taskrabbit/elasticsearch-dump
 
 # application image
-loggingRepository: docker.elastic.co
-image: elasticsearch/elasticsearch:5.5.0
+image: kibana/kibana:5.5.0
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
-# Example:
-config: {}
+config:
+  elasticsearchServiceName: log-es
+  elasticsearchPort: 9200
 
 # default number of instances
 replicaCount: 1
@@ -51,73 +48,53 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 300
   periodSeconds: 10
+  timeoutSeconds: 1
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 300
   periodSeconds: 10
-
-## Persist data to a persitent volume
-persistence:
-  enabled: true
-
-  ## A manually managed Persistent Volume and Claim
-  ## Requires persistence.enabled: true
-  ## If defined, PVC must be created manually before volume will be bound
-  # existingClaim:
-  volumeReclaimPolicy: Retain
-
-  ## database data Persistent Volume Storage Class
-  ## If defined, storageClassName: <storageClass>
-  ## If set to "-", storageClassName: "", which disables dynamic provisioning
-  ## If undefined (the default) or set to null, no storageClassName spec is
-  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-  ##   GKE, AWS & OpenStack)
-  accessMode: ReadWriteOnce
-  size: 1Gi
-  mountPath: /dockerdata-nfs
-  mountSubPath: log/elasticsearch/data
-  mountSubPathLogs: log
+  timeoutSeconds: 1
 
 service:
+  #Example service definition with external, internal and node ports.
+  #Services may use any combination of ports depending on the 'type' of
+  #service being defined.
   type: NodePort
-  name: log-es
-  externalPort: 9200
-  internalPort: 9200
-  nodePort: 54
-  type2: ClusterIP
-  name2: log-es-tcp
-  externalPort2: 9300
-  internalPort2: 9300
+  name: log-kibana
+  externalPort: 5601
+  internalPort: 5601
+  nodePort: 53
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "loges"
-      name: "log-es"
-      port: 9200
+    - baseaddr: "kibana.api"
+      name: "log-kibana"
+      port: 5601
   config:
     ssl: "none"
+
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
 resources:
   small:
     limits:
-      cpu: 1
+      cpu: 2
       memory: 4Gi
     requests:
       cpu: 1
       memory: 2Gi
   large:
     limits:
-      cpu: 2
+      cpu: 4
       memory: 8Gi
     requests:
-      cpu: 1
+      cpu: 2
       memory: 4Gi
   unlimited: {}
