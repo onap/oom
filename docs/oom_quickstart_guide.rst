@@ -25,6 +25,7 @@ where <BRANCH> can be an official release tag, such as
 * 4.0.0-ONAP for Dublin
 * 5.0.1-ONAP for El Alto
 * 6.0.0 for Frankfurt
+* 7.0.0 for Guilin
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
@@ -178,7 +179,7 @@ follows::
 single command
 
 .. note::
-  The ``--timeout 900`` is currently required in Dublin and up to address long
+  The ``--timeout 900`` is currently required in Guilin and up to address long
   running initialization tasks for DMaaP and SO. Without this timeout value both
   applications may fail to deploy.
 

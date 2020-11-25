@@ -437,7 +437,7 @@ would generate:
     namespace: default
     labels:
       app.kubernetes.io/name: nbi
-      helm.sh/chart: nbi-6.0.0
+      helm.sh/chart: nbi-7.0.0
       app.kubernetes.io/instance: release
       app.kubernetes.io/managed-by: Tiller
   spec:
