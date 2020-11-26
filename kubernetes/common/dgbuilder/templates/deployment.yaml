@@ -67,7 +67,7 @@ spec:
           name: config-input
         - mountPath: /config
           name: config
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
@@ -82,12 +82,12 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash"]
           args: ["-c", "cd /opt/onap/ccsdk/dgbuilder/ && {{ if .Values.global.aafEnabled}} cp /opt/app/osaaf/local/node-*.pem certs && {{end}}./start.sh sdnc1.0 && wait"]
