@@ -40,7 +40,7 @@ spec:
     spec:
       initContainers:
         - name: {{ include "common.name" . }}-readiness
-          image: {{ include "common.repository" . }}/{{ .Values.global.readinessImage }}
+          image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /app/ready.py
@@ -67,7 +67,7 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
-          image: {{ .Values.global.tlsRepository }}/{{ .Values.global.tlsImage }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.tlsImage }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources: {}
           volumeMounts:
@@ -77,7 +77,7 @@ spec:
       containers:
         {{- if .Values.service.secure.enabled }}
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources:
 {{ include "common.resources" . | indent 12 }}
@@ -114,7 +114,7 @@ spec:
             - name: HTTPS_KEY_PATH
               value: "/opt/tls/key.pem"
         - name: {{ include "common.name" . }}-fb-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-fb-conf
@@ -127,7 +127,7 @@ spec:
         {{ end }}
         {{- if .Values.service.insecure.enabled }}
         - name: {{ include "common.name" . }}-insecure
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources:
 {{ include "common.resources" . | indent 12 }}
@@ -156,7 +156,7 @@ spec:
             - name: CONSUL_HOST
               value: consul.{{ include "common.namespace" . }}
         - name: {{ include "common.name" . }}-fb-onap-i
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-fb-conf
