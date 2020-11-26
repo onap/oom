@@ -25,7 +25,7 @@ spec:
     spec:
       initContainers:
         - name: {{ include "common.name" . }}-readiness
-          image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+          image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /app/ready.py
@@ -40,7 +40,7 @@ spec:
                 fieldPath: metadata.namespace
         {{- if .Values.global.aafEnabled }}{{ include "common.aaf-config" . | nindent 8 }}{{ end }}
         - name: {{ include "common.name" . }}-permission-fixer
-          image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+          image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts: {{- if .Values.global.aafEnabled }}{{ include "common.aaf-config-volume-mountpath" . | nindent 10 }}{{ end }}
           - mountPath: {{ .Values.persistence.spool.path }}
@@ -50,7 +50,7 @@ spec:
           command: ["chown","-Rf","1000:1001", "/opt/app/"]
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
@@ -90,7 +90,7 @@ spec:
         {{- end -}}
         # Filebeat sidecar container
         - name: {{ include "common.name" . }}-filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-filebeat-conf

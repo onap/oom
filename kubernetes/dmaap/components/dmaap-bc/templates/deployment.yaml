@@ -40,12 +40,12 @@ spec:
           name: {{ include "common.name" . }}-config-input
         - mountPath: /config
           name: {{ include "common.name" . }}-config
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
 {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}-permission-fixer
-        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         command: ["chown","-Rf","1000:1001", "/opt/app/"]
@@ -54,7 +54,7 @@ spec:
 #       the cadi library is not using the jks password on the jks keystore.
 #       So, this attempts to "fix" the credential property file until this is fixed properly.
       - name: {{ include "common.name" . }}-cred-fixer
-        image: "{{ .Values.global.busyBoxRepository }}/{{ .Values.global.busyBoxImage }}"
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         command: ["/bin/sh"]
@@ -75,12 +75,12 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ .Values.repository }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{ if eq .Values.liveness.enabled true -}}
