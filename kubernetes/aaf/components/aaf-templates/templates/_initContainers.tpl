@@ -23,7 +23,7 @@
   - |
     chown -R 1000:1000 /opt/app/aaf
     chown -R 1000:1000 /opt/app/osaaf
-  image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
+  image: {{ include "repositoryGenerator.image.busybox" . }}
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   volumeMounts:
   - mountPath: /opt/app/osaaf
@@ -39,7 +39,7 @@
 
 {{- define "aaf.podConfiguration" }}
 - name: {{ include "common.name" . }}-config-container
-  image: {{ .Values.global.repository }}/{{.Values.global.aaf.config.image}}
+  image: {{ include "repositoryGenerator.repository" . }}/{{.Values.global.aaf.config.image}}
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   command:
   - /bin/bash
@@ -108,7 +108,7 @@ initContainers:
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
-  image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+  image: {{ include "repositoryGenerator.image.readiness" . }}
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   resources:
     limits:
