@@ -35,7 +35,7 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: neng-db-secret
+  - uid: &dbUserSecretName neng-db-secret
     name: '{{ include "common.release" . }}-neng-db-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
@@ -50,9 +50,11 @@ secrets:
 
 # sub-chart config
 mariadb-galera:
-  config: &mariadbConfig
-    userCredentialsExternalSecret: '{{ include "common.release" . }}-neng-db-secret'
-    mysqlDatabase: nengdb
+  db:
+    user: sdnctl
+    # password:
+    externalSecret: *dbUserSecretName
+    name: &mysqlDbName nengdb
   nameOverride: nengdb
   service:
     name: nengdb
@@ -63,7 +65,9 @@ mariadb-galera:
     mountSubPath: network-name-gen/data
 
 mariadb-init:
-  config: *mariadbConfig
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
   nameOverride: nengdb-init
 
 #################################################################
