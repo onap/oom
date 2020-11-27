@@ -24,8 +24,7 @@ global:
     config: &mariadbConfig
       mysqlDatabase: policyadmin
     service: &mariadbService
-      name: policy-mariadb
-      portName: mysql-policy
+      name: &policy-mariadb policy-mariadb
       internalPort: 3306
 
 #################################################################
@@ -107,21 +106,22 @@ readiness:
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals
-  config:
-    <<: *mariadbConfig
-    userName: policy_user
-    mariadbRootPasswordExternalSecret: *dbRootPassSecretName
-    userCredentialsExternalSecret: *dbSecretName
-  nameOverride: policy-mariadb
+  db:
+    user: policy_user
+    # password:
+    externalSecret: *dbSecretName
+    name: &mysqlDbName policyadmin
+  rootUser:
+    externalSecret: *dbRootPassSecretName
+  nameOverride: *policy-mariadb
   # mariadb-galera.service and global.mariadb.service must be equals
   service: *mariadbService
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: policy/maria/data
-  externalConfig: |-
-    [mysqld]
-    lower_case_table_names = 1
+  serviceAccount:
+    nameOverride: *policy-mariadb
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (small, large, or unlimited)
