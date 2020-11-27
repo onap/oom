@@ -30,7 +30,7 @@ app.kubernetes.io/instance: {{ include "common.release" $dot }}
 app.kubernetes.io/managed-by: {{ $dot.Release.Service }}
 {{ if .labels }}
 {{- include "common.tplValue" (dict "value" .labels "context" $dot) }}
-{{- end -}}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -41,14 +41,15 @@ The function takes several arguments (inside a dictionary):
 */}}
 {{- define "common.matchLabels" -}}
 {{- $dot := default . .dot -}}
-{{- if not .matchLabels.nameNoMatch -}}
+{{- $matchLabels := default (dict) .matchLabels -}}
+{{- if not $matchLabels.nameNoMatch -}}
 app.kubernetes.io/name: {{ include "common.name" $dot }}
 {{- end }}
 app.kubernetes.io/instance: {{ include "common.release" $dot }}
-{{ if .matchLabels }}
-{{$_ := unset .matchLabels "nameNoMatch"}}
-{{- include "common.tplValue" (dict "value" .matchLabels "context" $dot) }}
-{{- end -}}
+{{- if $matchLabels }}
+{{$_ := unset $matchLabels "nameNoMatch"}}
+{{- include "common.tplValue" (dict "value" $matchLabels "context" $dot) }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -69,7 +70,7 @@ namespace: {{ include "common.namespace" $dot }}
 labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot ) | nindent 2 }}
 {{- if $annotations }}
 annotations:  {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2}}
-{{- end -}}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -94,7 +95,7 @@ matchLabels: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "
 {{- $dot := default . .dot -}}
 {{- $labels := default (dict) .labels -}}
 {{- if $dot.Values.podAnnotations }}
-annotations: {{- include "common.tplValue" (dict "value" $dot.Values.podAnnotations "context" $) | nindent 2 }}
+annotations: {{- include "common.tplValue" (dict "value" $dot.Values.podAnnotations "context" $dot) | nindent 2 }}
 {{- end }}
 labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 2 }}
 name: {{ include "common.name" $dot }}
