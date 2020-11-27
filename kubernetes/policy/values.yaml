@@ -24,8 +24,7 @@ global:
     config: &mariadbConfig
       mysqlDatabase: policyadmin
     service: &mariadbService
-      name: policy-mariadb
-      portName: mysql-policy
+      name: &policy-mariadb policy-mariadb
       internalPort: 3306
 
 #################################################################
@@ -35,15 +34,15 @@ secrets:
   - uid: db-root-password
     name: &dbRootPassSecretName '{{ include "common.release" . }}-policy-db-root-password'
     type: password
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret")) .) (hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "config" "mariadbRootPasswordExternalSecret"))}}'
-    password: '{{ (index .Values "mariadb-galera" "config" "mariadbRootPassword") }}'
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .) (hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret"))}}'
+    password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
     policy: generate
   - uid: db-secret
     name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
-    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: generate
 
 db: &dbSecretsHook
@@ -107,21 +106,22 @@ readiness:
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals
-  config:
-    <<: *mariadbConfig
-    userName: policy_user
-    mariadbRootPasswordExternalSecret: *dbRootPassSecretName
-    userCredentialsExternalSecret: *dbSecretName
-  nameOverride: policy-mariadb
+  db:
+    user: policy_user
+    # password:
+    externalSecret: *dbSecretName
+    name: &mysqlDbName policyadmin
+  rootUser:
+    externalSecret: *dbRootPassSecretName
+  nameOverride: *policy-mariadb
   # mariadb-galera.service and global.mariadb.service must be equals
   service: *mariadbService
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: policy/maria/data
-  externalConfig: |-
-    [mysqld]
-    lower_case_table_names = 1
+  serviceAccount:
+    nameOverride: *policy-mariadb
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (small, large, or unlimited)

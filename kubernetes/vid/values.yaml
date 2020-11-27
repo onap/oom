@@ -30,7 +30,7 @@ global:
 #################################################################
 secrets:
   - uid: vid-db-user-secret
-    name: '{{ include "common.release" . }}-vid-db-user-secret'
+    name: &dbUserSecretName '{{ include "common.release" . }}-vid-db-user-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
@@ -66,16 +66,12 @@ config:
   roleaccesscentralized: remote
 
 mariadb-galera:
-  # '&mariadbConfig' means we "store" the values for  later use in the file
-  # with '*mariadbConfig' pointer.
-  config: &mariadbConfig
-    userCredentialsExternalSecret: '{{ include "common.release" . }}-vid-db-user-secret'
-    mysqlDatabase: vid_openecomp_epsdk
-  nameOverride: vid-galera
-  service:
-    name: vid-galera
-    portName: mysql-vid
-    internalPort: "3306"
+  db:
+    user: sdnctl
+    # password:
+    externalSecret: *dbUserSecretName
+    name: &mysqlDbName vid_openecomp_epsdk
+  nameOverride: &vid-galera vid-galera
   replicaCount: 3
   persistence:
     enabled: true
@@ -83,9 +79,13 @@ mariadb-galera:
   externalConfig: |-
     [mysqld]
     lower_case_table_names = 1
+  serviceAccount:
+    nameOverride: *vid-galera
 
 mariadb-init:
-  config: *mariadbConfig
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
   nameOverride: vid-mariadb-init
   # A configMap of same name is created. It points to file that will be run after
   # The DB has been created.
