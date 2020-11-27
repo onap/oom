@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2019 Amdocs, Bell Canada, Samsung Electronics
+# Copyright © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+
 {{- if .Values.backup.enabled }}
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: {{ include "common.fullname" . }}-backup
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   schedule: {{ .Values.backup.cron | quote }}
   concurrencyPolicy: Forbid
@@ -32,141 +30,130 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+          {{ include "common.podSecurityContext" . | indent 10 | trim}}
           restartPolicy: Never
-          initContainers:
-          - command:
-            - /app/ready.py
-            args:
-            - --container-name
-            - {{ include "common.name" . }}
-            env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-            image: {{ include "repositoryGenerator.image.readiness" . }}
-            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-            name: {{ include "common.name" . }}-readiness
-          - name: mariadb-galera-backup-init
-            image: {{ include "repositoryGenerator.image.mariadb" . }}
-            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-            command:
-            - /bin/bash
-            - -c
-            - |
-              remove_dir(){
-                dirToRemove=$1
-                rm -rf $dirToRemove
-                echo "Failed" > /backup/backup.log
-                echo "Backup failed!!!"
-              }
+          initContainers: {{- include "common.readinessCheck.waitFor" . | nindent 12 }}
+            - name: mariadb-galera-backup-init
+              image: {{ include "repositoryGenerator.image.mariadb" . }}
+              imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+              {{ include "common.containerSecurityContext" . | indent 14 | trim }}
+              command:
+                - /bin/bash
+                - -c
+                - |
+                    remove_dir(){
+                      dirToRemove=$1
+                      rm -rf $dirToRemove
+                      echo "Failed" > /backup/backup.log
+                      echo "Backup failed!!!"
+                    }
 
-              target_dir=/backup/backup-`date +%s`
-              mkdir -p $target_dir
+                    target_dir=/backup/backup-`date +%s`
+                    mkdir -p $target_dir
 
-              mysqlhost={{ include "common.fullname" . }}-{{ sub .Values.replicaCount 1 }}.{{ .Values.service.name }}
+                    mysqlhost={{ include "common.servicename" . }}.{{ include "common.namespace" . }}
 
-              mariabackup --backup --target-dir=$target_dir --user=root --password=$DB_PASS --host=$mysqlhost
+                    mariabackup --backup --target-dir=$target_dir --user=root --password=$DB_PASS --host=$mysqlhost
 
-              ret_code=$?
-              if [ $ret_code -ne 0 ]; then
-                remove_dir $target_dir
-                exit 0
-              fi
+                    ret_code=$?
+                    if [ $ret_code -ne 0 ]; then
+                      remove_dir $target_dir
+                      exit 0
+                    fi
 
-              echo "Starting Backup Preparation!!!"
-              mariabackup --prepare --target-dir=$target_dir
-              ret_code=$?
-              if [ $ret_code -ne 0 ]; then
-                remove_dir $target_dir
-                exit 0
-              fi
-              echo "Success" > /backup/backup.log
-              echo "Backup Successful!!!"
-            env:
-            - name: DB_PASS
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 14}}
-            volumeMounts:
-            - name: backup-dir
-              mountPath: /backup
-            - name: db-data
-              mountPath: /var/lib/mysql
+                    echo "Starting Backup Preparation!!!"
+                    mariabackup --prepare --target-dir=$target_dir
+                    ret_code=$?
+                    if [ $ret_code -ne 0 ]; then
+                      remove_dir $target_dir
+                      exit 0
+                    fi
+                    echo "Success" > /backup/backup.log
+                    echo "Backup Successful!!!"
+              env:
+                - name: DB_PASS
+                  {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 18 }}
+              resources: {{ include "common.resources" . | nindent 12 }}
+              volumeMounts:
+                - name: backup-dir
+                  mountPath: /backup
           containers:
-          - name: mariadb-backup-validate
-            image: {{ include "repositoryGenerator.image.mariadb" . }}
-            imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-            env:
-            - name: MYSQL_ROOT_PASSWORD
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 14}}
-            command:
-            - /bin/bash
-            - -c
-            - |
-              remove_dir(){
-                dirToRemove=$1
-                rm -rf $dirToRemove
-                echo "Validation Failed!!!";
-              }
+            - name: mariadb-backup-validate
+              image: {{ include "repositoryGenerator.image.mariadb" . }}
+              imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+              {{ include "common.containerSecurityContext" . | indent 14 | trim }}
+              env:
+                - name: MYSQL_ROOT_PASSWORD
+                  {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 18 }}
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  remove_dir(){
+                    dirToRemove=$1
+                    rm -rf $dirToRemove
+                    echo "Validation Failed!!!";
+                  }
 
-              backup_result=`cat /backup/backup.log`
-              rm -rf /backup/backup.log
+                  backup_result=`cat /backup/backup.log`
+                  rm -rf /backup/backup.log
 
-              if [ "$backup_result" == "Failed" ]; then
-                echo "Backup Failed!!! So Validation Failed!!!";
-                exit 0
-              fi
+                  if [ "$backup_result" == "Failed" ]; then
+                    echo "Backup Failed!!! Validation Failed!!!";
+                    exit 0
+                  fi
 
-              target_dir=$(ls -td -- /backup/backup-* | head -n 1)
-              cp -Ra $target_dir/* /var/lib/mysql/
+                  target_dir=$(ls -td -- /backup/backup-* | head -n 1)
+                  cp -Ra $target_dir/* /var/lib/mysql/
 
-              if [ ! "$(ls -A /var/lib/mysql)" ]; then
-                remove_dir $target_dir
-                exit 0
-              fi
+                  if [ ! "$(ls -A /var/lib/mysql)" ]; then
+                    remove_dir $target_dir
+                    exit 0
+                  fi
 
-              /docker-entrypoint.sh mysqld &
+                  /docker-entrypoint.sh mysqld &
 
-              count=0
-              until mysql --user=root --password=$MYSQL_ROOT_PASSWORD  -e "SELECT 1";
-                do sleep 3;
-                count=`expr $count + 1`;
-                if [ $count -ge 30 ]; then
-                  remove_dir $target_dir
-                  exit 0;
-                fi;
-              done
+                  count=0
+                  until mysql --user=root --password=$MYSQL_ROOT_PASSWORD  -e "SELECT 1";
+                    do sleep 3;
+                    count=`expr $count + 1`;
+                    if [ $count -ge 30 ]; then
+                      remove_dir $target_dir
+                      exit 0;
+                    fi;
+                  done
 
-              mysqlcheck -A  --user=root --password=$MYSQL_ROOT_PASSWORD > /tmp/output.log
-              error_lines=`cat /tmp/output.log| grep -v "OK" | wc -l`
+                  mysqlcheck -A  --user=root --password=$MYSQL_ROOT_PASSWORD > /tmp/output.log
+                  error_lines=`cat /tmp/output.log| grep -v "OK" | wc -l`
 
-              cat /tmp/output.log
+                  cat /tmp/output.log
 
-              if [ $error_lines -gt 1 ];then
-                remove_dir $target_dir
-              else
-                echo "Validation successful!!!"
-                cd /backup
-                totalFiles=`ls -t | grep "backup-" | wc -l`
-                if [ $totalFiles -gt {{ .Values.backup.retentionPeriod }} ]; then
-                  filestoDelete=`expr $totalFiles - {{ .Values.backup.retentionPeriod }}`
-                  ls -tr | grep backup | head -$filestoDelete | xargs rm -rf
-                fi
-              fi
-            volumeMounts:
-            - mountPath: /etc/localtime
-              name: localtime
-              readOnly: true
-            - name: backup-dir
-              mountPath: /backup
+                  if [ $error_lines -gt 1 ];then
+                    remove_dir $target_dir
+                  else
+                    echo "Validation successful!!!"
+                    cd /backup
+                    totalFiles=`ls -t | grep "backup-" | wc -l`
+                    if [ $totalFiles -gt {{ .Values.backup.retentionPeriod }} ]; then
+                      filestoDelete=`expr $totalFiles - {{ .Values.backup.retentionPeriod }}`
+                      ls -tr | grep backup | head -$filestoDelete | xargs rm -rf
+                    fi
+                  fi
+              resources: {{ include "common.resources" . | nindent 12 }}
+              volumeMounts:
+                - mountPath: /etc/localtime
+                  name: localtime
+                  readOnly: true
+                - name: backup-dir
+                  mountPath: /backup
+          imagePullSecrets:
+            - name: {{ include "common.namespace" . }}-docker-registry-key
           volumes:
-          - name: localtime
-            hostPath:
-              path: /etc/localtime
-          - name: backup-dir
-            persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-backup-data
-          - name: db-data
-            persistentVolumeClaim:
-              claimName: {{ include "common.fullname" . }}-data-{{ include "common.fullname" . }}-{{ sub .Values.replicaCount 1 }}
+            - name: localtime
+              hostPath:
+                path: /etc/localtime
+            - name: backup-dir
+              persistentVolumeClaim:
+                claimName: {{ include "common.fullname" . }}-backup-data
 {{- end }}
