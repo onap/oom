@@ -1,5 +1,6 @@
 {{/*
-# Copyright © 2019 Amdocs, Bell Canada, Orange
+# Copyright © 2019 Amdocs, Bell Canada
+# Copyright © 2019-2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
 # limitations under the License.
 */}}
 {{- if .Values.backup.enabled }}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -22,21 +23,22 @@ metadata:
   name: {{ include "common.fullname" . }}-backup-data
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}-backup
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ include "common.release" . }}"
-    heritage: "{{ .Release.Service }}"
-{{- if .Values.persistence.annotations }}
+    app: {{ include "common.fullname" . }}-backup
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    helm.sh/chart: {{ include "common.chart" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}-backup
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- if .Values.backup.persistence.annotations }}
   annotations:
-{{ toYaml .Values.persistence.annotations | indent 4 }}
+{{ toYaml .Values.backup.persistence.annotations | indent 4 }}
 {{- end }}
 spec:
   accessModes:
-    - {{ .Values.persistence.accessMode }}
+    - {{ .Values.backup.persistence.accessMode }}
   resources:
     requests:
-      storage: {{ .Values.persistence.size }}
-{{- if eq "True" (include "common.needPV" .) -}}
+      storage: {{ .Values.backup.persistence.size }}
+{{- if (include "common.needPV" .) }}
   storageClassName: "{{ include "common.fullname" . }}-data-backup"
 {{- else }}
   storageClassName: {{ include "common.storageClass" . }}
