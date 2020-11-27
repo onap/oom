@@ -1,0 +1,51 @@
+{{/*
+# Copyright © 2020 Bitnami, Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+{{- if default false (and .Values.global.metrics.enabled .Values.global.metrics.custom_resources) }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "common.fullname" . }}
+  {{- if .Values.metrics.serviceMonitor.namespace }}
+  namespace: {{ .Values.metrics.serviceMonitor.namespace }}
+  {{- else }}
+  namespace: {{ include "common.namespace" . }}
+  {{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+    {{- range $key, $value := .Values.metrics.serviceMonitor.selector }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "common.matchLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      {{- if .Values.metrics.serviceMonitor.interval }}
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+      {{- end }}
+      {{- if .Values.metrics.serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ .Values.metrics.serviceMonitor.scrapeTimeout }}
+      {{- end }}
+      {{- if .Values.metrics.serviceMonitor.relabelings }}
+      relabelings: {{- include "common.tplValue" ( dict "value" .Values.metrics.serviceMonitor.relabelings "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.metrics.serviceMonitor.metricRelabelings }}
+      metricRelabelings: {{- include "common.tplValue" ( dict "value" .Values.metrics.serviceMonitor.metricRelabelings "context" $) | nindent 8 }}
+      {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
