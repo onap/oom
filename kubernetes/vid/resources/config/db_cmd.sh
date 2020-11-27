@@ -16,13 +16,13 @@
 # limitations under the License.
 */}}
 
-DB={{index .Values "mariadb-galera" "config" "mysqlDatabase" | upper }}
+DB={{index .Values "mariadb-galera" "db" "name" | upper }}
 eval "MYSQL_USER=\$MYSQL_USER_${DB}"
 eval "MYSQL_PASSWORD=\$MYSQL_PASSWORD_${DB}"
 
 #echo "Going to run mysql ${DB} -u${MYSQL_USER} -p${MYSQL_PASSWORD} -h${DB_HOST} -P${DB_PORT} ..."
 mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} -h${DB_HOST} -P${DB_PORT} <<'EOD'
-CREATE TABLE IF NOT EXISTS `{{index .Values "mariadb-galera" "config" "mysqlDatabase" }}`.`schema_info` (
+CREATE TABLE IF NOT EXISTS `{{index .Values "mariadb-galera" "db" "name" }}`.`schema_info` (
 `SCHEMA_ID` VARCHAR(25) NOT NULL,
 `SCHEMA_DESC` VARCHAR(75) NOT NULL,
 `DATASOURCE_TYPE` VARCHAR(100) NULL DEFAULT NULL,

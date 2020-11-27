@@ -29,6 +29,7 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
+    service: mariadb-galera
   # Enabling CMPv2
   cmpv2Enabled: true
   platform:
@@ -60,25 +61,33 @@ global:
 #################################################################
 secrets:
   - uid: db-root-password
-    name: '{{ include "common.release" . }}-sdnc-db-root-password'
+    name: &rootDbSecret '{{ include "common.release" . }}-sdnc-db-root-password'
     type: password
+    # If we're using shared mariadb, we need to use the secret name (second
+    # part).
+    # If not, we do the same trick than for user db secret hat allows you
+    # override this secret using external one with the same field that is used
+    # to pass this to subchart.
     externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
-      ternary (default (include "common.mariadb.secret.rootPassSecretName"
-      (dict "dot" . "chartName"
-      (index .Values "mariadb-galera" "nameOverride")))
-      (index .Values "mariadb-galera" "config"
-      "mariadbRootPasswordExternalSecret"))
-      (include "common.mariadb.secret.rootPassSecretName"
-      (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
-    password: '{{ (index .Values "mariadb-galera" "config" "mariadbRootPassword") }}'
+      ternary ((hasSuffix "sdnc-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+                  ternary
+                    ""
+                    (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .))
+              (include "common.mariadb.secret.rootPassSecretName"
+                (dict "dot" .
+                      "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+    password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
   - uid: db-secret
     name: &dbSecretName '{{ include "common.release" . }}-sdnc-db-secret'
     type: basicAuth
     # This is a nasty trick that allows you override this secret using external one
     # with the same field that is used to pass this to subchart
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "sdnc-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
-    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    externalSecret: '{{ (hasSuffix "sdnc-db-secret" (index .Values "mariadb-galera" "db" "externalSecret")) |
+      ternary
+        ""
+        (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) }}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
   - uid: odl-creds
     name: &odlCredsSecretName '{{ include "common.release" . }}-sdnc-odl-creds'
     type: basicAuth
@@ -244,19 +253,25 @@ certInitializer:
 network-name-gen:
   enabled: true
 mariadb-galera: &mariadbGalera
-  nameOverride: sdnc-db
+  nameOverride: &sdnc-db sdnc-db
   config: &mariadbGaleraConfig
-    rootPasswordExternalSecret: '{{ ternary (include "common.release" .)-sdnc-db-root-password "" .Values.global.mariadbGalera.localCluster }}'
-    userName: sdnctl
+    rootPasswordExternalSecret: *rootDbSecret
+    userName: &dbUser sdnctl
     userCredentialsExternalSecret: *dbSecretName
+  rootUser:
+    externalSecret: *rootDbSecret
+  db:
+    user: *dbUser
+    externalSecret: *dbSecretName
   service:
     name: sdnc-dbhost
-    internalPort: 3306
   sdnctlPrefix: sdnc
   persistence:
     mountSubPath: sdnc/mariadb-galera
     enabled: true
   replicaCount: 1
+  serviceAccount:
+    nameOverride: *sdnc-db
 
 cds:
   enabled: false
@@ -311,7 +326,11 @@ dgbuilder:
   config:
     db:
       dbName: *sdncDbName
-      rootPasswordExternalSecret: '{{ ternary (printf "%s-sdnc-db-root-password" (include "common.release" .)) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" "mariadb-galera")) .Values.global.mariadbGalera.localCluster }}'
+      rootPasswordExternalSecret: '{{ .Values.global.mariadbGalera.localCluster |
+        ternary
+          (printf "%s-sdnc-db-root-password" (include "common.release" .))
+          (include "common.mariadb.secret.rootPassSecretName"
+            (dict "dot" . "chartName" "mariadb-galera")) }}'
       userCredentialsExternalSecret: *dbSecretName
     dbPodName: mariadb-galera
     dbServiceName: mariadb-galera
