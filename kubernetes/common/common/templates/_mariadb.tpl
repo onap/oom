@@ -45,6 +45,13 @@
 {{- end -}}
 
 {{/*
+  UID of mariadb backup credentials
+*/}}
+{{- define "common.mariadb.secret.backupCredentialsUID" -}}
+  {{- printf "db-backup-credentials" }}
+{{- end -}}
+
+{{/*
   Name of mariadb user credentials secret
 */}}
 {{- define "common.mariadb.secret.userCredentialsSecretName" -}}

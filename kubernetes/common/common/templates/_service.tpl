@@ -81,7 +81,7 @@
 {{- if or $annotations $msb_informations -}}
 annotations:
 {{-   if $annotations }}
-{{      include "common.tplValue" (dict "value" $annotations "context" $dot) | indent 2 }}
+{{      include "common.tplValue" (dict "value" $annotations "context" $dot) | indent 2  }}
 {{-   end }}
 {{-   if $msb_informations }}
   msb.onap.org/service-info: '[
