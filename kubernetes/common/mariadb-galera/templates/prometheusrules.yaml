@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, Bell Canada
+{{/*
 # Copyright © 2020 Bitnami, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-apiVersion: v1
-description: Chart for MariaDB Galera cluster
-name: mariadb-galera
-version: 7.0.0
-keywords:
-  - mariadb
-  - mysql
-  - database
-  - sql
-  - galera
-  - cluster
+{{- if default false (and .Values.global.metrics.enabled .Values.global.metrics.custom_resources) }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ template "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+    {{- toYaml .Values.metrics.prometheusRules.selector | nindent 4 }}
+spec:
+  groups:
+  - name: {{ template "common.fullname" . }}
+    rules:
+      {{- toYaml .Values.metrics.prometheusRules.rules | nindent 6 }}
+{{- end }}
+
