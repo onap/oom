@@ -30,9 +30,9 @@ secrets:
   - name: &dbUserSecretName '{{ include "common.release" . }}-cds-db-secret'
     uid: 'cds-db-secret'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "config" "userCredentialsExternalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "config" "userName" }}'
-    password: '{{ index .Values "mariadb-galera" "config" "userPassword" }}'
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
 
 #################################################################
 # Application configuration defaults.
@@ -71,19 +71,18 @@ ingress:
   enabled: false
 
 mariadb-galera:
-  config:
-    userName: sdnctl
-    # userPassword: sdnctl
-    userCredentialsExternalSecret: *dbUserSecretName
-    mysqlDatabase: &mysqlDbName sdnctl
+  db:
+    user: sdnctl
+    # password:
+    externalSecret: *dbUserSecretName
+    name: &mysqlDbName sdnctl
   nameOverride: &dbServer cds-db
-  service:
-    name: cds-db
-    portName: cds-db
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: cds/data
+  serviceAccount:
+    nameOverride: *dbServer
 
 cds-blueprints-processor:
   enabled: true
