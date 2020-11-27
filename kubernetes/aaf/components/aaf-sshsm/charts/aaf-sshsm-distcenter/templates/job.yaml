@@ -14,6 +14,8 @@
 # limitations under the License.
 */}}
 
+{{- if .Values.global.distcenter.enabled -}}
+
 apiVersion: batch/v1
 kind: Job
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -25,7 +27,7 @@ spec:
       restartPolicy: Never
       initContainers:
 {{- if .Values.global.tpm.enabled }}
-      - image: {{ include "repositoryGenerator.image.readiness" . }}
+      - image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
         command:
@@ -47,7 +49,7 @@ spec:
             cpu: 3m
             memory: 20Mi
 {{ else }}
-      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-gen-passphrase
         command: ["sh", "-c", "/usr/bin/openssl rand -base64 12 >/distcenter/data/passphrase"]
@@ -72,7 +74,7 @@ spec:
             memory: 20Mi
 {{- end }}
       containers:
-      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["/entrypoint.sh"]
@@ -99,3 +101,5 @@ spec:
           claimName: {{ include "common.release" . }}-aaf-sshsm
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+
+{{- end -}}

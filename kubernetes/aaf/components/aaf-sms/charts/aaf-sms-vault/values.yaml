@@ -1,4 +1,5 @@
 # Copyright 2018 Intel Corporation, Inc
+# Modifications © 2020 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,21 +18,41 @@
 #################################################################
 global:
   persistence: {}
-  tpm:
-    enabled: true
 
-#################################################################
-# Application configuration defaults.
-#################################################################
 # application image
-image: onap/aaf/distcenter:4.0.0
+repository: nexus3.onap.org:10001
+image:
+  consul: library/consul:1.7.1
+  vault: library/vault:1.3.3
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-# Example:
+#################################################################
+# Application configuration defaults.
+#################################################################
+config:
+  consul:
+    server: true
+    log_level: INFO
+    server: true
+    data_dir: '/consul/data'
+    ports:
+      http: 8500
+      https: -1
+
+  vault:
+    storage:
+      consul:
+        address: localhost:8500
+        path: smsvault
+    listener:
+      tcp:
+        address: '[::]:8200'
+        tls_disable: true
+    disable_mlock: true
+
 # default number of instances
 replicaCount: 1
 
@@ -39,31 +60,51 @@ nodeSelector: {}
 
 affinity: {}
 
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
 persistence:
   enabled: true
   volumeReclaimPolicy: Retain
   accessMode: ReadWriteOnce
-  size: 10Mi
+  size: 2Gi
   mountPath: /dockerdata-nfs
-  mountSubPath: sshsm/distcenter/data
+  mountSubPath: sms/consul/data
+
+service:
+  type: ClusterIP
+  name: aaf-sms-db
+  portName: aaf-sms-db
+  internalPort: 8200
+  externalPort: 8200
 
 ingress:
   enabled: false
 
-# Configure resource requests and limits
 flavor: small
+
+# Configure resource requests and limits
 resources:
   small:
     limits:
-      cpu: 20m
-      memory: 50Mi
+      cpu: 40m
+      memory: 40Mi
     requests:
       cpu: 10m
-      memory: 10Mi
+      memory: 25Mi
   large:
     limits:
       cpu: 400m
-      memory: 1Gi
+      memory: 700Mi
     requests:
       cpu: 10m
       memory: 100Mi

@@ -37,6 +37,8 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{- if .Values.persistence.enabled }}
       initContainers:
         - name: fix-permission
@@ -45,62 +47,52 @@ spec:
           args:
             - -c
             - |
-              chmod -R 775 /consul/data
-              chown -R 100:1000 /consul/data
-          image: {{ include "repositoryGenerator.image.busybox" . }}
+              chmod -R 775 /quorumclient/auth
+              chown -R 100:1000 /quorumclient/auth
+          image: "{{ .Values.global.busyboxRepository }}/{{ .Values.global.busyboxImage }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
-            - mountPath: /consul/data
+            - mountPath: /quorumclient/auth
               name: {{ include "common.fullname" . }}-data
 {{- end }}
       containers:
-      - image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.vault }}
+      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         name: {{ include "common.name" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        args: ["server"]
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
+        command: ["/quorumclient/bin/quorumclient"]
+        workingDir: /quorumclient/
         volumeMounts:
-        - mountPath: /vault/config/config.json
-          name: {{ include "common.fullname" . }}-vault
-          subPath: config.json
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
-        resources:
-{{ include "common.resources" . | indent 10 }}
-      - image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.consul }}
-        name: {{ include "common.name" . }}-backend
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        args: ["agent","-server","-bind","0.0.0.0","-bootstrap-expect=1","-config-file","/consul/config/config.json"]
-        ports:
-        - name: http
-          containerPort: 8500
-        volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
+          - mountPath: /quorumclient/config.json
+            name: {{ include "common.name" .}}
+            subPath: config.json
 {{- if .Values.persistence.enabled }}
-        - mountPath: /consul/data
-          name: {{ include "common.fullname" . }}-data
+          - mountPath: /quorumclient/auth
+            name: {{ include "common.fullname" . }}-data
 {{- end }}
-        - mountPath: /consul/config/config.json
-          name: {{ include "common.fullname" . }}-consulconfiguration
-          subPath: config.json
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
         resources:
 {{ include "common.resources" . | indent 10 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
       volumes:
-        - name: {{ include "common.fullname" . }}-consulconfiguration
-          configMap:
-            name: {{ include "common.fullname" . }}-consul
-        - name: {{ include "common.fullname" . }}-vault
-          configMap:
-            name: {{ include "common.fullname" . }}-vault
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name : {{ include "common.name" . }}
+        configMap:
+          name: {{ include "common.fullname" . }}
+          items:
+          - key: config.json
+            path: config.json
+            mode: 0755
 {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
   - metadata:
