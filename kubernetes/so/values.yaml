@@ -77,7 +77,11 @@ secrets:
   - uid: db-root-pass
     name: &dbRootPassSecretName '{{ include "common.release" . }}-so-db-root-pass'
     type: password
-    externalSecret: '{{ ternary .Values.global.mariadbGalera.rootPasswordExternalSecret (default (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.rootPasswordExternalSecret) .Values.global.mariadbGalera.localCluster }}'
+    externalSecret: '{{ .Values.global.mariadbGalera.localCluster | ternary
+      .Values.global.mariadbGalera.rootPasswordExternalSecret
+      (default (include "common.mariadb.secret.rootPassSecretName"
+        (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride))
+        .Values.global.mariadbGalera.rootPasswordExternalSecret)  }}'
     password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
   - uid: db-backup-creds
     name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
@@ -253,15 +257,15 @@ config:
 #                                                       --set so.global.mariadbGalera.nameOverride=so-mariadb-galera \
 #                                                       --set so.global.mariadbGalera.serviceName=so-mariadb-galera
 mariadb-galera:
-  config:
-    mariadbRootPasswordExternalSecret: *dbRootPassSecretName
-  nameOverride: so-mariadb-galera
+  rootUser:
+    externalSecret: *dbRootPassSecretName
+  nameOverride: &so-mariadb so-mariadb-galera
   replicaCount: 1
-  service:
-    name: so-mariadb-galera
   persistence:
     mountSubPath: so/mariadb-galera/data
     enabled: true
+  serviceAccount:
+    nameOverride: *so-mariadb
 
 ingress:
   enabled: false
