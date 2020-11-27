@@ -1,5 +1,8 @@
 {{/*
-# Copyright © 2019 Amdocs, Bell Canada, Orange, Samsung Electronics
+# Copyright © 2018 Amdocs, Bell Canada
+# Copyright © 2019 Samsung Electronics
+# Copyright © 2019-2020 Orange
+# Copyright © 2020 Bitnami
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,128 +19,207 @@
 
 apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ include "common.release" . }}"
-    heritage: "{{ .Release.Service }}"
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  serviceName: {{ .Values.service.name }}
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.fullname" . }}
-  template:
-    metadata:
-      labels:
-        app: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ include "common.release" . }}"
-        heritage: "{{ .Release.Service }}"
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
-    spec:
-    {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  serviceName: {{ include "common.servicename" . }}-headless
+  updateStrategy:
+    type: {{ .Values.updateStrategy.type }}
+    {{- if (eq "Recreate" .Values.updateStrategy.type) }}
+    rollingUpdate: null
     {{- end }}
-      volumes:
-      {{- if .Values.externalConfig }}
-        - name: config
-          configMap:
-            name: {{ include "common.fullname" . }}-external-config
-      {{- end}}
-        - name: init-script
-          configMap:
-            name: {{ include "common.fullname" . }}
-            defaultMode: 0755
-        - name: localtime
-          hostPath:
-            path: /etc/localtime
-      imagePullSecrets:
-      - name: {{ include "common.namespace" . }}-docker-registry-key
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      {{ include "common.podSecurityContext" . | indent 6  | trim }}
+      initContainers:
+        # we shouldn't need this but for unknown reason, it's fsGroup is not
+        # applied
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /data
+              chown {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /.bootstrap
+          image: {{ include "repositoryGenerator.image.busybox" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: previous-boot
+              mountPath: /.bootstrap
+            - name: {{ include "common.fullname" . }}
+              mountPath: /data
+            {{- if .Values.mariadbConfiguration }}
+            - name: mariadb-galera-config
+              mountPath: /my.cnf
+              subPath: my.cnf
+            {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
+          command:
+            - bash
+            - -ec
+            - |
+                {{- if (not (empty (.Values.galera.bootstrap.bootstrapFromNode | quote)))}}
+                {{- $fullname := include "common.names.fullname" . }}
+                {{- $bootstrapFromNode := int .Values.galera.bootstrap.bootstrapFromNode }}
+                # Bootstrap from the indicated node
+                NODE_ID="${MY_POD_NAME#"{{ $fullname }}-"}"
+                if [[ "$NODE_ID" -eq "{{ $bootstrapFromNode }}" ]]; then
+                    export MARIADB_GALERA_CLUSTER_BOOTSTRAP=yes
+                    export MARIADB_GALERA_FORCE_SAFETOBOOTSTRAP={{ ternary "yes" "no" .Values.galera.bootstrap.forceSafeToBootstrap }}
+                fi
+                {{- end }}
+                exec /opt/bitnami/scripts/mariadb-galera/entrypoint.sh /opt/bitnami/scripts/mariadb-galera/run.sh
           env:
-            - name: POD_NAMESPACE
+            - name: MY_POD_NAME
               valueFrom:
                 fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-            - name: MYSQL_USER
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.userCredentialsUID" .) "key" "login") | indent 14}}
-            - name: MYSQL_PASSWORD
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.userCredentialsUID" .) "key" "password") | indent 14}}
-            - name: MYSQL_DATABASE
-              value: {{ default "" .Values.config.mysqlDatabase | quote }}
-            - name: MYSQL_ROOT_PASSWORD
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 14}}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-            name: {{ .Values.service.portName }}
-          - containerPort: {{ .Values.service.sstPort }}
-            name: {{ .Values.service.sstPortName }}
-          - containerPort: {{ .Values.service.replicationPort }}
-            name: {{ .Values.service.replicationName }}
-          - containerPort: {{ .Values.service.istPort }}
-            name: {{ .Values.service.istPortName }}
+                  fieldPath: metadata.name
+            - name: BITNAMI_DEBUG
+              value: {{ ternary "true" "false" .Values.debug | quote }}
+            - name: MARIADB_GALERA_CLUSTER_NAME
+              value: {{ .Values.galera.name | quote }}
+            - name: MARIADB_GALERA_CLUSTER_ADDRESS
+              value: "gcomm://{{ template "common.name" . }}-headless.{{ include "common.namespace" . }}.svc.{{ .Values.global.clusterDomain }}"
+            - name: MARIADB_ROOT_USER
+              value: {{ .Values.rootUser.user | quote }}
+            - name: MARIADB_ROOT_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 14 }}
+            - name: MARIADB_USER
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.userCredentialsUID" .) "key" "login") | indent 14 }}
+            - name: MARIADB_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.userCredentialsUID" .) "key" "password") | indent 14 }}
+            - name: MARIADB_DATABASE
+              value: {{ .Values.db.name | quote }}
+            - name: MARIADB_GALERA_MARIABACKUP_USER
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "login") | indent 14 }}
+            - name: MARIADB_GALERA_MARIABACKUP_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "password") | indent 14 }}
+            {{- if .Values.extraFlags }}
+            - name: MARIADB_EXTRA_FLAGS
+              value: {{ .Values.extraFlags | quote }}
+            {{- end }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - |
+                  exec mysqladmin status -u$MARIADB_ROOT_USER -p$MARIADB_ROOT_PASSWORD
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             exec:
               command:
-              - /usr/share/container-scripts/mysql/readiness-probe.sh
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
-      {{- if eq .Values.liveness.enabled true }}
+                - bash
+                - -ec
+                - |
+                  exec mysqladmin status -u$MARIADB_ROOT_USER -p$MARIADB_ROOT_PASSWORD
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+          volumeMounts:
+            - name: previous-boot
+              mountPath: /opt/bitnami/mariadb/.bootstrap
+            - name: {{ include "common.fullname" . }}
+              mountPath: /bitnami/mariadb
+            {{- if .Values.mariadbConfiguration }}
+            - name: mariadb-galera-config
+              mountPath: /opt/bitnami/mariadb/conf/my.cnf
+              subPath: my.cnf
+            {{- end }}
+        {{- if default false .Values.global.metrics.enabled }}
+        - name: {{ include "common.name" . }}-metrics
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.metrics.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.metrics.pullPolicy | quote}}
+          env:
+            - name: MARIADB_METRICS_EXTRA_FLAGS
+              value: {{ default "" (join " " .Values.metrics.extraFlags) | quote }}
+            - name: MARIADB_ROOT_USER
+              value: {{ .Values.rootUser.user | quote }}
+            - name: MARIADB_ROOT_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.rootPassUID" .) "key" "password") | indent 14}}
+          command:
+            - sh
+            - -c
+            - |
+              DATA_SOURCE_NAME="$MARIADB_ROOT_USER:$MARIADB_ROOT_PASSWORD@(localhost:3306)/" /bin/mysqld_exporter $MARIADB_METRICS_EXTRA_FLAGS
+          ports:
+            - name: metrics
+              containerPort: 9104
           livenessProbe:
-            exec:
-              command: ["mysqladmin", "ping"]
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
+        {{- end }}
+      imagePullSecrets:
+        - name: {{ include "common.namespace" . }}-docker-registry-key
+      {{- if .Values.schedulerName }}
+      schedulerName: {{ .Values.schedulerName | quote }}
       {{- end }}
-          resources:
-{{ include "common.resources" . | indent 12 }}
-          volumeMounts:
-        {{- if .Values.externalConfig }}
-          - mountPath: /etc/config
-            name: config
-        {{- end}}
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: true
-          - mountPath: /usr/share/container-scripts/mysql/configure-mysql.sh
-            subPath: configure-mysql.sh
-            name: init-script
-{{- if .Values.persistence.enabled }}
-          - mountPath: /var/lib/mysql
-            name: {{ include "common.fullname" . }}-data
-      initContainers:
-        - name: {{ include "common.name" . }}-prepare
-          image: {{ include "repositoryGenerator.image.busybox" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy | quote}}
-          command: ["sh", "-c", "chown -R 27:27 /var/lib/mysql"]
-          volumeMounts:
-            - name: {{ include "common.fullname" . }}-data
-              mountPath: /var/lib/mysql
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      {{- if .Values.affinity }}
+      affinity: {{- include "common.tplvalues" ( dict "value" .Values.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAffinityPreset "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAntiAffinityPreset "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues" ( dict "value" .Values.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- include "common.tplvalues" (dict "value" .Values.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: previous-boot
+          emptyDir: {}
+        {{- if .Values.mariadbConfiguration  }}
+        - name: mariadb-galera-config
+          configMap:
+            name: {{ printf "%s-configuration" (include "common.fullname" .) }}
+        {{- end }}
+{{- if and .Values.persistence.enabled .Values.persistence.existingClaim }}
+        - name: {{ include "common.fullname" . }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim }}
+{{- else if not .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}
+          emptyDir: {}
+{{- else if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
   volumeClaimTemplates:
-  - metadata:
-      name: {{ include "common.fullname" . }}-data
-      labels:
-        name: {{ include "common.fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ include "common.release" . }}"
-        heritage: "{{ .Release.Service }}"
-    spec:
-      accessModes:
-      - {{ .Values.persistence.accessMode | quote }}
-      storageClassName: {{ include "common.storageClass" . }}
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size | quote }}
+    - {{ include "common.PVCTemplate" (dict "dot" . "suffix" "data" "persistenceInfos" .Values.persistence) | indent 6 | trim }}
 {{- end }}
