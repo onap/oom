@@ -82,8 +82,8 @@ config:
   odlGid: 101
   ansibleServiceName: appc-ansible-server
   ansiblePort: 8000
-  mariadbGaleraSVCName: appc-dbhost
-  mariadbGaleraContName: appc-db
+  mariadbGaleraSVCName: &appc-db appc-db
+  mariadbGaleraContName: *appc-db
   enableAAF: true
   enableClustering: false
   configDir: /opt/onap/appc/data/properties
@@ -110,24 +110,25 @@ appc-ansible-server:
     name: appc-ansible-server
     internalPort: 8000
   config:
-    mysqlServiceName: appc-dbhost
+    mysqlServiceName: *appc-db
 
 appc-cdt:
   enabled: true
 
 mariadb-galera:
-  nameOverride: appc-db
+  nameOverride: *appc-db
   config:
     mariadbRootPasswordExternalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
   service:
-    name: appc-dbhost
-    portName: appc-dbhost
+    name: *appc-db
   nfsprovisionerPrefix: appc
   sdnctlPrefix: appc
   persistence:
     mountSubPath: appc/data
     enabled: true
   disableNfsProvisioner: true
+  serviceAccount:
+    nameOverride: *appc-db
 
 dgbuilder:
   nameOverride: appc-dgbuilder
@@ -137,8 +138,8 @@ dgbuilder:
     db:
       rootPasswordExternalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
       userCredentialsExternalSecret: '{{ include "common.release" . }}-sdncdb-user-creds'
-    dbPodName: appc-db
-    dbServiceName: appc-dbhost
+    dbPodName: *appc-db
+    dbServiceName: *appc-db
   service:
     name: appc-dgbuilder
 
