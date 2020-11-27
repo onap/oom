@@ -39,24 +39,17 @@ secrets:
 
 mariadb-galera:
   replicaCount: 1
-  nameOverride: &containerName cmso-db
-  service:
-    type: ClusterIP
-    name: &serviceName oof-cmso-dbhost
-    portName: cmso-dbhost
+  nameOverride: &dbName cmso-db
   nfsprovisionerPrefix: cmso
   sdnctlPrefix: cmso
   persistence:
     mountSubPath: cmso/data
     enabled: true
   disableNfsProvisioner: true
-  config:
-    mariadbRootPasswordExternalSecret: *rootPassword
-    #    userCredentialsExternalSecret: *dbCreds
-    #    mysqlDatabase: cmso
-  externalConfig: |
-    [mysqld]
-    lower_case_table_names = 1
+  rootUser:
+    externalSecret: *rootPassword
+  serviceAccount:
+    nameOverride: *dbName
 
 global:
   commonConfigPrefix: "oof-cmso"
@@ -67,8 +60,8 @@ global:
 
 mariadb-init:
   mariadbGalera:
-    containerName: *containerName
-    serviceName: *serviceName
+    containerName: *dbName
+    serviceName: *dbName
     servicePort: 3306
     userRootSecret: *rootPassword
   config:
@@ -119,8 +112,8 @@ oof-cmso-service:
   config:
     db:
       userCredentialsExternalSecret: *serviceDbCreds
-      host: oof-cmso-dbhost
-      container: cmso-db
+      host: *dbName
+      container: *dbName
       mysqlDatabase: cmso
 
 oof-cmso-optimizer:
@@ -132,8 +125,8 @@ oof-cmso-optimizer:
     enabled: true
     db:
       userCredentialsExternalSecret: *optimizerDbCreds
-      host: oof-cmso-dbhost
-      container: cmso-db
+      host: *dbName
+      container: *dbName
       mysqlDatabase: optimizer
 
 oof-cmso-topology:
