@@ -1,5 +1,6 @@
 {{/*
-# Copyright © 2019 Amdocs, Bell Canada, Orange
+# Copyright © 2019 Amdocs, Bell Canada
+# Copyright © 2019-2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,28 +15,29 @@
 # limitations under the License.
 */}}
 {{- if .Values.backup.enabled }}
-{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
+{{- if and .Values.backup.persistence.enabled (not .Values.backup.persistence.existingClaim) -}}
 {{- if eq "True" (include "common.needPV" .) -}}
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ include "common.fullname" . }}-backup-data
+  name: {{ include "common.fullname" . }}-backup
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    heritage: {{ .Release.Service }}
-    name: {{ include "common.fullname" . }}-backup-data
+    app: {{ include "common.fullname" . }}-backup
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    helm.sh/chart: {{ include "common.chart" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}-backup
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   capacity:
-    storage: {{ .Values.persistence.size }}
+    storage: {{ .Values.backup.persistence.size }}
   accessModes:
-  - {{ .Values.persistence.accessMode }}
-  persistentVolumeReclaimPolicy: {{ .Values.persistence.volumeReclaimPolicy }}
+  - {{ .Values.backup.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.backup.persistence.volumeReclaimPolicy }}
   storageClassName: "{{ include "common.fullname" . }}-data-backup"
   hostPath:
-    path: {{ .Values.global.persistence.backup.mountPath | default .Values.persistence.backup.mountPath }}/{{ include "common.namespace" $ }}/{{ include "common.fullname" $ }}
+    path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.namespace" . }}/{{ include "common.fullname" . }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
