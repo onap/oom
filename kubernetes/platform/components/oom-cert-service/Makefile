@@ -30,9 +30,9 @@ start_docker:
 	$(eval REPOSITORY := $(shell cat ./values.yaml | grep -i "^[ \t]*repository" -m1 | xargs | cut -d ' ' -f2))
 	$(eval JAVA_IMAGE := $(shell cat ./values.yaml | grep -i "^[ \t]*certificateGenerationImage" -m1 | xargs | cut -d ' ' -f2))
 	$(eval FULL_JAVA_IMAGE := $(REPOSITORY)/$(JAVA_IMAGE))
-	$(eval USER :=$(shell id -u))
+	$(eval USERNAME :=$(shell id -u))
 	$(eval GROUP :=$(shell id -g))
-	docker run --rm --name ${DOCKER_CONTAINER} --user "$(USER):$(GROUP)" --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/app -w /app --entrypoint "sh" -td $(FULL_JAVA_IMAGE)
+	docker run --rm --name ${DOCKER_CONTAINER} --user "$(USERNAME):$(GROUP)" --mount type=bind,source=${CURRENT_DIR}/${CERTS_DIR},target=/app -w /app --entrypoint "sh" -td $(FULL_JAVA_IMAGE)
 
 # Stops docker container for generating  certificates. 'true' is used to return 0 status code, if container is already deleted
 stop_docker:
