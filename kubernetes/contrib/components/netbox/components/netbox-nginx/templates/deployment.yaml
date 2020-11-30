@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2019 Bell Canada
+# Copyright © 2018 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,33 +37,20 @@ spec:
     spec:
       containers:
       - name: {{ include "common.name" . }}
-        image: {{ .Values.global.repository | default .Values.repository }}/{{ .Values.image }}
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["nginx"]
+        args: ["-c", "/etc/netbox-nginx/nginx.conf","-g", "daemon off;"]
         ports:
         - containerPort: {{ .Values.service.internalPort }}
-        readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -i
-            - -c
-            - psql -h 127.0.0.1 -U $POSTGRES_USER -q -d {{ .Values.config.postgresDB }}
-              -c 'SELECT 1'
-          initialDelaySeconds: 5
-          timeoutSeconds: 1
-        env:
-          - name: POSTGRES_USER
-            value: "{{ .Values.config.postgresUser }}"
-          - name: POSTGRES_PASSWORD
-            value: "{{ .Values.config.postgresPassword }}"
-          - name: POSTGRES_DB
-            value: "{{ .Values.config.postgresDB }}"
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - name: {{ include "common.fullname" . }}-data
-          mountPath: /var/lib/postgresql/
+        - name: {{ include "common.fullname" . }}
+          mountPath: /opt/netbox/netbox/static
+        - name: {{ include "common.fullname" . }}-config
+          mountPath: /etc/netbox-nginx
         resources:
 {{ include "common.resources" . | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -78,12 +65,11 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
-      {{- if .Values.persistence.enabled }}
-        - name: {{ include "common.fullname" . }}-data
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-config-configmap
+        - name: {{ include "common.fullname" . }}
           persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
-      {{- else }}
-          emptyDir: {}
-      {{- end }}
+            claimName: {{ include "common.release" . }}-{{ .Values.persistence.staticPvName }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
