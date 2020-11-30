@@ -72,7 +72,7 @@ spec:
           name: config-input
         - mountPath: /config
           name: properties
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
       {{ if .Values.dgbuilder.enabled -}}
@@ -93,7 +93,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
         {{ end -}}
@@ -101,7 +101,7 @@ spec:
 
       {{ if .Values.global.cmpv2Enabled }}
       - name: certs-init
-        image: "{{ .Values.global.repository }}/{{ .Values.global.platform.certServiceClient.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.platform.certServiceClient.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
           - name: REQUEST_URL
@@ -142,7 +142,7 @@ spec:
       {{ end }}
 
       - name: {{ include "common.name" . }}-chown
-        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
         - sh
         args:
@@ -157,7 +157,7 @@ spec:
             name: {{ include "common.fullname" . }}-data
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash"]
           args: ["-c", "/opt/onap/sdnc/bin/startODL.sh"]
@@ -293,7 +293,7 @@ spec:
 
         # side car containers
         - name: filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - mountPath: /usr/share/filebeat/filebeat.yml
