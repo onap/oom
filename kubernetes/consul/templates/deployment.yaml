@@ -39,15 +39,36 @@ spec:
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+      initContainers:
+      - name: {{ include "common.name" . }}-chown
+        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
         command:
-        - /bin/sh
-        - "-c"
+        - sh
+        args:
+        - -c
         - |
-          apk update && apk add jq
-          cp /tmp/consul/config/* /consul/config
-          /usr/local/bin/docker-entrypoint.sh agent -client 0.0.0.0 -enable-script-checks -retry-join {{ .Values.consulServer.nameOverride }}
+          cp -r -L /tmp/consul/config/* /consul/config/
+          chown -R {{ .Values.consulUID }}:{{ .Values.consulGID }} /consul/config
+          ls -la /consul/config
+        volumeMounts:
+        - mountPath: /tmp/consul/config
+          name: consul-agent-config
+        - mountPath: /consul/config
+          name: consul-agent-config-dir
+      containers:
+      - image: {{ include "common.repository" . }}/{{ .Values.image }}
+        securityContext:
+          runAsUser: {{ .Values.securityContext.runAsUser }}
+          runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        command:
+        - docker-entrypoint.sh
+        args:
+        - agent
+        - -client
+        - 0.0.0.0
+        - -enable-script-checks
+        - -retry-join
+        - {{ .Values.consulServer.nameOverride }}
         name: {{ include "common.name" . }}
         env:
           - name: SDNC_ODL_COUNT
@@ -55,14 +76,16 @@ spec:
           - name: SDNC_IS_PRIMARY_CLUSTER
             value: "{{ .Values.sdnc.config.isPrimaryCluster }}"
         volumeMounts:
-        - mountPath: /tmp/consul/config
-          name: consul-agent-config
+        - mountPath: /consul/config
+          name: consul-agent-config-dir
         - mountPath: /consul/scripts
           name: consul-agent-scripts-config
         - mountPath: /consul/certs
           name: consul-agent-certs-config
         resources: {{ include "common.resources" . | nindent 10 }}
       volumes:
+      - name: consul-agent-config-dir
+        emptyDir: {}
       - configMap:
           name: {{ include "common.fullname" . }}-configmap
         name: consul-agent-config
