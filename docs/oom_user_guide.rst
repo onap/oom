@@ -13,6 +13,7 @@
 .. _Helm: https://docs.helm.sh/
 .. _Kubernetes: https://Kubernetes.io/
 .. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
+.. _`Docker installation guide`: https://docs.docker.com/engine/install/
 .. _user-guide-label:
 
 OOM User Guide
@@ -55,8 +56,12 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have both the Kubernetes `kubectl` and Helm setup as a
-one time activity.
+Your environment must have Docker installed as well as both the Kubernetes
+`kubectl` and Helm setup as a one time activity.
+
+Install Docker
+~~~~~~~~~~~~~~
+Follow official `Docker installation guide`_.
 
 Install Kubectl
 ~~~~~~~~~~~~~~~
