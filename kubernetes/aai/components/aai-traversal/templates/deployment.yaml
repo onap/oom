@@ -1,6 +1,6 @@
 # Copyright (c) 2017 Amdocs, Bell Canada
 # Modifications Copyright (c) 2018 AT&T
-# Modifications Copyright (c) 2020 Nokia
+# Modifications Copyright (c) 2020 Nokia, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -658,13 +658,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
     {{ end }}
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: DISABLE_UPDATE_QUERY
@@ -762,7 +762,7 @@ spec:
 
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
@@ -789,24 +789,24 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-configmap
+          name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-aaf-properties
         configMap:
-         name: {{ include "common.fullname" . }}-aaf-props
+          name: {{ include "common.fullname" . }}-aaf-props
       - name: {{ include "common.fullname" . }}-aaf-certs
         secret:
-         secretName: {{ include "common.fullname" . }}-aaf-keys
+          secretName: {{ include "common.fullname" . }}-aaf-keys
       - name: aai-common-aai-auth-mount
         secret:
           secretName: aai-common-aai-auth
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-common-truststore
-         items:
-          {{ range $job := .Values.global.config.auth.files }}
-           - key: {{ . }}
-             path: {{ . }}
-          {{ end }}
+          secretName: aai-common-truststore
+          items:
+            {{ range $job := .Values.global.config.auth.files }}
+            - key: {{ . }}
+              path: {{ . }}
+            {{ end }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

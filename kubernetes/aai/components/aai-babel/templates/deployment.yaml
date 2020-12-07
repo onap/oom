@@ -1,5 +1,6 @@
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
+# Modifications Copyright © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,14 +43,14 @@ spec:
 
       initContainers:
         - name: {{ .Values.global.tproxyConfig.name }}
-          image: "{{ include "common.repository" . }}/{{ .Values.global.tproxyConfig.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.tproxyConfig.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           securityContext:
             privileged: true
     {{ end }}
       containers:
         - name: {{ include "common.name" . }}
-          image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -113,7 +114,7 @@ spec:
 
         # side car containers
         - name: filebeat-onap
-          image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+          image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts:
           - mountPath: /usr/share/filebeat/filebeat.yml
@@ -126,7 +127,7 @@ spec:
 
     {{ if .Values.global.installSidecarSecurity }}
         - name: {{ .Values.global.rproxy.name }}
-          image: "{{ include "common.repository" . }}/{{ .Values.global.rproxy.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.rproxy.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
           - name: CONFIG_HOME
@@ -171,7 +172,7 @@ spec:
           - containerPort: {{ .Values.global.rproxy.port }}
 
         - name: {{ .Values.global.fproxy.name }}
-          image: "{{ include "common.repository" . }}/{{ .Values.global.fproxy.image }}"
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.fproxy.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
           - name: CONFIG_HOME

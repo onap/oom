@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,7 +60,7 @@ spec:
               fieldPath: metadata.namespace
         securityContext:
           privileged: true
-        image: {{ .Values.global.dockerhubRepository | default .Values.dockerhubRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: init-sysctl
         volumeMounts:
@@ -67,7 +68,7 @@ spec:
           mountPath: /logroot/
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: SERVICE_BEANS
@@ -132,7 +133,7 @@ spec:
 
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
