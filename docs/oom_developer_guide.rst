@@ -8,7 +8,7 @@
 .. _Helm Charts: https://github.com/kubernetes/charts
 .. _Kubernetes: https://Kubernetes.io/
 .. _Docker: https://www.docker.com/
-.. _Nexus: https://nexus.onap.org/#welcome
+.. _Nexus: https://nexus.onap.org/
 .. _AWS Elastic Block Store: https://aws.amazon.com/ebs/
 .. _Azure File: https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction
 .. _GCE Persistent Disk: https://cloud.google.com/compute/docs/disks/
@@ -1131,7 +1131,7 @@ access to watch the kubernetes events and get service annotation by
 Kubernetes APIs. The token can be found in the kubectl configuration file
 *~/.kube/config*
 
-More details can be found here `MSB installation <http://onap.readthedocs.io/en/latest/submodules/msb/apigateway.git/docs/platform/installation.html>`__.
+More details can be found here `MSB installation <https://docs.onap.org/projects/onap-msb-apigateway/en/latest/platform/installation.html>`_.
 
 .. MISC
 .. ====
