@@ -5,6 +5,8 @@
 .. reserved.
 .. _release_notes_dublin:
 
+:orphan:
+
 ONAP Operations Manager Release Notes
 =====================================
 

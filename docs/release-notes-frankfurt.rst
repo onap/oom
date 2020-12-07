@@ -4,6 +4,8 @@
 .. (c) ONAP Project and its contributors
 .. _release_notes_frankfurt:
 
+:orphan:
+
 *************************************
 ONAP Operations Manager Release Notes
 *************************************
