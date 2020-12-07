@@ -1,5 +1,5 @@
 # Copyright (c) 2018 Amdocs, Bell Canada, AT&T
-# Copyright (c) 2020 Nokia
+# Copyright (c) 2020 Nokia, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,105 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
-  readinessImage: onap/oom/readiness:3.0.1
+  cassandra:
+    #Service Name of the cassandra cluster to connect to.
+    #Override it to aai-cassandra if localCluster is enabled.
+    serviceName: cassandra
+
+  rproxy:
+    name: reverse-proxy
+
+  initContainers:
+    enabled: true
+
+  # Specifies a list of jobs to be run
+  jobs:
+    # When enabled, it will create the schema based on oxm and edge rules
+    createSchema:
+      enabled: true
+    #migration using helm hooks
+    migration:
+      enabled: false
+
+  config:
+    # Specifies that the cluster connected to a dynamic
+    # cluster being spinned up by kubernetes deployment
+    cluster:
+      cassandra:
+        dynamic: true
+
+    # Specifies if the basic authorization is enabled
+    basic:
+      auth:
+        enabled: true
+        username: AAI
+        passwd: AAI
+
+    # Active spring profiles for the resources microservice
+    profiles:
+      active: production,dmaap,aaf-auth
+
+    # Notification event specific properties
+    notification:
+      eventType: AAI-EVENT
+      domain: dev
+
+    # Schema specific properties that include supported versions of api
+    schema:
+      # Specifies if the connection should be one way ssl, two way ssl or no auth
+      service:
+        client: one-way-ssl
+      # Specifies which translator to use if it has schema-service, then it will make a rest request to schema service
+      translator:
+        list: schema-service
+      source:
+        # Specifies which folder to take a look at
+        name: onap
+      uri:
+        # Base URI Path of the application
+        base:
+          path: /aai
+      version:
+        # Current version of the REST API
+        api:
+          default: v21
+        # Specifies which version the depth parameter is configurable
+        depth: v11
+        # List of all the supported versions of the API
+        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21
+        # Specifies from which version related link should appear
+        related:
+          link: v11
+        # Specifies from which version the app root change happened
+        app:
+          root: v11
+        # Specifies from which version the xml namespace changed
+        namespace:
+          change: v12
+        # Specifies from which version the edge label appeared in API
+        edge:
+          label: v12
+
+    # Keystore configuration password and filename
+    keystore:
+      filename: aai_keystore
+      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
+
+    # Truststore configuration password and filename
+    truststore:
+      filename: aai_keystore
+      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
+
+    # Specifies a list of files to be included in auth volume
+    auth:
+      files:
+        - aai_keystore
+
+    # Specifies which clients should always default to realtime graph connection
+    realtime:
+      clients: SDNC,MSO,SO,robot-ete
 
 # application image
-repository: nexus3.onap.org:10001
 image: onap/aai-resources:1.7.2
 pullPolicy: Always
 restartPolicy: Always
