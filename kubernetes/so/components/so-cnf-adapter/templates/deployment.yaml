@@ -50,20 +50,7 @@ spec:
           volumeMounts:
             - name: encoder
               mountPath: /output
-        - name: {{ include "common.name" . }}-readiness
-          command:
-            - /app/ready.py
-          args:
-            - --job-name
-            - {{ include "common.release" . }}-so-mariadb-config-job
-          env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-          image: {{ include "repositoryGenerator.image.readiness" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.readinessCheck.waitFor" . | indent 8 | trim }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
