@@ -21,6 +21,8 @@
     if [ "${EXIT_VALUE}" != "0" ]
     then
       echo "issue with password: $cadi_truststore_password"
+      ls -lh {{ $subchartDot.Values.certInitializer.credsPath }}/mycreds.prop
+      cat {{ $subchartDot.Values.certInitializer.credsPath }}/mycreds.prop
       exit $EXIT_VALUE
     else
       keytool -importkeystore -srckeystore "{{ $subchartDot.Values.certInitializer.credsPath }}/truststoreONAPall.jks" \
