@@ -4,6 +4,7 @@
 # ================================================================================
 # Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2020 Nokia Intellectual Property. All rights reserved.
+# Copyright (c) 2020 Orange Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +74,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - command:
@@ -117,11 +118,11 @@ spec:
           name: {{ include "common.fullname" $global }}-auth-truststore-sec
           subPath: {{ . }}
           {{ end }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-restore-backup
       containers:
-      - image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-perform-migration
         command:
@@ -184,18 +185,18 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-configmap
+          name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-snapshots
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}-migration
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-common-truststore
-         items:
-          {{ range $job := .Values.global.config.auth.files }}
-           - key: {{ . }}
-             path: {{ . }}
-          {{ end }}
+          secretName: aai-common-truststore
+          items:
+            {{ range $job := .Values.global.config.auth.files }}
+            - key: {{ . }}
+              path: {{ . }}
+            {{ end }}
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -235,13 +236,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-db-backup-readiness
       {{- end }}
       containers:
       - name: {{ include "common.name" . }}-db-backup-job
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /bin/bash
@@ -296,10 +297,10 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-configmap
+          name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-migration
         configMap:
-         name: {{ include "common.fullname" . }}-migration-configmap
+          name: {{ include "common.fullname" . }}-migration-configmap
       - name: {{ include "common.fullname" . }}-snapshots
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}-migration

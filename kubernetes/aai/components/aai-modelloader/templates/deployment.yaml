@@ -1,5 +1,6 @@
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
+# Modifications Copyright © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +46,7 @@ spec:
       {{- end }}
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: CONFIG_HOME
@@ -72,7 +73,7 @@ spec:
 
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
@@ -103,7 +104,7 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
-         name: {{ include "common.fullname" . }}-log
+          name: {{ include "common.fullname" . }}-log
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1175,26 +1175,26 @@ spec:
           ]'
     spec:
       hostname: aai-resources
-    {{ if .Values.global.initContainers.enabled }}
-      {{ if .Values.global.installSidecarSecurity }}
+    {{- if .Values.global.initContainers.enabled }}
+      {{- if .Values.global.installSidecarSecurity }}
       hostAliases:
       - ip: {{ .Values.global.aaf.serverIp }}
         hostnames:
         - {{ .Values.global.aaf.serverHostname }}
-      {{ end }}
+      {{- end }}
       initContainers:
       - command:
-      {{ if .Values.global.jobs.migration.enabled }}
+      {{- if .Values.global.jobs.migration.enabled }}
         - /app/ready.py
         args:
         - --job-name
         - {{ include "common.release" . }}-aai-graphadmin-migration
-      {{  else if .Values.global.jobs.createSchema.enabled  }}
+      {{- else if .Values.global.jobs.createSchema.enabled  }}
         - /app/ready.py
         args:
         - --job-name
         - {{ include "common.release" . }}-aai-graphadmin-create-db-schema
-      {{  else }}
+      {{- else }}
         - /app/ready.py
         args:
         - --container-name
@@ -1205,27 +1205,27 @@ spec:
         {{- end }}
         - --container-name
         - aai-schema-service
-      {{  end  }}
+      {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
+        image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-      {{ if .Values.global.installSidecarSecurity }}
+      {{- if .Values.global.installSidecarSecurity }}
       - name: {{ .Values.global.tproxyConfig.name }}
-        image: "{{ include "common.repository" . }}/{{ .Values.global.tproxyConfig.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.tproxyConfig.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         securityContext:
           privileged: true
-      {{ end }}
-    {{ end }}
+      {{- end }}
+    {{- end }}
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: LOCAL_USER_ID
@@ -1256,11 +1256,11 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/etc/auth/realm.properties
           name: {{ include "common.fullname" . }}-config
           subPath: realm.properties
-        {{ if .Values.global.installSidecarSecurity }}
+        {{- if .Values.global.installSidecarSecurity }}
         - mountPath: /opt/app/aai-resources/resources/etc/auth/aai_policy.json
           name: {{ include "common.fullname" . }}-aai-policy
           subPath: aai_policy.json
-        {{ end }}
+        {{- end }}
         - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.keyfile
           name: {{ include "common.fullname" . }}-aaf-certs
           subPath: org.onap.aai.keyfile
@@ -1291,43 +1291,39 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/application-keycloak.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application-keycloak.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
+          {{- $global := . }}
+          {{- range $job := .Values.global.config.auth.files }}
         - mountPath: /opt/app/aai-resources/resources/etc/auth/{{ . }}
           name: {{ include "common.fullname" $global }}-auth-truststore-sec
           subPath: {{ . }}
-          {{ end }}
+          {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
-        {{ if .Values.liveness.enabled }}
+        {{- if .Values.liveness.enabled }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end }}
+        {{- end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        resources:
-{{ include "common.resources" . }}
+        resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
-      {{- end -}}
-      {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end }}
-
+      {{- if .Values.affinity }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
@@ -1337,11 +1333,10 @@ spec:
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /usr/share/filebeat/data
           name: {{ include "common.fullname" . }}-filebeat
-        resources:
-{{ include "common.resources" . }}
-    {{ if .Values.global.installSidecarSecurity }}
+        resources: {{ include "common.resources" . | nindent 12 }}
+    {{- if .Values.global.installSidecarSecurity }}
       - name: {{ .Values.global.rproxy.name }}
-        image: "{{ include "common.repository" . }}/{{ .Values.global.rproxy.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.rproxy.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: CONFIG_HOME
@@ -1386,9 +1381,8 @@ spec:
           subPath: org.onap.aai.p12
         ports:
         - containerPort: {{ .Values.global.rproxy.port }}
-
       - name: {{ .Values.global.fproxy.name }}
-        image: "{{ include "common.repository" . }}/{{ .Values.global.fproxy.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.fproxy.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: CONFIG_HOME
@@ -1417,8 +1411,7 @@ spec:
           subPath: client-cert.p12
         ports:
         - containerPort: {{ .Values.global.fproxy.port }}
-    {{ end }}
-
+    {{- end }}
       volumes:
       - name: aai-common-aai-auth-mount
         secret:
@@ -1435,50 +1428,50 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-         name: {{ include "common.fullname" . }}-configmap
+          name: {{ include "common.fullname" . }}-configmap
       - name: {{ include "common.fullname" . }}-aaf-properties
         configMap:
-         name: {{ include "common.fullname" . }}-aaf-props
+          name: {{ include "common.fullname" . }}-aaf-props
       - name: {{ include "common.fullname" . }}-aaf-certs
         secret:
-         secretName: {{ include "common.fullname" . }}-aaf-keys
+          secretName: {{ include "common.fullname" . }}-aaf-keys
       - name: {{ include "common.fullname" . }}-auth-truststore-sec
         secret:
-         secretName: aai-common-truststore
-         items:
-          {{ range $job := .Values.global.config.auth.files }}
-           - key: {{ . }}
-             path: {{ . }}
-          {{ end }}
-    {{ if .Values.global.installSidecarSecurity }}
+          secretName: aai-common-truststore
+          items:
+          {{- range $job := .Values.global.config.auth.files }}
+          - key: {{ . }}
+            path: {{ . }}
+          {{- end }}
+    {{- if .Values.global.installSidecarSecurity }}
       - name: {{ include "common.fullname" . }}-aai-policy
         configMap:
-         name: {{ include "common.fullname" . }}-aai-policy-configmap
+          name: {{ include "common.fullname" . }}-aai-policy-configmap
       - name: {{ include "common.fullname" . }}-rproxy-config
         configMap:
-         name: {{ include "common.fullname" . }}-rproxy-config
+          name: {{ include "common.fullname" . }}-rproxy-config
       - name: {{ include "common.fullname" . }}-rproxy-log-config
         configMap:
-         name: {{ include "common.fullname" . }}-rproxy-log-config
+          name: {{ include "common.fullname" . }}-rproxy-log-config
       - name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
         configMap:
-         name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
+          name: {{ include "common.fullname" . }}-rproxy-uri-auth-config
       - name: {{ include "common.fullname" . }}-rproxy-auth-config
         secret:
-         secretName: {{ include "common.fullname" . }}-rproxy-auth-config
+          secretName: {{ include "common.fullname" . }}-rproxy-auth-config
       - name: {{ include "common.fullname" . }}-rproxy-security-config
         secret:
-         secretName: {{ include "common.fullname" . }}-rproxy-security-config
+          secretName: {{ include "common.fullname" . }}-rproxy-security-config
       - name: {{ include "common.fullname" . }}-fproxy-config
         configMap:
-         name: {{ include "common.fullname" . }}-fproxy-config
+          name: {{ include "common.fullname" . }}-fproxy-config
       - name: {{ include "common.fullname" . }}-fproxy-log-config
         configMap:
-         name: {{ include "common.fullname" . }}-fproxy-log-config
+          name: {{ include "common.fullname" . }}-fproxy-log-config
       - name: {{ include "common.fullname" . }}-fproxy-auth-config
         secret:
-         secretName: {{ include "common.fullname" . }}-fproxy-auth-config
-    {{ end }}
+          secretName: {{ include "common.fullname" . }}-fproxy-auth-config
+    {{- end }}
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

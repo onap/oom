@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2020 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +40,7 @@ spec:
     spec:
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "common.repository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: LOCAL_USER_ID
@@ -103,7 +104,7 @@ spec:
 
       # side car containers
       - name: filebeat-onap
-        image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+        image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /usr/share/filebeat/filebeat.yml
@@ -129,27 +130,27 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
-         name: {{ include "common.fullname" . }}-log
+          name: {{ include "common.fullname" . }}-log
       - name: localhost-access-log-conf
         configMap:
-         name: {{ include "common.fullname" . }}-localhost-access-log-configmap
+          name: {{ include "common.fullname" . }}-localhost-access-log-configmap
       - name: springapp-conf
         configMap:
-         name: {{ include "common.fullname" . }}-springapp-configmap
+          name: {{ include "common.fullname" . }}-springapp-configmap
       - name: aaiconfig-conf
         configMap:
-         name: {{ include "common.fullname" . }}-aaiconfig-configmap
+          name: {{ include "common.fullname" . }}-aaiconfig-configmap
       - name: realm-conf
         configMap:
-         name: {{ include "common.fullname" . }}-realm-configmap
+          name: {{ include "common.fullname" . }}-realm-configmap
       - name: auth-truststore-sec
         secret:
-         secretName: aai-common-truststore
-         items:
-          {{ range $job := .Values.global.config.auth.files }}
-           - key: {{ . }}
-             path: {{ . }}
-          {{ end }}
+          secretName: aai-common-truststore
+          items:
+            {{ range $job := .Values.global.config.auth.files }}
+            - key: {{ . }}
+              path: {{ . }}
+            {{ end }}
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
