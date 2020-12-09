@@ -147,8 +147,9 @@ Then build your local Helm repository::
   > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all
 
 `HELM_BIN`
-  Sets the helm binary to be used. The default value use helm from PATH. Allow the user to have
-  multiple version of helm in operating system and choose which one to use.
+  Sets the helm binary to be used. The default value use helm from PATH.
+  Allow the user to have multiple version of helm in operating system and
+  choose which one to use.
 
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::
