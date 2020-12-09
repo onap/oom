@@ -12,8 +12,8 @@
 .. _Helm Documentation: https://docs.helm.sh/helm/
 .. _Helm: https://docs.helm.sh/
 .. _Kubernetes: https://Kubernetes.io/
-.. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
-.. _user-guide-label:
+.. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
+.. _oom_user_guide_helm3:
 
 OOM User Guide helm3 (experimental)
 ###################################
@@ -415,7 +415,7 @@ below::
 
 Ensure you've disabled any proxy settings the browser you are using to access
 the portal and then simply access now the new ssl-encrypted URL:
-https://portal.api.simpledemo.onap.org:30225/ONAPPORTAL/login.htm
+``https://portal.api.simpledemo.onap.org:30225/ONAPPORTAL/login.htm``
 
 .. note::
   Using the HTTPS based Portal URL the Browser needs to be configured to accept
@@ -482,7 +482,7 @@ have been created - a sample from the ONAP Integration labs follows:
 .. figure:: consulHealth.png
    :align: center
 
-To see the real-time health of a deployment go to: http://<kubernetes IP>:30270/ui/
+To see the real-time health of a deployment go to: ``http://<kubernetes IP>:30270/ui/``
 where a GUI much like the following will be found:
 
 
