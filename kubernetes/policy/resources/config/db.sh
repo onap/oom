@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/sh
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
 # Modifications Copyright © 2018, 2020 AT&T Intellectual Property
