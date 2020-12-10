@@ -98,49 +98,7 @@ spec:
         name: {{ include "common.name" . }}-readiness
         {{ end -}}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
-
-      {{ if .Values.global.cmpv2Enabled }}
-      - name: certs-init
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.platform.certServiceClient.image }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-          - name: REQUEST_URL
-            value: {{ .Values.global.platform.certServiceClient.envVariables.requestURL }}
-          - name: REQUEST_TIMEOUT
-            value: "30000"
-          - name: OUTPUT_PATH
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
-          - name: CA_NAME
-            value: {{ .Values.global.platform.certServiceClient.envVariables.caName }}
-          - name: COMMON_NAME
-            value: {{ .Values.global.platform.certServiceClient.envVariables.common_name }}
-          - name: ORGANIZATION
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Organization }}
-          - name: ORGANIZATION_UNIT
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2OrganizationalUnit }}
-          - name: LOCATION
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Location }}
-          - name: STATE
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2State }}
-          - name: COUNTRY
-            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Country }}
-          - name: KEYSTORE_PATH
-            value: {{ .Values.global.platform.certServiceClient.envVariables.keystorePath }}
-          - name: KEYSTORE_PASSWORD
-            value: {{ .Values.global.platform.certServiceClient.envVariables.keystorePassword }}
-          - name: TRUSTSTORE_PATH
-            value: {{ .Values.global.platform.certServiceClient.envVariables.truststorePath }}
-          - name: TRUSTSTORE_PASSWORD
-            value: {{ .Values.global.platform.certServiceClient.envVariables.truststorePassword }}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-          - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
-            name: certs
-          - mountPath: {{ .Values.global.platform.certServiceClient.secret.mountPath }}
-            name: certservice-tls-volume
-      {{ end }}
-
+{{ include "common.certServiceClient.initContainer" . | indent 6 }}
       - name: {{ include "common.name" . }}-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
@@ -224,6 +182,7 @@ spec:
 
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
+{{ include "common.certServiceClient.volumeMounts" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -276,10 +235,6 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/mountpoint-state-provider.properties
             name: properties
             subPath: mountpoint-state-provider.properties
-          {{ if .Values.global.cmpv2Enabled }}
-          - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
-            name: certs
-          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -330,19 +285,12 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
-        {{ if .Values.global.cmpv2Enabled }}
-        - name: certs
-          emptyDir:
-            medium: Memory
-        - name: certservice-tls-volume
-          secret:
-            secretName: {{ .Values.global.platform.certServiceClient.secret.name }}
-        {{- end }}
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
   {{ else }}
 {{ include "common.certInitializer.volumes" . | nindent 8 }}
+{{ include "common.certServiceClient.volumes" . | nindent 8 }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data
