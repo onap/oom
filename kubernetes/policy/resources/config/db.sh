@@ -1,5 +1,5 @@
-#!/bin/bash -x
-{{/*
+#!/bin/ash
+####
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
 # Modifications Copyright © 2018, 2020 AT&T Intellectual Property
 #
@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
+####
 
 mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
 
