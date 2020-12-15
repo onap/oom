@@ -72,30 +72,28 @@ spec:
       {{- end }}
     spec:
       hostname: aai-resources
-      initContainers:
-      - command:
-      {{- if .Values.global.jobs.migration.enabled }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - name: {{ include "common.name" . }}-readiness
+        command:
         - /app/ready.py
         args:
+        {{- if .Values.global.jobs.migration.enabled }}
         - --job-name
         - {{ include "common.release" . }}-aai-graphadmin-migration
-      {{- else }}
-        {{- if .Values.global.jobs.createSchema.enabled  }}
-        - /app/ready.py
-        args:
+        {{- else }}
+          {{- if .Values.global.jobs.createSchema.enabled  }}
         - --job-name
         - {{ include "common.release" . }}-aai-graphadmin-create-db-schema
-        {{- else }}
-        - /app/ready.py
-        args:
-        - --container-name
-          {{- if .Values.global.cassandra.localCluster }}
-        - aai-cassandra
           {{- else }}
+        - --container-name
+            {{- if .Values.global.cassandra.localCluster }}
+        - aai-cassandra
+            {{- else }}
         - cassandra
-          {{- end }}
+            {{- end }}
         - --container-name
         - aai-schema-service
+          {{- end }}
         {{- end }}
         env:
         - name: NAMESPACE
@@ -105,20 +103,29 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of AAI Resources"
+          /bin/bash /opt/app/aai-resources/docker-entrypoint.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
         - name: POST_JAVA_OPTS
-          value: '-Djavax.net.ssl.trustStore=/opt/app/aai-resources/resources/aaf/truststoreONAPall.jks -Djavax.net.ssl.trustStorePassword=changeit'
-        volumeMounts:
+          value: '-Djavax.net.ssl.trustStore=/opt/app/aai-resources/resources/aaf/truststoreONAPall.jks -Djavax.net.ssl.trustStorePassword={{ .Values.certInitializer.truststoreAllPassword }}'
+        - name: TRUSTORE_ALL_PASSWORD
+          value: {{ .Values.certInitializer.truststoreAllPassword }}
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -142,9 +149,6 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/etc/auth/realm.properties
           name: {{ include "common.fullname" . }}-config
           subPath: realm.properties
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.keyfile
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: org.onap.aai.keyfile
         - mountPath: /opt/app/aai-resources/resources/aaf/bath_config.csv
           name: {{ include "common.fullname" . }}-aaf-certs
           subPath: bath_config.csv
@@ -160,24 +164,12 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/cadi.properties
           name: {{ include "common.fullname" . }}-aaf-properties
           subPath: cadi.properties
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.p12
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: org.onap.aai.p12
-        - mountPath: /opt/app/aai-resources/resources/aaf/truststoreONAPall.jks
-          name: aai-common-aai-auth-mount
-          subPath: truststoreONAPall.jks
         - mountPath: /opt/app/aai-resources/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
         - mountPath: /opt/app/aai-resources/resources/application-keycloak.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application-keycloak.properties
-          {{- $global := . }}
-          {{- range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-resources/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -215,10 +207,7 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: {{ include "common.fullname" . }}-filebeat
         resources: {{ include "common.resources" . | nindent 12 }}
-      volumes:
-      - name: aai-common-aai-auth-mount
-        secret:
-          secretName: aai-common-aai-auth
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -231,21 +220,13 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
+          name: {{ include "common.fullname" . }}
       - name: {{ include "common.fullname" . }}-aaf-properties
         configMap:
           name: {{ include "common.fullname" . }}-aaf-props
       - name: {{ include "common.fullname" . }}-aaf-certs
         secret:
           secretName: {{ include "common.fullname" . }}-aaf-keys
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-          {{- range $job := .Values.global.config.auth.files }}
-          - key: {{ . }}
-            path: {{ . }}
-          {{- end }}
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
