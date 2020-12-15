@@ -65,7 +65,7 @@ ${BIN_DIR}/rmForeignKey.sh NETWORK_MODEL FK_NETWORK_MODEL
 if [ -x ${SDNC_HOME}/svclogic/bin/install.sh ]
 then
     echo "Installing directed graphs"
-     ${SDNC_HOME}/svclogic/bin/install.sh
+    ${SDNC_HOME}/svclogic/bin/install.sh
 fi
 
 
