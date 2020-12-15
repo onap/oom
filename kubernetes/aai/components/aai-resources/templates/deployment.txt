@@ -1,7 +1,7 @@
 {{/*
 # Copyright (c) 2017 Amdocs, Bell Canada
 # Modifications Copyright (c) 2018 AT&T
-# Modifications Copyright (c) 2020 Nokia
+# Modifications Copyright (c) 2020 Nokia, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -381,7 +381,7 @@ spec:
               "visualRange": "1",
               "path": "/aai/v14/service-design-and-creation"
           },
-           {
+          {
               "serviceName": "_aai-service-design-and-creation",
               "version": "v15",
               "url": "/aai/v15/service-design-and-creation",
@@ -1177,15 +1177,50 @@ spec:
           ]'
     spec:
       hostname: aai-resources
-    {{- if .Values.global.initContainers.enabled }}
       {{- if .Values.global.installSidecarSecurity }}
       hostAliases:
       - ip: {{ .Values.global.aaf.serverIp }}
         hostnames:
         - {{ .Values.global.aaf.serverHostname }}
       {{- end }}
-      initContainers:
-      - command:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{- if .Values.global.aafEnabled }}
+      - name: {{ include "common.name" . }}-update-config
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          export TRUSTSTORE_PASSWORD="${cadi_truststore_password}"
+          export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
+          cd /config-input
+          for PFILE in `ls -1`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+          done
+          cd /aaf-config-input
+          for PFILE in `ls -1`
+          do
+            envsubst <${PFILE} >/aaf-config/${PFILE}
+          done
+        env:
+        - name: TRUSTORE_ALL_PASSWORD
+          value: {{ .Values.certInitializer.truststoreAllPassword }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: {{ include "common.fullname" . }}-config
+        - mountPath: /config
+          name: {{ include "common.fullname" . }}-config-processed
+        - mountPath: /aaf-config-input
+          name: {{ include "common.fullname" . }}-aaf-properties
+        - mountPath: /aaf-config
+          name: {{ include "common.fullname" . }}-aaf-properties-processed
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      {{- end }}
+      - name: {{ include "common.name" . }}-readiness
+        command:
       {{- if .Values.global.jobs.migration.enabled }}
         - /app/ready.py
         args:
@@ -1216,7 +1251,6 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       {{- if .Values.global.installSidecarSecurity }}
       - name: {{ .Values.global.tproxyConfig.name }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.tproxyConfig.image }}
@@ -1224,7 +1258,6 @@ spec:
         securityContext:
           privileged: true
       {{- end }}
-    {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -1234,7 +1267,7 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -1263,9 +1296,6 @@ spec:
           name: {{ include "common.fullname" . }}-aai-policy
           subPath: aai_policy.json
         {{- end }}
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.keyfile
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: org.onap.aai.keyfile
         - mountPath: /opt/app/aai-resources/resources/aaf/bath_config.csv
           name: {{ include "common.fullname" . }}-aaf-certs
           subPath: bath_config.csv
@@ -1281,24 +1311,12 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/cadi.properties
           name: {{ include "common.fullname" . }}-aaf-properties
           subPath: cadi.properties
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.p12
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: org.onap.aai.p12
-        - mountPath: /opt/app/aai-resources/resources/aaf/truststoreONAPall.jks
-          name: aai-common-aai-auth-mount
-          subPath: truststoreONAPall.jks
         - mountPath: /opt/app/aai-resources/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
         - mountPath: /opt/app/aai-resources/resources/application-keycloak.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application-keycloak.properties
-          {{- $global := . }}
-          {{- range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-resources/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -1414,10 +1432,7 @@ spec:
         ports:
         - containerPort: {{ .Values.global.fproxy.port }}
     {{- end }}
-      volumes:
-      - name: aai-common-aai-auth-mount
-        secret:
-          secretName: aai-common-aai-auth
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -1431,20 +1446,18 @@ spec:
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}-configmap
+      - name: {{ include "common.fullname" . }}-config-processed
+        emptyDir:
+          medium: Memory
       - name: {{ include "common.fullname" . }}-aaf-properties
         configMap:
           name: {{ include "common.fullname" . }}-aaf-props
+      - name: {{ include "common.fullname" . }}-aaf-properties
+        emptyDir:
+          medium: Memory
       - name: {{ include "common.fullname" . }}-aaf-certs
         secret:
           secretName: {{ include "common.fullname" . }}-aaf-keys
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-          {{- range $job := .Values.global.config.auth.files }}
-          - key: {{ . }}
-            path: {{ . }}
-          {{- end }}
     {{- if .Values.global.installSidecarSecurity }}
       - name: {{ include "common.fullname" . }}-aai-policy
         configMap:
