@@ -26,9 +26,6 @@ global: # global defaults
   rproxy:
     name: reverse-proxy
 
-  initContainers:
-    enabled: true
-
   # Specifies a list of jobs to be run
   jobs:
     # When enabled, it will create the schema based on oxm and edge rules
@@ -97,24 +94,30 @@ global: # global defaults
         edge:
           label: v12
 
-    # Keystore configuration password and filename
-    keystore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-    # Truststore configuration password and filename
-    truststore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-    # Specifies a list of files to be included in auth volume
-    auth:
-      files:
-        - aai_keystore
-
     # Specifies which clients should always default to realtime graph connection
     realtime:
       clients: SDNC,MSO,SO,robot-ete
+
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: "aai"
+  app_ns: "org.osaaf.aaf"
+  fqi_namespace: "org.onap.aai"
+  fqi: "aai@aai.onap.org"
+  public_fqdn: "aaf.osaaf.org"
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh local showpass
+    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+  truststoreAllPassword: changeit
 
 # application image
 image: onap/aai-resources:1.7.2
