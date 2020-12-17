@@ -51,22 +51,25 @@ secrets:
 #################################################################
 
 mariadb-galera:
-  config: &mariadbConfig
-    userCredentialsExternalSecret: *dbSecretName
-    mysqlDatabase: etsicatalog
-  nameOverride: modeling-db
+  db:
+    externalSecret: *dbSecretName
+    name: &mysqlDbName etsicatalog
+  nameOverride: &modeling-db modeling-db
   service:
-    name: modeling-db
-    portName: modeling-db
+    name: *modeling-db
     internalPort: 3306
   nfsprovisionerPrefix: modeling
   persistence:
     mountSubPath: modeling/data
     enabled: true
   disableNfsProvisioner: true
+  serviceAccount:
+    nameOverride: *modeling-db
 
 mariadb-init:
-  config: *mariadbConfig
+  config:
+    userCredentialsExternalSecret: *dbSecretName
+    mysqlDatabase: *mysqlDbName
   # nameOverride should be the same with common.name
   nameOverride: modeling-etsicatalog
 
