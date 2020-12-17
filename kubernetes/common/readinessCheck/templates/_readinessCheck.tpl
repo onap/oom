@@ -35,6 +35,14 @@
       - aaf-cm
       - aaf-service
 
+  the powerful one allows also to wait for jobs with this:
+  wait_for:
+    name: myname
+    jobs:
+      - '{{ include "common.release" . }}-the-job'
+
+  Be careful, as on the example above, the job name may have a "non fixed" name
+  and thus don't forget to use templates if needed
 
   The function can takes below arguments (inside a dictionary):
      - .dot : environment (.)
@@ -55,15 +63,20 @@
 {{-   $wait_for := default $initRoot.wait_for .wait_for -}}
 {{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
+{{-   $jobs := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "jobs" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: "{{ include "common.repository" $subchartDot }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
   command:
   - /app/ready.py
   args:
-  {{- range $container := $containers }}
+  {{- range $container := default (list) $containers }}
   - --container-name
   - {{ tpl $container $dot }}
+  {{- end }}
+  {{- range $job := $jobs }}
+  - --job-name
+  - {{ tpl $job $dot }}
   {{- end }}
   env:
   - name: NAMESPACE
