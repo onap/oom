@@ -90,6 +90,10 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "htpasswdImage") .) }}
 {{- end -}}
 
+{{- define "repositoryGenerator.image.jre" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "jreImage") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image.kubectl" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "kubectlImage") .) }}
 {{- end -}}
