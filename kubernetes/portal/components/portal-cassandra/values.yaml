@@ -1,5 +1,6 @@
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright (c) 2017 Amdocs, Bell Canada
+# Modifications Copyright (c) 2018 AT&T
+# Modifications Copyright (c) 2020 Nokia, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +23,7 @@ global: # global defaults
 
 
 # application image
-image: onap/music/cassandra_music:3.0.0
+image: bitnami/cassandra:3.11.9-debian-10-r30
 pullPolicy: Always
 
 #################################################################
@@ -52,14 +53,20 @@ affinity: {}
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 10
-  periodSeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
   initialDelaySeconds: 10
-  periodSeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
 
 ## Persist data to a persitent volume
 persistence:
@@ -112,7 +119,7 @@ resources:
       memory: 3.75Gi
     requests:
       cpu: 160m
-      memory: 2.8Gi
+      memory: 3.1Gi
   large:
     limits:
       cpu: 4
@@ -120,4 +127,16 @@ resources:
     requests:
       cpu: 2
       memory: 6Gi
+  unlimited: {}
+
+heap:
+  # Heap size is tightly correlated to RAM limits.
+  # If limit > 8G, Cassandra should define itself the best value.
+  # If not, you must set up it in a coherent way with limits set
+  # Refer to https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/operations/opsTuneJVM.html#Determiningtheheapsize
+  # for more informations.
+  small:
+    max: 3G
+    new: 100M
+  large: {}
   unlimited: {}

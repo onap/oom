@@ -17,7 +17,7 @@
 {{- define "common.log.sidecar" -}}
 {{- if .Values.global.centralizedLoggingEnabled }}
 - name: {{ include "common.name" . }}-filebeat
-  image: "{{ .Values.global.loggingRepository }}/{{ .Values.global.loggingImage }}"
+  image: {{ include "repositoryGenerator.image.logging" . }}
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   volumeMounts:
   - name: filebeat-conf

@@ -59,7 +59,7 @@
 {{-   $aafRoot := default $dot.Values.aafConfig .aafRoot -}}
 {{-   if $dot.Values.global.aafEnabled -}}
 - name: {{ include "common.name" $dot }}-aaf-readiness
-  image: "{{ include "common.repository" $dot }}/{{ $dot.Values.global.readinessImage }}"
+  image: {{ include "common.repository" $dot }}/{{ $dot.Values.global.readinessImage }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
   command:
   - /app/ready.py

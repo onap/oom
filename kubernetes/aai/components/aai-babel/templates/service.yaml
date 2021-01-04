@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
+# Modifications Copyright (c) 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,27 +29,16 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-  {{ if .Values.global.installSidecarSecurity }}
-      {{if eq .Values.service.type "NodePort" -}}
-      - port: {{ .Values.global.rproxy.port }}
-        nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-        name: {{ .Values.service.portName }}
-      {{- else -}}
-      - port: {{ .Values.service.externalPort }}
-        targetPort: {{ .Values.global.rproxy.port }}
-        name: {{ .Values.service.portName }}
-      {{- end}}
-  {{ else }}
-      {{if eq .Values.service.type "NodePort" -}}
-      - port: {{ .Values.service.internalPort }}
-        nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-        name: {{ .Values.service.portName }}
-      {{- else -}}
-      - port: {{ .Values.service.externalPort }}
-        targetPort: {{ .Values.service.internalPort }}
-        name: {{ .Values.service.portName }}
-      {{- end}}
-  {{ end }}
+    {{- if eq .Values.service.type "NodePort" }}
+    - port: {{ .Values.service.internalPort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      name: {{ .Values.service.portName }}
+    {{- else }}
+    - port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      name: {{ .Values.service.portName }}
+    {{- end }}
+
   selector:
     app: {{ include "common.name" . }}
     release: {{ include "common.release" . }}

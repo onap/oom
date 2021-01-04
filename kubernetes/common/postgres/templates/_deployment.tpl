@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, AT&T, Bell Canada
 # Copyright © 2020 Samsung Electronics
+# Modifications Copyright (C) 2021 Bell Canada.
 # #
 # # Licensed under the Apache License, Version 2.0 (the "License");
 # # you may not use this file except in compliance with the License.
@@ -134,6 +135,8 @@ spec:
           value: "{{ $dot.Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
+        - name: PGDATA_PATH_OVERRIDE
+          value: "{{ $dot.Values.config.pgDataPath }}"
         volumeMounts:
         - name: config
           mountPath: /pgconf/pool_hba.conf

@@ -128,7 +128,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   name: {{ $port.name }}
 {{-       end }}
 {{-       if (eq $serviceType "NodePort") }}
-  nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "portNodePortExt" $port.useNodePortExt) }}{{ $port.nodePort }}
+  nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "useNodePortExt" $port.useNodePortExt) }}{{ $port.nodePort }}
 {{-       end }}
 {{-     else }}
 - port: {{ default $port.port $port.plain_port }}

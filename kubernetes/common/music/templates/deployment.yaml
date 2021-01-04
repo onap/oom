@@ -38,19 +38,18 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+        {{ include "common.certInitializer.initContainer" . | indent 8 | trim }}
         - command:
           - sh
           args:
           - -c
-          - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
+          - "export KEYSTORE_PASSWORD=$(cat /opt/app/aafcertman/local/.pass); cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
           env:
-          - name: KEYSTORE_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "music-keystore-pw" "key" "password") | indent 12}}
           - name: CASSA_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "login") | indent 12 }}
           - name: CASSA_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cassa-secret" "key" "password") | indent 12 }}
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /config-input
             name: properties-music-scrubbed
           - mountPath: /config
@@ -87,7 +86,7 @@ spec:
             value: "{{ .Values.javaOpts }}"
           - name: DEBUG
             value: "{{ .Values.debug }}"
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - name: localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -100,9 +99,7 @@ spec:
           - name: properties-music-scrubbed
             mountPath: /opt/app/music/etc/logback.xml
             subPath: logback.xml
-          - name: certs-aaf
-            mountPath: /opt/app/aafcertman/
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: shared-data
           emptyDir: {}
         - name: certificate-vol
@@ -116,6 +113,3 @@ spec:
         - name: properties-music
           emptyDir:
             medium: Memory
-        - name: certs-aaf
-          secret:
-            secretName: {{ include "common.secret.getSecretNameFast" (dict "global" . "uid" "music-certs") }}

@@ -25,16 +25,6 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: music-certs
-    name: keystore.jks
-    type: generic
-    filePaths:
-      - resources/keys/org.onap.music.jks
-  - uid: music-keystore-pw
-    name: keystore-pw
-    type: password
-    password: '{{ .Values.keystorePassword }}'
-    passwordPolicy: required
   - uid: cassa-secret
     type: basicAuth
     login: '{{ .Values.properties.cassandraUser }}'
@@ -115,8 +105,6 @@ debug: false
 ingress:
   enabled: false
 
-keystorePassword: "ysF9CVS+xvuXr0vf&fRa5lew"
-
 properties:
   lockUsing: "cassandra"
   # Comma dilimited list of hosts
@@ -160,3 +148,21 @@ logback:
   auditLogLevel: info
   # Values must be uppercase: INFO, WARN, CRITICAL,DEBUG etc..
   rootLogLevel: INFO
+
+#sub-charts configuration
+certInitializer:
+  nameOverride: music-cert-initializer
+  fqdn: "music.onap"
+  app_ns: "org.osaaf.aaf"
+  fqi: "music@music.onap.org"
+  fqi_namespace: org.onap.music
+  public_fqdn: "music.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "0.0"
+  cadi_longitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /opt/app/aafcertman
+  aaf_add_config: >
+    cd {{ .Values.credsPath }};
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password_jks= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1;

@@ -1,5 +1,6 @@
 # Copyright © 2020 Samsung Electronics, highstreet technologies GmbH
 # Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2021 Nokia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,32 +30,8 @@ global:
     service: mariadb-galera
     internalPort: 3306
     nameOverride: mariadb-galera
-    service: mariadb-galera
-  # Enabling CMPv2
-  cmpv2Enabled: true
-  platform:
-    certServiceClient:
-      image: onap/org.onap.oom.platform.cert-service.oom-certservice-client:2.3.1
-      secret:
-        name: oom-cert-service-client-tls-secret
-        mountPath: /etc/onap/oom/certservice/certs/
-      envVariables:
-        # Certificate related
-        cert_path: /var/custom-certs
-        cmpv2Organization: "Linux-Foundation"
-        cmpv2OrganizationalUnit: "ONAP"
-        cmpv2Location: "San-Francisco"
-        cmpv2Country: "US"
-        # Client configuration related
-        caName: "RA"
-        common_name: "sdnc.simpledemo.onap.org"
-        requestURL: "https://oom-cert-service:8443/v1/certificate/"
-        requestTimeout: "30000"
-        keystorePath: "/etc/onap/oom/certservice/certs/certServiceClient-keystore.jks"
-        outputType: "P12"
-        keystorePassword: "secret"
-        truststorePath: "/etc/onap/oom/certservice/certs/truststore.jks"
-        truststorePassword: "secret"
+  # Enabling CMPv2 with CertManager
+  CMPv2CertManagerIntegration: false
 
 #################################################################
 # Secrets metaconfig
@@ -96,6 +73,14 @@ secrets:
     password: '{{ .Values.config.odlPassword }}'
     # For now this is left hardcoded but should be revisited in a future
     passwordPolicy: required
+  - uid: dmaap-proxy-creds
+    name: &dmaapProxyCredsSecretName '{{ include "common.release" . }}-sdnc-dmaap-proxy-creds'
+    type: basicAuth
+    externalSecret: '{{ .Values.config.dmaapProxyCredsExternalSecret }}'
+    login: '{{ .Values.config.sdnr.dmaapProxy.user }}'
+    password: '{{ .Values.config.sdnr.dmaapProxy.password }}'
+    # For now this is left hardcoded but should be revisited in a future
+    passwordPolicy: required
   - uid: netbox-apikey
     type: password
     externalSecret: '{{ .Values.config.netboxApikeyExternalSecret }}'
@@ -133,12 +118,30 @@ secrets:
     password: '{{ .Values.config.scaleoutPassword }}'
     passwordPolicy: required
 #################################################################
+# Certificates
+#################################################################
+certificates:
+  - mountPath:  /var/custom-certs
+    commonName: sdnc.simpledemo.onap.org
+    dnsNames:
+        - sdnc.simpledemo.onap.org
+    keystore:
+      outputType:
+        - jks
+      passwordSecretRef:
+        name: sdnc-cmpv2-keystore-password
+        key: password
+    issuer:
+      group: certmanager.onap.org
+      kind: CMPv2Issuer
+      name: cmpv2-issuer-onap
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application images
 
 pullPolicy: Always
-image: onap/sdnc-image:2.0.4
+image: onap/sdnc-image:2.0.5
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -193,7 +196,7 @@ config:
     binDir: /opt/opendaylight/bin
     gcLogDir: /opt/opendaylight/data/log
     salConfigDir: /opt/opendaylight/system/org/opendaylight/controller/sal-clustering-config
-    salConfigVersion: 1.9.1
+    salConfigVersion: 1.10.4
     akka:
       seedNodeTimeout: 15s
       circuitBreaker:
@@ -228,6 +231,15 @@ config:
     sdnrdbTrustAllCerts: true
     mountpointRegistrarEnabled: false
     mountpointStateProviderEnabled: false
+    # enable and set dmaap-proxy for mountpointRegistrar
+    dmaapProxy:
+      enabled: false
+      usepwd: true
+      user: addUserHere
+      password: addPasswordHere
+      url: addProxyUrlHere
+
+
 
 
 
@@ -374,7 +386,7 @@ elasticsearch:
     # handles master and data node functionality
     dedicatednode: "no"
     nameOverride: *elasticSearchName
-    cluster_name: *elasticSearchName
+    cluster_name: sdnrdb-cluster
 # enable
 sdnc-web:
   enabled: true
@@ -447,7 +459,10 @@ persistence:
   size: 1Gi
   mountPath: /dockerdata-nfs
   mountSubPath: sdnc/mdsal
-  mdsalPath: /opt/opendaylight/current/daexim
+  mdsalPath: /opt/opendaylight/mdsal
+  daeximPath: /opt/opendaylight/mdsal/daexim
+  journalPath: /opt/opendaylight/journal
+  snapshotsPath: /opt/opendaylight/snapshots
 
 certpersistence:
   enabled: true

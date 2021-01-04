@@ -1,0 +1,272 @@
+openapi: 3.0.1
+info:
+  title: TS 28.532 Performance data file reporting Service
+  version: 16.4.0
+  description: >-
+    OAS 3.0.1 specification of the Performance data file reporting Management Service © 2020,
+    3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC). All
+    rights reserved.
+externalDocs:
+  description: 3GPP TS 28.532 V16.4.0; Generic management services
+  url: 'http://www.3gpp.org/ftp/Specs/archive/28_series/28.532/'
+servers:
+  - url: '{MnSRoot}/PerfDataFileReportMnS/v1640'
+    variables:
+      MnSRoot:
+        description: See subclause 4.4 of TS 32.158
+        default: http://example.com/3GPPManagement
+paths:
+  /Files:
+    get:
+      summary: Read resources of information of available files
+      description: 'With HTTP GET, resources of information of available files are read. The resources to be read are identified with the path component (base resource) and the query component (managementDataType, beginTime and endTime) of the URI. The fields query component allows to select the resource properties to be returned.'
+      parameters:
+        - name: managementDataType
+          in: query
+          description: This parameter identifies the type of management data that the file contains to select the resources from the collection resources identified with the path component of the URI.
+          required: true
+          $ref: '#/components/schemas/managementDataType-Type'
+        - name: beginTime
+          in: query
+          description: This parameter identifies the time stamp no later than which the file became available to select the resources from the collection resources identified with the path component of the URI.
+          required: true
+          $ref: '#/components/schemas/dateTime-Type'
+        - name: endTime
+          in: query
+          description: This parameter identifies the time stamp no earlier than which the file became available to select the resources from the collection resources identified with the path component of the URI.
+          required: true
+          $ref: '#/components/schemas/dateTime-Type'
+      responses:
+        '200':
+          description: 'Success case ("200 OK"). The resources identified in the request for retrieval are returned in the response message body. In case the fields query parameter is used, the selected resources are returned.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/fileInfoRetrieval-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+  /subscriptions:
+    post:
+      summary: Create a subscription
+      description: To create a subscription the representation of the subscription is POSTed on the /subscriptions collection resource.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/subscription-RequestType'
+      responses:
+        '201':
+          description: Success case ("201 Created"). The representation of the newly created subscription resource shall be returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/subscription-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+      callbacks:
+        notifyFileReady:
+          '{request.body#/consumerReference}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyFileReady-NotifType'
+              responses:
+                '204':
+                  description: Success case ("204 No Content"). The notification is successfully delivered. The response message body is absent.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+        notifyFilePreparationError:
+          '{request.body#/consumerReference}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyFilePreparationError-NotifType'
+              responses:
+                '204':
+                  description: Success case ("204 No Content"). The notification is successfully delivered. The response message body is absent.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+    delete:
+      summary: Delete all subscriptions made with a specific consumerReferenceId
+      description: The subscriptions are deleted by deleting the corresponding subscription resources. The resources to be deleted are identified with the path component of the URI pointing to the /subscription collection resource and filtering on the consumerReferenceId provided in the query part.
+      parameters:
+        - name: consumerReferenceId
+          in: query
+          description: Identifies the subscriptions to be deleted.
+          required: true
+          schema:
+            $ref: '#/components/schemas/consumerReferenceId-QueryType'
+      responses:
+        '204':
+          description: Success case ("204 No Content"). The subscription resources have been deleted. The response message body is absent.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+  '/subscriptions/{subscriptionId}':
+    delete:
+      summary: Delete a single subscription
+      description: The subscription is deleted by deleting the corresponding subscription resource. The resource to be deleted is identified with the path component of the URI.
+      parameters:
+        - name: subscriptionId
+          in: path
+          description: Identifies the subscription to be deleted.
+          required: true
+          schema:
+            $ref: '#/components/schemas/subscriptionId-PathType'
+      responses:
+        '204':
+          description: Success case ("204 No Content"). The subscription resource has been deleted. The response message body is absent.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+components:
+  schemas:
+    dateTime-Type:
+      type: string
+      format: date-Time
+    uri-Type:
+      type: string
+    long-Type:
+      type: string
+      format: long
+    additionalText-Type:
+      type: string
+    reason-Type:
+      type: string
+    fileInfoRetrieval-ResponseType:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/fileInfo-Type'
+    fileInfo-Type:
+      type: object
+      properties:
+        fileLocation:
+          $ref: '#/components/schemas/uri-Type'
+        fileSize:
+          $ref: '#/components/schemas/long-Type'
+        fileReadyTime:
+          $ref: '#/components/schemas/dateTime-Type'
+        fileExpirationTime:
+          $ref: '#/components/schemas/dateTime-Type'
+        fileCompression:
+          type: string
+        fileFormat:
+          type: string
+    error-ResponseType:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            errorInfo:
+              type: string
+    managementDataType-Type:
+      type: string
+      enum:
+        - PM
+    header-Type:
+      description: Header used in notifications as notification header
+      type: object
+      properties:
+        uri:
+          $ref: '#/components/schemas/uri-Type'
+        notificationId:
+          $ref: '#/components/schemas/notificationId-Type'
+        notificationType:
+          $ref: '#/components/schemas/notificationType-Type'
+        eventTime:
+          $ref: '#/components/schemas/dateTime-Type'
+    subscriptionId-PathType:
+      type: string
+    filter-Type:
+      type: string
+    notificationId-Type:
+      $ref: '#/components/schemas/long-Type'
+    notificationType-Type:
+      type: string
+      enum:
+        - notifyFileReady
+        - notifyFilePreparationError
+    subscription-ResourceType:
+      type: object
+      properties:
+        consumerReference:
+          $ref: '#/components/schemas/uri-Type'
+        timeTick:
+          $ref: '#/components/schemas/long-Type'
+        filter:
+          $ref: '#/components/schemas/filter-Type'
+    subscription-RequestType:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/subscription-ResourceType'
+    subscription-ResponseType:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/subscription-ResourceType'
+    consumerReferenceId-QueryType:
+      $ref: '#/components/schemas/uri-Type'
+    notifyFileReady-NotifType:
+      type: object
+      properties:
+        header:
+          $ref: '#/components/schemas/header-Type'
+        body:
+          type: object
+          properties:
+            fileInfoList:
+              type: array
+              items:
+                $ref: '#/components/schemas/fileInfo-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'
+    notifyFilePreparationError-NotifType:
+      type: object
+      properties:
+        header:
+          $ref: '#/components/schemas/header-Type'
+        body:
+          type: object
+          properties:
+            fileInfoList:
+              type: array
+              items:
+                $ref: '#/components/schemas/fileInfo-Type'
+            reason:
+              $ref: '#/components/schemas/reason-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'

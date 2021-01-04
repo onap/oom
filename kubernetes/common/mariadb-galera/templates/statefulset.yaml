@@ -94,12 +94,18 @@ spec:
                   fieldPath: metadata.name
             - name: BITNAMI_DEBUG
               value: {{ ternary "true" "false" .Values.debug | quote }}
-            - name: DB_INIT_SLEEP_TIME
+            - name: MARIADB_INIT_SLEEP_TIME
               value: {{ .Values.init_sleep_time | quote }}
             - name: MARIADB_GALERA_CLUSTER_NAME
               value: {{ .Values.galera.name | quote }}
             - name: MARIADB_GALERA_CLUSTER_ADDRESS
               value: "gcomm://{{ template "common.name" . }}-headless.{{ include "common.namespace" . }}.svc.{{ .Values.global.clusterDomain }}"
+            # Bitnami init script don't behave well in dual stack env.
+            # set it here as long as https://github.com/bitnami/charts/issues/4077 is not solved.
+            - name: MARIADB_GALERA_NODE_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: MARIADB_ROOT_USER
               value: {{ .Values.rootUser.user | quote }}
             - name: MARIADB_ROOT_PASSWORD

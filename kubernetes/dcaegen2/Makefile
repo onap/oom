@@ -1,4 +1,4 @@
-# Copyright © 2019  AT&T Intellectual Property.  All rights reserved.
+# Copyright © 2021 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,37 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+OUTPUT_DIR := $(ROOT_DIR)/../dist
+PACKAGE_DIR := $(OUTPUT_DIR)/packages
+SECRET_DIR := $(OUTPUT_DIR)/secrets
+
+EXCLUDES := dist resources templates charts docker
 HELM_BIN := helm
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
-make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard
+.PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-make-dcae-bootstrap:
-	cd components && $(HELM_BIN) dep up dcae-bootstrap && $(HELM_BIN) lint dcae-bootstrap
+all: $(HELM_CHARTS)
 
-make-dcae-cloudify-manager:
-	cd components && $(HELM_BIN) dep up dcae-cloudify-manager && $(HELM_BIN) lint dcae-cloudify-manager
+$(HELM_CHARTS):
+	@echo "\n[$@]"
+	@make package-$@
 
-make-dcae-config-binding-service:
-	cd components && $(HELM_BIN) dep up dcae-config-binding-service && $(HELM_BIN) lint dcae-config-binding-service
+make-%:
+	@if [ -f $*/Makefile ]; then make -C $*; fi
 
-make-dcae-healthcheck:
-	cd components && $(HELM_BIN) dep up dcae-healthcheck && $(HELM_BIN) lint dcae-healthcheck
+dep-%: make-%
+	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
-make-dcae-servicechange-handler:
-	cd components && $(HELM_BIN) dep up dcae-servicechange-handler && $(HELM_BIN) lint dcae-servicechange-handler
+lint-%: dep-%
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
-make-dcae-inventory-api:
-	cd components && $(HELM_BIN) dep up dcae-inventory-api && $(HELM_BIN) lint dcae-inventory-api
-
-make-dcae-deployment-handler:
-	cd components && $(HELM_BIN) dep up dcae-deployment-handler && $(HELM_BIN) lint dcae-deployment-handler
-
-make-dcae-policy-handler:
-	cd components && $(HELM_BIN) dep up dcae-policy-handler && $(HELM_BIN) lint dcae-policy-handler
-
-make-dcae-dashboard:
-	cd components && $(HELM_BIN) dep up dcae-dashboard && $(HELM_BIN) lint dcae-dashboard
+package-%: lint-%
+	@mkdir -p $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
-	@find . -type f -name '*.tgz' -delete
-	@find . -type f -name '*.lock' -delete
+	@rm -f */requirements.lock
+	@rm -f *tgz */charts/*tgz
+	@rm -rf $(PACKAGE_DIR)
+%:
+	@:

@@ -3,7 +3,7 @@
 # ================================================================================
 # Copyright (c) 2018-2020 AT&T Intellectual Property. All rights reserved.
 # Modifications Copyright © 2018 Amdocs, Bell Canada
-# Copyright (c) 2020 J. F. Lucas.  All rights reserved.
+# Copyright (c) 2020-2021 J. F. Lucas.  All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,6 +46,8 @@ spec:
       - ip: "127.0.0.1"
         hostnames:
         - "dcae-cloudify-manager"
+      # Cloudify requires a fixed hostname across restarts
+      hostname: dcae-cloudify-manager
       initContainers:
       - name: {{ include "common.name" . }}-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
@@ -55,6 +57,8 @@ spec:
         args:
           - --container-name
           - aaf-cm
+          - --container-name
+          - consul-server
           - "-t"
           - "15"
         env:
@@ -71,6 +75,18 @@ spec:
           - {{ include "common.namespace" . }}
           - --configmap
           - {{ .Values.multisiteConfigMapName }}
+      - name: init-consul
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.consulLoaderImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        args:
+        - --key
+        - k8s-plugin|/plugin-configs/k8s-plugin.json
+        - --key
+        - dmaap-plugin|/plugin-configs/dmaap-plugin.json
+        resources: {}
+        volumeMounts:
+          - mountPath: /plugin-configs
+            name: plugin-configs
       - name: init-tls
         env:
           - name: POD_IP
@@ -160,6 +176,9 @@ spec:
         - name: {{ include "common.fullname" .}}-kubeconfig
           configMap:
             name: {{ .Values.multisiteConfigMapName }}
+        - name: plugin-configs
+          configMap:
+            name: {{ include "common.fullname" . }}-plugins
         - name: dcae-token
           secret:
             secretName: dcae-token

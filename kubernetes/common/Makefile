@@ -21,7 +21,7 @@ COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
 PROCESSED_LAST := cert-wrapper repository-wrapper
-PROCESSED_FIRST := repositoryGenerator certInitializer
+PROCESSED_FIRST := repositoryGenerator readinessCheck certInitializer
 TO_FILTER := $(PROCESSED_FIRST) $(EXCLUDES) $(PROCESSED_LAST)
 
 HELM_BIN := helm

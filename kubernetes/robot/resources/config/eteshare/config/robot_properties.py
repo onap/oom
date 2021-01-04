@@ -20,7 +20,7 @@ GLOBAL_INJECTED_APPC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" .
 GLOBAL_INJECTED_APPC_CDT_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "appc-cdt") }}'
 GLOBAL_INJECTED_ARTIFACTS_VERSION = '{{.Values.demoArtifactsVersion}}'
 GLOBAL_INJECTED_ARTIFACTS_REPO_URL = "{{ .Values.demoArtifactsRepoUrl }}"
-GLOBAL_INJECTED_CLAMP_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "clamp") }}'
+GLOBAL_INJECTED_CLAMP_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "policy-clamp-fe") }}'
 GLOBAL_INJECTED_CLI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "cli") }}'
 GLOBAL_INJECTED_CLOUD_ENV = 'openstack'
 GLOBAL_INJECTED_DCAE_COLLECTOR_IP = "{{ .Values.dcaeCollectorIp }}"
@@ -152,7 +152,7 @@ GLOBAL_SDC_PASSWORD = "boop"
 GLOBAL_SDC_AUTHENTICATION = [GLOBAL_SDC_USERNAME, GLOBAL_SDC_PASSWORD]
 # clamp info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLAMP_SERVER_PROTOCOL = "https"
-GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "clamp" "port" 8443) }}'
+GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "policy-clamp-fe" "port" 2443) }}'
 # nbi info - everything is from the private oam network (also called onap private network)
 GLOBAL_NBI_SERVER_PROTOCOL = "https"
 GLOBAL_NBI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "nbi" "port" 8443) }}'
@@ -223,6 +223,22 @@ GLOBAL_INVENTORY_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "h
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "deployment-handler") }}'
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_PROTOCOL = "https"
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "deployment-handler" "port" 8443) }}'
+# dcae mod info
+GLOBAL_DCAEMOD_ONBOARDING_API_SERVER_PROTOCOL = "http"
+GLOBAL_DCAEMOD_ONBOARDING_API_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-onboarding-api" "port" 8080) }}'
+GLOBAL_DCAEMOD_ONBOARDING_API_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcaemod-onboarding-api") }}'
+GLOBAL_DCAEMOD_RUNTIME_API_SERVER_PROTOCOL = "http"
+GLOBAL_DCAEMOD_RUNTIME_API_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-runtime-api" "port" 9090) }}'
+GLOBAL_DCAEMOD_RUNTIME_API_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcaemod-runtime-api") }}'
+GLOBAL_DCAEMOD_DISTRIBUTOR_API_SERVER_PROTOCOL = "http"
+GLOBAL_DCAEMOD_DISTRIBUTOR_API_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-distributor-api" "port" 8080) }}'
+GLOBAL_DCAEMOD_DISTRIBUTOR_API_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcaemod-distributor-api") }}'
+GLOBAL_DCAEMOD_DESIGNTOOL_SERVER_PROTOCOL = "http"
+GLOBAL_DCAEMOD_DESIGNTOOL_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-designtool" "port" 8080) }}'
+GLOBAL_DCAEMOD_DESIGNTOOL_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcaemod-designtool") }}'
+GLOBAL_DCAEMOD_NIFI_REGISTRY_PROTOCOL = "http"
+GLOBAL_DCAEMOD_NIFI_REGISTRY_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-nifi-registry" "port" 18080) }}'
+GLOBAL_DCAEMOD_NIFI_REGISTRY_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcaemod-nifi-registry") }}'
 # SO containers - everything is from the private oam network (also called onap private network)
 GLOBAL_SO_APIHAND_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so" "port" 8080) }}'
 GLOBAL_SO_SDCHAND_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-sdc-controller" "port" 8085) }}'

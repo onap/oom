@@ -1,4 +1,5 @@
-// Copyright © 2018 Amdocs, Bell Canada, AT&T
+// Copyright (c) 2018 Amdocs, Bell Canada, AT&T
+// Modifications Copyright (c) 2020 Nokia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,3 +67,6 @@ CREATE TABLE portal.spring_session_attributes (
     AND min_index_interval = 128
     AND read_repair_chance = 0.0
     AND speculative_retry = '99PERCENTILE';
+
+CREATE TABLE portal.health_check (primary_id text PRIMARY KEY, creation_time text);
+insert into portal.health_check (primary_id,creation_time) values ('ECOMPPortal-25927','2018-05-25T20:14:39.408Z');

@@ -1,0 +1,579 @@
+openapi: 3.0.1
+info:
+  title: Provisioning MnS
+  version: 16.4.0
+  description: >-
+    OAS 3.0.1 definition of the Provisioning MnS
+    © 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
+    All rights reserved.
+externalDocs:
+  description: 3GPP TS 28.532 V16.4.0; Generic management services
+  url: http://www.3gpp.org/ftp/Specs/archive/28_series/28.532/
+servers:
+  - url: 'http://{URI-DN-prefix}/{root}/ProvMnS/v1640/{LDN-first-part}'
+    variables:
+      URI-DN-prefix:
+        description: See subclause 4.4 of TS 32.158
+        default: example.com
+      root:
+        description: See subclause 4.4 of TS 32.158
+        default: 3GPPManagement
+      LDN-first-part:
+        description: See subclause 4.4 of TS 32.158
+        default: ''
+paths:
+  '/{className}={id}':
+    parameters:
+      - name: className
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/className-PathType'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/id-PathType'
+    put:
+      summary: Replaces a complete single resource or creates it if it does not exist
+      description: >-
+        With HTTP PUT a complete resource is replaced or created if it does not
+        exist. The target resource is identified by the target URI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/resourcePut-RequestType'
+      responses:
+        '200':
+          description: >-
+            Success case ("200 OK").
+            This status code shall be returned when the resource is replaced, and
+            when the replaced resource representation is not identical to the resource
+            representation in the request.
+            This status code may be retourned when the resource is updated and when the
+            updated resource representation is identical to the resource representation
+            in the request.
+            The representation of the updated resource is returned in the response
+            message body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/resourceUpdate-ResponseType'
+        '201':
+          description: >-
+            Success case ("201 Created").
+            This status code shall be returned when the resource is created.
+            The representation of the created resource is returned in the response
+            message body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/resourceCreation-ResponseType'
+        '204':
+          description: >-
+            Success case ("204 No Content").
+            This status code may be returned only when the replaced resource
+            representation is identical to the representation in the request.
+            The response has no message body.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+      callbacks:
+        notifyMOICreation:
+          '{request.body#/notificationRecipientAddress}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyMOICreation-NotifType'
+              responses:
+                '204':
+                  description: >-
+                    Success case ("204 No Content").
+                    The notification is successfully delivered. The response
+                    has no message body.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+        notifyMOIDeletion:
+          '{request.body#/notificationRecipientAddress}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyMOIDeletion-NotifType'
+              responses:
+                '204':
+                  description: >-
+                    Success case ("204 No Content").
+                    The notification is successfully delivered. The response
+                    has no message body.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+        notifyMOIAttributeValueChange:
+          '{request.body#/notificationRecipientAddress}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyMOIAttributeValueChange-NotifType'
+              responses:
+                '204':
+                  description: >-
+                    Success case ("204 No Content").
+                    The notification is successfully delivered. The response
+                    has no message body.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+        notifyMOIChanges:
+          '{request.body#/notificationRecipientAddress}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/notifyMOIChanges-NotifType'
+              responses:
+                '204':
+                  description: >-
+                    Success case ("204 No Content").
+                    The notification is successfully delivered. The response
+                    has no message body.
+                default:
+                  description: Error case.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/error-ResponseType'
+    get:
+      summary: Reads one or multiple resources
+      description: >-
+        With HTTP GET resources are read. The resources to be retrieved are
+        identified with the target URI. The attributes and fields parameter
+        of the query components allow to select the resource properties to be returned.
+      parameters:
+        - name: scope
+          in: query
+          description: >-
+            This parameter extends the set of targeted resources beyond the base
+            resource identified with the path component of the URI. No scoping
+            mechanism is specified in the present document.
+          required: false
+          schema:
+            $ref: '#/components/schemas/scope-QueryType'
+          style: form
+          explode: true
+        - name: filter
+          in: query
+          description: >-
+            This parameter reduces the targeted set of resources by applying a
+            filter to the scoped set of resource representations. Only resource
+            representations for which the filter construct evaluates to "true"
+            are targeted. No filter language is specified in the present
+            document.
+          required: false
+          schema:
+            $ref: '#/components/schemas/filter-QueryType'
+        - name: attributes
+          in: query
+          description: >-
+            This parameter specifies the attributes of the scoped resources that
+            are returned.
+          required: true
+          schema:
+            $ref: '#/components/schemas/attributes-QueryType'
+          style: form
+          explode: false
+        - name: fields
+          in: query
+          description: >-
+            This parameter specifies the attribute field of the scoped resources
+            that are returned.
+          required: false
+          schema:
+            $ref: '#/components/schemas/fields-QueryType'
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: >-
+            Success case ("200 OK").
+            The resources identified in the request for retrieval are returned
+            in the response message body. In case the attributes or fields query
+            parameters are used, only the selected attributes or sub-attributes are
+            returned. The response message body is constructed according to the
+            hierarchical response construction method (TS 32.158 [15]).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/resourceRetrieval-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    patch:
+      summary: Patches one or multiple resources
+      description: >-
+        With HTTP PATCH resources are created, updated or deleted. The resources
+        to be modified are identified with the target URI (base resource) and
+        the patch document included in the request message body.
+      requestBody:
+        description: >-
+          The request body describes changes to be made to the target resources.
+          The following patch media types are available
+            - "application/merge-patch+json" (RFC 7396)
+            - "application/3gpp-merge-patch+json" (TS 32.158)
+            - "application/json-patch+json" (RFC 6902)
+            - "application/3gpp-json-patch+json" (TS 32.158)
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/jsonMergePatch-RequestType'
+          application/3gpp-merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/3gppJsonMergePatch-RequestType'
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/jsonPatch-RequestType'
+          application/3gpp-json-patch+json:
+            schema:
+              $ref: '#/components/schemas/3gppJsonPatch-RequestType'
+      responses:
+        '200':
+          description: >-
+            Success case ("200 OK").
+            This status code is returned when the updated the resource representations
+            shall be returned for some reason.
+            The resource representations are returned in the response message body. The
+            response message body is constructed according to the hierarchical response
+            construction method (TS 32.158 [15])
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/resourceUpdate-ResponseType'
+        '204':
+          description: >-
+            Success case ("204 No Content").
+            This status code is returned when there is no need to return the updated
+            resource representations.
+            The response message body is empty.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    delete:
+      summary: Deletes one or multiple resources
+      description: >-
+        With HTTP DELETE resources are deleted. The resources to be deleted are
+        identified with the target URI.
+      parameters:
+        - name: scope
+          in: query
+          description: >-
+            This parameter extends the set of targeted resources beyond the base
+            resource identified with the path component of the URI. No scoping
+            mechanism is specified in the present document.
+          required: false
+          schema:
+            $ref: '#/components/schemas/scope-QueryType'
+        - name: filter
+          in: query
+          description: >-
+            This parameter reduces the targeted set of resources by applying a
+            filter to the scoped set of resource representations. Only resources
+            representations for which the filter construct evaluates to "true"
+            are returned. No filter language is specified in the present
+            document.
+          required: false
+          schema:
+            $ref: '#/components/schemas/filter-QueryType'
+      responses:
+        '200':
+          description: >-
+            Success case ("200 OK").
+            This status code shall be returned, when query parameters are present in
+            the request and one or multiple resources are deleted.
+            The URIs of the deleted resources are returned in the response message body.
+        '204':
+          description: >-
+            Success case ("204 No Content").
+            This status code shall be returned, when no query parameters are present in
+            the request and only one resource is deleted.
+            The message body is empty.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/resourceDeletion-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+components:
+  schemas:
+    dateTime-Type:
+      type: string
+      format: date-time
+    long-Type:
+      type: integer
+      format: int64
+    uri-Type:
+      type: string
+    correlatedNotification-Type:
+      type: object
+      properties:
+        source:
+          $ref: '#/components/schemas/uri-Type'
+        notificationIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/notificationId-Type'
+    notificationId-Type:
+      $ref: '#/components/schemas/long-Type'
+    notificationType-Type:
+      type: string
+      enum:
+        - notifyMOICreation
+        - notifyMOIDeletion
+        - notifyMOIAttributeValueChange
+    systemDN-Type:
+      type: string
+    additionalText-Type:
+      type: string
+    sourceIndicator-Type:
+      type: string
+      enum:
+        - resourceOperation
+        - mangementOperation
+        - sONOperation
+        - unknown
+    header-Type:
+      type: object
+      properties:
+        href:
+          $ref: '#/components/schemas/uri-Type'
+        notificationId:
+          $ref: '#/components/schemas/notificationId-Type'
+        notificationType:
+          $ref: '#/components/schemas/notificationType-Type'
+        eventTime:
+          $ref: '#/components/schemas/dateTime-Type'
+        systemDN:
+          $ref: '#/components/schemas/systemDN-Type'
+      required:
+        - href
+        - notificationId
+        - notificationType
+        - eventTime
+        - systemDN
+    scopeType-Type:
+      type: string
+      enum:
+        - BASE_ONLY
+        - BASE_NTH_LEVEL
+        - BASE_SUBTREE
+        - BASE_ALL
+    scopeLevel-Type:
+      type: integer
+    className-PathType:
+      type: string
+    id-PathType:
+      type: string
+    attributes-QueryType:
+      type: array
+      items:
+        type: string
+    fields-QueryType:
+      type: array
+      items:
+        type: string
+    filter-QueryType:
+      type: string
+    scope-QueryType:
+      type: object
+      properties:
+        scopeType:
+          $ref: '#/components/schemas/scopeType-Type'
+        scopeLevel:
+          $ref: '#/components/schemas/scopeLevel-Type'
+
+    resourcePut-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    jsonMergePatch-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    3gppJsonMergePatch-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    jsonPatch-RequestType:
+      type: array
+      items:
+        type: object
+    3gppJsonPatch-RequestType:
+      type: array
+      items:
+        type: object
+
+    error-ResponseType:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            errorInfo:
+              type: string
+    resourceRetrieval-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceCreation-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceUpdate-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceDeletion-ResponseType:
+      type: array
+      items:
+        $ref: '#/components/schemas/uri-Type'
+
+    resourceRepresentation-Type:
+      oneOf:
+        - type: object
+          properties:
+            id:
+              type: string
+            attributes:
+              type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+        - anyOf:
+            - $ref: 'genericNrm.yaml#/components/schemas/resources-genericNrm'
+            - $ref: 'nrNrm.yaml#/components/schemas/resources-nrNrm'
+            - $ref: '5gcNrm.yaml#/components/schemas/resources-5gcNrm'
+            - $ref: 'sliceNrm.yaml#/components/schemas/resources-sliceNrm'
+
+    mOIChange-Type:
+      type: object
+      properties:
+        notificationId:
+          $ref: '#/components/schemas/notificationId-Type'
+        correlatedNotifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/correlatedNotification-Type'
+        additionalText:
+          $ref: '#/components/schemas/additionalText-Type'
+        sourceIndicator:
+          $ref: '#/components/schemas/sourceIndicator-Type'
+        path:
+          $ref: '#/components/schemas/uri-Type'
+        operation:
+          type: string
+          enum:
+            - CREATE
+            - DELETE
+            - REPLACE
+        value:
+          oneOf:
+            - type: object
+              additionalProperties:
+                nullable: true
+            - type: array
+              items:
+                type: object
+              minItems: 1
+              maxItems: 2
+
+    notifyMOICreation-NotifType:
+      allOf:
+        - $ref: '#/components/schemas/header-Type'
+        - type: object
+          properties:
+            correlatedNotifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/correlatedNotification-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'
+            sourceIndicator:
+              $ref: '#/components/schemas/sourceIndicator-Type'
+            attributeList:
+              type: object
+              additionalProperties:
+                nullable: true
+    notifyMOIDeletion-NotifType:
+      allOf:
+        - $ref: '#/components/schemas/header-Type'
+        - type: object
+          properties:
+            correlatedNotifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/correlatedNotification-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'
+            sourceIndicator:
+              $ref: '#/components/schemas/sourceIndicator-Type'
+            attributeList:
+              type: object
+              additionalProperties: true
+    notifyMOIAttributeValueChange-NotifType:
+      allOf:
+        - $ref: '#/components/schemas/header-Type'
+        - type: object
+          properties:
+            correlatedNotifications:
+              type: array
+              items:
+                $ref: '#/components/schemas/correlatedNotification-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'
+            sourceIndicator:
+              $ref: '#/components/schemas/sourceIndicator-Type'
+            attributeValueChange:
+              type: object
+              additionalProperties:
+                type: array
+                minItems: 1
+                maxItems: 2
+                items:
+                  nullable: true
+          required:
+            - attributeValueChange
+    notifyMOIChanges-NotifType:
+      allOf:
+        - $ref: '#/components/schemas/header-Type'
+        - type: object
+          properties:
+            mOIChanges:
+              type: array
+              items:
+                $ref: '#/components/schemas/mOIChange-Type'
+          required:
+            - mOIChanges
