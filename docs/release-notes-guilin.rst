@@ -4,6 +4,8 @@
 .. (c) ONAP Project and its contributors
 .. _release_notes_guilin:
 
+:orphan: 
+
 *************************************
 ONAP Operations Manager Release Notes
 *************************************
