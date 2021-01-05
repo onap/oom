@@ -85,7 +85,7 @@ clean:
 
 # publish helm plugins via distrubtion directory
 plugins:
-	@cp -R $(HELM_BIN) $(PACKAGE_DIR)/
+	@cp -R helm $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
 # WARNING: Only helm < v3 supported
