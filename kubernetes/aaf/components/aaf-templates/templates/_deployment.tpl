@@ -37,6 +37,9 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
+        - mountPath: /opt/app/osaaf/etc/org.osaaf.aaf.log4j.props
+          name: aaf-log
+          subPath: org.osaaf.aaf.log4j.props
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -62,6 +65,9 @@ spec:
           path: /etc/localtime
       - name: aaf-config-vol
         emptyDir: {}
+      - name: aaf-log
+        configMap:
+          name: {{ include "common.release" . }}-aaf-log
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{- end -}}
