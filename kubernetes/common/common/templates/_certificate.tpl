@@ -71,10 +71,17 @@
 {{- $dot := default . .dot -}}
 {{- $certificates := $dot.Values.certificates -}}
 
-{{ range $certificate := $certificates }}
+{{ range $i, $certificate := $certificates }}
 {{/*# General certifiacate attributes  #*/}}
-{{- $name           := $certificate.name                                                                          -}}
-{{- $secretName     := $certificate.secretName                                                                    -}}
+{{- $name           := include "common.fullname" $dot                                                             -}}
+{{- $certName       := printf "%s-cert-%d"   $name $i                                                             -}}
+{{- $secretName     := printf "%s-secret-%d" $name $i                                                             -}}
+{{- if $certificate.name -}}
+{{-   $certName      = $certificate.name                                                                          -}}
+{{- end -}}
+{{- if $certificate.secretName -}}
+{{-   $secretName    = $certificate.secretName                                                                    -}}
+{{- end -}}
 {{- $commonName     := default $dot.Values.global.certificate.default.commonName      $certificate.commonName     -}}
 {{- $renewBefore    := default $dot.Values.global.certificate.default.renewBefore     $certificate.renewBefore    -}}
 {{- $duration       := $certificate.duration                                                                      -}}
@@ -122,7 +129,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name:        {{ $name }}
+  name:        {{ $certName }}
   namespace:   {{ $namespace }}
 spec:
   secretName:  {{ $secretName }}
