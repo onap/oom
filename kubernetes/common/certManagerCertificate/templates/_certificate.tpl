@@ -18,7 +18,7 @@
 #
 # To request a certificate following steps are to be done:
 #  - create an object 'certificates' in the values.yaml
-#  - create a file templates/certificates.yaml and invoke the function "commom.certificate".
+#  - create a file templates/certificates.yaml and invoke the function "certManagerCertificate.certificate".
 #
 # Here is an example of the certificate request for a component:
 #
@@ -66,8 +66,12 @@
 #
 */}}
 
-{{- define "common.certificate" -}}
+{{- define "certManagerCertificate.certificate" -}}
 {{- $dot := default . .dot -}}
+{{- $initRoot := default $dot.Values.certManagerCertificate .initRoot -}}
+
+{{- $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
+{{- $constantValues := $subchartDot.Values.global -}}
 {{- $certificates := $dot.Values.certificates -}}
 
 {{ range $i, $certificate := $certificates }}
@@ -75,35 +79,32 @@
 {{- $name           := include "common.fullname" $dot                                                             -}}
 {{- $certName       := default (printf "%s-cert-%d"   $name $i) $certificate.name                                 -}}
 {{- $secretName     := default (printf "%s-secret-%d" $name $i) $certificate.secretName                           -}}
-{{- $commonName     := default $dot.Values.global.certificate.default.commonName      $certificate.commonName     -}}
-{{- $renewBefore    := default $dot.Values.global.certificate.default.renewBefore     $certificate.renewBefore    -}}
-{{- $duration       := $certificate.duration                                                                      -}}
-{{- $namespace      := default $dot.Release.Namespace         $dot.Values.global.certificate.default.namespace    -}}
-{{- if $certificate.namespace -}}
-{{-   $namespace    = default $namespace                                              $certificate.namespace      -}}
-{{- end -}}
+{{- $commonName     := $certificate.commonName     -}}
+{{- $renewBefore    := default $constantValues.certificate.default.renewBefore     $certificate.renewBefore    -}}
+{{- $duration       := default $constantValues.certificate.default.duration        $certificate.duration       -}}
+{{- $namespace      := $dot.Release.Namespace      -}}
 {{/*# SAN's #*/}}
-{{- $dnsNames       := default $dot.Values.global.certificate.default.dnsNames        $certificate.dnsNames       -}}
-{{- $ipAddresses    := default $dot.Values.global.certificate.default.ipAddresses     $certificate.ipAddresses    -}}
-{{- $uris           := default $dot.Values.global.certificate.default.uris            $certificate.uris           -}}
-{{- $emailAddresses := default $dot.Values.global.certificate.default.emailAddresses  $certificate.emailAddresses -}}
+{{- $dnsNames       := $certificate.dnsNames       -}}
+{{- $ipAddresses    := $certificate.ipAddresses    -}}
+{{- $uris           := $certificate.uris           -}}
+{{- $emailAddresses := $certificate.emailAddresses -}}
 {{/*# Subject #*/}}
-{{- $subject        := $dot.Values.global.certificate.default.subject                                             -}}
+{{- $subject        := $constantValues.certificate.default.subject                                             -}}
 {{- if $certificate.subject -}}
-{{-   $subject       = mergeOverwrite $subject  $certificate.subject                                              -}}
+{{-   $subject       = $certificate.subject                                              -}}
 {{- end -}}
 {{/*# Issuer #*/}}
-{{- $issuer         := $dot.Values.global.certificate.default.issuer                                              -}}
+{{- $issuer         := $constantValues.certificate.default.issuer                                              -}}
 {{- if $certificate.issuer -}}
-{{-   $issuer        = mergeOverwrite $issuer   $certificate.issuer                                               -}}
+{{-   $issuer        = $certificate.issuer                                               -}}
 {{- end -}}
 {{/*# Keystores #*/}}
-{{- $createJksKeystore                  := $dot.Values.global.certificate.default.jksKeystore.create                  -}}
-{{- $jksKeystorePasswordSecretName      := $dot.Values.global.certificate.default.jksKeystore.passwordSecretRef.name  -}}
-{{- $jksKeystorePasswordSecreKey        := $dot.Values.global.certificate.default.jksKeystore.passwordSecretRef.key   -}}
-{{- $createP12Keystore                  := $dot.Values.global.certificate.default.p12Keystore.create                  -}}
-{{- $p12KeystorePasswordSecretName      := $dot.Values.global.certificate.default.p12Keystore.passwordSecretRef.name  -}}
-{{- $p12KeystorePasswordSecreKey        := $dot.Values.global.certificate.default.p12Keystore.passwordSecretRef.key   -}}
+{{- $createJksKeystore                  := $constantValues.certificate.default.jksKeystore.create                  -}}
+{{- $jksKeystorePasswordSecretName      := $constantValues.certificate.default.jksKeystore.passwordSecretRef.name  -}}
+{{- $jksKeystorePasswordSecreKey        := $constantValues.certificate.default.jksKeystore.passwordSecretRef.key   -}}
+{{- $createP12Keystore                  := $constantValues.certificate.default.p12Keystore.create                  -}}
+{{- $p12KeystorePasswordSecretName      := $constantValues.certificate.default.p12Keystore.passwordSecretRef.name  -}}
+{{- $p12KeystorePasswordSecreKey        := $constantValues.certificate.default.p12Keystore.passwordSecretRef.key   -}}
 {{- if $certificate.jksKeystore -}}
 {{-   $createJksKeystore                 = default $createJksKeystore                $certificate.jksKeystore.create                   -}}
 {{-   if $certificate.jksKeystore.passwordSecretRef -}}
