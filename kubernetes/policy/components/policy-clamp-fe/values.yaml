@@ -1,0 +1,150 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018-2019 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global: # global defaults
+  nodePortPrefix: 302
+  centralizedLoggingEnabled: true
+  #AAF service
+  aafEnabled: true
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  permission_user: 1000
+  permission_group: 999
+  addconfig: true
+  keystoreFile: "org.onap.clamp.p12"
+  truststoreFile: "org.onap.clamp.trust.jks"
+  keyFile: "org.onap.clamp.keyfile"
+  truststoreFileONAP: "truststoreONAPall.jks"
+  clamp_key: "clamp.key"
+  clamp_pem: "clamp.pem"
+  clamp_ca_certs_pem: "clamp-ca-certs.pem"
+  nameOverride: clamp-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  public_fqdn: clamp.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass | grep '^c' | xargs -0);
+    cd {{ .Values.credsPath }};
+    openssl pkcs12 -in {{ .Values.keystoreFile }} -nocerts -nodes -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_key }};
+    openssl pkcs12 -in {{ .Values.keystoreFile }} -clcerts -nokeys -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_pem }};
+    openssl pkcs12 -in {{ .Values.keystoreFile }} -cacerts -nokeys -chain -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_ca_certs_pem }};
+    chmod a+rx *;
+
+subChartsOnly:
+  enabled: true
+
+flavor: small
+
+# application image
+image: onap/clamp-frontend:5.1.5
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# log configuration
+log:
+  path: /var/log/nginx/
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+config:
+  log:
+    logstashServiceName: log-ls
+    logstashPort: 5044
+  dataRootDir: /dockerdata-nfs
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  timeoutSeconds: 3
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+service:
+  type: NodePort
+  name: policy-clamp-fe
+  portName: policy-clamp-fe
+  internalPort: 2443
+  nodePort: 58
+
+  # as of 20180904 port 58 is reserved for clamp from log/logdemonode
+  # see https://wiki.onap.org/display/DW/OOM+NodePort+List
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "clamp.api"
+      name: "clamp"
+      port: 2443
+  config:
+    ssl: "redirect"
+
+#resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #
+  # Example:
+  # Configure resource requests and limits
+  # ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  # Minimum memory for development is 2 CPU cores and 4GB memory
+  # Minimum memory for production is 4 CPU cores and 8GB memory
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 200Mi
+    requests:
+      cpu: 1m
+      memory: 50Mi
+  large:
+    limits:
+      cpu: 1
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 50Mi
+  unlimited: {}

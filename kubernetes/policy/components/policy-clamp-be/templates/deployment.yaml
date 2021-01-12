@@ -1,0 +1,126 @@
+{{/*
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      initContainers:
+      - command:
+        - /app/ready.py
+        args:
+        - --job-name
+        - {{ include "common.release" . }}-policy-clamp-galera-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+{{ include "common.certInitializer.initContainer" . | indent 6 }}
+      containers:
+        # side car containers
+        {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.sidecar" . | nindent 8 }}{{ end }}
+        # main container
+        - name: {{ include "common.name" . }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - sh
+          workingDir: "/opt/clamp/"
+          args:
+          - -c
+          - |
+          {{- if .Values.global.aafEnabled }}
+            export $(grep '^cadi_' {{ .Values.certInitializer.credsPath }}/org.onap.clamp.cred.props | xargs -0)
+          {{- end }}
+            java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./app.jar
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - name: logs
+            mountPath: {{ .Values.log.path }}
+          - mountPath: /opt/clamp/sdc-controllers-config.json
+            name: {{ include "common.fullname" . }}-config
+            subPath: sdc-controllers-config.json
+          - mountPath: /opt/clamp/application.properties
+            name: {{ include "common.fullname" . }}-config
+            subPath: application.properties
+          env:
+          - name: MYSQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12 }}
+          - name: MYSQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 12 }}
+          {{-  if ne "unlimited" (include "common.flavor" .) }}
+          - name: JAVA_RAM_CONFIGURATION
+            value: -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=75
+          {{-  end }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
+        {{- end }}
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+            - key: sdc-controllers-config.json
+              path: sdc-controllers-config.json
+            - key: application.properties
+              path: application.properties
+        - name:  logs
+          emptyDir: {}
+        {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.volumes" . | nindent 8 }}{{ end }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
