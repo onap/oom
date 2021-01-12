@@ -61,7 +61,7 @@
 # Other mandatory fields for the certificate definition do not have to be defined directly,
 # in that case they will be taken from default values.
 #
-# Default values are defined in file onap/values.yaml (see-> global.certificate.default)
+# Default values are defined in file common/values.yaml (see-> global.certificate.default)
 # and can be overriden during onap installation process.
 #
 */}}
@@ -69,41 +69,40 @@
 {{- define "common.certificate" -}}
 {{- $dot := default . .dot -}}
 {{- $certificates := $dot.Values.certificates -}}
+{{- $commonGlobal := $dot.Values.common.global -}}
 
+{{ if $commonGlobal.CMPv2CertManagerIntegration }}
 {{ range $i, $certificate := $certificates }}
 {{/*# General certifiacate attributes  #*/}}
 {{- $name           := include "common.fullname" $dot                                                             -}}
 {{- $certName       := default (printf "%s-cert-%d"   $name $i) $certificate.name                                 -}}
 {{- $secretName     := default (printf "%s-secret-%d" $name $i) $certificate.secretName                           -}}
-{{- $commonName     := default $dot.Values.global.certificate.default.commonName      $certificate.commonName     -}}
-{{- $renewBefore    := default $dot.Values.global.certificate.default.renewBefore     $certificate.renewBefore    -}}
-{{- $duration       := $certificate.duration                                                                      -}}
-{{- $namespace      := default $dot.Release.Namespace         $dot.Values.global.certificate.default.namespace    -}}
-{{- if $certificate.namespace -}}
-{{-   $namespace    = default $namespace                                              $certificate.namespace      -}}
-{{- end -}}
+{{- $commonName     := $certificate.commonName     -}}
+{{- $renewBefore    := default $commonGlobal.certificate.default.renewBefore     $certificate.renewBefore    -}}
+{{- $duration       := default $commonGlobal.certificate.default.duration        $certificate.duration       -}}
+{{- $namespace      := $dot.Release.Namespace      -}}
 {{/*# SAN's #*/}}
-{{- $dnsNames       := default $dot.Values.global.certificate.default.dnsNames        $certificate.dnsNames       -}}
-{{- $ipAddresses    := default $dot.Values.global.certificate.default.ipAddresses     $certificate.ipAddresses    -}}
-{{- $uris           := default $dot.Values.global.certificate.default.uris            $certificate.uris           -}}
-{{- $emailAddresses := default $dot.Values.global.certificate.default.emailAddresses  $certificate.emailAddresses -}}
+{{- $dnsNames       := $certificate.dnsNames       -}}
+{{- $ipAddresses    := $certificate.ipAddresses    -}}
+{{- $uris           := $certificate.uris           -}}
+{{- $emailAddresses := $certificate.emailAddresses -}}
 {{/*# Subject #*/}}
-{{- $subject        := $dot.Values.global.certificate.default.subject                                             -}}
+{{- $subject        := $commonGlobal.certificate.default.subject                                             -}}
 {{- if $certificate.subject -}}
-{{-   $subject       = mergeOverwrite $subject  $certificate.subject                                              -}}
+{{-   $subject       = $certificate.subject                                              -}}
 {{- end -}}
 {{/*# Issuer #*/}}
-{{- $issuer         := $dot.Values.global.certificate.default.issuer                                              -}}
+{{- $issuer         := $commonGlobal.certificate.default.issuer                                              -}}
 {{- if $certificate.issuer -}}
-{{-   $issuer        = mergeOverwrite $issuer   $certificate.issuer                                               -}}
+{{-   $issuer        = $certificate.issuer                                               -}}
 {{- end -}}
 {{/*# Keystores #*/}}
-{{- $createJksKeystore                  := $dot.Values.global.certificate.default.jksKeystore.create                  -}}
-{{- $jksKeystorePasswordSecretName      := $dot.Values.global.certificate.default.jksKeystore.passwordSecretRef.name  -}}
-{{- $jksKeystorePasswordSecreKey        := $dot.Values.global.certificate.default.jksKeystore.passwordSecretRef.key   -}}
-{{- $createP12Keystore                  := $dot.Values.global.certificate.default.p12Keystore.create                  -}}
-{{- $p12KeystorePasswordSecretName      := $dot.Values.global.certificate.default.p12Keystore.passwordSecretRef.name  -}}
-{{- $p12KeystorePasswordSecreKey        := $dot.Values.global.certificate.default.p12Keystore.passwordSecretRef.key   -}}
+{{- $createJksKeystore                  := $commonGlobal.certificate.default.jksKeystore.create                  -}}
+{{- $jksKeystorePasswordSecretName      := $commonGlobal.certificate.default.jksKeystore.passwordSecretRef.name  -}}
+{{- $jksKeystorePasswordSecreKey        := $commonGlobal.certificate.default.jksKeystore.passwordSecretRef.key   -}}
+{{- $createP12Keystore                  := $commonGlobal.certificate.default.p12Keystore.create                  -}}
+{{- $p12KeystorePasswordSecretName      := $commonGlobal.certificate.default.p12Keystore.passwordSecretRef.name  -}}
+{{- $p12KeystorePasswordSecreKey        := $commonGlobal.certificate.default.p12Keystore.passwordSecretRef.key   -}}
 {{- if $certificate.jksKeystore -}}
 {{-   $createJksKeystore                 = default $createJksKeystore                $certificate.jksKeystore.create                   -}}
 {{-   if $certificate.jksKeystore.passwordSecretRef -}}
@@ -189,4 +188,5 @@ spec:
   {{- end }}
 {{ end }}
 
+{{- end -}}
 {{- end -}}
