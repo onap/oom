@@ -1,0 +1,154 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018-2019 AT&T
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global: # global defaults
+  nodePortPrefix: 302
+  persistence: {}
+  centralizedLoggingEnabled: true
+  #AAF service
+  aafEnabled: true
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  permission_user: 1000
+  permission_group: 999
+  keystoreFile: 'org.onap.clamp.p12'
+  truststoreFile: 'org.onap.clamp.trust.jks'
+  keyFile: 'org.onap.clamp.keyfile'
+  truststoreFileONAP: 'truststoreONAPall.jks'
+  nameOverride: clamp-backend-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: clamp
+  fqi: clamp@clamp.onap.org
+  public_fqdn: clamp.onap.org
+  cadi_longitude: '-72.0'
+  cadi_latitude: '38.0'
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_truststore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_truststore_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_key_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_key_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password_p12=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
+    cd {{ .Values.credsPath }};
+    chmod a+rx *;
+
+secrets:
+  - uid: db-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
+    login: '{{ .Values.db.user }}'
+    password: '{{ .Values.db.password }}'
+    passwordPolicy: required
+
+flavor: small
+
+# application image
+image: onap/clamp-backend:5.1.5
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# log configuration
+log:
+  path: /var/log/onap
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+#####dummy values for db user and password to pass lint!!!#######
+
+db:
+  user: policy_user
+  password: policy_user
+  image: mariadb:10.5.8
+  service:
+    name: policy-mariadb
+    internalPort: 3306
+
+config:
+  log:
+    logstashServiceName: log-ls
+    logstashPort: 5044
+  mysqlPassword: strong_pitchou
+  dataRootDir: /dockerdata-nfs
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  timeoutSeconds: 3
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+service:
+  type: ClusterIP
+  name: policy-clamp-be
+  portName: policy-clamp-be
+  internalPort: 8443
+  externalPort: 8443
+
+ingress:
+  enabled: false
+
+#resources: {}
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+#
+# Example:
+# Configure resource requests and limits
+# ref: http://kubernetes.io/docs/user-guide/compute-resources/
+# Minimum memory for development is 2 CPU cores and 4GB memory
+# Minimum memory for production is 4 CPU cores and 8GB memory
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 1
+      memory: 3Gi
+    requests:
+      cpu: 10m
+      memory: 3Gi
+  unlimited: {}
