@@ -33,11 +33,10 @@
 # To be added in the file values.yaml
 #  1. Minimal version (certificates only in PEM format)
 #  certificates:
-#    - name:       onap-component-certificate
-#      secretName: onap-component-certificate
-#      commonName: component.onap.org
-#   2. Extended version (with defined own issuer and additional certificate format):
-#   certificates:
+#    - commonName: component.onap.org
+#
+#  2. Extended version (with defined own issuer and additional certificate format):
+#  certificates:
 #    - name:       onap-component-certificate
 #      secretName: onap-component-certificate
 #      commonName: component.onap.org
@@ -71,10 +70,11 @@
 {{- $dot := default . .dot -}}
 {{- $certificates := $dot.Values.certificates -}}
 
-{{ range $certificate := $certificates }}
+{{ range $i, $certificate := $certificates }}
 {{/*# General certifiacate attributes  #*/}}
-{{- $name           := $certificate.name                                                                          -}}
-{{- $secretName     := $certificate.secretName                                                                    -}}
+{{- $name           := include "common.fullname" $dot                                                             -}}
+{{- $certName       := default (printf "%s-cert-%d"   $name $i) $certificate.name                                 -}}
+{{- $secretName     := default (printf "%s-secret-%d" $name $i) $certificate.secretName                           -}}
 {{- $commonName     := default $dot.Values.global.certificate.default.commonName      $certificate.commonName     -}}
 {{- $renewBefore    := default $dot.Values.global.certificate.default.renewBefore     $certificate.renewBefore    -}}
 {{- $duration       := $certificate.duration                                                                      -}}
@@ -122,7 +122,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name:        {{ $name }}
+  name:        {{ $certName }}
   namespace:   {{ $namespace }}
 spec:
   secretName:  {{ $secretName }}
