@@ -20,7 +20,7 @@ GLOBAL_INJECTED_APPC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" .
 GLOBAL_INJECTED_APPC_CDT_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "appc-cdt") }}'
 GLOBAL_INJECTED_ARTIFACTS_VERSION = '{{.Values.demoArtifactsVersion}}'
 GLOBAL_INJECTED_ARTIFACTS_REPO_URL = "{{ .Values.demoArtifactsRepoUrl }}"
-GLOBAL_INJECTED_CLAMP_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "clamp") }}'
+GLOBAL_INJECTED_CLAMP_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "policy-clamp-fe") }}'
 GLOBAL_INJECTED_CLI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "cli") }}'
 GLOBAL_INJECTED_CLOUD_ENV = 'openstack'
 GLOBAL_INJECTED_DCAE_COLLECTOR_IP = "{{ .Values.dcaeCollectorIp }}"
@@ -152,7 +152,7 @@ GLOBAL_SDC_PASSWORD = "boop"
 GLOBAL_SDC_AUTHENTICATION = [GLOBAL_SDC_USERNAME, GLOBAL_SDC_PASSWORD]
 # clamp info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLAMP_SERVER_PROTOCOL = "https"
-GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "clamp" "port" 8443) }}'
+GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "policy-clamp-fe" "port" 2443) }}'
 # nbi info - everything is from the private oam network (also called onap private network)
 GLOBAL_NBI_SERVER_PROTOCOL = "https"
 GLOBAL_NBI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "nbi" "port" 8443) }}'
