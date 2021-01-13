@@ -1,0 +1,84 @@
+{{/*
+# Copyright © 2018 Amdocs, Bell Canada
+# Modifications Copyright © 2020 AT&T Intellectual Property
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.release" . }}-policy-clamp-galera-config
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}-policy-clamp-job
+    release: {{ include "common.release" . }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}-policy-clamp-job
+        release: {{ include "common.release" . }}
+    spec:
+      initContainers:
+#This container checks that all galera instances are up before initializing it.
+      - name: {{ include "common.name" . }}-readiness
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /app/ready.py
+        - --job-name
+        - {{ include "common.release" . }}-policy-galera-config
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      containers:
+      - name: {{ include "common.release" . }}-policy-clamp-galera-config
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.db.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /dbcmd-config/create-db-tables.sh
+          name: {{ include "common.fullname" . }}-config
+          subPath: create-db-tables.sh
+        - mountPath: /dbcmd-config/policy-clamp-create-tables.sql
+          name: {{ include "common.fullname" . }}-config
+          subPath: policy-clamp-create-tables.sql
+        command:
+        - /bin/sh
+        args:
+        - -x
+        - /dbcmd-config/create-db-tables.sh
+        env:
+        - name: MYSQL_HOST
+          value: "{{ .Values.db.service.name }}"
+        - name: MYSQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 10 }}
+        - name: MYSQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 10 }} 
+        - name: MYSQL_PORT
+          value: "{{ .Values.db.service.internalPort }}"
+        resources:
+{{ include "common.resources" . }}
+      restartPolicy: Never
+      volumes:
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
+            items:
+              - key: create-db-tables.sh
+                path: create-db-tables.sh
+              - key: policy-clamp-create-tables.sql
+                path: policy-clamp-create-tables.sql

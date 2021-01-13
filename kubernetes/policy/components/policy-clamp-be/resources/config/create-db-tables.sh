@@ -1,6 +1,7 @@
+#!/bin/sh
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018, 2020 AT&T Intellectual Property
+# Copyright © 2017 Amdocs, Bell Canada, AT&T
+# Modifications Copyright © 2018, 2020, 2021 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +16,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-db-configmap
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-data:
-{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
+mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" policyclamp < /dbcmd-config/policy-clamp-create-tables.sql
