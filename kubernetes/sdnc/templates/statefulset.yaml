@@ -141,15 +141,19 @@ spec:
             name: certservice-tls-volume
       {{ end }}
 
-      - name: {{ include "common.name" . }}-chown
-        image: {{ .Values.global.busyboxRepository | default .Values.busyboxRepository }}/{{ .Values.global.busyboxImage | default .Values.busyboxImage }}
+      - name: {{ include "common.name" . }}-init-files
+        image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
         - sh
         args:
         - -c
-        - chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}
+        - |
+           mkdir {{ .Values.persistence.mdsalPath }}/daexim
+           mkdir {{ .Values.persistence.mdsalPath }}/journal
+           mkdir {{ .Values.persistence.mdsalPath }}/snapshots
+           chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}
 {{- if .Values.global.aafEnabled }}
-        - chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}
+           chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}
 {{- end }}
         volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
@@ -160,7 +164,7 @@ spec:
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash"]
-          args: ["-c", "/opt/onap/sdnc/bin/startODL.sh"]
+          args: ["-c", "/opt/onap/sdnc/bin/createLinks.sh ; /opt/onap/sdnc/bin/startODL.sh"]
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
@@ -200,6 +204,14 @@ spec:
             value: "{{ .Values.replicaCount }}"
           - name: MYSQL_HOST
             value: {{ include "common.mariadbService" . }}
+          - name: MDSAL_PATH
+            value: {{ .Values.persistence.mdsalPath }}
+          - name: DAEXIM_PATH
+            value: {{ .Values.persistence.daeximPath }}
+          - name: JOURNAL_PATH
+            value: {{ .Values.persistence.journalPath }}
+          - name: SNAPSHOTS_PATH
+            value: {{ .Values.persistence.snapshotsPath }}
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
           - name: JAVA_OPTS
@@ -233,6 +245,9 @@ spec:
           - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
             name: bin
             subPath: installSdncDb.sh
+          - mountPath: {{ .Values.config.binDir }}/createLinks.sh
+            name: bin
+            subPath: createLinks.sh
           - mountPath: {{ .Values.config.ccsdkConfigDir }}/aaiclient.properties
             name: properties
             subPath: aaiclient.properties
