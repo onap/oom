@@ -26,14 +26,20 @@ mkdir -p $WORK_DIR
 
 # Decrypt and move relevant files to WORK_DIR
 for f in $CERTS_DIR/*; do
-  if [[ $AAF_ENABLED == false ]] && [[ $f == *$ONAP_TRUSTSTORE* ]]; then
+  export canonical_name_nob64=$(echo $f | sed 's/.*\/\([^\/]*\)/\1/')
+  export canonical_name_b64=$(echo $f | sed 's/.*\/\([^\/]*\)\(\.b64\)/\1/')
+  if [ "$AAF_ENABLED" == "false" ] && [ "$canonical_name_b64" == "$ONAP_TRUSTSTORE" ]; then
     # Dont use onap truststore when aaf is disabled
     continue
   fi
-  if [[ $f == *.sh ]]; then
+  if [ "$AAF_ENABLED" == "false" ] && [ "$canonical_name_nob64" == "$ONAP_TRUSTSTORE" ]; then
+    # Dont use onap truststore when aaf is disabled
     continue
   fi
-  if [[ $f == *.b64 ]]
+  if [ ${f: -3} == ".sh" ]; then
+    continue
+  fi
+  if [ ${f: -4} == ".b64" ]
     then
       base64 -d $f > $WORK_DIR/`basename $f .b64`
     else
@@ -42,7 +48,7 @@ for f in $CERTS_DIR/*; do
 done
 
 # Prepare truststore output file
-if [[ $AAF_ENABLED == true ]]
+if [ "$AAF_ENABLED" == "true" ]
   then
     mv $WORK_DIR/$ONAP_TRUSTSTORE $WORK_DIR/$TRUSTSTORE_OUTPUT_FILENAME
   else
@@ -52,10 +58,10 @@ fi
 
 # Import Custom Certificates
 for f in $WORK_DIR/*; do
-  if [[ $f == *.pem ]]; then
+  if [ ${f: -4} == ".pem" ]; then
     echo "importing certificate: $f"
     keytool -import -file $f -alias `basename $f` -keystore $WORK_DIR/$TRUSTSTORE_OUTPUT_FILENAME -storepass $TRUSTSTORE_PASSWORD -noprompt
-    if [[ $? != 0 ]]; then
+    if [ $? != 0 ]; then
       echo "failed importing certificate: $f"
       exit 1
     fi
