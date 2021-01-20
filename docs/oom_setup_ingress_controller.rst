@@ -15,7 +15,7 @@
 .. figure:: oomLogoV2-medium.png
    :align: right
 
-.. _onap-on-kubernetes-with-rancher:
+.. _oom_setup_ingress_controller:
 
 
 Ingress controller setup on HA Kubernetes Cluster
