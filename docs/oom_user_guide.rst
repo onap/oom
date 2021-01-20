@@ -156,12 +156,12 @@ system, and looks for matches::
 
   > helm search -l
   NAME                    VERSION    DESCRIPTION
-  local/appc              7.0.0      Application Controller
-  local/clamp             7.0.0      ONAP Clamp
-  local/common            7.0.0      Common templates for inclusion in other charts
-  local/onap              7.0.0      Open Network Automation Platform (ONAP)
-  local/robot             7.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                7.0.0      ONAP Service Orchestrator
+  local/appc              8.0.0      Application Controller
+  local/clamp             8.0.0      ONAP Clamp
+  local/common            8.0.0      Common templates for inclusion in other charts
+  local/onap              8.0.0      Open Network Automation Platform (ONAP)
+  local/robot             8.0.0      A helm Chart for kubernetes-ONAP Robot
+  local/so                8.0.0      ONAP Service Orchestrator
 
 In any case, setup of the Helm repository is a one time activity.
 
