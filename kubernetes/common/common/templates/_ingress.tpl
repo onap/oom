@@ -1,42 +1,18 @@
-{{- define "ingress.config.host" -}}
-{{-   $dot := default . .dot -}}
-{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
-{{-   $burl := (required "'baseurl' param, set to the generic part of the fqdn, is required." $dot.Values.global.ingress.virtualhost.baseurl) -}}
-{{ printf "%s.%s" $baseaddr $burl }}
-{{- end -}}
-
 {{- define "ingress.config.port" -}}
 {{-   $dot := default . .dot -}}
-{{- if .Values.ingress -}}
-{{- if .Values.global.ingress -}}
-{{- if or (not .Values.global.ingress.virtualhost) (not .Values.global.ingress.virtualhost.enabled) -}}
-  - http:
-      paths:
-{{- range .Values.ingress.service }}
-{{ $baseaddr := required "baseaddr" .baseaddr }}
-        - path: {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-          backend:
-            serviceName: {{ .name }}
-            servicePort: {{ .port }}
-{{- end -}}
-{{- else if .Values.ingress.service -}}
+{{-   $burl := (required "'baseurl' param, set to the generic part of the fqdn, is required." $dot.Values.global.ingress.virtualhost.baseurl) -}}
 {{ range .Values.ingress.service }}
-{{ $baseaddr := required "baseaddr" .baseaddr }}
-  - host: {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) }}
+  - host: {{ printf "%s.%s" $baseaddr $burl }}
     http:
       paths:
       - backend:
           serviceName: {{ .name }}
           servicePort: {{ .port }}
-{{- end -}}
-{{- else -}}
-        - path: {{ printf "/%s" .Chart.Name }}
-          backend:
-            serviceName: {{ .Chart.Name }}
-            servicePort: {{ .Values.service.externalPort }}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+        {{- if .path }}
+        path: {{ .path }}
+        {{- end }}
+{{- end }}
 {{- end -}}
 
 

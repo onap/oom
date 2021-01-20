@@ -174,7 +174,6 @@ Ingress also can be enabled on any onap setup override using following code:
 
   ---
   <...>
-  #ingress virtualhost based configuration
   global:
   <...>
     ingress:
