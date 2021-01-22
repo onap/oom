@@ -1,0 +1,94 @@
+{{/*
+# Copyright (C) 2021 Pantheon.tech, Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim}}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      - name: {{ include "common.name" . }}-update-config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+            - sh
+        args:
+          - -c
+          - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+          - name: DB_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+          - name: DB_HOST
+            value: {{.Values.postgres.service.name2}}
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_NAME
+            value: {{.Values.postgres.config.pgDatabase}}
+        volumeMounts:
+          - mountPath: /config-input
+            name: init-data-input
+          - mountPath: /config
+            name: init-data
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{ include "common.containerPorts" . | nindent 8  }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            port: {{ .Values.liveness.port }}
+            path: {{ .Values.liveness.path }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          httpGet:
+            port: {{ .Values.readiness.port }}
+            path: {{ .Values.readiness.path }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources: {{ include "common.resources" . | nindent 10 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 12 }}
+        {{- end }}
+        {{- if .Values.affinity }}
+        affinity: {{ toYaml .Values.affinity | nindent 12 }}
+        {{- end }}
+        volumeMounts:
+          - mountPath: /app/resources/application.yml
+            subPath: application.yml
+            name: init-data
+      volumes:
+        - name: init-data-input
+          configMap:
+            name: {{ include "common.fullname" . }}
+        - name: init-data
+          emptyDir:
+            medium: Memory
+      imagePullSecrets:
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
