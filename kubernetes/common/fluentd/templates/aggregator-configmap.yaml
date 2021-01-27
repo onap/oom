@@ -1,0 +1,80 @@
+{{/*
+# Copyright © 2021 Bitnami, Intel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+{{- if and .Values.aggregator.enabled (not .Values.aggregator.configMap) -}}
+apiVersion: v1
+kind: ConfigMap
+{{ $suffix := "aggregator-cm" -}}
+{{ $labels := (dict "app.kubernetes.io/component" "aggregator") -}}
+metadata:  {{- include "common.resourceMetadata" (dict "suffix" $suffix "labels" $labels "dot" . ) | nindent 2 }}
+data:
+  fluentd.conf: |
+    {{- if .Values.metrics.enabled -}}
+    # Prometheus Exporter Plugin
+    # input plugin that exports metrics
+    <source>
+      @type prometheus
+      port {{ .Values.metrics.service.port }}
+    </source>
+
+    # input plugin that collects metrics from MonitorAgent
+    <source>
+      @type prometheus_monitor
+      <labels>
+        host ${hostname}
+      </labels>
+    </source>
+
+    # input plugin that collects metrics for output plugin
+    <source>
+      @type prometheus_output_monitor
+      <labels>
+        host ${hostname}
+      </labels>
+    </source>
+    {{- end }}
+
+    # Ignore fluentd own events
+    <match fluent.**>
+      @type null
+    </match>
+
+    # TCP input to receive logs from
+    {{- if and .Values.aggregator.port }}
+    <source>
+      @type forward
+      bind 0.0.0.0
+      port {{ .Values.aggregator.port }}
+    </source>
+    {{- end }}
+
+    # HTTP input for the liveness and readiness probes
+    <source>
+      @type http
+      bind 0.0.0.0
+      port 9880
+    </source>
+
+    # Throw the healthcheck to the standard output instead of forwarding it
+    <match fluentd.healthcheck>
+      @type stdout
+    </match>
+
+    # Send the logs to the standard output
+    <match **>
+      @type stdout
+    </match>
+{{- end -}}
