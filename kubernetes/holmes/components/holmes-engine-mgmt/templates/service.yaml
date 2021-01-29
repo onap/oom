@@ -1,8 +1,7 @@
 {{/*
 #============LICENSE_START========================================================
-#=================================================================================
-# Copyright (c) 2017-2018 AT&T Intellectual Property. All rights reserved.
-# Modifications Copyright © 2018 Amdocs, Bell Canada
+# ================================================================================
+# Copyright (c) 2019 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +17,25 @@
 # ============LICENSE_END=========================================================
 */}}
 
-{
-{{ if .Values.componentImages.holmes_rules }}
-  "hr_image" : '{{ include "repositoryGenerator.repository" . }}/{{ .Values.componentImages.holmes_rules }}',
-{{ end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{- range $index, $port := .Values.service.ports }}
+    - port: {{ $port.port }}
+      targetPort: {{ $port.port }}
+      name: {{ $port.name }}
+    {{- end }}
+  selector:
+    app: {{ include "common.name" . }}
+    release: {{ include "common.release" . }}
 
-  "msb_hostname": "{{ .Values.config.address.msb_iag }}.{{include "common.namespace" . }}",
-  "pgaas_cluster_name" : "{{ .Values.postgres.service.name2 }}.{{include "common.namespace" . }}",
-  "database_name":"holmes"
-}
