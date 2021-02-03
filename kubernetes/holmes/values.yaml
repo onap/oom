@@ -1,0 +1,85 @@
+# Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2021 ZTE
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.0.0
+
+secrets:
+- uid: pg-root-pass
+  name: &pgRootPassSecretName '{{ include "common.release" . }}-holmes-pg-root-pass'
+  type: password
+  externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "holmes-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+  password: '{{ .Values.postgres.config.pgRootPassword }}'
+- uid: pg-user-creds
+  name: &pgUserCredsSecretName '{{ include "common.release" . }}-holmes-pg-user-creds'
+  type: basicAuth
+  externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "holmes-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+  login: '{{ .Values.postgres.config.pgUserName }}'
+  password: '{{ .Values.postgres.config.pgUserPassword }}'
+  passwordPolicy: generate
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+pullPolicy: IfNotPresent
+
+config:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+# application configuration override for postgres
+postgres:
+  nameOverride: holmes-pg
+  service:
+    name: holmes-postgres
+    name2: &dbHost holmes-postgres-primary
+    name3: holmes-postgres-replica
+  container:
+    name:
+      primary: holmes-postgres-primary
+      replica: holmes-postgres-replica
+  config:
+    pgUserName: holmes
+    pgDatabase: &dbName holmes
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+    pgPort: &dbPort "5432"
+  persistence:
+    mountSubPath: holmes/data
+    mountInitPath: holmes
+
+holmes-engine-mgmt:
+  config:
+    pgConfig:
+      dbName: *dbName
+      dbHost: *dbHost
+      dbPort: *dbPort
+      dbUserCredsExternalSecret: *pgUserCredsSecretName
+
+holmes-rule-mgmt:
+  config:
+    pgConfig:
+      dbName: *dbName
+      dbHost: *dbHost
+      dbPort: *dbPort
+      dbUserCredsExternalSecret: *pgUserCredsSecretName
+
+# Resource Limit flavor -By Default using small
+flavor: small
