@@ -1,0 +1,126 @@
+{{/*
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2021 ZTE Intellectual Property. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: 1
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers: {{- include "common.certInitializer.initContainer" . | nindent 6 }}
+      - name: init-consul
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        args:
+        - --key
+        - holmes-rule-mgmt|/hrmconfigs/cfy.json
+        resources: {}
+        volumeMounts:
+        - mountPath: /hrmconfigs
+          name: {{ include "common.fullname" . }}-config
+      - name: {{ include "common.name" . }}-env-config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - "cd /hrmconfig && for PFILE in `find . -type f -not -name '*.json'`; do envsubst < ${PFILE} > /config/${PFILE##*/}; done"
+        env:
+        - name: JDBC_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: JDBC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        - name: DB_NAME
+          value: {{ .Values.config.pgConfig.dbName }}
+        - name: URL_JDBC
+          value: {{ .Values.config.pgConfig.dbHost }}
+        - name: DB_PORT
+          value: "{{ .Values.config.pgConfig.dbPort }}"
+        volumeMounts:
+        - mountPath: /hrmconfig
+          name: {{ include "common.fullname" . }}-config
+        - mountPath: /config
+          name: {{ include "common.fullname" . }}-env-config
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{ include "common.containerPorts" . | nindent 8  }}
+        volumeMounts: {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
+        - name: {{ include "common.fullname" . }}-env-config
+          mountPath: /opt/hrmconfig
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.liveness.path }}
+            port: {{ .Values.liveness.port }}
+            scheme: {{ .Values.liveness.scheme }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{- end }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readiness.path }}
+            port: {{ .Values.readiness.port }}
+            scheme: {{ .Values.readiness.scheme }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          failureThreshold: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        env:
+        - name: CONSUL_HOST
+          value: consul-server.{{ include "common.namespace" . }}
+        - name: CONFIG_BINDING_SERVICE
+          value: config-binding-service
+        - name: msb_hostname
+          value: "msb-iag.onap"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: PGPASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        - name: JDBC_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: JDBC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        - name: DB_NAME
+          value: {{ .Values.config.pgConfig.dbName }}
+        - name: URL_JDBC
+          value: {{ .Values.config.pgConfig.dbHost }}
+        - name: DB_PORT
+          value: "{{ .Values.config.pgConfig.dbPort }}"
+      volumes:  {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      - name: {{ include "common.fullname" . }}-config
+        configMap:
+          defaultMode: 422
+          name: {{ include "common.fullname" . }}
+      - name: {{ include "common.fullname" . }}-env-config
+        emptyDir:
+          medium: Memory
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
