@@ -37,10 +37,22 @@ spec:
         release: {{ include "common.release" . }}
         name: {{ include "common.fullname" . }}
     spec:
+      {{- if .Values.global.aafEnabled }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            export PASSPHRASE={{ .Values.certInitializer.credsPath }}/mycreds.prop
+            node .
+          {{- end }}
           ports:
             - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -71,12 +83,16 @@ spec:
               value: "{{ .Values.config.api.processor.grpc.port }}"
             - name: API_BLUEPRINT_PROCESSOR_GRPC_AUTH_TOKEN
               value: {{ .Values.config.api.processor.grpc.authToken }}
+            {{- if .Values.global.aafEnabled }}
+            - name: KEYSTORE
+              value: "{{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.fqi_namespace }}.p12"
+            {{- end }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 12 }}
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
@@ -90,7 +106,7 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
