@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Copyright © 2020 Samsung Electronics
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +37,57 @@ secrets:
     login: '{{ .Values.config.db.userName }}'
     password: '{{ .Values.config.db.userPassword }}'
 
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: vid-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: vid
+  fqi: vid@vid.onap.org
+  public_fqdn: vid.onap.org
+  fqi_namespace: "org.onap.vid"
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: |
+    echo "*** retrieving password for keystore and trustore"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+    if [ -z "$cadi_keystore_password" ]
+    then
+      echo "  /!\ certificates retrieval wasn't good"
+      exit 1
+    else
+      env | grep cadi
+      echo " - cadi_keystore_password_jks: ${cadi_keystore_password_jks}"
+      echo " - cadi_truststore_password: ${cadi_truststore_password}"
+      echo "*** changing them into shell safe ones"
+      export KEYSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+      export TRUSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+      cd {{ .Values.credsPath }}
+      keytool -storepasswd -new "${KEYSTORE_PASSWD}" \
+        -storepass "${cadi_keystore_password_jks}" \
+        -keystore {{ .Values.fqi_namespace }}.jks
+      keytool -storepasswd -new "${TRUSTORE_PASSWD}" \
+        -storepass "${cadi_truststore_password}" \
+        -keystore {{ .Values.fqi_namespace }}.trust.jks
+      echo "*** set key password as same password as keystore password"
+      keytool -keypasswd -new "${KEYSTORE_PASSWD}" \
+        -keystore {{ .Values.fqi_namespace }}.jks \
+        -keypass "${cadi_keystore_password_jks}" \
+        -storepass "${KEYSTORE_PASSWD}" -alias {{ .Values.fqi }}
+      echo "VID_KEYSTORE_PASSWORD=${KEYSTORE_PASSWD}" > mycreds.prop
+      echo "VID_TRUSTSTORE_PASSWORD=${TRUSTORE_PASSWD}" >> mycreds.prop
+      echo "VID_KEYSTORE_PASSWORD: ${KEYSTORE_PASSWD}"
+      echo "VID_TRUSTSTORE_PASSWORD: ${TRUSTORE_PASSWD}"
+      echo "*** change ownership of certificates to targeted user"
+      chown -R 1000 .
+    fi
+
 subChartsOnly:
   enabled: true
 
@@ -49,7 +101,6 @@ config:
     userName: vidadmin
 #    userCredentialsExternalSecret: some secret
 #    userPassword: password
-  vidkeystorepassword: 'F:.\,csU\&ew8\;tdVitnfo\}O\!g'
   asdcclientrestauth: "Basic dmlkOktwOGJKNFNYc3pNMFdYbGhhazNlSGxjc2UyZ0F3ODR2YW9HR21KdlV5MlU="
   asdcclientrestport: "8443"
   vidaaiport: "8443"
