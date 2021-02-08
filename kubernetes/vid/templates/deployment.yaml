@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Copyright © 2020 Samsung Electronics
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +37,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -55,6 +56,15 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+            /tmp/vid/localize.sh
+          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -100,8 +110,6 @@ spec:
               value: "{{ .Values.config.roleaccesscentralized }}"
             - name: VID_CONTACT_US_LINK
               value: "{{ .Values.config.vidcontactuslink }}"
-            - name: VID_KEYSTORE_PASSWORD
-              value: {{ .Values.config.vidkeystorepassword | quote }}
             - name: VID_UEB_URL_LIST
               value: message-router.{{ include "common.namespace" . }}
             - name: VID_MYSQL_HOST
@@ -116,9 +124,13 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "vid-db-user-secret" "key" "password") | indent 14 }}
             - name: VID_MYSQL_MAXCONNECTIONS
               value: "{{ .Values.config.vidmysqlmaxconnections }}"
-          volumeMounts:
-          - mountPath: /opt/app/vid/etc
-            name: vid-certs
+            {{- if .Values.global.aafEnabled }}
+            - name: VID_KEYSTORE_FILENAME
+              value: "{{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.fqi_namespace }}.jks"
+            - name: VID_TRUSTSTORE_FILENAME
+              value: "{{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.fqi_namespace }}.trust.jks"
+            {{- end }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -149,10 +161,7 @@ spec:
             name: vid-logs
           - mountPath: /usr/share/filebeat/data
             name: vid-data-filebeat
-      volumes:
-        - name: vid-certs
-          secret:
-            secretName: {{ include "common.fullname" . }}-certs
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
