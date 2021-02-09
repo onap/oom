@@ -149,7 +149,7 @@ Then build your local Helm repository::
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::
 
-  > helm search -l
+  > helm search repo local
   NAME                    VERSION    DESCRIPTION
   local/appc              2.0.0      Application Controller
   local/clamp             2.0.0      ONAP Clamp
