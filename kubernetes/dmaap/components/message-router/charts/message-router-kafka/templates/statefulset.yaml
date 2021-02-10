@@ -146,7 +146,7 @@ spec:
         - containerPort: {{ .Values.jmx.port }}
           name: jmx
         {{- end }}
-       {{ if eq .Values.liveness.enabled true }}
+        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -170,8 +170,6 @@ spec:
           value: {{ include "common.release" . }}-{{.Values.zookeeper.name}}-0.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-1.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-2.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}}
         - name: KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE
           value: "{{ .Values.kafka.enableSupport }}"
-        - name: KAFKA_OPTS
-          value: "{{ .Values.kafka.jaasOptions }}"
         {{- if  .Values.global.aafEnabled }}
         - name: KAFKA_OPTS
           value: "{{ .Values.kafka.jaasOptionsAaf }}"
@@ -218,7 +216,16 @@ spec:
         {{- if .Values.global.aafEnabled }}
         - mountPath: /etc/kafka/data/cadi.properties
           subPath: cadi.properties
-          name: cadi
+          name: certs
+        - mountPath: /etc/kafka/secrets/cert/org.onap.dmaap.mr.trust.jks
+          subPath: org.onap.dmaap.mr.trust.jks
+          name: certs
+        - mountPath: /etc/kafka/secrets/cert/org.onap.dmaap.mr.p12
+          subPath: org.onap.dmaap.mr.p12
+          name: certs
+        - mountPath: /etc/kafka/secrets/cert/org.onap.dmaap.mr.keyfile
+          subPath: org.onap.dmaap.mr.keyfile
+          name: certs
         {{ end  }}
         - name: jaas-config
           mountPath: /etc/kafka/secrets/jaas
@@ -239,18 +246,18 @@ spec:
         hostPath:
           path: /var/run/docker.sock
       {{- if .Values.global.aafEnabled }}
-      - name: cadi
-        configMap:
-          name: {{ include "common.fullname" . }}-cadi-prop-configmap
+      - name: certs
+        secret:
+            secretName: {{ include "common.fullname" . }}-certs
       {{ end }}
       - name: jaas
         configMap:
           name: {{ include "common.fullname" . }}-jaas-configmap
-       {{- if .Values.prometheus.jmx.enabled }}
+      {{- if .Values.prometheus.jmx.enabled }}
       - name: jmx-config
         configMap:
           name: {{ include "common.fullname" . }}-prometheus-configmap
-       {{- end }}
+      {{- end }}
 {{ if not .Values.persistence.enabled }}
       - name: kafka-data
         emptyDir: {}

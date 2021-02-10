@@ -97,10 +97,15 @@ spec:
             name: logback
           - mountPath: /appl/dmaapMR1/etc/cadi.properties
             subPath: cadi.properties
-            name: cadi
+            name: etc
           - mountPath: /appl/dmaapMR1/etc/keyfile
             subPath: mykey
             name: mykey
+          - mountPath: /appl/dmaapMR1/etc/ajsc-jetty.xml
+            subPath: ajsc-jetty.xml
+            name: etc
+          - mountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops/local/
+            name: certs
           resources: {{ include "common.resources" . | nindent 12 }}
       volumes:
         - name: localtime
@@ -109,12 +114,12 @@ spec:
         - name: appprops
           configMap:
             name: {{ include "common.fullname" . }}-msgrtrapi-prop-configmap
+        - name: etc
+          configMap:
+            name: {{ include "common.fullname" . }}-etc
         - name: logback
           configMap:
             name: {{ include "common.fullname" . }}-logback-xml-configmap
-        - name: cadi
-          configMap:
-            name: {{ include "common.fullname" . }}-cadi-prop-configmap
         {{- if .Values.prometheus.jmx.enabled }}
         - name: jmx-config
           configMap:
@@ -123,5 +128,8 @@ spec:
         - name: mykey
           secret:
             secretName: {{ include "common.fullname" . }}-secret
+        - name: certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
