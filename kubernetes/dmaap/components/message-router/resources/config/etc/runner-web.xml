@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--{{/*
+    ============LICENSE_START=======================================================
+    org.onap.dmaap
+    ================================================================================
+    Copyright c 2017 AT&T Intellectual Property. All rights reserved.
+    Copyright c 2021 Orange Intellectual Property. All rights reserved.
+    ================================================================================
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+          http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+    ============LICENSE_END=========================================================
+
+    ECOMP is a trademark and service mark of AT&T Intellectual Property.*/}}
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" metadata-complete="false" version="3.0">
+
+  <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>/WEB-INF/spring-servlet.xml,
+          classpath:applicationContext.xml
+</param-value>
+  </context-param>
+
+  <context-param>
+    <param-name>spring.profiles.default</param-name>
+    <param-value>nooauth</param-value>
+  </context-param>
+
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+
+  <servlet>
+    <servlet-name>ManagementServlet</servlet-name>
+    <servlet-class>ajsc.ManagementServlet</servlet-class>
+  </servlet>
+
+  <filter>
+    <filter-name>WriteableRequestFilter</filter-name>
+    <filter-class>com.att.ajsc.csi.writeablerequestfilter.WriteableRequestFilter</filter-class>
+  </filter>
+
+  <filter>
+    <filter-name>InterceptorFilter</filter-name>
+    <filter-class>ajsc.filters.InterceptorFilter</filter-class>
+    <init-param>
+      <param-name>preProcessor_interceptor_config_file</param-name>
+      <param-value>/etc/PreProcessorInterceptors.properties</param-value>
+    </init-param>
+    <init-param>
+      <param-name>postProcessor_interceptor_config_file</param-name>
+      <param-value>/etc/PostProcessorInterceptors.properties</param-value>
+    </init-param>
+
+  </filter>
+
+  <!-- Content length filter for Msgrtr -->
+  <filter>
+    <display-name>DMaaPAuthFilter</display-name>
+    <filter-name>DMaaPAuthFilter</filter-name>
+    <filter-class>org.onap.dmaap.util.DMaaPAuthFilter</filter-class>
+    <init-param>
+      <param-name>cadi_prop_files</param-name>
+      <param-value>{{.Values.certInitializer.appMountPath}}/local/cadi.properties</param-value>
+    </init-param>
+  </filter>
+
+  <!-- End Content length filter for Msgrtr -->
+  <servlet>
+    <servlet-name>RestletServlet</servlet-name>
+    <servlet-class>ajsc.restlet.RestletSpringServlet</servlet-class>
+    <init-param>
+      <param-name>org.restlet.component</param-name>
+      <param-value>restletComponent</param-value>
+    </init-param>
+  </servlet>
+
+  <servlet>
+    <servlet-name>CamelServlet</servlet-name>
+    <servlet-class>ajsc.servlet.AjscCamelServlet</servlet-class>
+  </servlet>
+
+
+  <filter>
+    <filter-name>springSecurityFilterChain</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+  </filter>
+
+  <servlet>
+    <servlet-name>spring</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>spring</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+
+</web-app>
