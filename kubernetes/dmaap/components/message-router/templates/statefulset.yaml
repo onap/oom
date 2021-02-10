@@ -42,6 +42,24 @@ spec:
         image: "{{ include "common.repository" . }}/{{ .Values.global.readinessImage }}"
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
+      {{- if  .Values.global.aafEnabled }}
+      - name: {{ include "common.name" . }}-update-config
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0);
+          cd /config-input  && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        - mountPath: /config
+          name: jetty
+        - mountPath: /config-input
+          name: etc
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      {{- end }}
       containers:
       {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -67,6 +85,16 @@ spec:
         - name: {{ include "common.name" . }}
           image: "{{ include "common.repository" . }}/{{ .Values.image }}"
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if  .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            cp /jetty-config/ajsc-jetty.xml /appl/dmaapMR1/etc/
+            cp /jetty-config/cadi.properties {{ .Values.certInitializer.appMountPath }}/local/cadi.properties
+            /bin/sh /appl/startup.sh
+          {{- end }}
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -85,7 +113,7 @@ spec:
           env:
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -95,26 +123,31 @@ spec:
           - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
             subPath: logback.xml
             name: logback
-          - mountPath: /appl/dmaapMR1/etc/cadi.properties
-            subPath: cadi.properties
-            name: cadi
           - mountPath: /appl/dmaapMR1/etc/keyfile
             subPath: mykey
             name: mykey
+          - mountPath: /appl/dmaapMR1/etc/runner-web.xml
+            subPath: runner-web.xml
+            name: etc
+          - mountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops/sys-props.properties
+            subPath: sys-props.properties
+            name: sys-props
+          - mountPath: /jetty-config
+            name: jetty
           resources: {{ include "common.resources" . | nindent 12 }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
         - name: appprops
           configMap:
             name: {{ include "common.fullname" . }}-msgrtrapi-prop-configmap
+        - name: etc
+          configMap:
+            name: {{ include "common.fullname" . }}-etc
         - name: logback
           configMap:
             name: {{ include "common.fullname" . }}-logback-xml-configmap
-        - name: cadi
-          configMap:
-            name: {{ include "common.fullname" . }}-cadi-prop-configmap
         {{- if .Values.prometheus.jmx.enabled }}
         - name: jmx-config
           configMap:
@@ -123,5 +156,10 @@ spec:
         - name: mykey
           secret:
             secretName: {{ include "common.fullname" . }}-secret
+        - name: sys-props
+          configMap:
+            name: {{ include "common.fullname" . }}-sys-props
+        - name: jetty
+          emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
