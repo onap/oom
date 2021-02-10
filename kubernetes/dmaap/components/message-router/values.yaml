@@ -19,6 +19,40 @@
 global:
   nodePortPrefix: 302
 
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: dmaap-mr-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: dmaap-mr
+  fqi: dmaapmr@mr.dmaap.onap.org
+  public_fqdn: mr.dmaap.onap.org
+  cadi_longitude: "-122.26147"
+  cadi_latitude: "37.78187"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops
+  fqi_namespace: org.onap.dmaap.mr
+  aaf_add_config: |
+    cd {{ .Values.credsPath }}
+    echo "*** store the keystore password"
+    echo "KEYSTORE_PASSWORD=${cadi_keystore_password_p12}" > mycreds.prop
+    echo "*** concat the three prop files"
+    cat {{ .Values.fqi_namespace }}.props > {{ .Values.fqi_namespace }}.properties
+    cat {{ .Values.fqi_namespace }}.cred.props >> {{ .Values.fqi_namespace }}.properties
+    cat {{ .Values.fqi_namespace }}.location.props >> {{ .Values.fqi_namespace }}.properties
+    sed -i '/cadi_keystore_password/d' {{ .Values.fqi_namespace }}.properties
+    sed -i '/cadi_truststore_password/d' {{ .Values.fqi_namespace }}.properties
+    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.fqi_namespace }}.properties
+    echo "cadi_keystore_password=$cadi_keystore_password_p12" >> {{ .Values.fqi_namespace }}.properties
+    echo "*** configuration result:"
+    cat {{ .Values.fqi_namespace }}.properties
+    chown -R 1000 .
+
 #################################################################
 # Application configuration defaults.
 #################################################################
