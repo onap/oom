@@ -19,6 +19,45 @@
 global:
   nodePortPrefix: 302
 
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: dmaap-mr-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: dmaap-mr
+  fqi: dmaapmr@mr.dmaap.onap.org
+  public_fqdn: mr.dmaap.onap.org
+  cadi_longitude: "-122.26147"
+  cadi_latitude: "37.78187"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops
+  fqi_namespace: org.onap.dmaap.mr
+  aaf_add_config: |
+    echo "*** retrieving password for keystore"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+    if [ -z "$cadi_keystore_password" ]
+    then
+      echo "  /!\ certificates retrieval wasn't good"
+      exit 1
+    else
+      cd {{ .Values.credsPath }}
+      echo "*** store the keystore password"
+      echo "KEYSTORE_PASSWORD=${cadi_keystore_password_jks}" > mycreds.prop
+      echo "*** concat the three prop files"
+      cat {{ .Values.fqi_namespace }}.props > {{ .Values.fqi_namespace }}.properties
+      cat {{ .Values.fqi_namespace }}.cred.props >> {{ .Values.fqi_namespace }}.properties
+      cat {{ .Values.fqi_namespace }}.location.props >> {{ .Values.fqi_namespace }}.properties
+      echo "*** configuration result:"
+      cat {{ .Values.fqi_namespace }}.properties
+      chown -R 1000 .
+    fi
+
 #################################################################
 # Application configuration defaults.
 #################################################################
