@@ -42,6 +42,7 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
       containers:
       {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -85,7 +86,7 @@ spec:
           env:
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -95,14 +96,11 @@ spec:
           - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
             subPath: logback.xml
             name: logback
-          - mountPath: /appl/dmaapMR1/etc/cadi.properties
-            subPath: cadi.properties
-            name: cadi
           - mountPath: /appl/dmaapMR1/etc/keyfile
             subPath: mykey
             name: mykey
           resources: {{ include "common.resources" . | nindent 12 }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
