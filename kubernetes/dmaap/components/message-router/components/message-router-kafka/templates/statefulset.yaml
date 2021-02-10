@@ -97,6 +97,7 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
+      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
       containers:
       {{- if .Values.prometheus.jmx.enabled }}
       - name: prometheus-jmx-exporter
@@ -129,6 +130,7 @@ spec:
         - |
           export KAFKA_BROKER_ID=${HOSTNAME##*-} && \
           {{- if  .Values.global.aafEnabled }}
+          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.final_cadi_files }} /etc/kafka/data/{{ .Values.certInitializer.final_cadi_files }} && \
           export KAFKA_ADVERTISED_LISTENERS=EXTERNAL_SASL_PLAINTEXT://$(HOST_IP):$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )),INTERNAL_SASL_PLAINTEXT://:{{ .Values.service.internalPort }} && \
           {{ else }}
           export KAFKA_ADVERTISED_LISTENERS=EXTERNAL_PLAINTEXT://$(HOST_IP):$(( $KAFKA_BROKER_ID + {{ .Values.service.baseNodePort }} )),INTERNAL_PLAINTEXT://:{{ .Values.service.internalPort }} && \
@@ -143,7 +145,7 @@ spec:
         - containerPort: {{ .Values.jmx.port }}
           name: jmx
         {{- end }}
-       {{ if eq .Values.liveness.enabled true }}
+        {{ if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -167,8 +169,6 @@ spec:
           value: {{ include "common.release" . }}-{{.Values.zookeeper.name}}-0.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-1.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}},{{ include "common.release" . }}-{{.Values.zookeeper.name}}-2.{{.Values.zookeeper.name}}.{{.Release.Namespace}}.svc.cluster.local:{{.Values.zookeeper.port}}
         - name: KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE
           value: "{{ .Values.kafka.enableSupport }}"
-        - name: KAFKA_OPTS
-          value: "{{ .Values.kafka.jaasOptions }}"
         {{- if  .Values.global.aafEnabled }}
         - name: KAFKA_OPTS
           value: "{{ .Values.kafka.jaasOptionsAaf }}"
@@ -206,17 +206,12 @@ spec:
         {{- end }}
         - name: enableCadi
           value: "{{ .Values.global.aafEnabled }}"
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /var/run/docker.sock
           name: docker-socket
-        {{- if .Values.global.aafEnabled }}
-        - mountPath: /etc/kafka/data/cadi.properties
-          subPath: cadi.properties
-          name: cadi
-        {{ end  }}
         - name: jaas-config
           mountPath: /etc/kafka/secrets/jaas
         - mountPath: /var/lib/kafka/data
@@ -225,7 +220,7 @@ spec:
       tolerations:
         {{ toYaml .Values.tolerations | indent 10 }}
       {{- end }}
-      volumes:
+      volumes:  {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -243,11 +238,11 @@ spec:
       - name: jaas
         configMap:
           name: {{ include "common.fullname" . }}-jaas-configmap
-       {{- if .Values.prometheus.jmx.enabled }}
+      {{- if .Values.prometheus.jmx.enabled }}
       - name: jmx-config
         configMap:
           name: {{ include "common.fullname" . }}-prometheus-configmap
-       {{- end }}
+      {{- end }}
 {{ if not .Values.persistence.enabled }}
       - name: kafka-data
         emptyDir: {}
