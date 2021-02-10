@@ -285,5 +285,3 @@ case "${1:-"help"}" in
     deploy $1 $2 ${@:3}
     ;;
 esac
-
-exit 0

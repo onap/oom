@@ -48,5 +48,3 @@ case "${1:-"help"}" in
     undeploy $1 ${@:2}
     ;;
 esac
-
-exit 0
