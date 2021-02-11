@@ -1,4 +1,5 @@
 # Copyright © 2019  AT&T Intellectual Property.  All rights reserved.
+# Modifications Copyright © 2021 Nokia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +14,7 @@
 # limitations under the License.
 HELM_BIN := helm
 
-make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard
+make-dcaegen2: make-dcae-bootstrap make-dcae-cloudify-manager make-dcae-config-binding-service make-dcae-healthcheck make-dcae-servicechange-handler make-dcae-inventory-api make-dcae-deployment-handler make-dcae-policy-handler make-dcae-dashboard make-dcae-ves-openapi-manager
 
 make-dcae-bootstrap:
 	cd components && $(HELM_BIN) dep up dcae-bootstrap && $(HELM_BIN) lint dcae-bootstrap
@@ -41,6 +42,9 @@ make-dcae-policy-handler:
 
 make-dcae-dashboard:
 	cd components && $(HELM_BIN) dep up dcae-dashboard && $(HELM_BIN) lint dcae-dashboard
+
+make-dcae-ves-openapi-manager:
+	cd components && $(HELM_BIN) dep up dcae-ves-openapi-manager && $(HELM_BIN) lint dcae-dashboard
 
 clean:
 	@find . -type f -name '*.tgz' -delete
