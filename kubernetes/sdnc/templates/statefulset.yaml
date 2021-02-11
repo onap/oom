@@ -129,6 +129,13 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
+          {{- $linkCommand := include "common.certManager.linkVolumeMounts" . }}
+          lifecycle:
+            postStart:
+              exec:
+                command: ["sh", "-c", {{$linkCommand | quote}} ]
+          {{- end }}
           command: ["/bin/bash"]
           args: ["-c", "/opt/onap/sdnc/bin/createLinks.sh ; /opt/onap/sdnc/bin/startODL.sh"]
           ports:
@@ -198,7 +205,11 @@ spec:
           {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
           - name: SDNRDBTRUSTALLCERTS
             value: "true"
-          {{ end }}
+          {{- end }}
+          {{- if .Values.global.cmpv2Enabled }}
+          - name: ODL_CERT_DIR
+            value: {{ (mustFirst (.Values.certificates)).mountPath }}
+          {{- end }}
 
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}

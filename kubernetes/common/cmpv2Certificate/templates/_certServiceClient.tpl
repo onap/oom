@@ -27,7 +27,9 @@ Full example (other fields are ignored):
 certificates:
   - mountPath:  /var/custom-certs
     caName: RA
-    outputType: JKS
+    keystore:
+      outputType:
+        - jks
     commonName: common-name
     dnsNames:
       - dns-name-1
@@ -65,7 +67,7 @@ There also need to be some includes used in a target component deployment (inden
 {{- if and $subchartGlobal.cmpv2Enabled (not $subchartGlobal.CMPv2CertManagerIntegration) -}}
 {{- range $index, $certificate := $dot.Values.certificates -}}
 {{/*# General certifiacate attributes  #*/}}
-{{- $commonName     := $certificate.commonName     -}}
+{{- $commonName     := (required "'commonName' for Certificate is required." $certificate.commonName) -}}
 {{/*# SAN's #*/}}
 {{- $dnsNames       := default (list)    $certificate.dnsNames       -}}
 {{- $ipAddresses    := default (list)    $certificate.ipAddresses    -}}
@@ -87,7 +89,11 @@ There also need to be some includes used in a target component deployment (inden
 {{- $orgUnit        := $certificate.subject.organizationalUnit -}}
 {{- end -}}
 {{- $caName := default $subchartGlobal.platform.certServiceClient.envVariables.caName $certificate.caName -}}
-{{- $outputType := default $subchartGlobal.platform.certServiceClient.envVariables.outputType  $certificate.outputType  -}}
+{{- $outputType := $subchartGlobal.platform.certServiceClient.envVariables.outputType -}}
+{{- if $certificate.keystore -}}
+{{- $outputTypeList := (required "'outputType' in 'keystore' section is required." $certificate.keystore.outputType) -}}
+{{- $outputType = mustFirst ($outputTypeList) | upper -}}
+{{- end -}}
 {{- $requestUrl := $subchartGlobal.platform.certServiceClient.envVariables.requestURL -}}
 {{- $certPath := $subchartGlobal.platform.certServiceClient.envVariables.certPath -}}
 {{- $requestTimeout := $subchartGlobal.platform.certServiceClient.envVariables.requestTimeout -}}
