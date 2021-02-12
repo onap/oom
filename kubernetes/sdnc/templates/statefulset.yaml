@@ -73,6 +73,12 @@ spec:
         - name: DMAAP_HTTP_PROXY_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-proxy-creds" "key" "password") | indent 10 }}
         {{- end }}
+        {{ if .Values.config.sdnr.oauth.enabled }}
+        - name: OAUTH_TOKEN_SECRET
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "oauth-token-secret" "key" "password") | indent 10 }}
+        - name: ENABLE_ODLUX_RBAC
+          value: "{{ .Values.config.sdnr.oauth.odluxRbac.enabled | default "true" }}"
+        {{ end }}
 
 
         volumeMounts:
@@ -210,7 +216,8 @@ spec:
           - name: ODL_CERT_DIR
             value: {{ (mustFirst (.Values.certificates)).mountPath }}
           {{- end }}
-
+          - name: ENABLE_OAUTH
+            value: "{{ .Values.config.sdnr.oauth.enabled | default "false" }}"
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
 {{ include "common.certServiceClient.volumeMounts" . | indent 10 }}
@@ -278,6 +285,11 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.daexim.cfg
             name: properties
             subPath: org.opendaylight.daexim.cfg
+          {{- if .Values.config.sdnr.oauth.enabled }}
+          - mountPath: {{ .Values.config.odl.etcDir }}/oauth-provider.config.json
+            name: properties
+            subPath: oauth-provider.config.json
+          {{ end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
