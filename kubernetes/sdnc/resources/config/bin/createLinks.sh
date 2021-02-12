@@ -27,11 +27,6 @@ then
     MDSAL_PATH=/opt/opendaylight/mdsal
 fi
 
-if [ "$DAEXIM_PATH" = "" ]
-then
-    DAEXIM_PATH=/opt/opendaylight/daexim
-fi
-
 if [ "$JOURNAL_PATH" = "" ]
 then
     JOURNAL_PATH=/opt/opendaylight/journal
@@ -42,11 +37,6 @@ then
     SNAPSHOTS_PATH=/opt/opendaylight/snapshots
 fi
 
-
-if [ ! -L $DAEXIM_PATH ]
-then
-    ln -s $MDSAL_PATH/daexim $DAEXIM_PATH
-fi
 
 if [ ! -L $JOURNAL_PATH ]
 then
