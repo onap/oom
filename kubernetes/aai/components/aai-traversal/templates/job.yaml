@@ -106,12 +106,6 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
       volumes:
@@ -129,15 +123,7 @@ spec:
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
+          name: {{ include "common.fullname" . }}
       restartPolicy: OnFailure
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
