@@ -29,6 +29,38 @@ secrets:
     password: '{{ .Values.a1controller.password }}'
     passwordPolicy: required
 
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: a1p-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: a1p
+  fqi: a1p@a1p.onap.org
+  public_fqdn: a1p.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  fqi_namespace: org.onap.a1p
+  aaf_add_config: |
+    echo "*** retrieving password for keystore and trustore"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+    {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+    if [ -z "$cadi_keystore_password" ]
+    then
+      echo "  /!\ certificates retrieval failed"
+      exit 1
+    else
+      echo "*** save the passwords"
+      echo "KEYSTORE_PASSWORD=${cadi_keystore_password_p12}" > mycreds.prop
+      echo "TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> mycreds.prop
+      echo "*** change ownership of certificates to targeted user"
+      chown -R 1000 {{ .Values.credsPath }}
+    fi
+
 image: onap/ccsdk-oran-a1policymanagementservice:1.0.1
 userID: 1000 #Should match with image-defined user ID
 groupID: 999 #Should match with image-defined group ID
