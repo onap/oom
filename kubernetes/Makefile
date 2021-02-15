@@ -38,7 +38,7 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS) check-for-staging-images
 
-all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
+all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -59,6 +59,8 @@ submod-%:
 %/requirements.yaml:
 	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
 
+print_helm_bin:
+	$(info helm binary used is [${HELM_BIN}])
 
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
