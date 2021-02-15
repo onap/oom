@@ -27,7 +27,7 @@ spec:
     metadata:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}-bootstrap-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -35,13 +35,21 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; chmod o+w /config/${PFILE}; done"
+        - |
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop\
+            | xargs -0)
+          cd /config-input
+          for PFILE in `ls -1`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+            chmod o+w /config/${PFILE}
+          done
         env:
         - name: A1CONTROLLER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
         - name: A1CONTROLLER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /config-input
           name: {{ include "common.fullname" . }}-policy-conf-input
         - mountPath: /config
@@ -86,11 +94,15 @@ spec:
             scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - name: config
-          mountPath: /opt/app/policy-agent/data
+          mountPath: /opt/app/policy-agent/data/application_configuration.json
+          subPath: application_configuration.json
+        - name: config
+          mountPath: /opt/app/policy-agent/config/application.yaml
+          subPath: application.yaml
         resources: {{ include "common.resources" . | nindent 10 }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-policy-conf-input
           configMap:
             name: {{ include "common.fullname" . }}-policy-conf
