@@ -37,12 +37,19 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
+        - |
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          cd /config-input
+          for PFILE in `find . -not -type d | grep -v -F ..`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+            chmod 0755 /config/${PFILE}
+          done
         env:
         - name: APPC_DB_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "appcdb-user-creds" "key" "login") | indent 10 }}
@@ -52,7 +59,7 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdncdb-user-creds" "key" "login") | indent 10 }}
         - name: SDNC_DB_PASSWD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdncdb-user-creds" "key" "password") | indent 10 }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /config-input/appc-data-properties
           name: onap-appc-data-properties-input
         - mountPath: /config-input/appc-svclogic-config
@@ -104,7 +111,7 @@ spec:
           - containerPort: {{ .Values.service.externalPort2 }}
           readinessProbe:
             tcpSocket:
-               port: {{ .Values.service.internalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -130,7 +137,7 @@ spec:
               value: "{{ .Values.config.enableClustering }}"
             - name: APPC_REPLICAS
               value: "{{ .Values.replicaCount }}"
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -214,7 +221,7 @@ spec:
 
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: keyfile-certs
           secret:
             secretName: {{ include "common.fullname" . }}-certs
