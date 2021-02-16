@@ -35,6 +35,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -56,10 +57,10 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts:
-          - name: ocomp-pem
-            mountPath: "/etc/lighttpd/ocomp.pem"
-            subPath: ocomp.pem
+          volumeMounts: {{- include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - name: lighttpd
+            mountPath: "/etc/lighttpd/lighttpd.conf"
+            subPath: lighttpd.conf
             readOnly: true
           env:
             - name: OPEN_CLI_MODE
@@ -74,9 +75,9 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      volumes:
-      - name: ocomp-pem
-        secret:
-          secretName: ocomp-pem
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      - name: lighttpd
+        configMap:
+          name: {{ include "common.fullname" . }}-lighttpd
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
