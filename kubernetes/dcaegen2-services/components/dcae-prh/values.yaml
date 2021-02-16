@@ -1,0 +1,150 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat configuration defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# initContainer images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/org.onap.dcaegen2.services.prh.prh-app-server:1.5.5
+pullPolicy: Always
+
+# log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /opt/app/prh/logs
+
+# directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/prh/etc/cert
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+
+# probe configuration
+readiness:
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  path: /heartbeat
+  scheme: HTTP
+  port: 8100
+
+# service configuration
+service:
+  type: ClusterIP
+  name: dcae-prh
+  ports:
+    - port: 8100
+      name: http
+
+# initial application configuration
+applicationConfig:
+  dmaap.dmaapConsumerConfiguration.dmaapUserName: admin
+  dmaap.dmaapConsumerConfiguration.dmaapUserPassword: admin
+  dmaap.dmaapConsumerConfiguration.dmaapContentType: "application/json"
+  dmaap.dmaapConsumerConfiguration.consumerId: "c12"
+  dmaap.dmaapConsumerConfiguration.consumerGroup: "OpenDCAE-c12"
+  dmaap.dmaapConsumerConfiguration.timeoutMs: -1
+  dmaap.dmaapProducerConfiguration.dmaapUserName: admin
+  dmaap.dmaapProducerConfiguration.dmaapUserPassword: admin
+  dmaap.dmaapProducerConfiguration.dmaapContentType: "application/json"
+  dmaap.dmaapUpdateProducerConfiguration.dmaapUserName: admin
+  dmaap.dmaapUpdateProducerConfiguration.dmaapUserPassword: admin
+  dmaap.dmaapUpdateProducerConfiguration.dmaapContentType: "application/json"
+  aai.aaiClientConfiguration.pnfUrl: https://aai.onap.svc.cluster.local:8443/aai/v12/network/pnfs/pnf
+  aai.aaiClientConfiguration.baseUrl: https://aai.onap.svc.cluster.local:8443/aai/v12
+  aai.aaiClientConfiguration.aaiHost: aai.onap.svc.cluster.local
+  aai.aaiClientConfiguration.aaiHostPortNumber: 8443
+  aai.aaiClientConfiguration.aaiProtocol: "https"
+  aai.aaiClientConfiguration.aaiUserName: AAI
+  aai.aaiClientConfiguration.aaiUserPassword: AAI
+  aai.aaiClientConfiguration.aaiIgnoreSslCertificateErrors: true
+  aai.aaiClientConfiguration.aaiBasePath: "/aai/v12"
+  aai.aaiClientConfiguration.aaiPnfPath: "/network/pnfs/pnf"
+  aai.aaiClientConfiguration.aaiServiceInstancePath: "/business/customers/customer/${customer}/service-subscriptions/service-subscription/${serviceType}/service-instances/service-instance/${serviceInstanceId}"
+  aai.aaiClientConfiguration.aaiHeaders:
+      X-FromAppId: "prh"
+      X-TransactionId: "9999"
+      Accept: "application/json"
+      Real-Time: "true"
+      Authorization: "Basic QUFJOkFBSQ=="
+  security.trustStorePath: "/opt/app/prh/etc/cert/trust.jks"
+  security.trustStorePasswordPath: "/opt/app/prh/etc/cert/trust.pass"
+  security.keyStorePath: "/opt/app/prh/etc/cert/cert.jks"
+  security.keyStorePasswordPath: "/opt/app/prh/etc/cert/jks.pass"
+  security.enableAaiCertAuth: false
+  security.enableDmaapCertAuth: false
+  streams_publishes:
+      pnf-update:
+        type: "message_router"
+        dmaap_info:
+          topic_url: http://message-router.onap.svc.cluster.local:3904/events/unauthenticated.PNF_UPDATE
+      pnf-ready:
+        type: "message_router"
+        dmaap_info:
+          topic_url: http://message-router.onap.svc.cluster.local:3904/events/unauthenticated.PNF_READY
+  streams_subscribes:
+      ves-reg-output:
+        type: "message_router"
+        dmaap_info:
+          topic_url: http://message-router.onap.svc.cluster.local:3904/events/unauthenticated.VES_PNFREG_OUTPUT
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
