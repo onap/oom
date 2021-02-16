@@ -108,11 +108,15 @@ spec:
             value: rack1
           - name: CASSANDRA_ENABLE_RPC
             value: "true"
-          {{- if eq "small" .Values.flavor }}
+          {{- $flavor := include "common.flavor" . }}
+          {{- $heap := pluck $flavor .Values.heap | first }}
+          {{- if (hasKey $heap "max") }}
           - name: MAX_HEAP_SIZE
-            value: {{ .Values.resources.small.heap.max }}
+            value: {{ $heap.max }}
+          {{- end }}
+          {{- if (hasKey $heap "new") }}
           - name: HEAP_NEWSIZE
-            value: {{ .Values.resources.small.heap.new }}
+            value: {{ $heap.new }}
           {{- end }}
         volumeMounts:
         - mountPath: /etc/localtime
