@@ -46,6 +46,39 @@ secrets:
 
 
 #################################################################
+# AAF part
+#################################################################
+
+# dependency / sub-chart configuration
+certInitializer:
+  nameOverride: appc-cert-initializer
+  truststoreMountpath: /opt/onap/appc/data/stores
+  fqdn: "appc"
+  app_ns: "org.osaaf.aaf"
+  fqi: "appc@appc.onap.org"
+  fqi_namespace: org.onap.appc
+  public_fqdn: "appc.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: |
+    echo "*** retrieving password for keystore"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+      {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+    if [ -z "$cadi_keystore_password" ]
+    then
+      echo "  /!\ certificates retrieval failed"
+      exit 1
+    else
+      echo "*** storing password for keystore"
+      echo "export KEYSTORE_PASSWORD=$cadi_keystore_password" > {{ .Values.credsPath }}/mycreds.prop
+      echo "*** change ownership of certificates to targeted user"
+      chown -R 100 {{ .Values.credsPath }}
+    fi
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 flavor: small
