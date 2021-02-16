@@ -38,7 +38,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -61,64 +61,52 @@ spec:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-
-        volumeMounts:
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop \
+            | xargs -0)
+          echo "KEYSTORE_PASSWORD: ${KEYSTORE_PASSWORD}"
+          echo "TRUSTSTORE_PASSWORD: ${TRUSTSTORE_PASSWORD}"
+          echo "*** actual launch of AAI Sparky BE"
+          /opt/app/sparky/bin/start.sh
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/sparky/config/auth/client-cert-onap.p12
-          name: {{ include "common.fullname" . }}-auth-config
-          subPath: client-cert-onap.p12
-
         - mountPath: /opt/app/sparky/config/auth/csp-cookie-filter.properties
           name: {{ include "common.fullname" . }}-auth-config
           subPath: csp-cookie-filter.properties
-
-        - mountPath: /opt/app/sparky/config/auth/org.onap.aai.p12
-          name: {{ include "common.fullname" . }}-auth-config
-          subPath: org.onap.aai.p12
-
-        - mountPath: /opt/app/sparky/config/auth/truststoreONAPall.jks
-          name: aai-common-aai-auth-mount
-          subPath: truststoreONAPall.jks
-
         - mountPath: /opt/app/sparky/config/portal/
           name: {{ include "common.fullname" . }}-portal-config
-
         - mountPath: /opt/app/sparky/config/portal/BOOT-INF/classes/
           name: {{ include "common.fullname" . }}-portal-config-props
-
         - mountPath: /var/log/onap
           name: {{ include "common.fullname" . }}-logs
-
         - mountPath:  /opt/app/sparky/config/application.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application.properties
-
         - mountPath:  /opt/app/sparky/config/application-resources.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application-resources.properties
-
         - mountPath:  /opt/app/sparky/config/application-ssl.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application-ssl.properties
-
         - mountPath:  /opt/app/sparky/config/application-oxm-default.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application-oxm-default.properties
-
         - mountPath:  /opt/app/sparky/config/application-oxm-override.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application-oxm-override.properties
-
         - mountPath:  /opt/app/sparky/config/application-oxm-schema-prod.properties
           name: {{ include "common.fullname" . }}-properties
           subPath: application-oxm-schema-prod.properties
-
         - mountPath:  /opt/app/sparky/config/roles.config
           name: {{ include "common.fullname" . }}-properties
           subPath: roles.config
-
         - mountPath:  /opt/app/sparky/config/users.config
           name: {{ include "common.fullname" . }}-properties
           subPath: users.config
@@ -165,7 +153,7 @@ spec:
         resources:
 {{ include "common.resources" . }}
 
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
