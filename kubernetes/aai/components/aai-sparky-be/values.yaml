@@ -27,6 +27,44 @@ global: # global defaults
   searchData:
     serviceName: aai-search-data
 
+
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-sparky-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: "aai"
+  app_ns: "org.osaaf.aaf"
+  fqi_namespace: "org.onap.aai"
+  fqi: "aai@aai.onap.org"
+  public_fqdn: "aaf.osaaf.org"
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: |
+    echo "*** changing passwords into shell safe ones"
+    export KEYSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+    export TRUSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+    cd {{ .Values.credsPath }}
+    keytool -storepasswd -new "${KEYSTORE_PASSWD}" \
+      -storepass "${cadi_keystore_password_jks}" \
+      -keystore {{ .Values.fqi_namespace }}.jks
+    keytool -storepasswd -new "${TRUSTORE_PASSWD}" \
+      -storepass "${cadi_truststore_password}" \
+      -keystore {{ .Values.fqi_namespace }}.trust.jks
+    echo "*** set key password as same password as keystore password"
+    keytool -keypasswd -new "${KEYSTORE_PASSWD}" \
+      -keystore {{ .Values.fqi_namespace }}.jks \
+      -keypass "${cadi_keystore_password_jks}" \
+      -storepass "${KEYSTORE_PASSWD}" -alias {{ .Values.fqi }}
+    echo "*** save the generated passwords"
+    echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWD}" > mycreds.prop
+    echo "TRUSTSTORE_PASSWORD=${TRUSTORE_PASSWD}" >> mycreds.prop
+    echo "*** change ownership of certificates to targeted user"
+
 # application image
 image: onap/sparky-be:2.0.0
 pullPolicy: Always
@@ -44,13 +82,7 @@ config:
   portalPassword: OBF:1t2v1vfv1unz1vgz1t3b
   portalCookieName: UserId
   portalAppRoles: ui_view
-  aafUsername: aai@aai.onap.org
-  aafNamespace: org.onap.aai
-  aafPassword: enc:xxYw1FqXU5UpianbPeH5Rezg0YfjzuwQrSiLcCmJGfz
-  cadiKeyFile: /opt/app/sparky/config/portal/keyFile
-  cadiTrustStore: /opt/app/sparky/config/auth/truststoreONAPall.jks
   cadiFileLocation: /opt/app/sparky/config/portal/cadi.properties
-  cadiTrustStorePassword: changeit
   cookieDecryptorClass: org.onap.aai.sparky.security.BaseCookieDecryptor
 
 # ONAP Cookie Processing - During initial development, the following flag, if true, will
