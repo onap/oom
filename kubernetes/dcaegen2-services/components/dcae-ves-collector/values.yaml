@@ -1,0 +1,170 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+  consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Filebeat configuration defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/org.onap.dcaegen2.collectors.ves.vescollector:1.7.9
+pullPolicy: Always
+
+# log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /opt/app/VESCollector/logs
+
+# directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/dcae-certificate
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+
+# probe configuration
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  path: /healthcheck
+  scheme: HTTP
+  port: 8080
+
+# service configuration
+service:
+  type: NodePort
+  name: dcae-ves-collector
+  ports:
+    - name: http
+      port: 8443
+      plain_port: 8080
+      port_protocol: http
+      nodePort: 17
+      useNodePortExt: true
+
+# initial application configuration
+applicationConfig:
+  collector.dmaap.streamid: fault=ves-fault|syslog=ves-syslog|heartbeat=ves-heartbeat|measurement=ves-measurement|measurementsForVfScaling=ves-measurement|mobileFlow=ves-mobileflow|other=ves-other|stateChange=ves-statechange|thresholdCrossingAlert=ves-thresholdCrossingAlert|voiceQuality=ves-voicequality|sipSignaling=ves-sipsignaling|notification=ves-notification|pnfRegistration=ves-pnfRegistration|3GPP-FaultSupervision=ves-3gpp-fault-supervision|3GPP-Heartbeat=ves-3gpp-heartbeat|3GPP-Provisioning=ves-3gpp-provisioning|3GPP-PerformanceAssurance=ves-3gpp-performance-assurance
+  collector.inputQueue.maxPending: "8096"
+  collector.keystore.file.location: /opt/app/dcae-certificate/cert.jks
+  collector.keystore.passwordfile: /opt/app/dcae-certificate/jks.pass
+  collector.truststore.file.location: /opt/app/dcae-certificate/trust.jks
+  collector.truststore.passwordfile: /opt/app/dcae-certificate/trust.pass
+  collector.schema.checkflag: "1"
+  collector.schema.file: "{\"v1\":\"./etc/CommonEventFormat_27.2.json\",\"v2\":\"./etc/CommonEventFormat_27.2.json\",\"v3\":\"./etc/CommonEventFormat_27.2.json\",\"v4\":\"./etc/CommonEventFormat_27.2.json\",\"v5\":\"./etc/CommonEventFormat_28.4.1.json\",\"v7\":\"./etc/CommonEventFormat_30.2_ONAP.json\"}"
+  collector.externalSchema.checkflag: 1
+  collector.externalSchema.schemasLocation: "./etc/externalRepo/"
+  collector.externalSchema.mappingFileLocation: "./etc/externalRepo/schema-map.json"
+  event.externalSchema.schemaRefPath: $.event.stndDefinedFields.schemaReference
+  event.externalSchema.stndDefinedDataPath: $.event.stndDefinedFields.data
+  collector.service.port: "8080"
+  collector.service.secure.port: "8443"
+  event.transform.flag: "0"
+  auth.method: "certBasicAuth"
+  header.authlist: "sample1,$2a$10$0buh.2WeYwN868YMwnNNEuNEAMNYVU9.FSMJGyIKV3dGET/7oGOi6|demouser,$2a$10$1cc.COcqV/d3iT2N7BjPG.S6ZKv2jpb9a5MV.o7lMih/GpjJRX.Ce"
+  services_calls: []
+  streams_publishes:
+    ves-fault:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_FAULT_OUTPUT"
+      type: message_router
+    ves-measurement:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.VES_MEASUREMENT_OUTPUT"
+      type: message_router
+    ves-notification:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.VES_NOTIFICATION_OUTPUT"
+      type: message_router
+    ves-pnfRegistration:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.VES_PNFREG_OUTPUT"
+      type: message_router
+    ves-heartbeat:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_HEARTBEAT_OUTPUT"
+      type: message_router
+    ves-other:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_OTHER_OUTPUT"
+      type: message_router
+    ves-3gpp-fault-supervision:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_3GPP_FAULTSUPERVISION_OUTPUT"
+      type: message_router
+    ves-3gpp-provisioning:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_3GPP_PROVISIONING_OUTPUT"
+      type: message_router
+    ves-3gpp-heartbeat:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_3GPP_HEARTBEAT_OUTPUT"
+      type: message_router
+    ves-3gpp-performance-assurance:
+      dmaap_info:
+        topic_url:
+          "http://message-router:3904/events/unauthenticated.SEC_3GPP_PERFORMANCEASSURANCE_OUTPUT"
+      type: message_router
+  collector.dynamic.config.update.frequency: "5"
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
