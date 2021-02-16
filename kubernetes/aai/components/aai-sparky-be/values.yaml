@@ -27,6 +27,39 @@ global: # global defaults
   searchData:
     serviceName: aai-search-data
 
+
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-sparky-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: "aai"
+  app_ns: "org.osaaf.aaf"
+  fqi_namespace: "org.onap.aai"
+  fqi: "aai@aai.onap.org"
+  public_fqdn: "aaf.osaaf.org"
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: |
+    echo "*** retrieving password for keystore and trustore"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+      {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+    if [ -z "$cadi_keystore_password_p12" ]
+    then
+      echo "  /!\ certificates retrieval failed"
+      exit 1
+    else
+      echo "*** save the passwords"
+      echo "export KEYSTORE_PASSWORD=${cadi_keystore_password_p12}" > {{ .Values.credsPath }}/mycreds.prop
+      echo "export TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> {{ .Values.credsPath }}/mycreds.prop
+      echo "*** change ownership of certificates to targeted user"
+      chown -R 1000 {{ .Values.credsPath }}
+    fi
+
 # application image
 image: onap/sparky-be:1.6.2
 pullPolicy: Always
