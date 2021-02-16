@@ -1,0 +1,129 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+  consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Filebeat configuration defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/org.onap.dcaegen2.analytics.tca-gen2.dcae-analytics-tca-web:1.2.1
+pullPolicy: Always
+
+# log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /opt/logs/dcae-analytics-tca
+
+# directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /etc/tca-gen2/ssl
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+
+# probe configuration
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  path: /actuator/health
+  scheme: HTTP
+  port: 9091
+
+# service configuration
+service:
+  type: ClusterIP
+  name: dcae-tcagen2
+  ports:
+    - port: 9091
+      name: http
+
+# initial application configuration
+applicationConfig:
+  service_calls: []
+  streams_publishes:
+    tca_handle_out:
+      dmaap_info:
+        topic_url: http://message-router:3904/events/unauthenticated.DCAE_CL_OUTPUT
+      type: message_router
+  streams_subscribes:
+    tca_handle_in:
+      dmaap_info:
+        topic_url: http://message-router:3904/events/unauthenticated.VES_MEASUREMENT_OUTPUT
+      type: message_router
+  spring.data.mongodb.uri: mongodb://dcae-mongohost/dcae-tcagen2
+  streams_subscribes.tca_handle_in.consumer_group: cg1
+  streams_subscribes.tca_handle_in.consumer_ids[0]: c0
+  streams_subscribes.tca_handle_in.consumer_ids[1]: c1
+  streams_subscribes.tca_handle_in.message_limit: 50000
+  streams_subscribes.tca_handle_in.polling.auto_adjusting.max: 60000
+  streams_subscribes.tca_handle_in.polling.auto_adjusting.min: 30000
+  streams_subscribes.tca_handle_in.polling.auto_adjusting.step_down: 30000
+  streams_subscribes.tca_handle_in.polling.auto_adjusting.step_up: 10000
+  streams_subscribes.tca_handle_in.polling.fixed_rate: 0
+  streams_subscribes.tca_handle_in.timeout: -1
+  tca.aai.enable_enrichment: true
+  tca.aai.generic_vnf_path: aai/v11/network/generic-vnfs/generic-vnf
+  tca.aai.node_query_path: aai/v11/search/nodes-query
+  tca.aai.password: DCAE
+  tca.aai.url: http://aai
+  tca.aai.username: DCAE
+  tca.policy: '{"domain":"measurementsForVfScaling","metricsPerEventName":[{"eventName":"vFirewallBroadcastPackets","controlLoopSchemaType":"VM","policyScope":"DCAE","policyName":"DCAE.Config_tca-hi-lo","policyVersion":"v0.0.1","thresholds":[{"closedLoopControlName":"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a","version":"1.0.2","fieldPath":"$.event.measurementsForVfScalingFields.vNicPerformanceArray[*].receivedTotalPacketsDelta","thresholdValue":300,"direction":"LESS_OR_EQUAL","severity":"MAJOR","closedLoopEventStatus":"ONSET"},{"closedLoopControlName":"ControlLoop-vFirewall-d0a1dfc6-94f5-4fd4-a5b5-4630b438850a","version":"1.0.2","fieldPath":"$.event.measurementsForVfScalingFields.vNicPerformanceArray[*].receivedTotalPacketsDelta","thresholdValue":700,"direction":"GREATER_OR_EQUAL","severity":"CRITICAL","closedLoopEventStatus":"ONSET"}]},{"eventName":"vLoadBalancer","controlLoopSchemaType":"VM","policyScope":"DCAE","policyName":"DCAE.Config_tca-hi-lo","policyVersion":"v0.0.1","thresholds":[{"closedLoopControlName":"ControlLoop-vDNS-6f37f56d-a87d-4b85-b6a9-cc953cf779b3","version":"1.0.2","fieldPath":"$.event.measurementsForVfScalingFields.vNicPerformanceArray[*].receivedTotalPacketsDelta","thresholdValue":300,"direction":"GREATER_OR_EQUAL","severity":"CRITICAL","closedLoopEventStatus":"ONSET"}]},{"eventName":"Measurement_vGMUX","controlLoopSchemaType":"VNF","policyScope":"DCAE","policyName":"DCAE.Config_tca-hi-lo","policyVersion":"v0.0.1","thresholds":[{"closedLoopControlName":"ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e","version":"1.0.2","fieldPath":"$.event.measurementsForVfScalingFields.additionalMeasurements[*].arrayOfFields[0].value","thresholdValue":0,"direction":"EQUAL","severity":"MAJOR","closedLoopEventStatus":"ABATED"},{"closedLoopControlName":"ControlLoop-vCPE-48f0c2c3-a172-4192-9ae3-052274181b6e","version":"1.0.2","fieldPath":"$.event.measurementsForVfScalingFields.additionalMeasurements[*].arrayOfFields[0].value","thresholdValue":0,"direction":"GREATER","severity":"CRITICAL","closedLoopEventStatus":"ONSET"}]}]}'
+  tca.processing_batch_size: 10000
+  tca.enable_abatement: true
+  tca.enable_ecomp_logging: true
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}

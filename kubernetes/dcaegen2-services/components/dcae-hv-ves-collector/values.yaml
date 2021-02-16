@@ -1,0 +1,121 @@
+#============LICENSE_START========================================================
+# ================================================================================
+# Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+  consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Filebeat configuration defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/org.onap.dcaegen2.collectors.hv-ves.hv-collector-main:1.6.0
+pullPolicy: Always
+
+# log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP/dcae-hv-ves-collector
+
+# directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /etc/ves-hv/ssl
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+
+# probe configuration
+readiness:
+  type: exec
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  timeoutSeconds: 2
+  command:
+  - /opt/ves-hv-collector/healthcheck.sh
+
+# service configuration
+service:
+  type: NodePort
+  name: dcae-hv-ves-collector
+  ports:
+    - name: http
+      port: 6061
+      port_protocol: http
+      nodePort: 22
+
+# initial application configuration
+applicationConfig:
+  logLevel: INFO
+  server.idleTimeoutSec: 300
+  server.listenPort: 6061
+  cbs.requestIntervalSec: 5
+  security.sslDisable: false
+  security.keys.keyStoreFile: /etc/ves-hv/ssl/cert.jks
+  security.keys.keyStorePasswordFile: /etc/ves-hv/ssl/jks.pass
+  security.keys.trustStoreFile: /etc/ves-hv/ssl/trust.jks
+  security.keys.trustStorePasswordFile: /etc/ves-hv/ssl/trust.pass
+  streams_publishes:
+    perf3gpp:
+      type: kafka
+      aaf_credentials:
+        username: admin
+        password: admin_secret
+      kafka_info:
+        bootstrap_servers: message-router-kafka:9092
+        topic_name: HV_VES_PERF3GPP
+
+applicationEnv:
+  JAVA_OPTS: '-Dlogback.configurationFile=/etc/ONAP/dcae-hv-ves-collector/logback.xml'
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
