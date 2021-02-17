@@ -5,6 +5,8 @@ import socket
 # Based on https://github.com/digitalocean/netbox/blob/develop/netbox/netbox/configuration.example.py
 
 # Read secret from file
+
+
 def read_secret(secret_name):
     try:
         f = open('/run/secrets/' + secret_name, 'r', encoding='utf-8')
@@ -13,6 +15,7 @@ def read_secret(secret_name):
     else:
         with f:
             return f.readline().strip()
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -33,7 +36,7 @@ DATABASE = {
     'NAME': os.environ.get('DB_NAME', 'netbox'),         # Database name
     'USER': os.environ.get('DB_USER', ''),               # PostgreSQL username
     'PASSWORD': os.environ.get('DB_PASSWORD', read_secret('db_password')),
-                                                         # PostgreSQL password
+    # PostgreSQL password
     'HOST': os.environ.get('DB_HOST', 'localhost'),      # Database server
     'PORT': os.environ.get('DB_PORT', ''),               # Database port (leave blank for default)
 }
