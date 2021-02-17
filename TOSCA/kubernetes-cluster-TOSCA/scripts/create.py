@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#============LICENSE_END============================================
+# ============LICENSE_END============================================
 
 # This tack will be triggered after VM created. It will check whether docker is up and running.
 
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     # Check if Docker PS works
     docker = check_command('docker ps')
     if not docker:
-            raise OperationRetry(
-                'Docker is not present on the system.')
+        raise OperationRetry(
+            'Docker is not present on the system.')
     ctx.logger.info('Docker is present on the system.')
 
     # Next check if Cloud Init is running.
