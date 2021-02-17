@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2018 Amdocs, Bell Canada , ZTE
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +39,7 @@ spec:
     spec:
       serviceAccountName: msb
       initContainers:
+      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
       - command:
         - /app/ready.py
         args:
@@ -83,19 +85,15 @@ spec:
           - name: ROUTE_LABELS
             value: {{ .Values.config.routeLabels }}
           volumeMounts:
+          {{ include "common.certInitializer.volumeMount" . | indent 10 | trim }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - name: {{ include "common.fullname" . }}-cert
-            mountPath: /usr/local/openresty/nginx/ssl/cert/cert.crt
-            readOnly: true
-            subPath: "cert.crt"
-          - name: {{ include "common.fullname" . }}-cert
-            mountPath: /usr/local/openresty/nginx/html/cert/ca.crt
-            readOnly: true
-            subPath: "ca.crt"
           - mountPath: /usr/local/apiroute-works/logs
             name: {{ include "common.fullname" . }}-logs
+          - mountPath: /usr/local/openresty/nginx/msb-enabled/msbhttps.conf
+            name: {{ include "common.fullname" . }}-nginx-conf
+            subPath: msbhttps.conf
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -122,12 +120,13 @@ spec:
             name: {{ include "common.fullname" . }}-log-conf
             subPath: logback.xml
       volumes:
-        - name: {{ include "common.fullname" . }}-cert
-          secret:
-            secretName: {{ include "common.release" . }}-msb-https-cert
+        {{ include "common.certInitializer.volumes" . | indent 8 | trim }}
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
+        - name: {{ include "common.fullname" . }}-nginx-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-nginx
         - name: {{ include "common.fullname" . }}-filebeat-conf
           configMap:
             name: {{ include "common.release" . }}-msb-filebeat-configmap
