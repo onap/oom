@@ -20,7 +20,14 @@ OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 HELM_BIN := helm
-HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
+
+# Helm v2 and helm v3 uses different version format so we first try in helm v3 format
+# and if it fails then we fallback to helm v2 one
+HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
+ifneq "$(findstring v3,$(HELM_VER))" "v3"
+	HELM_VER := $(shell $(HELM_BIN) version -c --template "{{.Client.SemVer}}")
+endif
+
 # use this if you would like to push onap charts to repo with other name
 # WARNING: Helm v3+ only
 # WARNING: Make sure to edit also requirements files
