@@ -266,7 +266,11 @@ deploy() {
   done
 
   # report on success/failures of installs/upgrades
-  helm ls | grep FAILED | grep $RELEASE
+  if [[ $HELM_VER == "v3."* ]]; then
+    helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
+  else
+    helm ls | grep FAILED | grep $RELEASE
+  fi
 }
 HELM_VER=$(helm version --template "{{.Version}}")
 echo $HELM_VER
