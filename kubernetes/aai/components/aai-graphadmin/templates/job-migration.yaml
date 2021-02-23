@@ -58,7 +58,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -80,15 +80,20 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - command:
-        - /bin/bash
+        - sh
+        args:
         - -c
-        - bash docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -114,12 +119,6 @@ spec:
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-restore-backup
@@ -128,15 +127,20 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-perform-migration
         command:
-        - /bin/bash
+        - sh
+        args:
         - -c
-        - bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -176,7 +180,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -191,14 +195,6 @@ spec:
       - name: {{ include "common.fullname" . }}-snapshots
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}-migration
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -226,8 +222,8 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
+      initContainers:  {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
-      initContainers:
       - command:
         - /bin/bash
         - -c
@@ -247,15 +243,20 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - /bin/bash
-        - docker-entrypoint.sh
-        - dataSnapshot.sh
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh dataSnapshot.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -291,7 +292,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
