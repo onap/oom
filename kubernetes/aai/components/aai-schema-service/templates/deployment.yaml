@@ -40,7 +40,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      containers:
+      containers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -49,7 +49,7 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -70,12 +70,6 @@ spec:
         - mountPath: /opt/app/aai-schema-service/resources/application.properties
           name: springapp-conf
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-schema-service/resources/etc/auth/{{ . }}
-          name: auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -116,7 +110,7 @@ spec:
           name: {{ include "common.fullname" . }}-logs
         - mountPath: /usr/share/filebeat/data
           name: {{ include "common.fullname" . }}-filebeat
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: aai-common-aai-auth-mount
         secret:
           secretName: aai-common-aai-auth
@@ -145,14 +139,6 @@ spec:
       - name: realm-conf
         configMap:
           name: {{ include "common.fullname" . }}-realm-configmap
-      - name: auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
