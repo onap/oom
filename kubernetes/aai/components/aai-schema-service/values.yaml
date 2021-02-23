@@ -58,20 +58,28 @@ global: # global defaults
         edge:
           label: v12
 
-    # Keystore configuration password and filename
-    keystore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-    # Truststore configuration password and filename
-    truststore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-    # Specifies a list of files to be included in auth volume
-    auth:
-      files:
-        - aai_keystore
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-schema-service-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: aai-schema-service
+  fqi: aai-schema-service@aai-schema-service.onap.org
+  public_fqdn: aai-schema-service.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  fqi_namespace: org.onap.aai-schema-service
+  aaf_add_config: |
+    echo "*** save the passwords"
+    echo "KEYSTORE_PASSWORD=${cadi_keystore_password_p12}" > {{ .Values.credsPath }}/mycreds.prop
+    echo "TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> {{ .Values.credsPath }}/mycreds.prop
+    echo "*** change ownership of certificates to targeted user"
+    chown -R 1000 {{ .Values.credsPath }}
 
 # application image
 image: onap/aai-schema-service:1.8.5
