@@ -46,7 +46,7 @@ spec:
     spec:
       hostname: aai-graphadmin
     {{ if .Values.global.initContainers.enabled }}
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
       {{ if .Values.global.jobs.migration.enabled }}
         - /app/ready.py
@@ -84,44 +84,47 @@ spec:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of AAI Resources"
+          /bin/bash /opt/app/aai-graphadmin/docker-entrypoint.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/realm.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: realm.properties
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -159,32 +162,24 @@ spec:
           subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /usr/share/filebeat/data
-          name: {{ include "common.fullname" . }}-filebeat
+          name: filebeat
 
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: filebeat-conf
         configMap:
           name: aai-filebeat
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-filebeat
+      - name: filebeat
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-config
+      - name: config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
+          name: configmap
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

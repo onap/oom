@@ -58,7 +58,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -80,46 +80,45 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
       - command:
-        - /bin/bash
+        - sh
+        args:
         - -c
-        - bash docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
-          name: {{ include "common.fullname" . }}-snapshots
+          name: snapshots
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-GA
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-restore-backup
@@ -128,37 +127,42 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-perform-migration
         command:
-        - /bin/bash
+        - sh
+        args:
         - -c
-        - bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-GA
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: application.properties
           {{ $global := . }}
           {{ range $job := .Values.global.config.auth.files }}
@@ -176,29 +180,21 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: filebeat-conf
         configMap:
           name: aai-filebeat
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-config
+      - name: config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-snapshots
+          name: configmap
+      - name: snapshots
         persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}-migration
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
+          claimName: migration
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -226,8 +222,8 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
+      initContainers:  {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
-      initContainers:
       - command:
         - /bin/bash
         - -c
@@ -247,39 +243,44 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - /bin/bash
-        - docker-entrypoint.sh
-        - dataSnapshot.sh
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of Job"
+          bash docker-entrypoint.sh dataSnapshot.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
-          name: {{ include "common.fullname" . }}-snapshots
+          name: snapshots
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-migration
+          name: migration
           subPath: janusgraph-migration-real.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-migration
+          name: migration
           subPath: janusgraph-migration-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES/
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: application.properties
         resources:
 {{ include "common.resources" . | indent 10 }}
@@ -291,21 +292,21 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-config
+      - name: config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-migration
+          name: configmap
+      - name: migration
         configMap:
-          name: {{ include "common.fullname" . }}-migration-configmap
-      - name: {{ include "common.fullname" . }}-snapshots
+          name: migration-configmap
+      - name: snapshots
         persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}-migration
+          claimName: migration
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
