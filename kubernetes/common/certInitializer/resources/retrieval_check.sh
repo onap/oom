@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2020 Samsung Electronics
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+#!/bin/sh
 
-apiVersion: v1
-kind: ConfigMap
-{{- $suffix := "add-config" }}
-metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
-data:
-{{ tpl (.Files.Glob "resources/*").AsConfig . | indent 2 }}
-{{ if .Values.aaf_add_config }}
-  aaf-add-config.sh: |
-    {{ tpl .Values.aaf_add_config . | indent 4 | trim }}
-{{- end }}
+echo "*** retrieving passwords for certificates"
+export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+  {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+if [ -z "${{ .Values.envVarToCheck }}" ]
+then
+  echo " /!\ certificates retrieval failed"
+  exit 1
+fi
+echo "*** password retrieval succeeded"
