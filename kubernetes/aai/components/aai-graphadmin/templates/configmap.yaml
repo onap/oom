@@ -4,6 +4,7 @@
 # org.onap.aai
 # ================================================================================
 # Copyright © 2018 AT&T Intellectual Property. All rights reserved.
+# Modifications Copyright © 2021 Orange
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +23,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-configmap
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -40,16 +41,33 @@ data:
 {{ tpl (.Files.Glob "resources/config/localhost-access-logback.xml").AsConfig . | indent 2 }}
 {{ tpl (.Files.Glob "resources/config/janusgraph-realtime.properties").AsConfig . | indent 2 }}
 {{ tpl (.Files.Glob "resources/config/janusgraph-cached.properties").AsConfig . | indent 2 }}
+{{ tpl (.Files.Glob "resources/config/realm.properties").AsConfig . | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-properties
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+  {{- if .Values.global.jobs.migration.enabled }}
+  annotations:
+    "helm.sh/hook": pre-upgrade,pre-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+  {{- end }}
+data:
 {{ tpl (.Files.Glob "resources/config/aaiconfig.properties").AsConfig . | indent 2 }}
 {{ tpl (.Files.Glob "resources/config/application.properties").AsConfig . | indent 2 }}
-{{ tpl (.Files.Glob "resources/config/realm.properties").AsConfig . | indent 2 }}
-
 {{- if .Values.global.jobs.migration.enabled }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-migration-configmap
+  name: {{ include "common.fullname" . }}-migration
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
