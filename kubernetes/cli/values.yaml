@@ -35,33 +35,24 @@ certInitializer:
   cadi_latitude: "0.0"
   credsPath: /opt/app/osaaf/local
   aaf_add_config: |
-    echo "*** retrieving password for keystore and trustore"
-    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
-      {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
-    if [ -z "$cadi_keystore_password_p12" ]
-    then
-      echo "  /!\ certificates retrieval failed"
-      exit 1
-    else
-      echo "*** transform AAF certs into pem files"
-      mkdir -p {{ .Values.credsPath }}/certs
-      keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
-        -keystore {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.trust.jks \
-        -alias ca_local_0 \
-        -storepass $cadi_truststore_password
-      openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
-        -nokeys -out {{ .Values.credsPath }}/certs/cert.pem \
-        -passin pass:$cadi_keystore_password_p12 \
-        -passout pass:$cadi_keystore_password_p12
-      echo "*** generating needed file"
-      cat {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key \
-          {{ .Values.credsPath }}/certs/cert.pem \
-          {{ .Values.credsPath }}/certs/cacert.pem \
-          > {{ .Values.credsPath }}/certs/fullchain.pem;
-      cat {{ .Values.credsPath }}/certs/fullchain.pem
-      echo "*** change ownership of certificates to targeted user"
-      chown -R 33 {{ .Values.credsPath }}
-    fi
+    echo "*** transform AAF certs into pem files"
+    mkdir -p {{ .Values.credsPath }}/certs
+    keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
+      -keystore {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.trust.jks \
+      -alias ca_local_0 \
+      -storepass $cadi_truststore_password
+    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
+      -nokeys -out {{ .Values.credsPath }}/certs/cert.pem \
+      -passin pass:$cadi_keystore_password_p12 \
+      -passout pass:$cadi_keystore_password_p12
+    echo "*** generating needed file"
+    cat {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key \
+        {{ .Values.credsPath }}/certs/cert.pem \
+        {{ .Values.credsPath }}/certs/cacert.pem \
+        > {{ .Values.credsPath }}/certs/fullchain.pem;
+    cat {{ .Values.credsPath }}/certs/fullchain.pem
+    echo "*** change ownership of certificates to targeted user"
+    chown -R 33 {{ .Values.credsPath }}
 
 
 #################################################################
