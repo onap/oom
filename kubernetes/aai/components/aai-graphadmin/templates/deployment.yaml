@@ -53,7 +53,29 @@ spec:
       hostname: aai-graphadmin
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
     {{ if .Values.global.initContainers.enabled }}
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{- if .Values.global.aafEnabled }}
+      - command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
+          echo "*** obfuscate them "
+          export KEYSTORE_PLAIN_PASSWORD=${KEYSTORE_PLAIN_PASSWORD}
+          export TRUSTSTORE_PLAIN_PASSWORD=${TRUSTSTORE_PLAIN_PASSWORD}
+          export KEYSTORE_PASSWORD=`java -cp /usr/local/jetty/lib/jetty-util-9.4.44.v20210927.jar org.eclipse.jetty.util.security.Password ${KEYSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
+          export TRUSTSTORE_PASSWORD=`java -cp /usr/local/jetty/lib/jetty-util-9.4.44.v20210927.jar org.eclipse.jetty.util.security.Password ${TRUSTSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
+          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
+          echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
+        image: {{ include "repositoryGenerator.image.jetty" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-obfuscate
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        securityContext:
+          runAsUser: {{ .Values.securityContext.user_id }}
+      {{- end }}
       - command:
       {{ if .Values.global.jobs.migration.enabled }}
         - /app/ready.py
@@ -89,50 +111,57 @@ spec:
       {{  end  }}
       containers:
       - name: {{ include "common.name" . }}
+        {{- if .Values.global.aafEnabled }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "keystore pass: $KEYSTORE_PASSWORD"
+          echo "truststore pass: $TRUSTSTORE_PASSWORD"
+          echo "*** actual launch of AAI GraphAdmin"
+          /bin/bash /opt/app/aai-graphadmin/docker-entrypoint.sh
+        {{- end }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
         - name: LOCAL_USER_ID
-          value: {{ .Values.global.config.userId | quote }}
+          value: {{ .Values.securityContext.user_id | quote }}
         - name: LOCAL_GROUP_ID
-          value: {{ .Values.global.config.groupId | quote }}
+          value: {{ .Values.securityContext.group_id | quote }}
         - name: INTERNAL_PORT_1
           value: {{ .Values.service.internalPort | quote }}
         - name: INTERNAL_PORT_2
           value: {{ .Values.service.internalPort2 | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES
           name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: localhost-access-logback.xml
         - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/realm.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: realm.properties
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
+          name: config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -176,24 +205,16 @@ spec:
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: logs
         emptyDir: {}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-config
+      - name: config
         configMap:
-          name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
+          name: {{ include "common.fullname" . }}
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: {{ include "common.namespace" . }}-docker-registry-key
