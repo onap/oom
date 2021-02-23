@@ -53,7 +53,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -87,7 +87,7 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -111,12 +111,6 @@ spec:
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/{{ . }}
-          name: {{ include "common.fullname" $global }}-auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         resources:
 {{ include "common.resources" . }}
       {{- if .Values.nodeSelector }}
@@ -127,7 +121,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -139,14 +133,6 @@ spec:
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}-configmap
-      - name: {{ include "common.fullname" . }}-auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

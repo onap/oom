@@ -58,8 +58,8 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
-      initContainers:
       - command:
         - /bin/bash
         - -c
@@ -87,7 +87,7 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -123,7 +123,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
