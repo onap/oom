@@ -4,7 +4,7 @@
 # ================================================================================
 # Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2020 Nokia Intellectual Property. All rights reserved.
-# Copyright (c) 2020 Orange Intellectual Property. All rights reserved.
+# Copyright (c) 2020-2021 Orange Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,18 +95,6 @@ global: # global defaults
         edge:
           label: v12
 
-    # Keystore configuration password and filename
-    keystore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-    # Truststore configuration password and filename
-    truststore:
-      filename: aai_keystore
-      passwd: OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0
-
-
-
     # Specifies a list of files to be included in auth volume
     auth:
       files:
@@ -116,6 +104,28 @@ global: # global defaults
     realtime:
       clients: SDNC,MSO,SO,robot-ete
 
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-graphadmin-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: aai-graphadmin
+  fqi: aai-graphadmin@aai-graphadmin.onap.org
+  public_fqdn: aai-graphadmin.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  fqi_namespace: org.onap.aai-graphadmin
+  aaf_add_config: |
+    echo "*** save the passwords"
+    echo "KEYSTORE_PASSWORD=${cadi_keystore_password_p12}" > {{ .Values.credsPath }}/mycreds.prop
+    echo "TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> {{ .Values.credsPath }}/mycreds.prop
+    echo "*** change ownership of certificates to targeted user"
+    chown -R 1000 {{ .Values.credsPath }}
 
 # application image
 image: onap/aai-graphadmin:1.7.1
