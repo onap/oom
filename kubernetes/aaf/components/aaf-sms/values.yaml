@@ -44,12 +44,22 @@ certInitializer:
   root_ca_name: aaf_root_ca.cer
   permission_user: 1000
   permission_group: 1000
-  aaf_add_config: >
-    cd {{ .Values.mountPath }}/local;
-    keytool -exportcert -rfc -file {{ .Values.root_ca_name }} -keystore {{ .Values.keystore }}
-    -alias {{ .Values.root_ca_alias }} -storepass {{ .Values.keystore_pass }};
-    chown -R {{.Values.permission_user}}:{{.Values.permission_group}}
-    {{ .Values.mountPath }};
+  aaf_add_config: |
+    echo "*** retrieving passwords for certificates"
+    export $(/opt/app/aaf_config/bin/agent.sh local showpass \
+      {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c')
+    if [ -z "$cadi_keystore_password_p12" ]
+    then
+      echo "  /!\ certificates retrieval failed"
+      exit 1
+    else
+      echo "*** retrieve root_ca"
+      cd {{ .Values.mountPath }}/local;
+      keytool -exportcert -rfc -file {{ .Values.root_ca_name }} -keystore {{ .Values.keystore }}
+      -alias {{ .Values.root_ca_alias }} -storepass {{ .Values.keystore_pass }};
+      chown -R {{.Values.permission_user}}:{{.Values.permission_group}}
+      {{ .Values.mountPath }};
+    fi
 
 #################################################################
 # Application configuration defaults.
