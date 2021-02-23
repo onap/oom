@@ -55,6 +55,9 @@
   - mountPath: /opt/app/aaf_config/cert/truststoreONAP.p12.b64
     name: aaf-agent-certs
     subPath: truststoreONAP.p12.b64
+  - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
+    mountPath: /opt/app/aaf_config/bin/retrieval_check.sh
+    subPath: retrieval_check.sh
 {{-     if $initRoot.aaf_add_config }}
   - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
     mountPath: /opt/app/aaf_config/bin/aaf-add-config.sh
@@ -66,6 +69,7 @@
     - |
       #!/usr/bin/env bash
       /opt/app/aaf_config/bin/agent.sh
+      source /opt/app/aaf_config/bin/retrieval_check.sh
 {{-     if $initRoot.aaf_add_config }}
       /opt/app/aaf_config/bin/aaf-add-config.sh
 {{-     end }}
@@ -174,13 +178,10 @@
   configMap:
     name: {{ tpl $subchartDot.Values.certsCMName $subchartDot }}
     defaultMode: 0700
-
-{{-     if $initRoot.aaf_add_config }}
 - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
   configMap:
     name: {{ include "common.fullname" $subchartDot }}-add-config
     defaultMode: 0700
-{{-     end -}}
 {{-     if $dot.Values.global.importCustomCertsEnabled }}
 - name: updated-truststore
   emptyDir: {}
