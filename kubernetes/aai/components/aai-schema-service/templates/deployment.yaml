@@ -40,16 +40,25 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      containers:
+      containers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          echo "*** actual launch of AAI Resources"
+          /bin/bash /opt/app/aai-schema-service/docker-entrypoint.sh
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -57,9 +66,9 @@ spec:
           name: aaiconfig-conf
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-SS
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-schema-service/resources/logback.xml
-          name: {{ include "common.fullname" . }}-log-conf
+          name: log-conf
           subPath: logback.xml
         - mountPath: /opt/app/aai-schema-service/resources/localhost-access-logback.xml
           name: localhost-access-log-conf
@@ -70,12 +79,6 @@ spec:
         - mountPath: /opt/app/aai-schema-service/resources/application.properties
           name: springapp-conf
           subPath: application.properties
-          {{ $global := . }}
-          {{ range $job := .Values.global.config.auth.files }}
-        - mountPath: /opt/app/aai-schema-service/resources/etc/auth/{{ . }}
-          name: auth-truststore-sec
-          subPath: {{ . }}
-          {{ end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
@@ -113,10 +116,10 @@ spec:
           subPath: filebeat.yml
           name: filebeat-conf
         - mountPath: /var/log/onap
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /usr/share/filebeat/data
-          name: {{ include "common.fullname" . }}-filebeat
-      volumes:
+          name: filebeat
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: aai-common-aai-auth-mount
         secret:
           secretName: aai-common-aai-auth
@@ -125,34 +128,26 @@ spec:
           path: /etc/localtime
       - name: filebeat-conf
         configMap:
-          name: aai-filebeat
-      - name: {{ include "common.fullname" . }}-logs
+          name: {{ include "common.fullname" . }}-aai-filebeat
+      - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-filebeat
+      - name: filebeat
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-log-conf
+      - name: log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
       - name: localhost-access-log-conf
         configMap:
-          name: {{ include "common.fullname" . }}-localhost-access-log-configmap
+          name: {{ include "common.fullname" . }}-localhost-access-log
       - name: springapp-conf
         configMap:
-          name: {{ include "common.fullname" . }}-springapp-configmap
+          name: {{ include "common.fullname" . }}-springapp
       - name: aaiconfig-conf
         configMap:
-          name: {{ include "common.fullname" . }}-aaiconfig-configmap
+          name: {{ include "common.fullname" . }}-aaiconfig
       - name: realm-conf
         configMap:
-          name: {{ include "common.fullname" . }}-realm-configmap
-      - name: auth-truststore-sec
-        secret:
-          secretName: aai-common-truststore
-          items:
-            {{ range $job := .Values.global.config.auth.files }}
-            - key: {{ . }}
-              path: {{ . }}
-            {{ end }}
+          name: {{ include "common.fullname" . }}-realm
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
