@@ -52,7 +52,7 @@ GLOBAL_INJECTED_NBI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . 
 GLOBAL_INJECTED_NETWORK = '{{ .Values.openStackPrivateNetId }}'
 GLOBAL_INJECTED_NEXUS_DOCKER_REPO = '{{ include "common.repository" . }}'
 GLOBAL_INJECTED_NEXUS_PASSWORD = 'docker'
-GLOBAL_INJECTED_NEXUS_REPO ='https://nexus.onap.org/content/sites/raw'
+GLOBAL_INJECTED_NEXUS_REPO = 'https://nexus.onap.org/content/sites/raw'
 GLOBAL_INJECTED_NEXUS_USERNAME = 'docker'
 GLOBAL_INJECTED_OOF_IP_ADDR = 'N/A'
 GLOBAL_INJECTED_OOF_HOMING_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "oof-has-api") }}'
@@ -70,7 +70,7 @@ GLOBAL_INJECTED_REGION_THREE = '{{ .Values.openStackRegionRegionThree }}'
 GLOBAL_INJECTED_KEYSTONE_REGION_THREE = '{{ .Values.openStackKeyStoneUrlRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION_REGION_THREE = '{{ .Values.openStackKeystoneAPIVersionRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE = '{{ .Values.openStackUserNameRegionThree }}'
-GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD_REGION_THREE  = '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}'
+GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD_REGION_THREE = '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD = '{{ .Values.config.openStackSoEncryptedPassword}}'
 GLOBAL_INJECTED_OPENSTACK_TENANT_ID_REGION_THREE = '{{ .Values.openStackTenantIdRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_PROJECT_DOMAIN_REGION_THREE = '{{ .Values.openStackProjectNameRegionThree }}'
@@ -230,7 +230,7 @@ GLOBAL_SO_BPMN_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hos
 GLOBAL_SO_CATDB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-catalog-db-adapter" "port" 8082) }}'
 GLOBAL_SO_OPENSTACK_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-openstack-adapter" "port" 8087) }}'
 GLOBAL_SO_REQDB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-request-db-adapter" "port" 8083) }}'
-GLOBAL_SO_SDNC_SERVER_PORT =  '{{include "robot.ingress.port" (dict "root" . "hostname" "so-sdnc-adapter" "port" 8086) }}'
+GLOBAL_SO_SDNC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-sdnc-adapter" "port" 8086) }}'
 GLOBAL_SO_VFC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-vfc-adapter" "port" 8084) }}'
 GLOBAL_SO_VNFM_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-vnfm-adapter" "port" 9092) }}'
 GLOBAL_SO_NSSMF_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-nssmf-adapter" "port" 8088) }}'
@@ -245,7 +245,7 @@ GLOBAL_SO_BPMN_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_BPMN_IP_ADDR + ':' + GL
 GLOBAL_SO_CATDB_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_CATDB_IP_ADDR + ':' + GLOBAL_SO_CATDB_SERVER_PORT
 GLOBAL_SO_OPENSTACK_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_OPENSTACK_IP_ADDR + ':' + GLOBAL_SO_OPENSTACK_SERVER_PORT
 GLOBAL_SO_REQDB_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_REQDB_IP_ADDR + ':' + GLOBAL_SO_REQDB_SERVER_PORT
-GLOBAL_SO_SDNC_ENDPOINT =  'http://' + GLOBAL_INJECTED_SO_SDNC_IP_ADDR + ':' + GLOBAL_SO_SDNC_SERVER_PORT
+GLOBAL_SO_SDNC_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_SDNC_IP_ADDR + ':' + GLOBAL_SO_SDNC_SERVER_PORT
 GLOBAL_SO_VFC_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_VFC_IP_ADDR + ':' + GLOBAL_SO_VFC_SERVER_PORT
 GLOBAL_SO_VNFM_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_VNFM_IP_ADDR + ':' + GLOBAL_SO_VNFM_SERVER_PORT
 GLOBAL_SO_NSSMF_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_NSSMF_IP_ADDR + ':' + GLOBAL_SO_NSSMF_SERVER_PORT
@@ -257,16 +257,16 @@ GLOBAL_MUSIC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostn
 GLOBAL_OOF_SERVER_PROTOCOL = "https"
 # oof-homing info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_HOMING_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "oof-has-api" "port" 8091) }}'
-GLOBAL_OOF_HOMING_USERNAME="{{ .Values.oofHomingUsername }}"
-GLOBAL_OOF_HOMING_PASSWORD="{{ .Values.oofHomingPassword }}"
+GLOBAL_OOF_HOMING_USERNAME = "{{ .Values.oofHomingUsername }}"
+GLOBAL_OOF_HOMING_PASSWORD = "{{ .Values.oofHomingPassword }}"
 # oof-sniro info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_SNIRO_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "oof-osdf" "port" 8698) }}'
-#oof user
-GLOBAL_OOF_OSDF_USERNAME="{{ .Values.oofUsername }}"
-GLOBAL_OOF_OSDF_PASSWORD="{{ .Values.oofPassword }}"
-#oof pci user
-GLOBAL_OOF_PCI_USERNAME="{{ .Values.oofOsdfPciOptUsername }}"
-GLOBAL_OOF_PCI_PASSWORD="{{ .Values.oofOsdfPciOptPassword }}"
+# oof user
+GLOBAL_OOF_OSDF_USERNAME = "{{ .Values.oofUsername }}"
+GLOBAL_OOF_OSDF_PASSWORD = "{{ .Values.oofPassword }}"
+# oof pci user
+GLOBAL_OOF_PCI_USERNAME = "{{ .Values.oofOsdfPciOptUsername }}"
+GLOBAL_OOF_PCI_PASSWORD = "{{ .Values.oofOsdfPciOptPassword }}"
 # oof cmso global info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_CMSO_PROTOCOL = "https"
 GLOBAL_OOF_CMSO_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "oof-cmso" "port" 8080) }}'
@@ -323,9 +323,9 @@ GLOBAL_DCAE_VES_USERNAME = 'sample1'
 GLOBAL_DCAE_VES_PASSWORD = 'sample1'
 
 
-#global selenium info
-GLOBAL_PROXY_WARNING_TITLE=""
-GLOBAL_PROXY_WARNING_CONTINUE_XPATH=""
+# global selenium info
+GLOBAL_PROXY_WARNING_TITLE = ""
+GLOBAL_PROXY_WARNING_CONTINUE_XPATH = ""
 # dns info
 GLOBAL_DNS_TRAFFIC_DURATION = "600"
 # location where heat templates and data are loaded from
@@ -342,4 +342,3 @@ GLOBAL_CCSDK_CDS_USERNAME = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_PASSWORD = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_AUTHENTICATION = [GLOBAL_CCSDK_CDS_USERNAME, GLOBAL_CCSDK_CDS_PASSWORD]
 GLOBAL_CDS_AUTH = "Y2NzZGthcHBzOmNjc2RrYXBwcw=="
-
