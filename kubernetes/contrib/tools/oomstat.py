@@ -26,14 +26,17 @@ import getopt
 from fnmatch import fnmatch as match
 import yaml
 
+
 def info(thing):
     if thing:
         sys.stderr.write("{}\n".format(thing))
+
 
 try:
     from tabulate import tabulate
 except ImportError as e:
     info("Warning: cannot import tabulate module (): {}".format(str(e)))
+
     def tabulate(lines, headers, tablefmt=None):
         ''' basic tabulate function '''
         fmt = ""

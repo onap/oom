@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#============LICENSE_END============================================
+# ============LICENSE_END============================================
 
 # Afther K8s master up and running. This script will be triggered in each worker nodes. It will join the nodes, and mount the NFS directory.
 
@@ -76,13 +76,13 @@ if __name__ == '__main__':
         master.target.instance.runtime_properties['master_port']
 
     # Join the cluster.
-    cniCommand1=subprocess.Popen(["sudo", "sysctl", 'net.bridge.bridge-nf-call-iptables=1'], stdout=subprocess.PIPE)
+    cniCommand1 = subprocess.Popen(["sudo", "sysctl", 'net.bridge.bridge-nf-call-iptables=1'], stdout=subprocess.PIPE)
     join_command = \
         'sudo kubeadm join --token {0} {1}:{2}'.format(
             bootstrap_token, master_ip, master_port)
     execute_command(join_command)
 
-    #mount
-    mount_command=\
+    # mount
+    mount_command =\
         'sudo mount -t nfs -o proto=tcp,port=2049 {0}:/dockerdata-nfs /dockerdata-nfs'.format(master_ip)
     execute_command(mount_command)

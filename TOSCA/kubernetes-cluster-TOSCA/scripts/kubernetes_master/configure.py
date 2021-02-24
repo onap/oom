@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#============LICENSE_END============================================
+# ============LICENSE_END============================================
 
 # This script will be executed on Kubernetes master host. It will initialize the master, and install a pod network.
 
@@ -32,11 +32,12 @@ from cloudify_rest_client.exceptions import CloudifyClientError
 JOIN_COMMAND_REGEX = '^kubeadm join[\sA-Za-z0-9\.\:\-\_]*'
 BOOTSTRAP_TOKEN_REGEX = '[a-z0-9]{6}.[a-z0-9]{16}'
 IP_PORT_REGEX = '[0-9]+(?:\.[0-9]+){3}:[0-9]+'
-NOT_SHA_REGEX='^(?!.*sha256)'
+NOT_SHA_REGEX = '^(?!.*sha256)'
 JCRE_COMPILED = re.compile(JOIN_COMMAND_REGEX)
 BTRE_COMPILED = re.compile(BOOTSTRAP_TOKEN_REGEX)
 IPRE_COMPILED = re.compile(IP_PORT_REGEX)
-SHA_COMPILED=re.compile(NOT_SHA_REGEX)
+SHA_COMPILED = re.compile(NOT_SHA_REGEX)
+
 
 def execute_command(_command):
 
@@ -121,7 +122,7 @@ def setup_secrets(_split_master_port, _bootstrap_token):
 if __name__ == '__main__':
 
     ctx.instance.runtime_properties['KUBERNETES_MASTER'] = True
-    cniCommand1=subprocess.Popen(["sudo", "sysctl", 'net.bridge.bridge-nf-call-iptables=1'], stdout=subprocess.PIPE)
+    cniCommand1 = subprocess.Popen(["sudo", "sysctl", 'net.bridge.bridge-nf-call-iptables=1'], stdout=subprocess.PIPE)
     # Start Kubernetes Master
     ctx.logger.info('Attempting to start Kubernetes master.')
     start_master_command = 'sudo kubeadm init'
@@ -163,13 +164,13 @@ if __name__ == '__main__':
     setup_secrets(split_master_port, bootstrap_token)
     configure_admin_conf()
 
-    weaveCommand1=subprocess.Popen(["kubectl", "version"], stdout=subprocess.PIPE)
-    weaveCommand2=subprocess.Popen(["base64"],stdin=weaveCommand1.stdout, stdout=subprocess.PIPE)
+    weaveCommand1 = subprocess.Popen(["kubectl", "version"], stdout=subprocess.PIPE)
+    weaveCommand2 = subprocess.Popen(["base64"], stdin=weaveCommand1.stdout, stdout=subprocess.PIPE)
     kubever = weaveCommand2.communicate()[0]
     kubever = kubever.replace('\n', '').replace('\r', '')
     ctx.logger.info("kubever :"+kubever)
-    weaveURL=('https://cloud.weave.works/k8s/net?k8s-version={0}'.format(kubever))
+    weaveURL = ('https://cloud.weave.works/k8s/net?k8s-version={0}'.format(kubever))
     ctx.logger.info("weaveURL:" + weaveURL)
-    weaveCommand4=subprocess.Popen(["kubectl","apply","-f",weaveURL],stdout=subprocess.PIPE)
-    weaveResult= weaveCommand4.communicate()[0]
+    weaveCommand4 = subprocess.Popen(["kubectl", "apply", "-f", weaveURL], stdout=subprocess.PIPE)
+    weaveResult = weaveCommand4.communicate()[0]
     ctx.logger.info("weaveResult :"+weaveResult)

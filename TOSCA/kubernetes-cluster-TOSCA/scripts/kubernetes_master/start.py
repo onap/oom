@@ -15,9 +15,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#============LICENSE_END============================================
+# ============LICENSE_END============================================
 
-#This script will be execute on master host. This script will check whether Kube-DNS is running, and set secrets in cloudify.
+# This script will be execute on master host. This script will check whether Kube-DNS is running, and set secrets in cloudify.
 
 import os
 import subprocess
@@ -112,7 +112,8 @@ if __name__ == '__main__':
             ctx.logger.info('Set secret: {0}.'.format(_secret_key))
         else:
             cfy_client.secrets.update(key=_secret_key, value=_cluster.get('certificate-authority-data'))
-        ctx.instance.runtime_properties['%s_certificate_authority_data' % __name] = _cluster.get('certificate-authority-data')
+        ctx.instance.runtime_properties['%s_certificate_authority_data' %
+                                        __name] = _cluster.get('certificate-authority-data')
         _clusters[__name] = _cluster
     del __name
 

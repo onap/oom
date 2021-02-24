@@ -39,23 +39,25 @@ configuration.assert_hostname = False
 coreV1Api = client.CoreV1Api(client.ApiClient(configuration))
 api_instance = client.CoreV1Api(client.ApiClient(configuration))
 
-def run_command( pod_name, command ):
-        try:
-                exec_command = [
-                    '/bin/sh',
-                    '-c',
-                    command]
-                resp = stream(api_instance.connect_get_namespaced_pod_exec, pod_name, namespace,
+
+def run_command(pod_name, command):
+    try:
+        exec_command = [
+            '/bin/sh',
+            '-c',
+            command]
+        resp = stream(api_instance.connect_get_namespaced_pod_exec, pod_name, namespace,
                       command=exec_command,
                       stderr=True, stdin=False,
                       stdout=True, tty=False)
-        except ApiException as e:
-                print("Exception when calling CoreV1Api->connect_get_namespaced_pod_exec: %s\n" % e)
-                return False
-        print(resp)
-        return True
+    except ApiException as e:
+        print("Exception when calling CoreV1Api->connect_get_namespaced_pod_exec: %s\n" % e)
+        return False
+    print(resp)
+    return True
 
-def find_pod(container_name,command,pods):
+
+def find_pod(container_name, command, pods):
     ready = False
     try:
         response = coreV1Api.list_namespaced_pod(namespace=namespace, watch=False)
@@ -66,9 +68,9 @@ def find_pod(container_name,command,pods):
             for s in i.status.container_statuses:
                 if s.name == container_name:
                     if pods == True:
-                       print (i.metadata.name)
+                        print(i.metadata.name)
                     else:
-                       ready = run_command(i.metadata.name,command)
+                        ready = run_command(i.metadata.name, command)
                 else:
                     continue
     except Exception as e:
@@ -82,12 +84,13 @@ USAGE = "Usage: ready.py [-t <timeout>] -c <container_name> [-c <container_name>
         "where\n" \
         "<container_name> - name of the container to wait for\n"
 
+
 def main(argv):
     pods = False
     command = ""
     container_name = ""
     try:
-        opts, args = getopt.getopt(argv, "ghp:c:", ["pod-container-name=", "command=", "help","getpods"])
+        opts, args = getopt.getopt(argv, "ghp:c:", ["pod-container-name=", "command=", "help", "getpods"])
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print("%s\n\n%s" % (DESCRIPTION, USAGE))
@@ -108,15 +111,14 @@ def main(argv):
         sys.exit(2)
 
     if pods == False:
-            if command.__len__() == 0:
-                print("Missing required input parameter(s)\n")
-                print(USAGE)
-                sys.exit(2)
-    ready = find_pod(container_name,command,pods)
+        if command.__len__() == 0:
+            print("Missing required input parameter(s)\n")
+            print(USAGE)
+            sys.exit(2)
+    ready = find_pod(container_name, command, pods)
     if ready == False:
         sys.exit(2)
 
+
 if __name__ == "__main__":
     main(sys.argv[1:])
-
-
