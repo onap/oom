@@ -40,6 +40,7 @@ spec:
             - -c
             - |
               export BPEL_PASSWORD=`htpasswd -bnBC 10 "" $BPEL_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
+              export INFRA_BASIC_AUTH=$(printf "%s:%s" $INFRA_USERNAME $INFRA_PASSWORD_INPUT | base64)
               export ACTUATOR_PASSWORD=`htpasswd -bnBC 10 "" $ACTUATOR_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
               {{- if .Values.global.aafEnabled }}
               export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
@@ -73,6 +74,10 @@ spec:
             - name: ACTUATOR_PASSWORD_INPUT
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 14 }}
             {{ include "so.certificates.env" . | nindent 12 }}
+            - name: INFRA_USERNAME
+                  {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-infra-creds" "key" "login") | indent 14 }}
+            - name: INFRA_PASSWORD_INPUT
+                {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-infra-creds" "key" "password") | indent 14 }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-env
