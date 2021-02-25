@@ -35,6 +35,28 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      {{- if .Values.global.aafEnabled }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - command:
+        - sh
+        args:
+        - -c
+        - |
+          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+          cd /config-input && for PFILE in `ls -1`
+          do
+            envsubst <${PFILE} >/config/${PFILE}
+          done
+          cat /config/server.xml
+        volumeMounts:
+        - mountPath: /config-input
+          name: config-input
+        - mountPath: /config
+          name: config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -42,7 +64,16 @@ spec:
           command:
             - /bin/bash
             - -c
-            - /home/uui/uuiStartup.sh
+            - |
+              echo "*** /opt"
+              ls -lh /opt/
+              echo "*** /opt/app"
+              ls -lh /opt/app/
+              echo "*** /opt/app/osaaf/"
+              ls -lh /opt/app/osaaf/
+              echo "*** /opt/app/osaaf/local"
+              ls -lh /opt/app/osaaf/local/
+              /home/uui/uuiStartup.sh
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -59,18 +90,30 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          {{- if .Values.global.aafEnabled }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - mountPath: /home/uui/server.xml
+            name: config
+            subPath: server.xml
+          {{- end }}
           env:
           - name: MSB_ADDR
             value: {{ tpl .Values.msbaddr . }}
-          resources:
-{{ include "common.resources" . | indent 12 }}
+          resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
-        {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end }}
+        {{- if .Values.affinity }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
+        {{- end }}
+      {{- if .Values.global.aafEnabled }}
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      - name: config-input
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: config
+        emptyDir:
+          medium: Memory
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
