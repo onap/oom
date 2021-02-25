@@ -1,3 +1,4 @@
+{{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #  ================================================================================
@@ -16,7 +17,30 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ============LICENSE_END=========================================================
 #  @author: gareth.roper@ericsson.com
+*/}}
 apiVersion: v1
-description: A Helm chart for ONAP Service Orchestration Monitoring
-name: so-monitoring
-version: 7.0.0
+data:
+  LOG_PATH: {{ index .Values.logPath }}
+  APP: {{ index .Values.app }}
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-app
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/overrides/*").AsConfig . | indent 2 }}

@@ -110,7 +110,7 @@ GLOBAL_INJECTED_SO_OPENSTACK_IP_ADDR = '{{include "robot.ingress.svchost" (dict 
 GLOBAL_INJECTED_SO_REQDB_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-request-db-adapter") }}'
 GLOBAL_INJECTED_SO_SDNC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-sdnc-adapter") }}'
 GLOBAL_INJECTED_SO_VFC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-vfc-adapter") }}'
-GLOBAL_INJECTED_SO_VNFM_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-vnfm-adapter") }}'
+GLOBAL_INJECTED_SO_VNFM_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-etsi-sol003-adapter") }}'
 GLOBAL_INJECTED_SO_NSSMF_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "so-nssmf-adapter") }}'
 GLOBAL_INJECTED_UBUNTU_1404_IMAGE = '{{ .Values.ubuntu14Image }}'
 GLOBAL_INJECTED_UBUNTU_1604_IMAGE = '{{ .Values.ubuntu16Image }}'
@@ -255,7 +255,7 @@ GLOBAL_SO_OPENSTACK_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" .
 GLOBAL_SO_REQDB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-request-db-adapter" "port" 8083) }}'
 GLOBAL_SO_SDNC_SERVER_PORT =  '{{include "robot.ingress.port" (dict "root" . "hostname" "so-sdnc-adapter" "port" 8086) }}'
 GLOBAL_SO_VFC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-vfc-adapter" "port" 8084) }}'
-GLOBAL_SO_VNFM_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-vnfm-adapter" "port" 9092) }}'
+GLOBAL_SO_VNFM_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-etsi-sol003-adapter" "port" 9092) }}'
 GLOBAL_SO_NSSMF_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-nssmf-adapter" "port" 8088) }}'
 GLOBAL_SO_USERNAME = '{{ .Values.soUsername }}'
 GLOBAL_SO_CATDB_USERNAME = '{{ .Values.soCatdbUsername }}'
@@ -365,4 +365,3 @@ GLOBAL_CCSDK_CDS_USERNAME = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_PASSWORD = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_AUTHENTICATION = [GLOBAL_CCSDK_CDS_USERNAME, GLOBAL_CCSDK_CDS_PASSWORD]
 GLOBAL_CDS_AUTH = "Y2NzZGthcHBzOmNjc2RrYXBwcw=="
-
