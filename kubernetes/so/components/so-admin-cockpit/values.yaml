@@ -2,6 +2,7 @@
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #   Copyright (C) 2020 Huawei
 #   Modifications Copyright © 2020 Nokia
+#   Modifications Copyright © 2021 Orange
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -59,9 +60,9 @@ secrets:
     passwordPolicy: required
   - uid: app-user-creds
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.server.monitoring.soMonitoringCredsExternalSecret) . }}'
-    login: '{{ .Values.server.monitoring.username }}'
-    password: '{{ .Values.server.monitoring.password }}'
+    externalSecret: '{{ tpl (default "" .Values.server.cockpit.soMonitoringCredsExternalSecret) . }}'
+    login: '{{ .Values.server.cockpit.username }}'
+    password: '{{ .Values.server.cockpit.password }}'
 
 #secretsFilePaths: |
 #  - 'my file 1'
@@ -71,7 +72,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 repository: nexus3.onap.org:10001
-image: onap/so/so-monitoring:1.7.11
+image: onap/so/so-admin-cockpit:1.8.2
 pullPolicy: Always
 
 db:
@@ -86,22 +87,22 @@ replicaCount: 1
 minReadySeconds: 10
 containerPort: &containerPort 9091
 logPath: app/logs/
-app: so-monitoring
+app: so-admin-cockpit
 
 #################################################################
 # soHelpers part
 #################################################################
 soHelpers:
-  nameOverride: so-monitoring-cert-init
+  nameOverride: so-cockpit-cert-init
   certInitializer:
-    nameOverride: so-monitoring-cert-init
+    nameOverride: so-cockpit-cert-init
     credsPath: /opt/app/osaaf/local
   cadi:
     apiEnforcement: org.onap.so.monitoringPerm
   containerPort: *containerPort
 
 server:
-  monitoring:
+  cockpit:
     username: demo
     # password: demo123456!
     # soMonitoringCredsExternalSecret: some secret
@@ -112,7 +113,7 @@ service:
     nodePort: 24
     internalPort: *containerPort
     externalPort: *containerPort
-    portName: so-monitor-port
+    portName: http
 updateStrategy:
     type: RollingUpdate
     maxUnavailable: 1
@@ -150,8 +151,8 @@ livenessProbe:
 ingress:
     enabled: false
     service:
-        - baseaddr: "somonitoring"
-          name: "so-monitoring"
+        - baseaddr: "soadmincockpit"
+          name: "so-admin-cockpit"
           port: 9091
     config:
         ssl: "none"
