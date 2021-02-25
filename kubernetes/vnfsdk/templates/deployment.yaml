@@ -35,7 +35,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - sh
         args:
@@ -75,10 +75,13 @@ spec:
         name: {{ include "common.name" . }}
         resources:
 {{ include "common.resources" . | indent 12 }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /service/webapps/ROOT/WEB-INF/classes/mybatis/configuration/configuration.xml
           name: init-data
           subPath: configuration.xml
+        - mountPath: /etc/nginx/nginx.conf
+          name: nginx
+          subPath: nginx.conf
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
@@ -86,10 +89,13 @@ spec:
           periodSeconds: {{ .Values.readiness.periodSeconds }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: init-data-input
         configMap:
           name: {{ include "common.fullname" . }}
+      - name: nginx
+        configMap:
+          name: {{ include "common.fullname" . }}-nginx
       - name: init-data
         emptyDir:
           medium: Memory
