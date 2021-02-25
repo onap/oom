@@ -35,10 +35,20 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+            bash /uui/run.sh
+          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -50,8 +60,7 @@ spec:
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
-          resources:
-{{ include "common.resources" . | indent 12 }}
+          resources: {{ include "common.resources" . | nindent 12 }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -62,5 +71,24 @@ spec:
             value: {{tpl .Values.msbaddr .}}
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
+          {{- if .Values.global.aafEnabled }}
+          - name: JAVA_MORE_OPTS
+            value: --spring.config.location=file:/config/application.properties
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - mountPath: /uui/run.sh
+            name: entrypoint
+            subPath: run.sh
+          - mountPath: /config/application.properties
+            name: config
+            subPath: application.properties
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      - name: config
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: entrypoint-input
+        configMap:
+          name: {{ include "common.fullname" . }}-entrypoint
+          defaultMode: 0755
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
