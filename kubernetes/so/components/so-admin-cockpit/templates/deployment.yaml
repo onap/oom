@@ -63,7 +63,7 @@ spec:
         args:
         - -c
         - |
-          export SO_MONITORING_PASSWORD=`htpasswd -bnBC 10 "" $SO_MON_PASS | tr -d ':\n' | sed 's/\$2y/\$2a/'`
+          export SO_COCKPIT_PASSWORD=`htpasswd -bnBC 10 "" $SO_COCKPIT_PASS | tr -d ':\n' | sed 's/\$2y/\$2a/'`
           {{- if .Values.global.aafEnabled }}
           export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/org.onap.so.cred.props | xargs -0)
           export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
@@ -86,14 +86,14 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "login") | indent 10 }}
         - name: DB_ADMIN_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "password") | indent 10 }}
-        - name: SO_MONITORING_USERNAME
+        - name: SO_COCKPIT_USERNAME
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 10 }}
-        - name: SO_MON_PASS
+        - name: SO_COCKPIT_PASS
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 10 }}
 
         envFrom:
         - configMapRef:
-            name: {{ include "common.fullname" . }}-configmap
+            name: {{ include "common.fullname" . }}
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
         - name: logs
@@ -123,6 +123,6 @@ spec:
         emptyDir: {}
       - name: config
         configMap:
-            name: {{ include "common.fullname" . }}-app-configmap
+            name: {{ include "common.fullname" . }}-app
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
