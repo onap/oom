@@ -67,6 +67,9 @@
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: {{ include "repositoryGenerator.image.readiness" $subchartDot }}
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
+  securityContext:
+    runAsUser: {{ $subchartDot.Values.user }}
+    runAsGroup: {{ $subchartDot.Values.group }}
   command:
   - /app/ready.py
   args:
