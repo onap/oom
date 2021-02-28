@@ -1,5 +1,5 @@
 # Copyright © 2018 Amdocs, Bell Canada, AT&T
-# Modifications Copyright © 2020 Orange
+# Modifications Copyright © 2020-2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,40 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
+
+#################################################################
+# Certificate configuration
+#################################################################
+certInitializer:
+  nameOverride: aai-ml-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: aai
+  fqi: aai@aai.onap.org
+  public_fqdn: aai.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /opt/app/model-loader/config/auth/aaf/
+  fqi_namespace: org.onap.aai
+  aaf_add_config: |
+    echo "*** changing them into shell safe ones"
+    export KEYSTORE_PLAIN_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+    export TRUSTSTORE_PLAIN_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+    cd {{ .Values.credsPath }}
+    keytool -storepasswd -new "${KEYSTORE_PLAIN_PASSWORD}" \
+      -storepass "${cadi_keystore_password_p12}" \
+      -keystore {{ .Values.fqi_namespace }}.p12
+    keytool -storepasswd -new "${TRUSTSTORE_PLAIN_PASSWORD}" \
+      -storepass "${cadi_truststore_password}" \
+      -keystore {{ .Values.fqi_namespace }}.trust.jks
+    echo "*** writing passwords into prop file"
+    echo "KEYSTORE_PLAIN_PASSWORD=${KEYSTORE_PLAIN_PASSWORD}" > {{ .Values.credsPath }}/mycreds.prop
+    echo "TRUSTSTORE_PLAIN_PASSWORD=${TRUSTSTORE_PLAIN_PASSWORD}" >> {{ .Values.credsPath }}/mycreds.prop
+    echo "*** change ownership of certificates to targeted user"
+    chown -R 1000 {{ .Values.credsPath }}
 
 # application image
 image: onap/model-loader:1.9.1
@@ -46,26 +80,6 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
-
-service:
-  type: NodePort
-  portName: http
-  externalPort: 8080
-  internalPort: 8080
-  nodePort: 10
-  portName2: https
-  externalPort2: 8443
-  internalPort2: 8443
-  nodePort2: 29
-
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "aaimodelloader"
-      name: "aai-modelloader"
-      port: 8443
-  config:
-    ssl: "redirect"
 
 resources:
   small:
