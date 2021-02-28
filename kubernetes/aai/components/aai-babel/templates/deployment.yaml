@@ -37,10 +37,23 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      initContainers:  {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            echo "*** retrieve Truststore and Keystore password"
+            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
+            echo "*** KEY_STORE_PASSWORD: $KEY_STORE_PASSWORD"
+            echo "*** actual launch of AAI Babel"
+            /bin/bash /opt/app/babel/bin/start.sh
+          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -60,35 +73,28 @@ spec:
           env:
             - name: CONFIG_HOME
               value: /opt/app/babel/config
-            - name: KEY_STORE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}-pass
-                  key: KEY_STORE_PASSWORD
-            - name: KEY_MANAGER_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "common.fullname" . }}-pass
-                  key: KEY_MANAGER_PASSWORD
-          volumeMounts:
+          volumeMounts:  {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          - mountPath: /opt/app/babel/config/application.properties
+            name: config
+            subPath: application.properties
           - mountPath: /opt/app/babel/config/artifact-generator.properties
-            name: {{ include "common.fullname" . }}-config
+            name: config
             subPath: artifact-generator.properties
           - mountPath: /opt/app/babel/config/tosca-mappings.json
-            name: {{ include "common.fullname" . }}-config
+            name: config
             subPath: tosca-mappings.json
           - mountPath: /opt/app/babel/config/babel-auth.properties
-            name: {{ include "common.fullname" . }}-config
+            name: config
             subPath: babel-auth.properties
           - mountPath: /opt/app/babel/config/auth
-            name: {{ include "common.fullname" . }}-secrets
+            name: secrets
           - mountPath: /var/log/onap
-            name: {{ include "common.fullname" . }}-logs
+            name: logs
           - mountPath: /opt/app/babel/config/logback.xml
-            name: {{ include "common.fullname" . }}-config
+            name: config
             subPath: logback.xml
           resources:
 {{ include "common.resources" . }}
@@ -110,33 +116,24 @@ spec:
             subPath: filebeat.yml
             name: filebeat-conf
           - mountPath: /var/log/onap
-            name: {{ include "common.fullname" . }}-logs
+            name: logs
           - mountPath: /usr/share/filebeat/data
             name: aai-filebeat
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: {{ include "common.fullname" . }}-config
+        - name: config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
-            items:
-            - key: artifact-generator.properties
-              path: artifact-generator.properties
-            - key: tosca-mappings.json
-              path: tosca-mappings.json
-            - key: babel-auth.properties
-              path: babel-auth.properties
-            - key: logback.xml
-              path: logback.xml
-        - name: {{ include "common.fullname" . }}-secrets
+        - name: secrets
           secret:
             secretName: {{ include "common.fullname" . }}-babel-secrets
         - name: filebeat-conf
           configMap:
             name: aai-filebeat
-        - name: {{ include "common.fullname" . }}-logs
+        - name: logs
           emptyDir: {}
         - name: aai-filebeat
           emptyDir: {}
