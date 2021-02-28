@@ -105,6 +105,10 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "htpasswdImage") .) }}
 {{- end -}}
 
+{{- define "repositoryGenerator.image.jetty" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "jettyImage") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image.jre" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "jreImage") .) }}
 {{- end -}}
