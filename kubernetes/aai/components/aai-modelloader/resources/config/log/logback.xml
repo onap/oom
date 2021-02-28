@@ -1,6 +1,7 @@
 {{/*
 <!--
 # Copyright © 2018 Amdocs, Bell Canada, AT&T
+# Modifications Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +27,7 @@
   <property name="auditLogName" value="audit" />
   <property name="debugLogName" value="debug" />
 
-  <property name="errorLogPattern"
-        value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%mdc{RequestId}|%thread|ModelLoader|%mdc{PartnerName}|%logger||%.-5level|%msg%n" />
+  <property name="errorLogPattern" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%mdc{RequestId}|%thread|ModelLoader|%mdc{PartnerName}|%logger||%.-5level|%msg%n" />
   <property name="auditMetricPattern" value="%m%n" />
 
   <property name="logDirectory" value="${logDir}/${componentName}" />
@@ -35,8 +35,11 @@
   <!-- Example evaluator filter applied against console appender -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>${defaultPattern}</pattern>
+      <pattern>${errorLogPattern}</pattern>
     </encoder>
+  </appender>
+  <appender name="AsyncSysOut" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="STDOUT" />
   </appender>
 
   <!-- ============================================================================ -->
@@ -46,8 +49,7 @@
   <!-- The EELFAppender is used to record events to the general application
        log -->
 
-  <appender name="EELF"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <appender name="EELF" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${logDirectory}/${generalLogName}.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${logDirectory}/${generalLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
@@ -66,8 +68,7 @@
     <appender-ref ref="EELF" />
   </appender>
 
-  <appender name="EELFAudit"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <appender name="EELFAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${logDirectory}/${auditLogName}.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${logDirectory}/${auditLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
@@ -82,8 +83,7 @@
     <appender-ref ref="EELFAudit" />
   </appender>
 
-  <appender name="EELFMetrics"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <appender name="EELFMetrics" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${logDirectory}/${metricsLogName}.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${logDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
@@ -98,8 +98,7 @@
     <appender-ref ref="EELFMetrics" />
   </appender>
 
-  <appender name="EELFDebug"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <appender name="EELFDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${logDirectory}/${debugLogName}.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
@@ -121,12 +120,15 @@
   <logger name="com.att.eelf" level="info" additivity="false">
     <appender-ref ref="asyncEELF" />
     <appender-ref ref="asyncEELFDebug" />
+    <appender-ref ref="AsyncSysOut" />
   </logger>
   <logger name="com.att.eelf.audit" level="info" additivity="false">
     <appender-ref ref="asyncEELFAudit" />
+    <appender-ref ref="AsyncSysOut" />
   </logger>
   <logger name="com.att.eelf.metrics" level="info" additivity="false">
     <appender-ref ref="asyncEELFMetrics" />
+    <appender-ref ref="AsyncSysOut" />
   </logger>
 
   <!-- Spring related loggers -->
@@ -162,8 +164,9 @@
   <logger name="ch.qos.logback.core" level="WARN" />
 
   <root>
-  <appender-ref ref="asyncEELF" />
-  <!-- <appender-ref ref="asyncEELFDebug" /> -->
-</root>
+    <appender-ref ref="asyncEELF" />
+    <appender-ref ref="AsyncSysOut" />
+    <!-- <appender-ref ref="asyncEELFDebug" /> -->
+  </root>
 
 </configuration>
