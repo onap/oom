@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
-# Modifications Copyright © 2020 Orange
+# Modifications Copyright © 2020-2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,50 +46,82 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
+      {{- if .Values.global.aafEnabled }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
+          echo "*** obfuscate them "
+          export KEYSTORE_PLAIN_PASSWORD=${KEYSTORE_PLAIN_PASSWORD}
+          export TRUSTSTORE_PLAIN_PASSWORD=${TRUSTSTORE_PLAIN_PASSWORD}
+          export KEYSTORE_PASSWORD=`java -cp /usr/local/jetty/lib/jetty-util-9.4.44.v20210927.jar org.eclipse.jetty.util.security.Password ${KEYSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
+          export TRUSTSTORE_PASSWORD=`java -cp /usr/local/jetty/lib/jetty-util-9.4.44.v20210927.jar org.eclipse.jetty.util.security.Password ${TRUSTSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
+          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
+          echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
+        image: {{ include "repositoryGenerator.image.jetty" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-obfuscate
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        securityContext:
+          runAsUser: {{ .Values.securityContext.user_id }}
+      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{- if .Values.global.aafEnabled }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          echo "*** retrieve Truststore and Keystore password"
+          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
+          echo "*** KEYSTORE_PASSWORD: $KEYSTORE_PASSWORD"
+          echo "*** actual launch of AAI Model Lader"
+          /bin/bash /opt/app/model-loader/bin/start.sh
+        {{- end }}
         env:
         - name: CONFIG_HOME
           value: /opt/app/model-loader/config/
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/model-loader/config/model-loader.properties
           subPath: model-loader.properties
-          name: {{ include "common.fullname" . }}-prop-config
+          name: prop-config
         - mountPath: /opt/app/model-loader/config/auth/
-          name: {{ include "common.fullname" . }}-auth-config
+          name: auth-config
         - mountPath: {{ .Values.log.path }}
           name: logs
         - mountPath: /opt/app/model-loader/logback.xml
-          name: {{ include "common.fullname" . }}-log-conf
+          name: log-config
           subPath: logback.xml
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.internalPort2 }}
         resources:
 {{ include "common.resources" . }}
 
       # side car containers
         {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-prop-config
+      - name: prop-config
         configMap:
           name: {{ include "common.fullname" . }}-prop
-      - name: {{ include "common.fullname" . }}-auth-config
+      - name: auth-config
         secret:
           secretName: {{ include "common.fullname" . }}
       - name: logs
         emptyDir: {}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-log-conf
+      - name: log-config
         configMap:
           name: {{ include "common.fullname" . }}-log
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
