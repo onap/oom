@@ -36,7 +36,7 @@ EOF
 
 cd /docker-entrypoint-initdb.d/db-sql-scripts
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.10.0.sql || exit 1
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.10.0.sql || exit 1
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.14.0.sql || exit 1
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.14.0.sql || exit 1
 
 echo "Created camundabpmn database . . ." 1>>/tmp/mariadb-camundabpmn.log 2>&1
