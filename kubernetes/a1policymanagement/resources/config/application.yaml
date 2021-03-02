@@ -1,0 +1,74 @@
+{{/*
+#
+# ============LICENSE_START=======================================================
+# ONAP : ccsdk oran
+# ================================================================================
+# Copyright (C) 2020 Nordix Foundation. All rights reserved.
+# Copyright (C) 2021 Orange. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+# ============LICENSE_END=========================================================
+#
+*/}}
+spring:
+  profiles:
+    active: prod
+  main:
+    allow-bean-definition-overriding: true
+  aop:
+    auto: false
+management:
+  endpoints:
+    web:
+      exposure:
+        # Enabling of springboot actuator features. See springboot documentation.
+        include: "loggers,logfile,health,info,metrics,threaddump,heapdump"
+
+logging:
+  # Configuration of logging
+  level:
+    ROOT: DEBUG
+    org.springframework: DEBUG
+    org.springframework.data: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
+    org.onap.ccsdk.oran.a1policymanagementservice: DEBUG
+  file:
+    name: /var/log/policy-agent/application.log
+server:
+  # Configuration of the HTTP/REST server. The parameters are defined and handeled by the springboot framework.
+  # See springboot documentation.
+  port: 8433
+  http-port: 8081
+  ssl:
+    key-store-type: PKCS12
+    key-store-password: ${KEYSTORE_PASSWORD}
+    key-store: {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.fqi_namespace }}.p12
+    key-password: ${KEYSTORE_PASSWORD}
+    key-alias: {{ .Values.certInitializer.fqi }}
+app:
+  # Location of the component configuration file. The file will only be used if the Consul database is not used;
+  # configuration from the Consul will override the file.
+  filepath: /opt/app/policy-agent/data/application_configuration.json
+  webclient:
+    # Configuration of the trust store used for the HTTP client (outgoing requests)
+    # The file location and the password for the truststore is only relevant if trust-store-used == true
+    # Note that the same keystore as for the server is used.
+    trust-store-used: false
+    trust-store-password: ${TRUSTSORE_PASSWORD}
+    trust-store: {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.fqi_namespace }}.trust.jks
+    # Configuration of usage of HTTP Proxy for the southbound accesses.
+    # The HTTP proxy (if configured) will only be used for accessing NearRT RIC:s
+    http.proxy-host:
+    http.proxy-port: 0
