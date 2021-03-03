@@ -46,17 +46,24 @@ The versions of Kubernetes that are supported by OOM are as follows:
 
 .. table:: OOM Software Requirements
 
-  ==============     ===========  =======  ========  ========
-  Release            Kubernetes   Helm     kubectl   Docker
-  ==============     ===========  =======  ========  ========
-  amsterdam          1.7.x        2.3.x    1.7.x     1.12.x
-  beijing            1.8.10       2.8.2    1.8.10    17.03.x
-  casablanca         1.11.5       2.9.1    1.11.5    17.03.x
-  dublin             1.13.5       2.12.3   1.13.5    18.09.5
-  el alto            1.15.2       2.14.2   1.15.2    18.09.x
-  frankfurt          1.15.9       2.16.6   1.15.11   18.09.x
-  guilin             1.15.11      2.16.10  1.15.11   18.09.x
-  ==============     ===========  =======  ========  ========
+  ==============     ===========  =======  ========  ========  =============  ================
+  Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager   Prometheus Stack
+  ==============     ===========  =======  ========  ========  =============  ================
+  amsterdam          1.7.x        2.3.x    1.7.x     1.12.x    --             --
+  beijing            1.8.10       2.8.2    1.8.10    17.03.x   --             --
+  casablanca         1.11.5       2.9.1    1.11.5    17.03.x   --             --
+  dublin             1.13.5       2.12.3   1.13.5    18.09.5   --             --
+  el alto            1.15.2       2.14.2   1.15.2    18.09.x   --             --
+  frankfurt          1.15.9       2.16.6   1.15.11   18.09.x   --             --
+  guilin             1.15.11      2.16.10  1.15.11   18.09.x   --             --
+  honolulu           1.19.x       3.5.x    1.19.x    18.09.x   1.2.0          13.x
+  ==============     ===========  =======  ========  ========  =============  ================
+
+.. note::
+  Starting from Honolulu release, Cert-Manager and Prometheus Stack are a part of 
+  K8s PaaS for ONAP. Full installation instructions for deployment of Cert-Manager 
+  and Prometheus Stack in ONAP cluster can be found in the `ONAP on HA Kubernetes 
+  Cluster <https://docs.onap.org/projects/onap-oom/en/latest/oom_setup_kubernetes_rancher.html>`_.
 
 .. note::
   Guilin version also supports Kubernetes up to version 1.19.x and should work
