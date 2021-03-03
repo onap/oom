@@ -419,6 +419,59 @@ Initialize Kubernetes Cluster for use by Helm
   > kubectl -n kube-system  rollout status deploy/tiller-deploy
 
 
+Prometheus Stack
+================
+Prometheus is an open-source systems monitoring and alerting toolkit 
+with an active ecosystem. 
+
+Kube Prometheus Stack is a collection of Kubernetes manifests, Grafana 
+dashboards, and Prometheus rules combined with documentation and scripts to 
+provide easy to operate end-to-end Kubernetes cluster monitoring with 
+Prometheus using the Prometheus Operator. As it includes both Prometheus 
+Operator and Grafana dashboards, there is no need to set up them separately.
+
+Installation steps
+------------------
+
+The recommended version of kube-prometheus-stack chart for 
+Kubernetes 1.19 is 13.x (which is currently the latest major chart version), 
+for example 13.3.1.
+
+In order to install Prometheus Stack, you must follow these steps:
+
+- Create the namespace for Prometheus Stack::
+
+    > kubectl create namespace prometheus
+	
+- Add the prometheus-community Helm repository::
+
+    > helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+- Update your local Helm chart repository cache::
+
+    > helm repo update
+
+- To install the kube-prometheus-stack Helm chart in latest version::
+
+    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus
+	
+  To install the kube-prometheus-stack Helm chart in specific version, for example 13.3.1::
+  
+    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --version=13.3.1
+	
+- Create Grafana service to be accessed from outside the cluster::
+
+    > kubectl -n prometheus expose deployment prometheus-grafana --name=prometheus-stack-grafana-expose --type=NodePort  --overrides '{ "apiVersion": "v1","spec":{"ports":[{"port":3000,"protocol":"TCP","targetPort":3000,"nodePort":32100}]}}'
+
+- Expose the Prometheus service via NodePort::
+
+    > kubectl -n prometheus expose service prometheus-kube-prometheus-prometheus --name=prometheus-stack-kube-prom-prometheus-expose --type=NodePort  --overrides '{ "apiVersion": "v1","spec":{"ports":[{"port":9090,"protocol":"TCP","targetPort":9090,"nodePort":32200}]}}'
+	
+- Expose the AlertManager service via NodePort::
+
+    > kubectl -n prometheus expose service prometheus-kube-prometheus-alertmanager --name=prometheus-stack-kube-prom-alertmanager-expose --type=NodePort  --overrides '{ "apiVersion": "v1","spec":{"ports":[{"port":9093,"protocol":"TCP","targetPort":9093,"nodePort":32300}]}}'
+
+
 
 Setting up an NFS share for Multinode Kubernetes Clusters
 =========================================================
