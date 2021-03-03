@@ -419,6 +419,35 @@ Initialize Kubernetes Cluster for use by Helm
   > kubectl -n kube-system  rollout status deploy/tiller-deploy
 
 
+Cert-Manager
+============
+Cert-Manager is a Kubernetes addon to automate the management and issuance 
+of TLS certificates from various issuing sources. It will ensure certificates 
+are valid and up to date periodically and attempt to renew certificates 
+at an appropriate time before expiry.
+
+Installation steps
+------------------
+
+The recommended version of Cert-Manager for Kubernetes 1.19 is v1.2.0.
+Cert-Manager is deployed using regular YAML manifests which include all 
+the needed resources (the CustomResourceDefinitions, cert-manager, 
+namespace, and the webhook component).
+
+Installation can be as simple as::
+
+  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+
+As an alternative to the YAML manifests, there is also an official Helm 
+chart for installing Cert-Manager.
+
+Full installation instructions, including details on how to configure extra 
+functionality in Cert-Manager can be found in the `Installation docs <https://cert-manager.io/docs/installation/kubernetes/>`_.
+
+There is also a kubectl plugin (kubectl cert-manager) that can help you 
+to manage cert-manager resources inside your cluster. For installation steps, 
+please refer to `kubectl plugin docs <https://cert-manager.io/docs/usage/kubectl-plugin/>`_.
+
 
 Setting up an NFS share for Multinode Kubernetes Clusters
 =========================================================
