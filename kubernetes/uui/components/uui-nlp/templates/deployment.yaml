@@ -1,0 +1,52 @@
+{{}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{ end -}}
+          resources:
+{{ include "common.resources" . | indent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          env:
+          - name: MSB_ADDR
+            value: {{tpl .Values.msbaddr .}}
+          - name: MR_ADDR
+            value: {{tpl .Values.mraddr .}}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
