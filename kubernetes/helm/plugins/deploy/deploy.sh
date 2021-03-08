@@ -251,7 +251,7 @@ deploy() {
       fi
 	  if [ "$DELAY" = "true" ]; then
 		echo sleep 3m
-		sleep 3m
+		sleep 180
 	  fi
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
