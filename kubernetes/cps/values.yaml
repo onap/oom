@@ -1,4 +1,5 @@
 #  Copyright (C) 2021 Pantheon.tech, Orange
+# Modifications Copyright (C) 2021 Bell Canada.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +29,13 @@ secrets:
     externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "cps-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+  - uid: app-user-creds
+    name: &appUserCredsSecretName '{{ include "common.release" . }}-cps-app-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.config.appUserExternalSecret) .) (hasSuffix "cps-app-user-creds" .Values.config.appUserExternalSecret) }}'
+    login: '{{ .Values.config.appUserName }}'
+    password: '{{ .Values.config.appUserPassword }}'
     passwordPolicy: generate
 
 #################################################################
@@ -113,9 +121,16 @@ securityContext:
 #################################################################
 # Application configuration defaults.
 #################################################################
+
+config:
+  appUserExternalSecret: *appUserCredsSecretName
+  appUserName: cpsuser
+  #appUserPassword:
+
 logging:
   level: INFO
   path: /tmp
+
 #################################################################
 # Postgres overriding defaults in the postgres
 #################################################################
