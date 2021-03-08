@@ -1,4 +1,4 @@
-#  Copyright (C) 2021 Pantheon.tech, Orange
+#  Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,12 @@ secrets:
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
+  - uid: app-user-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.appUserExternalSecret) . }}'
+    login: '{{ .Values.config.appUserName }}'
+    password: '{{ .Values.config.appUserPassword }}'
+    passwordPolicy: generate
 
 #################################################################
 # Global configuration defaults.
@@ -43,10 +49,6 @@ global:
 
 image: onap/cps-and-nf-proxy:1.0.0
 containerPort: &svc_port 8080
-
-config:
-  # Set it for pre loading xnfdata, else set to null
-  liquibaseLabels: xnf-data-preload
 
 service:
   type: ClusterIP
@@ -117,9 +119,20 @@ securityContext:
 #################################################################
 # Application configuration defaults.
 #################################################################
+
+config:
+
+  # Set it for pre loading xnfdata, else set to null
+  liquibaseLabels: xnf-data-preload
+
+  # REST API basic authentication credentials (passsword is generated if not provided)
+  appUserName: cpsuser
+  #appUserPassword:
+
 logging:
   level: INFO
   path: /tmp
+
 #################################################################
 # Postgres overriding defaults in the postgres
 #################################################################
