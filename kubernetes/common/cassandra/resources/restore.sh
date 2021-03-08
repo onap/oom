@@ -7,7 +7,7 @@ ss_name=""
 ss="snapshots"
 me=`basename $0`
 
-function find_target_table_name()
+find_target_table_name()
 {
     dest_path=$1
     keyspace_name=$2
@@ -18,7 +18,7 @@ function find_target_table_name()
     printf $dest_table_name
 }
 
-function print_usage()
+print_usage()
 {
 	echo "NAME"
 	echo "	Script to restore Cassandra database from Nuvo/Cain snapshot"
@@ -41,7 +41,7 @@ then
 	print_usage
 fi
 
-while [[ $# -gt 0 ]]
+while [ $# -gt 0 ]
 do
 key="$1"
 shift
@@ -75,7 +75,7 @@ esac
 done
 
 # Validate inputs
-if [ "$base_db_dir" == "" ] || [ "$ss_dir" == "" ] || [ "$keyspace_name" == "" ]
+if [ "$base_db_dir" = "" ] || [ "$ss_dir" = "" ] || [ "$keyspace_name" = "" ]
 then
 	echo ""
 	echo ">>>>>>>>>>Not all inputs provided, please check usage >>>>>>>>>>"
