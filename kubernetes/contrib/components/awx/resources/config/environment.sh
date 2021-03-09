@@ -1,3 +1,5 @@
+#!/bin/sh
+
 {{/*
 # Copyright © 2019 Bell Canada
 #
