@@ -17,7 +17,7 @@
 */}}
 
 debugLog(){
-  if [ "$enableDebugLogging" == true ]; then
+  if [ "$enableDebugLogging" = true ]; then
      if [ $# -eq 0 ]; then
        echo "" >> $LOGFILE
      else

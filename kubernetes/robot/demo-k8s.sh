@@ -63,7 +63,7 @@ usage ()
 
 # Check if execscript flag is used and drop it from input arguments
 
-if [[ "${!#}" == "execscript" ]]; then
+if [[ "${!#}" = "execscript" ]]; then
         set -- "${@:1:$#-1}"
         execscript=true
 fi

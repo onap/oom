@@ -32,8 +32,8 @@ DEBUG_PROP=
 # Debug Setup. Uses env variables
 # DEBUG and DEBUG_PORT
 # DEBUG=true/false | DEBUG_PORT=<Port valie must be integer>
-if [ "${DEBUG}" == "true" ]; then
-  if [ "${DEBUG_PORT}" == "" ]; then
+if [ "${DEBUG}" = "true" ]; then
+  if [ "${DEBUG_PORT}" = "" ]; then
     DEBUG_PORT=8000
   fi
   echo "Debug mode on"
