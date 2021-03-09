@@ -76,9 +76,9 @@ manual_configuration() {
 	generate_config_map $@
 }
 
-if [[ $# -eq 1 ]] && [[ $1 = "-h" || $1 = "--help" ]]; then
+if [ $# -eq 1 ] && [ "$1" = "-h" || "$1" = "--help" ]; then
 	usage
-elif [[ $# -eq 0 ]]; then
+elif [ $# -eq 0 ]; then
 	automatic_configuration
 else
 	manual_configuration $@

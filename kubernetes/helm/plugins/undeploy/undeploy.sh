@@ -29,7 +29,7 @@ undeploy() {
   done
 }
 
-if [[ $# < 1 ]]; then
+if [ $# < 1 ]; then
   echo "Error: command 'undeploy' requires a release name"
   exit 0
 fi
