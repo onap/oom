@@ -1,3 +1,5 @@
+#!/bin/sh -x
+
 # Copyright © 2018 Amdocs, Bell Canada, AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/sh -x
 SQL_DEST_DIR=${SQL_DEST_DIR:-/tmp/sql}
 DB_PORT=${DB_PORT:-3306}
 
