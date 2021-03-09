@@ -27,7 +27,9 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
-      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      initContainers:
+      {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       - name: {{ include "common.name" . }}-update-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -83,6 +85,7 @@ spec:
         affinity: {{ toYaml .Values.affinity | nindent 12 }}
         {{- end }}
         volumeMounts:
+        {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
           - mountPath: /app/resources/application.yml
             subPath: application.yml
             name: init-data
@@ -92,6 +95,7 @@ spec:
           - mountPath: /tmp
             name: init-temp
       volumes:
+      {{ include "common.certInitializer.volumes" . | nindent 6 }}
         - name: init-data-input
           configMap:
             name: {{ include "common.fullname" . }}
