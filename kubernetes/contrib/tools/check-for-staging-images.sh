@@ -16,7 +16,7 @@
 
 BASE_URL="https://nexus3.onap.org/repository/docker.release"
 
-if [ "$GERRIT_BRANCH" == "staging" ]; then
+if [ "$GERRIT_BRANCH" = "staging" ]; then
     exit 0
 fi
 
