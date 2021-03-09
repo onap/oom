@@ -18,7 +18,7 @@
 # Run the testsuite for the passed tag. Valid tags are listed in usage help
 # Please clean up logs when you are done...
 #
-if [ "$1" == "" ] || [ "$2" == "" ]; then
+if [ "$1" = "" ] || [ "$2" = "" ]; then
    echo "Usage: ete-k8s.sh [namespace] [tag] [execscript]"
    echo ""
    echo "  List of test case tags (filename for intent: tag)"
@@ -76,7 +76,7 @@ SCRIPTDIR=scripts/etescript
 
 ETEHOME=/var/opt/ONAP
 
-if [[ "${!#}" == "execscript" ]]; then
+if [[ "${!#}" = "execscript" ]]; then
    for script in $(ls -1 "$DIR/$SCRIPTDIR"); do
       [ -f "$DIR/$SCRIPTDIR/$script" ] && [ -x "$DIR/$SCRIPTDIR/$script" ] && source "$DIR/$SCRIPTDIR/$script"
    done

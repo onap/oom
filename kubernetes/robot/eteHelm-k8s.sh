@@ -18,7 +18,7 @@
 # Run the health-check testsuites for the tags discovered by helm list
 # Please clean up logs when you are done...
 #
-if [ "$1" == "" ] ;  then
+if [ "$1" = "" ] ;  then
    echo "Usage: eteHelm-k8s.sh [namespace] [execscript]"
    echo " list projects via helm list and runs health-check with those tags except dev and dev-consul"
    echo " [execscript] - optional parameter to execute user custom scripts located in scripts/helmscript directory"
@@ -44,7 +44,7 @@ SCRIPTDIR=scripts/helmscript
 
 ETEHOME=/var/opt/ONAP
 
-if [[ "${!#}" == "execscript" ]]; then
+if [[ "${!#}" = "execscript" ]]; then
    for script in $(ls -1 "$DIR/$SCRIPTDIR"); do
       [ -f "$DIR/$SCRIPTDIR/$script" ] && [ -x "$DIR/$SCRIPTDIR/$script" ] && source "$DIR/$SCRIPTDIR/$script"
    done
