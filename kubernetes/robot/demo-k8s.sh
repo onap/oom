@@ -17,7 +17,7 @@
 #
 # Execute tags built to support the hands-on demo
 #
-function usage
+usage ()
 {
 	echo "Usage: demo-k8s.sh <namespace> <command> [<parameters>] [execscript]"
 	echo " "
