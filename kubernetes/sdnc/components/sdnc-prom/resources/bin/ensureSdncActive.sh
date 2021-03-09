@@ -1,6 +1,6 @@
 #!/bin/bash
-{{/*
 
+{{/*
 # Copyright © 2018 Amdocs
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 */}}
 
 debugLog(){
-  if [ "$enableDebugLogging" == true ]; then
+  if [ "$enableDebugLogging" = true ]; then
      if [ $# -eq 0 ]; then
        echo "" >> $LOGFILE
      else

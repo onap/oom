@@ -26,7 +26,7 @@ EOF
 #argument: yaml file
 #calling syntax: parse_yaml <yaml_file_name>
 
-function parse_yaml {
+parse_yaml {
    local prefix=$2
    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
    sed -ne "s|^\($s\):|\1|" \
@@ -102,7 +102,7 @@ do
         for line in  `parse_yaml $filename`
         do
                 #skiping commented line
-                if [[ ${line:0:1} != '#' ]]; then
+                if [ ${line:0:1} != '#' ]; then
                         #find all image subtag inside converted values.yaml file's lines
                         if echo $line | grep -q $IMAGE_TEXT ; then
                                 #find imageName inside line
