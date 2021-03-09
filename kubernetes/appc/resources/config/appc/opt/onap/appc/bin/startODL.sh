@@ -30,7 +30,7 @@
 #set -x
 */}}
 
-function enable_odl_cluster(){
+enable_odl_cluster () {
   if [ -z $APPC_REPLICAS ]; then
      echo "APPC_REPLICAS is not configured in Env field"
      exit
