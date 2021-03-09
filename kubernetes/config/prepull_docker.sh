@@ -102,7 +102,7 @@ do
         for line in  `parse_yaml $filename`
         do
                 #skiping commented line
-                if [[ ${line:0:1} != '#' ]]; then
+                if [ "${line:0:1}" != '#' ]; then
                         #find all image subtag inside converted values.yaml file's lines
                         if echo $line | grep -q $IMAGE_TEXT ; then
                                 #find imageName inside line
