@@ -1,6 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0
+#!/bin/sh
 
-#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # Create root certificate CA (Certificate Authority) and its private key.
