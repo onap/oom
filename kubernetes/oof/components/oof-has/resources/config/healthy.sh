@@ -1,3 +1,5 @@
+#!/bin/sh
+
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T,VMware
