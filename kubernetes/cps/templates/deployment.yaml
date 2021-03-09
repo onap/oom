@@ -27,7 +27,21 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
-      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      initContainers:
+      {{- if .Values.ingress.tls }}
+      {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{- end -}}
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      {{ if .Values.ingress.tls }}
+      - name: {{ include "common.name" . }}-ingress-certs
+        image: {{ include "repositoryGenerator.image.kubectl" . }}
+        command:
+          - /ingress/onboard.sh
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - name: ingress-scripts
+            mountPath: /ingress
+      {{ end }}
       - name: {{ include "common.name" . }}-update-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -83,6 +97,9 @@ spec:
         affinity: {{ toYaml .Values.affinity | nindent 12 }}
         {{- end }}
         volumeMounts:
+        {{ if .Values.ingress.tls }}
+        {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+        {{ end }}
           - mountPath: /app/resources/application.yml
             subPath: application.yml
             name: init-data
@@ -92,6 +109,9 @@ spec:
           - mountPath: /tmp
             name: init-temp
       volumes:
+      {{ if .Values.ingress.tls }}
+      {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      {{ end }}
         - name: init-data-input
           configMap:
             name: {{ include "common.fullname" . }}
@@ -100,5 +120,11 @@ spec:
             medium: Memory
         - name: init-temp
           emptyDir: {}
+        {{ if .Values.ingress.tls }}
+        - name: ingress-scripts
+          configMap:
+            name: {{ include "common.fullname" . }}-ingress
+            defaultMode: 0777
+        {{ end }}
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"

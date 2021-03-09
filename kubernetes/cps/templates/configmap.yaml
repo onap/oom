@@ -1,5 +1,6 @@
 {{/*
-# Copyright (C) 2021 Pantheon.tech
+# Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
+# Modifications Copyright (C) 2021 Bell Canada.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,5 +17,14 @@
 
 apiVersion: v1
 kind: ConfigMap
-metadata:  {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 data: {{ tpl (.Files.Glob "resources/config/*").AsConfig . | nindent 2 }}
+---
+{{ if .Values.ingress.tls }}
+apiVersion: v1
+kind: ConfigMap
+  {{- $suffix := "ingress" }}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . ) | nindent 2 }}
+data:
+{{ tpl (.Files.Glob "resources/config/ingress/onboard.sh").AsConfig . | indent 2 }}
+{{ end }}
