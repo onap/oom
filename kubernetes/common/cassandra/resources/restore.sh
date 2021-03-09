@@ -75,7 +75,7 @@ esac
 done
 
 # Validate inputs
-if [ "$base_db_dir" == "" ] || [ "$ss_dir" == "" ] || [ "$keyspace_name" == "" ]
+if [ "$base_db_dir" = "" ] || [ "$ss_dir" = "" ] || [ "$keyspace_name" = "" ]
 then
 	echo ""
 	echo ">>>>>>>>>>Not all inputs provided, please check usage >>>>>>>>>>"

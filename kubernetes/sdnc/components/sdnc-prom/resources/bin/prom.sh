@@ -24,7 +24,7 @@ fi
 
 # should PROM start as passive?
 state=$( bin/sdnc.cluster )
-if [ "$state" == "standby" ]; then
+if [ "$state" = "standby" ]; then
   echo "Starting PROM in passive mode"
   passive="-p"
 fi
