@@ -19,7 +19,7 @@ NAMESPACE=
 FOLDER=
 POLL=0
 
-function check_required_parameter() {
+check_required_parameter () {
   # arg1 = parameter
   # arg2 = parameter name
   if [ -z "$1" ]; then
@@ -28,7 +28,7 @@ function check_required_parameter() {
   fi
 }
 
-function check_optional_paramater() {
+check_optional_paramater () {
   # arg1 = parameter
   # arg2 = parameter name
   if [ -z $1 ]; then

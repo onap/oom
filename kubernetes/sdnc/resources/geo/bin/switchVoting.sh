@@ -16,7 +16,7 @@
 # limitations under the License.
 */}}
 
-function usage()
+usage ()
 {
     echo usage: switchVoting.sh primary\|secondary
     exit 1
