@@ -344,7 +344,7 @@ while getopts ":b:s:e:u:l:k:v" PARAM; do
     esac
 done
 
-if [[ -z $BRANCH ]]; then
+if [ -z $BRANCH ]; then
   usage
   exit 1
 fi
