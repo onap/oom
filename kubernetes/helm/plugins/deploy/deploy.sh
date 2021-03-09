@@ -49,7 +49,7 @@ generate_overrides() {
   for index in "${!SUBCHART_NAMES[@]}"; do
     START=${SUBCHART_NAMES[index]}
     END=${SUBCHART_NAMES[index+1]}
-    if [[ $START == "global:" ]]; then
+    if [[ $START = "global:" ]]; then
       echo "global:" > $GLOBAL_OVERRIDES
       cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
         | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
@@ -72,11 +72,11 @@ resolve_deploy_flags() {
   n=${#flags[*]}
   for (( i = 0; i < n; i++ )); do
     PARAM=${flags[i]}
-    if [[ $PARAM == "-f" || \
-          $PARAM == "--values" || \
-          $PARAM == "--set" || \
-          $PARAM == "--set-string" || \
-          $PARAM == "--version" ]]; then
+    if [[ $PARAM = "-f" || \
+          $PARAM = "--values" || \
+          $PARAM = "--set" || \
+          $PARAM = "--set-string" || \
+          $PARAM = "--version" ]]; then
        # skip param and its value
        i=$((i + 1))
     else
@@ -98,7 +98,7 @@ deploy() {
   FLAGS=${@:3}
   CHART_REPO="$(cut -d'/' -f1 <<<"$CHART_URL")"
   CHART_NAME="$(cut -d'/' -f2 <<<"$CHART_URL")"
-  if [[ $HELM_VER == "v3."* ]]; then
+  if [[ $HELM_VER = "v3."* ]]; then
     CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
   else
     CACHE_DIR=~/.helm/plugins/deploy/cache
@@ -149,7 +149,7 @@ deploy() {
   SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
   # update specified subchart without parent
   RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
-  if [[ $SUBCHART_RELEASE == $RELEASE ]]; then
+  if [[ $SUBCHART_RELEASE = $RELEASE ]]; then
     SUBCHART_RELEASE=
   fi
 
@@ -201,13 +201,13 @@ deploy() {
     helm upgrade -i $RELEASE $CHART_DIR $DEPLOY_FLAGS -f $COMPUTED_OVERRIDES \
      > $LOG_FILE.log 2>&1
 
-    if [[ $VERBOSE == "true" ]]; then
+    if [[ $VERBOSE = "true" ]]; then
       cat $LOG_FILE
     else
       echo "release \"$RELEASE\" deployed"
     fi
     # Add annotation last-applied-configuration if set-last-applied flag is set
-    if [[ $SET_LAST_APPLIED == "true" ]]; then
+    if [[ $SET_LAST_APPLIED = "true" ]]; then
       helm get manifest ${RELEASE} \
       | kubectl apply set-last-applied --create-annotation -n onap -f - \
       > $LOG_FILE.log 2>&1
@@ -228,7 +228,7 @@ deploy() {
     fi
 
     if [[ $SUBCHART_ENABLED -eq 1 ]]; then
-      if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE == "$subchart" ]]; then
+      if [[ -z "$SUBCHART_RELEASE" || $SUBCHART_RELEASE = "$subchart" ]]; then
         LOG_FILE=$LOG_DIR/"${RELEASE}-${subchart}".log
         :> $LOG_FILE
 
@@ -236,19 +236,19 @@ deploy() {
          $DEPLOY_FLAGS -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES \
          > $LOG_FILE 2>&1
 
-        if [[ $VERBOSE == "true" ]]; then
+        if [[ $VERBOSE = "true" ]]; then
           cat $LOG_FILE
         else
           echo "release \"${RELEASE}-${subchart}\" deployed"
         fi
 	# Add annotation last-applied-configuration if set-last-applied flag is set
-        if [[ $SET_LAST_APPLIED == "true" ]]; then
+        if [[ $SET_LAST_APPLIED = "true" ]]; then
           helm get manifest "${RELEASE}-${subchart}" \
           | kubectl apply set-last-applied --create-annotation -n onap -f - \
 	      > $LOG_FILE.log 2>&1
         fi
       fi
-	  if [[ $DELAY == "true" ]]; then
+	  if [[ $DELAY = "true" ]]; then
 		echo sleep 3m
 		sleep 3m
 	  fi
@@ -256,7 +256,7 @@ deploy() {
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
-        if [[ $HELM_VER == "v3."* ]]; then
+        if [[ $HELM_VER = "v3."* ]]; then
           helm del "${array[i]}" 
         else
           helm del "${array[i]}" --purge
@@ -266,7 +266,7 @@ deploy() {
   done
 
   # report on success/failures of installs/upgrades
-  if [[ $HELM_VER == "v3."* ]]; then
+  if [[ $HELM_VER = "v3."* ]]; then
     helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
   else
     helm ls | grep FAILED | grep $RELEASE

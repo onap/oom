@@ -258,14 +258,14 @@ EOF
   helm init --service-account tiller
   kubectl -n kube-system  rollout status deploy/tiller-deploy
   echo "upgrade server side of helm in kubernetes"
-  if [ "$USERNAME" == "root" ]; then
+  if [ "$USERNAME" = "root" ]; then
     helm version
   else
     sudo helm version
   fi
   echo "sleep 30"
   sleep 30
-  if [ "$USERNAME" == "root" ]; then
+  if [ "$USERNAME" = "root" ]; then
     helm init --upgrade
   else
     sudo helm init --upgrade
@@ -273,13 +273,13 @@ EOF
   echo "sleep 30"
   sleep 30
   echo "verify both versions are the same below"
-  if [ "$USERNAME" == "root" ]; then
+  if [ "$USERNAME" = "root" ]; then
     helm version
   else
     sudo helm version
   fi
   echo "start helm server"
-  if [ "$USERNAME" == "root" ]; then
+  if [ "$USERNAME" = "root" ]; then
     helm serve &
   else
     sudo helm serve &
@@ -287,7 +287,7 @@ EOF
   echo "sleep 30"
   sleep 30
   echo "add local helm repo"
-  if [ "$USERNAME" == "root" ]; then
+  if [ "$USERNAME" = "root" ]; then
     helm repo add local http://127.0.0.1:8879
     helm repo list
   else

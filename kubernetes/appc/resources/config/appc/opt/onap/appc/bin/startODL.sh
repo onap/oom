@@ -83,7 +83,7 @@ then
 show databases like 'sdnctl';
 END
 )
-        if [ "x${sdnc_db_exists}" == "x" ]
+        if [ "x${sdnc_db_exists}" = "x" ]
         then
             echo "Installing SDNC database"
             ${SDNC_HOME}/bin/installSdncDb.sh
@@ -92,7 +92,7 @@ END
 show databases like 'appcctl';
 END
 )
-            if [ "x${appc_db_exists}" == "x" ]
+            if [ "x${appc_db_exists}" = "x" ]
             then
               echo "Installing APPC database"
               ${APPC_HOME}/bin/installAppcDb.sh
