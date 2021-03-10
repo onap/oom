@@ -65,7 +65,7 @@ DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
 # Wait for database to init properly
 #
 echo "Waiting for mariadbgalera"
-until mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD}  mysql &> /dev/null
+until mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD}  mysql >/dev/null 2>&1
 do
   printf "."
   sleep 1
