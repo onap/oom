@@ -164,7 +164,7 @@ docker_init_database_dir() {
 		installArgs=${installArgs}" --auth-root-authentication-method=normal"
 	fi
 	# "Other options are passed to mysqld." (so we pass all "mysqld" arguments directly here)
-	mysql_install_db ${installArgs} "${@:2}"
+	mysql_install_db "${installArgs}" "$(echo ${@}| sed 's/^..//')"
 	mysql_note "Database files initialized"
 }
 
@@ -313,7 +313,7 @@ _mysql_want_help() {
 
 _main() {
 	# if command starts with an option, prepend mysqld
-	if [ "${1:0:1}" = '-' ]; then
+	if [ "$(echo $1 | sed 's/^\(.\).*/\1/' )" = '-' ]; then
 		set -- mysqld "$@"
 	fi
 
