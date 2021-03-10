@@ -1,4 +1,5 @@
 #!/bin/bash
+
 {{/*
 # Copyright © 2019 Orange
 # Copyright © 2020 Samsung Electronics
@@ -22,8 +23,15 @@ set -e
 while read DB ; do
     USER_VAR="MYSQL_USER_${DB^^}"
     PASS_VAR="MYSQL_PASSWORD_${DB^^}"
-    USER=${!USER_VAR}
-    PASS=`echo -n ${!PASS_VAR} | sed -e "s/'/''/g"`
+{{/*
+    # USER=${!USER_VAR}
+    # PASS=`echo -n ${!PASS_VAR} | sed -e "s/'/''/g"`
+    # eval replacement of the bashism equivalents above might present a security issue here
+    # since it reads content from DB values filled by helm at the end of the script.
+    # These possible values has to be constrainted and/or limited by helm for a safe use of eval.
+*/}}
+    eval USER=\$$USER_VAR
+    PASS=$(eval echo -n \$$PASS_VAR | sed -e "s/'/''/g")
     MYSQL_OPTS=( -h ${DB_HOST} -P ${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} )
 
     echo "Creating database ${DB} and user ${USER}..."
