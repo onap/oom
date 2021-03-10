@@ -54,7 +54,7 @@ generate_overrides() {
       cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
         | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
     else
-      SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(cut -d':' -f1 <<<"$START")"
+      SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START"| cut -d':' -f1)"
       if [[ -d "$SUBCHART_DIR" ]]; then
         if [[ -z "$END" ]]; then
           cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
@@ -96,8 +96,8 @@ deploy() {
   RELEASE=$1
   CHART_URL=$2
   FLAGS=${@:3}
-  CHART_REPO="$(cut -d'/' -f1 <<<"$CHART_URL")"
-  CHART_NAME="$(cut -d'/' -f2 <<<"$CHART_URL")"
+  CHART_REPO="$(echo "$CHART_URL" | cut -d'/' -f1)"
+  CHART_NAME="$(echo "$CHART_URL" | cut -d'/' -f2)"
   if [[ $HELM_VER == "v3."* ]]; then
     CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
   else
@@ -146,9 +146,9 @@ deploy() {
   DEPLOY_FLAGS=$(resolve_deploy_flags "$FLAGS")
 
   # determine if upgrading individual subchart or entire parent + subcharts
-  SUBCHART_RELEASE="$(cut -d'-' -f2 <<<"$RELEASE")"
+  SUBCHART_RELEASE="$(echo "$RELEASE" | cut -d'-' -f2)"
   # update specified subchart without parent
-  RELEASE="$(cut -d'-' -f1 <<<"$RELEASE")"
+  RELEASE="$(echo "$RELEASE" | cut -d'-' -f1)"
   if [[ $SUBCHART_RELEASE == $RELEASE ]]; then
     SUBCHART_RELEASE=
   fi
