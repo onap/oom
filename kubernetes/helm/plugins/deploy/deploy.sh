@@ -96,9 +96,9 @@ deploy() {
 
   RELEASE=$1
   CHART_URL=$2
-  FLAGS=${@:3}
-  CHART_REPO="$(echo "$CHART_URL" |cut -d'/' -f1)"
-  CHART_NAME="$(echo "$CHART_URL" |cut -d'/' -f2)"
+  FLAGS=$(echo ${@} | sed 's/^...//')
+  CHART_REPO="$(echo "$CHART_URL" | cut -d'/' -f1)"
+  CHART_NAME="$(echo "$CHART_URL" | cut -d'/' -f2)"
   if expr "$HELM_VER" : "v3\..*" ; then
     CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
   else
@@ -287,7 +287,7 @@ case "${1:-"help"}" in
     usage
     ;;
   *)
-    deploy $1 $2 ${@:3}
+    deploy $1 $2 $(echo ${@} | sed 's/^...//')
     ;;
 esac
 
