@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -eo pipefail
 shopt -s nullglob
 
@@ -30,10 +31,15 @@ file_env() {
 		mysql_error "Both $var and $fileVar are set (but are exclusive)"
 	fi
 	local val="$def"
+	# val="${!var}"
+	# val="$(< "${!fileVar}")"
+	# eval replacement of the bashism equivalents above presents no security issue here
+	# since var and fileVar variables contents are derived from the file_env() function arguments.
+	# This method is only called inside this script with a limited number of possible values.
 	if [ "${!var:-}" ]; then
-		val="${!var}"
+		eval val=\$$var
 	elif [ "${!fileVar:-}" ]; then
-		val="$(< "${!fileVar}")"
+		val="$(< "$(eval echo "\$$fileVar")")"
 	fi
 	export "$var"="$val"
 	unset "$fileVar"
