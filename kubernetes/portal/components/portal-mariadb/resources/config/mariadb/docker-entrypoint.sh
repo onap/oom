@@ -107,7 +107,7 @@ docker_temp_server_start() {
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
 			extraArgs+=( '--dont-use-mysql-root-password' )
 		fi
-		if docker_process_sql "${extraArgs[@]}" --database=mysql <<<'SELECT 1' &> /dev/null; then
+		if echo 'SELECT 1'|docker_process_sql "${extraArgs[@]}" --database=mysql >/dev/null 2>&1; then
 			break
 		fi
 		sleep 1
@@ -263,19 +263,19 @@ docker_setup_db() {
 	# Creates a custom database and user if specified
 	if [ -n "$MYSQL_DATABASE" ]; then
 		mysql_note "Creating database ${MYSQL_DATABASE}"
-		docker_process_sql --database=mysql <<<"CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;"
+		echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;"|docker_process_sql --database=mysql
 	fi
 
 	if [ -n "$MYSQL_USER" ] && [ -n "$MYSQL_PASSWORD" ]; then
 		mysql_note "Creating user ${MYSQL_USER}"
-		docker_process_sql --database=mysql <<<"CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;"
+		echo "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;"|docker_process_sql --database=mysql
 
 		if [ -n "$MYSQL_DATABASE" ]; then
 			mysql_note "Giving user ${MYSQL_USER} access to schema ${MYSQL_DATABASE}"
-			docker_process_sql --database=mysql <<<"GRANT ALL ON \`${MYSQL_DATABASE//_/\\_}\`.* TO '$MYSQL_USER'@'%' ;"
+			echo "GRANT ALL ON \`${MYSQL_DATABASE//_/\\_}\`.* TO '$MYSQL_USER'@'%' ;"|docker_process_sql --database=mysql
 		fi
 
-		docker_process_sql --database=mysql <<<"FLUSH PRIVILEGES ;"
+		echo "FLUSH PRIVILEGES ;"|docker_process_sql --database=mysql
 	fi
 }
 
