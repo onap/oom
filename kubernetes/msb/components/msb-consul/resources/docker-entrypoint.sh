@@ -53,7 +53,7 @@ fi
 
 # If the user is trying to run Consul directly with some arguments, then
 # pass them to Consul.
-if [ "${1:0:1}" = '-' ]; then
+if [ "$(echo $1 | sed 's/^\(.\).*/\1/' )" = '-' ]; then
     set -- consul "$@"
 fi
 
