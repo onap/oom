@@ -71,7 +71,7 @@ if [ "$1" = 'cassandra' ]; then
                 authenticator \
         ; do
                 var="CASSANDRA_${yaml^^}"
-                val="${!var}"
+                eval $(echo "val=\$$var")
                 if [ "$val" ]; then
                         _sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
                                 -r 's/^(# )?('"$yaml"':).*/\2 '"$val"'/'
@@ -80,7 +80,7 @@ if [ "$1" = 'cassandra' ]; then
 
         for rackdc in dc rack; do
                 var="CASSANDRA_${rackdc^^}"
-                val="${!var}"
+                eval $(echo "val=\$$var")
                 if [ "$val" ]; then
                         _sed-in-place "$CASSANDRA_CONFIG/cassandra-rackdc.properties" \
                                 -r 's/^('"$rackdc"'=).*/\1 '"$val"'/'

@@ -22,8 +22,8 @@ set -e
 while read DB ; do
     USER_VAR="MYSQL_USER_${DB^^}"
     PASS_VAR="MYSQL_PASSWORD_${DB^^}"
-    USER=${!USER_VAR}
-    PASS=`echo -n ${!PASS_VAR} | sed -e "s/'/''/g"`
+    eval $(echo "USER=\$$USER_VAR")
+    PASS=$(echo -n $(eval echo "\$$PASS_VAR") | sed -e "s/'/''/g")
     MYSQL_OPTS=( -h ${DB_HOST} -P ${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} )
 
     echo "Creating database ${DB} and user ${USER}..."

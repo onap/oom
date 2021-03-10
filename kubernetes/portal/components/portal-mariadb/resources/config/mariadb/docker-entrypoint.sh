@@ -31,9 +31,9 @@ file_env() {
 	fi
 	local val="$def"
 	if [ "${!var:-}" ]; then
-		val="${!var}"
+		eval $(echo "val=\$$var")
 	elif [ "${!fileVar:-}" ]; then
-		val="$(< "${!fileVar}")"
+		val="$(< "$(eval echo "\$$filevar")")"
 	fi
 	export "$var"="$val"
 	unset "$fileVar"
