@@ -45,7 +45,7 @@ case "${1:-"help"}" in
     usage
     ;;
   *)
-    undeploy $1 ${@:2}
+    undeploy $1 $(echo ${@} | sed 's/^..//')
     ;;
 esac
 
