@@ -181,10 +181,8 @@ spec:
 {{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
   {{- range $i, $certificate := $dot.Values.certificates -}}
     {{- $mountPath := $certificate.mountPath -}}
-- mountPath: {{ (printf "%s/secret-%d" $mountPath $i) }}
-  name: certmanager-certs-volume-{{ $i }}
 - mountPath: {{ $mountPath }}
-  name: certmanager-certs-volume-{{ $i }}-dir
+  name: certmanager-certs-volume-{{ $i }}
    {{- end -}}
 {{- end -}}
 
@@ -196,8 +194,6 @@ spec:
   {{- range $i, $certificate := $certificates -}}
     {{- $name := include "common.fullname" $dot -}}
     {{- $certificatesSecretName := default (printf "%s-secret-%d" $name $i) $certificate.secretName -}}
-- name: certmanager-certs-volume-{{ $i }}-dir
-  emptyDir: {}
 - name: certmanager-certs-volume-{{ $i }}
   projected:
     sources:
@@ -220,18 +216,4 @@ spec:
             path: truststore.pass
      {{- end }}
   {{- end -}}
-{{- end -}}
-
-{{- define "common.certManager.linkVolumeMounts" -}}
-{{- $dot := default . .dot -}}
-{{- $initRoot := default $dot.Values.certManagerCertificate .initRoot -}}
-{{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
-{{- $certificates := $dot.Values.certificates -}}
-{{- $certsLinkCommand := "" -}}
-  {{- range $i, $certificate := $certificates -}}
-    {{- $destnationPath := (required "'mountPath' for Certificate is required." $certificate.mountPath) -}}
-    {{- $sourcePath := (printf "%s/secret-%d/*" $destnationPath $i) -}}
-    {{- $certsLinkCommand = (printf "ln -s %s %s; %s" $sourcePath $destnationPath $certsLinkCommand) -}}
-  {{- end -}}
-{{ $certsLinkCommand }}
 {{- end -}}
