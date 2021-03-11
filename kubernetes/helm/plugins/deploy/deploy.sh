@@ -70,7 +70,7 @@ generate_overrides() {
 resolve_deploy_flags() {
   flags=($1)
   n=${#flags[*]}
-  for (( i = 0; i < n; i++ )); do
+  for i in $(seq 0 $(($n-1))); do
     PARAM=${flags[i]}
     if [[ $PARAM == "-f" || \
           $PARAM == "--values" || \
@@ -255,9 +255,9 @@ deploy() {
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
-      for (( i = n-1; i >= 0; i-- )); do
+      for i in $(seq $(($n-1)) -1 0); do
         if [[ $HELM_VER == "v3."* ]]; then
-          helm del "${array[i]}" 
+          helm del "${array[i]}"
         else
           helm del "${array[i]}" --purge
         fi
