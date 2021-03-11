@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Copyright 2019 AT&T Intellectual Property. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+THIS_DIR="$( cd "$( dirname "$0" )" >/dev/null 2>&1 && pwd )"
 
 NAMESPACE=
 FOLDER=
@@ -138,13 +139,13 @@ kubectl --namespace $NAMESPACE cp ${POD}:share/logs/$OUTPUT_FOLDER/summary/stack
 kubectl --namespace $NAMESPACE cp ${POD}:share/logs/$OUTPUT_FOLDER/summary/results.json "$OUTPUT_DIRECTORY"/results.json
 kubectl --namespace $NAMESPACE cp ${POD}:share/logs/$OUTPUT_FOLDER/log.html "$OUTPUT_DIRECTORY"/log.html
 
-pushd .
+initdir=$(pwd)
 
 # echo -e "import hashlib\nwith open(\"README.md\", \"r\") as f: bytes = f.read()\nreadable_hash = hashlib.sha256(bytes).hexdigest()\nprint(readable_hash)" | python
 
 cd "$OUTPUT_DIRECTORY"
 tar -czvf vnf_heat_results.tar.gz *
 
-popd
+cd $initdir
 
 echo "VNF test results: $OUTPUT_DIRECTORY/vnf_heat_results.tar.gz"
