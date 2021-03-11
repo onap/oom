@@ -106,7 +106,7 @@ docker_temp_server_start() {
 	"$@" --skip-networking --socket="${SOCKET}" &
 	mysql_note "Waiting for server startup"
 	local i
-	for i in {30..0}; do
+	for i in $(seq 30 -1 0); do
 		# only use the root password if the database has already been initializaed
 		# so that it won't try to fill in a password file when it hasn't been set yet
 		extraArgs=""
@@ -172,7 +172,7 @@ docker_init_database_dir() {
 # This should be called after mysql_check_config, but before any other functions
 docker_setup_env() {
 	# Get config
-	declare -g DATADIR SOCKET
+    declare -g DATADIR SOCKET
 	DATADIR="$(mysql_get_config 'datadir' "$@")"
 	SOCKET="$(mysql_get_config 'socket' "$@")"
 
@@ -184,7 +184,7 @@ docker_setup_env() {
 	file_env 'MYSQL_ROOT_PASSWORD'
 	file_env 'PORTAL_DB_TABLES'
 
-	declare -g DATABASE_ALREADY_EXISTS
+    declare -g DATABASE_ALREADY_EXISTS
 	if [ -d "$DATADIR/mysql" ]; then
 		DATABASE_ALREADY_EXISTS='true'
 	fi
