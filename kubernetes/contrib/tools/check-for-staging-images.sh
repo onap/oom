@@ -40,7 +40,7 @@ printf "\n"
 if [ -n "$NOT_AVAILABLE_IMAGES" ]; then
     echo "[ERROR] Only release images are allowed in helm charts."
     echo "[ERROR] Images not found in release repo:"
-    echo -e "$NOT_AVAILABLE_IMAGES"
+    printf "%b$NOT_AVAILABLE_IMAGES\n"
     exit 1
 fi
 exit 0

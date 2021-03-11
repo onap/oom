@@ -93,7 +93,10 @@ do
 	case $key in
     	init_robot)
 			TAG="UpdateWebPage"
-			read -s -p "WEB Site Password for user 'test': " WEB_PASSWORD
+			echo "WEB Site Password for user 'test': "
+			stty -echo
+			read WEB_PASSWORD
+			stty echo
 			if [ "$WEB_PASSWORD" = "" ]; then
 				echo ""
 				echo "WEB Password is required for user 'test'"
