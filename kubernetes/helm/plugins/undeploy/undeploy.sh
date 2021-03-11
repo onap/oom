@@ -23,9 +23,11 @@ undeploy() {
 
   array=($(helm ls -q --all | grep $RELEASE))
   n=${#array[*]}
-  for (( i = n-1; i >= 0; i-- ))
+  i=$((n-1))
+  while [ "$i" -ge 0 ]
   do
     helm del "${array[i]}" $FLAGS
+    i=$((i-1))
   done
 }
 

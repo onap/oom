@@ -44,9 +44,11 @@ enable_odl_cluster () {
   node_index=($(echo ${hm} | awk -F"-" '{print $NF}'))
   node_list="${node}-0.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}";
 
-  for ((i=1;i<${APPC_REPLICAS};i++));
+  i=1
+  while [ "$i" -ne ${APPC_REPLICAS} ]
   do
     node_list="${node_list} ${node}-$i.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}"
+    i=$((i+1))
   done
 
   /opt/opendaylight/current/bin/configure_cluster.sh $((node_index+1)) ${node_list}
