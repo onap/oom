@@ -172,7 +172,6 @@ docker_init_database_dir() {
 # This should be called after mysql_check_config, but before any other functions
 docker_setup_env() {
 	# Get config
-    declare -g DATADIR SOCKET
 	DATADIR="$(mysql_get_config 'datadir' "$@")"
 	SOCKET="$(mysql_get_config 'socket' "$@")"
 
@@ -184,7 +183,6 @@ docker_setup_env() {
 	file_env 'MYSQL_ROOT_PASSWORD'
 	file_env 'PORTAL_DB_TABLES'
 
-    declare -g DATABASE_ALREADY_EXISTS
 	if [ -d "$DATADIR/mysql" ]; then
 		DATABASE_ALREADY_EXISTS='true'
 	fi
