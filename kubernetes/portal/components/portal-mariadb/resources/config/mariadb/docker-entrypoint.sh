@@ -87,7 +87,7 @@ docker_process_init_files() {
 mysql_check_config() {
 	local toRun=( "$@" --verbose --help --log-bin-index="$(mktemp -u)" ) errors
 	if ! errors="$("${toRun[@]}" 2>&1 >/dev/null)"; then
-		mysql_error $'mysqld failed while attempting to check config\n\tcommand was: '"${toRun[*]}"$'\n\t'"$errors"
+		mysql_error "$(printf 'mysqld failed while attempting to check config\n\tcommand was: ')${toRun[*]}$(printf'\n\t')$errors"
 	fi
 }
 
@@ -134,7 +134,7 @@ docker_temp_server_stop() {
 # Verify that the minimally required password settings are set for new databases.
 docker_verify_minimum_env() {
 	if [ -z "$MYSQL_ROOT_PASSWORD" -a -z "$MYSQL_ALLOW_EMPTY_PASSWORD" -a -z "$MYSQL_RANDOM_ROOT_PASSWORD" ]; then
-		mysql_error $'Database is uninitialized and password option is not specified\n\tYou need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD'
+		mysql_error "$(printf'Database is uninitialized and password option is not specified\n\tYou need to specify one of MYSQL_ROOT_PASSWORD, MYSQL_ALLOW_EMPTY_PASSWORD and MYSQL_RANDOM_ROOT_PASSWORD')"
 	fi
 }
 
