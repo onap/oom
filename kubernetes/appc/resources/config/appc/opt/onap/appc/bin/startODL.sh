@@ -44,7 +44,7 @@ function enable_odl_cluster(){
   node_index=($(echo ${hm} | awk -F"-" '{print $NF}'))
   node_list="${node}-0.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}";
 
-  for ((i=1;i<${APPC_REPLICAS};i++));
+  for i in $(seq 1 $((${APPC_REPLICAS}-1)))
   do
     node_list="${node_list} ${node}-$i.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}"
   done
