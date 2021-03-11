@@ -36,13 +36,13 @@
 {{- $global := . }}
 {{-   range $index, $port := $ports }}
 {{-     if (include "common.needTLS" $global) }}
-- containerPort: {{ default $port.port $port.internal_port }}
+- containerPort: {{ $port.port }}
 {{-     else }}
-- containerPort: {{ default (default $port.port $port.internal_port) (default $port.plain_port $port.internal_plain_port) }}
+- containerPort: {{ default $port.port $port.plain_port }}
 {{-     end }}
   name: {{ $port.name }}
 {{-     if (and $port.plain_port (and (include "common.needTLS" $global) $both_tls_and_plain))  }}
-- containerPort: {{ default $port.plain_port $port.internal_plain_port }}
+- containerPort: {{ $port.plain_port }}
   name: {{ $port.name }}-plain
 {{-     end }}
 {{-   end }}
@@ -67,3 +67,4 @@ securityContext:
   privileged: false
   allowPrivilegeEscalation: false
 {{- end }}
+
