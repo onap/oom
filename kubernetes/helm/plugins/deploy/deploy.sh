@@ -2,7 +2,7 @@
 
 usage() {
 cat << EOF
-Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases 
+Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases
 
 The umbrella Helm Chart is broken apart into a parent release and subchart releases.
 Subcharts the are disabled (<chart>.enabled=false) will not be installed or upgraded.
