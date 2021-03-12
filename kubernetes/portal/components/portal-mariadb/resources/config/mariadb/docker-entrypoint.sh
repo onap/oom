@@ -245,7 +245,7 @@ docker_setup_db() {
         read -r -d '' rootCreate <<-EOSQL || true
             CREATE USER 'root'@'${MYSQL_ROOT_HOST}' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' ;
             GRANT ALL ON *.* TO 'root'@'${MYSQL_ROOT_HOST}' WITH GRANT OPTION ;
-        EOSQL
+EOSQL
     fi
 
     # tell docker_process_sql to not use MYSQL_ROOT_PASSWORD since it is just now being set
@@ -264,7 +264,7 @@ docker_setup_db() {
         FLUSH PRIVILEGES ;
         ${rootCreate}
         DROP DATABASE IF EXISTS test ;
-    EOSQL
+EOSQL
 
     # Creates a custom database and user if specified
     if [ -n "$MYSQL_DATABASE" ]; then
@@ -293,7 +293,7 @@ _mysql_passfile() {
         cat <<-EOF
             [client]
             password="${MYSQL_ROOT_PASSWORD}"
-        EOF
+EOF
     fi
 }
 
