@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # ============LICENSE_START=======================================================
 #  Copyright (c) 2021 Bell Canada.
