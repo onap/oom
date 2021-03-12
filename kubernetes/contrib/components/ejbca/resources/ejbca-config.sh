@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
-waitForEjbcaToStart() {
+waitForEjbcaToStart () {
     until $(curl -kI https://localhost:8443/ejbca/publicweb/healthcheck/ejbcahealth --output /dev/null --silent --head --fail)
     do
         sleep 5
     done
 }
 
-configureEjbca() {
+configureEjbca () {
     ejbca.sh config cmp addalias --alias cmpRA
     ejbca.sh config cmp updatealias --alias cmpRA --key operationmode --value ra
     ejbca.sh ca editca --caname ManagementCA --field cmpRaAuthSecret --value ${RA_IAK}

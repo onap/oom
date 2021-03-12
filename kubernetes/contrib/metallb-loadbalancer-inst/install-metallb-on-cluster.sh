@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/sh -e
+
 #
 #   Copyright 2020 Samsung Electronics Co., Ltd.
 #
@@ -15,7 +16,8 @@
 #   limitations under the License.
 #
 
-usage() {
+usage ()
+{
 cat << ==usage
 $0 Automatic configuration using external addresess from nodes
 $0 --help This message
@@ -25,7 +27,7 @@ $0 [cluster_ip1] ... [cluster_ipn]  Cluster address or ip ranges
 }
 
 
-find_nodes_with_external_addrs()
+find_nodes_with_external_addrs ()
 {
 	local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
 	for worker in $WORKER_NODES; do
@@ -55,23 +57,27 @@ $(for value in "$@"; do echo -e "      - $value"; done)
 CNFEOF
 }
 
-generate_config_from_single_addr() {
+generate_config_from_single_addr ()
+{
 	generate_config_map "$1 - $1"
 }
 
-install_metallb() {
+install_metallb ()
+{
 	kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.9.3/manifests/namespace.yaml
 	kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.9.3/manifests/metallb.yaml
 	# Only when install
 	kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
 }
 
-automatic_configuration() {
+automatic_configuration ()
+{
 	install_metallb
 	generate_config_from_single_addr $(find_nodes_with_external_addrs)
 }
 
-manual_configuration() {
+manual_configuration ()
+{
 	install_metallb
 	generate_config_map $@
 }

@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 #   Copyright 2020 Samsung Electronics Co., Ltd.
 #
@@ -21,7 +21,7 @@ SPATH="$( dirname "$( which "$0" )" )"
 
 
 
-usage() {
+usage () {
 cat << ==usage
 $0 [cluster_domain] [lb_ip] [helm_chart_args] ...
 	[cluster_domain] Default value simpledemo.onap.org
@@ -33,7 +33,8 @@ $0 --info Display howto configure target machine
 }
 
 
-target_machine_notice_info() {
+target_machine_notice_info ()
+{
 cat << ==infodeploy
 Extra DNS server already deployed:
 1. You can add the DNS server to the target machine using following commands:
@@ -46,7 +47,7 @@ Extra DNS server already deployed:
 }
 
 
-list_node_with_external_addrs()
+list_node_with_external_addrs ()
 {
 	local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
 	for worker in $WORKER_NODES; do
@@ -59,7 +60,8 @@ list_node_with_external_addrs()
 	done
 }
 
-ingress_controller_ip() {
+ingress_controller_ip ()
+{
 	local metal_ns=$(kubectl get ns --no-headers --output=custom-columns=NAME:metadata.name |grep metallb-system)
 	if [ -z $metal_ns ]; then
 		echo $CLUSTER_IP
@@ -68,7 +70,7 @@ ingress_controller_ip() {
 	fi
 }
 
-deploy() {
+deploy () {
 	local ingress_ip=$(ingress_controller_ip)
 	initdir = $(pwd)
 	cd $SPATH/bind9dns
