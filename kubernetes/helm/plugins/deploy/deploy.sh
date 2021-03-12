@@ -2,7 +2,7 @@
 
 usage() {
 cat << EOF
-Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases 
+Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases
 
 The umbrella Helm Chart is broken apart into a parent release and subchart releases.
 Subcharts the are disabled (<chart>.enabled=false) will not be installed or upgraded.
@@ -257,7 +257,6 @@ deploy() {
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
         if [[ $HELM_VER = "v3."* ]]; then
-          helm del "${array[i]}" 
         else
           helm del "${array[i]}" --purge
         fi
