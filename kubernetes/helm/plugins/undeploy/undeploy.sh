@@ -2,7 +2,7 @@
 
 usage() {
 cat << EOF
-Delete an umbrella Helm Chart, and its subcharts, that was previously deployed using 'Helm deploy'. 
+Delete an umbrella Helm Chart, and its subcharts, that was previously deployed using 'Helm deploy'.
 
 Example of deleting all Releases that have the prefix 'demo'.
   $ helm undeploy demo
