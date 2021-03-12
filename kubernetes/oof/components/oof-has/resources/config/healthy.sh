@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
