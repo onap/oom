@@ -25,29 +25,29 @@ TMPTPL='onap_security'
 CSV2JSON='import csv; import json; import sys; print(json.dumps({i[0]: i[1] for i in csv.reader(sys.stdin)}))'
 FILTER="$(tr -d [:space:] <<TEMPLATE
 {{range .items}}
-	{{range.spec.ports}}
-		{{if .nodePort}}
-			{{.nodePort}}{{','}}{{.name}}{{'\n'}}
-		{{end}}
-	{{end}}
+    {{range.spec.ports}}
+        {{if .nodePort}}
+            {{.nodePort}}{{','}}{{.name}}{{'\n'}}
+        {{end}}
+    {{end}}
 {{end}}
 TEMPLATE)"
 
 
 setup () {
-	export NODEPORTS_FILE="$(mktemp -p ${TMPDIR} ${TMPTPL}XXX)"
+    export NODEPORTS_FILE="$(mktemp -p ${TMPDIR} ${TMPTPL}XXX)"
 }
 
 create_actual_nodeport_json () {
-	kubectl get svc -n $NAMESPACE -o go-template="$FILTER" | python3 -c "$CSV2JSON" > "$NODEPORTS_FILE"
+    kubectl get svc -n $NAMESPACE -o go-template="$FILTER" | python3 -c "$CSV2JSON" > "$NODEPORTS_FILE"
 }
 
 copy_actual_nodeport_json_to_robot () {
-	kubectl cp "$1" "$2/$3:$4"
+    kubectl cp "$1" "$2/$3:$4"
 }
 
 cleanup () {
-	rm "$NODEPORTS_FILE"
+    rm "$NODEPORTS_FILE"
 }
 
 
