@@ -72,7 +72,7 @@ if [ "$1" = 'cassandra' ]; then
                 authenticator \
         ; do
                 var="CASSANDRA_$(echo $yaml |tr '[:lower:]' '[:upper:]')"
-                # eval here presents no security issues because of limited possible values of var
+                # eval here presents no security issue because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
                         _sed_in_place "$CASSANDRA_CONFIG/cassandra.yaml" \
@@ -82,7 +82,7 @@ if [ "$1" = 'cassandra' ]; then
 
         for rackdc in dc rack; do
                 var="CASSANDRA_$(echo $rackdc |tr '[:lower:]' '[:upper:]')"
-                # eval here presents no security issues because of limited possible values of var
+                # eval here presents no security issue because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
                         _sed_in_place "$CASSANDRA_CONFIG/cassandra-rackdc.properties" \

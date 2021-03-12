@@ -20,25 +20,25 @@ find_target_table_name ()
 
 print_usage ()
 {
-	echo "NAME"
-	echo "	Script to restore Cassandra database from Nuvo/Cain snapshot"
-	echo "SYNOPSIS"
-	echo "	$me [--help|-h] [--base_db_dir|-b] [--snapshot_dir|-s] [--keyspace|-k] [--tag|-t]"
-	echo "	MUST OPTIONS: base_db_dir, snapshot_dir, keyspace_name"
-	echo "DESCRIPTION"
-	echo "	--base_db_dir, -b"
-	echo "		Location of running Cassandra database"
-	echo "	--snapshot_dir, -s"
-	echo "		Snapshot location of Cassandra database taken by Nuvo/Cain"
-	echo "	--keyspace, -k"
-	echo "		Name of the keyspace to restore"
-	echo "EXAMPLE"
-	echo "	$me -b /var/lib/cassandra/data -s /root/data.ss -k DISCOVERY_SERVER -t 1234567"
-	exit
+    echo "NAME"
+    echo "    Script to restore Cassandra database from Nuvo/Cain snapshot"
+    echo "SYNOPSIS"
+    echo "    $me [--help|-h] [--base_db_dir|-b] [--snapshot_dir|-s] [--keyspace|-k] [--tag|-t]"
+    echo "    MUST OPTIONS: base_db_dir, snapshot_dir, keyspace_name"
+    echo "DESCRIPTION"
+    echo "    --base_db_dir, -b"
+    echo "        Location of running Cassandra database"
+    echo "    --snapshot_dir, -s"
+    echo "        Snapshot location of Cassandra database taken by Nuvo/Cain"
+    echo "    --keyspace, -k"
+    echo "        Name of the keyspace to restore"
+    echo "EXAMPLE"
+    echo "    $me -b /var/lib/cassandra/data -s /root/data.ss -k DISCOVERY_SERVER -t 1234567"
+    exit
 }
 if [ $# -eq  0 ]
 then
-	print_usage
+    print_usage
 fi
 
 while [ $# -gt 0 ]
@@ -47,40 +47,40 @@ key="$1"
 shift
 
 case $key in
-	-h|--help)
-	print_usage
-	;;
-	-b|--base_db_dir)
-	base_db_dir="$1"
-	shift
-	;;
-	-s|--snapshot_dir)
-	ss_dir="$1"
-	shift
-	;;
-	-k|--keyspace)
-	keyspace_name="$1"
-	;;
-	-t|--tag)
-	tag_name="$1"
-	;;
-	--default)
-	DEFAULT=YES
-	shift
-	;;
-	*)
-	# unknown option
-	;;
+    -h|--help)
+        print_usage
+        ;;
+    -b|--base_db_dir)
+        base_db_dir="$1"
+        shift
+        ;;
+    -s|--snapshot_dir)
+        ss_dir="$1"
+        shift
+        ;;
+    -k|--keyspace)
+        keyspace_name="$1"
+        ;;
+    -t|--tag)
+        tag_name="$1"
+        ;;
+    --default)
+    DEFAULT=YES
+        shift
+        ;;
+    *)
+        # unknown option
+        ;;
 esac
 done
 
 # Validate inputs
 if [ "$base_db_dir" = "" ] || [ "$ss_dir" = "" ] || [ "$keyspace_name" = "" ]
 then
-	echo ""
-	echo ">>>>>>>>>>Not all inputs provided, please check usage >>>>>>>>>>"
-	echo ""
-	print_usage
+    echo ""
+    echo ">>>>>>>>>>Not all inputs provided, please check usage >>>>>>>>>>"
+    echo ""
+    print_usage
 fi
 
 # Remove commit logs from current data dir
