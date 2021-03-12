@@ -4,8 +4,7 @@
 # ============LICENSE_START=======================================================
 # ONAP : SDN-C
 # ================================================================================
-# Copyright (C) 2017 AT&T Intellectual Property. All rights
-# 							reserved.
+# Copyright (C) 2017 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +52,7 @@ then
     if [ -d $JOURNAL_PATH ]
     then
         mv $JOURNAL_PATH/* $MDSAL_PATH/journal
-	rm -f $JOURNAL_PATH
+        rm -f $JOURNAL_PATH
     fi
     ln -s $MDSAL_PATH/journal $JOURNAL_PATH
 fi
@@ -63,7 +62,7 @@ then
     if [ -d $SNAPSHOTS_PATH ]
     then
         mv $SNAPSHOTS_PATH/* $MDSAL_PATH/snapshots
-	rm -f $SNAPSHOTS_PATH
+        rm -f $SNAPSHOTS_PATH
     fi
     ln -s $MDSAL_PATH/snapshots $SNAPSHOTS_PATH
 fi
