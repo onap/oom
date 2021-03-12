@@ -22,13 +22,13 @@ You can specify the '--values'/'-f' flag multiple times. The priority will be gi
 last (right-most) file specified. For example, if both myvalues.yaml and override.yaml
 contained a key called 'Test', the value set in override.yaml would take precedence:
 
-	$ helm deploy demo ./onap --namespace onap -f openstack.yaml -f overrides.yaml
+    $ helm deploy demo ./onap --namespace onap -f openstack.yaml -f overrides.yaml
 
 You can specify the '--set' flag multiple times. The priority will be given to the
 last (right-most) set specified. For example, if both 'bar' and 'newbar' values are
 set for a key called 'foo', the 'newbar' value would take precedence:
 
-	$ helm deploy demo local/onap --namespace onap -f overrides.yaml --set log.enabled=false --set vid.enabled=false
+    $ helm deploy demo local/onap --namespace onap -f overrides.yaml --set log.enabled=false --set vid.enabled=false
 
 Usage:
   helm deploy [RELEASE] [CHART] [flags]
@@ -241,17 +241,17 @@ deploy() {
         else
           echo "release \"${RELEASE}-${subchart}\" deployed"
         fi
-	# Add annotation last-applied-configuration if set-last-applied flag is set
+    # Add annotation last-applied-configuration if set-last-applied flag is set
         if [ "$SET_LAST_APPLIED" = "true" ]; then
           helm get manifest "${RELEASE}-${subchart}" \
           | kubectl apply set-last-applied --create-annotation -n onap -f - \
-	      > $LOG_FILE.log 2>&1
+          > $LOG_FILE.log 2>&1
         fi
       fi
-	  if [ "$DELAY" = "true" ]; then
-		echo sleep 3m
-		sleep 180
-	  fi
+      if [ "$DELAY" = "true" ]; then
+        echo sleep 3m
+        sleep 180
+      fi
     else
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
