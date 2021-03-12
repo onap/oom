@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright 2019 AT&T Intellectual Property. All rights reserved.
 #
