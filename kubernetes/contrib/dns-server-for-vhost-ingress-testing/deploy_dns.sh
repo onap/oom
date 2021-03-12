@@ -24,9 +24,9 @@ SPATH="$( dirname "$( which "$0" )" )"
 usage() {
 cat << ==usage
 $0 [cluster_domain] [lb_ip] [helm_chart_args] ...
-	[cluster_domain] Default value simpledemo.onap.org
-	[lb_ip] Default value LoadBalancer IP
-	[helm_chart_args] ... Optional arguments passed to helm install command
+    [cluster_domain] Default value simpledemo.onap.org
+    [lb_ip] Default value LoadBalancer IP
+    [helm_chart_args] ... Optional arguments passed to helm install command
 $0 --help This message
 $0 --info Display howto configure target machine
 ==usage
@@ -37,10 +37,10 @@ target_machine_notice_info() {
 cat << ==infodeploy
 Extra DNS server already deployed:
 1. You can add the DNS server to the target machine using following commands:
-	sudo iptables -t nat -A OUTPUT -p tcp -d 192.168.211.211 --dport 53 -j DNAT --to-destination $CLUSTER_IP:$DNS_PORT
-	sudo iptables -t nat -A OUTPUT -p udp -d 192.168.211.211 --dport 53 -j DNAT --to-destination $CLUSTER_IP:$DNS_PORT
-	sudo sysctl -w net.ipv4.conf.all.route_localnet=1
-	sudo sysctl -w net.ipv4.ip_forward=1
+    sudo iptables -t nat -A OUTPUT -p tcp -d 192.168.211.211 --dport 53 -j DNAT --to-destination $CLUSTER_IP:$DNS_PORT
+    sudo iptables -t nat -A OUTPUT -p udp -d 192.168.211.211 --dport 53 -j DNAT --to-destination $CLUSTER_IP:$DNS_PORT
+    sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+    sudo sysctl -w net.ipv4.ip_forward=1
 2. Update /etc/resolv.conf file with nameserver 192.168.211.211 entry on your target machine
 ==infodeploy
 }
@@ -48,49 +48,50 @@ Extra DNS server already deployed:
 
 list_node_with_external_addrs()
 {
-	local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
-	for worker in $WORKER_NODES; do
-		local external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
-		local internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
-		if [ $internal_ip != $external_ip ]; then
-			echo $external_ip
-			break
-		fi
-	done
+    local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
+    for worker in $WORKER_NODES; do
+        local external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
+        local internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
+        if [ $internal_ip != $external_ip ]; then
+            echo $external_ip
+            break
+        fi
+    done
 }
 
-ingress_controller_ip() {
-	local metal_ns=$(kubectl get ns --no-headers --output=custom-columns=NAME:metadata.name |grep metallb-system)
-	if [ -z $metal_ns ]; then
-		echo $CLUSTER_IP
-	else
-		list_node_with_external_addrs
-	fi
+ingress_controller_ip ()
+{
+    local metal_ns=$(kubectl get ns --no-headers --output=custom-columns=NAME:metadata.name |grep metallb-system)
+    if [ -z $metal_ns ]; then
+        echo $CLUSTER_IP
+    else
+        list_node_with_external_addrs
+    fi
 }
 
-deploy() {
-	local ingress_ip=$(ingress_controller_ip)
-	initdir = $(pwd)
-	cd $SPATH/bind9dns
-	if [ $# -eq 0 ]; then
-		local cl_domain="simpledemo.onap.org"
-	else
-		local cl_domain=$1
-		shift
-	fi
-	if [ $# -ne 0 ]; then
-		ingress_ip=$1
-		shift
-	fi
-	helm install . --set dnsconf.wildcard="$cl_domain=$ingress_ip" $@
-	cd $initdir
-	target_machine_notice_info
+deploy () {
+    local ingress_ip=$(ingress_controller_ip)
+    initdir = $(pwd)
+    cd $SPATH/bind9dns
+    if [ $# -eq 0 ]; then
+        local cl_domain="simpledemo.onap.org"
+    else
+        local cl_domain=$1
+        shift
+    fi
+    if [ $# -ne 0 ]; then
+        ingress_ip=$1
+        shift
+    fi
+    helm install . --set dnsconf.wildcard="$cl_domain=$ingress_ip" $@
+    cd $initdir
+    target_machine_notice_info
 }
 
 if [ $# -eq 1 ] && [ "$1" = "-h" || "$1" = "--help" ]; then
-	usage
+    usage
 elif [ $# -eq 1 ] && [ "$1" = "--info" ]; then
-       target_machine_notice_info
+    target_machine_notice_info
 else
-	deploy $@
+    deploy $@
 fi
