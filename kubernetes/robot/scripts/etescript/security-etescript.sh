@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Copyright 2019 Samsung Electronics Co., Ltd.
 #
