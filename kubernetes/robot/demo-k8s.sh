@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/sh
+
 # Copyright (C) 2018 Amdocs, Bell Canada
 # Modifications Copyright (C) 2019 Samsung
 # Modifications Copyright (C) 2020 Nokia

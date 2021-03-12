@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/sh -e
+
 #
 #   Copyright 2020 Samsung Electronics Co., Ltd.
 #
@@ -15,7 +16,8 @@
 #   limitations under the License.
 #
 
-usage() {
+usage()
+{
 cat << ==usage
 $0 Automatic configuration using external addresess from nodes
 $0 --help This message

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 waitForEjbcaToStart() {
     until $(curl -kI https://localhost:8443/ejbca/publicweb/healthcheck/ejbcahealth --output /dev/null --silent --head --fail)
