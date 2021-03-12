@@ -21,8 +21,8 @@
 set -e
 
 while read DB ; do
-    USER_VAR="MYSQL_USER_${DB^^}"
-    PASS_VAR="MYSQL_PASSWORD_${DB^^}"
+    USER_VAR="MYSQL_USER_$(echo $DB | tr '[:lower:]' '[:upper:]')"
+    PASS_VAR="MYSQL_PASSWORD_$(echo $DB | tr '[:lower:]' '[:upper:]')"
 {{/*
     # USER=${!USER_VAR}
     # PASS=`echo -n ${!PASS_VAR} | sed -e "s/'/''/g"`
