@@ -28,7 +28,7 @@ _ip_address() {
 }
 
 # "sed -i", but without "mv" (which doesn't work on a bind-mounted file, for example)
-_sed-in-place() {
+_sed_in_place() {
         local filename="$1"; shift
         local tempFile
         tempFile="$(mktemp)"
@@ -57,7 +57,7 @@ if [ "$1" = 'cassandra' ]; then
         fi
         : ${CASSANDRA_SEEDS:="$CASSANDRA_BROADCAST_ADDRESS"}
 
-        _sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
+        _sed_in_place "$CASSANDRA_CONFIG/cassandra.yaml" \
                 -r 's/(- seeds:).*/\1 "'"$CASSANDRA_SEEDS"'"/'
 
         for yaml in \
@@ -75,7 +75,7 @@ if [ "$1" = 'cassandra' ]; then
                 # eval presents no security issue here because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
-                        _sed-in-place "$CASSANDRA_CONFIG/cassandra.yaml" \
+                        _sed_in_place "$CASSANDRA_CONFIG/cassandra.yaml" \
                                 -r 's/^(# )?('"$yaml"':).*/\2 '"$val"'/'
                 fi
         done
@@ -85,7 +85,7 @@ if [ "$1" = 'cassandra' ]; then
                 # eval presents no security issue here because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
-                        _sed-in-place "$CASSANDRA_CONFIG/cassandra-rackdc.properties" \
+                        _sed_in_place "$CASSANDRA_CONFIG/cassandra-rackdc.properties" \
                                 -r 's/^('"$rackdc"'=).*/\1 '"$val"'/'
                 fi
         done
