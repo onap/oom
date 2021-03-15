@@ -20,14 +20,7 @@ OUTPUT_DIR := $(ROOT_DIR)/dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 HELM_BIN := helm
-
-# Helm v2 and helm v3 uses different version format so we first try in helm v3 format
-# and if it fails then we fallback to helm v2 one
-HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
-ifneq "$(findstring v3,$(HELM_VER))" "v3"
-	HELM_VER := $(shell $(HELM_BIN) version -c --template "{{.Client.SemVer}}")
-endif
-
+HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 # use this if you would like to push onap charts to repo with other name
 # WARNING: Helm v3+ only
 # WARNING: Make sure to edit also requirements files
@@ -45,7 +38,7 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS) check-for-staging-images
 
-all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
+all: $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
 
 $(COMMON_CHARTS):
 	@echo "\n[$@]"
@@ -66,8 +59,6 @@ submod-%:
 %/requirements.yaml:
 	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
 
-print_helm_bin:
-	$(info Using Helm binary ${HELM_BIN} which is helm version ${HELM_VER})
 
 make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
@@ -94,7 +85,7 @@ clean:
 
 # publish helm plugins via distrubtion directory
 plugins:
-	@cp -R helm $(PACKAGE_DIR)/
+	@cp -R $(HELM_BIN) $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
 # WARNING: Only helm < v3 supported

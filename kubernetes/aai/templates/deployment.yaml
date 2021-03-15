@@ -39,7 +39,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - command:
         - /app/ready.py
         args:
@@ -75,7 +75,9 @@ spec:
           subPath: haproxy.cfg
         {{ end }}
           name: haproxy-cfg
-        {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
+        - mountPath: /etc/ssl/private/aai.pem
+          name: aai-pem
+          subPath: aai.pem
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -126,6 +128,8 @@ spec:
         - name: haproxy-cfg
           configMap:
             name: aai-deployment-configmap
-        {{ include "common.certInitializer.volumes" . | nindent 8 }}
+        - name: aai-pem
+          secret:
+            secretName: aai-haproxy-secret
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

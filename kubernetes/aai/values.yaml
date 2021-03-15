@@ -1,7 +1,6 @@
 # Copyright (c) 2017 Amdocs, Bell Canada
 # Modifications Copyright (c) 2018 AT&T
 # Modifications Copyright (c) 2020 Nokia, Orange
-# Modifications Copyright (c) 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,8 +30,30 @@ global: # global defaults
 
   restartPolicy: Always
 
+  installSidecarSecurity: false
   aafEnabled: true
-  msbEnabled: true
+
+  fproxy:
+    name: forward-proxy
+    activeSpringProfiles: noHostVerification,cadi
+    image: onap/fproxy:2.1.13
+    port: 10680
+
+  rproxy:
+    name: reverse-proxy
+    activeSpringProfiles: noHostVerification,cadi
+    image: onap/rproxy:2.1.13
+    port: 10692
+
+  tproxyConfig:
+    name: init-tproxy-config
+    image: onap/tproxy-config:2.1.13
+
+  # AAF server details. Only needed if the AAF DNS does not resolve from the pod
+  aaf:
+    serverIp: 10.12.6.214
+    serverHostname: aaf.osaaf.org
+    serverPort: 30247
 
   cassandra:
     #This will instantiate AAI cassandra cluster, default:shared cassandra.
@@ -228,11 +249,11 @@ global: # global defaults
       version:
         # Current version of the REST API
         api:
-          default: v23
+          default: v21
         # Specifies which version the depth parameter is configurable
         depth: v11
         # List of all the supported versions of the API
-        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23
+        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21
         # Specifies from which version related link should appear
         related:
           link: v11
@@ -273,44 +294,6 @@ global: # global defaults
         # when debugging the issue and changed back as it can affect performance
         # since when this is enabled, it prints a lot of information to console
         enabled: false
-
-#################################################################
-# Certificate configuration
-#################################################################
-certInitializer:
-  nameOverride: aai-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: "aai"
-  app_ns: "org.osaaf.aaf"
-  fqi_namespace: "org.onap.aai"
-  fqi: "aai@aai.onap.org"
-  public_fqdn: "aaf.osaaf.org"
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: |
-    echo "*** retrieving passwords from AAF"
-    /opt/app/aaf_config/bin/agent.sh local showpass \
-      {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
-    export $(grep '^c' {{ .Values.credsPath }}/mycreds.prop | xargs -0)
-    echo "*** transform AAF certs into pem files"
-    mkdir -p {{ .Values.credsPath }}/certs
-    keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
-      -keystore {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.trust.jks \
-      -alias ca_local_0 \
-      -storepass $cadi_truststore_password
-    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
-      -nokeys -out {{ .Values.credsPath }}/certs/cert.pem \
-      -passin pass:$cadi_keystore_password_p12 \
-      -passout pass:$cadi_keystore_password_p12
-    echo "*** generating needed file"
-    cat {{ .Values.credsPath }}/certs/cert.pem \
-        {{ .Values.credsPath }}/certs/cacert.pem \
-        {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key \
-        > {{ .Values.credsPath }}/certs/fullchain.pem;
-    chown 1001 {{ .Values.credsPath }}/certs/*
 
 # application image
 dockerhubRepository: registry.hub.docker.com
@@ -396,3 +379,4 @@ resources:
       cpu: 2
       memory: 2Gi
   unlimited: {}
+

@@ -65,11 +65,8 @@
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
 {{-   $jobs := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "jobs" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
-  image: {{ include "repositoryGenerator.image.readiness" $subchartDot }}
+  image: "{{ include "common.repository" $subchartDot }}/{{ $subchartDot.Values.global.readinessImage }}"
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
-  securityContext:
-    runAsUser: {{ $subchartDot.Values.user }}
-    runAsGroup: {{ $subchartDot.Values.group }}
   command:
   - /app/ready.py
   args:

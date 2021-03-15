@@ -31,23 +31,13 @@ spec:
         args:
         - -c
         - |
-          echo "*** Move files from configmap to emptyDir"
-          cp -L /config-input-dats/* /config-dats/
-          echo "*** set righ user to the different folders"
-          chown -R 1000:1000 /config-dats
+          chown -R 1000:1000 /opt/app/aaf/status
           chown -R 1000:1000 /var/lib/cassandra
-          chown -R 1000:1000 /status
         image: {{ include "repositoryGenerator.image.busybox" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
           - mountPath: /var/lib/cassandra
             name: aaf-cass-vol
-          - mountPath: /config-input-dats
-            name: config-cass-init-dats
-          - mountPath: /config-dats
-            name: config-cass-dats
-          - mountPath: /status
-            name: aaf-status
         resources:
           limits:
             cpu: 100m
@@ -91,10 +81,6 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - mountPath: /opt/app/aaf/cass_init/dats
-          name: config-cass-dats
-        - mountPath: /opt/app/aaf/status
-          name: aaf-status
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -118,8 +104,6 @@ spec:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: aaf-status
-        emptyDir: {}
       - name: aaf-cass-vol
       {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
@@ -127,10 +111,5 @@ spec:
       {{- else }}
         emptyDir: {}
       {{- end }}
-      - name: config-cass-init-dats
-        configMap:
-          name: {{ include "common.fullname" . }}-cass-init-dats
-      - name: config-cass-dats
-        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

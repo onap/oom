@@ -17,9 +17,9 @@ OUTPUT_DIR := $(ROOT_DIR)/../../dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
-EXCLUDES :=
+EXCLUDES := soHelpers
 HELM_BIN := helm
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
+HELM_CHARTS := soHelpers $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 

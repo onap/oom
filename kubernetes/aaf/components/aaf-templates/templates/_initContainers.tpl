@@ -15,16 +15,12 @@
 */}
 
 {{- define "aaf.permissionFixer" -}}
-- name: onboard-identity-and-fix-permission
+- name: fix-permission
   command:
   - /bin/sh
   args:
   - -c
   - |
-    echo "*** Move files from configmap to emptyDir"
-    cp -L /config-input-identity/* /config-identity/
-    echo "*** set righ user to the different folders"
-    chown -R 1000:1000 /config-identity
     chown -R 1000:1000 /opt/app/aaf
     chown -R 1000:1000 /opt/app/osaaf
   image: {{ include "repositoryGenerator.image.busybox" . }}
@@ -32,10 +28,6 @@
   volumeMounts:
   - mountPath: /opt/app/osaaf
     name: aaf-config-vol
-  - mountPath: /config-input-identity
-    name: config-init-identity
-  - mountPath: /config-identity
-    name: config-identity
   resources:
     limits:
       cpu: 100m

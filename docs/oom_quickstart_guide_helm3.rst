@@ -203,7 +203,7 @@ single command
 To deploy all ONAP applications use this command::
 
     > cd oom/kubernetes
-    >  helm deploy dev local/onap --namespace onap --create-namespace --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900s
+    >  helm deploy dev local/onap --namespace onap --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900s
 
 All override files may be customized (or replaced by other overrides) as per
 needs.

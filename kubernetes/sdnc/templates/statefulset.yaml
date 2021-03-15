@@ -1,7 +1,6 @@
 {{/*
 # Copyright © 2020 Samsung Electronics
 # Copyright © 2017 Amdocs, Bell Canada
-# Copyright © 2021 Nokia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,13 +66,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
         - name: ODL_ADMIN_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
-        {{ if and .Values.config.sdnr.dmaapProxy.enabled  .Values.config.sdnr.dmaapProxy.usepwd }}
-        - name: DMAAP_HTTP_PROXY_USERNAME
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-proxy-creds" "key" "login") | indent 10 }}
-        - name: DMAAP_HTTP_PROXY_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-proxy-creds" "key" "password") | indent 10 }}
-        {{- end }}
-
 
         volumeMounts:
         - mountPath: /config-input
@@ -106,19 +98,58 @@ spec:
         name: {{ include "common.name" . }}-readiness
         {{ end -}}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
-{{ include "common.certServiceClient.initContainer" . | indent 6 }}
+
+      {{ if .Values.global.cmpv2Enabled }}
+      - name: certs-init
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.platform.certServiceClient.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        env:
+          - name: REQUEST_URL
+            value: {{ .Values.global.platform.certServiceClient.envVariables.requestURL }}
+          - name: REQUEST_TIMEOUT
+            value: "30000"
+          - name: OUTPUT_PATH
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
+          - name: CA_NAME
+            value: {{ .Values.global.platform.certServiceClient.envVariables.caName }}
+          - name: COMMON_NAME
+            value: {{ .Values.global.platform.certServiceClient.envVariables.common_name }}
+          - name: ORGANIZATION
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Organization }}
+          - name: ORGANIZATION_UNIT
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2OrganizationalUnit }}
+          - name: LOCATION
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Location }}
+          - name: STATE
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2State }}
+          - name: COUNTRY
+            value: {{ .Values.global.platform.certServiceClient.envVariables.cmpv2Country }}
+          - name: KEYSTORE_PATH
+            value: {{ .Values.global.platform.certServiceClient.envVariables.keystorePath }}
+          - name: KEYSTORE_PASSWORD
+            value: {{ .Values.global.platform.certServiceClient.envVariables.keystorePassword }}
+          - name: TRUSTSTORE_PATH
+            value: {{ .Values.global.platform.certServiceClient.envVariables.truststorePath }}
+          - name: TRUSTSTORE_PASSWORD
+            value: {{ .Values.global.platform.certServiceClient.envVariables.truststorePassword }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+          - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
+            name: certs
+          - mountPath: {{ .Values.global.platform.certServiceClient.secret.mountPath }}
+            name: certservice-tls-volume
+      {{ end }}
+
       - name: {{ include "common.name" . }}-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
         - sh
         args:
         - -c
-        - |
-           mkdir {{ .Values.persistence.mdsalPath }}/journal
-           mkdir {{ .Values.persistence.mdsalPath }}/snapshots
-           chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}
+        - chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}
 {{- if .Values.global.aafEnabled }}
-           chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}
+        - chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}
 {{- end }}
         volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
@@ -128,15 +159,8 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
-          {{- $linkCommand := include "common.certManager.linkVolumeMounts" . }}
-          lifecycle:
-            postStart:
-              exec:
-                command: ["sh", "-c", {{$linkCommand | quote}} ]
-          {{- end }}
           command: ["/bin/bash"]
-          args: ["-c", "/opt/onap/sdnc/bin/createLinks.sh ; /opt/onap/sdnc/bin/startODL.sh"]
+          args: ["-c", "/opt/onap/sdnc/bin/startODL.sh"]
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           - containerPort: {{ .Values.service.internalPort2 }}
@@ -176,14 +200,6 @@ spec:
             value: "{{ .Values.replicaCount }}"
           - name: MYSQL_HOST
             value: {{ include "common.mariadbService" . }}
-          - name: MDSAL_PATH
-            value: {{ .Values.persistence.mdsalPath }}
-          - name: DAEXIM_PATH
-            value: {{ .Values.persistence.daeximPath }}
-          - name: JOURNAL_PATH
-            value: {{ .Values.persistence.journalPath }}
-          - name: SNAPSHOTS_PATH
-            value: {{ .Values.persistence.snapshotsPath }}
           - name: JAVA_HOME
             value: "{{ .Values.config.javaHome}}"
           - name: JAVA_OPTS
@@ -204,18 +220,10 @@ spec:
           {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
           - name: SDNRDBTRUSTALLCERTS
             value: "true"
-          {{- end }}
-          {{- if .Values.global.cmpv2Enabled }}
-          - name: ODL_CERT_DIR
-            value: {{ (mustFirst (.Values.certificates)).mountPath }}
-          {{- end }}
+          {{ end }}
 
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
-{{ include "common.certServiceClient.volumeMounts" . | indent 10 }}
-{{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
-{{ include "common.certManager.volumeMounts" . | indent 10 }}
-{{- end }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -225,9 +233,6 @@ spec:
           - mountPath: {{ .Values.config.binDir }}/installSdncDb.sh
             name: bin
             subPath: installSdncDb.sh
-          - mountPath: {{ .Values.config.binDir }}/createLinks.sh
-            name: bin
-            subPath: createLinks.sh
           - mountPath: {{ .Values.config.ccsdkConfigDir }}/aaiclient.properties
             name: properties
             subPath: aaiclient.properties
@@ -262,9 +267,6 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.controller.cluster.datastore.cfg
             name: properties
             subPath: org.opendaylight.controller.cluster.datastore.cfg
-          - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.aaa.filterchain.cfg
-            name: properties
-            subPath: org.opendaylight.aaa.filterchain.cfg
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
@@ -274,9 +276,10 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/mountpoint-state-provider.properties
             name: properties
             subPath: mountpoint-state-provider.properties
-          - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.daexim.cfg
-            name: properties
-            subPath: org.opendaylight.daexim.cfg
+          {{ if .Values.global.cmpv2Enabled }}
+          - mountPath: {{ .Values.global.platform.certServiceClient.envVariables.cert_path }}
+            name: certs
+          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -327,15 +330,19 @@ spec:
         - name: properties
           emptyDir:
             medium: Memory
+        {{ if .Values.global.cmpv2Enabled }}
+        - name: certs
+          emptyDir:
+            medium: Memory
+        - name: certservice-tls-volume
+          secret:
+            secretName: {{ .Values.global.platform.certServiceClient.secret.name }}
+        {{- end }}
   {{ if not .Values.persistence.enabled }}
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
   {{ else }}
 {{ include "common.certInitializer.volumes" . | nindent 8 }}
-{{ include "common.certServiceClient.volumes" . | nindent 8 }}
-{{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
-{{ include "common.certManager.volumes" . | nindent 8 }}
-{{- end }}
   volumeClaimTemplates:
   - metadata:
       name: {{ include "common.fullname" . }}-data

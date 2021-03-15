@@ -35,7 +35,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -65,17 +65,10 @@ spec:
           # for nodePort3. This value will be configured in appc main chart in appc-cdt section.
           - name: CDT_PORT
             value: "{{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.nodePort3 }}"
-          - name: HTTPS_KEY_FILE
-            value: {{ .Values.certInitializer.credsPath }}/certs/key.pem
-          - name: HTTPS_CERT_FILE
-            value: {{ .Values.certInitializer.credsPath }}/certs/cert.pem
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /opt/startCdt.sh
-            name: entrypoint
-            subPath: startCdt.sh
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -86,13 +79,9 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: entrypoint
-          configMap:
-            name: {{ include "common.fullname" . }}-entrypoint
-            defaultMode: 0755
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
