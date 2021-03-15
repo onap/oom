@@ -58,10 +58,12 @@ ejbca:
 pullPolicy: Always
 
 mariadb-galera:
-  db:
-    externalSecret: *ejbca-db-secret
-    name: *dbName
-  nameOverride: &ejbca-galera ejbca-galera
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
+    userCredentialsExternalSecret: *ejbca-db-secret
+    mysqlDatabase: *dbName
+  nameOverride: ejbca-galera
   service:
     name: ejbca-galera
     portName: ejbca-galera
@@ -70,13 +72,9 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: ejbca/maria/data
-  serviceAccount:
-    nameOverride: *ejbca-galera
 
 mariadb-init:
-  config:
-    userCredentialsExternalSecret: *ejbca-db-secret
-    mysqlDatabase: *dbName
+  config: *mariadbConfig
   nameOverride: ejbca-config
 
 nodeSelector: {}

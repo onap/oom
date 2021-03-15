@@ -55,7 +55,7 @@ aafConfig:
 #################################################################
 secrets:
   - uid: nbi-db-secret
-    name: &dbUserSecretName '{{ include "common.release" . }}-nbi-db-secret'
+    name: '{{ include "common.release" . }}-nbi-db-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
@@ -89,21 +89,23 @@ config:
     # userCredentialsExternalSecret: some-secret
 
 mariadb-galera:
-  db:
-    externalSecret: *dbUserSecretName
-    name: &mysqlDbName nbi
-  nameOverride: &nbi-galera nbi-galera
+  # '&mariadbConfig' means we "store" the values for  later use in the file
+  # with '*mariadbConfig' pointer.
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-nbi-db-secret'
+    mysqlDatabase: nbi
+  nameOverride: nbi-galera
+  service:
+    name: nbi-galera
+    portName: nbi-galera
+    internalPort: 3306
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: nbi/maria/data
-  serviceAccount:
-    nameOverride: *nbi-galera
 
 mariadb-init:
-  config:
-    userCredentialsExternalSecret: *dbUserSecretName
-    mysqlDatabase: *mysqlDbName
+  config: *mariadbConfig
   nameOverride: nbi-config
 
 mongo:

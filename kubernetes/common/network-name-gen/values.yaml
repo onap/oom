@@ -36,9 +36,9 @@ global:
 #################################################################
 secrets:
   - uid: neng-db-secret
-    name: &dbUserSecretName '{{ include "common.release" . }}-neng-db-secret'
+    name: '{{ include "common.release" . }}-neng-db-secret'
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.db.externalSecret) . }}'
+    externalSecret: '{{ tpl (default "" .Values.config.db.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.db.userName }}'
     password: '{{ .Values.config.db.userPassword }}'
   - uid: pol-basic-auth-secret
@@ -50,11 +50,9 @@ secrets:
 
 # sub-chart config
 mariadb-galera:
-  db:
-    user: sdnctl
-    # password:
-    externalSecret: *dbUserSecretName
-    name: &mysqlDbName nengdb
+  config: &mariadbConfig
+    userCredentialsExternalSecret: '{{ include "common.release" . }}-neng-db-secret'
+    mysqlDatabase: nengdb
   nameOverride: nengdb
   service:
     name: nengdb
@@ -65,9 +63,7 @@ mariadb-galera:
     mountSubPath: network-name-gen/data
 
 mariadb-init:
-  config:
-    userCredentialsExternalSecret: *dbUserSecretName
-    mysqlDatabase: *mysqlDbName
+  config: *mariadbConfig
   nameOverride: nengdb-init
 
 #################################################################
