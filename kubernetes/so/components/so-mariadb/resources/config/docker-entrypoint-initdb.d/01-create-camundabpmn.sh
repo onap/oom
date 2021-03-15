@@ -4,6 +4,7 @@
 # ============LICENSE_START==========================================
 # ===================================================================
 # Copyright © 2017 AT&T Intellectual Property. All rights reserved.
+#
 # ===================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +37,7 @@ EOF
 
 cd /docker-entrypoint-initdb.d/db-sql-scripts
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.10.0.sql || exit 1
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.10.0.sql || exit 1
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.14.0.sql || exit 1
+mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.14.0.sql || exit 1
 
 echo "Created camundabpmn database . . ." 1>>/tmp/mariadb-camundabpmn.log 2>&1
