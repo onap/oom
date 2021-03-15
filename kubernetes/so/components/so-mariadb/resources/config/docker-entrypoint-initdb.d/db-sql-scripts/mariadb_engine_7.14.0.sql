@@ -1,8 +1,9 @@
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -41,6 +42,12 @@ values ('history.cleanup.job.lock', '0', 1);
 insert into ACT_GE_PROPERTY
 values ('startup.lock', '0', 1);
 
+insert into ACT_GE_PROPERTY
+values ('telemetry.lock', '0', 1);
+
+insert into ACT_GE_PROPERTY
+values ('installationId.lock', '0', 1);
+
 create table ACT_GE_BYTEARRAY (
     ID_ varchar(64),
     REV_ integer,
@@ -56,10 +63,20 @@ create table ACT_GE_BYTEARRAY (
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
+create table ACT_GE_SCHEMA_LOG (
+    ID_ varchar(64),
+    TIMESTAMP_ datetime(3),
+    VERSION_ varchar(255),
+    primary key (ID_)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
+insert into ACT_GE_SCHEMA_LOG
+values ('0', CURRENT_TIMESTAMP, '7.14.0');
+
 create table ACT_RE_DEPLOYMENT (
     ID_ varchar(64),
     NAME_ varchar(255),
-    DEPLOY_TIME_ timestamp(3),
+    DEPLOY_TIME_ datetime(3),
     SOURCE_ varchar(255),
     TENANT_ID_ varchar(64),
     primary key (ID_)
@@ -93,7 +110,7 @@ create table ACT_RU_JOB (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
     TYPE_ varchar(255) NOT NULL,
-    LOCK_EXP_TIME_ timestamp(3) NULL,
+    LOCK_EXP_TIME_ datetime(3) NULL,
     LOCK_OWNER_ varchar(255),
     EXCLUSIVE_ boolean,
     EXECUTION_ID_ varchar(64),
@@ -103,8 +120,10 @@ create table ACT_RU_JOB (
     RETRIES_ integer,
     EXCEPTION_STACK_ID_ varchar(64),
     EXCEPTION_MSG_ varchar(4000),
-    DUEDATE_ timestamp(3) NULL,
+    FAILED_ACT_ID_ varchar(255),
+    DUEDATE_ datetime(3) NULL,
     REPEAT_ varchar(255),
+    REPEAT_OFFSET_ bigint DEFAULT 0,
     HANDLER_TYPE_ varchar(255),
     HANDLER_CFG_ varchar(4000),
     DEPLOYMENT_ID_ varchar(64),
@@ -128,6 +147,7 @@ create table ACT_RU_JOBDEF (
     SUSPENSION_STATE_ integer,
     JOB_PRIORITY_ bigint,
     TENANT_ID_ varchar(64),
+    DEPLOYMENT_ID_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -167,7 +187,7 @@ create table ACT_RU_TASK (
     ASSIGNEE_ varchar(255),
     DELEGATION_ varchar(64),
     PRIORITY_ integer,
-    CREATE_TIME_ timestamp(3),
+    CREATE_TIME_ datetime(3),
     DUE_DATE_ datetime(3),
     FOLLOW_UP_DATE_ datetime(3),
     SUSPENSION_STATE_ integer,
@@ -194,14 +214,16 @@ create table ACT_RU_VARIABLE (
     NAME_ varchar(255) not null,
     EXECUTION_ID_ varchar(64),
     PROC_INST_ID_ varchar(64),
+    PROC_DEF_ID_ varchar(64),
     CASE_EXECUTION_ID_ varchar(64),
     CASE_INST_ID_ varchar(64),
     TASK_ID_ varchar(64),
+    BATCH_ID_ varchar(64),
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     VAR_SCOPE_ varchar(64) not null,
     SEQUENCE_COUNTER_ bigint,
     IS_CONCURRENT_LOCAL_ TINYINT,
@@ -218,7 +240,7 @@ create table ACT_RU_EVENT_SUBSCR (
     PROC_INST_ID_ varchar(64),
     ACTIVITY_ID_ varchar(255),
     CONFIGURATION_ varchar(255),
-    CREATED_ timestamp(3) not null,
+    CREATED_ datetime(3) not null,
     TENANT_ID_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -226,11 +248,12 @@ create table ACT_RU_EVENT_SUBSCR (
 create table ACT_RU_INCIDENT (
   ID_ varchar(64) not null,
   REV_ integer not null,
-  INCIDENT_TIMESTAMP_ timestamp(3) not null,
+  INCIDENT_TIMESTAMP_ datetime(3) not null,
   INCIDENT_MSG_ varchar(4000),
   INCIDENT_TYPE_ varchar(255) not null,
   EXECUTION_ID_ varchar(64),
   ACTIVITY_ID_ varchar(255),
+  FAILED_ACTIVITY_ID_ varchar(255),
   PROC_INST_ID_ varchar(64),
   PROC_DEF_ID_ varchar(64),
   CAUSE_INCIDENT_ID_ varchar(64),
@@ -250,6 +273,8 @@ create table ACT_RU_AUTHORIZATION (
   RESOURCE_TYPE_ integer not null,
   RESOURCE_ID_ varchar(255),
   PERMS_ integer,
+  REMOVAL_TIME_ datetime(3),
+  ROOT_PROC_INST_ID_ varchar(64),
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -269,7 +294,7 @@ create table ACT_RU_METER_LOG (
   NAME_ varchar(64) not null,
   REPORTER_ varchar(255),
   VALUE_ bigint,
-  TIMESTAMP_ timestamp(3),
+  TIMESTAMP_ datetime(3),
   MILLISECONDS_ bigint DEFAULT 0,
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -282,7 +307,7 @@ create table ACT_RU_EXT_TASK (
   RETRIES_ integer,
   ERROR_MSG_ varchar(4000),
   ERROR_DETAILS_ID_ varchar(64),
-  LOCK_EXP_TIME_ timestamp(3) NULL,
+  LOCK_EXP_TIME_ datetime(3) NULL,
   SUSPENSION_STATE_ integer,
   EXECUTION_ID_ varchar(64),
   PROC_INST_ID_ varchar(64),
@@ -318,13 +343,17 @@ create index ACT_IDX_EXEC_BUSKEY on ACT_RU_EXECUTION(BUSINESS_KEY_);
 create index ACT_IDX_EXEC_TENANT_ID on ACT_RU_EXECUTION(TENANT_ID_);
 create index ACT_IDX_TASK_CREATE on ACT_RU_TASK(CREATE_TIME_);
 create index ACT_IDX_TASK_ASSIGNEE on ACT_RU_TASK(ASSIGNEE_);
+create index ACT_IDX_TASK_OWNER on ACT_RU_TASK(OWNER_);
 create index ACT_IDX_TASK_TENANT_ID on ACT_RU_TASK(TENANT_ID_);
 create index ACT_IDX_IDENT_LNK_USER on ACT_RU_IDENTITYLINK(USER_ID_);
 create index ACT_IDX_IDENT_LNK_GROUP on ACT_RU_IDENTITYLINK(GROUP_ID_);
 create index ACT_IDX_EVENT_SUBSCR_CONFIG_ on ACT_RU_EVENT_SUBSCR(CONFIGURATION_);
 create index ACT_IDX_EVENT_SUBSCR_TENANT_ID on ACT_RU_EVENT_SUBSCR(TENANT_ID_);
+
 create index ACT_IDX_VARIABLE_TASK_ID on ACT_RU_VARIABLE(TASK_ID_);
 create index ACT_IDX_VARIABLE_TENANT_ID on ACT_RU_VARIABLE(TENANT_ID_);
+create index ACT_IDX_VARIABLE_TASK_NAME_TYPE on ACT_RU_VARIABLE(TASK_ID_, NAME_, TYPE_);
+
 create index ACT_IDX_ATHRZ_PROCEDEF on ACT_RU_IDENTITYLINK(PROC_DEF_ID_);
 create index ACT_IDX_INC_CONFIGURATION on ACT_RU_INCIDENT(CONFIGURATION_);
 create index ACT_IDX_INC_TENANT_ID on ACT_RU_INCIDENT(TENANT_ID_);
@@ -498,6 +527,12 @@ alter table ACT_RU_BATCH
     foreign key (BATCH_JOB_DEF_ID_)
     references ACT_RU_JOBDEF (ID_);
 
+create index ACT_IDX_BATCH_ID ON ACT_RU_VARIABLE(BATCH_ID_);
+alter table ACT_RU_VARIABLE
+    add constraint ACT_FK_VAR_BATCH
+    foreign key (BATCH_ID_)
+    references ACT_RU_BATCH (ID_);
+
 -- indexes for deadlock problems - https://app.camunda.com/jira/browse/CAM-2567 --
 create index ACT_IDX_INC_CAUSEINCID on ACT_RU_INCIDENT(CAUSE_INCIDENT_ID_);
 create index ACT_IDX_INC_EXID on ACT_RU_INCIDENT(EXECUTION_ID_);
@@ -521,11 +556,16 @@ create index ACT_IDX_EVENT_SUBSCR_EVT_NAME ON ACT_RU_EVENT_SUBSCR(EVENT_NAME_);
 create index ACT_IDX_PROCDEF_DEPLOYMENT_ID ON ACT_RE_PROCDEF(DEPLOYMENT_ID_);
 create index ACT_IDX_PROCDEF_TENANT_ID ON ACT_RE_PROCDEF(TENANT_ID_);
 create index ACT_IDX_PROCDEF_VER_TAG ON ACT_RE_PROCDEF(VERSION_TAG_);
+
+-- indices for history cleanup: https://jira.camunda.com/browse/CAM-11616
+create index ACT_IDX_AUTH_ROOT_PI on ACT_RU_AUTHORIZATION(ROOT_PROC_INST_ID_);
+create index ACT_IDX_AUTH_RM_TIME on ACT_RU_AUTHORIZATION(REMOVAL_TIME_);
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -648,10 +688,11 @@ alter table ACT_RU_CASE_SENTRY_PART
 create index ACT_IDX_CASE_DEF_TENANT_ID on ACT_RE_CASE_DEF(TENANT_ID_);
 create index ACT_IDX_CASE_EXEC_TENANT_ID on ACT_RU_CASE_EXECUTION(TENANT_ID_);
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -706,10 +747,11 @@ create index ACT_IDX_DEC_DEF_TENANT_ID on ACT_RE_DECISION_DEF(TENANT_ID_);
 create index ACT_IDX_DEC_DEF_REQ_ID on ACT_RE_DECISION_DEF(DEC_REQ_ID_);
 create index ACT_IDX_DEC_REQ_DEF_TENANT_ID on ACT_RE_DECISION_REQ_DEF(TENANT_ID_);
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -759,7 +801,7 @@ create table ACT_HI_ACTINST (
     CALL_CASE_INST_ID_ varchar(64),
     ACT_NAME_ varchar(255),
     ACT_TYPE_ varchar(255) not null,
-    ASSIGNEE_ varchar(64),
+    ASSIGNEE_ varchar(255),
     START_TIME_ datetime(3) not null,
     END_TIME_ datetime(3),
     DURATION_ bigint,
@@ -820,8 +862,8 @@ create table ACT_HI_VARINST (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     STATE_ varchar(20),
     REMOVAL_TIME_ datetime(3),
@@ -850,12 +892,13 @@ create table ACT_HI_DETAIL (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     SEQUENCE_COUNTER_ bigint,
     TENANT_ID_ varchar(64),
     OPERATION_ID_ varchar(64),
     REMOVAL_TIME_ datetime(3),
+    INITIAL_ boolean,
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -935,6 +978,9 @@ create table ACT_HI_OP_LOG (
     NEW_VALUE_ varchar(4000),
     TENANT_ID_ varchar(64),
     REMOVAL_TIME_ datetime(3),
+	CATEGORY_ varchar(64),
+	EXTERNAL_TASK_ID_ varchar(64),
+	ANNOTATION_ varchar(4000),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -950,9 +996,11 @@ create table ACT_HI_INCIDENT (
   INCIDENT_MSG_ varchar(4000),
   INCIDENT_TYPE_ varchar(255) not null,
   ACTIVITY_ID_ varchar(255),
+  FAILED_ACTIVITY_ID_ varchar(255),
   CAUSE_INCIDENT_ID_ varchar(64),
   ROOT_CAUSE_INCIDENT_ID_ varchar(64),
   CONFIGURATION_ varchar(255),
+  HISTORY_CONFIGURATION_ varchar(255),
   INCIDENT_STATE_ integer,
   TENANT_ID_ varchar(64),
   JOB_DEF_ID_ varchar(64),
@@ -962,9 +1010,9 @@ create table ACT_HI_INCIDENT (
 
 create table ACT_HI_JOB_LOG (
     ID_ varchar(64) not null,
-    TIMESTAMP_ timestamp(3) not null,
+    TIMESTAMP_ datetime(3) not null,
     JOB_ID_ varchar(64) not null,
-    JOB_DUEDATE_ timestamp(3) NULL,
+    JOB_DUEDATE_ datetime(3) NULL,
     JOB_RETRIES_ integer,
     JOB_PRIORITY_ bigint NOT NULL DEFAULT 0,
     JOB_EXCEPTION_MSG_ varchar(4000),
@@ -974,6 +1022,7 @@ create table ACT_HI_JOB_LOG (
     JOB_DEF_TYPE_ varchar(255),
     JOB_DEF_CONFIGURATION_ varchar(255),
     ACT_ID_ varchar(255),
+    FAILED_ACT_ID_ varchar(255),
     ROOT_PROC_INST_ID_ varchar(64),
     EXECUTION_ID_ varchar(64),
     PROCESS_INSTANCE_ID_ varchar(64),
@@ -982,6 +1031,7 @@ create table ACT_HI_JOB_LOG (
     DEPLOYMENT_ID_ varchar(64),
     SEQUENCE_COUNTER_ bigint,
     TENANT_ID_ varchar(64),
+    HOSTNAME_ varchar(255),
     REMOVAL_TIME_ datetime(3),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -1036,7 +1086,7 @@ create index ACT_IDX_HI_PRO_INST_ROOT_PI on ACT_HI_PROCINST(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_PRO_INST_RM_TIME on ACT_HI_PROCINST(REMOVAL_TIME_);
 
 create index ACT_IDX_HI_ACTINST_ROOT_PI on ACT_HI_ACTINST(ROOT_PROC_INST_ID_);
-create index ACT_IDX_HI_ACT_INST_START on ACT_HI_ACTINST(START_TIME_);
+create index ACT_IDX_HI_ACT_INST_START_END on ACT_HI_ACTINST(START_TIME_, END_TIME_);
 create index ACT_IDX_HI_ACT_INST_END on ACT_HI_ACTINST(END_TIME_);
 create index ACT_IDX_HI_ACT_INST_PROCINST on ACT_HI_ACTINST(PROC_INST_ID_, ACT_ID_);
 create index ACT_IDX_HI_ACT_INST_COMP on ACT_HI_ACTINST(EXECUTION_ID_, ACT_ID_, END_TIME_, ID_);
@@ -1068,6 +1118,7 @@ create index ACT_IDX_HI_DETAIL_PROC_DEF_KEY on ACT_HI_DETAIL(PROC_DEF_KEY_);
 create index ACT_IDX_HI_DETAIL_BYTEAR on ACT_HI_DETAIL(BYTEARRAY_ID_);
 create index ACT_IDX_HI_DETAIL_RM_TIME on ACT_HI_DETAIL(REMOVAL_TIME_);
 create index ACT_IDX_HI_DETAIL_TASK_BYTEAR on ACT_HI_DETAIL(BYTEARRAY_ID_, TASK_ID_);
+create index ACT_IDX_HI_DETAIL_VAR_INST_ID on ACT_HI_DETAIL(VAR_INST_ID_);
 
 create index ACT_IDX_HI_IDENT_LNK_ROOT_PI on ACT_HI_IDENTITYLINK(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_IDENT_LNK_USER on ACT_HI_IDENTITYLINK(USER_ID_);
@@ -1076,6 +1127,7 @@ create index ACT_IDX_HI_IDENT_LNK_TENANT_ID on ACT_HI_IDENTITYLINK(TENANT_ID_);
 create index ACT_IDX_HI_IDENT_LNK_PROC_DEF_KEY on ACT_HI_IDENTITYLINK(PROC_DEF_KEY_);
 create index ACT_IDX_HI_IDENT_LINK_TASK on ACT_HI_IDENTITYLINK(TASK_ID_);
 create index ACT_IDX_HI_IDENT_LINK_RM_TIME on ACT_HI_IDENTITYLINK(REMOVAL_TIME_);
+create index ACT_IDX_HI_IDENT_LNK_TIMESTAMP on ACT_HI_IDENTITYLINK(TIMESTAMP_);
 
 create index ACT_IDX_HI_VARINST_ROOT_PI on ACT_HI_VARINST(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_PROCVAR_PROC_INST on ACT_HI_VARINST(PROC_INST_ID_);
@@ -1085,12 +1137,15 @@ create index ACT_IDX_HI_VAR_INST_TENANT_ID on ACT_HI_VARINST(TENANT_ID_);
 create index ACT_IDX_HI_VAR_INST_PROC_DEF_KEY on ACT_HI_VARINST(PROC_DEF_KEY_);
 create index ACT_IDX_HI_VARINST_BYTEAR on ACT_HI_VARINST(BYTEARRAY_ID_);
 create index ACT_IDX_HI_VARINST_RM_TIME on ACT_HI_VARINST(REMOVAL_TIME_);
+create index ACT_IDX_HI_VAR_PI_NAME_TYPE on ACT_HI_VARINST(PROC_INST_ID_, NAME_, VAR_TYPE_);
 
 create index ACT_IDX_HI_INCIDENT_TENANT_ID on ACT_HI_INCIDENT(TENANT_ID_);
 create index ACT_IDX_HI_INCIDENT_PROC_DEF_KEY on ACT_HI_INCIDENT(PROC_DEF_KEY_);
 create index ACT_IDX_HI_INCIDENT_ROOT_PI on ACT_HI_INCIDENT(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_INCIDENT_PROCINST on ACT_HI_INCIDENT(PROC_INST_ID_);
 create index ACT_IDX_HI_INCIDENT_RM_TIME on ACT_HI_INCIDENT(REMOVAL_TIME_);
+create index ACT_IDX_HI_INCIDENT_CREATE_TIME on ACT_HI_INCIDENT(CREATE_TIME_);
+create index ACT_IDX_HI_INCIDENT_END_TIME on ACT_HI_INCIDENT(END_TIME_);
 
 create index ACT_IDX_HI_JOB_LOG_ROOT_PI on ACT_HI_JOB_LOG(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_JOB_LOG_PROCINST on ACT_HI_JOB_LOG(PROCESS_INSTANCE_ID_);
@@ -1100,6 +1155,7 @@ create index ACT_IDX_HI_JOB_LOG_JOB_DEF_ID on ACT_HI_JOB_LOG(JOB_DEF_ID_);
 create index ACT_IDX_HI_JOB_LOG_PROC_DEF_KEY on ACT_HI_JOB_LOG(PROCESS_DEF_KEY_);
 create index ACT_IDX_HI_JOB_LOG_EX_STACK on ACT_HI_JOB_LOG(JOB_EXCEPTION_STACK_ID_);
 create index ACT_IDX_HI_JOB_LOG_RM_TIME on ACT_HI_JOB_LOG(REMOVAL_TIME_);
+create index ACT_IDX_HI_JOB_LOG_JOB_CONF on ACT_HI_JOB_LOG(JOB_DEF_CONFIGURATION_);
 
 create index ACT_HI_BAT_RM_TIME on ACT_HI_BATCH(REMOVAL_TIME_);
 
@@ -1117,6 +1173,9 @@ create index ACT_IDX_HI_OP_LOG_PROCDEF on ACT_HI_OP_LOG(PROC_DEF_ID_);
 create index ACT_IDX_HI_OP_LOG_TASK on ACT_HI_OP_LOG(TASK_ID_);
 create index ACT_IDX_HI_OP_LOG_RM_TIME on ACT_HI_OP_LOG(REMOVAL_TIME_);
 create index ACT_IDX_HI_OP_LOG_TIMESTAMP on ACT_HI_OP_LOG(TIMESTAMP_);
+create index ACT_IDX_HI_OP_LOG_USER_ID on ACT_HI_OP_LOG(USER_ID_);
+create index ACT_IDX_HI_OP_LOG_OP_TYPE on ACT_HI_OP_LOG(OPERATION_TYPE_);
+create index ACT_IDX_HI_OP_LOG_ENTITY_TYPE on ACT_HI_OP_LOG(ENTITY_TYPE_);
 
 create index ACT_IDX_HI_COMMENT_TASK on ACT_HI_COMMENT(TASK_ID_);
 create index ACT_IDX_HI_COMMENT_ROOT_PI on ACT_HI_COMMENT(ROOT_PROC_INST_ID_);
@@ -1129,10 +1188,11 @@ create index ACT_IDX_HI_ATTACHMENT_PROCINST on ACT_HI_ATTACHMENT(PROC_INST_ID_);
 create index ACT_IDX_HI_ATTACHMENT_TASK on ACT_HI_ATTACHMENT(TASK_ID_);
 create index ACT_IDX_HI_ATTACHMENT_RM_TIME on ACT_HI_ATTACHMENT(REMOVAL_TIME_);
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -1190,10 +1250,11 @@ create index ACT_IDX_HI_CAS_A_I_COMP on ACT_HI_CASEACTINST(CASE_ACT_ID_, END_TIM
 create index ACT_IDX_HI_CAS_A_I_CASEINST on ACT_HI_CASEACTINST(CASE_INST_ID_, CASE_ACT_ID_);
 create index ACT_IDX_HI_CAS_A_I_TENANT_ID on ACT_HI_CASEACTINST(TENANT_ID_);
 --
--- Copyright © 2012 - 2018 camunda services GmbH and various authors (info@camunda.com)
---
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
+-- Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+-- under one or more contributor license agreements. See the NOTICE file
+-- distributed with this work for additional information regarding copyright
+-- ownership. Camunda licenses this file to you under the Apache License,
+-- Version 2.0; you may not use this file except in compliance with the License.
 -- You may obtain a copy of the License at
 --
 --     http://www.apache.org/licenses/LICENSE-2.0
@@ -1241,8 +1302,8 @@ create table ACT_HI_DEC_IN (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     CREATE_TIME_ datetime(3),
     ROOT_PROC_INST_ID_ varchar(64),
@@ -1263,8 +1324,8 @@ create table ACT_HI_DEC_OUT (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     CREATE_TIME_ datetime(3),
     ROOT_PROC_INST_ID_ varchar(64),
