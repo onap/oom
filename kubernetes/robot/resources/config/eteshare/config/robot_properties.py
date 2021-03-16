@@ -25,6 +25,7 @@ GLOBAL_INJECTED_CLI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . 
 GLOBAL_INJECTED_CLOUD_ENV = 'openstack'
 GLOBAL_INJECTED_DCAE_COLLECTOR_IP = "{{ .Values.dcaeCollectorIp }}"
 GLOBAL_INJECTED_DCAE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-healthcheck") }}'
+GLOBAL_INJECTED_DCAE_MS_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-ms-healthcheck") }}'
 GLOBAL_INJECTED_DCAE_VES_HOST = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-ves-collector") }}'
 GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-prov") }}'
 GLOBAL_INJECTED_DMAAP_DR_NODE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-node") }}'
@@ -164,6 +165,12 @@ GLOBAL_DCAE_SERVER_PROTOCOL = "http"
 GLOBAL_DCAE_HEALTH_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-healthcheck" "port" 80) }}'
 GLOBAL_DCAE_USERNAME = '{{ .Values.dcaeUsername }}'
 GLOBAL_DCAE_PASSWORD = '{{ .Values.dcaePassword}}'
+GLOBAL_DCAE_AUTHENTICATION = [GLOBAL_DCAE_USERNAME, GLOBAL_DCAE_PASSWORD]
+# dcae microservice info - everything is from the private oam network (also called onap private network)
+GLOBAL_DCAE_MS_SERVER_PROTOCOL = "http"
+GLOBAL_DCAE_MS_HEALTH_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-healthcheck" "port" 8080) }}'
+GLOBAL_DCAE_MS_USERNAME = '{{ .Values.dcaeMsUsername }}'
+GLOBAL_DCAE_MS_PASSWORD = '{{ .Values.dcaeMsPassword}}'
 GLOBAL_DCAE_AUTHENTICATION = [GLOBAL_DCAE_USERNAME, GLOBAL_DCAE_PASSWORD]
 # dcae hv-ves info
 GLOBAL_DCAE_HVVES_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-hv-ves-collector") }}'
