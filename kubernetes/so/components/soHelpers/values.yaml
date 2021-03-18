@@ -1,5 +1,6 @@
 # Copyright © 2018 AT&T USA
 # Copyright © 2020 Huawei
+# Copyright © 2021 Orange
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,16 +33,6 @@ global:
     path: /etc/ssl/certs
     share_path: /usr/local/share/ca-certificates/
 
-#################################################################
-# Secrets metaconfig
-#################################################################
-secrets:
-  - uid: 'so-onap-certs'
-    name: '{{ include "common.release" . }}-so-certs'
-    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
-    type: generic
-    filePaths:
-      - resources/config/certificates/msb-ca.crt
 
 #################################################################
 # AAF part
@@ -58,9 +49,9 @@ certInitializer:
   app_ns: org.osaaf.aaf
   credsPath: /opt/app/osaaf/local
   trustStoreAllPass: changeit
-  aaf_add_config: >
-    /opt/app/aaf_config/bin/agent.sh local showpass
-    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
+  aaf_add_config: |
+    echo "cadi_truststore_password=$cadi_truststore_password" > {{ .Values.credsPath }}/mycreds.prop
+    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
 
 aafConfig:
   permission_user: 1000
