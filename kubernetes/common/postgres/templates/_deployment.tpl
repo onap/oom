@@ -57,6 +57,8 @@ spec:
         env:
         - name: PG_PRIMARY_USER
           value: primaryuser
+        - name: MODE
+          value: postgres
         - name: PG_PRIMARY_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
@@ -116,6 +118,8 @@ spec:
           value: /tmp
         - name: PG_PRIMARY_USER
           value: primaryuser
+        - name: MODE
+          value: postgres
         - name: PG_MODE
           value: {{ $pgMode }}
         - name: PG_PRIMARY_HOST
