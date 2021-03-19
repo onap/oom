@@ -2,8 +2,8 @@
 {{-   $dot := default . .dot -}}
 {{-   $initRoot := default $dot.Values.soHelpers .initRoot -}}
 cadiLoglevel: {{ $initRoot.cadi.logLevel }}
-cadiKeyFile: {{ $initRoot.certInitializer.credsPath }}/{{ $initRoot.aaf.keyFile }}
-cadiTrustStore: {{ $initRoot.certInitializer.credsPath }}/{{ $initRoot.aaf.trustore }}
+cadiKeyFile: {{ $initRoot.certInitializer.credsPath }}/{{ $initRoot.certInitializer.fqi_namespace }}.keyfile
+cadiTrustStore: {{ $initRoot.certInitializer.credsPath }}/truststoreONAPall.jks
 cadiTruststorePassword: ${TRUSTSTORE_PASSWORD}
 cadiLatitude: {{ $initRoot.cadi.latitude }}
 cadiLongitude: {{ $initRoot.cadi.longitude }}
