@@ -25,10 +25,10 @@
 {{- $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
 {{-   if $dot.Values.global.aafEnabled }}
 - name: TRUSTSTORE
-  value: {{ $subchartDot.Values.certInitializer.credsPath }}/{{ $subchartDot.Values.aaf.trustore }}
+  value: {{ $subchartDot.Values.certInitializer.credsPath }}/truststoreONAPall.jks
 {{-     if $dot.Values.global.security.aaf.enabled }}
 - name: KEYSTORE
-  value: {{ $subchartDot.Values.certInitializer.credsPath }}/org.onap.so.p12
+  value: {{ $subchartDot.Values.certInitializer.credsPath }}/{{ $subchartDot.Values.certInitializer.fqi_namespace }}.p12
 {{-     end }}
 {{-   end }}
 {{- end -}}
