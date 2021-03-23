@@ -69,6 +69,7 @@ certificate information includes only the AAF CA cert.
 {{- $logDir :=  default "" .Values.logDirectory -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
+{{- $postgres := default "" .Values.postgres -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -138,6 +139,14 @@ spec:
         {{- if $certDir }}
         - name: DCAE_CA_CERTPATH
           value: {{ $certDir}}/cacert.pem
+        {{- end }}
+        {{- if $postgres }}
+        - name: PMSH_PG_URL
+          value: {{ .Values.postgres.service.name2 }}
+        - name: PMSH_PG_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: PMSH_PG_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
         {{- end }}
         - name: CONSUL_HOST
           value: consul-server.onap
