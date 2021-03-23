@@ -69,6 +69,8 @@ certificate information includes only the AAF CA cert.
 {{- $logDir :=  default "" .Values.logDirectory -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
+{{- $postgres := default "" .Values.postgres -}}
+{{- $appProperties := default "" .Values.applicationProperties -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -113,6 +115,18 @@ spec:
         volumeMounts:
           - mountPath: /app-config
             name: app-config
+      {{- if $appProperties }}
+      - name: init-consul-app-properties
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        args:
+        - --key
+        - "{{ include "common.name" . }}:{{ .Values.monitoringPolicy }}|/pmsh-config/application.json"
+        resources: {{ include "common.resources" . | nindent 2 }}
+        volumeMounts:
+          - mountPath: /pmsh-config
+            name: pmsh-config
+      {{- end }}
       {{- if $certDir }}
       - name: init-tls
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.tlsImage }}
@@ -138,6 +152,14 @@ spec:
         {{- if $certDir }}
         - name: DCAE_CA_CERTPATH
           value: {{ $certDir}}/cacert.pem
+        {{- end }}
+        {{- if $postgres }}
+        - name: PMSH_PG_URL
+          value: {{ .Values.postgres.service.name2 }}
+        - name: PMSH_PG_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: PMSH_PG_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
         {{- end }}
         - name: CONSUL_HOST
           value: consul-server.onap
@@ -220,6 +242,12 @@ spec:
       - emptyDir:
           medium: Memory
         name: app-config
+      {{- if $appProperties }}
+      - configMap:
+          defaultMode: 420
+          name: {{ include "common.fullname" . }}-application-properties-configmap
+        name: pmsh-config
+      {{- end }}
       {{- if $logDir }}
       - emptyDir: {}
         name: component-log

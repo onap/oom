@@ -50,6 +50,17 @@ data:
   application_config.yaml: |
 {{ .Values.applicationConfig | toYaml | indent 4 }}
 
+{{- if .Values.applicationProperties }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-application-properties-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data: {{ tpl (.Files.Glob "resources/config/*").AsConfig . | nindent 2 }}
+{{- end }}
+
 {{- if .Values.logDirectory }}
 ---
 apiVersion: v1
