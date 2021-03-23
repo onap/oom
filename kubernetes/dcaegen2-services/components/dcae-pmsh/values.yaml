@@ -1,0 +1,192 @@
+# ================================ LICENSE_START =============================
+# ============================================================================
+#  Copyright (C) 2021 Nordix Foundation.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ==============================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Secrets Configuration.
+#################################################################
+secrets:
+  - uid: &aafCredsUID aafcreds
+    type: basicAuth
+    login: '{{ .Values.aafCreds.identity }}'
+    password: '{{ .Values.aafCreds.password }}'
+    passwordPolicy: required
+  - uid: &pgUserCredsSecretUid pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-pmsh-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "pmsh-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.services.pmsh:1.1.2
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP/dcaegen2/services/pmsh
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/pmsh/etc/certs
+
+# Explicit Application Properties
+applicationProperties: true
+
+# Monitoring Policy Consul Key
+monitoringPolicy: policy
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+    - &postgresName dcae-pmsh-postgres
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 1
+  path: /healthcheck
+  scheme: HTTPS
+  port: 8443
+
+# Service Configuration
+service:
+  type: ClusterIP
+  name: dcae-pmsh
+  ports:
+    - name: https
+      port: 8443
+      port_protocol: http
+
+# AAF Credentials
+aafCreds:
+  identity: dcae@dcae.onap.org
+  password: demo123456!
+
+credentials:
+- name: AAF_IDENTITY
+  uid: *aafCredsUID
+  key: login
+- name: AAF_PASSWORD
+  uid: *aafCredsUID
+  key: password
+
+# Initial Application Configuration
+applicationConfig:
+  enable_tls: true
+  aaf_identity: ${AAF_IDENTITY}
+  aaf_password: ${AAF_PASSWORD}
+  key_path: '/opt/app/pmsh/etc/certs/key.pem'
+  cert_path: '/opt/app/pmsh/etc/certs/cert.pem'
+  ca_cert_path: '/opt/app/pmsh/etc/certs/cacert.pem'
+  control_loop_name: 'pmsh-control-loop'
+  operational_policy_name: 'pmsh-operational-policy'
+  streams_publishes:
+    policy_pm_publisher:
+      type: message_router
+      dmaap_info:
+        topic_url: { concat: [ "https://message-router:3905/events/", 'unauthenticated.DCAE_CL_OUTPUT' ] }
+  streams_subscribes:
+    policy_pm_subscriber:
+      type: message_router
+      dmaap_info:
+        topic_url: { concat: [ "https://message-router:3905/events/", 'unauthenticated.PMSH_CL_INPUT' ] }
+    aai_subscriber:
+      type: message_router
+      dmaap_info:
+        topic_url: { concat: [ "https://message-router:3905/events/", 'AAI-EVENT' ] }
+
+applicationEnv:
+  PMSH_PG_URL: 'dcae-pmsh-pg-primary'
+  PMSH_PG_USERNAME:
+     secretUid: *pgUserCredsSecretUid
+     key: login
+  PMSH_PG_PASSWORD:
+     secretUid: *pgUserCredsSecretUid
+     key: password
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
+
+#################################################################
+# Application configuration Overriding Defaults in the Postgres.
+#################################################################
+postgres:
+  nameOverride: *postgresName
+  service:
+    name: *postgresName
+    name2: dcae-pmsh-pg-primary
+    name3: dcae-pmsh-pg-replica
+  container:
+    name:
+      primary: dcae-pmsh-pg-primary
+      replica: dcae-pmsh-pg-replica
+  persistence:
+    mountSubPath: pmsh/data
+    mountInitPath: pmsh
+  config:
+    pgUserName: pmsh
+    pgDatabase: pmsh
+    pgUserExternalSecret: *pgUserCredsSecretName
