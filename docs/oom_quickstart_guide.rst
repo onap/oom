@@ -26,13 +26,20 @@ where <BRANCH> can be an official release tag, such as
 * 5.0.1-ONAP for El Alto
 * 6.0.0 for Frankfurt
 * 7.0.0 for Guilin
+* 8.0.0 for Honolulu
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
-  > sudo cp -R ~/oom/kubernetes/helm/plugins/ ~/.helm
+  > cp -R ~/oom/kubernetes/helm/plugins/ ~/.local/share/helm/plugins
+  > helm plugin install https://github.com/chartmuseum/helm-push.git
 
+**Step 3** Install Chartmuseum::
 
-**Step 3.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
+  > curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+  > chmod +x ./chartmuseum
+  > mv ./chartmuseum /usr/local/bin
+
+**Step 4.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
 an override file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file
 to suit your deployment with items like the OpenStack tenant information.
 
@@ -78,8 +85,6 @@ openssl algorithm that works with the python based Robot Framework.
     cd so/resources/config/mso/
     /oom/kubernetes/so/resources/config/mso# echo -n "<openstack tenant password>" | openssl aes-128-ecb -e -K `cat encryption.key` -nosalt | xxd -c 256 -p``
 
-  Use OS_PASSWORD value from openstack .RC file for "openstack tenant password"
-
 c. Generating SO Encrypted Password:
 The SO Encrypted Password uses a java based encryption utility since the
 Java encryption library is not easy to integrate with openssl/python that
@@ -89,7 +94,7 @@ Robot uses in Dublin and upper versions.
   To generate SO ``openStackEncryptedPasswordHere`` and ``openStackSoEncryptedPassword``
   ensure `default-jdk` is installed::
 
-    sudo apt-get update; sudo apt-get install default-jdk
+    apt-get update; apt-get install default-jdk
 
   Then execute::
 
@@ -132,10 +137,6 @@ observe the following constraints.
   deployment need not worry about this setting but for the demonstration VNFs
   the ip asssignment strategy assumes 10.0 ip prefix.
 
-.. note::
-  Copy below required openstack.yaml file and update the parameters for the variables
-  accordingly from openstack environment (openrc file) and replace
-
 Example Keystone v2.0
 
 .. literalinclude:: example-integration-override.yaml
@@ -147,33 +148,33 @@ Example Keystone v3  (required for Rocky and later releases)
    :language: yaml
 
 
-**Step 4.** To setup a local Helm server to server up the ONAP charts::
+**Step 5.** To setup a local Helm server to server up the ONAP charts::
 
-  > helm serve &
+  > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
 
 Note the port number that is listed and use it in the Helm repo add as
 follows::
 
   > helm repo add local http://127.0.0.1:8879
 
-**Step 5.** Verify your Helm repository setup with::
+**Step 6.** Verify your Helm repository setup with::
 
   > helm repo list
   NAME   URL
   local  http://127.0.0.1:8879
 
-**Step 6.** Build a local Helm repository (from the kubernetes directory)::
+**Step 7.** Build a local Helm repository (from the kubernetes directory)::
 
-  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all
+  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all ; make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] onap
 
 `HELM_BIN`
-  Sets the helm binary to be used. The default value use helm from PATH. Allow
-  the user to have multiple version of helm in operating system and choose
-  which one to use.
+  Sets the helm binary to be used. The default value use helm from PATH
 
-**Step 7.** Display the onap charts that available to be deployed::
 
-  > helm search onap -l
+**Step 8.** Display the onap charts that available to be deployed::
+
+  > helm repo update
+  > helm search repo onap
 
 .. literalinclude:: helm-search.txt
 
@@ -182,13 +183,14 @@ follows::
   to your deployment charts or values be sure to use ``make`` to update your
   local Helm repository.
 
-**Step 8.** Once the repo is setup, installation of ONAP can be done with a
+**Step 9.** Once the repo is setup, installation of ONAP can be done with a
 single command
 
 .. note::
-  The ``--timeout 900`` is currently required in Guilin and up to address long
-  running initialization tasks for DMaaP and SO. Without this timeout value both
-  applications may fail to deploy.
+  The ``--timeout 900s`` is currently required in Dublin and later
+  versions up to address long running initialization tasks for DMaaP
+  and SO. Without this timeout value both applications may fail to
+  deploy.
 
 .. danger::
   We've added the master password on the command line.
@@ -202,7 +204,7 @@ single command
 To deploy all ONAP applications use this command::
 
     > cd oom/kubernetes
-    >  helm deploy dev local/onap --namespace onap --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900
+    >  helm deploy dev local/onap --namespace onap --create-namespace --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900s
 
 All override files may be customized (or replaced by other overrides) as per
 needs.
@@ -229,7 +231,7 @@ needs.
   you want to use to deploy VNFs from ONAP and/or additional parameters for the
   embedded tests.
 
-**Step 9.** Verify ONAP installation
+**Step 10.** Verify ONAP installation
 
 Use the following to monitor your deployment and determine when ONAP is ready
 for use::
@@ -243,26 +245,9 @@ for use::
 
     > ~/oom/kubernetes/robot/ete-k8s.sh onap health
 
-  Launch Robot distribute health checks to verify whether ONAP runtime components are healthy::
-
-    > ~/oom/kubernetes/robot/ete-k8s.sh onap healthdist
-
-**Step 10.** Undeploy ONAP
+**Step 11.** Undeploy ONAP
 ::
 
-  > helm undeploy dev --purge
-
-.. note::
-  After undeploy follow the below steps to cleanup everything before redeplying ONAP
-
-::
-
-  > kubectl delete namespace onap
-
-  > kubectl delete pv -n onap --all
-
-  > kubectl delete pvc -n onap --all
-
-  > sudo rm -rf /dockerdata-nfs/*
+  > helm undeploy dev
 
 More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
