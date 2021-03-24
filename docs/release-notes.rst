@@ -49,8 +49,8 @@ Release Data
 New features
 ------------
 
-* Kubernetes support for version up to 1.19
-* Helm (experimental) support for version up to 3.3
+* Kubernetes support for version up to 1.20
+* Helm support for version up to 3.5
 * Limits are set for most of the components
 
 **Bug fixes**
