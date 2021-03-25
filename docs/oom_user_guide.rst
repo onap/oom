@@ -13,11 +13,10 @@
 .. _Helm: https://docs.helm.sh/
 .. _Kubernetes: https://Kubernetes.io/
 .. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
-.. _`Docker installation guide`: https://docs.docker.com/engine/install/
 .. _user-guide-label:
 
-OOM User Guide
-##############
+OOM User Guide helm3 (experimental)
+###################################
 
 The ONAP Operations Manager (OOM) provide the ability to manage the entire
 life-cycle of an ONAP installation, from the initial deployment to final
@@ -56,12 +55,8 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have Docker installed as well as both the Kubernetes
-`kubectl` and Helm setup as a one time activity.
-
-Install Docker
-~~~~~~~~~~~~~~
-Follow official `Docker installation guide`_.
+Your environment must have both the Kubernetes `kubectl` and Helm setup as a
+one time activity.
 
 Install Kubectl
 ~~~~~~~~~~~~~~~
@@ -88,17 +83,13 @@ Install Helm
 Helm is used by OOM for package and configuration management. To install Helm,
 enter the following::
 
-  > wget http://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-linux-amd64.tar.gz
-  > tar -zxvf helm-v2.9.1-linux-amd64.tar.gz
+  > wget https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz
+  > tar -zxvf helm-v3.5.2-linux-amd64.tar.gz
   > sudo mv linux-amd64/helm /usr/local/bin/helm
 
 Verify the Helm version with::
 
   > helm version
-
-Install the Helm Tiller application and initialize with::
-
-  > helm init
 
 Install the Helm Repo
 ---------------------
@@ -122,14 +113,20 @@ stable which should be removed to avoid confusion::
 
 To prepare your system for an installation of ONAP, you'll need to::
 
-  > git clone -b frankfurt --recurse-submodules -j2 http://gerrit.onap.org/r/oom
+  > git clone -b guilin --recurse-submodules -j2 http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 
+To install a local Helm server::
+
+  > curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+  > chmod +x ./chartmuseum
+  > mv ./chartmuseum /usr/local/bin
+
 To setup a local Helm server to server up the ONAP charts::
 
-  > helm init
-  > helm serve &
+  > mkdir -p ~/helm3-storage
+  > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
 
 Note the port number that is listed and use it in the Helm repo add as
 follows::
@@ -147,27 +144,25 @@ Then build your local Helm repository::
   > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all
 
 `HELM_BIN`
-  Sets the helm binary to be used. The default value use helm from PATH.
-  Allow the user to have multiple version of helm in operating system and
-  choose which one to use.
+  Sets the helm binary to be used. The default value use helm from PATH
 
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::
 
-  > helm search -l
+  > helm search repo local
   NAME                    VERSION    DESCRIPTION
-  local/appc              7.0.0      Application Controller
-  local/clamp             7.0.0      ONAP Clamp
-  local/common            7.0.0      Common templates for inclusion in other charts
-  local/onap              7.0.0      Open Network Automation Platform (ONAP)
-  local/robot             7.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                7.0.0      ONAP Service Orchestrator
+  local/appc              2.0.0      Application Controller
+  local/clamp             2.0.0      ONAP Clamp
+  local/common            2.0.0      Common templates for inclusion in other charts
+  local/onap              2.0.0      Open Network Automation Platform (ONAP)
+  local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
+  local/so                2.0.0      ONAP Service Orchestrator
 
 In any case, setup of the Helm repository is a one time activity.
 
 Next, install Helm Plugins required to deploy the ONAP Casablanca release::
 
-  > cp -R helm/plugins/ ~/.helm
+  > cp -R ~/oom/kubernetes/helm/plugins/ ~/.local/share/helm/plugins
 
 Once the repo is setup, installation of ONAP can be done with a single
 command::
@@ -720,13 +715,13 @@ will display the outcome of deleting the 'onap' release from the
 deployment.
 To completely delete a release and remove it from the internal store enter::
 
-  > helm undeploy onap --purge
+  > helm undeploy onap
 
 One can also remove individual components from a deployment by changing the
 ONAP configuration values.  For example, to remove `so` from a running
 deployment enter::
 
-  > helm undeploy onap-so --purge
+  > helm undeploy onap-so
 
 will remove `so` as the configuration indicates it's no longer part of the
 deployment. This might be useful if a one wanted to replace just `so` by
