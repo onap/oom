@@ -79,28 +79,32 @@ cmpServers:
     mountPath: /etc/onap/oom/certservice
 
 tls:
+  issuer:
+    selfsigning:
+      name: &selfSigningIssuer cmpv2-selfsigning-issuer
+    ca:
+      name: &caIssuer cmpv2-ca-issuer
+      secret:
+        name: &caKeyPairSecret  cmpv2-ca-key-pair
   server:
     secret:
-      name: oom-cert-service-server-tls-secret
+      name: &serverSecret oom-cert-service-server-tls-secret
     volume:
       name: oom-cert-service-server-tls-volume
       mountPath: /etc/onap/oom/certservice/certs/
   client:
     secret:
       defaultName: oom-cert-service-client-tls-secret
-  provider:
-    secret:
-      name: cmpv2-issuer-secret
 
 envs:
   keystore:
-    jksName: certServiceServer-keystore.jks
-    p12Name: certServiceServer-keystore.p12
-    pemName: certServiceServer-keystore.pem
+    jksName: keystore.jks
+    p12Name: keystore.p12
+    pemName: tls.crt
   truststore:
     jksName: truststore.jks
-    crtName: root.crt
-    pemName: truststore.pem
+    crtName: ca.crt
+    pemName: tls.crt
   httpsPort: 8443
 
 # External secrets with credentials can be provided to override default credentials defined below,
@@ -127,7 +131,7 @@ credentials:
 
 secrets:
   - uid: keystore-password
-    name: '{{ include "common.release" . }}-keystore-password'
+    name: &keystorePasswordSecretName '{{ include "common.release" . }}-keystore-password'
     type: password
     externalSecret: '{{ tpl (default "" .Values.credentials.tls.keystorePasswordExternalSecret) . }}'
     password: '{{ .Values.credentials.tls.keystorePassword }}'
@@ -155,3 +159,65 @@ secrets:
     type: password
     externalSecret: '{{ tpl (default "" .Values.credentials.cmp.raRvExternalSecret) . }}'
     password: '{{ .Values.credentials.cmp.ra.rv }}'
+
+# Certificates definitions
+certificates:
+  - name: selfsigned-cert
+    secretName: *caKeyPairSecret
+    isCA: true
+    commonName: root.com
+    subject:
+      organization: Root Company
+      country: PL
+      locality: Wroclaw
+      province: Dolny Slask
+      organizationalUnit: Root Org
+    issuer:
+      name: *selfSigningIssuer
+      kind: Issuer
+  - name: cert-service-server-cert
+    secretName: *serverSecret
+    commonName: oom-cert-service
+    dnsNames:
+      - oom-cert-service
+      - localhost
+    subject:
+      organization: certServiceServer org
+      country: PL
+      locality: Wroclaw
+      province: Dolny Slask
+      organizationalUnit: certServiceServer company
+    usages:
+      - server auth
+      - client auth
+    keystore:
+      outputType:
+        - jks
+        - p12
+      passwordSecretRef:
+        name: *keystorePasswordSecretName
+        key: password
+    issuer:
+      name: *caIssuer
+      kind: Issuer
+  - name: cert-service-client-cert
+    secretName: '{{ .Values.cmpv2Config.global.platform.certServiceClient.secretName | default .Values.tls.client.secret.defaultName }}'
+    commonName: certServiceClient.com
+    subject:
+      organization: certServiceClient org
+      country: PL
+      locality: Wroclaw
+      province: Dolny Slask
+      organizationalUnit: certServiceClient company
+    usages:
+      - server auth
+      - client auth
+    keystore:
+      outputType:
+        - jks
+      passwordSecretRef:
+        name: *keystorePasswordSecretName
+        key: password
+    issuer:
+      name: *caIssuer
+      kind: Issuer
