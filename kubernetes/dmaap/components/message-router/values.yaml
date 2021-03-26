@@ -19,6 +19,43 @@
 global:
   nodePortPrefix: 302
 
+
+#################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: dmaap-mr-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: dmaap-mr
+  fqi: dmaapmr@mr.dmaap.onap.org
+  public_fqdn: mr.dmaap.onap.org
+  cadi_longitude: "-122.26147"
+  cadi_latitude: "37.78187"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  appMountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops
+  fqi_namespace: org.onap.dmaap.mr
+  aaf_add_config: |
+    cd {{ .Values.credsPath }}
+    echo "*** change jks password into shell safe one"
+    export KEYSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
+    keytool -storepasswd -new "${KEYSTORE_PASSWD}" \
+      -storepass "${cadi_keystore_password_jks}" \
+      -keystore {{ .Values.fqi_namespace }}.jks
+    echo "*** set key password as same password as jks keystore password"
+      keytool -keypasswd -new "${KEYSTORE_PASSWD}" \
+        -keystore {{ .Values.fqi_namespace }}.jks \
+        -keypass "${cadi_keystore_password_jks}" \
+        -storepass "${KEYSTORE_PASSWD}" -alias {{ .Values.fqi }}
+    echo "*** store the passwords"
+    echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWD}" > mycreds.prop
+    echo "KEYSTORE_PASSWORD_P12=${cadi_keystore_password_p12}" >> mycreds.prop
+    echo "TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> mycreds.prop
+    echo "*** give ownership of files to the user"
+    chown -R 1000 .
+
 #################################################################
 # Application configuration defaults.
 #################################################################
