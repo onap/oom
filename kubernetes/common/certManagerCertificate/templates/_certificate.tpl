@@ -18,7 +18,7 @@
 #
 # To request a certificate following steps are to be done:
 #  - create an object 'certificates' in the values.yaml
-#  - create a file templates/certificates.yaml and invoke the function "certManagerCertificate.certificate".
+#  - create a file templates/certificate.yaml and invoke the function "certManagerCertificate.certificate".
 #
 # Here is an example of the certificate request for a component:
 #
@@ -53,6 +53,7 @@
 #        passwordSecretRef:
 #          name: secret-name
 #          key:  secret-key
+#          create: true
 #
 # Fields 'name', 'secretName' and 'commonName' are mandatory and required to be defined.
 # Other mandatory fields for the certificate definition do not have to be defined directly,
@@ -74,7 +75,7 @@
 {{/*# General certifiacate attributes  #*/}}
 {{- $name           := include "common.fullname" $dot                                                             -}}
 {{- $certName       := default (printf "%s-cert-%d"   $name $i) $certificate.name                                 -}}
-{{- $secretName     := default (printf "%s-secret-%d" $name $i) $certificate.secretName                           -}}
+{{- $secretName     := default (printf "%s-secret-%d" $name $i) (tpl (default "" $certificate.secretName) $ )  -}}
 {{- $commonName     := (required "'commonName' for Certificate is required." $certificate.commonName)          -}}
 {{- $renewBefore    := default $subchartGlobal.certificate.default.renewBefore     $certificate.renewBefore    -}}
 {{- $duration       := default $subchartGlobal.certificate.default.duration        $certificate.duration       -}}
@@ -94,10 +95,11 @@
 {{- if $certificate.issuer -}}
 {{-   $issuer        = $certificate.issuer                                               -}}
 {{- end -}}
----
-{{- if $certificate.keystore }}
+{{/*# Secret #*/}}
+{{ if $certificate.keystore -}}
   {{- $passwordSecretRef := $certificate.keystore.passwordSecretRef -}}
-  {{- $password := include "common.createPassword" (dict "dot" $dot "uid" $certName) | quote }}
+  {{- $password := include "common.createPassword" (dict "dot" $dot "uid" $certName) | quote -}}
+  {{- if $passwordSecretRef.create }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -106,7 +108,8 @@ metadata:
 type: Opaque
 stringData:
   {{ $passwordSecretRef.key }}: {{ $password }}
-{{- end }}
+  {{- end }}
+{{ end -}}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -119,6 +122,15 @@ spec:
   renewBefore: {{ $renewBefore }}
   {{- if $duration }}
   duration:    {{ $duration }}
+  {{- end }}
+  {{- if $certificate.isCA }}
+  isCA: {{ $certificate.isCA }}
+  {{- end }}
+  {{- if $certificate.usages }}
+  usages:
+    {{- range $usage := $certificate.usages }}
+      - {{ $usage }}
+    {{- end }}
   {{- end }}
   subject:
     organizations:
@@ -156,7 +168,9 @@ spec:
     {{- end }}
   {{- end }}
   issuerRef:
+    {{- if not (eq $issuer.kind "Issuer" ) }}
     group: {{ $issuer.group }}
+    {{- end }}
     kind:  {{ $issuer.kind }}
     name:  {{ $issuer.name }}
   {{- if $certificate.keystore }}
@@ -168,7 +182,7 @@ spec:
     {{ $outputType }}:
       create: true
       passwordSecretRef:
-        name: {{ $certificate.keystore.passwordSecretRef.name }}
+        name: {{ tpl (default "" $certificate.keystore.passwordSecretRef.name) $ }}
         key: {{ $certificate.keystore.passwordSecretRef.key }}
     {{- end }}
   {{- end }}
