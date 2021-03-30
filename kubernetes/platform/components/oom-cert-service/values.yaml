@@ -111,10 +111,8 @@ envs:
 # by uncommenting and filling appropriate *ExternalSecret value
 credentials:
   tls:
-    keystorePassword: secret
-    truststorePassword: secret
-    #keystorePasswordExternalSecret:
-    #truststorePasswordExternalSecret:
+    certificatesPassword: secret
+    #certificatesPasswordExternalSecret:
   # Below cmp values contain credentials for EJBCA test instance and are relevant only if global addTestingComponents flag is enabled
   cmp:
     # Used only if cmpv2 testing is enabled
@@ -130,17 +128,11 @@ credentials:
       # rv: unused
 
 secrets:
-  - uid: keystore-password
-    name: &keystorePasswordSecretName '{{ include "common.release" . }}-keystore-password'
+  - uid: certificates-password
+    name: &certificatesPasswordSecretName '{{ .Values.cmpv2Config.global.platform.certificates.keystorePasswordSecretName }}'
     type: password
-    externalSecret: '{{ tpl (default "" .Values.credentials.tls.keystorePasswordExternalSecret) . }}'
-    password: '{{ .Values.credentials.tls.keystorePassword }}'
-    passwordPolicy: required
-  - uid: truststore-password
-    name: '{{ include "common.release" . }}-truststore-password'
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.credentials.tls.truststorePasswordExternalSecret) . }}'
-    password: '{{ .Values.credentials.tls.truststorePassword }}'
+    externalSecret: '{{ tpl (default "" .Values.credentials.tls.certificatesPasswordExternalSecret) . }}'
+    password: '{{ .Values.credentials.tls.certificatesPassword }}'
     passwordPolicy: required
   # Below values are relevant only if global addTestingComponents flag is enabled
   - uid: ejbca-server-client-iak
@@ -195,13 +187,13 @@ certificates:
         - jks
         - p12
       passwordSecretRef:
-        name: *keystorePasswordSecretName
+        name: *certificatesPasswordSecretName
         key: password
     issuer:
       name: *caIssuer
       kind: Issuer
   - name: cert-service-client-cert
-    secretName: '{{ .Values.cmpv2Config.global.platform.certServiceClient.secretName | default .Values.tls.client.secret.defaultName }}'
+    secretName: '{{ .Values.cmpv2Config.global.platform.certificates.clientSecretName | default .Values.tls.client.secret.defaultName }}'
     commonName: certServiceClient.com
     subject:
       organization: certServiceClient org
@@ -216,7 +208,7 @@ certificates:
       outputType:
         - jks
       passwordSecretRef:
-        name: *keystorePasswordSecretName
+        name: *certificatesPasswordSecretName
         key: password
     issuer:
       name: *caIssuer
