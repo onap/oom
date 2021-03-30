@@ -62,7 +62,7 @@ There also need to be some includes used in a target component deployment (inden
 
 {{- define "common.certServiceClient.initContainer" -}}
 {{- $dot := default . .dot -}}
-{{- $initRoot := default $dot.Values.cmpv2Certificate .initRoot -}}
+{{- $initRoot := default $dot.Values.cmpv2Certificate.cmpv2Config .initRoot -}}
 {{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
 {{- if and $subchartGlobal.cmpv2Enabled (not $subchartGlobal.CMPv2CertManagerIntegration) -}}
 {{- range $index, $certificate := $dot.Values.certificates -}}
@@ -97,11 +97,14 @@ There also need to be some includes used in a target component deployment (inden
 {{- $requestUrl := $subchartGlobal.platform.certServiceClient.envVariables.requestURL -}}
 {{- $certPath := $subchartGlobal.platform.certServiceClient.envVariables.certPath -}}
 {{- $requestTimeout := $subchartGlobal.platform.certServiceClient.envVariables.requestTimeout -}}
-{{- $certificatesSecretMountPath := $subchartGlobal.platform.certServiceClient.secret.mountPath -}}
-{{- $keystorePath := $subchartGlobal.platform.certServiceClient.envVariables.keystorePath -}}
-{{- $keystorePassword := $subchartGlobal.platform.certServiceClient.envVariables.keystorePassword -}}
-{{- $truststorePath := $subchartGlobal.platform.certServiceClient.envVariables.truststorePath -}}
-{{- $truststorePassword := $subchartGlobal.platform.certServiceClient.envVariables.truststorePassword -}}
+{{- $certificatesSecret:= $subchartGlobal.platform.certServiceClient.clientSecretName -}}
+{{- $certificatesSecretMountPath := $subchartGlobal.platform.certServiceClient.certificatesSecretMountPath -}}
+{{- $keystorePath := (printf "%s%s" $subchartGlobal.platform.certServiceClient.certificatesSecretMountPath $subchartGlobal.platform.certificates.keystoreKeyRef ) -}}
+{{- $keystorePasswordSecret := $subchartGlobal.platform.certificates.keystorePasswordSecretName -}}
+{{- $keystorePasswordSecretKey := $subchartGlobal.platform.certificates.keystorePasswordSecretKey -}}
+{{- $truststorePath := (printf "%s%s" $subchartGlobal.platform.certServiceClient.certificatesSecretMountPath $subchartGlobal.platform.certificates.truststoreKeyRef ) -}}
+{{- $truststorePasswordSecret := $subchartGlobal.platform.certificates.truststorePasswordSecretName -}}
+{{- $truststorePasswordSecretKey := $subchartGlobal.platform.certificates.truststorePasswordSecretKey -}}
 - name: certs-init-{{ $index }}
   image: {{ include "repositoryGenerator.image.certserviceclient" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
@@ -133,11 +136,17 @@ There also need to be some includes used in a target component deployment (inden
     - name: KEYSTORE_PATH
       value: {{ $keystorePath | quote }}
     - name: KEYSTORE_PASSWORD
-      value: {{ $keystorePassword | quote }}
+      valueFrom:
+        secretKeyRef:
+          name: {{ $keystorePasswordSecret | quote}}
+          key: {{ $keystorePasswordSecretKey | quote}}
     - name: TRUSTSTORE_PATH
       value: {{ $truststorePath | quote }}
     - name: TRUSTSTORE_PASSWORD
-      value: {{ $truststorePassword | quote }}
+      valueFrom:
+        secretKeyRef:
+          name: {{ $truststorePasswordSecret | quote}}
+          key: {{ $truststorePasswordSecretKey | quote}}
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
@@ -151,10 +160,10 @@ There also need to be some includes used in a target component deployment (inden
 
 {{- define "common.certServiceClient.volumes" -}}
 {{- $dot := default . .dot -}}
-{{- $initRoot := default $dot.Values.cmpv2Certificate .initRoot -}}
+{{- $initRoot := default $dot.Values.cmpv2Certificate.cmpv2Config .initRoot -}}
 {{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
 {{- if and $subchartGlobal.cmpv2Enabled (not $subchartGlobal.CMPv2CertManagerIntegration) -}}
-{{- $certificatesSecretName := $subchartGlobal.platform.certServiceClient.secret.name -}}
+{{- $certificatesSecretName := $subchartGlobal.platform.certServiceClient.clientSecretName -}}
 - name: certservice-tls-volume
   secret:
     secretName: {{ $certificatesSecretName }}
@@ -168,7 +177,7 @@ There also need to be some includes used in a target component deployment (inden
 
 {{- define "common.certServiceClient.volumeMounts" -}}
 {{- $dot := default . .dot -}}
-{{- $initRoot := default $dot.Values.cmpv2Certificate .initRoot -}}
+{{- $initRoot := default $dot.Values.cmpv2Certificate.cmpv2Config .initRoot -}}
 {{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
 {{- if and $subchartGlobal.cmpv2Enabled (not $subchartGlobal.CMPv2CertManagerIntegration) -}}
 {{- range $index, $certificate := $dot.Values.certificates -}}
