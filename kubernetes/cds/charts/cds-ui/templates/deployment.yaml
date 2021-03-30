@@ -52,6 +52,13 @@ spec:
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            echo "cadi_keystore_password_p12=$PASSPHRASE_VALUE" > .enc
+            node .
           env:
             - name: HOST
               value: 0.0.0.0
@@ -71,6 +78,10 @@ spec:
               value: "{{ .Values.config.api.processor.grpc.port }}"
             - name: API_BLUEPRINT_PROCESSOR_GRPC_AUTH_TOKEN
               value: {{ .Values.config.api.processor.grpc.authToken }}
+            - name: KEYSTORE
+              value: "/certs/org.onap.sdnc-cds.p12"
+            - name: PASSPHRASE_VALUE
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-certs-pass" "key" "password") | indent 14 }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -80,6 +91,8 @@ spec:
             - mountPath: /etc/localtime
               name: localtime
               readOnly: true
+            - mountPath: /certs
+              name: certs
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -94,5 +107,8 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: certs
+          secret:
+            secretName: {{ include "common.fullname" . }}-certs
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
