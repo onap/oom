@@ -152,8 +152,17 @@ spec:
               fieldPath: status.podIP
         {{- if .Values.applicationEnv }}
         {{- range $envName, $envValue := .Values.applicationEnv }}
+        {{- if kindIs "string" $envValue }}
         - name: {{ $envName }}
           value: {{ $envValue | quote }}
+        {{- else }}
+        {{- if $envValue.secretUid }}
+        {{- if $envValue.key }}
+        - name: {{ $envName }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $ "uid" $envValue.secretUid "key" $envValue.key) | indent 10 }}
+        {{- end }}
+        {{- end }}
+        {{- end -}}
         {{- end }}
         {{- end }}
         {{- if .Values.service }}
