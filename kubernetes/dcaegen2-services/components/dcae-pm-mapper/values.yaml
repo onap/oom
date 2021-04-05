@@ -1,0 +1,140 @@
+# ================================ LICENSE_START =============================
+# ============================================================================
+#  Copyright (C) 2021 Nordix Foundation.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ==============================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.services.pm-mapper:1.5.2
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP/dcaegen2/services/pm-mapper
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/pm-mapper/etc/cert
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+    - dmaap-bc
+    - dmaap-dr-node
+    - dmaap-dr-prov
+    - message-router
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 1
+  path: /healthcheck
+  scheme: HTTPS
+  port: 8443
+
+# Service Configuration
+service:
+  type: ClusterIP
+  name: dcae-pm-mapper
+  both_tls_and_plain: true
+  ports:
+    - name: https
+      port: 8443
+      plain_port: 8081
+      port_protocol: http
+
+# Initial Application Configuration
+applicationConfig:
+  enable_tls: true
+  enable_http: false
+  aaf_identity: 'dcae@dcae.onap.org'
+  aaf_password: 'demo123456!'
+  pm-mapper-filter: "{ \"filters\":[] }"
+  dmaap_dr_feed_name: 'bulk_pm_feed'
+  trust_store_path: '/opt/app/pm-mapper/etc/cert/trust.jks'
+  trust_store_pass_path: '/opt/app/pm-mapper/etc/cert/trust.pass'
+  key_store_path: '/opt/app/pm-mapper/etc/cert/cert.jks'
+  key_store_pass_path: '/opt/app/pm-mapper/etc/cert/jks.pass'
+  dmaap_dr_delete_endpoint: { concat: ['https://','dmaap-dr-node',':','8443','/delete'] }
+  streams_publishes:
+    dmaap_publisher:
+      type: message_router
+      dmaap_info:
+        location: 'san-francisco'
+        client_id: 'dcae@dcae.onap.org'
+        client_role: 'org.onap.dcae.pmPublisher'
+        topic_url: { concat: [ "https://message-router:3905/events/", 'org.onap.dmaap.mr.PERFORMANCE_MEASUREMENTS' ] }
+  streams_subscribes:
+    dmaap_subscriber:
+      type: data_router
+      dmaap_info:
+        privileged: true
+        decompress: true
+        scheme: 'https'
+        delivery_url: ''
+        username: 'username'
+        password: 'password'
+        location: 'san-francisco'
+        client_role: 'org.onap.dcae.pmPublisher'
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
