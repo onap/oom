@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "bbf79a6e_5bba4c4c",
+        "filename": "kubernetes/dcaegen2-services/common/dcaegen2-services-common/templates/_deployment.tpl",
+        "patchSetId": 3
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 4965
+      },
+      "writtenOn": "2021-04-06T21:31:30Z",
+      "side": 1,
+      "message": "Hmm... I know what you are trying to achieve here but I\u0027m a little bit afraid that it may get complicated really quickly.\n\nHow about allowing just to input env definition here directly using toYaml function?\n\nI realize that it may put a little bit more boilerplate in the values.yaml but then it gives a full flexibility to the template user. In short:\n\nin values.yaml:\n applicationEnv: \u003e\n   - name: JAVA_OPTS\n     value: \u0027-Dlogback.configurationFile\u003d/etc/ONAP/dcae-hv-ves-collector/logback.xml\u0027\n   - name: MY_SECRET\n     {{- include \"common.secret.envFromSecretFast\" (dict \"global\" . \"uid\" $envValue.secretUid \"key\" myKey) | indent 2 }}\n\nthen in this tamplate you would just do sth like:\n\n{{ tpl .Values.applicationEnv . | toYaml | indent $asNeeded }}\n\nThis should avoid issues if someone needs to reference another secret, access some certificate or o any other crazy stuff that k8s API allows.\n\n@Jack\n@Sylvain\nWhat do you think?",
+      "revId": "f952c50f5a2947f7b66b023838ef411711f3e3b4",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    }
+  ]
+}
