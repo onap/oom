@@ -172,6 +172,17 @@ secrets:
     login: '{{ .Values.config.scaleoutUser }}'
     password: '{{ .Values.config.scaleoutPassword }}'
     passwordPolicy: required
+  - uid: oauth-token-secret
+    type: password
+    externalSecret: '{{ ternary (tpl (default "" .Values.config.sdnr.oauth.tokenExternalSecret) .) "oauth-disabled" .Values.config.sdnr.oauth.enabled }}'
+    password: '{{ .Values.config.sdnr.oauth.tokenSecret }}'
+    passwordPolicy: required
+  - uid: keycloak-secret
+    type: password
+    externalSecret: '{{ ternary (tpl (default "" .Values.config.sdnr.oauth.providersSecrets.keycloakExternalSecret) .) "oauth-disabled" .Values.config.sdnr.oauth.enabled }}'
+    password: '{{ .Values.config.sdnr.oauth.providersSecrets.keycloak }}'
+    passwordPolicy: required
+
 #################################################################
 # Certificates
 #################################################################
@@ -311,6 +322,7 @@ config:
     sdnrdbTrustAllCerts: true
     mountpointRegistrarEnabled: false
     mountpointStateProviderEnabled: false
+    #
     # enable and set dmaap-proxy for mountpointRegistrar
     dmaapProxy:
       enabled: false
@@ -318,10 +330,28 @@ config:
       user: addUserHere
       password: addPasswordHere
       url: addProxyUrlHere
-
-
-
-
+    oauth:
+      enabled: false
+      tokenIssuer: ONAP SDNC
+      tokenSecret: secret
+      supportOdlusers: true
+      redirectUri: null
+      publicUrl: none
+      odluxRbac:
+        enabled: true
+      # example definition for a oauth provider
+      providersSecrets:
+        keycloak: d8d7ed52-0691-4353-9ac6-5383e72e9c46
+      providers:
+      - id: keycloak
+        type: KEYCLOAK
+        host: http://keycloak:8080
+        clientId: odlux.app
+        secret: ${KEYCLOAK_SECRET}
+        scope: openid
+        title: ONAP Keycloak Provider
+        roleMapping:
+          mykeycloak: admin
 
 # dependency / sub-chart configuration
 certInitializer:
