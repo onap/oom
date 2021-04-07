@@ -1,0 +1,327 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3e8c53c0_9711cfeb",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "for volumes and volumeMounts, add the following in values.yaml:\n\n# If path / names can be anything, with your example:\n\nin values.yaml:\nvolumes:\n  - name: dmaap\n    path: /opt/app/config/dmaap/\n  - name: dcaelocations\n    path: /opt/app/config/dcaeLocations/\n  - name: dr-nodes\n    path: /opt/app/config/dr_nodes/\n  - name: feeds\n    path: /opt/app/config/feeds/\n  - name: mr-clusters\n    path: /opt/app/config/mr_clusters/\n  - name: topics\n    path: /opt/app/config/topics/\n\nthen here:\n\n{{- define \"common.dmaap.provisioning._volumeMounts\" -}}\n{{- $dot :\u003d default . .dot -}}\n{{- range _, $volume :\u003d $dot.volumes }}\n- name: {{ $volume.name }}\n  mountPath: {{ $volume.path }}\n{{- end }}\n{{- end -}}\n\n{{- define \"common.dmaap.provisioning._volumes\" -}}\n{{- $dot :\u003d default . .dot -}}\n{{- range _, $volume :\u003d $dot.volumes }}\n- name: {{ $volume.name }}\n  configMap:\n    name: {{ include \"common.fullname\" $dot }}-{{ printf \"%s\" $volume.name }}\n{{- end }}\n{{- end -}}\n\n\n\n\n# If path / names must be from a specific list (the one given here) and always given, I would create a specific common charts (dmaapProvisionningJob) with requirements.\n\nin dmaapProvisionningJob values.yaml:\nvolumes:\n  dmaap:\n    configMapName: default\n    path: /opt/app/config/dmaap/\n  dcaelocations:\n    configMapName: default\n    path: /opt/app/config/dcaeLocations/\n  drNodes:\n    configMapName: default\n    path: /opt/app/config/dr_nodes/\n  feeds:\n    configMapName: default\n    path: /opt/app/config/feeds/\n  mrClusters:\n    configMapName: default\n    path: /opt/app/config/mr_clusters/\n  topics:\n    configMapName: default\n    path: /opt/app/config/topics/\n\nin tpl file of the chart:\n\n{{- define \"common.dmaap.provisioning._volumeMounts\" -}}\n{{-   $dot :\u003d default . .dot -}}\n{{-   range $name, $volume :\u003d $dot.volumes }}\n- name: {{ $name }}\n  mountPath: {{ $volume.path }}\n{{- end }}\n{{- end -}}\n\n{{- define \"common.dmaap.provisioning._volumes\" -}}\n{{-   $dot :\u003d default . .dot -}}\n{{-   $initRoot :\u003d default $dot.Values.dmaapProvisionningJob .initRoot -}}\n{{-   $initName :\u003d default \"dmaapProvisionningJob\" -}}\n{{-   $subchartDot :\u003d fromJson (include \"common.subChartDot\" (dict \"dot\" $dot \"initRoot\" $initRoot)) }}\n{{-   range $name, $volume :\u003d $dot.volumes }}\n- name: {{ $name }}\n  configMap:\n{{-     if eq \"default\" $volume.configMapName }}\n    name: {{ include \"common.fullname\" $subChartDot }}-{{ printf \"%s\" $volume.name }}\n{{-     else }}\n    name: {{ tpl $volume.configMapName }}\n{{-     end }}\n{{-   end }}\n{{- end -}}\n\n\nin job definition:\n\n...\n        volumeMounts: {{ include \"common.dmaap.provisioning._volumeMounts\" . | nindent 8 }}\n...\n      volumes: {{ include \"common.dmaap.provisioning._volumes\" . | nindent 6 }}\n\n\nand in values.yaml of this project:\ndmaapProvisionningJob:\n  volumes:\n    drNodes:\n      configMapName: \u0027{{ include \"common.fullname\" . }}-dr-nodes\u0027\n    topics:\n      configMapName: \u0027{{ include \"common.fullname\" . }}-topics\u0027",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1e222412_2f4cc070",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "maybe \"common.dmaap.provisioning.job\"",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "10fa46a2_d0062658",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "metadata:  {{- include \"common.resourceMetadata\" (dict \"suffix\" \"dmaap-provisioning\" \"dot\" . )| nindent 2 }}",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ee404630_1a8138eb",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "maybe less than 20 no?",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "2ace1051_fa8be0f8",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "{{ include \"common.name\" . }}-readiness",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c304803a_a584937b",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 64,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "please add bc client image to \"repositoryGenerator\" like other \"global\" images",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cdaeb712_39ca047c",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "{{- if include \"common.needTLS\" . }}",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cd010235_f8809685",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "18c3e126_23235e04",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 86,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "842e0519_bdfc32e8",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6f9653bc_505a5597",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 90,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "caf6cb1c_2fe06572",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 92,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f4148fef_dcaffcf2",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f7e3407c_46db1535",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3a048176_293a5b82",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 110,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a19373e8_ef130b5d",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "09d114c9_284f3c44",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 116,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4a1839f7_1fdfbc15",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 119,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "20fa0242_45135be8",
+        "filename": "kubernetes/common/common/templates/_dmaapProvisioning.tpl",
+        "patchSetId": 2
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 2319
+      },
+      "writtenOn": "2021-04-07T06:45:41Z",
+      "side": 1,
+      "message": "remove {{ include \"common.fullname\" . }} here as we don\u0027t need it and it \"costs\" compute time",
+      "revId": "df7d70882a96f01abb4c9dd8a8a7b193f33bc39e",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    }
+  ]
+}
