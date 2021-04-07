@@ -20,12 +20,13 @@ kind: Job
 {{- $suffix := "set-tls-secret" }}
 metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
 spec:
+  backoffLimit: 20
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers: {{ include "common.certInitializer.initContainer" (dict "dot" . "initRoot" .Values) | nindent 6 }}
       containers:
-      - name: create tls secret
+      - name: create-tls-secret
         command:
           - /ingress/onboard.sh
         image: {{ include "repositoryGenerator.image.kubectl" . }}
@@ -41,4 +42,5 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-ingress
           defaultMode: 0777
+      restartPolicy: Never
 {{- end}}
