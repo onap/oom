@@ -14,7 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-*/}}
+*/ -}}
+
 echo "*** retrieving passwords for certificates"
 export $(/opt/app/aaf_config/bin/agent.sh local showpass \
   {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
