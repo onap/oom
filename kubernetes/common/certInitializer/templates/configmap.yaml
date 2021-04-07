@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2020 Samsung Electronics
+# Copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +20,20 @@ kind: ConfigMap
 {{- $suffix := "add-config" }}
 metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
 data:
-{{ tpl (.Files.Glob "resources/*").AsConfig . | indent 2 }}
+{{ tpl (.Files.Glob "resources/retrieval/retrieval_check.sh").AsConfig . | indent 2 }}
+{{- if hasKey .Values "ingressTlsSecret" }}
+{{ tpl (.Files.Glob "resources/retrieval/tls_certs_configure.sh").AsConfig . | indent 2 }}
+{{- end }}
 {{ if .Values.aaf_add_config }}
   aaf-add-config.sh: |
     {{ tpl .Values.aaf_add_config . | indent 4 | trim }}
+{{- end }}
+{{- if hasKey .Values "ingressTlsSecret" }}
+---
+apiVersion: v1
+kind: ConfigMap
+{{- $suffix := "ingress" }}
+metadata: {{- include "common.resourceMetadata" (dict "suffix" $suffix "dot" . )| nindent 2 }}
+data:
+{{ tpl (.Files.Glob "resources/ingress/onboard.sh").AsConfig . | indent 2 }}
 {{- end }}
