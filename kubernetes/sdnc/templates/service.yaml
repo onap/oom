@@ -174,3 +174,27 @@ spec:
   selector:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-2
 {{ end }}
+
+{{ if .Values.config.sdnr.netconfCallHome.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-callhome
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: NodePort
+  ports:
+    - name: "{{ .Values.service.portName }}-callhome"
+      port: {{ .Values.service.callHomePort }}
+      targetPort: {{ .Values.service.callHomePort }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.callHomeNodePort }}
+  selector:
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}
+{{ end }}
