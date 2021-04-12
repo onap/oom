@@ -41,8 +41,6 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
           - name: DB_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
-          - name: LIQUIBASE_LABELS
-            value: {{ .Values.config.liquibaseLabels }}
         volumeMounts:
           - mountPath: /config-input
             name: init-data-input
@@ -75,6 +73,8 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
           - name: CPS_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: {{ .Values.config.spring.profile }}
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 12 }}
@@ -83,8 +83,8 @@ spec:
         affinity: {{ toYaml .Values.affinity | nindent 12 }}
         {{- end }}
         volumeMounts:
-          - mountPath: /app/resources/application.yml
-            subPath: application.yml
+          - mountPath: /app/resources/application-helm.yml
+            subPath: application-helm.yml
             name: init-data
           - mountPath: /app/resources/logback.xml
             subPath: logback.xml
