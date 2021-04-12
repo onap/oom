@@ -70,11 +70,18 @@ spec:
             path: {{ .Values.readiness.path }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+        envFrom:
+          - configMapRef:
+              name: {{ include "common.fullname" . }}-env-configmap
         env:
           - name: CPS_USERNAME
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
           - name: CPS_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
+          - name: DB_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 12 }}
@@ -83,9 +90,6 @@ spec:
         affinity: {{ toYaml .Values.affinity | nindent 12 }}
         {{- end }}
         volumeMounts:
-          - mountPath: /app/resources/application.yml
-            subPath: application.yml
-            name: init-data
           - mountPath: /app/resources/logback.xml
             subPath: logback.xml
             name: init-data
