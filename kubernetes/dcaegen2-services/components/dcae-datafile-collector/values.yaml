@@ -1,0 +1,181 @@
+# ================================ LICENSE_START ==========================
+# =========================================================================
+#  Copyright (C) 2021 Nordix Foundation.
+# =========================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ===========================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+certPostProcessorImage: onap/org.onap.oom.platform.cert-service.oom-certservice-post-processor:2.3.3
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.collectors.datafile.datafile-app-server:1.5.5
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/datafile/etc/cert
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# CMPv2 certificate
+# It is used only when:
+# - certDirectory is set
+# - global cmpv2Enabled flag is set to true
+# - flag useCmpv2Certificates is set to true
+# Disabled by default
+useCmpv2Certificates: false
+certificates:
+  - mountPath: /opt/app/datafile/etc/cert/external
+    commonName: dcae-datafile-collector
+    dnsNames:
+      - dcae-datafile-collector
+      - datafile-collector
+      - datafile
+    keystore:
+      outputType:
+        - p12
+      passwordSecretRef:
+        name: datafile-collector-cmpv2-keystore-password
+        key: password
+        create: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    containers:
+      - dcae-config-binding-service
+      - aaf-cm
+      - dmaap-bc
+    jobs:
+      - '{{ include "common.release" . }}-dmaap-bc-dmaap-provisioning'
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 1
+  path: /heartbeat
+  scheme: HTTP
+  port: 8100
+
+# Service Configuration
+service:
+  type: ClusterIP
+  name: datafile-collector
+  ports:
+    - name: https
+      port: 8443
+      plain_port: 8100
+      port_protocol: http
+
+# Initial Application Configuration
+applicationConfig:
+  dmaap.certificateConfig.keyCert: /opt/app/datafile/etc/cert/cert.p12
+  dmaap.certificateConfig.keyPasswordPath: /opt/app/datafile/etc/cert/p12.pass
+  dmaap.certificateConfig.trustedCa: /opt/app/datafile/etc/cert/trust.jks
+  dmaap.certificateConfig.trustedCaPasswordPath: /opt/app/datafile/etc/cert/trust.pass
+  dmaap.dmaapConsumerConfiguration.consumerGroup: OpenDcae-c12
+  dmaap.dmaapConsumerConfiguration.consumerId: C12
+  dmaap.dmaapConsumerConfiguration.timeoutMs: -1
+  dmaap.security.enableDmaapCertAuth: true
+  dmaap.security.keyStorePasswordPath: /opt/app/datafile/etc/cert/jks.pass
+  dmaap.security.keyStorePath: /opt/app/datafile/etc/cert/cert.jks
+  dmaap.security.trustStorePasswordPath: /opt/app/datafile/etc/cert/trust.pass
+  dmaap.security.trustStorePath: /opt/app/datafile/etc/cert/trust.jks
+  service_calls: []
+  sftp.security.strictHostKeyChecking: true
+  streams_publishes:
+    PM_MEAS_FILES:
+      dmaap_info:
+        publisher_id: ${DR_FILES_PUBLISHER_ID_0}
+        location: loc00
+        log_url: ${DR_LOG_URL_0}
+        publish_url: ${DR_FILES_PUBLISHER_URL_0}
+        username: ${DR_USERNAME_0}
+        password: ${DR_PASSWORD_0}
+      type: data_router
+  streams_subscribes:
+    dmaap_subscriber:
+      dmaap_info:
+        topic_url: "https://message-router:3905/events/unauthenticated.VES_NOTIFICATION_OUTPUT"
+      type: message_router
+
+# DataRouter Feed Configuration
+drFeedConfig:
+  - feedName: bulk_pm_feed
+    owner: dcaecm
+    feedVersion: 0.0
+    asprClassification: unclassified
+    feedDescription: DFC Feed Creation
+
+# DataRouter Publisher Configuration
+drPubConfig:
+  - feedName: bulk_pm_feed
+    dcaeLocationName: loc00
+
+# ConfigMap Configuration for Feed, Dr_Publisher
+volumes:
+  - name: feeds-config
+    path: /opt/app/config/feeds
+  - name: drpub-config
+    path: /opt/app/config/dr_pubs
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 768Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  unlimited: {}
