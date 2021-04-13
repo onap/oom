@@ -2,6 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2019 AT&T
 # Copyright (c) 2021 J. F. Lucas.  All rights reserved.
+# Copyright (c) 2021 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,5 +62,65 @@ metadata:
 data:
   filebeat.yml: |-
 {{ include "dcaegen2-services-common.filebeatConfiguration" . | indent 4 }}
+{{- end }}
+
+{{- if .Values.drFeedConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-feeds-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $feed := .Values.drFeedConfig }}
+  feedConfig-{{$i}}.json: |-
+  {{ $feed | toJson | indent 2 }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.drPubConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-drpub-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $drpub := .Values.drPubConfig }}
+  drpubConfig-{{$i}}.json: |-
+  {{ $drpub | toJson | indent 2 }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.drSubConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-drsub-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $drsub := .Values.drSubConfig }}
+  drsubConfig-{{$i}}.json: |-
+  {{ $drsub | toJson | indent 2 }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.mrTopicsConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-topics-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $topics := .Values.mrTopicsConfig }}
+  topicsConfig-{{$i}}.json: |-
+  {{ $topics | toJson | indent 2 }}
+  {{- end }}
 {{- end }}
 {{- end }}

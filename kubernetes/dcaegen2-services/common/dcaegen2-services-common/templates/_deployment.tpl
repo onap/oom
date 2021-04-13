@@ -4,6 +4,7 @@
 # Copyright (c) 2021 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2021 Nokia. All rights reserved.
+# Copyright (c) 2021 Nordix Foundation.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -206,6 +207,7 @@ list of policyID or filter
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $policy := default "" .Values.policies -}}
+{{- $drFeedConfig := default "" .Values.drFeedConfig -}}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -217,6 +219,7 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
+      {{- if not $drFeedConfig }}
       - command:
         - sh
         args:
@@ -239,8 +242,9 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-
+      {{- end }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
       - name: init-consul
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -436,6 +440,7 @@ spec:
       - name: policy-shared
         emptyDir: {}
       {{- end }}
+      {{- include "common.dmaap.provisioning._volumes" . | nindent 6 -}}
       {{- include "dcaegen2-services-common._externalVolumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
