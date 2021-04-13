@@ -62,4 +62,34 @@ data:
   filebeat.yml: |-
 {{ include "dcaegen2-services-common.filebeatConfiguration" . | indent 4 }}
 {{- end }}
+
+{{- if .Values.drFeedConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-feeds-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $feed := .Values.drFeedConfig }}
+  feedConfig-{{$i}}.json: |-
+  {{ $feed | toJson | indent 2 }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.drPubConfig }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-drpub-config
+  namespace: {{ include "common.namespace" . }}
+  labels: {{ include "common.labels" . | nindent 6 }}
+data:
+  {{- range $i, $drpub := .Values.drPubConfig }}
+  drpubConfig-{{$i}}.json: |-
+  {{ $drpub | toJson | indent 2 }}
+  {{- end }}
+{{- end }}
 {{- end }}
