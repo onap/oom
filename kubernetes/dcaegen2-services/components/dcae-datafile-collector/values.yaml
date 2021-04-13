@@ -1,0 +1,137 @@
+# ================================ LICENSE_START =============================
+# ============================================================================
+#  Copyright (C) 2021 Nordix Foundation.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ==============================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.collectors.datafile.datafile-app-server:1.5.5
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/datafile/etc/cert/
+
+# Explicit Application Properties
+applicationProperties: true
+
+# Monitoring Policy Consul Key
+monitoringPolicy: policy
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Flag to Indicate External TLS Enable/Disable.
+use_external_tls: false
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+    - dmaap-bc
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 1
+  path: /heartbeat
+  scheme: HTTPS
+  port: 8443
+
+# Service Configuration
+service:
+  type: ClusterIP
+  name: datafile-collector
+  ports:
+    - name: https
+      port: 8443
+      plain_port: 8100
+      port_protocol: http
+
+# Initial Application Configuration
+applicationConfig:
+  service_calls: []
+  dmaap.certificateConfig.keyCert: /opt/app/datafile/etc/cert/cert.p12
+  dmaap.certificateConfig.keyPasswordPath: /opt/app/datafile/etc/cert/p12.pass
+  dmaap.certificateConfig.trustedCa: /opt/app/datafile/etc/cert/trust.jks
+  dmaap.certificateConfig.trustedCaPasswordPath: /opt/app/datafile/etc/cert/trust.pass
+  dmaap.security.enableDmaapCertAuth: true
+  dmaap.security.keyStorePath: /opt/app/datafile/etc/cert/cert.jks
+  dmaap.security.keyStorePasswordPath: /opt/app/datafile/etc/cert/jks.pass
+  dmaap.security.trustStorePath: /opt/app/datafile/etc/cert/trust.jks
+  dmaap.security.trustStorePasswordPath: /opt/app/datafile/etc/cert/trust.pass
+  dmaap.dmaapConsumerConfiguration.consumerGroup: OpenDcae-c12
+  dmaap.dmaapConsumerConfiguration.consumerId: C12
+  dmaap.dmaapConsumerConfiguration.timeoutMs: -1
+  sftp.security.strictHostKeyChecking: true
+  streams_subscribes:
+    dmaap_subscriber:
+      type: message_router
+      dmaap_info:
+        topic_url: { concat: [ 'https://message-router:3905/events/','unauthenticated.VES_NOTIFICATION_OUTPUT' ] }
+  streams_publishes:
+    PM_MEAS_FILES:
+      type: data_router
+      dmaap_info:
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
