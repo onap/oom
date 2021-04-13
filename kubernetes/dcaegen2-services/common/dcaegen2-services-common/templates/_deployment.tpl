@@ -241,6 +241,7 @@ spec:
         name: {{ include "common.name" . }}-update-config
 
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
       - name: init-consul
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -436,6 +437,7 @@ spec:
       - name: policy-shared
         emptyDir: {}
       {{- end }}
+      {{- include "common.dmaap.provisioning._volumes" . | nindent 6 -}}
       {{- include "dcaegen2-services-common._externalVolumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
