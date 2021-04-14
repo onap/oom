@@ -1,3 +1,5 @@
+#!/bin/bash
+
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T,VMware
@@ -13,9 +15,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 */}}
-#!/bin/bash
+
 {{/*
 # Controller is a process that reads from Music Q
 # It uses no ports (TCP or HTTP). The PROB will check
