@@ -26,11 +26,13 @@ The versions of PaaS compoents that are supported by OOM are as follows:
   honolulu           1.2.0          13.x
   ==============     =============  =================
 
-This guide provides instructions on how to install the following PaaS
-components for ONAP:
+This guide provides instructions on how to install the PaaS
+components for ONAP.
 
-- Cert-Manager
-- Prometheus Stack
+.. contents::
+   :depth: 1
+   :local:
+..
 
 Cert-Manager
 ============
