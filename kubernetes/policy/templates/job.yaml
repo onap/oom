@@ -47,7 +47,6 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-      containers:
       - name: {{ include "common.release" . }}-policy-galera-config
         image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadb.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -71,6 +70,32 @@ spec:
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
         resources:
 {{ include "common.resources" . }}
+      containers:
+      - name: {{ include "common.release" . }}-policy-galera-db-migrator
+        image: {{ .Values.repository }}/{{ .Values.dbmigrator.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /dbcmd-config/db_migrator_policy_init.sh
+          name: {{ include "common.fullname" . }}-config
+          subPath: db_migrator_policy_init.sh
+        command:
+        - /bin/sh
+        args:
+        - -x
+        - /dbcmd-config/db_migrator_policy_init.sh
+        env:
+        - name: SQL_HOST
+          value: "{{ index .Values "mariadb-galera" "service" "name" }}"
+        - name: SQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: SQL_DB
+          value: {{ .Values.dbmigrator.schema }}
+        - name: POLICY_HOME
+          value: {{ .Values.dbmigrator.policy_home }}
+        resources:
+{{ include "common.resources" . }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -80,3 +105,5 @@ spec:
             items:
               - key: db.sh
                 path: db.sh
+              - key: db_migrator_policy_init.sh
+                path: db_migrator_policy_init.sh
