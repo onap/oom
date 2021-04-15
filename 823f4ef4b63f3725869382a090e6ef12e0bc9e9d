@@ -16,6 +16,24 @@
       "revId": "823f4ef4b63f3725869382a090e6ef12e0bc9e9d",
       "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "edc556d8_ab0adc63",
+        "filename": "kubernetes/dcaegen2-services/common/dcaegen2-services-common/templates/_deployment.tpl",
+        "patchSetId": 5
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 511
+      },
+      "writtenOn": "2021-04-15T14:19:39Z",
+      "side": 1,
+      "message": "What is \"correct indentation\" in Helm?\n\nIf the output were not white-space sensitive, I would have done it like this:\n\n{{- define \"dcaegen2-services-common._ms-specific-env-vars\" -}}\n    {{- $global :\u003d . }}\n    {{- if .Values.applicationEnv }}\n        {{- range $envName, $envValue :\u003d .Values.applicationEnv }}\n            {{- if kindIs \"string\" $envValue }}\n                - name: {{ $envName }}\n                  value: {{ $envValue | quote }}\n            {{- else }}\n                {{- if $envValue.secretUid }}\n                    {{- if $envValue.key }}\n                        - name: {{ $envName }}\n                        {{- include \"common.secret.envFromSecretFast\" (dict \"global\" $global \"uid\" $envValue.secretUid \"key\" $envValue.key) | nindent 2 }}\n                    {{- end }}\n               {{- end }}\n            {{- end -}}\n        {{- end }}\n    {{- end }}\n{{- end -}}\n\nHowever, this makes the output indented differently depending on which condition is met.  Seems like templates should generate text that\u0027s not indented at all.\n\nAlternatively, we could do this:\n\n{{- define \"dcaegen2-services-common._ms-specific-env-vars\" -}}\n    {{- $global :\u003d . }}\n    {{- if .Values.applicationEnv }}\n        {{- range $envName, $envValue :\u003d .Values.applicationEnv }}\n            {{- if kindIs \"string\" $envValue }}\n- name: {{ $envName }}\n  value: {{ $envValue | quote }}\n            {{- else }}\n                {{- if $envValue.secretUid }}\n                    {{- if $envValue.key }}\n- name: {{ $envName }}\n  {{- include \"common.secret.envFromSecretFast\" (dict \"global\" $global \"uid\" $envValue.secretUid \"key\" $envValue.key) | nindent 2 }}\n                    {{- end }}\n               {{- end }}\n            {{- end -}}\n        {{- end }}\n    {{- end }}\n{{- end -}}\n\nTo me, that\u0027s no more readable.  In fact, I find it harder to see what\u0027s going on.  Using 2-space indentation rather than 4 makes it even worse, in my view.\n\nPlease make a clear statement about how you expect Helm to be indented.  I\u0027ve got more changes coming, and other people on the DCAE team are also making changes, so we need to know--not just indentation rules, but any other standards you expect to be met.  It takes days or weeks to cycle through even a small change to OOM, so it\u0027s best if we get it \"right\" at the beginning, rather than going through several cycles to make everything \"correct\".",
+      "parentUuid": "9cdbf691_2c3f9dd9",
+      "revId": "823f4ef4b63f3725869382a090e6ef12e0bc9e9d",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
     }
   ]
 }
