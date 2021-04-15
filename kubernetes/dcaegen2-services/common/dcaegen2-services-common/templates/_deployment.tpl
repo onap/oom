@@ -2,6 +2,7 @@
 #============LICENSE_START========================================================
 # ================================================================================
 # Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,57 +17,6 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 */}}
-{{/*
-For internal use only!
-
-dcaegen2-services-common._ms-specific-env-vars:
-This template generates a list of microservice-specific environment variables
-as specified in .Values.applicationEnv.  The
-dcaegen2-services-common.microServiceDeployment uses this template
-to add the microservice-specific environment variables to the microservice's container.
-These environment variables are in addition to a standard set of environment variables
-provided to all microservices.
-
-The template expects a single argument, pointing to the caller's global context.
-
-Microservice-specific environment variables can be specified in two ways:
-  1. As literal string values.
-  2. As values that are sourced from a secret, identified by the secret's
-     uid and the key within the secret that provides the value.
-
-The following example shows an example of each type.  The example assumes
-that a secret has been created using the OOM common secret mechanism, with
-a secret uid "example-secret" and a key called "password".
-
-applicationEnv:
-  APPLICATION_PASSWORD:
-    secretUid: example-secret
-    key: password
-  APPLICATION_EXAMPLE: "An example value"
-
-The example would set two environment variables on the microservice's container,
-one called "APPLICATION_PASSWORD" with the value set from the "password" key in
-the secret with uid "example-secret", and one called "APPLICATION_EXAMPLE" set to
-the the literal string "An example value".
-*/}}
-{{- define "dcaegen2-services-common._ms-specific-env-vars" -}}
-  {{- $global := . }}
-  {{- if .Values.applicationEnv }}
-    {{- range $envName, $envValue := .Values.applicationEnv }}
-      {{- if kindIs "string" $envValue }}
-- name: {{ $envName }}
-  value: {{ $envValue | quote }}
-      {{- else }}
-        {{- if $envValue.secretUid }}
-          {{- if $envValue.key }}
-- name: {{ $envName }}
-  {{- include "common.secret.envFromSecretFast" (dict "global" $global "uid" $envValue.secretUid "key" $envValue.key) | indent 2 }}
-          {{- end }}
-        {{- end }}
-      {{- end -}}
-    {{- end }}
-  {{- end }}
-{{- end -}}
 {{/*
 dcaegen2-services-common.microserviceDeployment:
 This template produces a Kubernetes Deployment for a DCAE microservice.
@@ -114,12 +64,21 @@ certificate information will include a server cert and key, in various
 formats.  It will also include the AAF CA cert.   If the microservice is
 a TLS client only (indicated by setting .Values.tlsServer to false), the
 certificate information includes only the AAF CA cert.
+
+Deployed POD may also include a Policy-sync sidecar container.
+The sidecar is included if .Values.policies is set.  The
+Policy-sync sidecar polls PolicyEngine (PDP) periodically based
+on .Values.policies.duration and configuration retrieved is shared with 
+DCAE Microservice container by common volume. Policy can be retrieved based on 
+list of policyID or filter
 */}}
 
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $logDir :=  default "" .Values.logDirectory -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
+{{- $policy := default "" .Values.policies -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -201,7 +160,12 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        {{- include "dcaegen2-services-common._ms-specific-env-vars" . | nindent 8 }}
+        {{- if .Values.applicationEnv }}
+        {{- range $envName, $envValue := .Values.applicationEnv }}
+        - name: {{ $envName }}
+          value: {{ $envValue | quote }}
+        {{- end }}
+        {{- end }}
         {{- if .Values.service }}
         ports: {{ include "common.containerPorts" . | nindent 10 }}
         {{- end }}
@@ -237,6 +201,10 @@ spec:
           name: tls-info
         {{- end }}
         {{- end }}
+        {{- if $policy }}
+        - name: policy-shared
+          mountPath: /etc/policies
+        {{- end }}
       {{- if $logDir }}
       - image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -256,6 +224,53 @@ spec:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
           subPath: filebeat.yml
+      {{- end }}
+      {{- if $policy }}
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dcaePolicySyncImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: policy-sync
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: POLICY_SYNC_PDP_USER
+          valueFrom:
+            secretKeyRef:
+              name: onap-policy-xacml-pdp-api-creds
+              key: login
+        - name: POLICY_SYNC_PDP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: onap-policy-xacml-pdp-api-creds
+              key: password
+        - name: POLICY_SYNC_PDP_URL
+          value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969
+        - name: POLICY_SYNC_OUTFILE
+          value : "/etc/policies/policies.json"
+        - name: POLICY_SYNC_V1_DECISION_ENDPOINT
+          value : "policy/pdpx/v1/decision"
+        {{- if $policy.filter }}
+        - name: POLICY_SYNC_FILTER
+          value: {{ $policy.filter }}
+        {{- end -}}
+        {{- if $policy.policyID }}
+        - name: POLICY_SYNC_ID
+          value: {{ $policy.policyID }}
+        {{- end -}}
+        {{- if $policy.duration }}
+        - name: POLICY_SYNC_DURATION
+          value: {{ $policy.duration }}
+        {{- end }}
+        resources: {{ include "common.resources" . | nindent 2 }}
+        volumeMounts:
+        - mountPath: /etc/policies
+          name: policy-shared
+        {{- if $certDir }}
+        - mountPath: /opt/ca-certificates/
+          name: tls-info
+        {{- end }}
       {{- end }}
       hostname: {{ include "common.name" . }}
       volumes:
@@ -279,6 +294,10 @@ spec:
       {{- if $certDir }}
       - emptyDir: {}
         name: tls-info
+      {{- end }}
+      {{- if $policy }}
+      - name: policy-shared
+        emptyDir: {}
       {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
