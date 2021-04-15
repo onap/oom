@@ -2,6 +2,7 @@
 #============LICENSE_START========================================================
 # ================================================================================
 # Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,12 +115,21 @@ certificate information will include a server cert and key, in various
 formats.  It will also include the AAF CA cert.   If the microservice is
 a TLS client only (indicated by setting .Values.tlsServer to false), the
 certificate information includes only the AAF CA cert.
+
+Deployed POD may also include a Policy-sync sidecar container.
+The sidecar is included if .Values.policies is set.  The
+Policy-sync sidecar polls PolicyEngine (PDP) periodically based
+on .Values.policies.duration and configuration retrieved is shared with 
+DCAE Microservice container by common volume. Policy can be retrieved based on 
+list of policyID or filter
 */}}
 
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $logDir :=  default "" .Values.logDirectory -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
+{{- $policy := default "" .Values.policies -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
@@ -237,6 +247,10 @@ spec:
           name: tls-info
         {{- end }}
         {{- end }}
+        {{- if $policy }}
+        - name: policy-shared
+          mountPath: /etc/policies
+        {{- end }}
       {{- if $logDir }}
       - image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -256,6 +270,53 @@ spec:
         - mountPath: /usr/share/filebeat/filebeat.yml
           name: filebeat-conf
           subPath: filebeat.yml
+      {{- end }}
+      {{- if $policy }}
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dcaePolicySyncImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: policy-sync
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: POLICY_SYNC_PDP_USER
+          valueFrom:
+            secretKeyRef:
+              name: onap-policy-xacml-pdp-api-creds
+              key: login
+        - name: POLICY_SYNC_PDP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: onap-policy-xacml-pdp-api-creds
+              key: password
+        - name: POLICY_SYNC_PDP_URL
+          value : http{{ if "common.needTLS" . }}s{{ end }}://policy-xacml-pdp:6969
+        - name: POLICY_SYNC_OUTFILE
+          value : "/etc/policies/policies.json"
+        - name: POLICY_SYNC_V1_DECISION_ENDPOINT
+          value : "policy/pdpx/v1/decision"
+        {{- if $policy.filter }}
+        - name: POLICY_SYNC_FILTER
+          value: {{ $policy.filter }}
+        {{- end -}}
+        {{- if $policy.policyID }}
+        - name: POLICY_SYNC_ID
+          value: {{ $policy.policyID }}
+        {{- end -}}
+        {{- if $policy.duration }}
+        - name: POLICY_SYNC_DURATION
+          value: {{ $policy.duration }}
+        {{- end }}
+        resources: {{ include "common.resources" . | nindent 2 }}
+        volumeMounts:
+        - mountPath: /etc/policies
+          name: policy-shared
+        {{- if $certDir }}
+        - mountPath: /opt/ca-certificates/
+          name: tls-info
+        {{- end }}
       {{- end }}
       hostname: {{ include "common.name" . }}
       volumes:
@@ -279,6 +340,10 @@ spec:
       {{- if $certDir }}
       - emptyDir: {}
         name: tls-info
+      {{- end }}
+      {{- if $policy }}
+      - name: policy-shared
+        emptyDir: {}
       {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
