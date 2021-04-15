@@ -1,7 +1,6 @@
 #!/bin/sh
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada, AT&T
-# Modifications Copyright © 2018, 2020 AT&T Intellectual Property
+# Copyright (C) 2021 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,13 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
-mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
-
-for db in migration pooling policyadmin policyclamp operationshistory
-do
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
-done
-
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
+/opt/app/policy/bin/prepare_upgrade.sh ${SQL_DB}
+/opt/app/policy/bin/db-migrator -s ${SQL_DB} -o upgrade
+rc=$?
+/opt/app/policy/bin/db-migrator -s ${SQL_DB} -o report
+exit $rc
