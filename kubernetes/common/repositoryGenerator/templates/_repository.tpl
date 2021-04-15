@@ -86,6 +86,10 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "certServiceClientImage") .) }}
 {{- end -}}
 
+{{- define "repositoryGenerator.image.dcaepolicysync" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "dcaePolicySyncImage") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image.envsubst" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "envsubstImage") .) }}
 {{- end -}}
