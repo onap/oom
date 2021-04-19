@@ -21,6 +21,12 @@ global:
   portalFEPort: "30225"
   # application's front end hostname.  Must be resolvable on the client side environment
   portalHostName: "portal.api.simpledemo.onap.org"
+  mariadbGalera: &mariadbGalera
+    #This flag allows Portal to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -32,13 +38,13 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.casandraCredsExternalSecret) . }}'
     login: '{{ .Values.config.cassandraUsername }}'
     password: '{{ .Values.config.cassandraPassword }}'
-  - uid: portal-backend-db
-    name: &backendDbSecretName '{{ include "common.release" . }}-portal-backend-creds'
+  - uid: portal-db-user-secret
+    name: &dbUserSecretName '{{ include "common.release" . }}-portal-db-user-secret'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.mariadb.config.backendDbExternalSecret) . }}'
     login: '{{ .Values.mariadb.config.backendUserName }}'
     password: '{{ .Values.mariadb.config.backendPassword }}'
-    passwordPolicy: required
+#################################################################
 
 config:
   logstashServiceName: log-ls
@@ -54,8 +60,19 @@ mariadb:
     name: portal-db
   config:
 #   backendDbExternalSecret: some secret
+    dbname: &mysqlDbName portal
     backendUserName: portal
     backendPassword: portal
+    backend_portal_tables: portal,ecomp_sdk
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: portal-mariadb-init
+  # A configMap of same name is created. It points to file that will be run after
+  # The DB has been created.
+  dbScriptConfigMap: '{{ include "common.release" . }}-portal-db-init'
 
 widget:
   service:
@@ -68,14 +85,14 @@ cassandra:
 portal-app:
   mariadb:
     config:
-      backendDbExternalSecret: *backendDbSecretName
+      backendDbExternalSecret: *dbUserSecretName
   cassandra:
     config:
       cassandraExternalSecret: *dbSecretName
 portal-sdk:
   mariadb:
     config:
-      backendDbExternalSecret: *backendDbSecretName
+      backendDbExternalSecret: *dbUserSecretName
   cassandra:
     config:
       cassandraExternalSecret: *dbSecretName
