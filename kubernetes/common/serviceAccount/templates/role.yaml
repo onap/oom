@@ -14,88 +14,17 @@
 # limitations under the License.
 */}}
 
-{{-   $dot := . -}}
+{{- $dot := . -}}
 {{- range $role_type := $dot.Values.roles }}
+{{/* Default roles are already built, just creating specidic ones */}}
+{{-   if not (has $role_type $dot.Values.defaultRoles) }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot )}}
+  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot ) }}
   namespace: {{ include "common.namespace" $dot }}
 rules:
-{{- if eq $role_type "read" }}
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  - batch
-  - extensions
-  resources:
-  - pods
-  - deployments
-  - jobs
-  - jobs/status
-  - statefulsets
-  - replicasets
-  - replicasets/status
-  - daemonsets
-  verbs:
-  - get
-  - watch
-  - list
-{{- else  }}
-{{-   if eq $role_type "create" }}
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  - batch
-  - extensions
-  resources:
-  - pods
-  - deployments
-  - jobs
-  - jobs/status
-  - statefulsets
-  - replicasets
-  - replicasets/status
-  - daemonsets
-  - secrets
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  resources:
-  - statefulsets
-  verbs:
-  - patch
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  resources:
-  - deployments
-  - secrets
-  verbs:
-  - create
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  resources:
-  - pods
-  - persistentvolumeclaims
-  - secrets
-  - deployment
-  verbs:
-  - delete
-- apiGroups:
-  - "" # "" indicates the core API group
-  - apps
-  resources:
-  - pods/exec
-  verbs:
-  - create
-{{-   else }}
 {{-     if hasKey $dot.Values.new_roles_definitions $role_type  }}
 {{ include "common.tplValue" ( dict "value" (index $dot.Values.new_roles_definitions $role_type ) "context" $dot) }}
 {{-     else}}
@@ -105,5 +34,4 @@ rules:
   verbs: []
 {{-     end }}
 {{-   end }}
-{{- end }}
 {{- end }}
