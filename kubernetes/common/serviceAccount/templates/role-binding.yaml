@@ -14,20 +14,28 @@
 # limitations under the License.
 */}}
 
+{{/* Don't create role binding when on genreric role creation */}}
+{{- if not .Values.createGenericRoles }}
 {{- $dot := . -}}
 {{- range $role_type := $dot.Values.roles }}
+{{/* retrieve the names for generic roles */}}
+{{ $name := printf "%s-%s" (include "common.release" $dot) $role_type }}
+{{- if not (has $role_type $dot.Values.defaultRoles) }}
+{{ $name = include "common.fullname" (dict "suffix" $role_type "dot" $dot ) }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 # This cluster role binding allows anyone in the "manager" group to read secrets in any namespace.
 kind: RoleBinding
 metadata:
-  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot )}}
+  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot ) }}
   namespace: {{ include "common.namespace" $dot }}
 subjects:
 - kind: ServiceAccount
-  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot )}}
+  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot ) }}
 roleRef:
   kind: Role
-  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot )}}
+  name: {{ $name }}
   apiGroup: rbac.authorization.k8s.io
+{{- end }}
 {{- end }}
