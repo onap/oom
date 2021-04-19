@@ -17,6 +17,7 @@
 */}}
 
 CERTS_DIR=${CERTS_DIR:-/certs}
+MORE_CERTS_DIR=${MORE_CERTS_DIR:-/more_certs}
 WORK_DIR=${WORK_DIR:-/updatedTruststore}
 ONAP_TRUSTSTORE=${ONAP_TRUSTSTORE:-truststoreONAPall.jks}
 JRE_TRUSTSTORE=${JRE_TRUSTSTORE:-$JAVA_HOME/lib/security/cacerts}
@@ -43,6 +44,13 @@ for f in $CERTS_DIR/*; do
     then
       base64 -d $f > $WORK_DIR/`basename $f .b64`
     else
+      cp $f $WORK_DIR/.
+  fi
+done
+
+for f in $MORE_CERTS_DIR/*; do
+  if [ ${f: -4} == ".pem" ]
+    then
       cp $f $WORK_DIR/.
   fi
 done
