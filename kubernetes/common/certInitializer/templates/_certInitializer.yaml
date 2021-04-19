@@ -137,6 +137,8 @@
   volumeMounts:
     - mountPath: /certs
       name: aaf-agent-certs
+    - mountPath: /more_certs
+      name: provided-custom-certs
     - mountPath: /root/import-custom-certs.sh
       name: aaf-agent-certs
       subPath: import-custom-certs.sh
@@ -177,6 +179,21 @@
   configMap:
     name: {{ tpl $subchartDot.Values.certsCMName $subchartDot }}
     defaultMode: 0700
+{{- if $dot.Values.global.importCustomCertsEnabled }}
+- name: provided-custom-certs
+{{-   if $dot.Values.global.customCertsSecret }}
+  secret:
+    secretName: {{ $dot.Values.global.customCertsSecret }}
+{{-   else }}
+{{-     if $dot.Values.global.customCertsConfigMap }}
+  configMap:
+    name: {{ $dot.Values.global.customCertsConfigMap }}
+{{-     else }}
+  emptyDir:
+    medium: Memory
+{{-     end }}
+{{-   end }}
+{{- end }}
 - name: {{ include "common.certInitializer._aafAddConfigVolumeName" $dot }}
   configMap:
     name: {{ include "common.fullname" $subchartDot }}-add-config
