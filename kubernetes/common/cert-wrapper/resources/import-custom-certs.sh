@@ -50,7 +50,8 @@ done
 # Prepare truststore output file
 if [ "$AAF_ENABLED" == "true" ]
   then
-    mv $WORK_DIR/$ONAP_TRUSTSTORE $WORK_DIR/$TRUSTSTORE_OUTPUT_FILENAME
+    echo "AAF is enabled, use 'AAF' truststore"
+    export TRUSTSTORE_OUTPUT_FILENAME=${ONAP_TRUSTSTORE}
   else
     echo "AAF is disabled, using JRE truststore"
     cp $JRE_TRUSTSTORE $WORK_DIR/$TRUSTSTORE_OUTPUT_FILENAME
