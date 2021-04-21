@@ -180,8 +180,9 @@ spec:
           {{- end }}
         {{- end }}
         resources: {{ include "common.resources" . | nindent 2 }}
-        {{- if or $logDir $certDir  }}
         volumeMounts:
+        - mountPath: /app-config
+          name: app-config-input
         {{- if $logDir }}
         - mountPath: {{ $logDir}}
           name: component-log
@@ -189,7 +190,6 @@ spec:
         {{- if $certDir }}
         - mountPath: {{ $certDir }}
           name: tls-info
-        {{- end }}
         {{- end }}
       {{- if $logDir }}
       - image: {{ include "repositoryGenerator.image.logging" . }}
