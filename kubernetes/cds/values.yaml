@@ -20,6 +20,12 @@
 global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
+  mariadbGalera: &mariadbGalera
+    #This flag allows CDS to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
   persistence:
     mountPath: /dockerdata-nfs
 
@@ -84,11 +90,20 @@ mariadb-galera:
   serviceAccount:
     nameOverride: *dbServer
 
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: cds-mariadb-init
+  # A configMap of same name is created. It points to file that will be run after
+  # The DB has been created.
+  # dbScriptConfigMap:
+
 cds-blueprints-processor:
   enabled: true
   config:
     cdsDB:
-      dbServer: *dbServer
+      dbServer: '{{ ternary "cds-db" "mariadb-galera" .Values.global.mariadbGalera.localCluster }}'
       dbPort: 3306
       dbName: *mysqlDbName
       dbCredsExternalSecret: *dbUserSecretName
