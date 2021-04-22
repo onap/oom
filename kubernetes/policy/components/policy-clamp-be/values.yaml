@@ -43,12 +43,10 @@ certInitializer:
   cadi_latitude: '38.0'
   app_ns: org.osaaf.aaf
   credsPath: /opt/app/osaaf/local
+  sdcClientPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
   aaf_add_config: >
     /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;
-    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_truststore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_truststore_password.pwd;
-    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_key_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_key_password.pwd;
-    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password.pwd;
-    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password_p12=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
+    java -jar {{ .Values.credsPath }}/aaf-cadi-aaf-2.1.20-full.jar cadi digest {{ .Values.sdcClientPassword }} {{ .Values.credsPath }}/org.onap.clamp.keyfile > {{ .Values.credsPath }}/sdc_client_password.pwd;
     cd {{ .Values.credsPath }};
     chmod a+rx *;
 
@@ -63,7 +61,7 @@ secrets:
 flavor: small
 
 # application image
-image: onap/policy-clamp-backend:6.0.2
+image: onap/policy-clamp-backend:6.1.0
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -86,6 +84,9 @@ db:
   service:
     name: policy-mariadb
     internalPort: 3306
+
+sdc:
+  client_password: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
 config:
   log:
