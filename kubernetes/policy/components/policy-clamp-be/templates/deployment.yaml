@@ -67,6 +67,8 @@ spec:
           - |
           {{- if .Values.global.aafEnabled }}
             export $(grep '^cadi_' {{ .Values.certInitializer.credsPath }}/org.onap.clamp.cred.props | xargs -0)
+            export SDC_CLIENT_PASSWORD_ENC=`java -jar {{ .Values.certInitializer.credsPath }}/aaf-cadi-aaf-2.1.20-full.jar cadi digest ${SDC_CLIENT_PASSWORD} {{ .Values.certInitializer.credsPath }}/org.onap.clamp.keyfile`;
+            envsubst < "/opt/policy/clamp/sdc-controllers-config.json" > "/opt/policy/clamp/sdc-controllers-config-pass.json"
           {{- end }}
             java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./policy-clamp-backend.jar
           ports:
@@ -99,6 +101,8 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12 }}
           - name: MYSQL_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 12 }}
+          - name: SDC_CLIENT_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-creds" "key" "password") | indent 12 }}
           {{-  if ne "unlimited" (include "common.flavor" .) }}
           - name: JAVA_RAM_CONFIGURATION
             value: -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=75
