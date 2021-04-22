@@ -44,10 +44,11 @@ certInitializer:
   app_ns: org.osaaf.aaf
   credsPath: /opt/app/osaaf/local
   aaf_add_config: >
-    echo "$cadi_truststore_password" > {{ .Values.credsPath }}/cadi_truststore_password.pwd;
-    echo "$cadi_key_password" > {{ .Values.credsPath }}/cadi_key_password.pwd;
-    echo "$cadi_keystore_password" > {{ .Values.credsPath }}/cadi_keystore_password.pwd;
-    echo "$cadi_keystore_password_p12" > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_truststore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_truststore_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_key_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_key_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password.pwd;
+    grep '^cadi' {{ .Values.credsPath }}/mycreds.prop | awk -v FS="cadi_keystore_password_p12=" 'NF>1{print $2}' > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
     cd {{ .Values.credsPath }};
     chmod a+rx *;
 
@@ -57,6 +58,11 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
+    passwordPolicy: required
+  - uid: sdc-creds
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.sdc.sdcClientExternalSecret) . }}'
+    password: '{{ .Values.sdc.clientPassword }}'
     passwordPolicy: required
 
 flavor: small
@@ -77,6 +83,9 @@ log:
 #################################################################
 
 #####dummy values for db user and password to pass lint!!!#######
+
+sdc:
+  clientPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
 db:
   user: policy_user
