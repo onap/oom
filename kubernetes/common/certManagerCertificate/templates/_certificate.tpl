@@ -189,6 +189,8 @@ spec:
 {{ end }}
 {{- end -}}
 
+{{/*Using templates below allows read and write access to volume mounted at $mountPath*/}}
+
 {{- define "common.certManager.volumeMounts" -}}
 {{- $dot := default . .dot -}}
 {{- $initRoot := default $dot.Values.certManagerCertificate .initRoot -}}
@@ -248,4 +250,49 @@ spec:
     {{- $certsLinkCommand = (printf "ln -s %s %s; %s" $sourcePath $destnationPath $certsLinkCommand) -}}
   {{- end -}}
 {{ $certsLinkCommand }}
+{{- end -}}
+
+{{/*Using templates below allows only read access to volume mounted at $mountPath*/}}
+
+{{- define "common.certManager.volumeMountsReadOnly" -}}
+{{- $dot := default . .dot -}}
+{{- $initRoot := default $dot.Values.certManagerCertificate .initRoot -}}
+{{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
+  {{- range $i, $certificate := $dot.Values.certificates -}}
+    {{- $mountPath := $certificate.mountPath -}}
+- mountPath: {{ $mountPath }}
+  name: certmanager-certs-volume-{{ $i }}
+   {{- end -}}
+{{- end -}}
+
+{{- define "common.certManager.volumesReadOnly" -}}
+{{- $dot := default . .dot -}}
+{{- $initRoot := default $dot.Values.certManagerCertificate .initRoot -}}
+{{- $subchartGlobal := mergeOverwrite (deepCopy $initRoot.global) $dot.Values.global -}}
+{{- $certificates := $dot.Values.certificates -}}
+  {{- range $i, $certificate := $certificates -}}
+    {{- $name := include "common.fullname" $dot -}}
+    {{- $certificatesSecretName := default (printf "%s-secret-%d" $name $i) $certificate.secretName -}}
+- name: certmanager-certs-volume-{{ $i }}
+  projected:
+    sources:
+    - secret:
+        name: {{ $certificatesSecretName }}
+    {{- if $certificate.keystore }}
+        items:
+        {{- range $outputType := $certificate.keystore.outputType }}
+          - key: keystore.{{ $outputType }}
+            path: keystore.{{ $outputType }}
+          - key: truststore.{{ $outputType }}
+            path: truststore.{{ $outputType }}
+        {{- end }}
+    - secret:
+        name: {{ $certificate.keystore.passwordSecretRef.name }}
+        items:
+          - key: {{ $certificate.keystore.passwordSecretRef.key }}
+            path: keystore.pass
+          - key: {{ $certificate.keystore.passwordSecretRef.key }}
+            path: truststore.pass
+     {{- end }}
+  {{- end -}}
 {{- end -}}

@@ -130,6 +130,7 @@ spec:
         - mountPath: /opt/app/osaaf
           name: tls-info
       {{- end }}
+      {{ include "dcaegen2-services-common._certPostProcessor" .  | nindent 4 }}
       containers:
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -137,7 +138,7 @@ spec:
         env:
         {{- if $certDir }}
         - name: DCAE_CA_CERTPATH
-          value: {{ $certDir}}/cacert.pem
+          value: {{ $certDir }}/cacert.pem
         {{- end }}
         - name: CONSUL_HOST
           value: consul-server.onap
@@ -189,6 +190,9 @@ spec:
         {{- if $certDir }}
         - mountPath: {{ $certDir }}
           name: tls-info
+          {{- if and .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+          {{- include "common.certManager.volumeMountsReadOnly" . | nindent 8 -}}
+          {{- end -}}
         {{- end }}
         {{- end }}
       {{- if $logDir }}
@@ -233,7 +237,56 @@ spec:
       {{- if $certDir }}
       - emptyDir: {}
         name: tls-info
+        {{ if and .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+        {{ include "common.certManager.volumesReadOnly" . | nindent 6 }}
+        {{- end }}
       {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end -}}
+
+{{/*
+  For internal use
+
+  Template to attach CertPostProcessor which merges CMPv2 truststore with AAF truststore
+  and swaps keystore files.
+*/}}
+{{- define "dcaegen2-services-common._certPostProcessor" -}}
+  {{- $certDir := default "" .Values.certDirectory . -}}
+  {{- if and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+    {{- $cmpv2Certificate := (index .Values.certificates 0) -}}
+    {{- $cmpv2CertificateDir := $cmpv2Certificate.mountPath -}}
+    {{- $certType := "pem" -}}
+    {{- if $cmpv2Certificate.keystore -}}
+      {{- $certType = (index $cmpv2Certificate.keystore.outputType 0) -}}
+    {{- end -}}
+    {{- $truststoresPaths := printf "%s/%s:%s/%s" $certDir "cacert.pem" $cmpv2CertificateDir "ca.crt" -}}
+    {{- $truststoresPasswordPaths := "" -}}
+    {{- $keystoreSourcePaths := printf "%s/%s:%s/%s" $cmpv2CertificateDir "tls.crt" $cmpv2CertificateDir "tls.key" -}}
+    {{- $keystoreDestinationPaths := printf "%s/%s:%s/%s" $certDir "cert.pem" $certDir "key.pem" -}}
+    {{- if not (eq $certType "pem") -}}
+      {{- $truststoresPaths = printf "%s/%s:%s/%s.%s" $certDir "trust.jks" $cmpv2CertificateDir "truststore" $certType -}}
+      {{- $truststoresPasswordPaths = printf "%s/%s:%s/%s" $certDir "trust.pass" $cmpv2CertificateDir "truststore.pass" -}}
+      {{- $keystoreSourcePaths = printf "%s/%s.%s:%s/%s" $cmpv2CertificateDir "keystore" $certType $cmpv2CertificateDir "keystore.pass" -}}
+      {{- $keystoreDestinationPaths = printf "%s/%s.%s:%s/%s.pass" $certDir "cert" $certType $certDir $certType -}}
+    {{- end }}
+  - name: cert-post-processor
+    image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.certPostProcessorImage }}
+    imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+    resources:
+      {{- include "common.resources" . | nindent 4 }}
+    volumeMounts:
+    - mountPath: {{ $certDir }}
+      name: tls-info
+      {{- include "common.certManager.volumeMountsReadOnly" . | nindent 4 }}
+    env:
+    - name: TRUSTSTORES_PATHS
+      value: {{ $truststoresPaths | quote}}
+    - name: TRUSTSTORES_PASSWORDS_PATHS
+      value: {{ $truststoresPasswordPaths | quote }}
+    - name: KEYSTORE_SOURCE_PATHS
+      value: {{ $keystoreSourcePaths | quote }}
+    - name: KEYSTORE_DESTINATION_PATHS
+      value: {{ $keystoreDestinationPaths | quote }}
+  {{- end }}
+{{- end -}}
