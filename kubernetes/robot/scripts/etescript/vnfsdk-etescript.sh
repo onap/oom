@@ -35,7 +35,7 @@ copy_package_certs_to_robot () {
 
 mkdir "$DIR/$SCRIPTDIR/tmp"
 cd "$DIR/$SCRIPTDIR/tmp"
-if [[ -f rootCA-robot-$SDCVALID.cert  &&  -f package-robot-$SDCVALID.cert  &&  -f package-robot-$SDCINVALID.cert  &&  -f package-private-robot-$SDCVALID.key  &&  -f package-private-robot-$SDCINVALID.key ]]; then
+if [ -f rootCA-robot-$SDCVALID.cert ] && [ -f package-robot-$SDCVALID.cert ] && [ -f package-robot-$SDCINVALID.cert ] && [ -f package-private-robot-$SDCVALID.key ] && [ -f package-private-robot-$SDCINVALID.key ]; then
         echo "All files are present";
 else
         generate_ca_key_cert_and_package_cert_issued_by_CA $SDCVALID
