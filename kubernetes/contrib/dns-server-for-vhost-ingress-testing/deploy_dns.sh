@@ -86,9 +86,11 @@ deploy() {
 	target_machine_notice_info
 }
 
-if [[ $# -eq 1 ]] && [[ $1 = "-h" || $1 = "--help" ]]; then
+if [ $# -eq 1 ] && [ "$1" = "-h" ]; then
 	usage
-elif [[ $# -eq 1 ]] && [[ $1 = "--info" ]]; then
+elif [ $# -eq 1 ] && [ "$1" = "--help" ]; then
+	usage
+elif [ $# -eq 1 ] && [ "$1" = "--info" ]; then
        target_machine_notice_info
 else
 	deploy $@
