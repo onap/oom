@@ -76,7 +76,7 @@ SCRIPTDIR=scripts/etescript
 
 ETEHOME=/var/opt/ONAP
 
-if [[ "${!#}" = "execscript" ]]; then
+if [ "${!#}" = "execscript" ]; then
    for script in $(ls -1 "$DIR/$SCRIPTDIR"); do
       [ -f "$DIR/$SCRIPTDIR/$script" ] && [ -x "$DIR/$SCRIPTDIR/$script" ] && source "$DIR/$SCRIPTDIR/$script"
    done
