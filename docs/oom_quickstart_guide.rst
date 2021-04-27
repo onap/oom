@@ -67,6 +67,12 @@ to suit your deployment with items like the OpenStack tenant information.
 
 
 
+.. note::
+  If you want to use CMPv2 certificate onboarding, Cert-Manager must be installed.
+  :doc:`Click here <oom_setup_paas>` to see how to install Cert-Manager.
+
+
+
 a. Enabling/Disabling Components:
 Here is an example of the nominal entries that need to be provided.
 We have different values file available for different contexts.
