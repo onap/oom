@@ -304,6 +304,19 @@ true
 {{-   end }}
 {{- end -}}
 
+{{/*
+  generate needed scheme:
+    - https if needTLS
+    - http if not
+*/}}
+{{- define "common.scheme" -}}
+  {{- if "common.needTLS" . }}
+https
+  {{- else }}
+http
+  {{- end -}}
+{{- end -}}
+
 {{- define "common.port.buildCache" -}}
   {{- $global := . }}
   {{- if not $global.Values._DmaapDrNodePortsCache }}
