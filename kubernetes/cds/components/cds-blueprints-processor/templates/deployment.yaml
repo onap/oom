@@ -123,6 +123,16 @@ spec:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
           - containerPort: {{ .Values.service.cluster.internalPort }}
+          startupProbe:
+            httpGet:
+              path: /api/v1/execution-service/health-check
+              port: {{ .Values.service.http.internalPort }}
+              httpHeaders:
+                - name: Authorization
+                  value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
+            initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
