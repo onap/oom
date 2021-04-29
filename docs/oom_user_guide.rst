@@ -55,8 +55,8 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have both the Kubernetes `kubectl` and Helm setup as a
-one time activity.
+Your environment must have the Kubernetes `kubectl` with Cert-Manager
+and Helm setup as a one time activity.
 
 Install Kubectl
 ~~~~~~~~~~~~~~~
@@ -77,6 +77,10 @@ Verify that the Kubernetes config is correct::
   > kubectl get pods --all-namespaces
 
 At this point you should see Kubernetes pods running.
+
+Install Cert-Manager
+~~~~~~~~~~~~~~~~~~~~
+Details on how to install Cert-Manager can be found :doc:`here <oom_setup_paas>`.
 
 Install Helm
 ~~~~~~~~~~~~
