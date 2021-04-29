@@ -29,7 +29,7 @@ kubectl create -f heapster/deploy/kube-config/rbac/heapster-rbac.yaml
 kubectl  apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/alternative/kubernetes-dashboard.yaml
 
 ##Change spec.type from ClusterIP to NodePort  and save.
-kubectl get svc kubernetes-dashboard --namespace=kube-system -o yaml | sed 's/type: ClusterIP/type: NodePort/' | kubectl replace -f -
+kubectl get svc kubernetes-dashboard --namespace=kube-system -o yaml |sed 's/type: ClusterIP/type: NodePort/' |kubectl replace -f -
 
 cat <<EOF >>dashboard-admin.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1

@@ -39,7 +39,7 @@ setup () {
 }
 
 create_actual_nodeport_json () {
-	kubectl get svc -n $NAMESPACE -o go-template="$FILTER" | python3 -c "$CSV2JSON" > "$NODEPORTS_FILE"
+	kubectl get svc -n $NAMESPACE -o go-template="$FILTER" |python3 -c "$CSV2JSON" > "$NODEPORTS_FILE"
 }
 
 copy_actual_nodeport_json_to_robot () {

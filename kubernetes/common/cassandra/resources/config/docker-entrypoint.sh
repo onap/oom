@@ -17,7 +17,7 @@ fi
 _ip_address() {
         # scrape the first non-localhost IP address of the container
         # in Swarm Mode, we often get two IPs -- the container IP, and the (shared) VIP, and the container IP should always be first
-        ip address | awk '
+        ip address |awk '
                 $1 == "inet" && $NF != "lo" {
                         gsub(/\/.+$/, "", $2)
                         print $2

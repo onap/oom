@@ -39,7 +39,7 @@ find_nodes_with_external_addrs()
 
 generate_config_map()
 {
-cat <<CNFEOF | kubectl apply -f -
+cat <<CNFEOF |kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:

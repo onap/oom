@@ -40,14 +40,14 @@ for instance in $(seq $count);do
     continue
   fi
 
-  status=$( echo "$response" | jq -r ".status" )
+  status=$( echo "$response" |jq -r ".status" )
   if [ "$status" != "200" ];then
     # query failed, try another instance
     echo "$shard query failed [http-status=$status]"
     continue
   fi
 
-  raftState=$( echo "$response" | jq -r ".value.RaftState" )
+  raftState=$( echo "$response" |jq -r ".value.RaftState" )
   if [ "$raftState" = "Leader" -o "$raftState" = "Follower" ];then
     # cluster has a leader and is healthy
     echo "$shard is healthy [RaftState=$raftState]"

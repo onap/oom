@@ -13,8 +13,8 @@ find_target_table_name ()
     keyspace_name=$2
     src_table_name=$3
     find_in_dir=$dest_path/$keyspace_name
-    tname_without_uuid=$(echo $src_table_name | cut -d '-' -f 1)
-    dest_table_name=$(ls -td -- $find_in_dir/$tname_without_uuid-* | head -n 1 | rev | cut -d'/' -f1 | rev)
+    tname_without_uuid=$(echo $src_table_name |cut -d '-' -f 1)
+    dest_table_name=$(ls -td -- $find_in_dir/$tname_without_uuid-* |head -n 1 |rev |cut -d'/' -f1 |rev)
     printf $dest_table_name
 }
 
@@ -104,7 +104,7 @@ do
     #if [ ! -d "$dest_path" ]; then
     #    mkdir -p $dest_path
     #fi
-    db_files=$(ls $src_path/*.db 2> /dev/null | wc -l)
+    db_files=$(ls $src_path/*.db 2> /dev/null |wc -l)
     if [ $db_files -ne 0 ]
     then
         cp $src_path/*.db $dest_path

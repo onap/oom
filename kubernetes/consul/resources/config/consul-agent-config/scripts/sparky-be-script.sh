@@ -16,10 +16,10 @@
 # limitations under the License.
 */}}
 
-NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "aai-sparky-be[^[:space:]]*")
+NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod |grep -o "aai-sparky-be[^[:space:]]*")
 
 if [ -n "$NAME" ]; then
-   if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $NAME -- ps -efww | grep 'java' | grep 'sparky' > /dev/null; then
+   if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $NAME -- ps -efww |grep 'java' |grep 'sparky' > /dev/null; then
 
       echo Success. UI Backend Service process is running. 2>&1
       exit 0

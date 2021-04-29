@@ -23,7 +23,7 @@ echo "Creating nfvo database . . ." 1>/tmp/mariadb-nfvodb.log 2>&1
 
 prepare_password()
 {
-    echo "$1" | sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
+    echo "$1" |sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
 }
 
 NFVO_DB_PASSWORD=`prepare_password $NFVO_DB_PASSWORD`

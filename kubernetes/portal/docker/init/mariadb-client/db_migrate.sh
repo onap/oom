@@ -25,7 +25,7 @@ DB_PORT=${DB_PORT:-3306}
 mkdir -p $SQL_DEST_DIR
 
 #Find all sql files and copy them to the destination directory
-find "/onap-sources/$SQL_SRC_DIR" -type f -iname "*.sql" | awk -v dest="$SQL_DEST_DIR" '{n=split($1,a,"/"); system(sprintf( "cp %s %s", $1, dest"/"a[n])) }'
+find "/onap-sources/$SQL_SRC_DIR" -type f -iname "*.sql" |awk -v dest="$SQL_DEST_DIR" '{n=split($1,a,"/"); system(sprintf( "cp %s %s", $1, dest"/"a[n])) }'
 
 
 #Not needed right now?
@@ -35,4 +35,4 @@ find "/onap-sources/$SQL_SRC_DIR" -type f -iname "*.sql" | awk -v dest="$SQL_DES
 ##ERROR 1062 (23000) at line 382: Duplicate entry '2' for key 'PRIMARY'
 
 cd $SQL_DEST_DIR
-cat *.sql | mysql -vv --user=$DB_USER --password=$DB_PASS --host=$DB_HOST --port=$DB_PORT --force
+cat *.sql |mysql -vv --user=$DB_USER --password=$DB_PASS --host=$DB_HOST --port=$DB_PORT --force

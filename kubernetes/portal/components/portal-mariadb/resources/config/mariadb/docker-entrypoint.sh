@@ -70,8 +70,8 @@ docker_process_init_files() {
 				fi
 				;;
 			*.sql)    mysql_note "$0: running $f"; docker_process_sql < "$f"; echo ;;
-			*.sql.gz) mysql_note "$0: running $f"; gunzip -c "$f" | docker_process_sql; echo ;;
-			*.sql.xz) mysql_note "$0: running $f"; xzcat "$f" | docker_process_sql; echo ;;
+			*.sql.gz) mysql_note "$0: running $f"; gunzip -c "$f" |docker_process_sql; echo ;;
+			*.sql.xz) mysql_note "$0: running $f"; xzcat "$f" |docker_process_sql; echo ;;
 			*)        mysql_warn "$0: ignoring $f" ;;
 		esac
 		echo
@@ -91,7 +91,7 @@ mysql_check_config() {
 mysql_get_config() {
 	local conf="$1"; shift
 	"$@" --verbose --help --log-bin-index="$(mktemp -u)" 2>/dev/null \
-		| awk -v conf="$conf" '$1 == conf && /^[^ \t]/ { sub(/^[^ \t]+[ \t]+/, ""); print; exit }'
+	 |awk -v conf="$conf" '$1 == conf && /^[^ \t]/ { sub(/^[^ \t]+[ \t]+/, ""); print; exit }'
 	# match "datadir      /some/path with/spaces in/it here" but not "--xyz=abc\n     datadir (xyz)"
 }
 
@@ -151,7 +151,7 @@ docker_create_db_directories() {
 docker_init_database_dir() {
 	mysql_note "Initializing database files"
 	installArgs=( --datadir="$DATADIR" --rpm )
-	if { mysql_install_db --help || :; } | grep -q -- '--auth-root-authentication-method'; then
+	if { mysql_install_db --help || :; } |grep -q -- '--auth-root-authentication-method'; then
 		# beginning in 10.4.3, install_db uses "socket" which only allows system user root to connect, switch back to "normal" to allow mysql root without a password
 		# see https://github.com/MariaDB/server/commit/b9f3f06857ac6f9105dc65caae19782f09b47fb3
 		# (this flag doesn't exist in 10.0 and below)
@@ -217,12 +217,12 @@ docker_setup_db() {
 
 			# sed is for https://bugs.mysql.com/bug.php?id=20545
 			mysql_tzinfo_to_sql /usr/share/zoneinfo \
-				| sed 's/Local time zone must be set--see zic manual page/FCTY/'
+			 |sed 's/Local time zone must be set--see zic manual page/FCTY/'
 
 			for table in "${tztables[@]}"; do
 				echo "/*!100400 ALTER TABLE $table TRANSACTIONAL=1 */;"
 			done
-		} | docker_process_sql --dont-use-mysql-root-password --database=mysql
+		} |docker_process_sql --dont-use-mysql-root-password --database=mysql
 		# tell docker_process_sql to not use MYSQL_ROOT_PASSWORD since it is not set yet
 	fi
 	# Generate random root password
@@ -342,10 +342,10 @@ _main() {
 			docker_setup_db
 			docker_process_init_files /docker-entrypoint-initdb.d/*
 
-			for i in $(echo $PORTAL_DB_TABLES | sed "s/,/ /g")
+			for i in $(echo $PORTAL_DB_TABLES |sed "s/,/ /g")
 				do
 					echo "Granting portal user ALL PRIVILEGES for table $i"
-					echo "GRANT ALL ON \`$i\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+					echo "GRANT ALL ON \`$i\`.* TO '$MYSQL_USER'@'%' ;" |"${mysql[@]}"
 				done
 
 			mysql_note "Stopping temporary server"

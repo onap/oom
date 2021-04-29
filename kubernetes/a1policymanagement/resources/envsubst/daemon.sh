@@ -16,7 +16,7 @@
 */}}
 
 terminate() {
-  echo "$(date) | INFO | Terminating child processes"
+  echo "$(date) |INFO |Terminating child processes"
   pids="$(jobs -p)"
   if [ "$pids" != "" ]; then
     kill -TERM $pids >/dev/null 2>/dev/null
@@ -25,6 +25,6 @@ terminate() {
 }
 
 trap terminate TERM
-echo "$(date) | INFO | Started monitoring /config-input/ directory"
+echo "$(date) |INFO |Started monitoring /config-input/ directory"
 inotifyd /tmp/scripts/update_files /config-input/ &
 wait

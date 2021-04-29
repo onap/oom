@@ -40,8 +40,8 @@ enable_odl_cluster () {
   hm=$(hostname)
   echo "Get current Hostname ${hm}"
 
-  node=($(echo ${hm} | sed 's/-[0-9]*$//g'))
-  node_index=($(echo ${hm} | awk -F"-" '{print $NF}'))
+  node=($(echo ${hm} |sed 's/-[0-9]*$//g'))
+  node_index=($(echo ${hm} |awk -F"-" '{print $NF}'))
   node_list="${node}-0.{{ .Values.service.name }}-cluster.{{.Release.Namespace}}";
 
   for ((i=1;i<${APPC_REPLICAS};i++));

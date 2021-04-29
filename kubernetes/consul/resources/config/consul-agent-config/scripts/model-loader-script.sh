@@ -16,10 +16,10 @@
 # limitations under the License.
 */}}
 
-NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod | grep -o "aai-model-loader[^[:space:]]*")
+NAME=$(/consul/bin/kubectl -n {{ include "common.namespace" . }} get pod |grep -o "aai-model-loader[^[:space:]]*")
 
 if [ -n "$NAME" ]; then
-   if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $NAME -- ps -efww | grep 'java' | grep 'model-loader' > /dev/null; then
+   if /consul/bin/kubectl -n {{ include "common.namespace" . }} exec -it $NAME -- ps -efww |grep 'java' |grep 'model-loader' > /dev/null; then
 
       echo Success. Model Loader process is running. 2>&1
       exit 0

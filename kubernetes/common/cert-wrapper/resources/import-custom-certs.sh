@@ -26,8 +26,8 @@ mkdir -p $WORK_DIR
 
 # Decrypt and move relevant files to WORK_DIR
 for f in $CERTS_DIR/*; do
-  export canonical_name_nob64=$(echo $f | sed 's/.*\/\([^\/]*\)/\1/')
-  export canonical_name_b64=$(echo $f | sed 's/.*\/\([^\/]*\)\(\.b64\)/\1/')
+  export canonical_name_nob64=$(echo $f |sed 's/.*\/\([^\/]*\)/\1/')
+  export canonical_name_b64=$(echo $f |sed 's/.*\/\([^\/]*\)\(\.b64\)/\1/')
   if [ "$AAF_ENABLED" = "false" ] && [ "$canonical_name_b64" = "$ONAP_TRUSTSTORE" ]; then
     # Dont use onap truststore when aaf is disabled
     continue

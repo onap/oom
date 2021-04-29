@@ -31,7 +31,7 @@ LOGGING=
 DEBUG_PROP=
 # Debug Setup. Uses env variables
 # DEBUG and DEBUG_PORT
-# DEBUG=true/false | DEBUG_PORT=<Port valie must be integer>
+# DEBUG=true/false |DEBUG_PORT=<Port valie must be integer>
 if [ "${DEBUG}" = "true" ]; then
   if [ "${DEBUG_PORT}" = "" ]; then
     DEBUG_PORT=8000
@@ -57,11 +57,11 @@ fi
 # If music-sb.properties exists in /opt/app/music/etc then use that to override the application.properties
 if [ -f $PROPS ]; then
   # Run with different Property file
-  #echo "java ${DEBUG_PROP} -jar MUSIC.jar --spring.config.location=file:${PROPS} ${LOGGING} 2>&1 | tee ${LOGFILE}"
-  java ${DEBUG_PROP} ${JAVA_OPTS} -jar MUSIC-SB.jar ${SPRING_OPTS} --spring.config.location=file:${PROPS} ${LOGGING} 2>&1 | tee ${LOGFILE}
+  #echo "java ${DEBUG_PROP} -jar MUSIC.jar --spring.config.location=file:${PROPS} ${LOGGING} 2>&1 |tee ${LOGFILE}"
+  java ${DEBUG_PROP} ${JAVA_OPTS} -jar MUSIC-SB.jar ${SPRING_OPTS} --spring.config.location=file:${PROPS} ${LOGGING} 2>&1 |tee ${LOGFILE}
 else
-  #echo "java ${DEBUG_PROP} -jar MUSIC.jar --server.ssl.key-store-password=${PASSWORD} ${LOGGING} 2>&1 | tee ${LOGFILE}"
-  java ${DEBUG_PROP} ${JAVA_OPTS} -jar MUSIC-SB.jar ${SPRING_OPTS} --server.ssl.key-store-password="${PASSWORD}" ${LOGGING} 2>&1 | tee ${LOGFILE}
+  #echo "java ${DEBUG_PROP} -jar MUSIC.jar --server.ssl.key-store-password=${PASSWORD} ${LOGGING} 2>&1 |tee ${LOGFILE}"
+  java ${DEBUG_PROP} ${JAVA_OPTS} -jar MUSIC-SB.jar ${SPRING_OPTS} --server.ssl.key-store-password="${PASSWORD}" ${LOGGING} 2>&1 |tee ${LOGFILE}
 fi
 
 

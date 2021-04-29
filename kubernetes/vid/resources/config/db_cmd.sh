@@ -16,7 +16,7 @@
 # limitations under the License.
 */}}
 
-DB={{index .Values "mariadb-galera" "db" "name" | upper }}
+DB={{index .Values "mariadb-galera" "db" "name" |upper }}
 eval "MYSQL_USER=\$MYSQL_USER_${DB}"
 eval "MYSQL_PASSWORD=\$MYSQL_PASSWORD_${DB}"
 

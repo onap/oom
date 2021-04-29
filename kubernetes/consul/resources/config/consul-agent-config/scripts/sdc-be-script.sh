@@ -23,7 +23,7 @@ HEALTH_CHECK_RESPONSE=$(curl -s $HEALTH_CHECK_ENDPOINT)
 ## Strip out the ON_BOARDING section from the response XML (otherwise we will
 ## get duplicate results when we search for component BE) and check to see if
 ## the BE component is reported as up.
-READY=$(echo "$HEALTH_CHECK_RESPONSE" | sed '/ON_BOARDING/,/]/d' | grep -A 1 "BE" | grep "UP")
+READY=$(echo "$HEALTH_CHECK_RESPONSE" |sed '/ON_BOARDING/,/]/d' |grep -A 1 "BE" |grep "UP")
 
 if [ -n $READY ]; then
   echo "Query against health check endpoint: $HEALTH_CHECK_ENDPOINT"

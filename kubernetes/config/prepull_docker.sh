@@ -104,14 +104,14 @@ do
                 #skiping commented line
                 if [[ ${line:0:1} != '#' ]]; then
                         #find all image subtag inside converted values.yaml file's lines
-                        if echo $line | grep -q $IMAGE_TEXT ; then
+                        if echo $line |grep -q $IMAGE_TEXT ; then
                                 #find imageName inside line
-                                imageName=`echo $line | awk -F "=" '{print $2}'`
+                                imageName=`echo $line |awk -F "=" '{print $2}'`
                                 #remove attional prefix and postfix
-                                imageNameFinal=`echo "$imageName" | sed -e 's/^"//' -e 's/"$//' `
+                                imageNameFinal=`echo "$imageName" |sed -e 's/^"//' -e 's/"$//' `
 
                         	#check if line contain Version as a subtag in lines if yes then call docker pull with version
-                                if echo $line | grep -q $IMAGE_VERSION_TEXT ; then
+                                if echo $line |grep -q $IMAGE_VERSION_TEXT ; then
                                         echo docker pull "$imageNameWithVersion":"$imageNameFinal"
                                         docker pull $imageNameWithVersion:$imageNameFinal &
                                         imageNameWithVersion=" "
@@ -133,7 +133,7 @@ done
 echo "finished launching pulls"
 #MAX_WAIT_INTERVALS=300
 INTERVAL_COUNT=300
-while [  $(ps -ef | grep docker | grep pull | grep -v $0 | wc -l) -gt 0 ]; do
+while [  $(ps -ef |grep docker |grep pull |grep -v $0 |wc -l) -gt 0 ]; do
   sleep 10
   INTERVAL_COUNT=$((INTERVAL_COUNT - 1))
   echo "waiting for last pull"

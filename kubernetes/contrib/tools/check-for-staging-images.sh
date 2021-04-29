@@ -20,17 +20,17 @@ if [ "$GERRIT_BRANCH" = "staging" ]; then
     exit 0
 fi
 
-USED_IMAGES=$(grep -r -E -o -h ':\s*onap/.*:.*' | sed -e 's/^: //' -e 's/^ //' | sort | uniq)
-REPO_IMAGES=$(curl -s $BASE_URL/v2/_catalog | jq -r '.repositories[]')
-NOT_AVAILABLE_IMAGES=$(echo "$USED_IMAGES" | grep -vE  "$(echo "$REPO_IMAGES" | tr "\n" "|" | sed 's/|$//')")
-USED_IMAGES=$(echo "$USED_IMAGES" | grep -E "$(echo "$REPO_IMAGES" | tr "\n" "|" | sed 's/|$//')")
+USED_IMAGES=$(grep -r -E -o -h ':\s*onap/.*:.*' |sed -e 's/^: //' -e 's/^ //' |sort |uniq)
+REPO_IMAGES=$(curl -s $BASE_URL/v2/_catalog |jq -r '.repositories[]')
+NOT_AVAILABLE_IMAGES=$(echo "$USED_IMAGES" |grep -vE  "$(echo "$REPO_IMAGES" |tr "\n" "|" |sed 's/|$//')")
+USED_IMAGES=$(echo "$USED_IMAGES" |grep -E "$(echo "$REPO_IMAGES" |tr "\n" "|" |sed 's/|$//')")
 for i in $USED_IMAGES; do
-    TMP_IMG=$(echo "$i" | cut -d ":" -f1)
-    TMP_TAG=$(echo "$i" | cut -d ":" -f2)
+    TMP_IMG=$(echo "$i" |cut -d ":" -f1)
+    TMP_TAG=$(echo "$i" |cut -d ":" -f2)
     if [ "$LAST_IMG" != "$TMP_IMG" ]; then
-        AVAILABLE_TAGS=$(curl -s $BASE_URL/v2/$TMP_IMG/tags/list | jq -r '.tags[]')
+        AVAILABLE_TAGS=$(curl -s $BASE_URL/v2/$TMP_IMG/tags/list |jq -r '.tags[]')
     fi
-    if ! echo "$AVAILABLE_TAGS" | grep "$TMP_TAG" > /dev/null; then
+    if ! echo "$AVAILABLE_TAGS" |grep "$TMP_TAG" > /dev/null; then
         NOT_AVAILABLE_IMAGES="$NOT_AVAILABLE_IMAGES\n$i"
     fi
     LAST_IMG="$TMP_IMG"

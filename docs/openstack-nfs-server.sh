@@ -2,7 +2,7 @@
 
 apt-get update
 
-IP_ADDR=`ip address |grep ens|grep inet|awk '{print $2}'| awk -F / '{print $1}'`
+IP_ADDR=`ip address |grep ens|grep inet|awk '{print $2} |awk -F / '{print $1}'`
 HOSTNAME=`hostname`
 
 echo "$IP_ADDR $HOSTNAME" >> /etc/hosts

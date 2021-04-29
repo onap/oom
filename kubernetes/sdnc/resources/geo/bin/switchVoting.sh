@@ -28,7 +28,7 @@ fi
 
 dir=$( dirname $0 )
 USERNAME=admin
-PASSWORD=`awk '/odlPassword/ {print $2}' $dir/../../../values.yaml | head -1`
+PASSWORD=`awk '/odlPassword/ {print $2}' $dir/../../../values.yaml |head -1`
 
 case "$1" in
 

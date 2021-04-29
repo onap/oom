@@ -44,24 +44,24 @@ EOF
 }
 
 generate_overrides() {
-  SUBCHART_NAMES=($(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'))
+  SUBCHART_NAMES=($(cat $COMPUTED_OVERRIDES |grep -v '^\s\s'))
 
   for index in "${!SUBCHART_NAMES[@]}"; do
     START=${SUBCHART_NAMES[index]}
     END=${SUBCHART_NAMES[index+1]}
     if [[ $START = "global:" ]]; then
       echo "global:" > $GLOBAL_OVERRIDES
-      cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
-        | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
+      cat $COMPUTED_OVERRIDES |sed '/common:/,/consul:/d' \
+ |sed -n '/^'"$START"'/,/'log:'/p' |sed '1d;$d' >> $GLOBAL_OVERRIDES
     else
       SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
       if [[ -d "$SUBCHART_DIR" ]]; then
         if [[ -z "$END" ]]; then
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+          cat $COMPUTED_OVERRIDES |sed -n '/^'"$START"'/,/'"$END"'/p' \
+ |sed '1d;$d' |cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
         else
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+          cat $COMPUTED_OVERRIDES |sed -n '/^'"$START"'/,/^'"$END"'/p' \
+ |sed '1d;$d' |cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
         fi
       fi
     fi
@@ -111,19 +111,19 @@ deploy() {
   # determine if verbose output is enabled
   VERBOSE="false"
   if [[ $FLAGS = *"--verbose"* ]]; then
-    FLAGS="$(echo $FLAGS| sed -n 's/--verbose//p')"
+    FLAGS="$(echo $FLAG |sed -n 's/--verbose//p')"
     VERBOSE="true"
   fi
   # determine if delay for deployment is enabled
   DELAY="false"
   if [[ $FLAGS = *"--delay"* ]]; then
-    FLAGS="$(echo $FLAGS| sed -n 's/--delay//p')"
+    FLAGS="$(echo $FLAG |sed -n 's/--delay//p')"
     DELAY="true"
   fi
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
   if [[ $FLAGS = *"--set-last-applied"* ]]; then
-    FLAGS="$(echo $FLAGS| sed -n 's/--set-last-applied//p')"
+    FLAGS="$(echo $FLAG |sed -n 's/--set-last-applied//p')"
     SET_LAST_APPLIED="true"
   fi
   if [[ $FLAGS = *"--dry-run"* ]]; then
@@ -132,9 +132,9 @@ deploy() {
   fi
 
   # should pass all flags instead
-  NAMESPACE="$(echo $FLAGS | sed -n 's/.*\(namespace\).\s*/\1/p' | cut -c10- | cut -d' ' -f1)"
+  NAMESPACE="$(echo $FLAGS |sed -n 's/.*\(namespace\).\s*/\1/p' |cut -c10- |cut -d' ' -f1)"
 
-  VERSION="$(echo $FLAGS | sed -n 's/.*\(version\).\s*/\1/p' | cut -c8- | cut -d' ' -f1)"
+  VERSION="$(echo $FLAGS |sed -n 's/.*\(version\).\s*/\1/p' |cut -c8- |cut -d' ' -f1)"
 
   if [ ! -z $VERSION ]; then
      VERSION="--version $VERSION"
@@ -187,7 +187,7 @@ deploy() {
   # compute overrides for parent and all subcharts
   COMPUTED_OVERRIDES=$CACHE_DIR/$CHART_NAME/computed-overrides.yaml
   helm upgrade -i $RELEASE $CHART_DIR $FLAGS --dry-run --debug \
-   | sed -n '/COMPUTED VALUES:/,/HOOKS:/p' | sed '1d;$d' > $COMPUTED_OVERRIDES
+ |sed -n '/COMPUTED VALUES:/,/HOOKS:/p' |sed '1d;$d' > $COMPUTED_OVERRIDES
 
   # extract global overrides to apply to parent and all subcharts
   GLOBAL_OVERRIDES=$CHART_DIR/global-overrides.yaml
@@ -209,7 +209,7 @@ deploy() {
     # Add annotation last-applied-configuration if set-last-applied flag is set
     if [[ $SET_LAST_APPLIED = "true" ]]; then
       helm get manifest ${RELEASE} \
-      | kubectl apply set-last-applied --create-annotation -n onap -f - \
+ |kubectl apply set-last-applied --create-annotation -n onap -f - \
       > $LOG_FILE.log 2>&1
     fi
   fi
@@ -224,7 +224,7 @@ deploy() {
 
     SUBCHART_ENABLED=0
     if [[ -f $SUBCHART_OVERRIDES ]]; then
-      SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+      SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES |grep -c "^enabled: true")
     fi
 
     if [[ $SUBCHART_ENABLED -eq 1 ]]; then
@@ -244,7 +244,7 @@ deploy() {
 	# Add annotation last-applied-configuration if set-last-applied flag is set
         if [[ $SET_LAST_APPLIED = "true" ]]; then
           helm get manifest "${RELEASE}-${subchart}" \
-          | kubectl apply set-last-applied --create-annotation -n onap -f - \
+ |kubectl apply set-last-applied --create-annotation -n onap -f - \
 	      > $LOG_FILE.log 2>&1
         fi
       fi
@@ -253,7 +253,7 @@ deploy() {
 		sleep 3m
 	  fi
     else
-      array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
+      array=($(echo "$ALL_HELM_RELEASES" |grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for (( i = n-1; i >= 0; i-- )); do
         if [[ $HELM_VER = "v3."* ]]; then
@@ -267,9 +267,9 @@ deploy() {
 
   # report on success/failures of installs/upgrades
   if [[ $HELM_VER = "v3."* ]]; then
-    helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
+    helm ls --all-namespaces |grep -i FAILED |grep $RELEASE
   else
-    helm ls | grep FAILED | grep $RELEASE
+    helm ls |grep FAILED |grep $RELEASE
   fi
 }
 HELM_VER=$(helm version --template "{{.Version}}")

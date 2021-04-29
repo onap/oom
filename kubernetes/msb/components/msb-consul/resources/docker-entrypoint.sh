@@ -13,7 +13,7 @@ set -x
 # to Consul.
 CONSUL_BIND=
 if [ -n "$CONSUL_BIND_INTERFACE" ]; then
-  CONSUL_BIND_ADDRESS=$(ip -o -4 addr list $CONSUL_BIND_INTERFACE | head -n1 | awk '{print $4}' | cut -d/ -f1)
+  CONSUL_BIND_ADDRESS=$(ip -o -4 addr list $CONSUL_BIND_INTERFACE |head -n1 |awk '{print $4}' |cut -d/ -f1)
   if [ -z "$CONSUL_BIND_ADDRESS" ]; then
     echo "Could not find IP for interface '$CONSUL_BIND_INTERFACE', exiting"
     exit 1
@@ -28,7 +28,7 @@ fi
 # pass the proper -client= option along to Consul.
 CONSUL_CLIENT=
 if [ -n "$CONSUL_CLIENT_INTERFACE" ]; then
-  CONSUL_CLIENT_ADDRESS=$(ip -o -4 addr list $CONSUL_CLIENT_INTERFACE | head -n1 | awk '{print $4}' | cut -d/ -f1)
+  CONSUL_CLIENT_ADDRESS=$(ip -o -4 addr list $CONSUL_CLIENT_INTERFACE |head -n1 |awk '{print $4}' |cut -d/ -f1)
   if [ -z "$CONSUL_CLIENT_ADDRESS" ]; then
     echo "Could not find IP for interface '$CONSUL_CLIENT_INTERFACE', exiting"
     exit 1
@@ -69,7 +69,7 @@ if [ "$1" = 'agent' ]; then
 elif [ "$1" = 'version' ]; then
     # This needs a special case because there's no help output.
     set -- consul "$@"
-elif consul --help "$1" 2>&1 | grep -q "consul $1"; then
+elif consul --help "$1" 2>&1 |grep -q "consul $1"; then
     # We can't use the return code to check for the existence of a subcommand, so
     # we have to use grep to look for a pattern in the help output.
     set -- consul "$@"

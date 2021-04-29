@@ -218,7 +218,7 @@ EOF
   echo "Installing on ${SERVER} for ${BRANCH}: RKE: ${RKE_VERSION} Kubectl: ${KUBECTL_VERSION} Helm: ${HELM_VERSION} Docker: ${DOCKER_VERSION} username: ${USERNAME}"
   sudo echo "127.0.0.1 ${SERVER}" >> /etc/hosts
   echo "Install docker - If you must install as non-root - comment out the docker install below - run it separately, run the user mod, logout/login and continue this script"
-  curl https://releases.rancher.com/install-docker/$DOCKER_VERSION.sh | sh
+  curl https://releases.rancher.com/install-docker/$DOCKER_VERSION.sh |sh
   sudo usermod -aG docker $USERNAME
 
   echo "Install RKE"
@@ -297,7 +297,7 @@ EOF
   echo "To enable grafana dashboard - do this after running cd.sh which brings up onap - or you may get a 302xx port conflict"
   echo "kubectl expose -n kube-system deployment monitoring-grafana --type=LoadBalancer --name monitoring-grafana-client"
   echo "to get the nodeport for a specific VM running grafana"
-  echo "kubectl get services --all-namespaces | grep graf"
+  echo "kubectl get services --all-namespaces |grep graf"
   sudo docker version
   helm version
   kubectl version

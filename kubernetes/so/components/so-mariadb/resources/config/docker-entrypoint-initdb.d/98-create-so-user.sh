@@ -27,7 +27,7 @@ echo "Creating so user . . ." 1>/tmp/mariadb-so-user.log 2>&1
 
 prepare_password()
 {
-	echo "$1" | sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
+	echo "$1" |sed -e "s/'/\\\\'/g; s/\"/\\\\\"/g"
 }
 
 DB_PASSWORD=`prepare_password $DB_PASSWORD`

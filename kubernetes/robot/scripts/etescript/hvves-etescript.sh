@@ -20,7 +20,7 @@
 #
 
 
-HVVESPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name | grep hv-ves)
+HVVESPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name |grep hv-ves)
 
 
 generate_ca_key_cert () {

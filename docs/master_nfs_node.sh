@@ -25,7 +25,7 @@ NFS_EXP=""
 for i in $@; do
   NFS_EXP+="$i(rw,sync,no_root_squash,no_subtree_check) "
 done
-echo "/dockerdata-nfs "$NFS_EXP | sudo tee -a /etc/exports
+echo "/dockerdata-nfs "$NFS_EXP |sudo tee -a /etc/exports
 
 #Restart the NFS service
 sudo exportfs -a

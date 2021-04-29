@@ -17,7 +17,7 @@
 */}}
 echo "*** retrieving passwords for certificates"
 export $(/opt/app/aaf_config/bin/agent.sh local showpass \
-  {{.Values.fqi}} {{ .Values.fqdn }} | grep '^c' | xargs -0)
+  {{.Values.fqi}} {{ .Values.fqdn }} |grep '^c' |xargs -0)
 if [ -z "${{ .Values.envVarToCheck }}" ]
 then
   echo " /!\ certificates retrieval failed"

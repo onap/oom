@@ -12,8 +12,8 @@
 
 SDCVALID=sdc-valid
 SDCINVALID=sdc-invalid
-ROBOTPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name | grep robot )
-SDCONBOARDINGPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name | grep sdc-onboarding-be | grep -v cassandra)
+ROBOTPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name |grep robot )
+SDCONBOARDINGPOD=$(kubectl -n $NAMESPACE get pods --no-headers=true -o custom-columns=:metadata.name |grep sdc-onboarding-be |grep -v cassandra)
 
 generate_ca_key_cert_and_package_cert_issued_by_CA () {
         openssl req -batch -new -nodes -x509 -days 36500 -keyout rootCA-private-robot-$1.key -out rootCA-robot-$1.cert

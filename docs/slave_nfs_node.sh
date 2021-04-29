@@ -22,4 +22,4 @@ sudo mkdir -p /dockerdata-nfs
 
 #Mount the remote NFS directory to the local one
 sudo mount $MASTER_IP:/dockerdata-nfs /dockerdata-nfs/
-echo "$MASTER_IP:/dockerdata-nfs /dockerdata-nfs nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0" | sudo tee -a /etc/fstab
+echo "$MASTER_IP:/dockerdata-nfs /dockerdata-nfs nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0" |sudo tee -a /etc/fstab

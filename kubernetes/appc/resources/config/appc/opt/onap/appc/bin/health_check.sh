@@ -15,7 +15,7 @@
 # limitations under the License.
 */}}
 
-waiting_bundles=$(/opt/opendaylight/current/bin/client bundle:list | grep Waiting | wc -l)
+waiting_bundles=$(/opt/opendaylight/current/bin/client bundle:list |grep Waiting |wc -l)
 run_level=$(/opt/opendaylight/current/bin/client system:start-level)
 
   if [ "$run_level" = "Level 100" ] && [ "$waiting_bundles" -lt "1" ]

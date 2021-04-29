@@ -21,7 +21,7 @@ undeploy() {
   RELEASE=$1
   FLAGS=$2
 
-  array=($(helm ls -q --all | grep $RELEASE))
+  array=($(helm ls -q --all |grep $RELEASE))
   n=${#array[*]}
   for (( i = n-1; i >= 0; i-- ))
   do

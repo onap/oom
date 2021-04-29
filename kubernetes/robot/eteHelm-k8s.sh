@@ -29,9 +29,9 @@ set -x
 
 export NAMESPACE="$1"
 
-POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
+POD=$(kubectl --namespace $NAMESPACE get pods |sed 's/ .*// |grep robot)
 
-PROJECTS=$(helm list | tail -n +3 | grep '-' | cut -d' ' -f1 | sed -E 's/\w+-(\w+)/health-\1/g' | grep -v consul | grep -v nfs-provision)
+PROJECTS=$(helm list |tail -n +3 |grep '-' |cut -d' ' -f1 |sed -E 's/\w+-(\w+)/health-\1/g' |grep -v consul |grep -v nfs-provision)
 
 TAGS=""
 for project in $PROJECTS ;
@@ -50,7 +50,7 @@ if [[ "${!#}" = "execscript" ]]; then
    done
 fi
 
-export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
+export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ |wc -l")
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_ete_helmlist
 DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
 
