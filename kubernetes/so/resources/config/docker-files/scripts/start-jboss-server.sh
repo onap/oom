@@ -37,7 +37,7 @@ trap "kill -TERM $JBOSS_PID" INT
 trap "kill -QUIT $JBOSS_PID" QUIT
 trap "kill -PIPE $JBOSS_PID" PIPE
 trap "kill -TERM $JBOSS_PID" TERM
-if [ "x$JBOSS_PIDFILE" != "x" ]; then
+if [ "$JBOSS_PIDFILE" != "" ]; then
   echo $JBOSS_PID > $JBOSS_PIDFILE
 fi
 # Wait until the background process exits
@@ -60,6 +60,6 @@ if [ "$JBOSS_STATUS" -ne 10 ]; then
       # Wait for a complete shudown
       wait $JBOSS_PID 2>/dev/null
 fi
-if [ "x$JBOSS_PIDFILE" != "x" ]; then
+if [ "$JBOSS_PIDFILE" != "" ]; then
       grep "$JBOSS_PID" $JBOSS_PIDFILE && rm $JBOSS_PIDFILE
 fi
