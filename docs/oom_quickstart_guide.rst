@@ -33,13 +33,19 @@ where <BRANCH> can be an official release tag, such as
   > cp -R ~/oom/kubernetes/helm/plugins/ ~/.local/share/helm/plugins
   > helm plugin install https://github.com/chartmuseum/helm-push.git
 
-**Step 3** Install Chartmuseum::
+**Step 3.** Install Chartmuseum::
 
   > curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
   > chmod +x ./chartmuseum
   > mv ./chartmuseum /usr/local/bin
 
-**Step 4.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
+**Step 4.** Install Cert-Manager::
+
+  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+
+More details can be found :doc:`here <oom_setup_paas>`.
+
+**Step 5.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
 an override file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file
 to suit your deployment with items like the OpenStack tenant information.
 
@@ -64,12 +70,6 @@ to suit your deployment with items like the OpenStack tenant information.
     charts or use an override file to replace them.
 
  e. Add in the command line a value for the global master password (global.masterPassword).
-
-
-
-.. note::
-  If you want to use CMPv2 certificate onboarding, Cert-Manager must be installed.
-  :doc:`Click here <oom_setup_paas>` to see how to install Cert-Manager.
 
 
 
@@ -154,7 +154,7 @@ Example Keystone v3  (required for Rocky and later releases)
    :language: yaml
 
 
-**Step 5.** To setup a local Helm server to server up the ONAP charts::
+**Step 6.** To setup a local Helm server to server up the ONAP charts::
 
   > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
 
@@ -163,13 +163,13 @@ follows::
 
   > helm repo add local http://127.0.0.1:8879
 
-**Step 6.** Verify your Helm repository setup with::
+**Step 7.** Verify your Helm repository setup with::
 
   > helm repo list
   NAME   URL
   local  http://127.0.0.1:8879
 
-**Step 7.** Build a local Helm repository (from the kubernetes directory)::
+**Step 8.** Build a local Helm repository (from the kubernetes directory)::
 
   > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all ; make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] onap
 
@@ -177,7 +177,7 @@ follows::
   Sets the helm binary to be used. The default value use helm from PATH
 
 
-**Step 8.** Display the onap charts that available to be deployed::
+**Step 9.** Display the onap charts that available to be deployed::
 
   > helm repo update
   > helm search repo onap
@@ -189,7 +189,7 @@ follows::
   to your deployment charts or values be sure to use ``make`` to update your
   local Helm repository.
 
-**Step 9.** Once the repo is setup, installation of ONAP can be done with a
+**Step 10.** Once the repo is setup, installation of ONAP can be done with a
 single command
 
 .. note::
@@ -237,7 +237,7 @@ needs.
   you want to use to deploy VNFs from ONAP and/or additional parameters for the
   embedded tests.
 
-**Step 10.** Verify ONAP installation
+**Step 11.** Verify ONAP installation
 
 Use the following to monitor your deployment and determine when ONAP is ready
 for use::
@@ -251,7 +251,7 @@ for use::
 
     > ~/oom/kubernetes/robot/ete-k8s.sh onap health
 
-**Step 11.** Undeploy ONAP
+**Step 12.** Undeploy ONAP
 ::
 
   > helm undeploy dev
