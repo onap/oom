@@ -46,9 +46,9 @@ The versions of Kubernetes that are supported by OOM are as follows:
 
 .. table:: OOM Software Requirements
 
-  ==============     ===========  =======  ========  ========
-  Release            Kubernetes   Helm     kubectl   Docker
-  ==============     ===========  =======  ========  ========
+  ==============     ===========  =======  ========  ======== ============
+  Release            Kubernetes   Helm     kubectl   Docker   Cert-Manager
+  ==============     ===========  =======  ========  ======== ============
   amsterdam          1.7.x        2.3.x    1.7.x     1.12.x
   beijing            1.8.10       2.8.2    1.8.10    17.03.x
   casablanca         1.11.5       2.9.1    1.11.5    17.03.x
@@ -57,7 +57,8 @@ The versions of Kubernetes that are supported by OOM are as follows:
   frankfurt          1.15.9       2.16.6   1.15.11   18.09.x
   guilin             1.15.11      2.16.10  1.15.11   18.09.x
   Honolulu           1.19.9       3.5.2    1.19.9    19.03.x
-  ==============     ===========  =======  ========  ========
+  Istanbul                                                    1.2.0
+  ==============     ===========  =======  ========  ======== ============
 
 .. note::
   Guilin version also supports Kubernetes up to version 1.19.x and should work
