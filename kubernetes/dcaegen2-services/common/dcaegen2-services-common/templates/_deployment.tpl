@@ -3,6 +3,7 @@
 # ================================================================================
 # Copyright (c) 2021 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
+# Copyright (c) 2021 Nokia. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -295,7 +296,7 @@ spec:
               name: onap-policy-xacml-pdp-api-creds
               key: password
         - name: POLICY_SYNC_PDP_URL
-          value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969 
+          value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969
         - name: POLICY_SYNC_OUTFILE
           value : "/etc/policies/policies.json"
         - name: POLICY_SYNC_V1_DECISION_ENDPOINT
@@ -370,9 +371,9 @@ spec:
     {{- if $cmpv2Certificate.keystore -}}
       {{- $certType = (index $cmpv2Certificate.keystore.outputType 0) -}}
     {{- end -}}
-    {{- $truststoresPaths := printf "%s/%s:%s/%s" $certDir "cacert.pem" $cmpv2CertificateDir "ca.crt" -}}
-    {{- $truststoresPasswordPaths := "" -}}
-    {{- $keystoreSourcePaths := printf "%s/%s:%s/%s" $cmpv2CertificateDir "tls.crt" $cmpv2CertificateDir "tls.key" -}}
+    {{- $truststoresPaths := printf "%s/%s:%s/%s" $certDir "cacert.pem" $cmpv2CertificateDir "cacert.pem" -}}
+    {{- $truststoresPasswordPaths := ":" -}}
+    {{- $keystoreSourcePaths := printf "%s/%s:%s/%s" $cmpv2CertificateDir "cert.pem" $cmpv2CertificateDir "key.pem" -}}
     {{- $keystoreDestinationPaths := printf "%s/%s:%s/%s" $certDir "cert.pem" $certDir "key.pem" -}}
     {{- if not (eq $certType "pem") -}}
       {{- $truststoresPaths = printf "%s/%s:%s/%s.%s" $certDir "trust.jks" $cmpv2CertificateDir "truststore" $certType -}}
