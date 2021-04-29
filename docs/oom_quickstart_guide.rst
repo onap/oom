@@ -68,7 +68,12 @@ to suit your deployment with items like the OpenStack tenant information.
 
 
 .. note::
-  If you want to use CMPv2 certificate onboarding, Cert-Manager must be installed.
+  If you want to use CMPv2 certificate onboarding (platform components enabled
+  and cmpv2Enabled flag is true), Cert-Manager must be installed.
+
+  By default - if you use onap-all.yaml override - CMPv2 certificate onboarding is enabled,
+  so Cert-Manager installation is mandatory.
+
   :doc:`Click here <oom_setup_paas>` to see how to install Cert-Manager.
 
 
