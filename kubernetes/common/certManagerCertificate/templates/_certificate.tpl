@@ -219,8 +219,14 @@ spec:
     sources:
     - secret:
         name: {{ $certificatesSecretName }}
-    {{- if $certificate.keystore }}
         items:
+          - key: tls.key
+            path: key.pem
+          - key: tls.crt
+            path: cert.pem
+          - key: ca.crt
+            path: cacert.pem
+    {{- if $certificate.keystore }}
         {{- range $outputType := $certificate.keystore.outputType }}
           - key: keystore.{{ $outputType }}
             path: keystore.{{ $outputType }}
@@ -278,8 +284,14 @@ spec:
     sources:
     - secret:
         name: {{ $certificatesSecretName }}
-    {{- if $certificate.keystore }}
         items:
+          - key: tls.key
+            path: key.pem
+          - key: tls.crt
+            path: keystore.pem
+          - key: ca.crt
+            path: truststore.pem
+    {{- if $certificate.keystore }}
         {{- range $outputType := $certificate.keystore.outputType }}
           - key: keystore.{{ $outputType }}
             path: keystore.{{ $outputType }}

@@ -260,9 +260,9 @@ spec:
     {{- if $cmpv2Certificate.keystore -}}
       {{- $certType = (index $cmpv2Certificate.keystore.outputType 0) -}}
     {{- end -}}
-    {{- $truststoresPaths := printf "%s/%s:%s/%s" $certDir "cacert.pem" $cmpv2CertificateDir "ca.crt" -}}
+    {{- $truststoresPaths := printf "%s/%s:%s/%s" $certDir "cacert.pem" $cmpv2CertificateDir "cacert.pem" -}}
     {{- $truststoresPasswordPaths := "" -}}
-    {{- $keystoreSourcePaths := printf "%s/%s:%s/%s" $cmpv2CertificateDir "tls.crt" $cmpv2CertificateDir "tls.key" -}}
+    {{- $keystoreSourcePaths := printf "%s/%s:%s/%s" $cmpv2CertificateDir "cert.pem" $cmpv2CertificateDir "key.pem" -}}
     {{- $keystoreDestinationPaths := printf "%s/%s:%s/%s" $certDir "cert.pem" $certDir "key.pem" -}}
     {{- if not (eq $certType "pem") -}}
       {{- $truststoresPaths = printf "%s/%s:%s/%s.%s" $certDir "trust.jks" $cmpv2CertificateDir "truststore" $certType -}}
