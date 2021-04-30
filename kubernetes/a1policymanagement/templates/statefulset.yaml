@@ -17,17 +17,11 @@
 ################################################################################
 */}}
 
-kind: Deployment
+kind: StatefulSet
 apiVersion: apps/v1
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ include "common.release" . }}"
-    heritage: "{{ .Release.Service }}"
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  serviceName: {{ include "common.servicename" . }}
   replicas: {{ index .Values.replicaCount }}
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
@@ -108,8 +102,8 @@ spec:
           subPath: application_configuration.json
         - name: config
           mountPath: /opt/app/policy-agent/config/application.yaml
-          subPath: application.yaml   
-        - name: vardata
+          subPath: application.yaml
+        - name: {{ include "common.fullname" . }}-data
           mountPath: "/var/policy-management-service/database"
         resources: {{ include "common.resources" . | nindent 10 }}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
@@ -123,6 +117,10 @@ spec:
         - name: config
           emptyDir:
             medium: Memory
-        - name: vardata
-          persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}
+{{- if not .Values.persistence.enabled }}
+        - name: {{ include "common.fullname" . }}-data
+          emptyDir: {}
+{{- else }}
+  volumeClaimTemplates:
+    {{- include "common.PVCTemplate" | indent 4 | trim }}
+{{- end }}
