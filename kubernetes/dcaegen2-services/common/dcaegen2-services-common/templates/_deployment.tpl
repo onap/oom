@@ -17,6 +17,56 @@
 # ============LICENSE_END=========================================================
 */}}
 {{/*
+For internal use only!
+
+dcaegen2-services-common._ms-specific-env-vars:
+This template generates a list of microservice-specific environment variables
+as specified in .Values.applicationEnv.  The
+dcaegen2-services-common.microServiceDeployment uses this template
+to add the microservice-specific environment variables to the microservice's container.
+These environment variables are in addition to a standard set of environment variables
+provided to all microservices.
+
+The template expects a single argument, pointing to the caller's global context.
+
+Microservice-specific environment variables can be specified in two ways:
+  1. As literal string values.
+  2. As values that are sourced from a secret, identified by the secret's
+     uid and the key within the secret that provides the value.
+
+The following example shows an example of each type.  The example assumes
+that a secret has been created using the OOM common secret mechanism, with
+a secret uid "example-secret" and a key called "password".
+
+applicationEnv:
+  APPLICATION_PASSWORD:
+    secretUid: example-secret
+    key: password
+  APPLICATION_EXAMPLE: "An example value"
+
+The example would set two environment variables on the microservice's container,
+one called "APPLICATION_PASSWORD" with the value set from the "password" key in
+the secret with uid "example-secret", and one called "APPLICATION_EXAMPLE" set to
+the the literal string "An example value".
+*/}}
+{{- define "dcaegen2-services-common._ms-specific-env-vars" -}}
+  {{- $global := . }}
+  {{- if .Values.applicationEnv }}
+    {{- range $envName, $envValue := .Values.applicationEnv }}
+      {{- if kindIs "string" $envValue }}
+- name: {{ $envName }}
+  value: {{ $envValue | quote }}
+      {{- else }}
+        {{ if or (not $envValue.secretUid) (not $envValue.key) }}
+          {{ fail (printf "Env %s definition is not a string and does not contain secretUid or key fields" $envName) }}
+        {{- end }}
+- name: {{ $envName }}
+  {{- include "common.secret.envFromSecretFast" (dict "global" $global "uid" $envValue.secretUid "key" $envValue.key) | indent 2 }}
+      {{- end -}}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+{{/*
 dcaegen2-services-common.microserviceDeployment:
 This template produces a Kubernetes Deployment for a DCAE microservice.
 
@@ -150,12 +200,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        {{- if .Values.applicationEnv }}
-        {{- range $envName, $envValue := .Values.applicationEnv }}
-        - name: {{ $envName }}
-          value: {{ $envValue | quote }}
-        {{- end }}
-        {{- end }}
+        {{- include "dcaegen2-services-common._ms-specific-env-vars" . | nindent 8 }}
         {{- if .Values.service }}
         ports: {{ include "common.containerPorts" . | nindent 10 }}
         {{- end }}
