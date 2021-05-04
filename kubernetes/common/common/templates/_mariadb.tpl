@@ -63,7 +63,7 @@
 */}}
 {{- define "common.mariadbService" -}}
   {{- if .Values.global.mariadbGalera.localCluster -}}
-    {{- index .Values "mariadb-galera" "service" "name" -}}
+    {{- index .Values "mariadb-galera" "nameOverride" -}}
   {{- else -}}
     {{- .Values.global.mariadbGalera.service -}}
   {{- end -}}
