@@ -63,9 +63,9 @@ spec:
             /db_config/db_cmd.sh{{ end }}
         env:
         - name: DB_HOST
-          value: "{{ default .Values.global.mariadbGalera.nameOverride .Values.mariadbGalera.serviceName }}"
+          value: {{ include "common.mariadbService" . }}
         - name: DB_PORT
-          value: "{{ default .Values.global.mariadbGalera.servicePort .Values.mariadbGalera.servicePort }}"
+          value: {{ include "common.mariadbPort" . | quote }}
         - name: MYSQL_ROOT_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "root-password" "key" (default "password" .Values.global.mariadbGalera.userRootSecretKey)) | indent 10 }}
         - name: {{ printf "MYSQL_USER_%s" .Values.config.mysqlDatabase | upper }}
@@ -83,10 +83,10 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        - name: mariadb-conf
+        - name: mariadb-init
           mountPath: /db_init/
 {{- if or .Values.dbScriptConfigMap .Values.dbScript }}
-        - name: mariadb-init
+        - name: mariadb-conf
           mountPath: /db_config/
 {{- end }}
         resources:
@@ -104,7 +104,7 @@ spec:
         hostPath:
           path: /etc/localtime
 {{- if  or .Values.dbScriptConfigMap .Values.dbScript }}
-      - name: mariadb-init
+      - name: mariadb-conf
         configMap:
 {{-   if  .Values.dbScriptConfigMap }}
           name: {{ tpl .Values.dbScriptConfigMap . }}
@@ -113,7 +113,7 @@ spec:
 {{-   end }}
           defaultMode: 0755
 {{- end }}
-      - name: mariadb-conf
+      - name: mariadb-init
         configMap:
           name: {{ include "mariadbInit.configMap" . }}
           defaultMode: 0755
