@@ -21,7 +21,61 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Frankfurt release.
+This document provides the release notes for the Guilin Maintenance release
+1.
+
+Summary
+=======
+
+The focus of this release is to correct issues found on Guilin release of OOM
+installer.
+It has also a large number of certificates update in order to have valid ones
+for the next monthes
+
+Release Data
+============
+
++--------------------------------------+--------------------------------------+
+| **Project**                          | OOM                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Docker images**                    | N/A                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release designation**              | Guilin Maintenance Release 1         |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release date**                     | 2021/04/26                           |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+
+New features
+------------
+
+None
+
+**Bug fixes**
+
+- `OOM-2671 <https://jira.onap.org/browse/OOM-2671>`_ [DMAAP][DR] Fix bad
+  templating
+- `OOM-2643 <https://jira.onap.org/browse/OOM-2643>`_ [COMMON] Add some python
+  linters in tox.ini
+- `OOM-2668 <https://jira.onap.org/browse/OOM-2668>`_ [COMMON][ETCD] Skip
+  startup self-discovery for etcd nodes
+- `OOM-2641 <https://jira.onap.org/browse/OOM-2641>`_ [COMMON] Configure paths
+  for Ingress
+- `OOM-2648 <https://jira.onap.org/browse/OOM-2648>`_ [COMMON] Add doc linting
+- `OOM-2666 <https://jira.onap.org/browse/OOM-2666>`_ [COMMON][CERTS] Use sh to
+  onboard custom certs
+
+**Known Issues**
+
+Same as Guilin Release
+
+Abstract
+========
+
+This document provides the release notes for the Guilin release.
 
 Summary
 =======
