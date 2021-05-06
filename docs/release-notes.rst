@@ -42,7 +42,7 @@ Release Data
 | **Release designation**              | Honolulu                             |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2020/12/03                           |
+| **Release date**                     | 2021/04/29                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
@@ -52,18 +52,53 @@ New features
 * Kubernetes support for version up to 1.20
 * Helm support for version up to 3.5
 * Limits are set for most of the components
+* Portal-Cassandra image updated to Bitnami, supporting IPv4/IPv6 Dual Stack
+* CMPv2 external issuer implemented which extends Cert-Manager with ability  to
+  enroll X.509 certificates from CMPv2 servers
+* New version for mariadb galera using Bitnami image, supporting IPv4/IPv6 Dual
+  Stack
+* Bump version of common PostgreSQL and ElasticSearch
+* Move to automatic certificates retrieval for 80% of the components
+* Consistent retrieval of docker images, with ability to configure proxy for the
+  4 repositories used by ONAP
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/10826
+https://jira.onap.org/projects/OOM/versions/11073
+
+major issues solved:
+
+* Better handling of persistence on PostgreSQL
+* Better Ingress templating
+* Better Service templating
 
 **Known Issues**
 
-- `<https://github.com/bitnami/bitnami-docker-mariadb-galera/issues/35>`_
-  bitnami mariadb galera image doesn't support single quote in password.
-
-
+- `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
+- `OOM-2435 <https://jira.onap.org/browse/OOM-2435>`_ SDNC karaf shell:
+  log:list: Error executing command: Unrecognized configuration
+- `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
+  not complete
+- `OOM-2706 <https://jira.onap.org/browse/OOM-2706>`_ CDS Blueprint Processor
+  does not work with local DB
+- `OOM-2713 <https://jira.onap.org/browse/OOM-2713>`_ Problem on onboarding
+  custom cert to SDNC ONAP during deployment
+- `OOM-2698 <https://jira.onap.org/browse/OOM-2698>`_ SO helm override fails in
+  for value with multi-level replacement
+- `OOM-2697 <https://jira.onap.org/browse/OOM-2697>`_ SO with local MariaDB
+  deployment fails
+- `OOM-2538 <https://jira.onap.org/browse/OOM-2538>`_ strange error with
+  CertInitializer template
+- `OOM-2547 <https://jira.onap.org/browse/OOM-2547>`_ Health Check failures
+  seen after bringing down/up control plane & worker node VM instances on which
+  ONAP hosted
+- `OOM-2699 <https://jira.onap.org/browse/OOM-2699>`_ SO so-mariadb
+  readinessCheck fails for local MariaDB instance
+- `OOM-2705 <https://jira.onap.org/browse/OOM-2705>`_ SDNC DB installation fails
+  on local MariaDB instance
+- `OOM-2603 <https://jira.onap.org/browse/OOM-2603>`_ [SDNC] allign password for
+  scaleoutUser/restconfUser/odlUser
 
 Deliverables
 ------------
