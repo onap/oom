@@ -1,0 +1,1516 @@
+openapi: 3.0.1
+info:
+  title: Generic NRM
+  version: 16.6.0
+  description: >-
+    OAS 3.0.1 definition of the Generic NRM
+    © 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
+    All rights reserved.
+externalDocs:
+  description: 3GPP TS 28.623 V16.5.0; Generic NRM
+  url: http://www.3gpp.org/ftp/Specs/archive/28_series/28.623/
+paths: {}
+components:
+  schemas:
+
+#-------- Definition of types-----------------------------------------------------
+
+    RegistrationState:
+      type: string
+      enum:
+        - REGISTERED
+        - DEREGISTERED
+    VnfParameter:
+      type: object
+      properties:
+        vnfInstanceId:
+          type: string
+        vnfdId:
+          type: string
+        flavourId:
+          type: string
+        autoScalable:
+          type: boolean
+    SiteLatitude:
+      type: number
+      format: float
+      minimum: -90
+      maximum: 90
+    SiteLongitude:
+      type: number
+      format: float
+      minimum: -180
+      maximum: 180
+    PeeParameter:
+      type: object
+      properties:
+        siteIdentification:
+          type: string
+        siteDescription:
+          type: string
+        siteLatitude:
+          $ref: '#/components/schemas/SiteLatitude'
+        siteLongitude:
+          $ref: '#/components/schemas/SiteLongitude'
+        equipmentType:
+          type: string
+        environmentType:
+          type: string
+        powerInterface:
+          type: string
+    ThresholdInfo:
+      type: object
+      properties:
+        thresholdDirection:
+          type: string
+          enum:
+            - UP
+            - DOWN
+            - UP_AND_DOWN
+        thresholdValue:
+          oneOf:
+            - type: integer
+            - $ref: 'comDefs.yaml#/components/schemas/Float'
+        hysteresis:
+          oneOf:
+            - type: integer
+              minimum: 0
+            - type: number
+              format: float
+              minimum: 0
+    Operation:
+      type: object
+      properties:
+        name:
+          type: string
+        allowedNFTypes:
+          $ref: '#/components/schemas/NFType'
+        operationSemantics:
+          $ref: '#/components/schemas/OperationSemantics'
+    NFType:
+      type: string
+      description: ' NF name defined in TS 23.501'
+      enum:
+        - NRF
+        - UDM
+        - AMF
+        - SMF
+        - AUSF
+        - NEF
+        - PCF
+        - SMSF
+        - NSSF
+        - UDR
+        - LMF
+        - GMLC
+        - 5G_EIR
+        - SEPP
+        - UPF
+        - N3IWF
+        - AF
+        - UDSF
+        - DN
+    Fqdn:
+      type: string
+    OperationSemantics:
+      type: string
+      enum:
+        - REQUEST_RESPONSE
+        - SUBSCRIBE_NOTIFY
+    SAP:
+      type: object
+      properties:
+        host:
+          $ref: '#/components/schemas/HostAddr'
+        port:
+          type: integer
+    NFServiceType:
+      type: string
+      enum:
+        - Namf_Communication
+        - Namf_EventExposure
+        - Namf_MT
+        - Namf_Location
+        - Nsmf_PDUSession
+        - Nsmf_EventExposure
+        - Others
+    HostAddr:
+      oneOf:
+        - $ref: '#/components/schemas/Ipv4Addr'
+        - $ref: '#/components/schemas/Ipv6Addr'
+        - $ref: '#/components/schemas/Fqdn'
+    Ipv4Addr:
+      type: string
+      pattern: '^(([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$'
+      example: '198.51.100.1'
+    Ipv6Addr:
+      type: string
+      allOf:
+        - pattern: '^((:|(0?|([1-9a-f][0-9a-f]{0,3}))):)((0?|([1-9a-f][0-9a-f]{0,3})):){0,6}(:|(0?|([1-9a-f][0-9a-f]{0,3})))$'
+        - pattern: '^((([^:]+:){7}([^:]+))|((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?))$'
+      example: '2001:db8:85a3::8a2e:370:7334'
+    Ipv6Prefix:
+      type: string
+      allOf:
+        - pattern: '^((:|(0?|([1-9a-f][0-9a-f]{0,3}))):)((0?|([1-9a-f][0-9a-f]{0,3})):){0,6}(:|(0?|([1-9a-f][0-9a-f]{0,3})))(\/(([0-9])|([0-9]{2})|(1[0-1][0-9])|(12[0-8])))$'
+        - pattern: '^((([^:]+:){7}([^:]+))|((([^:]+:)*[^:]+)?::(([^:]+:)*[^:]+)?))(\/.+)$'
+      example: '2001:db8:abcd:12::0/64'
+    TransportProtocol:
+      anyOf:
+        - type: string
+          enum:
+            - TCP
+        - type: string
+    SupportedPerfMetricGroup:
+      type: object
+      properties:
+        performanceMetrics:
+          type: array
+          items:
+            type: string
+        granularityPeriods:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+        reportingMethods:
+          type: array
+          items:
+            type: string
+            enum:
+             - FILE_BASED_LOC_SET_BY_PRODUCER
+             - FILE_BASED_LOC_SET_BY_CONSUMER
+             - STREAM_BASED 
+        monitorGranularityPeriods:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+    ReportingCtrl:
+      oneOf:
+        - type: object
+          properties:
+            fileReportingPeriod:
+              type: integer
+        - type: object
+          properties:
+            fileReportingPeriod:
+              type: integer
+            fileLocation:
+              $ref: 'comDefs.yaml#/components/schemas/Uri'
+        - type: object
+          properties:
+            streamTarget:
+              $ref: 'comDefs.yaml#/components/schemas/Uri'
+    Scope:
+      type: object
+      properties:
+        scopeType:
+          type: string
+          enum:
+            - BASE_ONLY
+            - BASE_ALL
+            - BASE_NTH_LEVEL
+            - BASE_SUBTREE
+        scopeLevel:
+          type: integer
+
+#-------- Definition of types used in Trace control NRM fragment------------------
+                
+    tjJobType-Type:
+      type: string
+      description: Specifies whether the TraceJob represents only MDT, Logged MBSFN MDT, Trace or a combined Trace and MDT job. Applicable for Trace, MDT, RCEF and RLF reporting. See 3GPP TS 32.422 clause 5.9a for additional details.
+      enum:
+        - IMMEDIATE_MDT_ONLY
+        - LOGGED_MDT_ONLY
+        - TRACE_ONLY
+        - IMMEDIATE_MDT AND TRACE
+        - RLF_REPORT_ONLY
+        - RCEF_REPORT_ONLY
+        - LOGGED_MBSFN_MDT
+
+    tjListOfInterfaces-Type:
+      description: The interfaces to be recorded in the Network Element. See 3GPP TS 32.422 clause 5.5 for additional details.
+      type: object
+      properties:
+        MSCServerInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - A
+              - Iu-CS
+              - Mc
+              - MAP-G
+              - MAP-B
+              - MAP-E
+              - MAP-F
+              - MAP-D
+              - MAP-C
+              - CAP
+        MGWInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mc
+              - Nb-UP
+              - Iu-UP
+        RNCInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Iu-CS
+              - Iu-PS
+              - Iur
+              - Iub
+              - Uu
+        SGSNInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Gb
+              - Iu-PS
+              - Gn
+              - MAP-Gr
+              - MAP-Gd
+              - MAP-Gf
+              - Ge
+              - Gs
+              - S6d
+              - S4
+              - S3
+              - S13
+        GGSNInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Gn
+              - Gi
+              - Gmb
+        S-CSCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mw
+              - Mg
+              - Mr
+              - Mi
+        P-CSCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Gm
+              - Mw
+        I-CSCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Cx
+              - Dx
+              - Mg
+              - Mw
+        MRFCInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mp
+              - Mr
+        MGCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mg
+              - Mj
+              - Mn
+        IBCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Ix
+              - Mx
+        E-CSCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mw
+              - Ml
+              - Mm
+              - Mi/Mg
+        BGCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Mi
+              - Mj
+              - Mk
+        ASInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Dh
+              - Sh
+              - ISC
+              - Ut
+        HSSInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - MAP-C
+              - MAP-D
+              - Gc
+              - Gr
+              - Cx
+              - S6d
+              - S6a
+              - Sh
+        EIRInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - MAP-F
+              - S13
+              - MAP-Gf
+        BM-SCInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - Gmb
+        MMEInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - S1-MME
+              - S3
+              - S6a
+              - S10
+              - S11
+              - S13
+        SGWInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - S4
+              - S5
+              - S8
+              - S11
+              - Gxc
+        PDN_GWInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - S2a
+              - S2b
+              - S2c
+              - S5
+              - S6b
+              - Gx
+              - S8
+              - SGi
+        eNBInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - S1-MME
+              - X2
+        en-gNBInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - S1-MME
+              - X2
+              - Uu
+              - F1-C
+              - E1
+        AMFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N1
+              - N2
+              - N8
+              - N11
+              - N12
+              - N14
+              - N15
+              - N20
+              - N22
+              - N26
+        AUSFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N12
+              - N13
+        NEFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N29
+              - N30
+              - N33
+        NRFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N27
+        NSSFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N22
+              - N31
+        PCFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N5
+              - N7
+              - N15
+        SMFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N4
+              - N7
+              - N10
+              - N11
+              - S5-C
+        SMSFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N20
+              - N21
+        UDMInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N8
+              - N10
+              - N13
+              - N21
+        UPFInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - N4
+        ng-eNBInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - NG-C
+              - Xn-C
+              - Uu
+        gNB-CU-CPInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - NG-C
+              - Xn-C
+              - Uu
+              - F1-C
+              - E1
+              - X2-C
+        gNB-CU-UPInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - E1
+        gNB-DUInterfaces:
+          type: array
+          items:
+            type: string
+            enum:
+              - F1-C
+
+    tjListOfNeTypes-Type:
+      description: The Network Element types where Trace Session activation is needed. See 3GPP TS 32.422 clause 5.4 for additional details.
+      type: array
+      items:
+        type: string
+        enum:
+          - MSC_SERVER
+          - SGSN
+          - MGW
+          - GGSN
+          - RNC
+          - BM_SC
+          - MME
+          - SGW
+          - PGW
+          - ENB
+          - EN_GNB
+          - GNB_CU_CP
+          - GNB_CU_UP
+          - GNB_DU
+
+    tjPLMNTaget-Type:
+      type: object
+      description: The PLMN for which sessions shall be selected in the Trace Session in case of management based activation when several PLMNs are supported in the RAN (this means that shared cells and not shared cells are allowed for the specified PLMN. Note that the PLMN Target might differ from the PLMN specified in the Trace Reference, as that specifies the PLMN that is containing the management system requesting the Trace Session from the NE. See 3GPP TS 32.422 clause 5.9b for additional details.
+      properties:
+        mcc:
+          $ref: 'comDefs.yaml#/components/schemas/Mcc'
+        mnc:
+          $ref: 'comDefs.yaml#/components/schemas/Mnc'
+      required:
+        - mcc
+        - mnc
+
+    tjStreamingTraceConsumerURI-Type:
+      type: string
+      description: The URI of the Trace Reporting MnS consumer (see 3GPP TS 28.532) to which the Trace records shall be sent. See 3GPP TS 32.422 clause 5.9 for additional details.
+      format: uri
+
+    tjTraceCollectionEntityAddress-Type:
+      description: The IP address to which the Trace records shall be transferred. See 3GPP TS 32.422 clause 5.9 for additional details.
+      oneOf:
+        - $ref: '#/components/schemas/Ipv4Addr'
+        - $ref: '#/components/schemas/Ipv6Addr'
+
+    tjTraceDepth-Type:
+      description: Specifies how detailed information should be recorded in the Network Element. The Trace Depth is a paremeter for Trace Session level, i.e., the Trace Depth is the same for all of the NEs to be traced in the same Trace Session. See 3GPP TS 32.422 clause 5.3 for additional details.
+      type: string
+      enum:
+        - MINIMUM
+        - MEDIUM
+        - MAXIMUM
+        - VENDORMINIMUM
+        - VENDORMEDIUM
+        - VENDORMAXIMUM
+
+    tjTraceReference-Type:
+      type: object
+      description: The Trace Reference parameter shall be globally unique, therefore the Trace Reference shall compose as follows - MCC+MNC+Trace ID, where the MCC and MNC are coming with the Trace activation request from the management system to identify one PLMN containing the management system, and Trace ID is a 3 byte Octet String. See 3GPP TS 32.422 clause 5.6 for additional details.
+      properties:
+        mcc:
+          $ref: 'comDefs.yaml#/components/schemas/Mcc'
+        mnc:
+          $ref: 'comDefs.yaml#/components/schemas/Mnc'
+        traceId:
+          type: integer
+      required:
+        - mcc
+        - mnc
+        - traceId
+
+    tjTraceReportingFormat-Type:
+      type: string
+      description: Specifies whether file-based or streaming reporting shall be used for this Trace Session. See 3GPP TS 32.422 clause 5.11 for additional details.
+      enum:
+        - FILE-BASED
+        - STREAMING
+
+    tjTraceTarget-Type:
+      type: object
+      description: Trace target conveying both the type and value of the target ID. For additional details see 3GPP TS 32.422
+      properties:
+        TargetIdType:
+          type: string
+          enum:
+            - IMSI
+            - IMEI
+            - IMEISV
+            - PUBLIC_ID
+            - UTRAN_CELL
+            - E-UTRAN_CELL
+            - NG-RAN_CELL
+            - eNB
+            - RNC
+            - gNB
+            - SUPI
+        TargetIdValue:
+          type: string
+      required:
+        - TargetIdType
+        - TargetIdValue
+    
+    tjTriggeringEvent-Type:
+      type: object
+      description: Specifies when to start a Trace Recording Session and which message shall be recorded first, when to stop a Trace Recording Session and which message shall be recorded last respectively. See 3GPP TS 32.422 clause 5.1 for additional detials.
+      properties:
+        NetworkElement:
+          type: string
+          enum:
+            - MSC_SERVER
+            - SGSN
+            - MGW
+            - GGSN
+            - BM_SC
+            - MME
+            - SGW
+            - PGW
+            - AMF
+            - SMF
+            - PCF
+            - UPF
+        EventBitmap:
+          type: integer
+      required:
+        - NetworkElement
+        - EventBitmap
+    
+    tjMDTAnonymizationOfData-Type:
+      description: Specifies level of MDT anonymization. For additional details see 3GPP TS 32.422 clause 5.10.12.
+      type: string
+      enum:
+        - NO_IDENTITY
+        - TAC_OF_IMEI
+    
+    tjMDTAreaConfigurationForNeighCell-Type:
+      description: Used for logged NR MDT and defines the area for which UE is requested to perform measurement logging for neighbour cells which have list of frequencies. For additional details see 3GPP TS 32.422 clause 5.10.26.
+      type: array
+      items:
+        type: object
+        properties:
+          frequency:
+            type: string
+          cell:
+            type: string
+      
+    tjMDTAreaScope-Type:
+      description: defines the area in terms or Cells or Tracking Area/Routing Area/Location Area where the MDT data collection shall take place. For additional details see 3GPP TS 32.422 clause 5.10.2.
+      allOf:
+        - $ref: 'comDefs.yaml#/components/schemas/DnList'
+        
+    tjMDTCollectionPeriodRrmLte-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.20.
+      type: string
+      enum:
+        - 250ms
+        - 500ms
+        - 1000ms
+        - 2000ms
+        - 3000ms
+        - 4000ms
+        - 6000ms
+        - 8000ms
+        - 12000ms
+        - 16000ms
+        - 20000ms
+        - 24000ms
+        - 28000ms
+        - 32000ms
+        - 64000ms
+
+    tjMDTCollectionPeriodRrmUmts-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.21.
+      type: string
+      enum:
+        - 1024ms
+        - 1280ms
+        - 2048ms
+        - 2560ms
+        - 5120ms
+        - 10240ms
+        - 1min
+    
+    tjMDTCollectionPeriodRrmNR-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.30.
+      type: string
+      enum:
+        - 1024ms
+        - 1280ms
+        - 2048ms
+        - 5120ms
+        - 10240ms
+        - 60000ms
+
+    tjMDTEventListForTriggeredMeasurement-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.28.
+      type: string
+      enum:
+        - OUT_OF_COVERAGE
+        - A2_EVENT
+
+    tjMDTEventThreshold-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.7, 5.10.7a, 5.10.13 and 5.10.14.
+      type: object
+      properties:
+        EventThresholdRSRP:
+          type: integer
+          minimum: 0
+          maximum: 97
+        EventThresholdRSRQ:      
+          type: integer
+          minimum: 0
+          maximum: 34
+        EventThreshold1F:
+          type: object
+          properties:
+            CPICH_RSCP:
+              type: integer
+              minimum: -120
+              maximum: 25
+            CPICH_EcNo:
+              type: integer
+              minimum: -24
+              maximum: 0
+            PathLoss:
+              type: integer
+              minimum: 30
+              maximum: 165
+        EventThreshold1I:
+          type: integer
+          minimum: -120
+          maximum: 25
+
+    tjMDTListOfMeasurements-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.3 for details.
+      type: object
+      properties:
+        UMTS:
+          type: array
+          items:
+            type: string
+            enum:
+              - M1
+              - M2
+              - M3
+              - M4
+              - M5
+              - M6_DL
+              - M6_UL
+              - M7_DL
+              - M7_UL
+        LTE:
+          type: array
+          items:
+            type: string
+            enum:
+              - M1
+              - M2
+              - M3
+              - M4
+              - M5
+              - M1_EVENT_TRIGGERED
+              - M6
+              - M7
+              - M8
+              - M9
+        NR:
+          type: array
+          items:
+            type: string
+            enum:
+              - M1
+              - M2
+              - M3
+              - M4
+              - M5
+              - M6
+              - M7
+              - M8
+              - M9
+
+    tjMDTLoggingDuration-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.9.
+      type: string
+      enum:
+        - 600s
+        - 1200s
+        - 2400s
+        - 3600s
+        - 5400s
+        - 7200s
+    
+    tjMDTLoggingInterval-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.8.
+      type: string
+      enum:
+        - 1.28s
+        - 2.56s
+        - 5.12s
+        - 10.24s
+        - 20.48s
+        - 30.72s
+        - 40.96s
+        - 61.44s
+
+    tjMDTMBSFNAreaList-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.25.
+      type: array
+      items:
+        type: object
+        properties:
+          mbsfnAreaId:
+            type: integer
+            minimum: 1
+          earfcn:
+            type: integer
+            minimum: 1
+        required:
+          - mbsfnAreaId
+          - earfcn
+
+    tjMDTMeasurementPeriodLTE-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.23.
+      type: string
+      enum:
+        - 1024ms
+        - 1280ms
+        - 2048ms
+        - 2560ms
+        - 5120ms
+        - 10240ms
+        - 1min
+
+    tjMDTMeasurementPeriodUMTS-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.22.
+      type: string
+      enum:
+        - 250ms
+        - 500ms
+        - 1000ms
+        - 2000ms
+        - 3000ms
+        - 4000ms
+        - 6000ms
+        - 8000ms
+        - 12000ms
+        - 16000ms
+        - 20000ms
+        - 24000ms
+        - 28000ms
+        - 32000ms
+        - 64000ms
+
+    tjMDTMeasurementQuantity-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.15.
+      type: string
+      enum:
+        - CPICH_EcNo
+        - CPICH_RSCP
+        - PathLoss
+
+    tjMDTPLMList-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.24.
+      type: array
+      items:
+        type: object
+        properties:
+          mcc:
+            $ref: 'comDefs.yaml#/components/schemas/Mcc'
+          mnc:
+            $ref: 'comDefs.yaml#/components/schemas/Mnc'
+        required:
+          - mcc
+          - mnc
+      maxItems: 16
+
+    tjMDTPositioningMethod-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.19.
+      type: string
+      enum:
+        - GNSS
+        - E-CELL_ID
+
+    tjMDTReportAmount-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.6.
+      type: string
+      enum:
+        - 1
+        - 2
+        - 4
+        - 8
+        - 16
+        - 32
+        - 64
+        - INFINITY
+
+    tjMDTReportingTrigger-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.4.
+      type: array
+      items:
+        type: string
+        enum:
+          - PERIODICAL
+          - A2_FOR_LTE
+          - 1F_FOR_UMTS
+          - 1I_FOR_UMTS_MCPS_TDD
+          - A2_TRIGGERED_PERIODIC_FOR_LTE
+          - ALL_CONFIGURED_RRM_FOR_LTE
+          - ALL_CONFIGURED_RRM_FOR_UMTS
+
+    tjMDTReportInterval-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.5.
+      type: string
+      enum:
+        - 250ms
+        - 500ms
+        - 1000ms
+        - 2000ms
+        - 3000ms
+        - 4000ms
+        - 6000ms
+        - 8000ms
+        - 12000ms
+        - 16000ms
+        - 20000ms
+        - 24000ms
+        - 28000ms
+        - 32000ms
+        - 64000ms
+        - 120ms
+        - 240ms
+        - 480ms
+        - 640ms
+        - 1024ms
+        - 2048ms
+        - 5120ms
+        - 10240ms
+        - 60000ms
+        - 360000ms
+        - 720000ms
+        - 1800000ms
+        - 3600000ms
+
+    tjMDTReportType-Type:
+      description: Report type for logged NR MDT. See details in 3GPP TS 32.422 clause 5.10.27.
+      type: string
+      enum:
+        - PERIODICAL
+        - EVENT_TRIGGERED
+
+    tjMDTSensorInformation-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.29.
+      type: array
+      items:
+        type: string
+        enum:
+          - BAROMETRIC_PRESSURE
+          - UE_SPEED
+          - UE_ORIENTATION
+
+    tjMDTTraceCollectionEntityID-Type:
+      description: See details in 3GPP TS 32.422 clause 5.10.11. Only tceID value may be sent over the air to the UE being configured for Logged MDT.
+      type: object
+      properties:
+        tceID:
+          type: integer
+        tcePLMN:
+          type: object
+          properties:
+            mcc:
+              $ref: 'comDefs.yaml#/components/schemas/Mcc'
+            mnc:
+              $ref: 'comDefs.yaml#/components/schemas/Mnc'
+          required:
+            - mcc
+            - mnc
+        tceAddress:
+          oneOf:
+            - $ref: '#/components/schemas/tjTraceCollectionEntityAddress-Type'
+            - $ref: '#/components/schemas/tjStreamingTraceConsumerURI-Type'
+      required:
+        - tceID
+        - tcePLMN
+        - tceAddress
+
+
+#-------- end of Definition of types used in Trace control NRM fragment ----------
+
+
+#-------- Definition of abstract IOC Top -----------------------------------------
+
+    Top-Attr:
+      #  This definition will be deprecated, when all occurances of Top-Attr
+      #  are replaced by Top.
+      type: object
+      properties:
+        id:
+          type: string
+        VsDataContainer:
+          $ref: '#/components/schemas/VsDataContainer-Multiple'
+    Top:
+      type: object
+      properties:
+        id:
+          type: string
+        VsDataContainer:
+          $ref: '#/components/schemas/VsDataContainer-Multiple'
+
+#-------- Definition of IOCs with new name-containments defined in other TS ------
+
+    SubNetwork-Attr:
+      type: object
+      properties:
+        dnPrefix:
+          type: string
+        userLabel:
+          type: string
+        userDefinedNetworkType:
+          type: string
+        setOfMcc:
+          type: array
+          items:
+            $ref: 'comDefs.yaml#/components/schemas/Mcc'
+        priorityLabel:
+          type: integer
+        supportedPerfMetricGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportedPerfMetricGroup'
+    ManagedElement-Attr:
+      type: object
+      properties:
+        dnPrefix:
+          type: string
+        managedElementTypeList:
+          type: array
+          items:
+            type: string
+        userLabel:
+          type: string
+        locationName:
+          type: string
+        managedBy:
+          $ref: 'comDefs.yaml#/components/schemas/DnList'
+        vendorName:
+          type: string
+        userDefinedState:
+          type: string
+        swVersion:
+          type: string
+        priorityLabel:
+          type: integer
+        supportedPerfMetricGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportedPerfMetricGroup'
+
+    SubNetwork-ncO:
+      type: object
+      properties:
+        ManagementNode:
+          $ref: '#/components/schemas/ManagementNode-Multiple'
+        MeContext:
+          $ref: '#/components/schemas/MeContext-Multiple'
+        PerfMetricJob:
+          $ref: '#/components/schemas/PerfMetricJob-Multiple'
+        ThresholdMonitor:
+          $ref: '#/components/schemas/ThresholdMonitor-Multiple'
+        NtfSubscriptionControl:
+          $ref: '#/components/schemas/NtfSubscriptionControl-Multiple'
+        TraceJob:
+          $ref: '#/components/schemas/TraceJob-Multiple'
+        AlarmList:
+          $ref: '#/components/schemas/AlarmList-Single'
+    ManagedElement-ncO:
+      type: object
+      properties:
+        PerfMetricJob:
+          $ref: '#/components/schemas/PerfMetricJob-Multiple'
+        ThresholdMonitor:
+          $ref: '#/components/schemas/ThresholdMonitor-Multiple'
+        NtfSubscriptionControl:
+          $ref: '#/components/schemas/NtfSubscriptionControl-Multiple'
+        TraceJob:
+          $ref: '#/components/schemas/TraceJob-Multiple'
+        AlarmList:
+          $ref: '#/components/schemas/AlarmList-Single'
+
+#-------- Definition of abstract IOCs --------------------------------------------
+
+    ManagedFunction-Attr:
+      type: object
+      properties:
+        userLabel:
+          type: string
+        vnfParametersList:
+          type: array
+          items:
+            $ref: '#/components/schemas/VnfParameter'
+        peeParametersList:
+          type: array
+          items:
+            $ref: '#/components/schemas/PeeParameter'
+        priorityLabel:
+          type: integer
+        supportedPerfMetricGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportedPerfMetricGroup'
+    EP_RP-Attr:
+      type: object
+      properties:
+        userLabel:
+          type: string
+        farEndEntity:
+          type: string
+        supportedPerfMetricGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportedPerfMetricGroup'
+
+    TraceJob-Attr:
+      type: object
+      description: abstract class used as a container of all TraceJob attributes
+      properties:
+        tjJobType:
+          $ref: '#/components/schemas/tjJobType-Type'
+        tjListOfInterfaces:
+          $ref: '#/components/schemas/tjListOfInterfaces-Type'                  
+        tjListOfNeTypes:
+          $ref: '#/components/schemas/tjListOfNeTypes-Type'
+        tjPLMNTarget:
+          $ref: '#/components/schemas/tjPLMNTaget-Type'
+        tjTraceConsumer:
+          oneOf:
+            - $ref: '#/components/schemas/tjStreamingTraceConsumerURI-Type'
+            - $ref: '#/components/schemas/tjTraceCollectionEntityAddress-Type'
+        tjTraceDepth:
+          $ref: '#/components/schemas/tjTraceDepth-Type'
+        tjTraceReference:
+          $ref: '#/components/schemas/tjTraceReference-Type'
+        tjTraceReportingFormat:
+          $ref: '#/components/schemas/tjTraceReportingFormat-Type'
+        tjTraceTarget:
+          $ref: '#/components/schemas/tjTraceTarget-Type'
+        tjTriggeringEvent:
+          $ref: '#/components/schemas/tjTriggeringEvent-Type'
+        tjMDTAnonymizationOfData:
+          $ref: '#/components/schemas/tjMDTAnonymizationOfData-Type'
+        tjMDTAreaConfigurationForNeighCell:
+          $ref: '#/components/schemas/tjMDTAreaConfigurationForNeighCell-Type'
+        tjMDTAreaScope:
+          $ref: '#/components/schemas/tjMDTAreaScope-Type'
+        tjMDTCollectionPeriodRrmLte:
+          $ref: '#/components/schemas/tjMDTCollectionPeriodRrmLte-Type'
+        tjMDTCollectionPeriodRrmUmts:
+          $ref: '#/components/schemas/tjMDTCollectionPeriodRrmUmts-Type'
+        tjMDTCollectionPeriodRrmNR:
+          $ref: '#/components/schemas/tjMDTCollectionPeriodRrmNR-Type'
+        tjMDTEventListForTriggeredMeasurement:
+          $ref: '#/components/schemas/tjMDTEventListForTriggeredMeasurement-Type'
+        tjMDTEventThreshold:
+          $ref: '#/components/schemas/tjMDTEventThreshold-Type'
+        tjMDTListOfMeasurements:
+          $ref: '#/components/schemas/tjMDTListOfMeasurements-Type'
+        tjMDTLoggingDuration:
+          $ref: '#/components/schemas/tjMDTLoggingDuration-Type'
+        tjMDTLoggingInterval:
+          $ref: '#/components/schemas/tjMDTLoggingInterval-Type'
+        tjMDTMBSFNAreaList:
+          $ref: '#/components/schemas/tjMDTMBSFNAreaList-Type'
+        tjMDTMeasurementPeriodLTE:
+          $ref: '#/components/schemas/tjMDTMeasurementPeriodLTE-Type'
+        tjMDTMeasurementPeriodUMTS:
+          $ref: '#/components/schemas/tjMDTMeasurementPeriodUMTS-Type'
+        tjMDTMeasurementQuantity:
+          $ref: '#/components/schemas/tjMDTMeasurementQuantity-Type'
+        tjMDTPLMList:
+          $ref: '#/components/schemas/tjMDTPLMList-Type'
+        tjMDTPositioningMethod:
+          $ref: '#/components/schemas/tjMDTPositioningMethod-Type'
+        tjMDTReportAmount:
+          $ref: '#/components/schemas/tjMDTReportAmount-Type'
+        tjMDTReportingTrigger:
+          $ref: '#/components/schemas/tjMDTReportingTrigger-Type'
+        tjMDTReportInterval:
+          $ref: '#/components/schemas/tjMDTReportInterval-Type'
+        tjMDTReportType:
+          $ref: '#/components/schemas/tjMDTReportType-Type'
+        tjMDTSensorInformation:
+          $ref: '#/components/schemas/tjMDTSensorInformation-Type'
+        tjMDTTraceCollectionEntityID:
+          $ref: '#/components/schemas/tjMDTTraceCollectionEntityID-Type'
+      required:
+        - tjJobType
+        - tjTraceReference
+        - tjTraceConsumer
+        - tjTraceReportingFormat
+        - tjTraceTarget
+
+    ManagedFunction-ncO:
+      type: object
+      properties:
+        PerfMetricJob:
+          $ref: '#/components/schemas/PerfMetricJob-Multiple'
+        ThresholdMonitor:
+          $ref: '#/components/schemas/ThresholdMonitor-Multiple'
+        ManagedNFService:
+          $ref: '#/components/schemas/ManagedNFService-Multiple'
+        TraceJob:
+          $ref: '#/components/schemas/TraceJob-Multiple'
+
+#-------- Definition of concrete IOCs --------------------------------------------
+
+    VsDataContainer-Single:
+      type: object
+      properties:
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            vsDataType:
+              type: string
+            vsDataFormatVersion:
+              type: string
+            vsData:
+              nullable: true
+        VsDataContainer:
+          $ref: '#/components/schemas/VsDataContainer-Multiple'
+    ManagedNFService-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                userLabel:
+                  type: string
+                nFServiceType:
+                  $ref: '#/components/schemas/NFServiceType'
+                sAP:
+                  $ref: '#/components/schemas/SAP'
+                operations:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Operation'
+                administrativeState:
+                  $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                operationalState:
+                  $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                usageState:
+                  $ref: 'comDefs.yaml#/components/schemas/UsageState'
+                registrationState:
+                  $ref: '#/components/schemas/RegistrationState'
+    ManagementNode-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                userLabel:
+                  type: string
+                managedElements:
+                  $ref: 'comDefs.yaml#/components/schemas/DnList'
+                vendorName:
+                  type: string
+                userDefinedState:
+                  type: string
+                locationName:
+                  type: string
+                swVersion:
+                  type: string
+    MeContext-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                dnPrefix:
+                  type: string
+    PerfMetricJob-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                administrativeState:
+                  $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                operationalState:
+                  $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                jobId:
+                  type: string
+                performanceMetrics:
+                  type: array
+                  items:
+                    type: string
+                granularityPeriod:
+                  type: integer
+                  minimum: 1
+                objectInstances:
+                  $ref: 'comDefs.yaml#/components/schemas/DnList'
+                rootObjectInstances:
+                  $ref: 'comDefs.yaml#/components/schemas/DnList'
+                reportingCtrl:
+                  $ref: '#/components/schemas/ReportingCtrl'
+    ThresholdMonitor-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                administrativeState:
+                  $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                operationalState:
+                  $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                performanceMetrics:
+                  type: array
+                  items:
+                    type: string
+                thresholdInfoList:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ThresholdInfo'
+                monitorGranularityPeriod:
+                  type: integer
+                  minimum: 1
+                objectInstances:
+                  $ref: 'comDefs.yaml#/components/schemas/DnList'
+                rootObjectInstances:
+                  $ref: 'comDefs.yaml#/components/schemas/DnList'
+    NtfSubscriptionControl-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                notificationRecipientAddress:
+                  $ref: 'comDefs.yaml#/components/schemas/Uri'
+                notificationTypes:
+                  type: array
+                  items:
+                    $ref: 'comDefs.yaml#/components/schemas/NotificationType'
+                scope:
+                  $ref: '#/components/schemas/Scope'
+                notificationFilter:
+                  type: string
+            HeartbeatControl:
+              $ref: '#/components/schemas/HeartbeatControl-Single'
+    HeartbeatControl-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                heartbeatNtfPeriod:
+                  type: integer
+                triggerHeartbeatNtf:
+                  type: boolean
+    TraceJob-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              $ref: '#/components/schemas/TraceJob-Attr'
+
+    AlarmList-Single:
+      allOf:
+        - $ref: '#/components/schemas/Top'
+        - type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                administrativeState:
+                  $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                operationalState:
+                  $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                numOfAlarmRecords:
+                  type: integer
+                lastModification:
+                  $ref: 'comDefs.yaml#/components/schemas/DateTime'
+                alarmRecords:
+                  description: >-
+                     This resource represents a map of alarm records.
+                     The alarmIds are used as keys in the map.
+                  type: object
+                  additionalProperties:
+                    $ref: 'faultMnS.yaml#/components/schemas/AlarmRecord'
+
+#-------- Definition of YAML arrays for name-contained IOCs ----------------------
+
+    VsDataContainer-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/VsDataContainer-Single'
+    ManagedNFService-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/ManagedNFService-Single'
+    ManagementNode-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/ManagementNode-Single'
+    MeContext-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/MeContext-Single'
+    PerfMetricJob-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/PerfMetricJob-Single'
+    ThresholdMonitor-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/ThresholdMonitor-Single'
+    TraceJob-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/TraceJob-Single'
+    NtfSubscriptionControl-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/NtfSubscriptionControl-Single'
+
+#-------- Definitions in TS 28.623 for TS 28.532 ---------------------------------
+
+    resources-genericNrm:
+      oneOf:
+
+       - $ref: '#/components/schemas/VsDataContainer-Single'
+
+       - $ref: '#/components/schemas/ManagementNode-Single'
+       - $ref: '#/components/schemas/MeContext-Single'
+
+       - $ref: '#/components/schemas/ManagedNFService-Single'
+
+       - $ref: '#/components/schemas/PerfMetricJob-Single'
+       - $ref: '#/components/schemas/ThresholdMonitor-Single'
+       - $ref: '#/components/schemas/TraceJob-Single'
+
+       - $ref: '#/components/schemas/NtfSubscriptionControl-Single'
+       - $ref: '#/components/schemas/HeartbeatControl-Single'
+
+       - $ref: '#/components/schemas/AlarmList-Single'
