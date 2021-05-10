@@ -68,6 +68,83 @@ the the literal string "An example value".
   {{- end }}
 {{- end -}}
 {{/*
+For internal use only!
+
+dcaegen2-services-common._externalVolumes:
+This template generates a list of volumes associated with the pod,
+based on information provided in .Values.externalVolumes.  This
+template works in conjunction with dcaegen2-services-common._externalVolumeMounts
+to give the microservice access to data in volumes created else.
+This initial implementation supports ConfigMaps only, as this is the only
+external volume mounting required by current microservices.
+
+.Values.externalValues is a list of objects.  Each object has 3 required fields and 1 optional field:
+   - name: the name of the resource (in the current implementation, it must be a ConfigMap)
+     that is to be set up as a volume.  The value is a case sensitive string.  Because the
+     names of resources are sometimes set at deployment time (for instance, to prefix the Helm
+     release to the name), the string can be a Helm template fragment that will be expanded at
+     deployment time.
+   - type: the type of the resource (in the current implementation, only "ConfigMap" is supported).
+     The value is a case-INsensitive string.
+   - mountPoint: the path to the mount point for the volume in the container file system.  The
+     value is a case-sensitive string.
+   - readOnly: (Optional) Boolean flag.  Set to true to mount the volume as read-only.
+     Defaults to false.
+
+Here is an example fragment from a values.yaml file for a microservice:
+
+externalVolumes:
+  - name: my-example-configmap
+    type: configmap
+    mountPath: /opt/app/config
+  - name: '{{ include "common.release" . }}-another-example'
+    type: configmap
+    mountPath: /opt/app/otherconfig
+*/}}
+{{- define "dcaegen2-services-common._externalVolumes" -}}
+  {{- $global := . -}}
+  {{- if .Values.externalVolumes }}
+    {{- range $vol := .Values.externalVolumes }}
+      {{- if eq (lower $vol.type) "configmap" }}
+        {{- $vname := (tpl $vol.name $global) }}
+- configMap:
+    defaultMode: 420
+    name: {{ $vname }}
+  name: {{ $vname }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{/*
+For internal use only!
+
+dcaegen2-services-common._externalVolumeMounts:
+This template generates a list of volume mounts for the microservice container,
+based on information provided in .Values.externalVolumes.  This
+template works in conjunction with dcaegen2-services-common._externalVolumes
+to give the microservice access to data in volumes created else.
+This initial implementation supports ConfigMaps only, as this is the only
+external volume mounting required by current microservices.
+
+See the documentation for dcaegen2-services-common._externalVolumes for
+details on how external volumes are specified in the values.yaml file for
+the microservice.
+*/}}
+{{- define "dcaegen2-services-common._externalVolumeMounts" -}}
+  {{- $global := . -}}
+  {{- if .Values.externalVolumes }}
+    {{- range $vol := .Values.externalVolumes }}
+      {{- if eq (lower $vol.type) "configmap" }}
+        {{- $vname := (tpl $vol.name $global) -}}
+        {{- $readOnly := $vol.readOnly | default false }}
+- mountPath: {{ $vol.mountPath }}
+  name: {{ $vname }}
+  readOnly: {{ $readOnly }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{/*
 dcaegen2-services-common.microserviceDeployment:
 This template produces a Kubernetes Deployment for a DCAE microservice.
 
@@ -250,6 +327,7 @@ spec:
         - name: policy-shared
           mountPath: /etc/policies
         {{- end }}
+        {{- include "dcaegen2-services-common._externalVolumeMounts" . | nindent 8 }}
       {{- if $logDir }}
       - image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -291,7 +369,7 @@ spec:
               name: onap-policy-xacml-pdp-api-creds
               key: password
         - name: POLICY_SYNC_PDP_URL
-          value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969 
+          value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969
         - name: POLICY_SYNC_OUTFILE
           value : "/etc/policies/policies.json"
         - name: POLICY_SYNC_V1_DECISION_ENDPOINT
@@ -344,6 +422,7 @@ spec:
       - name: policy-shared
         emptyDir: {}
       {{- end }}
+      {{- include "dcaegen2-services-common._externalVolumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end -}}
