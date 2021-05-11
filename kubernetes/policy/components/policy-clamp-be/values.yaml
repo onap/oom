@@ -44,10 +44,7 @@ certInitializer:
   app_ns: org.osaaf.aaf
   credsPath: /opt/app/osaaf/local
   aaf_add_config: >
-    echo "$cadi_truststore_password" > {{ .Values.credsPath }}/cadi_truststore_password.pwd;
-    echo "$cadi_key_password" > {{ .Values.credsPath }}/cadi_key_password.pwd;
-    echo "$cadi_keystore_password" > {{ .Values.credsPath }}/cadi_keystore_password.pwd;
-    echo "$cadi_keystore_password_p12" > {{ .Values.credsPath }}/cadi_keystore_password_p12.pwd;
+    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop;
     cd {{ .Values.credsPath }};
     chmod a+rx *;
 
@@ -58,11 +55,16 @@ secrets:
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
     passwordPolicy: required
+  - uid: sdc-creds
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.sdc.sdcClientExternalSecret) . }}'
+    password: '{{ .Values.sdc.clientPassword }}'
+    passwordPolicy: required
 
 flavor: small
 
 # application image
-image: onap/policy-clamp-backend:6.0.2
+image: onap/policy-clamp-backend:6.1.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -77,6 +79,9 @@ log:
 #################################################################
 
 #####dummy values for db user and password to pass lint!!!#######
+
+sdc:
+  clientPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
 db:
   user: policy_user
