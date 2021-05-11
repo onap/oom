@@ -1,0 +1,74 @@
+# Copyright (C) 2021 Wipro Limited.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global: {}
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: root-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.config.userRootSecret) . }}'
+    password: '{{  .Values.config.userRootPassword }}'
+  - uid: app-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.appUser }}'
+    password: '{{ .Values.config.appPassword }}'
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
+image: bitnami/etcd:3.3.15
+pullPolicy: Always
+backoffLimit: 20
+
+nodeSelector: {}
+
+affinity: {}
+
+etcd:
+  serviceName: k8s-etcd
+  port : 2379
+  containerName: k8s-etcd
+
+config:
+  userRootSecret: root
+#  userCredentialsExternalSecret:
+  appUser: user
+  appRole: role
+  keyPrefix: key
+
+flavor: small
+resources:
+  small:
+    limits:
+      cpu: 100m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 10Mi
+  large:
+    limits:
+      cpu: 200m
+      memory: 500Mi
+    requests:
+      cpu: 20m
+      memory: 20Mi
+  unlimited: {}
