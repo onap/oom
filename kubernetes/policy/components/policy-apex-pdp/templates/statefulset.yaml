@@ -2,6 +2,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #   Modifications Copyright (C) 2020 AT&T Intellectual Property.
+#   Modifications Copyright (C) 2021 Bell Canada. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -101,6 +102,12 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
+          {{- $certDirectory := .Values.certDirectory -}}
+          {{- range $path, $bytes := .Files.Glob "resources/certs/*" }}
+          - mountPath: {{ $certDirectory }}/{{ base $path }}
+            name: apex-secret
+            subPath: {{ base $path }}
+          {{- end }}
           - mountPath: /var/log/onap
             name: policy-logs
           - mountPath: /home/apexuser/config
@@ -129,5 +136,14 @@ spec:
         - name: apexconfig
           emptyDir:
             medium: Memory
+        - name: apex-secret
+          secret:
+            secretName: {{ include "common.fullname" . }}-secret
+            items:
+            {{- range $path, $bytes := .Files.Glob "resources/certs/*" }}
+            - key: {{ base $path }}
+              path: {{ base $path }}
+              mode: 0644
+            {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
