@@ -181,6 +181,8 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{- $labels := default (dict) .labels -}}
 {{- $matchLabels := default (dict) .matchLabels -}}
 {{- $sessionAffinity := default "None" $dot.Values.service.sessionAffinity -}}
+{{- $kubeTargetVersion := default $dot.Capabilities.KubeVersion.Version | trimPrefix "v" -}}
+{{- $targetipFamilyPolicy := default PreferDualStack $dot.Values.service.ipFamilyPolicy -}}
 apiVersion: v1
 kind: Service
 metadata: {{ include "common.serviceMetadata" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "labels" $labels "dot" $dot) | nindent 2 }}
@@ -189,6 +191,9 @@ spec:
   clusterIP: None
   {{- end }}
   ports: {{- include "common.servicePorts" (dict "serviceType" $serviceType "ports" $ports "dot" $dot "add_plain_port" $add_plain_port) | nindent 4 }}
+  {{- if semverCompare ">=1.20.0" $kubeTargetVersion }}
+  ipFamilyPolicy: {{ $ipFamilyPolicy }}
+  {{- end }}
   {{- if $publishNotReadyAddresses }}
   publishNotReadyAddresses: true
   {{- end }}
