@@ -113,40 +113,45 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
      - .ports : an array of ports
      - .serviceType: the type of the service
      - .add_plain_port: add tls port AND plain port
+     - .add_internal_ports: add all the ports, internal included
 */}}
 {{- define "common.servicePorts" -}}
 {{- $serviceType := .serviceType }}
 {{- $dot := .dot }}
 {{- $add_plain_port := default false .add_plain_port }}
+{{- $add_internal_ports := default false .add_internal_ports }}
 {{-   range $index, $port := .ports }}
-{{-     if (include "common.needTLS" $dot) }}
+{{-     $internal_port := default false $port.internal_only }}
+{{-     if (or (not $internal_port) $add_internal_ports) }}
+{{-       if (include "common.needTLS" $dot) }}
 - port: {{ $port.port }}
   targetPort: {{ $port.name }}
-{{-       if $port.port_protocol }}
+{{-         if $port.port_protocol }}
   name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
 {{-       else }}
   name: {{ $port.name }}
-{{-       end }}
-{{-       if (eq $serviceType "NodePort") }}
+{{-         end }}
+{{-         if (eq $serviceType "NodePort") }}
   nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "useNodePortExt" $port.useNodePortExt) }}{{ $port.nodePort }}
-{{-       end }}
-{{-     else }}
+{{-         end }}
+{{-       else }}
 - port: {{ default $port.port $port.plain_port }}
   targetPort: {{ $port.name }}
-{{-       if $port.port_protocol }}
-  name: {{ printf "%s-%s" $port.port_protocol $port.name }}
-{{-       else }}
-  name: {{ $port.name }}
-{{-       end }}
-{{-     end }}
-{{-     if (and (and (include "common.needTLS" $dot) $add_plain_port) $port.plain_port)  }}
-{{-       if (eq $serviceType "ClusterIP")  }}
-- port: {{ $port.plain_port }}
-  targetPort: {{ $port.name }}-plain
 {{-         if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-         else }}
+  name: {{ $port.name }}
+{{-         end }}
+{{-       end }}
+{{-       if (and (and (include "common.needTLS" $dot) $add_plain_port) $port.plain_port)  }}
+{{-         if (eq $serviceType "ClusterIP")  }}
+- port: {{ $port.plain_port }}
+  targetPort: {{ $port.name }}-plain
+{{-           if $port.port_protocol }}
+  name: {{ printf "%s-%s" $port.port_protocol $port.name }}
+{{-           else }}
   name: {{ $port.name }}-plain
+{{-           end }}
 {{-         end }}
 {{-       end }}
 {{-     end }}
@@ -178,6 +183,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{- $ports := .ports -}}
 {{- $headless := default false .headless -}}
 {{- $add_plain_port := default false .add_plain_port }}
+{{- $add_internal_ports := default false .add_internal_ports }}
 {{- $labels := default (dict) .labels -}}
 {{- $matchLabels := default (dict) .matchLabels -}}
 {{- $sessionAffinity := default "None" $dot.Values.service.sessionAffinity -}}
@@ -188,7 +194,8 @@ spec:
   {{- if $headless }}
   clusterIP: None
   {{- end }}
-  ports: {{- include "common.servicePorts" (dict "serviceType" $serviceType "ports" $ports "dot" $dot "add_plain_port" $add_plain_port) | nindent 4 }}
+  add-internal-ports: {{ $add_internal_ports }}
+  ports: {{- include "common.servicePorts" (dict "serviceType" $serviceType "ports" $ports "dot" $dot "add_plain_port" $add_plain_port "add_internal_ports" $add_internal_ports) | nindent 4 }}
   {{- if $publishNotReadyAddresses }}
   publishNotReadyAddresses: true
   {{- end }}
@@ -201,12 +208,13 @@ spec:
     Create service template
     Will create one or two service templates according to this table:
 
-    | serviceType   | both_tls_and_plain | result       |
-    |---------------|--------------------|--------------|
-    | ClusterIP     | any                | one Service  |
-    | Not ClusterIP | not present        | one Service  |
-    | Not ClusterIP | false              | one Service  |
-    | Not ClusterIP | true               | two Services |
+    | serviceType   | both_tls_and_plain | has_internal_only_ports | result       |
+    |---------------|--------------------|-------------------------|--------------|
+    | ClusterIP     | any                | any                     | one Service  |
+    | Not ClusterIP | not present        | not present             | one Service  |
+    | Not ClusterIP | false              | false                   | one Service  |
+    | Not ClusterIP | any                | true                    | two Services |
+    | Not ClusterIP | true               | any                     | two Services |
 
     If two services are created, one is ClusterIP with both crypted and plain
     ports and the other one is NodePort (or LoadBalancer) with crypted port only.
@@ -220,11 +228,11 @@ spec:
 {{-   $serviceType := $dot.Values.service.type -}}
 {{-   $ports := $dot.Values.service.ports -}}
 {{-   $both_tls_and_plain:= default false $dot.Values.service.both_tls_and_plain }}
+{{-   $has_internal_only_ports:= default false $dot.Values.service.has_internal_only_ports }}
 {{-   $labels := default (dict) .labels -}}
 {{-   $matchLabels := default (dict) .matchLabels -}}
-
-{{-   if (and (include "common.needTLS" $dot) $both_tls_and_plain) }}
-{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true $labels "matchLabels" $matchLabels) }}
+{{-   if (or (and (include "common.needTLS" $dot) $both_tls_and_plain) $has_internal_only_ports) }}
+{{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" $both_tls_and_plain "add_internal_ports" $has_internal_only_ports "labels" $labels "matchLabels" $matchLabels) }}
 {{-     if (ne $serviceType "ClusterIP") }}
 ---
 {{-       if $suffix }}
