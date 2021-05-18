@@ -19,7 +19,7 @@
 global:
   commonConfigPrefix: onap-oof-has
   image:
-    optf_has: onap/optf-has:2.1.5
+    optf_has: onap/optf-has:2.2.0
   persistence:
     enabled: true
 
@@ -32,11 +32,24 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
     type: generic
     filePaths: '{{ .Values.secretsFilePaths }}'
+  - uid: oof-has-etcd-root-password
+    name: &root-password '{{ include "common.release" . }}-has-etcd-root-password'
+    type: password
+    password: '{{ .Values.config.etcd.rootPassword }}'
+    policy: generate
+  - uid: oof-has-etcd-secret
+    name: &user-creds '{{ include "common.release" . }}-oof-has-etcd-secret'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.etcd.userCredentialsExternalSecret) . }}'
+    login: '{{ .Values.config.etcd.appUser }}'
+    password: '{{ .Values.config.etcd.appPassword }}'
+    passwordPolicy: generate
 
 pullPolicy: Always
 nodePortPrefix: 302
 dataRootDir: /dockerdata-nfs
 config:
+  dbBackend: etcd
   aaf:
     serviceName: aaf-service
     port: 8100
@@ -58,6 +71,13 @@ config:
   cps:
     service: cps-tbdmt
     port: 8080
+  etcd:
+    serviceName: &etcd-service oof-has-etcd
+    port: 2379
+    appUser: conductor
+#    rootPassword:
+#    appPassword:
+#    userCredentialsExternalSecret:
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
@@ -79,19 +99,59 @@ resources:
   unlimited: {}
 
 #component overrides
-oof-has-api:
+oof-has-api: &has-config
   enabled: true
   certSecret: *oof-certs
-oof-has-controller:
-  enabled: true
-  certSecret: *oof-certs
-oof-has-data:
-  enabled: true
-  certSecret: *oof-certs
-oof-has-reservation:
-  enabled: true
-  certSecret: *oof-certs
-oof-has-solver:
-  enabled: true
-  certSecret: *oof-certs
+  config:
+    etcd:
+      userCredentialsExternalSecret: *user-creds
+      configJobNameOverride: &job-name oof-has-etcd-config
+oof-has-controller: *has-config
+oof-has-data: *has-config
+oof-has-reservation: *has-config
+oof-has-solver: *has-config
+music:
+  enabled: false
 
+#etcd subchart configurations
+etcd:
+  enabled: true
+  replicaCount: 3
+  nameOverride: &etcd-container oof-has-etcd
+  service:
+    name: *etcd-service
+  persistence:
+    mountSubPath: oof/etcd/data
+    enabled: true
+  flavor: &etcd-flavor large
+  resources: &etcd-resources
+    small:
+      limits:
+        cpu: 100m
+        memory: 300Mi
+      requests:
+        cpu: 10m
+        memory: 75Mi
+    large:
+      limits:
+        cpu: 200m
+        memory: 1Gi
+      requests:
+        cpu: 50m
+        memory: 300Mi
+    unlimited: {}
+
+etcd-init:
+  enabled: true
+  nameOverride: *job-name
+  etcd:
+    serviceName: *etcd-service
+    port : 2379
+    containerName: *etcd-container
+  config:
+    userRootSecret: *root-password
+    userCredentialsExternalSecret: *user-creds
+    appRole: conductor
+    keyPrefix: conductor
+  flavor: *etcd-flavor
+  resources: *etcd-resources
