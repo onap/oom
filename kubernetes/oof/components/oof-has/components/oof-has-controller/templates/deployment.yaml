@@ -41,25 +41,10 @@ spec:
         command:
         - /app/ready.py
         args:
-        - --container-name
-        - music-springboot
+        - --job-name
+        - {{ include "common.release" . }}-{{ .Values.config.etcd.configJobNameOverride }}-job
         - --container-name
         - aaf-sms
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-
-      - name: {{ include "common.name" . }}-onboard-readiness
-        command:
-        - /app/ready.py
-        args:
-        - -j
-        - "{{ include "common.release" . }}-oof-has-onboard"
         env:
         - name: NAMESPACE
           valueFrom:
@@ -114,7 +99,7 @@ spec:
               - /usr/local/bin/healthy.sh
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          env:
+          env: {{ include "oof.etcd.env" . | nindent 10 }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
