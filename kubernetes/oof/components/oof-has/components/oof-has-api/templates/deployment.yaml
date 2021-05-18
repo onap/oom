@@ -55,21 +55,6 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 
-      - name: {{ include "common.name" . }}-onboard-readiness
-        command:
-        - /app/ready.py
-        args:
-        - -j
-        - "{{ include "common.release" . }}-oof-has-onboard"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-
       - name: {{ include "common.name" . }}-has-sms-readiness
         command:
         - sh
@@ -94,7 +79,7 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.image.optf_has }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ["/bin/bash","-c"]
+          command: ["/bin/sh","-c"]
           args: ["/usr/local/bin/uwsgi -s /run/conductor/uwsgi.sock --chmod-socket=777 --wsgi-file /etc/nginx/conductor.wsgi --callable application --set port={{ .Values.uwsgi.internalPort }} --die-on-term --exit-on-reload --pidfile /run/conductor/conductor-uwsgi.pid --enable-threads --workers 6 --master --vacuum --single-interpreter --socket-timeout 10 --max-worker-lifetime 300 --max-requests 100 --no-defer-accept --protocol=uwsgi --socket 0.0.0.0:{{ .Values.uwsgi.internalPort }}"]
           ports:
           - containerPort: {{ .Values.uwsgi.internalPort }}
@@ -113,6 +98,7 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+{{ include "oof.etcd.env" . | indent 10 }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
