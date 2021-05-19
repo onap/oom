@@ -274,6 +274,10 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
         env:
+        {{- range $cred := .Values.credentials }}
+        - name: {{ $cred.name }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" $ "uid" $cred.uid "key" $cred.key) | indent 10 }}
+        {{- end }}
         {{- if $certDir }}
         - name: DCAE_CA_CERTPATH
           value: {{ $certDir }}/cacert.pem
@@ -317,6 +321,8 @@ spec:
         volumeMounts:
         - mountPath: /app-config
           name: app-config
+        - mountPath: /app-config-input
+          name: app-config-input
         {{- if $logDir }}
         - mountPath: {{ $logDir}}
           name: component-log
