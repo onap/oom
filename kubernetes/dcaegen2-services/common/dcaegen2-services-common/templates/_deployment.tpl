@@ -324,7 +324,7 @@ spec:
         {{- if $certDir }}
         - mountPath: {{ $certDir }}
           name: tls-info
-          {{- if and .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+          {{- if (include "dcaegen2-services-common.shouldUseCmpv2Certificates" .) -}}
           {{- include "common.certManager.volumeMountsReadOnly" . | nindent 8 -}}
           {{- end -}}
         {{- end }}
@@ -422,7 +422,7 @@ spec:
       {{- if $certDir }}
       - emptyDir: {}
         name: tls-info
-        {{ if and .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+        {{ if (include "dcaegen2-services-common.shouldUseCmpv2Certificates" .) -}}
         {{ include "common.certManager.volumesReadOnly" . | nindent 6 }}
         {{- end }}
       {{- end }}
@@ -443,7 +443,7 @@ spec:
 */}}
 {{- define "dcaegen2-services-common._certPostProcessor" -}}
   {{- $certDir := default "" .Values.certDirectory . -}}
-  {{- if and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration -}}
+  {{- if (include "dcaegen2-services-common.shouldUseCmpv2Certificates" .) -}}
     {{- $cmpv2Certificate := (index .Values.certificates 0) -}}
     {{- $cmpv2CertificateDir := $cmpv2Certificate.mountPath -}}
     {{- $certType := "pem" -}}
@@ -479,4 +479,17 @@ spec:
     - name: KEYSTORE_DESTINATION_PATHS
       value: {{ $keystoreDestinationPaths | quote }}
   {{- end }}
+{{- end -}}
+
+{{/*
+  Template returns string "true" if CMPv2 certificates should be used and nothing (so it can be used in with statements)
+  when they shouldn't. Example use:
+    {{- if (include "dcaegen2-services-common.shouldUseCmpv2Certificates" .) -}}
+
+*/}}
+{{- define "dcaegen2-services-common.shouldUseCmpv2Certificates" -}}
+  {{- $certDir := default "" .Values.certDirectory . -}}
+  {{- if (and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration .Values.useCmpv2Certificates) -}}
+  true
+  {{- end -}}
 {{- end -}}
