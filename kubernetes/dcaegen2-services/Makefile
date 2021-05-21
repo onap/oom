@@ -1,4 +1,4 @@
-# Copyright Â© 2020 Samsung Electronics
+# Copyright © 2020 Samsung Electronics
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,11 @@
 # limitations under the License.
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-OUTPUT_DIR := $(ROOT_DIR)/../../dist
+OUTPUT_DIR := $(ROOT_DIR)/../dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
+
+HELM_REPO := local
 
 EXCLUDES :=
 HELM_BIN := helm
@@ -26,26 +28,25 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 all: $(HELM_CHARTS)
 
 $(HELM_CHARTS):
-	@echo "\n[$@]"
-	@make package-$@
+        @echo "\n[$@]"
+        @make package-$@
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+        @if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+        @if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+        @if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
 package-%: lint-%
-	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+        @mkdir -p $(PACKAGE_DIR)
+        @if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
 
 clean:
-	@rm -f */requirements.lock
-	@rm -f *tgz */charts/*tgz
-	@rm -rf $(PACKAGE_DIR)
+        @rm -f */requirements.lock
+        @rm -f *tgz */charts/*tgz
+        @rm -rf $(PACKAGE_DIR)
 %:
-	@:
+        @:
