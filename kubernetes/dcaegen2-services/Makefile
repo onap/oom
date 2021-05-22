@@ -1,4 +1,5 @@
 # Copyright © 2020 Samsung Electronics
+# Copyright (c) 2021 AT&T. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +14,11 @@
 # limitations under the License.
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-OUTPUT_DIR := $(ROOT_DIR)/../../dist
+OUTPUT_DIR := $(ROOT_DIR)/../dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
+
+HELM_REPO := local
 
 EXCLUDES :=
 HELM_BIN := helm
@@ -40,8 +43,7 @@ lint-%: dep-%
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
 
 clean:
 	@rm -f */requirements.lock
