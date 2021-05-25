@@ -1,0 +1,223 @@
+# ============= LICENSE_START ================================================
+# ============================================================================
+# Copyright (C) 2021 Wipro Limited.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============= LICENSE_END ==================================================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Secrets Configuration.
+#################################################################
+secrets:
+  - uid: &aafCredsUID aafcreds
+    type: basicAuth
+    login: '{{ .Values.aafCreds.identity }}'
+    password: '{{ .Values.aafCreds.password }}'
+    passwordPolicy: required
+  - uid: &pgUserCredsSecretUid pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-sliceanalysisms-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "sliceanalysisms-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
+################################aafcreds#################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.services.components.slice-analysis-ms:1.0.4
+pullPolicy: Always
+volumeMounts:
+- name: policy-shared
+  mountPath: /etc/policies.json
+  subPath: policies.json
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP/dcaegen2/services/sliceanalysisms
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/sliceanalysisms/etc/cert/
+
+# Explicit Application Properties
+applicationProperties: true
+
+# Monitoring Policy Consul Key
+monitoringPolicy: policy
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+    - &postgresName dcae-sliceanalysisms-postgres
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  timeoutSeconds: 1
+  path: /healthcheck
+  scheme: HTTP
+  port: 8080
+
+# Service Configuration
+service:
+  type: ClusterIP
+  name: dcae-slice-analysis-ms
+  ports:
+    - name: https
+      port: 8080
+      port_protocol: http
+
+# AAF Credentials
+aafCreds:
+  identity: dcae@dcae.onap.org
+  password: demo123456!
+
+credentials:
+- name: AAF_IDENTITY
+  uid: *aafCredsUID
+  key: login
+- name: AAF_PASSWORD
+  uid: *aafCredsUID
+  key: password
+- name: PG_USERNAME
+  uid:  *pgUserCredsSecretUid
+  key: login
+- name: PG_PASSWORD
+  uid: *pgUserCredsSecretUid
+  key: password
+
+# Initial Application Configuration
+applicationConfig:
+  aafUsername: ${AAF_IDENTITY}
+  aafPassword: ${AAF_PASSWORD}
+  postgres.host: dcae-sliceanalysisms-pg-primary
+  postgres.port: 5432
+  postgres.username: ${PG_USERNAME}
+  postgres.password: ${PG_PASSWORD}
+  trust_store_path: /opt/app/sliceanalysisms/etc/cert/trust.jks
+  trust_store_pass_path: /opt/app/sliceanalysisms/etc/cert/trust.pass
+  sliceanalysisms.pollingInterval: 20
+  sliceanalysisms.pollingTimeout: 60
+  cbsPollingInterval: 60
+  sliceanalysisms.namespace: onap
+  sliceanalysisms.dmaap.server: ["message-router"]
+  sliceanalysisms.bufferTime: 60
+  sliceanalysisms.cg: sliceanalysisms-cg
+  sliceanalysisms.cid: sliceanalysisms-cid
+  sliceanalysisms.configDb.service: http://config-db:8080
+  sliceanalysisms.configDbEnabled: true
+  sliceanalysisms.aai.url: https://aai.onap.svc.cluster.local:8443/aai/v21
+  sliceanalysisms.cps.url: https://cps:8088
+  sliceanalysisms.samples: 3
+  sliceanalysisms.minPercentageChange: 5
+  sliceanalysisms.initialDelaySeconds: 120000
+  streams_publishes:
+    CL_topic:
+      type: message-router
+      aaf_username: ${AAF_IDENTITY}
+      aaf_password: ${AAF_PASSWORD}
+      dmaap_info:
+        topic_url: https://message-router.onap.svc.cluster.local:3905/events/unauthenticated.DCAE_CL_OUTPUT
+  streams_subscribes:
+    performance_management_topic:
+      type: message-router
+      aaf_username: ${AAF_IDENTITY}
+      aaf_password: ${AAF_PASSWORD}
+      dmaap_info:
+        topic_url: https://message-router.onap.svc.cluster.local:3905/events/org.onap.dmaap.mr.PERFORMANCE_MEASUREMENTS
+    intelligent_slicing_topic:
+      type: message-router
+      aaf_username: ${AAF_IDENTITY}
+      aaf_password: ${AAF_PASSWORD}
+      dmaap_info:
+        topic_url: https://message-router.onap.svc.cluster.local:3905/events/unauthenticated.ML_RESPONSE_TOPIC
+    dcae_cl_response_topic:
+      type: message-router
+      aaf_username: ${AAF_IDENTITY}
+      aaf_password: ${AAF_PASSWORD}
+      dmaap_info:
+        topic_url: https://message-router.onap.svc.cluster.local:3905/events/DCAE_CL_RSP
+
+applicationEnv:
+  STANDALONE: 'false'
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
+
+#################################################################
+# Application configuration Overriding Defaults in the Postgres.
+#################################################################
+postgres:
+  nameOverride: *postgresName
+  service:
+    name: *postgresName
+    name2: dcae-sliceanalysisms-pg-primary
+    name3: dcae-sliceanalysisms-pg-replica
+  container:
+    name:
+      primary: dcae-sliceanalysisms-pg-primary
+      replica: dcae-sliceanalysisms-pg-replica
+  persistence:
+    mountSubPath: sliceanalysisms/data
+    mountInitPath: sliceanalysisms
+  config:
+    pgUserName: sliceanalysisms
+    pgDatabase: sliceanalysisms
+    pgUserExternalSecret: *pgUserCredsSecretName
