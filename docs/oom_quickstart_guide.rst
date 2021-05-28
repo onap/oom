@@ -161,13 +161,13 @@ Example Keystone v3  (required for Rocky and later releases)
 Note the port number that is listed and use it in the Helm repo add as
 follows::
 
-  > helm repo add local http://127.0.0.1:8879
+  > helm repo add onap http://127.0.0.1:8879
 
 **Step 7.** Verify your Helm repository setup with::
 
   > helm repo list
   NAME   URL
-  local  http://127.0.0.1:8879
+  onap  http://127.0.0.1:8879
 
 **Step 8.** Build a local Helm repository (from the kubernetes directory)::
 
@@ -210,7 +210,7 @@ single command
 To deploy all ONAP applications use this command::
 
     > cd oom/kubernetes
-    >  helm deploy dev local/onap --namespace onap --create-namespace --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900s
+    >  helm deploy dev onap/onap --namespace onap --create-namespace --set global.masterPassword=myAwesomePasswordThatINeedToChange -f onap/resources/overrides/onap-all.yaml -f onap/resources/overrides/environment.yaml -f onap/resources/overrides/openstack.yaml --timeout 900s
 
 All override files may be customized (or replaced by other overrides) as per
 needs.

@@ -189,7 +189,7 @@ Then in `requirements.yaml`, you'll use these values:
   dependencies:
     - name: common
       version: ~x.y-0
-      repository: '@local'
+      repository: '@onap'
     - name: component1
       version: ~x.y-0
       repository: 'file://components/component1'

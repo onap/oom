@@ -28,6 +28,11 @@ HELM_BIN := helm
 HELM_CHARTS := $(PROCESSED_FIRST) $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PROCESSED_LAST)
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 
+# use this if you would like to push onap charts to repo with other name
+# WARNING: Helm v3+ only
+# WARNING: Make sure to edit also requirements files
+HELM_REPO := onap
+
 .PHONY: $(HELM_CHARTS) $(TO_FILTER)
 
 all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
@@ -48,7 +53,7 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
 else
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
 endif

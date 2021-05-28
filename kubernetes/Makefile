@@ -31,7 +31,7 @@ endif
 # use this if you would like to push onap charts to repo with other name
 # WARNING: Helm v3+ only
 # WARNING: Make sure to edit also requirements files
-HELM_REPO := local
+HELM_REPO := onap
 
 ifneq ($(SKIP_LINT),TRUE)
 	HELM_LINT_CMD := $(HELM_BIN) lint

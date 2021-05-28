@@ -101,11 +101,14 @@ Install the Helm Repo
 Once kubectl and Helm are setup, one needs to setup a local Helm server to
 server up the ONAP charts::
 
-  > helm install osn/onap
+  > helm install onap/onap
 
 .. note::
-  The osn repo is not currently available so creation of a local repository is
+  The onap repo is not currently available so creation of a local repository is
   required.
+
+.. note::
+  local repository was name "local" before, it's now named "onap"
 
 Helm is able to use charts served up from a repository and comes setup with a
 default CNCF provided `Curated applications for Kubernetes`_ repository called
@@ -114,11 +117,11 @@ stable which should be removed to avoid confusion::
   > helm repo remove stable
 
 .. To setup the Open Source Networking Nexus repository for helm enter::
-..  > helm repo add osn 'https://nexus3.onap.org:10001/helm/helm-repo-in-nexus/master/'
+..  > helm repo add onap 'https://nexus3.onap.org/repository/onap-helm-release/'
 
 To prepare your system for an installation of ONAP, you'll need to::
 
-  > git clone -b guilin --recurse-submodules -j2 http://gerrit.onap.org/r/oom
+  > git clone -b istanbul --recurse-submodules -j2 http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 
@@ -136,13 +139,13 @@ To setup a local Helm server to server up the ONAP charts::
 Note the port number that is listed and use it in the Helm repo add as
 follows::
 
-  > helm repo add local http://127.0.0.1:8879
+  > helm repo add onap http://127.0.0.1:8879
 
 To get a list of all of the available Helm chart repositories::
 
   > helm repo list
   NAME   URL
-  local  http://127.0.0.1:8879
+  onap  http://127.0.0.1:8879
 
 Then build your local Helm repository::
 
@@ -154,14 +157,14 @@ Then build your local Helm repository::
 The Helm search command reads through all of the repositories configured on the
 system, and looks for matches::
 
-  > helm search repo local
-  NAME                    VERSION    DESCRIPTION
-  local/appc              2.0.0      Application Controller
-  local/clamp             2.0.0      ONAP Clamp
-  local/common            2.0.0      Common templates for inclusion in other charts
-  local/onap              2.0.0      Open Network Automation Platform (ONAP)
-  local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                2.0.0      ONAP Service Orchestrator
+  > helm search repo onap
+  NAME                    VERSION    DESCRI
+  onap/appc              2.0.0      Application Contr
+  onap/clamp             2.0.0      ONAP
+  onap/common            2.0.0      Common templates for inclusion in other c
+  onap/onap              2.0.0      Open Network Automation Platform (
+  onap/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
+  onap/so                2.0.0      ONAP Service Orchestrator
 
 In any case, setup of the Helm repository is a one time activity.
 
@@ -172,7 +175,7 @@ Next, install Helm Plugins required to deploy the ONAP release::
 Once the repo is setup, installation of ONAP can be done with a single
 command::
 
-  > helm deploy development local/onap --namespace onap --set global.masterPassword=password
+  > helm deploy development onap/onap --namespace onap --set global.masterPassword=password
 
 This will install ONAP from a local repository in a 'development' Helm release.
 As described below, to override the default configuration values provided by
@@ -180,7 +183,7 @@ OOM, an environment file can be provided on the command line as follows::
 
 
 
-  > helm deploy development local/onap --namespace onap -f overrides.yaml --set global.masterPassword=password
+  > helm deploy development onap/onap --namespace onap -f overrides.yaml --set global.masterPassword=password
 
 .. note::
   Refer the Configure_ section on how to update overrides.yaml and values.yaml
@@ -314,7 +317,7 @@ value for the vnfDeployment/openstack/oam_network_cidr key as shown below.
 
 To deploy ONAP with this environment file, enter::
 
-  > helm deploy local/onap -n onap -f onap/resources/environments/onap-production.yaml --set global.masterPassword=password
+  > helm deploy onap/onap -n onap -f onap/resources/environments/onap-production.yaml --set global.masterPassword=password
 
 .. include:: environments_onap_demo.yaml
    :code: yaml
@@ -325,15 +328,15 @@ file:
 
 .. code-block:: yaml
 
-  # Referencing a named repo called 'local'.
+  # Referencing a named repo called 'onap'.
   # Can add this repo by running commands like:
   # > helm serve
-  # > helm repo add local http://127.0.0.1:8879
+  # > helm repo add onap http://127.0.0.1:8879
   dependencies:
   <...>
     - name: so
       version: ~8.0.0
-      repository: '@local'
+      repository: '@onap'
       condition: so.enabled
   <...>
 
@@ -578,19 +581,19 @@ Below is the example for the same::
 
   > helm search cassandra
     NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-    local/cassandra         8.0.0                           ONAP cassandra
-    local/portal-cassandra  8.0.0                           Portal cassandra
-    local/aaf-cass          8.0.0                           ONAP AAF cassandra
-    local/sdc-cs            8.0.0                           ONAP Service Design and Creation Cassandra
+    onap/cassandra         8.0.0                           ONAP cassandra
+    onap/portal-cassandra  8.0.0                           Portal cassandra
+    onap/aaf-cass          8.0.0                           ONAP AAF cassandra
+    onap/sdc-cs            8.0.0                           ONAP Service Design and Creation Cassandra
 
 Here the Name column shows the chart name. As we want to try the scale
-operation for cassandra, thus the correponding chart name is local/cassandra
+operation for cassandra, thus the correponding chart name is onap/cassandra
 
 
 Now we have both the command's arguments, thus we can perform the
 scale opeartion for cassandra as follows::
 
-  > helm upgrade dev-cassandra local/cassandra --set replicaCount=3
+  > helm upgrade dev-cassandra onap/cassandra --set replicaCount=3
 
 Using this command we can scale up or scale down the cassadra db instances.
 
