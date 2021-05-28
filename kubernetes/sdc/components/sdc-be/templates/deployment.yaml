@@ -119,8 +119,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /sdc2/rest/healthCheck
-              port: {{ .Values.liveness.port }}
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -128,9 +127,9 @@ spec:
             failureThreshold: {{ .Values.liveness.failureThreshold }}
           {{ end }}
           readinessProbe:
-            exec:
-              command:
-              - "/var/lib/jetty/ready-probe.sh"
+            httpGet:
+              path: /sdc2/rest/healthCheck
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -138,9 +137,9 @@ spec:
             failureThreshold: {{ .Values.readiness.failureThreshold }}
           resources: {{ include "common.resources" . | nindent 12 }}
           startupProbe:
-            exec:
-              command:
-              - "/var/lib/jetty/ready-probe.sh"
+            httpGet:
+              path: /sdc2/rest/healthCheck
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
@@ -160,12 +159,12 @@ spec:
                 fieldPath: status.podIP
           volumeMounts:
           - name: sdc-environments-output
-            mountPath: /var/lib/jetty/chef-solo/environments/
+            mountPath: /app/jetty/chef-solo/environments/
           - name: sdc-environments-output
-            mountPath: /var/lib/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.p12
+            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.p12
             subPath: org.onap.sdc.p12
           - name: sdc-environments-output
-            mountPath: /var/lib/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.trust.jks
+            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.trust.jks
             subPath: org.onap.sdc.trust.jks
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
@@ -178,7 +177,7 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/var/lib/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/app/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
         - name: {{ include "common.name" . }}-filebeat-onap
           image: {{ include "repositoryGenerator.image.logging" . }}
