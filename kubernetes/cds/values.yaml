@@ -33,6 +33,17 @@ secrets:
     externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
     login: '{{ index .Values "mariadb-galera" "db" "user" }}'
     password: '{{ index .Values "mariadb-galera" "db" "password" }}'
+  - name: &apiSecret '{{ include "common.release" . }}-cds-api-secret'
+    uid: 'cds-api-secret'
+    externalSecret: ""
+    type: genericKV
+    envs:
+      - name: login
+        value: '{{ index .Values "cds-blueprints-processor" "api-credentials" "user" }}'
+      - name: password
+        value: '{{ index .Values "cds-blueprints-processor" "api-credentials" "password" }}'
+      - name: basicAuth
+        value: '{{ printf "%s:%s" (index .Values  "cds-blueprints-processor" "api-credentials" "user") (index .Values "cds-blueprints-processor" "api-credentials" "password") | b64enc | printf "Basic %s" }}'
 
 #################################################################
 # Application configuration defaults.
@@ -206,7 +217,14 @@ mariadb-galera:
 
 cds-blueprints-processor:
   enabled: true
+  api-credentials:
+    user: ccsdkapps
+    password: ccsdkapps
   config:
+    healthCheck:
+      # Need to match api-credentials
+      user: eHbVUbJAj4AG2522cSbrOQ==
+      password: eHbVUbJAj4AG2522cSbrOQ==
     cdsDB:
       dbServer: *dbServer
       dbPort: 3306
@@ -218,12 +236,19 @@ cds-command-executor:
 
 cds-py-executor:
   enabled: true
+  config:
+    authCredentialsExternalSecret: *apiSecret
 
 cds-sdc-listener:
   enabled: true
+  config:
+    authCredentialsExternalSecret: *apiSecret
 
 cds-ui:
   enabled: true
+  config:
+    api:
+      externalSecret: *apiSecret
 
 
 #Resource Limit flavor -By Default using small
