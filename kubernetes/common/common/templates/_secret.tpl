@@ -193,8 +193,14 @@ type: Opaque
       {{- $entry := dict }}
       {{- $uid := tpl (default "" $secret.uid) $global }}
       {{- $keys := keys $secret }}
-      {{- range $key := (without $keys "annotations" "filePaths" )}}
+      {{- range $key := (without $keys "annotations" "filePaths" "envs" )}}
         {{- $_ := set $entry $key (tpl (index $secret $key) $global) }}
+      {{- end }}
+      {{- if $secret.envs }}
+        {{ range $env :=  $secret.envs }}
+          {{- $_ := set $env "value" (tpl $env.value $global) }}
+        {{- end }}
+        {{- $_ := set $entry "envs" $secret.envs }}
       {{- end }}
       {{- if $secret.annotations }}
         {{- $_ := set $entry "annotations" $secret.annotations }}
