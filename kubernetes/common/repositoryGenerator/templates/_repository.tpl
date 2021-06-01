@@ -1,6 +1,6 @@
 {{/*
 # Copyright Â© 2017 Amdocs, Bell Canada
-# Copyright © 2021 AT&T
+# Copyright ï¿½ 2021 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,10 +81,6 @@
 
 {{- define "repositoryGenerator.image.curl" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "curlImage") .) }}
-{{- end -}}
-
-{{- define "repositoryGenerator.image.certserviceclient" -}}
-  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "certServiceClientImage") .) }}
 {{- end -}}
 
 {{- define "repositoryGenerator.image.dcaepolicysync" -}}

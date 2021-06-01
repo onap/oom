@@ -495,7 +495,7 @@ spec:
 */}}
 {{- define "dcaegen2-services-common.shouldUseCmpv2Certificates" -}}
   {{- $certDir := default "" .Values.certDirectory . -}}
-  {{- if (and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration .Values.useCmpv2Certificates) -}}
+  {{- if (and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.useCmpv2Certificates) -}}
   true
   {{- end -}}
 {{- end -}}
