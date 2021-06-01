@@ -155,7 +155,6 @@ spec:
         name: {{ include "common.name" . }}-readiness
         {{ end -}}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
-{{ include "common.certServiceClient.initContainer" . | indent 6 }}
       - name: {{ include "common.name" . }}-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
@@ -178,7 +177,7 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
+          {{- if .Values.global.cmpv2Enabled }}
           {{- $linkCommand := include "common.certManager.linkVolumeMounts" . }}
           lifecycle:
             postStart:
@@ -312,8 +311,7 @@ spec:
             value: "{{ .Values.config.sdnr.netconfCallHome.enabled | default "false" }}"
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
-{{ include "common.certServiceClient.volumeMounts" . | indent 10 }}
-{{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
+{{- if .Values.global.cmpv2Enabled }}
 {{ include "common.certManager.volumeMounts" . | indent 10 }}
 {{- end }}
           - mountPath: /etc/localtime
@@ -437,8 +435,7 @@ spec:
           emptyDir: {}
   {{ else }}
 {{ include "common.certInitializer.volumes" . | nindent 8 }}
-{{ include "common.certServiceClient.volumes" . | nindent 8 }}
-{{- if and .Values.global.cmpv2Enabled .Values.global.CMPv2CertManagerIntegration }}
+{{- if .Values.global.cmpv2Enabled }}
 {{ include "common.certManager.volumes" . | nindent 8 }}
 {{- end }}
   volumeClaimTemplates:
