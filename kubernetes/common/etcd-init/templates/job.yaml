@@ -1,0 +1,104 @@
+{{/*
+# Copyright (C) 2021 Wipro Limited.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+      name: {{ include "common.name" . }}
+    spec:
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - {{ .Values.etcd.containerName }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            # Create users
+            export ETCDCTL_ENDPOINTS=http://${ETCD_HOST}:${ETCD_PORT}
+            export ETCDCTL_API=3
+            echo "${ROOT_PASSWORD}" | etcdctl user add root --interactive=false
+            echo "${APP_PASSWORD}" | etcdctl user add ${APP_USER} --interactive=false
+
+            # Create roles
+            etcdctl role add ${APP_ROLE}
+            etcdctl role grant-permission ${APP_ROLE} --prefix=true readwrite ${KEY_PREFIX}
+
+            etcdctl user grant-role ${APP_USER} ${APP_ROLE}
+            etcdctl auth enable
+        env:
+        - name: ALLOW_NONE_AUTHENTICATION
+          value: "yes"
+        - name: ETCD_HOST
+          value: "{{ .Values.etcd.serviceName }}.{{ include "common.namespace" . }}"
+        - name: ETCD_PORT
+          value: "{{ .Values.etcd.port }}"
+        - name: ROOT_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "root-password" "key" "password" ) | indent 10 }}
+        - name: APP_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-creds" "key" "login") | indent 10 }}
+        - name: APP_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-creds" "key" "password") | indent 10 }}
+        - name: APP_ROLE
+          value: "{{ .Values.config.appRole }}"
+        - name: KEY_PREFIX
+          value: "{{ .Values.config.keyPrefix }}"
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        resources: {{ include "common.resources" . | nindent 12 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity: {{ toYaml .Values.affinity | nindent 10 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
