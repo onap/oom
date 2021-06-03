@@ -1,0 +1,97 @@
+#============LICENSE_START========================================================
+#=================================================================================
+# Copyright (c) 2021 AT&T. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+# Global values
+global:
+  pullPolicy: Always
+  persistence: {}
+  githubContainerRegistry: ghcr.io
+image: helm/chartmuseum:v0.13.1
+containerPort: &cont_port 8080
+
+
+# Secrets Configuration.
+secrets:
+  - uid: registrycred
+    type: basicAuth
+    login: '{{ .Values.registryCred.username }}'
+    password: '{{ .Values.registryCred.password }}'
+    passwordPolicy: required
+
+
+# service configuration
+service:
+  type: ClusterIP
+  name: chart-museum
+  ports:
+    - port: 80
+      internal_port: *cont_port
+      name: &port http
+
+chartsMap:
+  directory: "/charts/components/"
+
+liveness:
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  path: /health
+  port: *port
+  enabled: true
+
+# Below parameter should match setting in all clients
+# including contrib\tools\registry-initialize.sh
+# which does preload
+registryCred:
+  username: onapintializer
+  password: demo123456!
+
+# Parameters for persistent storage
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 4Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: chartmuseum/data
+  volumeReclaimPolicy: Retain
+
+
+serviceAccount:
+  nameOverride: chartmuseum
+  roles:
+    - read
+
+securityContext:
+  user_id: 2000
+  group_id: 3000
+
+flavor: small
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 0.5
+      memory: 512Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  unlimited: {}
