@@ -79,7 +79,7 @@ to give the microservice access to data in volumes created else.
 This initial implementation supports ConfigMaps only, as this is the only
 external volume mounting required by current microservices.
 
-.Values.externalValues is a list of objects.  Each object has 3 required fields and 1 optional field:
+.Values.externalVolumes is a list of objects.  Each object has 3 required fields and 2 optional fields:
    - name: the name of the resource (in the current implementation, it must be a ConfigMap)
      that is to be set up as a volume.  The value is a case sensitive string.  Because the
      names of resources are sometimes set at deployment time (for instance, to prefix the Helm
@@ -91,6 +91,11 @@ external volume mounting required by current microservices.
      value is a case-sensitive string.
    - readOnly: (Optional) Boolean flag.  Set to true to mount the volume as read-only.
      Defaults to false.
+   - optional: (Optional) Boolean flag.  Set to true to make the configMap optional (i.e., to allow the
+     microservice's pod to start even if the configMap doesn't exist).  If set to false, the configMap must
+     be present in order for the microservice's pod to start. Defaults to true.  (Note that this
+     default is the opposite of the Kubernetes default.  We've done this to be consistent with the behavior
+     of the DCAE Cloudify plugin for Kubernetes [k8splugin], which always set "optional" to true.)
 
 Here is an example fragment from a values.yaml file for a microservice:
 
@@ -101,16 +106,19 @@ externalVolumes:
   - name: '{{ include "common.release" . }}-another-example'
     type: configmap
     mountPath: /opt/app/otherconfig
+    optional: false
 */}}
 {{- define "dcaegen2-services-common._externalVolumes" -}}
   {{- $global := . -}}
   {{- if .Values.externalVolumes }}
     {{- range $vol := .Values.externalVolumes }}
       {{- if eq (lower $vol.type) "configmap" }}
-        {{- $vname := (tpl $vol.name $global) }}
+        {{- $vname := (tpl $vol.name $global) -}}
+        {{- $opt := hasKey $vol "optional" | ternary $vol.optional true }}
 - configMap:
     defaultMode: 420
     name: {{ $vname }}
+    optional: {{ $opt }}
   name: {{ $vname }}
       {{- end }}
     {{- end }}
