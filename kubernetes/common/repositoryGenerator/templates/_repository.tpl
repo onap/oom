@@ -139,7 +139,7 @@
   {{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
   {{- $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
   {{- $repoCreds := "" }}
-  {{- if $subchartDot.Values.global.dockerHubRepositoryCred }}
+  {{- if $subchartDot.Values.global.repositoryCred }}
   {{-   $repo := $subchartDot.Values.global.repository }}
   {{-   $cred := $subchartDot.Values.global.repositoryCred }}
   {{-   $mail := default "@" $cred.mail }}
