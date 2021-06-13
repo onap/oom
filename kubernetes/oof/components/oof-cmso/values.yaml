@@ -13,6 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+global:
+  commonConfigPrefix: "oof-cmso"
+  truststoreFile: "truststoreONAPall.jks"
+  keystoreFile: "org.onap.oof.jks"
+  truststorePassword:
+  authentication: aaf-auth
+  mariadbGalera: &mariadbGalera
+    #This flag allows OOF-CMSO to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
+
 #################################################################
 # Secrets metaconfig
 #################################################################
@@ -42,7 +55,7 @@ secrets:
     login: '{{ .Values.config.aaf.user }}'
     password: '{{ .Values.config.aaf.password }}'
 
-mariadb-galera:
+mariadb-galera: &localMariadb
   replicaCount: 1
   nameOverride: &dbName cmso-db
   nfsprovisionerPrefix: cmso
@@ -56,19 +69,7 @@ mariadb-galera:
   serviceAccount:
     nameOverride: *dbName
 
-global:
-  commonConfigPrefix: "oof-cmso"
-  truststoreFile: "truststoreONAPall.jks"
-  keystoreFile: "org.onap.oof.jks"
-  truststorePassword:
-  authentication: aaf-auth
-
 mariadb-init:
-  mariadbGalera:
-    containerName: *dbName
-    serviceName: *dbName
-    servicePort: 3306
-    userRootSecret: *rootPassword
   config:
     userCredentialsExternalSecret: *serviceDbCreds
     mysqlDatabase: cmso
@@ -117,11 +118,10 @@ oof-cmso-service:
   certInitializer:
     << : *certInitConfig
     nameOverride: oof-cmso-service-cert-initializer
+  mariadb-galera: *localMariadb
   config:
     db:
       userCredentialsExternalSecret: *serviceDbCreds
-      host: *dbName
-      container: *dbName
       mysqlDatabase: cmso
     aaf:
       userCredentialsExternalSecret: *aafCreds
@@ -131,12 +131,11 @@ oof-cmso-optimizer:
   certInitializer:
     << : *certInitConfig
     nameOverride: oof-cmso-optimizer-cert-initializer
+  mariadb-galera: *localMariadb
   config:
     enabled: true
     db:
       userCredentialsExternalSecret: *optimizerDbCreds
-      host: *dbName
-      container: *dbName
       mysqlDatabase: optimizer
     aaf:
       userCredentialsExternalSecret: *aafCreds
