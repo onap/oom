@@ -42,8 +42,8 @@ spec:
           command:
           - /app/ready.py
           args:
-          - --container-name
-          - {{ .Values.config.dmaapDrDb.mariadbContName }}
+          - --job-name
+          - {{ include "common.fullname" . }}-db-config-job
           env:
           - name: NAMESPACE
             valueFrom:
@@ -80,6 +80,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          - name: DB_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: DB_PORT
+            value: {{ include "common.mariadbPort" . | quote}}
           - name: DB_USERNAME
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-dr-db-user-secret" "key" "login") | indent 12 }}
           - name: DB_PASSWORD
