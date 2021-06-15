@@ -20,7 +20,7 @@ global:
   # Change to an unused port prefix range to prevent port conflicts
   # with other instances running within the same k8s cluster
   nodePortPrefixExt: 304
-
+  mariadbGalera: {}
   # image pull policy
   pullPolicy: Always
 
@@ -37,9 +37,9 @@ global:
 secrets:
   - uid: 'cds-db-user-creds'
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.cdsDB.dbCredsExternalSecret) . }}'
-    login: '{{ .Values.config.cdsDB.dbUser }}'
-    password: '{{ .Values.config.cdsDB.dbPassword }}'
+    externalSecret: '{{ tpl (default "" .Values.mariadb-galera.db.externalSecret) . }}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: required
   - uid: 'sdnc-db-root-pass'
     type: password
@@ -57,24 +57,15 @@ pullPolicy: Always
 # flag to enable debugging - application support required
 debugEnabled: false
 
+mariadb-galera: {}
+
 # application configuration
 config:
   appConfigDir: /opt/app/onap/config
   sdncDB:
     dbService: mariadb-galera
-    dbPort: 3306
-    dbName: sdnctl
     #dbRootPass: Custom root password
     dbRootPassExternalSecret: '{{ include "common.mariadb.secret.rootPassSecretName" ( dict "dot" . "chartName" .Values.config.sdncDB.dbService ) }}'
-  cdsDB:
-    dbServer: cds-db
-    dbPort: 3306
-    dbName: sdnctl
-    dbUser: sdnctl
-    dbPassword: sdnctl
-    # dbCredsExternalSecret: <some secret name>
-    # dbRootPassword: password
-    # dbRootPassExternalSecret
 
 # default number of instances
 replicaCount: 1
