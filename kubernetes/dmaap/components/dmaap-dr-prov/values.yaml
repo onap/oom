@@ -19,6 +19,12 @@ global:
   nodePortPrefix: 302
   loggingDirectory: /opt/app/datartr/logs
   persistence: {}
+  mariadbGalera: &mariadbGalera
+    #This flag allows DMAAP-DR to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -94,21 +100,15 @@ config:
 
   # dr-prov db configuration
   dmaapDrDb:
-    mariadbServiceName: dmaap-dr-db
-    mariadbServicePort: 3306
-    mariadbContName: &dmaap-dr-db dmaap-dr-db
     userName: datarouter
 #    userPassword: password
 #    userCredentialsExternalSecret: some secret
 
 # mariadb-galera configuration
-mariadb:
-  name: *dmaap-dr-db
+mariadb-galera:
+  name: &dmaap-dr-db dmaap-dr-db
   nameOverride: *dmaap-dr-db
   replicaCount: 3
-  db:
-    externalSecret: *dbSecretName
-    name: datarouter
   service:
     name: dmaap-dr-db
   nfsprovisionerPrefix: dmaap-dr-db
@@ -117,6 +117,12 @@ mariadb:
     mountSubPath: data-router/dr-db-data
   serviceAccount:
     nameOverride: *dmaap-dr-db
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbSecretName
+    mysqlDatabase: datarouter
+  nameOverride: dmaap-dr-prov-db-config
 
 #################################################################
 # AAF part
