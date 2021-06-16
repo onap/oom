@@ -44,6 +44,10 @@ spec:
         - -c
         - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; chmod 0755 /config/${PFILE}; done"
         env:
+        - name: DB_HOST
+          value: {{ include "common.mariadbService" . }}
+        - name: DB_PORT
+          value: {{ include "common.mariadbPort" . | quote}}
         - name: APPC_DB_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "appcdb-user-creds" "key" "login") | indent 10 }}
         - name: APPC_DB_PASSWD
@@ -77,8 +81,8 @@ spec:
         command:
         - /app/ready.py
         args:
-        - --container-name
-        - {{.Values.config.mariadbGaleraContName}}
+        - --job-name
+        - {{ include "common.fullname" . }}-db-config-job
         env:
         - name: NAMESPACE
           valueFrom:
@@ -108,6 +112,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+            - name: DB_HOST
+              value: {{ include "common.mariadbService" . }}
+            - name: DB_PORT
+              value: {{ include "common.mariadbPort" . | quote}}
             - name: MYSQL_ROOT_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-pass" "key" "password") | indent 14}}
             - name: APPC_DB_USER

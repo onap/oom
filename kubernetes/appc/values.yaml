@@ -21,24 +21,30 @@ global:
   centralizedLoggingEnabled: false
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera: &mariadbGalera
+    #This flag allows APPC to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
   - uid: "db-root-pass"
-    name: '{{ include "common.release" . }}-appc-db-root-pass'
+    name: &dbRootPass '{{ include "common.release" . }}-appc-db-root-pass'
     externalSecret: '{{ .Values.config.dbRootPassExternalSecret }}'
     type: password
     password: '{{ .Values.config.dbRootPass }}'
   - uid: 'appcdb-user-creds'
-    name: '{{ include "common.release" . }}-appcdb-user-creds'
+    name: &appcdbUserSecretName '{{ include "common.release" . }}-appcdb-user-creds'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.appcdb.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.appcdb.userName }}'
     password: '{{ .Values.config.appcdb.password }}'
   - uid: 'sdncdb-user-creds'
-    name: '{{ include "common.release" . }}-sdncdb-user-creds'
+    name: &sdncdbUserSecretName '{{ include "common.release" . }}-sdncdb-user-creds'
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.sdncdb.userCredentialsExternalSecret) . }}'
     login: '{{ .Values.config.sdncdb.userName }}'
@@ -67,7 +73,7 @@ config:
   appcdb:
     # Warning: changing this config option may not work.
     # It seems that the DB name is hardcoded.
-    dbName: appcctl
+    dbName: &appcdbName appcctl
     userName: appcctl
     # password: appcctl
     # userCredsExternalSecret: some secret
@@ -82,8 +88,6 @@ config:
   odlGid: 101
   ansibleServiceName: appc-ansible-server
   ansiblePort: 8000
-  mariadbGaleraSVCName: &appc-db appc-db
-  mariadbGaleraContName: *appc-db
   enableAAF: true
   enableClustering: false
   configDir: /opt/onap/appc/data/properties
@@ -104,21 +108,10 @@ config:
   dmaapServiceUser: appc
   dmaapServicePassword: onapappc
 
-appc-ansible-server:
-  enabled: true
-  service:
-    name: appc-ansible-server
-    internalPort: 8000
-  config:
-    mysqlServiceName: *appc-db
-
-appc-cdt:
-  enabled: true
-
-mariadb-galera:
-  nameOverride: *appc-db
+mariadb-galera: &localMariadb
+  nameOverride: &appc-db appc-db
   rootUser:
-    externalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
+    externalSecret: *dbRootPass
   service:
     name: *appc-db
   nfsprovisionerPrefix: appc
@@ -131,14 +124,23 @@ mariadb-galera:
     nameOverride: *appc-db
   replicaCount: 1
 
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *appcdbUserSecretName
+    mysqlDatabase: *appcdbName
+    mysqlAdditionalDatabases:
+      sdnctl:
+        externalSecret: *sdncdbUserSecretName
+  nameOverride: appc-db-config
+
 dgbuilder:
   nameOverride: appc-dgbuilder
   certInitializer:
     nameOverride: appc-dgbuilder-cert-initializer
   config:
     db:
-      rootPasswordExternalSecret: '{{ include "common.release" . }}-appc-db-root-pass'
-      userCredentialsExternalSecret: '{{ include "common.release" . }}-sdncdb-user-creds'
+      rootPasswordExternalSecret: *dbRootPass
+      userCredentialsExternalSecret: *sdncdbUserSecretName
     dbPodName: *appc-db
     dbServiceName: *appc-db
   service:
@@ -154,9 +156,19 @@ dgbuilder:
     config:
       ssl: "redirect"
 
+#passing value to ansible server.
+appc-ansible-server:
+  enabled: true
+  mariadb-galera: *localMariadb
+  service:
+    name: appc-ansible-server
+    internalPort: 8000
+
 #passing value to cdt chart. value of nodePort3 will be same as appc.service.nodePort3.
 appc-cdt:
+  enabled: true
   nodePort3: 11
+
 # default number of instances
 replicaCount: 1
 
