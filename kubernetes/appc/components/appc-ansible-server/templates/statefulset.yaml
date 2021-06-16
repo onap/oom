@@ -37,6 +37,21 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers:
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >{{ .Values.config.configDir }}/${PFILE}; done"
+        env:
+        - name: DB_HOST
+          value: {{ include "common.mariadbService" . }}
+        volumeMounts:
+        - mountPath: /config-input/RestServer_config
+          name: config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
       - name: {{ include "common.name" . }}-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         command: ["sh", "-c", "chown -R {{ .Values.config.ansibleUid }}:{{ .Values.config.ansibleGid}} {{ .Values.persistence.playbookPath }}"]
