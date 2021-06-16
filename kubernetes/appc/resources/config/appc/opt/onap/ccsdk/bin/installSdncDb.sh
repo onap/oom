@@ -30,10 +30,11 @@ MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
 SDNC_DB_USER=${SDNC_DB_USER}
 SDNC_DB_PASSWD=${SDNC_DB_PASSWD}
 SDNC_DB_DATABASE={{.Values.config.sdncdb.dbName}}
-
+MYSQL_HOST=${DB_HOST}.{{.Release.Namespace}}
+MYSQL_PORT=${DB_PORT}
 
 # Create tablespace and user account
-mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
+mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} mysql <<-END
 CREATE DATABASE ${SDNC_DB_DATABASE};
 CREATE USER '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWD}';
 CREATE USER '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWD}';
@@ -44,5 +45,5 @@ END
 
 if [ -f ${SDNC_HOME}/data/odlsli.dump ]
 then
-mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${SDNC_HOME}/data/odlsli.dump
+mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${SDNC_HOME}/data/odlsli.dump
 fi

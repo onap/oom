@@ -31,10 +31,11 @@ APPC_DB_USER=${APPC_DB_USER}
 APPC_DB_PASSWD=${APPC_DB_PASSWD}
 APPC_DB_DATABASE={{.Values.config.appcdb.dbName}}
 SDNC_DB_DATABASE={{.Values.config.sdncdb.dbName}}
-
+MYSQL_HOST=${DB_HOST}.{{.Release.Namespace}}
+MYSQL_PORT=${DB_PORT}
 
 # Create tablespace and user account
-mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
+mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} mysql <<-END
 CREATE DATABASE ${APPC_DB_DATABASE};
 CREATE USER '${APPC_DB_USER}'@'localhost' IDENTIFIED BY '${APPC_DB_PASSWD}';
 CREATE USER '${APPC_DB_USER}'@'%' IDENTIFIED BY '${APPC_DB_PASSWD}';
@@ -45,15 +46,15 @@ END
 
 if [ -f ${APPC_HOME}/data/appcctl.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${APPC_DB_DATABASE} < ${APPC_HOME}/data/appcctl.dump
+  mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} ${APPC_DB_DATABASE} < ${APPC_HOME}/data/appcctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sdnctl.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sdnctl.dump
+  mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sdnctl.dump
 fi
 
 if [ -f ${APPC_HOME}/data/sqlData.dump ]
 then
-  mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sqlData.dump
+  mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} ${SDNC_DB_DATABASE} < ${APPC_HOME}/data/sqlData.dump
 fi

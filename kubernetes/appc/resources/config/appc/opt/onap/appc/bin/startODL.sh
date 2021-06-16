@@ -60,12 +60,14 @@ MYSQL_PASSWD=${MYSQL_ROOT_PASSWORD}
 ENABLE_ODL_CLUSTER=${ENABLE_ODL_CLUSTER:-false}
 ENABLE_AAF=${ENABLE_AAF:-true}
 DBINIT_DIR=${DBINIT_DIR:-/opt/opendaylight/current/daexim}
+MYSQL_HOST=${DB_HOST}.{{.Release.Namespace}}
+MYSQL_PORT=${DB_PORT}
 
 #
 # Wait for database to init properly
 #
 echo "Waiting for mariadbgalera"
-until mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD}  mysql >/dev/null 2>&1
+until mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD}  mysql >/dev/null 2>&1
 do
   printf "."
   sleep 1
@@ -79,7 +81,7 @@ fi
 
 if [ ! -f ${DBINIT_DIR}/.installed ]
 then
-        sdnc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
+        sdnc_db_exists=$(mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} mysql <<-END
 show databases like 'sdnctl';
 END
 )
@@ -88,7 +90,7 @@ END
             echo "Installing SDNC database"
             ${SDNC_HOME}/bin/installSdncDb.sh
 
-            appc_db_exists=$(mysql -h {{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}} -u root -p${MYSQL_PASSWD} mysql <<-END
+            appc_db_exists=$(mysql -h ${MYSQL_HOST} -P ${MYSQL_PORT} -u root -p${MYSQL_PASSWD} mysql <<-END
 show databases like 'appcctl';
 END
 )
