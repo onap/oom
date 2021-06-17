@@ -69,10 +69,16 @@ spec:
         - bash
         - "-c"
         - |
-          set -x
-          if [ ! -d /opt/aai/logroot/AAI-GQ/misc ]; then mkdir -p /opt/aai/logroot/AAI-GQ/misc; fi
-          until nc -w10 -z -v aai.{{.Release.Namespace}} 8443; do echo "Retrying to reach aai on port 8443"; done;
-          bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
+           set -x
+           if [ ! -d /opt/aai/logroot/AAI-GQ/misc ]; then mkdir -p /opt/aai/logroot/AAI-GQ/misc; fi
+          {{- if (include "common.needTLS" .) }} 
+           until nc -w10 -z -v aai.{{.Release.Namespace}} 8443; do echo "Retrying to reach aai on port 8443"; done;
+           bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
+          {{- else }}
+           until nc -w10 -z -v aai.{{.Release.Namespace}} 8080; do echo "Retrying to reach aai on port 8080"; done;
+           bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
+           {{- include "common.serviceMesh.killSidecar" . | indent 12 | trim }}
+          {{- end }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
