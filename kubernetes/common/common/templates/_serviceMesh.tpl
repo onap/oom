@@ -25,3 +25,15 @@ true
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+
+{{- define "common.serviceMesh.killSidecar" -}}
+{{-   if (include "common.onServiceMesh" .) }}
+RCODE="$?";
+echo "*** script finished with exit code $RCODE" ;
+echo "*** killing service mesh sidecar" ;
+curl -sf -X POST http://127.0.0.1:15020/quitquitquit ;
+echo "" ;
+echo "*** exiting with script exit code" ;
+exit "$RCODE"
+{{-   end }}
+{{- end -}}
