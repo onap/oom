@@ -25,3 +25,9 @@ true
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+
+{{- define "common.serviceMesh.killSidecar" -}}
+{{-   if (include "common.onServiceMesh" .) }}
+curl -sf -xPOST http://127.0.0.1:15020/quitquitquit
+{{-   end }}
+{{- end -}}
