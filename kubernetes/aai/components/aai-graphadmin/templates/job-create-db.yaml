@@ -80,8 +80,11 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /bin/bash
-        - docker-entrypoint.sh
-        - createDBSchema.sh
+        - -c
+        - |
+           set -e
+           bash docker-entrypoint.sh createDBSchema.sh ;
+           {{- include "common.serviceMesh.killSidecar" . | indent 12 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
@@ -149,5 +152,5 @@ spec:
             {{ end }}
       restartPolicy: Never
       imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      - name: {{ include "common.namespace" . }}-docker-registry-key
 {{ end }}
