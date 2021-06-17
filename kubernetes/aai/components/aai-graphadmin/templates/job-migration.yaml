@@ -130,7 +130,10 @@ spec:
         command:
         - /bin/bash
         - -c
-        - bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
+        - |
+           set -e
+           bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges
+           {{- include "common.serviceMesh.killSidecar" . | indent 12 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
@@ -248,8 +251,11 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /bin/bash
-        - docker-entrypoint.sh
-        - dataSnapshot.sh
+        - -c
+        - |
+           set -e
+           docker-entrypoint.sh dataSnapshot.sh
+           {{- include "common.serviceMesh.killSidecar" . | indent 12 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}

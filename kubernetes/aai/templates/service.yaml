@@ -26,16 +26,12 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   ports:
-  {{if eq .Values.service.type "NodePort" -}}
-  - name: {{ .Values.service.portName }}
-    port: {{ .Values.service.externalPort }}
-    targetPort: {{ .Values.service.internalPort }}
+  - name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
+    port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.externalPort .Values.service.externalPlainPort }}
+    targetPort: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+    {{- if eq .Values.service.type "NodePort" }}
     nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-  {{- else -}}
-  - port: {{ .Values.service.externalPort }}
-    targetPort: {{ .Values.service.internalPort }}
-    name: {{ .Values.service.portName }}
-  {{- end}}
+    {{- end }}
   type: {{ .Values.service.type }}
   selector:
     app: {{ include "common.name" . }}
