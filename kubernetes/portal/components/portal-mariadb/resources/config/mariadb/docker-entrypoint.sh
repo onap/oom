@@ -323,7 +323,7 @@ _main() {
 		# If container is started as root user, restart as dedicated mysql user
 		if [ "$(id -u)" = "0" ]; then
 			mysql_note "Switching to dedicated user 'mysql'"
-			exec gosu mysql "$BASH_SOURCE" "$@"
+			exec gosu mysql "$0" "$@"
 		fi
 
 		# there's no database, so it needs to be initialized

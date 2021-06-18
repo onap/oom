@@ -1,5 +1,5 @@
 #!/bin/bash -e
-#
+
 #   Copyright 2020 Samsung Electronics Co., Ltd.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,7 +70,8 @@ ingress_controller_ip() {
 
 deploy() {
 	local ingress_ip=$(ingress_controller_ip)
-	pushd "$SPATH/bind9dns" > /dev/null
+	initdir = $(pwd)
+	cd $SPATH/bind9dns
 	if [ $# -eq 0 ]; then
 		local cl_domain="simpledemo.onap.org"
 	else
@@ -82,7 +83,7 @@ deploy() {
 		shift
 	fi
 	helm install . --set dnsconf.wildcard="$cl_domain=$ingress_ip" $@
-	popd > /dev/null
+	cd $initdir
 	target_machine_notice_info
 }
 
