@@ -25,3 +25,12 @@ true
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+
+{{- define "common.serviceMesh.disableAnnotations" -}}
+{{-   if eq (default .Values.global.serviceMesh.engine "istio") "istio" }}
+sidecar.istio.io/inject: disabled
+{{-   else -}}
+linkerd.io/inject: disabled
+{{-   end -}}
+{{- end -}}
+
