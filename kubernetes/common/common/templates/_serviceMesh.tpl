@@ -25,3 +25,14 @@ true
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+
+{{- define "common.serviceMesh.disableAutoInject" -}}
+{{-   if eq (default .Values.global.serviceMesh.engine "istio") "istio" }}
+sidecar.istio.io/inject: disabled
+{{-   else if eq .Values.global.serviceMesh.engine "linkerd" -}}
+linkerd.io/inject: disabled
+{{-   else -}}
+{{-    fail (printf "Value for .Values.global.serviceMesh.engine not valid, valid values: istio or linkerd") }}
+{{-   end -}}
+{{- end -}}
+
