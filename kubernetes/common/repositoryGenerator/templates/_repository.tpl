@@ -67,6 +67,15 @@
   {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "googleK8sRepository") .) }}
 {{- end -}}
 
+{{/*
+  Resolve the name of the GithubContainer registry
+  - .Values.global.githubContainerRegistry  : default image githubContainerRegistry for all dockerHub images
+  - .Values.githubContainerRegistryOverride : override global githubContainerRegistry on a per chart basis
+*/}}
+{{- define "repositoryGenerator.githubContainerRegistry" -}}
+  {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "githubContainerRegistry") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image._helper" -}}
   {{- $dot := default . .dot -}}
   {{- $initRoot := default $dot.Values.repositoryGenerator .initRoot -}}
@@ -180,6 +189,18 @@
   {{-     $repoCreds = $gcrRepoCreds }}
   {{-   else }}
   {{-     $repoCreds = printf "%s, %s" $repoCreds $gcrRepoCreds }}
+  {{-   end }}
+  {{- end }}
+  {{- if $subchartDot.Values.global.githubContainerRegistryCred }}
+  {{-   $ghcrRepo := $subchartDot.Values.global.githubContainerRegistry }}
+  {{-   $ghcrCred := $subchartDot.Values.global.githubContainerRegistryCred }}
+  {{-   $ghcrMail := default "@" $ghcrCred.mail }}
+  {{-   $ghcrAuth := printf "%s:%s" $ghcrCred.user $ghcrCred.password | b64enc }}
+  {{-   $ghcrRepoCreds := printf "\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}" $ghcrRepo $ghcrCred.user $ghcrCred.password $ghcrMail $ghcrAuth }}
+  {{-   if eq "" $repoCreds }}
+  {{-     $repoCreds = $ghcrRepoCreds }}
+  {{-   else }}
+  {{-     $repoCreds = printf "%s, %s" $repoCreds $ghcrRepoCreds }}
   {{-   end }}
   {{- end }}
   {{- printf "{%s}" $repoCreds | b64enc -}}
