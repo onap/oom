@@ -128,20 +128,25 @@ spec:
             valueFrom:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: cs_truststore_password}
           - name: SDC_PROTOCOL
-            value: "{{ .Values.config.sdcProtocol }}"
+            value: "{{ (eq "true" (include "common.needTLS" .)) | ternary "HTTPS" "HTTP" }}"
           - name: SDC_ENDPOINT
-            value: "{{ .Values.config.sdcEndpoint }}"
+            value: "{{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdcEndpoint.https .Values.config.sdcEndpoint.http }}"
           - name: SDC_USER
             value: "{{ .Values.config.sdcExternalUser }}"
           - name: SDC_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: wf_external_user_password}
+          {{- if (include "common.needTLS" .) }}
           - name: SERVER_SSL_ENABLED
-            value: "{{ .Values.config.serverSSLEnabled }}"
+            value: {{ .Values.config.serverSSLEnabled }}
           - name: SERVER_SSL_KEYSTORE_TYPE
             value: "{{ .Values.config.serverSSLKeyStoreType }}"
           - name: SERVER_SSL_TRUSTSTORE_TYPE
             value: "{{ .Values.config.serverSSLTrustStoreType }}"
+          {{- else }}
+          - name: SERVER_SSL_ENABLED
+            value: "false"
+          {{- end }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           resources: {{ include "common.resources" . | nindent 12 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}

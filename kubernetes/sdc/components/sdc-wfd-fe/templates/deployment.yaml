@@ -128,13 +128,13 @@ spec:
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
           - name: BACKEND
-            value: {{ .Values.config.backendServerURL }}
+            value: "{{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.backendServerURL.https .Values.config.backendServerURL.http }}"
           - name: IS_HTTPS
-            value: "{{ .Values.config.isHttpsEnabled}}"
-            {{ if and .Values.config.isHttpsEnabled (eq .Values.security.isDefaultStore false) }}
+            value: {{ (eq "true" (include "common.needTLS" .)) | ternary "true" "false" }}
+            {{- if and (include "common.needTLS" .) (eq .Values.security.isDefaultStore false) }}
           - name: TRUST_ALL
             value: "{{ .Values.config.isTrustAll}}"
-            {{ end }}
+            {{- end }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
