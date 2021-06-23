@@ -90,11 +90,38 @@ spec:
           requests:
             cpu: 200m
             memory: 200Mi
+      {{- if not (include "common.needTLS" .) }}
+      - name: {{ include "common.name" . }}-check-container
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /tmp/scripts/checkContainer.py
+        args:
+        - --container-name
+        - {{ include "common.name" . }}-job
+        - "-t"
+        - "45"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: scripts-vol
+          mountPath: /tmp/scripts
+      {{- end }}
       volumes:
       - name: {{ include "common.fullname" . }}-environments
         configMap:
           name: {{ include "common.release" . }}-sdc-environments-configmap
           defaultMode: 0755
+      {{- if not (include "common.needTLS" .) }}
+      - name: scripts-vol
+        configMap:
+          name: {{ include "common.name" . }}-check-container-configmap
+          defaultMode: 0777
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       restartPolicy: Never
