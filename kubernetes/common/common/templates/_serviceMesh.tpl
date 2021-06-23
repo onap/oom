@@ -25,3 +25,26 @@ true
 {{-     end -}}
 {{-   end -}}
 {{- end -}}
+{{- define "common.linkerd" -}}
+{{-   if .Values.global.serviceMesh -}}
+{{-     if (default false .Values.global.linkerd) -}}
+true
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- define "common.istio" -}}
+{{-   if .Values.global.serviceMesh -}}
+{{-     if (default false .Values.global.istio) -}}
+true
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{- define "common.serviceMesh.disableAnnotations" -}}
+{{-   if (include "common.linkerd" .) }}
+linkerd.io/inject: disabled
+{{-   end -}}
+{{-   if (include "common.istio" .) }}
+sidecar.istio.io/inject: disabled
+{{-   end -}}
+{{- end -}}
+
