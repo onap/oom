@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 DOCKER_VERSION=18.09.5
 
@@ -18,10 +18,10 @@ systemctl daemon-reload
 systemctl restart docker
 apt-mark hold docker-ce
 
-IP_ADDR=$(ip address |grep ens|grep inet|awk '{print $2}'| awk -F / '{print $1}')
-HOST_NAME=$(hostname)
+IP_ADDR=`ip address |grep ens|grep inet|awk '{print $2}'| awk -F / '{print $1}'`
+HOSTNAME=`hostname`
 
-echo "$IP_ADDR $HOST_NAME" >> /etc/hosts
+echo "$IP_ADDR $HOSTNAME" >> /etc/hosts
 
 docker login -u docker -p docker nexus3.onap.org:10001
 

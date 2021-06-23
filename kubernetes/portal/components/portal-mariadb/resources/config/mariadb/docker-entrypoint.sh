@@ -111,7 +111,7 @@ docker_temp_server_start() {
 		# so that it won't try to fill in a password file when it hasn't been set yet
 		extraArgs=()
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
-			extraArgs=${extraArgs}( '--dont-use-mysql-root-password' )
+			extraArgs+=( '--dont-use-mysql-root-password' )
 		fi
 		if echo 'SELECT 1' |docker_process_sql "${extraArgs[@]}" --database=mysql >/dev/null 2>&1; then
 			break
@@ -161,7 +161,7 @@ docker_init_database_dir() {
 		# beginning in 10.4.3, install_db uses "socket" which only allows system user root to connect, switch back to "normal" to allow mysql root without a password
 		# see https://github.com/MariaDB/server/commit/b9f3f06857ac6f9105dc65caae19782f09b47fb3
 		# (this flag doesn't exist in 10.0 and below)
-		installArgs=${installArgs}( --auth-root-authentication-method=normal )
+		installArgs+=( --auth-root-authentication-method=normal )
 	fi
 	# "Other options are passed to mysqld." (so we pass all "mysqld" arguments directly here)
 	mysql_install_db "${installArgs[@]}" "${@:2}"
@@ -197,7 +197,7 @@ docker_setup_env() {
 docker_process_sql() {
 	passfileArgs=()
 	if [ '--dont-use-mysql-root-password' = "$1" ]; then
-		passfileArgs=${passfileArgs}( "$1" )
+		passfileArgs+=( "$1" )
 		shift
 	fi
 	# args sent in can override this db, since they will be later in the command

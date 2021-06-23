@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 apt-get update
 
-IP_ADDR=$(ip address |grep ens|grep inet|awk '{print $2}'| awk -F / '{print $1}')
-HOST_NAME=$(hostname)
+IP_ADDR=`ip address |grep ens|grep inet|awk '{print $2}'| awk -F / '{print $1}'`
+HOSTNAME=`hostname`
 
-echo "$IP_ADDR $HOST_NAME" >> /etc/hosts
+echo "$IP_ADDR $HOSTNAME" >> /etc/hosts
 
 sudo apt-get install make -y
 
