@@ -32,11 +32,11 @@ spec:
     {{if eq .Values.service.type "NodePort" -}}
     - port: {{ template "wfd-be.internalPort" . }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}
+      name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
     {{- else -}}
-    - port: {{ if .Values.config.serverSslEnabled }}{{ .Values.service.externalPort2 }}{{ else }}{{ .Values.service.externalPort }}{{ end }}
+    - port: {{ if (include "common.needTLS" .) }}{{ .Values.service.externalPort2 }}{{ else }}{{ .Values.service.externalPort }}{{ end }}
       targetPort: {{ template "wfd-be.internalPort" . }}
-      name: {{ .Values.service.portName }}
+      name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
     {{- end}}
   selector:
     app: {{ include "common.name" . }}
