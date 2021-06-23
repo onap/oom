@@ -1,1 +1,1 @@
-{{- define "wfd-fe.internalPort" }}{{ if .Values.config.isHttpsEnabled }}{{ .Values.service.internalPort2 }}{{ else }}{{ .Values.service.internalPort }}{{ end }}{{- end }}
+{{- define "wfd-fe.internalPort" }}{{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort2 }}{{ else }}{{ .Values.service.internalPort }}{{ end }}{{- end }}
