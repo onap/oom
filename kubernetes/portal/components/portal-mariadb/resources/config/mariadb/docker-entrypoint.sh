@@ -109,11 +109,11 @@ docker_temp_server_start() {
 	for i in {30..0}; do
 		# only use the root password if the database has already been initializaed
 		# so that it won't try to fill in a password file when it hasn't been set yet
-		extraArgs=()
+		extraArgs=""
 		if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
-			extraArgs+=( '--dont-use-mysql-root-password' )
+			extraArgs=${extraArgs}" --dont-use-mysql-root-password"
 		fi
-		if echo 'SELECT 1' |docker_process_sql "${extraArgs[@]}" --database=mysql >/dev/null 2>&1; then
+		if echo 'SELECT 1' |docker_process_sql ${extraArgs} --database=mysql >/dev/null 2>&1; then
 			break
 		fi
 		sleep 1
@@ -156,15 +156,15 @@ docker_create_db_directories() {
 # initializes the database directory
 docker_init_database_dir() {
 	mysql_note "Initializing database files"
-	installArgs=( --datadir="$DATADIR" --rpm )
+	installArgs=" --datadir=$DATADIR --rpm "
 	if { mysql_install_db --help || :; } | grep -q -- '--auth-root-authentication-method'; then
 		# beginning in 10.4.3, install_db uses "socket" which only allows system user root to connect, switch back to "normal" to allow mysql root without a password
 		# see https://github.com/MariaDB/server/commit/b9f3f06857ac6f9105dc65caae19782f09b47fb3
 		# (this flag doesn't exist in 10.0 and below)
-		installArgs+=( --auth-root-authentication-method=normal )
+		installArgs=${installArgs}" --auth-root-authentication-method=normal"
 	fi
 	# "Other options are passed to mysqld." (so we pass all "mysqld" arguments directly here)
-	mysql_install_db "${installArgs[@]}" "${@:2}"
+	mysql_install_db ${installArgs} "${@:2}"
 	mysql_note "Database files initialized"
 }
 
@@ -195,9 +195,9 @@ docker_setup_env() {
 #    ie: docker_process_sql --database=mydb <<<'INSERT ...'
 #    ie: docker_process_sql --dont-use-mysql-root-password --database=mydb <my-file.sql
 docker_process_sql() {
-	passfileArgs=()
+	passfileArgs=""
 	if [ '--dont-use-mysql-root-password' = "$1" ]; then
-		passfileArgs+=( "$1" )
+		passfileArgs=${passfileArgs}" $1"
 		shift
 	fi
 	# args sent in can override this db, since they will be later in the command
@@ -205,7 +205,7 @@ docker_process_sql() {
 		set -- --database="$MYSQL_DATABASE" "$@"
 	fi
 
-	mysql --defaults-extra-file=<( _mysql_passfile "${passfileArgs[@]}") --protocol=socket -uroot -hlocalhost --socket="${SOCKET}" "$@"
+	mysql --defaults-extra-file=<( _mysql_passfile ${passfileArgs}) --protocol=socket -uroot -hlocalhost --socket="${SOCKET}" "$@"
 }
 
 # Initializes database with timezone info and root password, plus optional extra db/user
