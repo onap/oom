@@ -22,11 +22,18 @@ HELM_REPO := local
 
 EXCLUDES :=
 HELM_BIN := helm
+# Helm v2 and helm v3 uses different version format so we first try in helm v3 format
+# and if it fails then we fallback to helm v2 one
+HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
+ifneq "$(findstring v3,$(HELM_VER))" "v3"
+	HELM_VER := $(shell $(HELM_BIN) version -c --template "{{.Client.SemVer}}")
+endif
+
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-all: $(HELM_CHARTS)
+all: $(HELM_CHARTS) helm-repo-update
 
 $(HELM_CHARTS):
 	@echo "\n[$@]"
@@ -50,5 +57,11 @@ clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
+
+helm-repo-update:
+ifeq "$(findstring v3,$(HELM_VER))" "v3"
+	@$(HELM_BIN) repo update
+endif
+
 %:
 	@:
