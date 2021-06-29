@@ -403,7 +403,7 @@ spec:
         {{- end -}}
         {{- if $policy.duration }}
         - name: POLICY_SYNC_DURATION
-          value: {{ $policy.duration }}
+          value: "{{ $policy.duration }}"
         {{- end }}
         resources: {{ include "common.resources" . | nindent 2 }}
         volumeMounts:
