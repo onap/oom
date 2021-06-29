@@ -1,5 +1,5 @@
 {{/*
-# Copyright Â© 2017 Amdocs, Bell Canada
+# Copyright © 2017 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   protocol: {{ $port.protocol }}
 {{-       else }}
   protocol: TCP
-{{-       end }}  
+{{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
 {{-       else }}
@@ -142,7 +142,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   protocol: {{ printf "%s" $port.protocol}}
 {{-       else }}
   protocol: TCP
-{{-       end }}  
+{{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-       else }}
@@ -157,8 +157,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   protocol: {{ printf "%s" $port.protocol}}
 {{-       else }}
   protocol: TCP
-{{-       end }}  
-
+{{-       end }}
 {{-         if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-         else }}
