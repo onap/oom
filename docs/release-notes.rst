@@ -11,6 +11,7 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
+- :ref:`Honolulu <release_notes_honolulu>`
 - :ref:`Guilin <release_notes_guilin>`
 - :ref:`Frankfurt <release_notes_frankfurt>`
 - :ref:`El Alto <release_notes_elalto>`
@@ -22,12 +23,12 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Honolulu release.
+This document provides the release notes for the Istanbul release.
 
 Summary
 =======
 
-The focus of this release is to strengthen the foundation of OOM installer.
+
 
 Release Data
 ============
@@ -39,66 +40,25 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Honolulu                             |
+| **Release designation**              | Istanbul                             |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2021/04/29                           |
+| **Release date**                     |                                      |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
-* Kubernetes support for version up to 1.20
-* Helm support for version up to 3.5
-* Limits are set for most of the components
-* Portal-Cassandra image updated to Bitnami, supporting IPv4/IPv6 Dual Stack
-* CMPv2 external issuer implemented which extends Cert-Manager with ability  to
-  enroll X.509 certificates from CMPv2 servers
-* New version for mariadb galera using Bitnami image, supporting IPv4/IPv6 Dual
-  Stack
-* Bump version of common PostgreSQL and ElasticSearch
-* Move to automatic certificates retrieval for 80% of the components
-* Consistent retrieval of docker images, with ability to configure proxy for
-  the 4 repositories used by ONAP
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11073
+https://jira.onap.org/projects/OOM/versions/11074
 
-major issues solved:
-
-* Better handling of persistence on PostgreSQL
-* Better Ingress templating
-* Better Service templating
 
 **Known Issues**
 
-- `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
-- `OOM-2435 <https://jira.onap.org/browse/OOM-2435>`_ SDNC karaf shell:
-  log:list: Error executing command: Unrecognized configuration
-- `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
-  not complete
-- `OOM-2706 <https://jira.onap.org/browse/OOM-2706>`_ CDS Blueprint Processor
-  does not work with local DB
-- `OOM-2713 <https://jira.onap.org/browse/OOM-2713>`_ Problem on onboarding
-  custom cert to SDNC ONAP during deployment
-- `OOM-2698 <https://jira.onap.org/browse/OOM-2698>`_ SO helm override fails in
-  for value with multi-level replacement
-- `OOM-2697 <https://jira.onap.org/browse/OOM-2697>`_ SO with local MariaDB
-  deployment fails
-- `OOM-2538 <https://jira.onap.org/browse/OOM-2538>`_ strange error with
-  CertInitializer template
-- `OOM-2547 <https://jira.onap.org/browse/OOM-2547>`_ Health Check failures
-  seen after bringing down/up control plane & worker node VM instances on which
-  ONAP hosted
-- `OOM-2699 <https://jira.onap.org/browse/OOM-2699>`_ SO so-mariadb
-  readinessCheck fails for local MariaDB instance
-- `OOM-2705 <https://jira.onap.org/browse/OOM-2705>`_ SDNC DB installation fails
-  on local MariaDB instance
-- `OOM-2603 <https://jira.onap.org/browse/OOM-2603>`_ [SDNC] allign password for
-  scaleoutUser/restconfUser/odlUser
 
 Deliverables
 ------------
@@ -126,17 +86,19 @@ Known Limitations, Issues and Workarounds
 Known Vulnerabilities
 ---------------------
 
-- Hard coded password used for all OOM deployments
-  [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
-- :doc:`Hard coded certificates <oom_hardcoded_certificates>` in Helm packages
 
 Workarounds
 -----------
 
-- `<https://github.com/bitnami/bitnami-docker-mariadb-galera/issues/35>`_
-  Workaround is to generate a password with "short" strenght or pregenerate
-  passwords without single quote in it. Default deployment is using "short"
-  password generation for mariadb.
+- `OOM-2754 <https://jira.onap.org/browse/OOM-2754>`_ Because of *updateEndpoint* property added
+  to *cmpv2issuer* CRD it is impossible to upgrade platform component from Honolulu to Istanbul release
+  without manual steps. Actions that should be performed:
+
+  - Update the CRD definition: *kubectl -n onap apply -f platform/components/cmpv2-cert-provider/crds/cmpv2issuer.yaml*
+  - Upgrade the component
+  - Make sure that *cmpv2issuer* contains correct value for *spec.updateEndpoint*.
+    If not, edit the resource: *kubectl -n onap edit cmpv2issuer cmpv2-issuer-onap*
+    The value should be: *v1/certificate-update*
 
 Security Notes
 --------------
@@ -146,7 +108,7 @@ Security Notes
 References
 ==========
 
-For more information on the ONAP Frankfurt release, please see:
+For more information on the ONAP Istanbul release, please see:
 
 #. `ONAP Home Page`_
 #. `ONAP Documentation`_
