@@ -1,0 +1,148 @@
+# ================================ LICENSE_START =============================
+# ============================================================================
+# Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ==============================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.collectors.snmptrap:2.0.5
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /opt/app/snmptrap/logs
+
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+
+# Probe Configuration
+#readiness:
+#  type: exec
+#  command:
+#    - '/opt/app/snmptrap/bin/snmptrapd.sh status'
+
+
+
+# service configuration
+service:
+  type: NodePort
+  name: dcae-snmptrap-collector
+  ports:
+    - name: udp
+      port: 6162
+      protocol: UDP  # default to TCP if not set
+      port_protocol: udp    #used in svn name
+      nodePort: 70
+      useNodePortExt: true
+
+# Initial Application Configuration
+applicationConfig:
+  StormWatchPolicy: ''
+  cache:
+    dns_cache_ttl_seconds: 60
+  services_calls: {}
+  snmptrapd:
+    version: '2.0.4'
+    title: ONAP SNMP Trap Receiver
+  sw_interval_in_seconds: 60
+  streams_publishes:
+    sec_fault_unsecure:
+      dmaap_info:
+        topic_url: http://message-router:3904/events/unauthenticated.ONAP-COLLECTOR-SNMPTRAP
+      type: message_router
+      aaf_password: null
+      aaf_username: null
+  files:
+    runtime_base_dir: "/opt/app/snmptrap"
+    log_dir: logs
+    data_dir: data
+    pid_dir: tmp
+    arriving_traps_log: snmptrapd_arriving_traps.log
+    snmptrapd_diag: snmptrapd_prog_diag.log
+    traps_stats_log: snmptrapd_stats.csv
+    perm_status_file: snmptrapd_status.log
+    eelf_base_dir: "/opt/app/snmptrap/logs"
+    eelf_error: error.log
+    eelf_debug: debug.log
+    eelf_audit: audit.log
+    eelf_metrics: metrics.log
+    roll_frequency: hour
+    minimum_severity_to_log: 3
+  protocols:
+    transport: udp
+    ipv4_interface: 0.0.0.0
+    ipv4_port: 6162
+    ipv6_interface: "::1"
+    ipv6_port: 6162
+  publisher:
+    http_milliseconds_timeout: 1500
+    http_retries: 3
+    http_milliseconds_between_retries: 750
+    http_primary_publisher: 'true'
+    http_peer_publisher: unavailable
+    max_traps_between_publishes: 10
+    max_milliseconds_between_publishes: 10000
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
