@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
 {{/*
   Resolve the name of a chart's service.
 
@@ -122,6 +121,11 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-     if (include "common.needTLS" $dot) }}
 - port: {{ $port.port }}
   targetPort: {{ $port.name }}
+{{-       if $port.l4_protocol }}
+  protocol: {{ $port.l4_protocol }}
+{{-       else }}
+  protocol: TCP
+{{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
 {{-       else }}
@@ -133,6 +137,11 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-     else }}
 - port: {{ default $port.port $port.plain_port }}
   targetPort: {{ $port.name }}
+{{-       if $port.plain_port_l4_protocol }}
+  protocol: {{ $port.plain_port_l4_protocol }}
+{{-       else }}
+  protocol: {{ default "TCP" $port.l4_protocol  }}
+{{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-       else }}
@@ -143,6 +152,11 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-       if (eq $serviceType "ClusterIP")  }}
 - port: {{ $port.plain_port }}
   targetPort: {{ $port.name }}-plain
+{{-       if $port.plain_l4_port_protocol }}
+  protocol: {{ $port.plain_port_l4_protocol }}
+{{-       else }}
+  protocol: {{ default "TCP" $port.l4_protocol  }}
+{{-       end }}
 {{-         if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-         else }}
