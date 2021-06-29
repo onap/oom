@@ -27,6 +27,13 @@ configureEjbca() {
     ejbca.sh config cmp updatealias --alias cmp --key extractusernamecomponent --value CN
     ejbca.sh config cmp dumpalias --alias cmp
     ejbca.sh ca getcacert --caname ManagementCA -f /dev/stdout > cacert.pem
+
+    ejbca.sh roles addrole "Certificate Update Admin"
+    ejbca.sh roles changerule "Certificate Update Admin" /ca/ManagementCA/ ACCEPT
+    ejbca.sh roles changerule "Certificate Update Admin" /ca_functionality/create_certificate/ ACCEPT
+    ejbca.sh roles changerule "Certificate Update Admin" /endentityprofilesrules/Custom_EndEntity/ ACCEPT
+    ejbca.sh roles changerule "Certificate Update Admin" /ra_functionality/edit_end_entity/ ACCEPT
+    ejbca.sh roles addrolemember "Certificate Update Admin" ManagementCA WITH_ORGANIZATION --value "{{ .Values.cmpv2Config.global.certificate.default.subject.organization }}"
 }
 
 
