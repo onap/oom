@@ -40,6 +40,7 @@ information for the logging sidecar.
 */}}
 
 {{- define "dcaegen2-services-common.configMap" -}}
+{{- $appConf := .Values.applicationConfig | default (dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -48,7 +49,7 @@ metadata:
     labels: {{ include "common.labels" . | nindent 6 }}
 data:
   application_config.yaml: |
-{{ .Values.applicationConfig | toYaml | indent 4 }}
+{{ $appConf | toYaml | indent 4 }}
 
 {{- if .Values.logDirectory }}
 ---
