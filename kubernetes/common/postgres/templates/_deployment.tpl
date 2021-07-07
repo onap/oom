@@ -42,6 +42,8 @@ spec:
         release: {{ include "common.release" $dot }}
         name: "{{ index $dot.Values "container" "name" $pgMode }}"
     spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" $dot }}-docker-registry-key"
       initContainers:
       - command:
         - sh
