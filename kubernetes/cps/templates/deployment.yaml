@@ -23,7 +23,16 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "common.name" . }}
+        app.kubernetes.io/instance: {{ include "common.release" . }}
+      {{- if .Values.prometheus.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: 'manage/prometheus'
+        prometheus.io/port: {{ .Values.managementPort | quote }}
+      {{- end }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
