@@ -119,6 +119,10 @@ spec:
                 fieldPath: metadata.name
           - name: CLUSTER_CONFIG_FILE
             value: {{ .Values.config.appConfigDir }}/hazelcast.yaml
+          {{- if .Values.config.private_ca.enabled  }}
+          - name: PRIVATE_CA
+            value: {{ .Values.config.private_ca.cert }}
+          {{ end }}
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
@@ -177,7 +181,11 @@ spec:
           - mountPath: {{ .Values.config.appConfigDir }}/ONAP_RootCA.cer
             name: {{ include "common.fullname" . }}-config
             subPath: ONAP_RootCA.cer
-
+          {{- if .Values.config.private_ca.enabled  }}
+          - mountPath: {{ .Values.config.appConfigDir }}/{{ .Values.config.private_ca.cert }}
+            name: {{ include "common.fullname" . }}-config
+            subPath: {{ .Values.config.private_ca.cert }}
+          {{ end }}
           - mountPath: {{ .Values.persistence.deployedBlueprint }}
             name: {{ include "common.fullname" . }}-blueprints
           resources:
