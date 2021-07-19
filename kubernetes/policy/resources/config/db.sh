@@ -18,7 +18,7 @@
 
 mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
 
-for db in support onap_sdk log migration operationshistory10 pooling policyadmin policyclamp operationshistory
+for db in support onap_sdk log migration pooling policyadmin policyclamp operationshistory
 do
 	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
 	mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
