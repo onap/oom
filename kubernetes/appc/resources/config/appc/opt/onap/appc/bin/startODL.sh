@@ -70,7 +70,8 @@ do
   printf "."
   sleep 1
 done
-echo -e "\nmariadbgalera ready"
+echo
+echo "mariadbgalera ready"
 
 if [ ! -d ${DBINIT_DIR} ]
 then
