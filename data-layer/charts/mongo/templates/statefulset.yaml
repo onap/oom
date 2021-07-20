@@ -1,0 +1,110 @@
+{{/*
+# Copyright © 2018 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ .Values.service.name }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+{{ include "common.podSecurityContext" . | indent 6 }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - docker-entrypoint.sh
+          args:
+          - --nounixsocket
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: "{{ .Values.config.dbName }}"
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
+          # disable liveness probe when breakpoints set in debugger
+          # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          {{end -}}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-data
+            mountPath: /var/lib/mongo
+          resources: {{ include "common.resources" . | nindent 12 }}
+{{ include "common.containerSecurityContext" . | indent 10 }}
+        {{- if .Values.nodeSelector }}
+        nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+        {{- end -}}
+        {{- if .Values.affinity }}
+        affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+        {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "common.fullname" . }}-data
+      labels:
+        name: {{ include "common.fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ include "common.release" . }}"
+        heritage: "{{ .Release.Service }}"
+    spec:
+      accessModes:
+      - {{ .Values.persistence.accessMode | quote }}
+      storageClassName: {{ include "common.storageClass" . }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}
+  {{- else }}
+      volumes:
+      - name: {{ include "common.fullname" . }}-data
+        emptyDir: {}
+  {{- end }}
