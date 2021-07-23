@@ -1,4 +1,4 @@
-#  Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
+# Copyright (C) 2021 Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,156 +13,16 @@
 # limitations under the License.
 
 #################################################################
-# Secrets.
-#################################################################
-secrets:
-  - uid: pg-root-pass
-    name: &pgRootPassSecretName '{{ include "common.release" . }}-cps-pg-root-pass'
-    type: password
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "cps-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
-    password: '{{ .Values.postgres.config.pgRootpassword }}'
-    policy: generate
-  - uid: pg-user-creds
-    name: &pgUserCredsSecretName '{{ include "common.release" . }}-cps-pg-user-creds'
-    type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "cps-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
-    login: '{{ .Values.postgres.config.pgUserName }}'
-    password: '{{ .Values.postgres.config.pgUserPassword }}'
-    passwordPolicy: generate
-  - uid: app-user-creds
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.appUserExternalSecret) . }}'
-    login: '{{ .Values.config.appUserName }}'
-    password: '{{ .Values.config.appUserPassword }}'
-    passwordPolicy: generate
-
-#################################################################
 # Global configuration defaults.
 #################################################################
-
-# bitnami image doesn't support well single quote in password
 passwordStrengthOverride: basic
 global:
   ingress:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/cps-and-nf-proxy:1.0.1
-containerPort: &svc_port 8080
+config: {}
 
-service:
-  type: ClusterIP
-  name: cps
-  ports:
-    - name: &port http
-      port: *svc_port
-
-pullPolicy: Always
-# flag to enable debugging - application support required
-debugEnabled: false
-nodeSelector: {}
-affinity: {}
-# Resource Limit flavor -By Default using small
-flavor: small
-# default number of instances
-replicaCount: 1
-# Segregation for Different environment (Small and Large)
-resources:
-  small:
-    limits:
-      cpu: 2
-      memory: 2Gi
-    requests:
-      cpu: 1
-      memory: 1Gi
-  large:
-    limits:
-      cpu: 4
-      memory: 4Gi
-    requests:
-      cpu: 2
-      memory: 2Gi
-  unlimited: {}
-# probe configuration parameters
-liveness:
-  initialDelaySeconds: 20
-  periodSeconds: 20
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
+# Enable all CPS components by default
+cps-core:
   enabled: true
-  path: /manage/health
-  port: *port
-
-readiness:
-  initialDelaySeconds: 15
-  periodSeconds: 15
-  path: /manage/health
-  port: *port
-
-ingress:
-  enabled: true
-  service:
-    - baseaddr: "cps"
-      path: "/"
-      name: "cps"
-      port: *svc_port
-
-serviceAccount:
-  nameOverride: cps
-  roles:
-    - read
-
-securityContext:
-  user_id: 100
-  group_id: 655533
-
-#################################################################
-# Application configuration defaults.
-#################################################################
-
-config:
-
-  # Set it for pre loading xnfdata, else set to null
-  liquibaseLabels: xnf-data-preload
-
-  # REST API basic authentication credentials (passsword is generated if not provided)
-  appUserName: cpsuser
-  spring:
-    profile: helm
-  #appUserPassword:
-
-# Any new property can be added in the env by setting in overrides in the format mentioned below
-# All the added properties must be in "key: value" format insead of yaml.
-#  additional:
-#    spring.config.max-size: 200
-#    spring.config.min-size: 10
-
-logging:
-  level: INFO
-  path: /tmp
-
-#################################################################
-# Postgres overriding defaults in the postgres
-#################################################################
-postgres:
-  nameOverride: &postgresName cps-postgres
-  service:
-    name: *postgresName
-    name2: cps-pg-primary
-    name3: cps-pg-replica
-  container:
-    name:
-      primary: cps-pg-primary
-      replica: cps-pg-replica
-  persistence:
-    mountSubPath: cps/data
-    mountInitPath: cps
-  config:
-    pgUserName: cps
-    pgDatabase: cpsdb
-    pgUserExternalSecret: *pgUserCredsSecretName
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
-
-readinessCheck:
-  wait_for:
-    - cps-postgres
