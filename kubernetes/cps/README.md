@@ -19,4 +19,4 @@
 
 ONAP Configuration Persistence Service (CPS) includes the following Kubernetes services:
 
-1) Cps and xNF - Configuration Persistence Service together with Nf Configuration Persistence Service
+1) cps-core - Configuration Persistence Service together with Nf Configuration Persistence Service
