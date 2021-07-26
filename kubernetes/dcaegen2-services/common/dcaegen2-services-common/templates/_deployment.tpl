@@ -207,7 +207,18 @@ The sidecar is included if .Values.policies is set.  The
 Policy-sync sidecar polls PolicyEngine (PDP) periodically based
 on .Values.policies.duration and configuration retrieved is shared with
 DCAE Microservice container by common volume. Policy can be retrieved based on
-list of policyID or filter
+list of policyID or filter. An optional policyRelease parameter can be specified 
+to override the default policy helm release (used for retreiving the secret containing
+pdp username and password)
+
+Following is example policy config override
+
+dcaePolicySyncImage: onap/org.onap.dcaegen2.deployments.dcae-services-policy-sync:1.0.1
+policies:
+  duration: 300
+  policyRelease: "onap"
+  policyID: |
+    '["onap.vfirewall.tca","onap.vdns.tca"]'
 */}}
 
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
@@ -215,6 +226,8 @@ list of policyID or filter
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $policy := default "" .Values.policies -}}
+{{- $commonRelease := default print (include "common.release" .) -}}
+{{- $policyRls := default $commonRelease .Values.policies.policyRelease -}}
 {{- $drFeedConfig := default "" .Values.drFeedConfig -}}
 
 apiVersion: apps/v1
@@ -384,12 +397,12 @@ spec:
         - name: POLICY_SYNC_PDP_USER
           valueFrom:
             secretKeyRef:
-              name: onap-policy-xacml-pdp-api-creds
+              name: {{ $policyRls }}-policy-xacml-pdp-api-creds
               key: login
         - name: POLICY_SYNC_PDP_PASS
           valueFrom:
             secretKeyRef:
-              name: onap-policy-xacml-pdp-api-creds
+              name: {{ $policyRls }}-policy-xacml-pdp-api-creds
               key: password
         - name: POLICY_SYNC_PDP_URL
           value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969
