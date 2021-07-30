@@ -1,0 +1,177 @@
+# ================================ LICENSE_START =============================
+# ============================================================================
+#  Copyright (C) 2021 Wipro Limited.
+# ============================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ================================= LICENSE_END ==============================
+
+#################################################################
+# Global Configuration Defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+
+#################################################################
+# Filebeat Configuration Defaults.
+#################################################################
+filebeatConfig:
+  logstashServiceName: log-ls
+  logstashPort: 5044
+
+#################################################################
+# Secrets Configuration.
+#################################################################
+secrets:
+  - uid: &aafCredsUID aafcreds
+    type: basicAuth
+    login: '{{ .Values.aafCreds.identity }}'
+    password: '{{ .Values.aafCreds.password }}'
+    passwordPolicy: required
+  - uid: &pgUserCredsSecretUid pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-datalake-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "datalake-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
+#################################################################
+# InitContainer Images.
+#################################################################
+tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.0
+
+#################################################################
+# Application Configuration Defaults.
+#################################################################
+# Application Image
+image: onap/org.onap.dcaegen2.services.datalakefeeder:1.1.1
+pullPolicy: Always
+
+# Log directory where logging sidecar should look for log files
+# if absent, no sidecar will be deployed
+logDirectory: /var/log/ONAP/dcaegen2/services/datalake
+
+# Directory where TLS certs should be stored
+# if absent, no certs will be retrieved and stored
+certDirectory: /opt/app/datalake/etc/certs
+
+# TLS role -- set to true if microservice acts as server
+# If true, an init container will retrieve a server cert
+# and key from AAF and mount them in certDirectory.
+tlsServer: true
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    - dcae-config-binding-service
+    - aaf-cm
+    - &postgresName dcae-datalake-postgres
+
+# Probe Configuration
+readiness:
+  initialDelaySeconds: 90
+  periodSeconds: 90
+  timeoutSeconds: 10
+  path: /datalake/v1/topics
+  scheme: HTTP
+  port: 1680
+
+# Service Configuration
+service:
+  type: NodePort
+  name: dl-feeder
+  ports:
+    - name: http
+      port: 1680
+      port_protocol: http
+      nodePort: '08'
+      useNodePortExt: true
+
+# AAF Credentials
+aafCreds:
+  identity: dcae@dcae.onap.org
+  password: demo123456!
+
+credentials:
+- name: PG_USER
+  uid:  *pgUserCredsSecretUid
+  key: login
+- name: PG_PASSWORD
+  uid: *pgUserCredsSecretUid
+  key: password
+
+# Initial Application Configuration
+applicationConfig:
+  PG_HOST: dcae-datalake-pg-primary
+  PG_PORT: 5432
+  PG_USER: ${PG_USER}
+  PG_PASSWORD: ${PG_PASSWORD}
+  PG_DB: datalake
+  HOSTNAME: dcae-datalake-feeder
+  CONSUL_HOST: consul
+  CONFIG_BINDING_SERVICE: 30408
+
+applicationEnv:
+  PG_HOST: dcae-datalake-pg-primary
+  PG_PORT: '5432'
+  PG_USER:
+    secretUid: *pgUserCredsSecretUid
+    key: login
+  PG_PASSWORD:
+    secretUid: *pgUserCredsSecretUid
+    key: password
+  PG_DB: datalake
+
+# Resource Limit Flavor -By Default Using Small
+flavor: small
+
+# Segregation for Different Environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+  unlimited: {}
+
+#################################################################
+# Application configuration Overriding Defaults in the Postgres.
+#################################################################
+postgres:
+  nameOverride: *postgresName
+  service:
+    name: *postgresName
+    name2: dcae-datalake-pg-primary
+    name3: dcae-datalake-pg-replica
+  container:
+    name:
+      primary: dcae-datalake-pg-primary
+      replica: dcae-datalake-pg-replica
+  persistence:
+    mountSubPath: datalake/data
+    mountInitPath: datalake
+  config:
+    pgUserName: datalake
+    pgDatabase: datalake
+    pgUserExternalSecret: *pgUserCredsSecretName
