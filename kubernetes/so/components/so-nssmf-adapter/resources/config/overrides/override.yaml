@@ -15,7 +15,11 @@
 */}}
 aai:
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.aai.auth )}}
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  {{ end }}
 logging:
   path: logs
 spring:
@@ -51,7 +55,11 @@ mso:
   msb-port: 80
   adapters:
     requestDb:
+      {{ if (include "common.needTLS" .) }}
       endpoint: https://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      {{ else }}
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      {{ end }}
       auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
 #Actuator
 management:

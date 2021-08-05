@@ -1,5 +1,9 @@
 aai:
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  {{ end }}
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.aai.auth )}}
 server:
     port: {{ index .Values.containerPort }}
@@ -45,13 +49,21 @@ mso:
     activate:
       instanceid: test
       userid: cs0008
-    endpoint: http://sdc-be.{{ include "common.namespace" . }}:8443
+    {{ if (include "common.needTLS" .) }}
+    endpoint: https://sdc-be.{{ include "common.namespace" . }}:8443
+    {{ else }}
+    endpoint: http://sdc-be.{{ include "common.namespace" . }}:8080
+    {{ end }}
   tenant:
     isolation:
       retry:
         count: 3
   aai:
+    {{ if (include "common.needTLS" .) }}
     endpoint: https://aai.{{ include "common.namespace" . }}:8443
+    {{ else }}
+    endpoint: http://aai.{{ include "common.namespace" . }}:8080
+    {{ end }}
     auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.aai.auth )}}
 
   extApi:
