@@ -1,7 +1,7 @@
 {{ if .Values.global.cmpv2Enabled }}
 
 # ============LICENSE_START=======================================================
-# Copyright (c) 2020 Nokia
+# Copyright (c) 2020-2021 Nokia
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,39 +16,6 @@
 # limitations under the License.
 # ============LICENSE_END=========================================================
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: cmpv2-issuer-leader-election-role
-  namespace: {{ include "common.namespace" . }}
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps/status
-    verbs:
-      - get
-      - update
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -82,6 +49,7 @@ rules:
       - cert-manager.io
     resources:
       - certificaterequests/status
+      - cmpv2issuers/status
     verbs:
       - get
       - patch
@@ -98,70 +66,17 @@ rules:
       - patch
       - update
       - watch
-  - apiGroups:
-      - certmanager.onap.org
-    resources:
-      - cmpv2issuers/status
-    verbs:
-      - get
-      - patch
-      - update
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: cmpv2-issuer-proxy-role
-rules:
-  - apiGroups:
-      - authentication.k8s.io
-    resources:
-      - tokenreviews
-    verbs:
-      - create
-  - apiGroups:
-      - authorization.k8s.io
-    resources:
-      - subjectaccessreviews
-    verbs:
-      - create
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: cmpv2-issuer-leader-election-rolebinding
-  namespace: {{ include "common.namespace" . }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: cmpv2-issuer-leader-election-role
-subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: {{ include "common.namespace" . }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: cmpv2-issuer-manager-rolebinding
+  name: cmpv2-issuer-manager-clusterrolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cmpv2-issuer-manager-role
 subjects:
   - kind: ServiceAccount
-    name: default
-    namespace: {{ include "common.namespace" . }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: cmpv2-issuer-proxy-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cmpv2-issuer-proxy-role
-subjects:
-  - kind: ServiceAccount
-    name: default
+    name: {{ include "common.fullname" (dict "suffix" "access" "dot" . )}}
     namespace: {{ include "common.namespace" . }}
 {{ end }}
