@@ -1,4 +1,6 @@
-# Copyright (C) 2021 Bell Canada
+#!/bin/bash
+
+#  Copyright (C) Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#################################################################
-# Global configuration defaults.
-#################################################################
-passwordStrengthOverride: basic
-global:
-  ingress:
-    virtualhost:
-      baseurl: "simpledemo.onap.org"
-
-config: {}
-
-# Enable all CPS components by default
-cps-core:
-  enabled: true
-cps-temporal:
-  enabled: true
+set -e
+set echo on;
+psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';
+    CREATE SCHEMA $POSTGRES_DB;
+    GRANT ALL PRIVILEGES ON SCHEMA $POSTGRES_DB TO $DB_USERNAME;
+    CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA $POSTGRES_DB;
+EOSQL
