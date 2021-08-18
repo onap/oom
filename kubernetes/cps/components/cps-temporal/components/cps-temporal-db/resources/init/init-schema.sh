@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+set echo on;
+set serveroutput on;
+psql --username "$POSTGRES_USER"  <<-EOSQL
+    CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+EOSQL
+psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';
+    CREATE SCHEMA $POSTGRES_DB;
+    GRANT ALL PRIVILEGES ON SCHEMA $POSTGRES_DB TO $DB_USERNAME;
+EOSQL

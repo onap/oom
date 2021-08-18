@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  serviceName: {{ include "common.servicename" . }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
+      securityContext:
+      {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
+          livenessProbe:
+            exec:
+              command: ["psql", "-w", "-U", "{{ .Values.global.db.default.username }}", "-c", "select 1"]
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          readinessProbe:
+            exec:
+              command: ["psql", "-w", "-U", "{{ .Values.global.db.default.username }}",  "-c", "select 1"]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: {{ include "common.fullname" . }}-init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: {{ include "common.fullname" . }}
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: {{ include "common.fullname" . }}-init
+          configMap:
+            name: {{ include "common.fullname" . }}-init
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+ {{if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - {{ include "common.PVCTemplate" (dict "dot" . "suffix" "data" "persistenceInfos" .Values.persistence) | indent 6 | trim }}
+{{- end }}
