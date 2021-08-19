@@ -16,6 +16,24 @@
       "revId": "b40cc1c39b06eb5821e69e3c2158654f761731de",
       "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "973e2e6d_44257d76",
+        "filename": "kubernetes/common/common/templates/_service.tpl",
+        "patchSetId": 13
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 511
+      },
+      "writtenOn": "2021-08-19T17:32:46Z",
+      "side": 1,
+      "message": "The problem here is not with \"port_protocol\", the problem is with \"protocol\" (or, more precisely, service.ports[i].protocol in the values.yaml.  Prior to the present change, \"protocol\" was not used at all by this template.)  \n\nIt seems that some aaf components, for whatever reason, included service.ports[i].protocol in their values.yaml file. For instance:\n            service:\n              name: aaf-gui\n              type: NodePort\n              ports:\n                - name: gui\n                  protocol: http\n                  port: 8200\n                  nodePort: 51\nThe master branch version of this template just ignores \"protocol\", but this new version of the template tries to use the \"protocol\" value to render a k8s Service file, and \"http\" is not a valid value.\n\nI see two reasonable approaches to fixing this:\n(1) Remove the spurious service.ports[i].protocol settings from the various aaf values.yaml files.  (From a grep through the oom tree, it appears aaf is the only component that is setting these values. aaf-hello, aaf-cm, aaf-fs, aaf-locate, aaf-oauth, aaf-gui, and aaf-service would be affected.)\n(2) Change the name of values.yaml parameter from \"protocol\" to something like \"layer4Protocol\", which would affect the _service.tpl file and the values.yaml file for dcae-snmp-trap-collector.  We could leave the aaf values.yaml files unchanged, and the spurious \"protocol\" values would be ignored.\n\nAny preferences here?",
+      "parentUuid": "df9e2507_1387f12a",
+      "revId": "b40cc1c39b06eb5821e69e3c2158654f761731de",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
     }
   ]
 }
