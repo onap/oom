@@ -40,7 +40,7 @@ Return a hard nodeAffinity definition
 requiredDuringSchedulingIgnoredDuringExecution:
   nodeSelectorTerms:
     - matchExpressions:
-        key: {{ .key }}
+      - key: {{ .key }}
         operator: In
         values:
           {{- range .values }}
