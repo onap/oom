@@ -21,6 +21,25 @@ global:
   aafEnabled: true
 
 #################################################################
+# AAF part
+#################################################################
+certInitializer:
+  nameOverride: dmaap-dr-node-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  # aafDeployCredsExternalSecret: some secret
+  fqdn: dmaap-dr-node
+  fqi: dmaap-dr-node@dmaap-dr.onap.org
+  public_fqdn: dmaap-dr.onap.org
+  cadi_longitude: "0.0"
+  cadi_latitude: "0.0"
+  app_ns: org.osaaf.aaf
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: >
+    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
+    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.credsPath }}/mycreds.prop
+
+#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
@@ -78,32 +97,9 @@ persistence:
       app.kubernetes.io/component: event-logs
 
 #################################################################
-# AAF part
-#################################################################
-aafConfig:
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: dmaap-dr-node
-  fqi: dmaap-dr-node@dmaap-dr.onap.org
-  public_fqdn: dmaap-dr.onap.org
-  cadi_longitude: 0.0
-  cadi_latitude: 0.0
-  app_ns: org.osaaf.aaf
-  permission_user: 1000
-  permission_group: 1001
-  secret_uid: &aaf_secret_uid dmaap-dr-node-aaf-deploy-creds
-  credsPath: /opt/app/osaaf/local
-
-#################################################################
 # Secrets metaconfig
 #################################################################
-secrets:
-  - uid: *aaf_secret_uid
-    type: basicAuth
-    externalSecret: '{{ ternary (tpl (default "" .Values.aafConfig.aafDeployCredsExternalSecret) .) "aafIsDisabled" .Values.global.aafEnabled }}'
-    login: '{{ .Values.aafConfig.aafDeployFqi }}'
-    password: '{{ .Values.aafConfig.aafDeployPass }}'
-    passwordPolicy: required
+secrets: {}
 
 ingress:
   enabled: false

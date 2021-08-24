@@ -23,7 +23,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 8 }}
         - name: {{ include "common.name" . }}-readiness
           image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -38,11 +38,10 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-        {{- if .Values.global.aafEnabled }}{{ include "common.aaf-config" . | nindent 8 }}{{ end }}
         - name: {{ include "common.name" . }}-permission-fixer
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts: {{- if .Values.global.aafEnabled }}{{ include "common.aaf-config-volume-mountpath" . | nindent 10 }}{{ end }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: {{ .Values.persistence.spool.path }}
             name: {{ include "common.fullname" . }}-spool
           - mountPath: {{ .Values.persistence.event.path }}
@@ -65,7 +64,7 @@ spec:
               port: {{.Values.readiness.port}}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts: {{- if .Values.global.aafEnabled }}{{ include "common.aaf-config-volume-mountpath" . | nindent 10 }}{{ end }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: {{ .Values.persistence.spool.path }}
             name: {{ include "common.fullname" . }}-spool
           - mountPath: {{ .Values.persistence.event.path }}
@@ -103,7 +102,7 @@ spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.aaf-config-volumes" . | nindent 8 }}
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
