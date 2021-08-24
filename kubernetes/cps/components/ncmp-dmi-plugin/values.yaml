@@ -1,5 +1,6 @@
-#  Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
-#
+# ============LICENSE_START=======================================================
+# Copyright (C) 2021 Nordix Foundation
+# ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,54 +12,61 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+# ============LICENSE_END=========================================================
 
 #################################################################
 # Secrets.
 #################################################################
 secrets:
-  - uid: pg-root-pass
-    name: &pgRootPassSecretName '{{ include "common.release" . }}-cps-pg-root-pass'
-    type: password
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "cps-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
-    password: '{{ .Values.postgres.config.pgRootpassword }}'
-    policy: generate
-  - uid: pg-user-creds
-    name: &pgUserCredsSecretName '{{ include "common.release" . }}-cps-pg-user-creds'
+  - uid: user-creds
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "cps-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
-    login: '{{ .Values.postgres.config.pgUserName }}'
-    password: '{{ .Values.postgres.config.pgUserPassword }}'
-    passwordPolicy: generate
-  - uid: app-user-creds
-    name: &coreCredsSecretName '{{ include "common.release" . }}-cps-core-app-user-creds'
-    type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.config.appUserExternalSecret) .) (hasSuffix "cps-core-app-user-creds" .Values.config.appUserExternalSecret) }}'
+    externalSecret: '{{ tpl (default "" .Values.config.appUserExternalSecret) . }}'
     login: '{{ .Values.config.appUserName }}'
     password: '{{ .Values.config.appUserPassword }}'
+    passwordPolicy: generate
+  - uid: sdnc-creds
+    type: basicAuth
+    externalSecret: '{{ .Values.config.odlCredsExternalSecret }}'
+    login: '{{ .Values.config.sdncUser }}'
+    password: '{{ .Values.config.sdncPassword }}'
+    passwordPolicy: required
+  - uid: core-creds
+    name: &coreCredsSecretName '{{ include "common.release" . }}-cps-core-app-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.config.coreCredsExternalSecret) .) (hasSuffix "cps-core-app-user-creds" .Values.config.coreCredsExternalSecret) }}'
+    login: '{{ .Values.config.coreUser }}'
+    password: '{{ .Values.config.corePassword }}'
     passwordPolicy: generate
 
 #################################################################
 # Global configuration defaults.
 #################################################################
-
-# bitnami image doesn't support well single quote in password
-passwordStrengthOverride: basic
 global:
   ingress:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/cps-and-nf-proxy:1.0.1
+image: onap/ncmp-dmi-plugin:0.0.1
 containerPort: &svc_port 8080
+managementPort: &mgt_port 8081
+
+prometheus:
+  enabled: true
+  interval: 60s
 
 service:
   type: ClusterIP
-  name: cps-core
+  name: ncmp-dmi-plugin
   ports:
     - name: &port http
       port: *svc_port
+    - name: management
+      port: *mgt_port
+      targetPort: *mgt_port
 
-pullPolicy: Always
+pullPolicy: IfNotPresent
 # flag to enable debugging - application support required
 debugEnabled: false
 nodeSelector: {}
@@ -92,24 +100,24 @@ liveness:
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 readiness:
   initialDelaySeconds: 15
   periodSeconds: 15
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 ingress:
   enabled: true
   service:
-    - baseaddr: "cps-core"
+    - baseaddr: "ncmp-dmi-plugin"
       path: "/"
-      name: "cps-core"
+      name: "ncmp-dmi-plugin"
       port: *svc_port
 
 serviceAccount:
-  nameOverride: cps-core
+  nameOverride: ncmp-dmi-plugin
   roles:
     - read
 
@@ -123,15 +131,17 @@ securityContext:
 
 config:
 
-  # Set it for pre loading xnfdata, else set to null
-  liquibaseLabels: xnf-data-preload
-
   # REST API basic authentication credentials (passsword is generated if not provided)
-  appUserName: cpsuser
+  appUserName: ncmpuser
   spring:
     profile: helm
   #appUserPassword:
-  appUserExternalSecret: *coreCredsSecretName
+
+  sdncUser: admin
+  sdncPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+
+  coreUser: cpsuser
+  coreCredsExternalSecret: *coreCredsSecretName
 
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format insead of yaml.
@@ -141,29 +151,8 @@ config:
 
 logging:
   level: INFO
+  cps: DEBUG
   path: /tmp
-
-#################################################################
-# Postgres overriding defaults in the postgres
-#################################################################
-postgres:
-  nameOverride: &postgresName cps-postgres
-  service:
-    name: *postgresName
-    name2: cps-pg-primary
-    name3: cps-pg-replica
-  container:
-    name:
-      primary: cps-pg-primary
-      replica: cps-pg-replica
-  persistence:
-    mountSubPath: cps/data
-    mountInitPath: cps
-  config:
-    pgUserName: cps
-    pgDatabase: cpsdb
-    pgUserExternalSecret: *pgUserCredsSecretName
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
 
 readinessCheck:
   wait_for:
