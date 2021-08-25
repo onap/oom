@@ -29,6 +29,12 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  minReadySeconds: {{ .Values.minReadySeconds }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   selector:
     matchLabels:
       app: {{ include "common.name" . }}
@@ -91,6 +97,7 @@ spec:
       {{- end }}
     spec:
       hostname: aai-traversal
+      terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
@@ -144,6 +151,10 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
+        - name: INTERNAL_PORT_1
+          value: {{ .Values.service.internalPort }}
+        - name: INTERNAL_PORT_2
+          value: {{ .Values.service.internalPort2 }}
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - mountPath: /etc/localtime
           name: localtime
@@ -194,6 +205,18 @@ spec:
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPort2 }}
+        lifecycle:
+          # wait for active requests (long-running tasks) to be finished
+          # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
+          preStop:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1 -e $INTERNAL_PORT_2)
+                  do sleep 10
+                  done
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{ if .Values.liveness.enabled }}
