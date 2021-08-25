@@ -68,6 +68,14 @@ spec:
             readOnly: true
           - mountPath: {{ .Values.persistence.deployedBlueprint }}
             name: {{ include "common.fullname" . }}-blueprints
+          #Mounting log dir of the filebeat
+          - mountPath: {{ .Values.log.path }}
+            name: logs
+          - mountPath: /opt/app/onap/logging.yaml
+            name: log-config
+            subPath: logging.yaml
+         # Filebeat sidecar container
+        {{ include "common.log.sidecar" . | nindent 8 }}
           resources:
 {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
@@ -83,6 +91,18 @@ spec:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: logs
+          emptyDir: {}
+{{- if .Values.global.centralizedLoggingEnabled }}
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.release" . }}-cds-filebeat
+        - name: filebeat-data
+          emptyDir: {}
+{{- end }}
+        - name: log-config
+          configMap:
+            name: {{ include "common.fullname" . }}-configmap
         # Py executor shares the blueprintsprocessor storage (for now) to
         # share uploaded CBA files. In the future it will be deprecated
         # when all parts of the CDS will make use of Artifact Manager

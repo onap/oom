@@ -177,9 +177,13 @@ spec:
           - mountPath: {{ .Values.config.appConfigDir }}/ONAP_RootCA.cer
             name: {{ include "common.fullname" . }}-config
             subPath: ONAP_RootCA.cer
-
           - mountPath: {{ .Values.persistence.deployedBlueprint }}
             name: {{ include "common.fullname" . }}-blueprints
+          #Mounting log dir of the filebeat
+          - mountPath: {{ .Values.log.path }}
+            name: logs
+        # Filebeat sidecar container
+        {{ include "common.log.sidecar" . | nindent 8 }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -215,5 +219,14 @@ spec:
         - name: processed-config
           emptyDir:
             medium: Memory
+        - name: logs
+          emptyDir: {}
+{{- if .Values.global.centralizedLoggingEnabled }}
+        - name: filebeat-conf
+          configMap:
+            name: {{ include "common.release" . }}-cds-filebeat
+        - name: filebeat-data
+          emptyDir: {}
+{{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
