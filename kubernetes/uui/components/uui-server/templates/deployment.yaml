@@ -35,6 +35,20 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      securityContext:
+        fsGroup: 0
+      initContainers:
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              chmod -R 777 /home/uui/upload
+          image: busybox:1.32
+          volumeMounts:
+          - mountPath: /home/uui/upload
+            name: uui-server-v    
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -62,5 +76,12 @@ spec:
             value: {{tpl .Values.msbaddr .}}
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
+          volumeMounts:
+          - mountPath: /home/uui/upload
+            name: uui-server-v
+      volumes:
+      - name: uui-server-v
+        hostPath:
+          path: "/dockerdata-nfs/uui/uui-nlp"
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
