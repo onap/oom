@@ -20,19 +20,20 @@ global:
 
 uui-nlp:
   enabled: false
-
+ 
 subChartsOnly:
   enabled: true
 
-flavor: small
+flavor: xlarge
 
 # application image
-image: onap/usecase-ui:4.0.1
+repository: nexus3.onap.org:10001
+image: onap/usecase-ui-nlp:1.0.0
 pullPolicy: Always
 
 # application configuration
 
-msbaddr: msb-iag.{{include "common.namespace" .}}:80
+msbaddr: msb-iag.{{include "common.namespace" .}}:443
 mraddr: message-router.{{include "common.namespace" .}}:3904
 
 # flag to enable debugging - application support required
@@ -47,29 +48,29 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 180
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 180
   periodSeconds: 10
 
 service:
   type: NodePort
-  name: uui
-  portName: uui
-  internalPort: 8443
-  nodePort: 98
+  name: uui-nlp
+  portName: uui-nlp
+  internalPort: 33011
+  nodePort: 97
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "uui.api"
-      name: "uui"
-      port: 8443
+    - baseaddr: uuinlp
+      name: "uui-nlp"
+      port: 8082
   config:
     ssl: "redirect"
 
@@ -86,16 +87,23 @@ ingress:
 resources:
   small:
     limits:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 1.5
+      memory: 350Mi
     requests:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 1
+      memory: 245Mi
   large:
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 2
+      memory: 500Mi
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 1
+      memory: 500Mi
+  xlarge:
+    limits:
+      cpu: 4
+      memory: 2048Mi
+    requests:
+      cpu: 2
+      memory: 1024Mi
   unlimited: {}
