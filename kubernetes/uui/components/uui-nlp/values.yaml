@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2021 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,23 +17,20 @@
 # Declare variables to be passed into your templates.
 global:
   uuiPortPrefix: 303
-  persistence: {}
 
 uui-nlp:
   enabled: false
 
-subChartsOnly:
-  enabled: true
-
-flavor: small
+flavor: large
 
 # application image
-image: onap/usecase-ui:4.0.1
-pullPolicy: Always
+repository: nexus3.onap.org:10001
+image: onap/usecase-ui-nlp:1.0.0
+pullPolicy: IfNotPresent
 
 # application configuration
 
-msbaddr: msb-iag.{{include "common.namespace" .}}:80
+msbaddr: msb-iag.{{include "common.namespace" .}}:443
 mraddr: message-router.{{include "common.namespace" .}}:3904
 
 # flag to enable debugging - application support required
@@ -48,29 +45,36 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 180
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
+  initialDelaySeconds: 180
   periodSeconds: 10
 
 service:
-  type: NodePort
-  name: uui
-  portName: uui
-  internalPort: 8443
-  nodePort: 98
+  type: ClusterIP
+  #name: uui-nlp
+  portName: online
+  internalPort: 33011
+  externalPort: 33011
+  #nodePort: 97
+  portName2: offline
+  internalPort2: 33012
+  externalPort2: 33012
+  portName3: upload
+  internalPort3: 33013
+  externalPort3: 33013
 
 ingress:
   enabled: false
   service:
-    - baseaddr: "uui.api"
-      name: "uui"
-      port: 8443
+    - baseaddr: uuinlp
+      name: "uui-nlp"
+      port: 8082
   config:
     ssl: "redirect"
 
@@ -87,16 +91,25 @@ ingress:
 resources:
   small:
     limits:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 1.5
+      memory: 350Mi
     requests:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 1
+      memory: 245Mi
   large:
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 2
+      memory: 500Mi
     requests:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 1
+      memory: 500Mi
   unlimited: {}
+
+persistence:
+  enabled: true
+  #existingClaim:
+  mountPath: /dockerdata-nfs
+  mountSubPath: "uui/uui-nlp"
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  size: 5Gi
