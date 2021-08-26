@@ -1,6 +1,6 @@
 {{/*
-# Copyright © 2021 CTC
-# Modifications Copyright © 2018 AT&T, Amdocs, Bell Canada
+# Copyright © 2018 ZTE
+# Modifications Copyright © 2021 AT&T, Amdocs, Bell Canada
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,18 +23,6 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-        - name: fix-permission
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - |
-              chmod -R 777 /home/uui/upload
-          image: busybox:1.32
-          volumeMounts:
-          - mountPath: /home/uui/upload
-            name: uui-server-v
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -63,11 +51,15 @@ spec:
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
           volumeMounts:
-          - mountPath: /home/uui/upload
+          - mountPath: /home/run/bert-master/upload
             name: uui-server-v
       volumes:
       - name: uui-server-v
+      {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
