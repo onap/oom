@@ -30,9 +30,9 @@ spec:
         - /app/ready.py
         args:
         - --container-name
-        - {{ .Values.kafka.name }}
+        - {{ .Values.global.kafkaPod }}
         - --container-name
-        - {{ .Values.zookeeper.name }}
+        - {{ .Values.global.zookeeperPod }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -82,6 +82,45 @@ spec:
           - name: jmx-config
             mountPath: /etc/jmx-kafka
       {{- end }}
+        - name: srimzi-zk-entrance
+          image: 'docker.io/scholzj/zoo-entrance:latest'
+          command:
+            - /opt/stunnel/stunnel_run.sh
+          ports:
+            - containerPort: {{ .Values.global.zkTunnelService.internalPort }}
+              name: zoo
+              protocol: TCP
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: STRIMZI_ZOOKEEPER_CONNECT
+              value: '{{ include "common.release" . }}-{{ .Values.global.clusterName }}-zookeeper-client:{{ .Values.global.zkTunnelService.internalPort }}'
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.global.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.global.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /etc/cluster-operator-certs/
+              name: cluster-operator-certs
+            - mountPath: /etc/cluster-ca-certs/
+              name: cluster-ca-certs
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -111,6 +150,10 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:
+          - name: JAASLOGIN
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "mr-kafka-admin-secret" "key" "sasl.jaas.config") | indent 12 }}
+          - name: SASLMECH
+            value: {{ .Values.global.saslMechanism }}
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
@@ -164,5 +207,33 @@ spec:
             name: {{ include "common.fullname" . }}-sys-props
         - name: jetty
           emptyDir: {}
+        - name: cluster-operator-certs
+          secret:
+            defaultMode: 288
+            secretName: {{ include "common.release" . }}-{{ .Values.global.clusterName }}-cluster-operator-certs
+        - name: cluster-ca-certs
+          secret:
+            defaultMode: 288
+            secretName: {{ include "common.release" . }}-{{ .Values.global.clusterName }}-cluster-ca-cert
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "common.fullname" . }}-zk-network-policy
+  namespace: {{ include "common.namespace" . }}
+spec:
+  podSelector:
+    matchLabels:
+      strimzi.io/name: {{ include "common.release" . }}-{{ .Values.global.clusterName }}-zookeeper
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: {{ include "common.name" . }}
+    ports:
+    - port: {{ .Values.global.zkTunnelService.internalPort }}
+      protocol: TCP
+  policyTypes:
+  - Ingress

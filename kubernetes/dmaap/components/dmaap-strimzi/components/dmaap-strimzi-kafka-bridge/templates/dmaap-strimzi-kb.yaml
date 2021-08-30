@@ -1,6 +1,5 @@
 {{/*
-# Copyright © 2017 Amdocs, Bell Canada
-# Modifications Copyright © 2018 AT&T
+# Copyright © 2021 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
-apiVersion: v1
-kind: Secret
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaBridge
 metadata:
-  name: {{ include "common.fullname" . }}-secret
+  name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
-data:
-{{ (.Files.Glob "resources/config/dmaap/mykey").AsSecrets | indent 2 }}
-type: Opaque
----
-{{ include "common.secretFast" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  enableMetrics: false
+  bootstrapServers: {{ include "common.release" . }}-{{ .Values.global.clusterName }}-kafka-bootstrap:{{ .Values.global.kafkaInternalPort }}
+  authentication:
+    type: {{ .Values.global.saslMechanism }}
+    username: {{ include "common.release" . }}-{{ .Values.global.kafkaStrimziAdminUser }}
+    passwordSecret:
+      secretName: {{ include "common.release" . }}-{{ .Values.global.kafkaStrimziAdminUser }}
+      password: password
+  http:
+    port: {{ .Values.port }}
