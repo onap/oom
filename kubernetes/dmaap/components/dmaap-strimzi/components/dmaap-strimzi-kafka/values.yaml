@@ -1,5 +1,4 @@
-# Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
-# Modifications Copyright © 2018 Amdocs,Bell Canada
+# Copyright © 2021 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,39 +17,12 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  nodePortPrefixExt: 304
-  readinessImage: onap/oom/readiness:3.0.1
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-  clientImage: onap/dmaap/dbc-client:1.0.9
-  repository: nexus3.onap.org:10001
-  busyBoxImage: busybox:1.30
-  busyBoxRepository: docker.io
-
-#Global DMaaP app config
-  allow_http: false
-
-  #Logstash config
-  logstashServiceName: log-ls
-  logstashPort: 5044
-
-  #dmaap-dr-prov server configuration
-  dmaapDrProvName: dmaap-dr-prov
-  dmaapDrProvExtPort2: 443
-  dmaapDrProvExtPort: 80
-
-  #AAF global config overrides
-  aafEnabled: true
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
-  aafAppNs: org.osaaf.aaf
-  aafLocatorContainer: oom
-
-  #Strimzi config
+  persistence:
+    mountPath: /dockerdata-nfs
   clusterName: dmaap-strimzi-kafka
   version: 2.8.0
   kafkaAdminUser: dmaap-strimzi-kafka-admin
   kafkaInternalPort: 9092
-  kafkaPod: kafka
   zookeeperPod: zookeeper
 
   zkTunnelService:
@@ -59,18 +31,54 @@ global:
     portName: tcp-zk-tunnel
     internalPort: 2181
 
-#Component overrides
-message-router:
+#################################################################
+# Application configuration defaults.
+#################################################################
+# default number of instances
+replicaCount: 3
+
+persistence: {}
+
+persistenceKafka:
   enabled: true
-dmaap-bc:
+  size: 2Gi
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  mountPath: /dockerdata-nfs
+  mountSubPath: strimzi/kafka
+persistenceZk:
   enabled: true
-dmaap-dr-node:
-  enabled: true
-dmaap-dr-prov:
-  enabled: true
+  size: 2Gi
+  volumeReclaimPolicy: Retain
+  accessMode: ReadWriteOnce
+  mountPath: /dockerdata-nfs
+  mountSubPath: strimzi/zk
+
+ingress:
+  enabled: false
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  unlimited: {}
 
 #Pods Service Account
 serviceAccount:
-  nameOverride: dmaap
+  nameOverride: dmaap-strimzi-kafka
   roles:
     - read

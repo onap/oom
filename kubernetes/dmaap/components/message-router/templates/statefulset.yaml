@@ -30,9 +30,9 @@ spec:
         - /app/ready.py
         args:
         - --container-name
-        - {{ .Values.kafka.name }}
+        - {{ .Values.global.kafkaPod }}
         - --container-name
-        - {{ .Values.zookeeper.name }}
+        - {{ .Values.global.zookeeperPod }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -111,6 +111,10 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:
+          - name: saslconfig
+            value: {{- include "common.secret.envFromSecret" (dict "global" . "uid" "onap-dmaap-strimzi-kafka-admin" "key" "sasl.jaas.config") | indent 12}}
+          - name: SASL
+            value: "kubikyvu"
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
