@@ -18,6 +18,14 @@
 #################################################################
 global:
   nodePortPrefix: 302
+  clusterName: dmaap-strimzi-kafka
+  kafkaAdminUser: dmaap-strimzi-kafka-admin
+  kafkaInternalPort: 9092
+  kafkaPod: kafka
+  zookeeperPod: zookeeper
+  zkTunnelService:
+    name: zk-tunnel-svc
+    internalPort: 2181
 
 
 #################################################################
@@ -63,18 +71,25 @@ certInitializer:
 image: onap/dmaap/dmaap-mr:1.1.20
 pullPolicy: Always
 
-kafka:
-  name: message-router-kafka
-  port: 9092
-zookeeper:
-  name: message-router-zookeeper
-  port: 2181
+secrets:
+  - uid: mr-kafka-admin-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: password
+        value: '{{ .Values.config.somePass }}'
+        policy: generate
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
-config: {}
+config:
+  someConfig: blah
+  somePass: blah
 
 # default number of instances
 replicaCount: 1
