@@ -193,7 +193,7 @@ type: Opaque
       {{- $entry := dict }}
       {{- $uid := tpl (default "" $secret.uid) $global }}
       {{- $keys := keys $secret }}
-      {{- range $key := (without $keys "annotations" "filePaths" )}}
+      {{- range $key := (without $keys "annotations" "filePaths" "envs")}}
         {{- $_ := set $entry $key (tpl (index $secret $key) $global) }}
       {{- end }}
       {{- if $secret.annotations }}
@@ -212,6 +212,9 @@ type: Opaque
         {{- else }}
           {{- $_ := set $entry "filePaths" $secret.filePaths }}
         {{- end }}
+      {{- end }}
+      {{- if $secret.envs }}
+        {{- $_ := set $entry "envs" $secret.envs }}
       {{- end }}
       {{- $realName := default (include "common.secret.genNameFast" (dict "global" $global "uid" $uid "name" $entry.name) ) $entry.externalSecret }}
       {{- $_ := set $entry "realName" $realName }}
