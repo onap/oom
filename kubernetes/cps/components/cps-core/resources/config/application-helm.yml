@@ -28,6 +28,17 @@ spring:
     password: ${DB_PASSWORD}
     driverClassName: org.postgresql.Driver
     initialization-mode: always
+  kafka:
+    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.global.kafkaClusterName }}-kafka-bootstrap:9092
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl:
+        mechanism: SCRAM-SHA-512
+        jaas:
+          config: ${JAASLOGIN}
+    producer:
+      client-id: cps-core
 
   liquibase:
     change-log: classpath:changelog/changelog-master.yaml
@@ -48,10 +59,6 @@ dmi:
   auth:
     username: ${DMI_USERNAME}
     password: ${DMI_PASSWORD}
-
-{{- if .Values.config.eventPublisher }}
-{{ toYaml .Values.config.eventPublisher | nindent 2 }}
-{{- end }}
 
 {{- if .Values.config.additional }}
 {{ toYaml .Values.config.additional | nindent 2 }}
