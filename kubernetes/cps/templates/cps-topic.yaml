@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2018  AT&T
+# Copyright © 2021 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
-apiVersion: policy/v1beta1
-kind: PodDisruptionBudget
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
 metadata:
-  name: {{ include "common.fullname" . }}-pdb
+  name: cps.data-updated-events
   labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+    strimzi.io/cluster: {{ include "common.release" . }}-{{ .Values.global.kafkaClusterName }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  maxUnavailable: 1
+  partitions: 10
+  replicas: 3
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
