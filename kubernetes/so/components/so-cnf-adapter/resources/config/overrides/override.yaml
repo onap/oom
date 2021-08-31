@@ -30,10 +30,32 @@ server:
   tomcat:
     max-threads: 50
 mso:
+  adapters:
+    requestDb:
+      endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
+      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
+  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.encrypted "value2" .Values.mso.auth )}}
   site-name: localSite
   logPath: ./logs/cnf-adapter
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
+  msb-scheme: https
+  workflow:
+    endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
+  msoKey: {{ .Values.mso.msoKey }}
+  config:
+    {{ if eq .Values.global.security.aaf.enabled true }}
+    cadi: {{ include "so.cadi.keys" . | nindent 8}}
+    {{- else }}
+    cadi:
+      aafId: {{ .Values.mso.basicUser }}
+    {{- end }}
+  catalog:
+    db:
+      spring:
+        endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
+  db:
+    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
 #Actuator
 management:
   endpoints:
