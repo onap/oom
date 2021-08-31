@@ -71,7 +71,7 @@ if [ "$1" = 'cassandra' ]; then
                 start_rpc \
                 authenticator \
         ; do
-                var="CASSANDRA_${yaml^^}"
+                var="CASSANDRA_$(echo $yaml | tr '[:lower:]' '[:upper:]')"
                 # eval presents no security issue here because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
@@ -81,7 +81,7 @@ if [ "$1" = 'cassandra' ]; then
         done
 
         for rackdc in dc rack; do
-                var="CASSANDRA_${rackdc^^}"
+                var="CASSANDRA_$(echo $rackdc | tr '[:lower:]' '[:upper:]')"
                 # eval presents no security issue here because of limited possible values of var
                 eval val=\$$var
                 if [ "$val" ]; then
