@@ -1,0 +1,46 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "common.name" . }}-servicemonitor
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  endpoints:
+  - path: {{ default "/metrics" .Values.metrics.serviceMonitor.path }}
+    {{- if .Values.metrics.serviceMonitor.port }}
+    port: {{ .Values.metrics.serviceMonitor.port }}
+    {{- else if .Values.metrics.serviceMonitor.targetPort }}
+    targetPort: {{ .Values.metrics.serviceMonitor.targetPort }}
+    {{- else }}
+    port: metrics
+    {{- end }}
+    {{- if .Values.metrics.serviceMonitor.basicAuth.enabled }}
+    basicAuth:
+      username:
+        key: {{ .Values.metrics.serviceMonitor.basicAuth.externalSecretUserKey }}
+        name: {{ .Values.metrics.serviceMonitor.basicAuth.externalSecretName }}
+      password:
+        key: {{ .Values.metrics.serviceMonitor.basicAuth.externalSecretPasswordKey }}
+        name: {{ .Values.metrics.serviceMonitor.basicAuth.externalSecretName }}
+    {{- end }}
+    {{- if .Values.metrics.serviceMonitor.interval }}
+    interval: {{ .Values.metrics.serviceMonitor.interval }}
+    {{- end }}
+    {{- if .Values.metrics.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ .Values.metrics.serviceMonitor.scrapeTimeout }}
+    {{- end }}
+  namespaceSelector:
+    matchNames:
+    - {{ include "common.namespace" . }}
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+      chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+      release: {{ .Release.Name }}
+      heritage: {{ .Release.Service }}
+{{- end }}
