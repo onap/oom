@@ -18,14 +18,12 @@
 #################################################################
 global:
   aafEnabled: true
-  mariadb:
-    # '&mariadbConfig' means we "store" the values for  later use in the file
-    # with '*mariadbConfig' pointer.
-    config: &mariadbConfig
-      mysqlDatabase: policyadmin
-    service: &mariadbService
-      name: &policy-mariadb policy-mariadb
-      internalPort: 3306
+  mariadbGalera: &mariadbGalera
+    #This flag allows Policy to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -37,42 +35,13 @@ secrets:
     externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .) (hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret"))}}'
     password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
     policy: generate
-  - uid: db-secret
-    name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
+  - uid: policy-db-secret
+    name: &dbUserSecretName '{{ include "common.release" . }}-policy-db-secret'
     type: basicAuth
     externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
     login: '{{ index .Values "mariadb-galera" "db" "user" }}'
     password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: generate
-
-db: &dbSecretsHook
-  credsExternalSecret: *dbSecretName
-
-policy-api:
-  enabled: true
-  db: *dbSecretsHook
-policy-pap:
-  enabled: true
-  db: *dbSecretsHook
-policy-xacml-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-apex-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-drools-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-distribution:
-  enabled: true
-  db: *dbSecretsHook
-policy-clamp-be:
-  enabled: true
-  db: *dbSecretsHook
-policy-clamp-fe:
-  enabled: true
-policy-nexus:
-  enabled: false
 
 #################################################################
 # DB configuration defaults.
@@ -80,9 +49,6 @@ policy-nexus:
 
 repository: nexus3.onap.org:10001
 pullPolicy: Always
-
-mariadb:
-  image: mariadb:10.5.8
 
 subChartsOnly:
   enabled: true
@@ -109,24 +75,65 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-mariadb-galera:
-  # mariadb-galera.config and global.mariadb.config must be equals
+mariadb-galera: &localMariadb
   db:
     user: policy_user
     # password:
-    externalSecret: *dbSecretName
+    externalSecret: *dbUserSecretName
     name: &mysqlDbName policyadmin
   rootUser:
     externalSecret: *dbRootPassSecretName
-  nameOverride: *policy-mariadb
-  # mariadb-galera.service and global.mariadb.service must be equals
-  service: *mariadbService
+  nameOverride: &policy-mariadb policy-mariadb
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: policy/maria/data
   serviceAccount:
     nameOverride: *policy-mariadb
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: '{{ include "common.release" . }}-policy-mariadb-init'
+  dbScriptConfigMap: '{{ include "common.fullname" . }}-db-configmap'
+
+#################################################################
+# Components configuration.
+#################################################################
+policy-api:
+  enabled: true
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
+policy-pap:
+  enabled: true
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
+policy-xacml-pdp:
+  enabled: true
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
+policy-apex-pdp:
+  enabled: true
+policy-drools-pdp:
+  enabled: true
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
+policy-distribution:
+  enabled: true
+policy-clamp-be:
+  enabled: true
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
+policy-clamp-fe:
+  enabled: true
+policy-nexus:
+  enabled: false
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (small, large, or unlimited)

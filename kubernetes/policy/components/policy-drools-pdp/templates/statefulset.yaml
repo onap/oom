@@ -42,7 +42,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-policy-galera-config
+        - {{ include "common.release" . }}-policy-mariadb-init
         env:
         - name: NAMESPACE
           valueFrom:
@@ -96,10 +96,14 @@ spec:
           env:
           - name: REPLICAS
             value: "{{ .Values.replicaCount }}"
+          - name: DB_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: DB_PORT
+            value: {{ include "common.mariadbPort" . | quote}}
           - name: SQL_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-db-secret" "key" "login") | indent 12 }}
           - name: SQL_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-db-secret" "key" "password") | indent 12 }}
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
