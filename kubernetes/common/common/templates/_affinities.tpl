@@ -23,7 +23,7 @@ Return a soft nodeAffinity definition
 preferredDuringSchedulingIgnoredDuringExecution:
   - preference:
       matchExpressions:
-        key: {{ .key }}
+      - key: {{ .key }}
         operator: In
         values:
           {{- range .values }}
@@ -40,7 +40,7 @@ Return a hard nodeAffinity definition
 requiredDuringSchedulingIgnoredDuringExecution:
   nodeSelectorTerms:
     - matchExpressions:
-        key: {{ .key }}
+      - key: {{ .key }}
         operator: In
         values:
           {{- range .values }}
