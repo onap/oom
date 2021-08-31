@@ -22,6 +22,12 @@ global:
   nodePortPrefixExt: 304
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera: &mariadbGalera
+    #This flag allows CDS to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -70,20 +76,19 @@ readiness:
 ingress:
   enabled: false
 
-mariadb-galera:
+mariadb-galera: &localMariadb
   db:
     user: sdnctl
     # password:
     externalSecret: *dbUserSecretName
     name: &mysqlDbName sdnctl
-  nameOverride: &dbServer cds-db
+  nameOverride: cds-db
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: cds/data
   serviceAccount:
     nameOverride: *dbServer
-
   mariadbConfiguration: |-
     [client]
     port=3306
@@ -204,14 +209,17 @@ mariadb-galera:
     # aria_encrypt_tables=ON
     # encrypt_tmp_disk_tables=ON
 
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: onap-cds-mariadb-init
+
 cds-blueprints-processor:
   enabled: true
-  config:
-    cdsDB:
-      dbServer: *dbServer
-      dbPort: 3306
-      dbName: *mysqlDbName
-      dbCredsExternalSecret: *dbUserSecretName
+  global:
+    mariadbGalera: *mariadbGalera
+  mariadb-galera: *localMariadb
 
 cds-command-executor:
   enabled: true
