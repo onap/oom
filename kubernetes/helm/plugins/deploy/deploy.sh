@@ -89,7 +89,7 @@ resolve_deploy_flags() {
 
 deploy() {
   # validate params
-  if [ -z "$1" ] || [ -z "$2" ]; then
+  if [ -z "$1" ] || [ -z "$2" ]; then
     usage
     exit 0
   fi
