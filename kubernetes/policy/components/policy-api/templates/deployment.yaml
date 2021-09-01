@@ -24,7 +24,7 @@ spec:
           - /app/ready.py
           args:
           - --job-name
-          - {{ include "common.release" . }}-policy-galera-config
+          - onap-policy-mariadb-init
           env:
           - name: NAMESPACE
             valueFrom:
@@ -40,10 +40,20 @@ spec:
           - -c
           - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
           env:
+          - name: DB_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: DB_PORT
+            value: {{ include "common.mariadbPort" . | quote}}
           - name: SQL_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.mariadbSecret" . }}
+                key: login
           - name: SQL_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.mariadbSecret" . }}
+                key: password
           - name: RESTSERVER_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 12 }}
           - name: RESTSERVER_PASSWORD
