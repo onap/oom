@@ -44,7 +44,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-policy-galera-config
+        - onap-policy-mariadb-init
         env:
         - name: NAMESPACE
           valueFrom:
@@ -68,10 +68,20 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "login") | indent 10 }}
         - name: API_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "password") | indent 10 }}
+        - name: DB_HOST
+          value: {{ include "common.mariadbService" . }}
+        - name: DB_PORT
+          value: {{ include "common.mariadbPort" . | quote}}
         - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.secret.getSecretName" . }}
+              key: login
         - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.secret.getSecretName" . }}
+              key: password
         volumeMounts:
         - mountPath: /config-input
           name: pdpxconfig
