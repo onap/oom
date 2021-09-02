@@ -84,11 +84,11 @@
   Choose the value of secret to retrieve user value.
 */}}
 {{- define "common.mariadbSecret" -}}
-  {{- if .Values.global.mariadbGalera.localCluster -}}
-    {{ printf "%s-%s-db-user-credentials" (include "common.fullname" .) (index .Values "mariadb-galera" "nameOverride") -}}
-  {{- else -}}
-    {{ printf "%s-%s-%s" ( include "common.release" .) (index .Values "mariadb-init" "nameOverride") (index .Values "mariadb-init" "config" "mysqlDatabase" ) -}}
-  {{- end -}}
+  {{- $key := .key }}
+valueFrom:
+  secretKeyRef:
+    name: {{ tpl (index .Values "mariadb-init" "config" "userCredentialsExternalSecret") . -}}
+    key: {{ $key }}
 {{- end -}}
 
 {{/*
