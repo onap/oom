@@ -48,7 +48,7 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - sh
         args:
@@ -113,6 +113,8 @@ spec:
             value: {{ if (gt (int (.Values.replicaCount)) 2) }} {{ .Values.cluster.enabled | quote }} {{ else }} "false" {{ end }}
           - name: CLUSTER_ID
             value: {{ .Values.cluster.clusterName }}
+          - name: AAF_CREDSPATH
+            value: {{ .Values.certInitializer.credsPath }}
           - name: CLUSTER_NODE_ID
             valueFrom:
               fieldRef:
@@ -157,7 +159,7 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
-          volumeMounts:
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -191,7 +193,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
