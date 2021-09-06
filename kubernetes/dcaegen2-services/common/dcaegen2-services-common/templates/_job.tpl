@@ -55,7 +55,8 @@ spec:
       - name: dcae-config-delete
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /opt/app/delete_key.sh
         args:
-        - --delete-key
         - {{ include "common.name" . }}
 {{ end -}}
