@@ -1,6 +1,6 @@
 #============LICENSE_START========================================================
 #=================================================================================
-# Copyright (c) 2019-2020 AT&T Intellectual Property. All rights reserved.
+# Copyright (c) 2019-2021 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,11 +35,14 @@ config:
   importCloudify: https://www.getcloudify.org/spec/cloudify/4.5.5/types.yaml
   importK8S: plugin:k8splugin?version=>=3.5.1,<4.0.0
   importPostgres: plugin:pgaas?version=1.3.0
-  importClamp: plugin:clamppolicyplugin?version=1.1.0
+  importClamp: plugin:clamppolicyplugin?version=1.1.1
   importDMaaP: plugin:dmaap?version=>=1.5.1,<2.0.0
   useDmaapPlugin: false
   bpResourcesCpuLimit: 250m
   bpResourcesMemoryLimit: 128Mi
+  artifactType: "BLUEPRINT"
+  registryBaseurl: http://chart-museum:80/api/charts
+
 
 secrets:
   - uid: "dashsecret"
@@ -47,6 +50,18 @@ secrets:
     login: '{{ .Values.config.dashboardUser }}'
     password: '{{ .Values.config.dashboardPassword }}'
     passwordPolicy: generate
+  - uid: registrycred
+    type: basicAuth
+    login: '{{ .Values.registryCred.username }}'
+    password: '{{ .Values.registryCred.password }}'
+    passwordPolicy: required
+
+# Below parameter should match setting in all clients
+# including oom\kubernetes\platform\components\chartmuseum
+# where ONAP registry is setup
+registryCred:
+  username: onapinitializer
+  password: demo123456!
 
 service:
   type: ClusterIP
@@ -92,4 +107,3 @@ resources:
       cpu: 2
       memory: 2Gi
   unlimited: {}
-
