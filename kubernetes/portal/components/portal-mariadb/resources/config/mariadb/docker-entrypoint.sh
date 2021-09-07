@@ -106,7 +106,7 @@ docker_temp_server_start() {
 	"$@" --skip-networking --socket="${SOCKET}" &
 	mysql_note "Waiting for server startup"
 	local i
-	for i in {30..0}; do
+	for i in $(seq 30 -1 0); do
 		# only use the root password if the database has already been initializaed
 		# so that it won't try to fill in a password file when it hasn't been set yet
 		extraArgs=""

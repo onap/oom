@@ -49,21 +49,21 @@ create_pkcs12_ca_and_server () {
 }
 
 copy_server_certs_to_hvves () {
-	for f in {ca.p12,server.p12}
+	for f in ca.p12 server.p12
 	do
 		kubectl cp $1/$f $2/$3:$4
 	done
 }
 
 copy_client_certs_to_robot () {
-	for f in {ca.pem,client.key,client.pem}
+	for f in ca.pem client.key client.pem
 	do
                 kubectl cp $1/$f $2/$3:$4
         done
 }
 
 cleanup () {
-	rm -f $1/{ca,server,client}.???
+	rm -f $1/ca.??? $1/server.??? s$1/client.???
 }
 
 
