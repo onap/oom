@@ -49,8 +49,7 @@ for f in $CERTS_DIR/*; do
 done
 
 for f in $MORE_CERTS_DIR/*; do
-  if [ ${f: -4} == ".pem" ]
-    then
+  if [ ${f: -4} = ".pem" ]; then
       cp $f $WORK_DIR/.
   fi
 done
