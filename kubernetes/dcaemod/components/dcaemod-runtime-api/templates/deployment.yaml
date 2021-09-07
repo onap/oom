@@ -1,7 +1,7 @@
 {{/*
 #============LICENSE_START========================================================
 # ================================================================================
-# Copyright (c) 2019-2020 AT&T Intellectual Property. All rights reserved.
+# Copyright (c) 2019-2021 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,6 +44,17 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           resources: {{ include "common.resources" . | nindent 12 }}
+          volumeMounts:
+            - mountPath: {{ .Values.config.basehelmchartlocation }}/base/values.yaml
+              subPath: values.yaml
+              name: dcae-helmgen-base
+            - mountPath: {{ .Values.config.basehelmchartlocation }}/base/Chart.yaml
+              subPath: Chart.yaml
+              name: dcae-helmgen-base
+            - mountPath: {{ .Values.config.basehelmchartlocation }}/base/templates
+              name: dcae-helmgen-templates
+            - mountPath: {{ .Values.config.basehelmchartlocation }}/addons/templates
+              name: dcae-helmgen-addon-templates
           env:
             - name: DASHBOARD_URL
               value: {{ .Values.config.dashboardURL }}
@@ -71,7 +82,26 @@ spec:
               value: {{ .Values.config.bpResourcesCpuLimit }}
             - name: BP_RESOURCES_MEMORY_LIMIT
               value: {{ .Values.config.bpResourcesMemoryLimit }}
+            - name: ARTIFACT_TYPE
+              value: {{ .Values.config.artifactType }}
+            - name: CHARTMUSEUM_BASEURL
+              value: {{ .Values.config.registryBaseurl }}
+            - name: HELM_BASE_CHART_TEMPLATE_LOCATION
+              value: {{ .Values.config.basehelmchartlocation }}
+            - name: CHARTMUSEUM_AUTH_BASIC_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "registrycred" "key" "login") | indent 14 }}
+            - name: CHARTMUSEUM_AUTH_BASIC_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "registrycred" "key" "password") | indent 14 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
-
+      volumes:
+        - name: dcae-helmgen-templates
+          configMap:
+            name: {{ include "common.fullname" . }}-dcae-helmgen-templates
+        - name: dcae-helmgen-base
+          configMap:
+            name: {{ include "common.fullname" . }}-dcae-helmgen-base
+        - name: dcae-helmgen-addon-templates
+          configMap:
+            name: {{ include "common.fullname" . }}-dcae-helmgen-addons-templates
