@@ -37,10 +37,10 @@ for f in $CERTS_DIR/*; do
     # Dont use onap truststore when aaf is disabled
     continue
   fi
-  if [ ${f: -3} = ".sh" ]; then
+  if echo $f | grep '\.sh$' >/dev/null; then
     continue
   fi
-  if [ ${f: -4} = ".b64" ]
+  if echo $f | grep '\.b64$' >/dev/null; then
     then
       base64 -d $f > $WORK_DIR/`basename $f .b64`
     else
@@ -49,8 +49,7 @@ for f in $CERTS_DIR/*; do
 done
 
 for f in $MORE_CERTS_DIR/*; do
-  if [ ${f: -4} == ".pem" ]
-    then
+  if echo $f | grep '\.pem$' >/dev/null; then
       cp $f $WORK_DIR/.
   fi
 done
@@ -67,7 +66,7 @@ fi
 
 # Import Custom Certificates
 for f in $WORK_DIR/*; do
-  if [ ${f: -4} = ".pem" ]; then
+  if echo $f | grep '\.pem$' >/dev/null; then
     echo "importing certificate: $f"
     keytool -import -file $f -alias `basename $f` -keystore $WORK_DIR/$TRUSTSTORE_OUTPUT_FILENAME -storepass $TRUSTSTORE_PASSWORD -noprompt
     if [ $? != 0 ]; then
