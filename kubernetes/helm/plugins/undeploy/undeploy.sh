@@ -29,9 +29,9 @@ undeploy() {
   done
 }
 
-if [ $# < 1 ]; then
+if [ -z "$1" ]; then
   echo "Error: command 'undeploy' requires a release name"
-  exit 0
+  exit 1
 fi
 
 case "${1:-"help"}" in

@@ -91,7 +91,7 @@ deploy() {
   # validate params
   if [ -z "$1" ] || [ -z "$2" ]; then
     usage
-    exit 0
+    exit 1
   fi
 
   RELEASE=$1
@@ -123,7 +123,7 @@ deploy() {
   fi
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
-  if expr"$FLAGS" : ".*--set-last-applied.*" ; then
+  if expr "$FLAGS" : ".*--set-last-applied.*" ; then
     FLAGS="$(echo $FLAGS| sed -n 's/--set-last-applied//p')"
     SET_LAST_APPLIED="true"
   fi
