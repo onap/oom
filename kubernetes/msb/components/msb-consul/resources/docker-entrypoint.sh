@@ -48,7 +48,7 @@ CONSUL_CONFIG_DIR=/consul/config
 # You can also set the CONSUL_LOCAL_CONFIG environemnt variable to pass some
 # Consul configuration JSON without having to bind any volumes.
 if [ -n "$CONSUL_LOCAL_CONFIG" ]; then
-	echo "$CONSUL_LOCAL_CONFIG" > "$CONSUL_CONFIG_DIR/local.json"
+    echo "$CONSUL_LOCAL_CONFIG" > "$CONSUL_CONFIG_DIR/local.json"
 fi
 
 # If the user is trying to run Consul directly with some arguments, then
