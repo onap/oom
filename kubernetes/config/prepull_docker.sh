@@ -110,7 +110,7 @@ do
                                 #remove attional prefix and postfix
                                 imageNameFinal=`echo "$imageName" | sed -e 's/^"//' -e 's/"$//' `
 
-                        	#check if line contain Version as a subtag in lines if yes then call docker pull with version
+                                #check if line contain Version as a subtag in lines if yes then call docker pull with version
                                 if echo $line | grep -q $IMAGE_VERSION_TEXT ; then
                                         echo docker pull "$imageNameWithVersion":"$imageNameFinal"
                                         docker pull $imageNameWithVersion:$imageNameFinal &
