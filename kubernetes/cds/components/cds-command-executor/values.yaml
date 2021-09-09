@@ -66,6 +66,10 @@ service:
     portName: command-executor-grpc
     internalPort: 50051
     externalPort: 50051
+  metrics:
+    portName: command-executor-metrics
+    internalPort: 10005
+    externalPort: 10005
 
 persistence:
   enabled: true
@@ -97,3 +101,19 @@ serviceAccount:
   nameOverride: cds-command-executor
   roles:
     - read
+
+metrics:
+  serviceMonitor:
+    enabled: false
+    port: command-executor-metrics
+    path: /actuator/prometheus
+    basicAuth:
+      enabled: false
+      externalSecretName: mysecretname
+      externalSecretUserKey: login
+      externalSecretPasswordKey: password
+    selector:
+      app: '{{ include "common.name" . }}'
+      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      release: '{{ .Release.Name }}'
+      heritage: '{{ .Release.Service }}'
