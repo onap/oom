@@ -142,7 +142,7 @@
       cd /opt/app/config/cache
       for file in $(ls feed*); do
         NUM=$(echo "$file" | sed 's/feedConfig-\([0-9]\+\)-resp.json/\1/')
-        export DR_LOG_URL_"$NUM"="$(grep -o '"logURL":"[^"]*' "$file" | cut -d '"' -f4)"
+        export DR_LOG_URL_"$NUM"="$(grep -o '"logURL":"[^"]*' "$file" | grep -w "feedlog" | cut -d '"' -f4)"
         export DR_FILES_PUBLISHER_URL_"$NUM"="$(grep -o '"publishURL":"[^"]*' "$file" | cut -d '"' -f4)"
       done
       for file in $(ls drpub*); do
