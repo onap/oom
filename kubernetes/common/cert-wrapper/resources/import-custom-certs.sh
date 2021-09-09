@@ -22,6 +22,7 @@ WORK_DIR=${WORK_DIR:-/updatedTruststore}
 ONAP_TRUSTSTORE=${ONAP_TRUSTSTORE:-truststoreONAPall.jks}
 JRE_TRUSTSTORE=${JRE_TRUSTSTORE:-$JAVA_HOME/lib/security/cacerts}
 TRUSTSTORE_OUTPUT_FILENAME=${TRUSTSTORE_OUTPUT_FILENAME:-truststore.jks}
+SSL_WORKDIR=${SSL_WORKDIR:-/usr/local/share/ca-certificates}
 
 mkdir -p $WORK_DIR
 
@@ -75,3 +76,15 @@ for f in $WORK_DIR/*; do
     fi
   fi
 done
+
+# Import certificates to Linux SSL Truststore
+cp $CERTS_DIR/*.crt $SSL_WORKDIR/.
+cp $MORE_CERTS_DIR/*.crt $SSL_WORKDIR/.
+update-ca-certificates
+if [ $? != 0 ]
+  then
+    echo "failed importing certificates"
+    exit 1
+  else
+    cp /etc/ssl/certs/ca-certificates.crt $WORK_DIR/.
+fi
