@@ -364,6 +364,12 @@ spec:
           mountPath: /etc/policies
         {{- end }}
         {{- include "dcaegen2-services-common._externalVolumeMounts" . | nindent 8 }}
+        {{- if (include "dcaegen2-services-common.mountExternalSchemaRepo" . ) -}}
+        - mountPath: {{ .Values.externalSchemaRepo.schemaMappingMountPath | default "/opt/app/externalRepo/" }}
+          name: external-schema-mapping
+        - mountPath: {{ .Values.externalSchemaRepo.schemasMountPath | default "/opt/app/externalRepo/3gpp" }}
+          name: external-schemas
+        {{- end }}
       {{- if $logDir }}
       - image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -461,6 +467,18 @@ spec:
       - name: policy-shared
         emptyDir: {}
       {{- end }}
+      {{- if (include "dcaegen2-services-common.mountExternalSchemaRepo" . ) }}
+      - configMap:
+          defaultMode: 420
+          name: {{ include "common.release" . }}-dcae-external-repo-configmap-schema-map
+          optional: true
+        name: external-schema-mapping
+      - configMap:
+          defaultMode: 420
+          name: {{ include "common.release" . }}-dcae-external-repo-configmap-sa91-rel16
+          optional: true
+        name: external-schemas
+      {{- end }}
       {{- include "common.dmaap.provisioning._volumes" . | nindent 6 -}}
       {{- include "dcaegen2-services-common._externalVolumes" . | nindent 6 }}
       imagePullSecrets:
@@ -523,5 +541,19 @@ spec:
   {{- $certDir := default "" .Values.certDirectory . -}}
   {{- if (and $certDir .Values.certificates .Values.global.cmpv2Enabled .Values.useCmpv2Certificates) -}}
   true
+  {{- end -}}
+{{- end -}}
+
+
+{{/*
+  Template returns string "true" if ConfigMap with external schema repository should be added and nothing
+  when they shouldn't. Example use:
+    {{- if (include "dcaegen2-services-common.shouldAddExternalRepo" . ) -}}
+*/}}
+{{- define "dcaegen2-services-common.mountExternalSchemaRepo" -}}
+  {{- if .Values.externalSchemaRepo -}}
+  {{- if .Values.externalSchemaRepo.enabled -}}
+  true
+  {{- end -}}
   {{- end -}}
 {{- end -}}
