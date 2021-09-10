@@ -15,14 +15,32 @@
 #################################################################
 # Global configuration defaults.
 #################################################################
+secrets:
+  - uid: core-app-user-creds
+    name: &core-creds-secret '{{ include "common.release" . }}-cps-core-app-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.coreUserExternalSecret) . }}'
+    login: '{{ .Values.config.coreUserName }}'
+    password: '{{ .Values.config.coreUserPassword }}'
+    passwordPolicy: generate
+
+
 passwordStrengthOverride: basic
 global:
   ingress:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-config: {}
+config:
+  coreUserName: cpsuser
 
 # Enable all CPS components by default
 cps-core:
   enabled: true
+  config:
+    appUserExternalSecret: *core-creds-secret
+
+ncmp-dmi-plugin:
+  enabled: true
+  config:
+    coreCredsExternalSecret: *core-creds-secret
