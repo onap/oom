@@ -432,6 +432,7 @@ spec:
         {{- end }}
       {{- end }}
       hostname: {{ include "common.name" . }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - configMap:
           defaultMode: 420
