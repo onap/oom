@@ -218,6 +218,7 @@ spec:
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
       {{- end }}
       # side car containers
+      {{- if .Values.global.filebeatEnabled }}
       - name: filebeat-onap
         image: {{ include "repositoryGenerator.image.logging" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -230,18 +231,23 @@ spec:
         - mountPath: /usr/share/filebeat/data
           name: {{ include "common.fullname" . }}-filebeat
         resources: {{ include "common.resources" . | nindent 12 }}
+      {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
+      {{- if .Values.global.filebeatEnabled }}
       - name: filebeat-conf
         configMap:
           name: aai-filebeat
+      {{- end }}
       - name: {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      {{- if .Values.global.filebeatEnabled }}
       - name: {{ include "common.fullname" . }}-filebeat
         emptyDir: {}
+      {{- end }}
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}

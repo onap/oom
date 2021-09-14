@@ -102,6 +102,7 @@ spec:
       {{- end }}
 
         # side car containers
+        {{- if .Values.global.filebeatEnabled }}
         - name: filebeat-onap
           image: {{ include "repositoryGenerator.image.logging" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -113,6 +114,7 @@ spec:
             name: {{ include "common.fullname" . }}-logs
           - mountPath: /usr/share/filebeat/data
             name: aai-filebeat
+        {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
         - name: localtime
@@ -133,13 +135,17 @@ spec:
         - name: {{ include "common.fullname" . }}-secrets
           secret:
             secretName: {{ include "common.fullname" . }}-babel-secrets
+        {{- if .Values.global.filebeatEnabled }}
         - name: filebeat-conf
           configMap:
             name: aai-filebeat
+        {{- end }}
         - name: {{ include "common.fullname" . }}-logs
           emptyDir: {}
+        {{- if .Values.global.filebeatEnabled }}
         - name: aai-filebeat
           emptyDir: {}
+        {{- end }}
 
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
