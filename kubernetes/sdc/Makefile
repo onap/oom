@@ -28,31 +28,31 @@ HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 all: $(HELM_CHARTS)
 
 $(HELM_CHARTS):
-	@echo "\n[$@]"
-	@make package-$@
+    @echo "\n[$@]"
+    @make package-$@
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+    @if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+    @if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+    @if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
 package-%: lint-%
-	@mkdir -p $(PACKAGE_DIR)
+    @mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
+    @if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
 else
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+    @if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
 endif
 
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+    @$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
-	@rm -f */requirements.lock
-	@rm -f *tgz */charts/*tgz
-	@rm -rf $(PACKAGE_DIR)
+    @rm -f */requirements.lock
+    @rm -f *tgz */charts/*tgz
+    @rm -rf $(PACKAGE_DIR)
 %:
-	@:
+    @:
