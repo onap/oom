@@ -47,8 +47,9 @@ global:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/cps-and-nf-proxy:1.0.1
+image: onap/cps-and-nf-proxy:2.0.0
 containerPort: &svc_port 8080
+managementPort: &mgt_port 8081
 
 service:
   type: ClusterIP
@@ -56,6 +57,21 @@ service:
   ports:
     - name: &port http
       port: *svc_port
+    - name: management
+      port: *mgt_port
+      targetPort: *mgt_port
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    port: management
+      ## specify target port if name is not given to the port in the service definition
+      ##
+    # targetPort: 8080
+    path: /manage/prometheus
+    interval: 60s
+    basicAuth:
+      enabled: false
 
 pullPolicy: Always
 # flag to enable debugging - application support required
@@ -91,13 +107,13 @@ liveness:
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 readiness:
   initialDelaySeconds: 15
   periodSeconds: 15
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 ingress:
   enabled: true
@@ -166,3 +182,9 @@ postgres:
 readinessCheck:
   wait_for:
     - cps-postgres
+
+minReadySeconds: 10
+updateStrategy:
+  type: RollingUpdate
+  maxUnavailable: 0
+  maxSurge: 1
