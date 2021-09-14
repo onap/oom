@@ -19,7 +19,7 @@ CREATE KEYSPACE IF NOT EXISTS admin
         'replication_factor': 1
     }
     AND DURABLE_WRITES = true;
- 
+
 CREATE TABLE IF NOT EXISTS admin.keyspace_master (
     uuid uuid,
     keyspace_name text,
@@ -86,7 +86,7 @@ CREATE TABLE portal.spring_session_attributes (
     AND min_index_interval = 128
     AND read_repair_chance = 0.0
     AND speculative_retry = '99PERCENTILE';
-    
+
 
 
 CREATE KEYSPACE IF NOT EXISTS portalsdk
