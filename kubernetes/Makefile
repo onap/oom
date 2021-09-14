@@ -25,7 +25,7 @@ HELM_BIN := helm
 # and if it fails then we fallback to helm v2 one
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
 ifneq "$(findstring v3,$(HELM_VER))" "v3"
-	HELM_VER := $(shell $(HELM_BIN) version -c --template "{{.Client.SemVer}}")
+    HELM_VER := $(shell $(HELM_BIN) version -c --template "{{.Client.SemVer}}")
 endif
 
 # use this if you would like to push onap charts to repo with other name
@@ -34,9 +34,9 @@ endif
 HELM_REPO := local
 
 ifneq ($(SKIP_LINT),TRUE)
-	HELM_LINT_CMD := $(HELM_BIN) lint
+    HELM_LINT_CMD := $(HELM_BIN) lint
 else
-	HELM_LINT_CMD := echo "Skipping linting of"
+    HELM_LINT_CMD := echo "Skipping linting of"
 endif
 
 SUBMODS := robot
@@ -48,76 +48,76 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
 
 $(COMMON_CHARTS):
-	@echo "\n[$@]"
-	@make package-$@
+    @echo "\n[$@]"
+    @make package-$@
 
 $(HELM_CHARTS):
-	@echo "\n[$@]"
-	@make package-$@
+    @echo "\n[$@]"
+    @make package-$@
 
 $(SUBMODS):
-	@echo "\n[$@]"
-	@make submod-$@
-	@make package-$@
+    @echo "\n[$@]"
+    @make submod-$@
+    @make package-$@
 
 submod-%:
-	@make $*/requirements.yaml
+    @make $*/requirements.yaml
 
 %/requirements.yaml:
-	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
+    $(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
 
 print_helm_bin:
-	$(info Using Helm binary ${HELM_BIN} which is helm version ${HELM_VER})
+    $(info Using Helm binary ${HELM_BIN} which is helm version ${HELM_VER})
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+    @if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+    @if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
+    @if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
 
 package-%: lint-%
-	@mkdir -p $(PACKAGE_DIR)
+    @mkdir -p $(PACKAGE_DIR)
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
+    @if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
 else
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+    @if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+    @$(HELM_BIN) repo index $(PACKAGE_DIR)
 endif
 
 clean:
-	@rm -f */requirements.lock
-	@find . -type f -name '*.tgz' -delete
-	@rm -rf $(PACKAGE_DIR)/*
+    @rm -f */requirements.lock
+    @find . -type f -name '*.tgz' -delete
+    @rm -rf $(PACKAGE_DIR)/*
 
 # publish helm plugins via distrubtion directory
 plugins:
-	@cp -R helm $(PACKAGE_DIR)/
+    @cp -R helm $(PACKAGE_DIR)/
 
 # start up a local helm repo to serve up helm chart packages
 # WARNING: Only helm < v3 supported
 repo:
-	@mkdir -p $(PACKAGE_DIR)
-	@$(HELM_BIN) serve --repo-path $(PACKAGE_DIR) &
-	@sleep 3
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
-	@$(HELM_BIN) repo add local http://127.0.0.1:8879
+    @mkdir -p $(PACKAGE_DIR)
+    @$(HELM_BIN) serve --repo-path $(PACKAGE_DIR) &
+    @sleep 3
+    @$(HELM_BIN) repo index $(PACKAGE_DIR)
+    @$(HELM_BIN) repo add local http://127.0.0.1:8879
 
 # stop local helm repo
 # WARNING: Only helm < v3 supported
 repo-stop:
-	@pkill $(HELM_BIN)
-	@$(HELM_BIN) repo remove local
+    @pkill $(HELM_BIN)
+    @$(HELM_BIN) repo remove local
 
 check-for-staging-images:
-	$(ROOT_DIR)/contrib/tools/check-for-staging-images.sh
+    $(ROOT_DIR)/contrib/tools/check-for-staging-images.sh
 
 helm-repo-update:
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@$(HELM_BIN) repo update
+    @$(HELM_BIN) repo update
 endif
 
 %:
-	@:
+    @:
