@@ -21,6 +21,12 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  minReadySeconds: {{ index .Values.minReadySeconds }}
+  strategy:
+    type: {{ index .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ index .Values.updateStrategy.maxSurge }}
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
@@ -47,6 +53,11 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
           - name: CPS_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
+          - name: DMI_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "login") | indent 12 }}
+          - name: DMI_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "password") | indent 12 }}
+
         volumeMounts:
           - mountPath: /config-input
             name: init-data-input
