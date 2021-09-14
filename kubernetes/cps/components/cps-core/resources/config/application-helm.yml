@@ -16,25 +16,7 @@
 # limitations under the License.
 */}}
 
-server:
-  port: 8080
-
-rest:
-  api:
-    cps-base-path: /cps/api
-    xnf-base-path: /cps-nf-proxy/api
-
 spring:
-  main:
-    banner-mode: "off"
-  jpa:
-    ddl-auto: create
-    open-in-view: false
-    properties:
-      hibernate:
-        enable_lazy_load_no_trans: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
   datasource:
     url: jdbc:postgresql://{{ .Values.postgres.service.name2 }}:5432/{{ .Values.postgres.config.pgDatabase }}
     username: ${DB_USERNAME}
@@ -42,46 +24,49 @@ spring:
     driverClassName: org.postgresql.Driver
     initialization-mode: always
 
-  cache:
-    type: caffeine
-    cache-names: yangSchema
-    caffeine:
-      spec: maximumSize=10000,expireAfterAccess=10m
-
   liquibase:
     change-log: classpath:changelog/changelog-master.yaml
     labels: {{ .Values.config.liquibaseLabels }}
 
+  kafka:
+     bootstrap-servers: [{{ .Values.config.kafka.service }}:{{ .Values.config.kafka.port }}]
+     security:
+        protocol: {{ .Values.config.kafka.protocol }}
+     producer:
+        client-id: {{ .Values.config.kafka.clientId }}
+notification:
+  data-updated:
+    enabled: {{ .Values.config.notification.dataUpdated.enabled }}
+    topic: {{ .Values.config.notification.dataUpdated.topic }}
+    filters:
+      enabled-dataspaces: {{ .Values.config.notification.dataUpdated.filters.enabledDataspace }}
+  async:
+    enabled: {{ .Values.config.notification.async.enabled }}
+    executor:
+      core-pool-size: {{ .Values.config.notification.async.executor.corePoolSize }}
+      max-pool-size: {{ .Values.config.notification.async.executor.maxPoolSize }}
+      queue-capacity: {{ .Values.config.notification.async.executor.queueCapacity }}
+      wait-for-tasks-to-complete-on-shutdown: {{ .Values.config.notification.async.executor.waitEnabled }}
+      thread-name-prefix: {{ .Values.config.notification.async.executor.threadNamePrefix }}
 security:
-  # comma-separated uri patterns which do not require authorization
-  permit-uri: /manage/health/**,/manage/info,/swagger-ui/**,/swagger-resources/**,/v3/api-docs
-  auth:
-    username: ${CPS_USERNAME}
-    password: ${CPS_PASSWORD}
-
-# Actuator
-management:
-  endpoints:
-    web:
-      base-path: /manage
-    exposure:
-      include: info,health,loggers
-  endpoint:
-    health:
-      show-details: always
-      # kubernetes probes: liveness and readiness
-      probes:
-        enabled: true
-    loggers:
-      enabled: true
-
+    # comma-separated uri patterns which do not require authorization
+    permit-uri: /manage/**,/swagger-ui/**,/swagger-resources/**,/api-docs
+    auth:
+        username: ${CPS_USERNAME}
+        password: ${CPS_PASSWORD}
 logging:
   level:
     org:
       springframework: {{ .Values.logging.level }}
+
+dmi:
+  auth:
+    username: ${DMI_USERNAME}
+    password: ${DMI_PASSWORD}
 
 {{- if .Values.config.additional }}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
+

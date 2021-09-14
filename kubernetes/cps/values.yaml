@@ -23,6 +23,13 @@ secrets:
     login: '{{ .Values.config.coreUserName }}'
     password: '{{ .Values.config.coreUserPassword }}'
     passwordPolicy: generate
+  - uid: dmi-plugin-user-creds
+    name: &dmi-plugin-creds-secret '{{ include "common.release" . }}-cps-dmi-plugin-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.dmiPluginUserExternalSecret) . }}'
+    login: '{{ .Values.config.dmiPluginUserName }}'
+    password: '{{ .Values.config.dmiPluginUserPassword }}'
+    passwordPolicy: generate
 
 passwordStrengthOverride: basic
 global:
@@ -32,12 +39,14 @@ global:
 
 config:
   coreUserName: cpsuser
+  dmiPluginUserName: dmiuser
 
 # Enable all CPS components by default
 cps-core:
   enabled: true
   config:
     appUserExternalSecret: *core-creds-secret
+    dmiPluginUserExternalSecret: *dmi-plugin-creds-secret
 
 cps-temporal:
   enabled: true
@@ -46,3 +55,4 @@ ncmp-dmi-plugin:
   enabled: true
   config:
     coreCredsExternalSecret: *core-creds-secret
+    appUserExternalSecret: *dmi-plugin-creds-secret
