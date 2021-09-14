@@ -97,8 +97,10 @@ Workarounds
 
   #. Update the CRD definition::
 
-     > kubectl -n onap apply -f cmpv2-cert-provider/crds/cmpv2issuer.yaml
-  #. Upgrade the component
+     > kubectl -n onap apply -f oom/kubernetes/platform/components/cmpv2-cert-provider/crds/cmpv2issuer.yaml
+  #. Upgrade the component::
+
+     > helm -n onap upgrade dev-platform oom/kubernetes/platform
   #. Make sure that *cmpv2issuer* contains correct value for
      *spec.updateEndpoint*. The value should be: *v1/certificate-update*.
      If it's not, edit the resource::
