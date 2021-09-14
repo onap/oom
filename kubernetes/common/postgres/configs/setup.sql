@@ -32,9 +32,9 @@ CREATE EXTENSION IF NOT EXISTS pgaudit;
 CREATE SCHEMA IF NOT EXISTS "${PG_USER}";
 
 CREATE TABLE IF NOT EXISTS "${PG_USER}".testtable (
-	name varchar(30) PRIMARY KEY,
-	value varchar(50) NOT NULL,
-	updatedt timestamp NOT NULL
+    name varchar(30) PRIMARY KEY,
+    value varchar(50) NOT NULL,
+    updatedt timestamp NOT NULL
 );
 
 INSERT INTO "${PG_USER}".testtable (name, value, updatedt) VALUES ('CPU', '256', now());

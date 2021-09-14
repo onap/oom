@@ -14,10 +14,10 @@ See post deploy info
 1. You can add the following entry after DNS deploy on running cluster at the end of cluster.yaml file (rke)
 ~~~yaml
 dns:
-	provider: coredns
-	upstreamnameservers:
-		- <cluster_ip>:31555
+    provider: coredns
+    upstreamnameservers:
+        - <cluster_ip>:31555
 ~~~
 2. You can edit coredns configuration with command:
-		kubectl -n kube-system edit configmap coredns
+        kubectl -n kube-system edit configmap coredns
 

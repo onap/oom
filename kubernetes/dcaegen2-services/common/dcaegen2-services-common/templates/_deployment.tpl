@@ -207,7 +207,7 @@ The sidecar is included if .Values.policies is set.  The
 Policy-sync sidecar polls PolicyEngine (PDP) periodically based
 on .Values.policies.duration and configuration retrieved is shared with
 DCAE Microservice container by common volume. Policy can be retrieved based on
-list of policyID or filter. An optional policyRelease parameter can be specified 
+list of policyID or filter. An optional policyRelease parameter can be specified
 to override the default policy helm release (used for retreiving the secret containing
 pdp username and password)
 

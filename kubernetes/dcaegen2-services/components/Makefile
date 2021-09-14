@@ -29,32 +29,32 @@ HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)
 all: $(HELM_CHARTS) helm-repo-update
 
 $(HELM_CHARTS):
-	@echo "\n[$@]"
-	@make package-$@
+    @echo "\n[$@]"
+    @make package-$@
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+    @if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+    @if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+    @if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
 package-%: lint-%
-	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
-	@sleep 5
+    @mkdir -p $(PACKAGE_DIR)
+    @if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
+    @sleep 5
 
 clean:
-	@rm -f */requirements.lock
-	@rm -f *tgz */charts/*tgz
-	@rm -rf $(PACKAGE_DIR)
+    @rm -f */requirements.lock
+    @rm -f *tgz */charts/*tgz
+    @rm -rf $(PACKAGE_DIR)
 
 helm-repo-update:
 ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@$(HELM_BIN) repo update
+    @$(HELM_BIN) repo update
 endif
 
 %:
-	@:
+    @:

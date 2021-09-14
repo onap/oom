@@ -22,4 +22,4 @@ ONAP includes the following Kubernetes services available in ONAP Beijing Releas
 # Service Dependencies
 
 message-router depends on AAF
-dmaap-prov depends on AAF and Postgresql.  
+dmaap-prov depends on AAF and Postgresql.
