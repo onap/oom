@@ -22,24 +22,29 @@ global:
   nodePortPrefixExt: 304
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera: &mariadbGalera
+    #This flag allows CDS to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - name: &dbUserSecretName '{{ include "common.release" . }}-cds-db-secret'
-    uid: 'cds-db-secret'
+  - name: &dbUserSecretName '{{ include "common.release" . }}-sdncdb-user-creds-cds'
+    uid: 'sdncdb-user-creds'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
-    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
+    externalSecret: '{{ ternary (.Values.config.sdncdb.userCredentialsExternalSecret) "" .Values.config.sdncdb.appcInstalled }}'
+    login: '{{ .Values.config.sdncdb.userName }}'
+    password: '{{ .Values.config.sdncdb.password }}'
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application images
 pullPolicy: Always
-
 
 subChartsOnly:
   enabled: true
@@ -70,12 +75,23 @@ readiness:
 ingress:
   enabled: false
 
-mariadb-galera:
+config:
+  sdncdb:
+    dbName: &mysqlDbName sdnctl
+    userName: &mysqlDbUser sdnctl
+    # password: &mysqlDbPass password
+    # *Workaround* due to APPC/CDS/SDNC use the same DB name/user. 
+    # Password must be retreived from the first installed component (APPC) or from an external secret. 
+    # Set this value to true as long as external secret will be used (by default we use the one created by APPC), set it to false to ignore the external secret.
+    appcInstalled: true
+    userCredsExternalSecret: '{{ include "common.release" . }}-sdncdb-user-creds-appc'
+
+mariadb-galera: &localMariadb
   db:
-    user: sdnctl
-    # password:
+    name: *mysqlDbName
+    user: *mysqlDbUser
+    # password: *mysqlDbPass
     externalSecret: *dbUserSecretName
-    name: &mysqlDbName sdnctl
   nameOverride: &dbServer cds-db
   replicaCount: 1
   persistence:
@@ -83,7 +99,6 @@ mariadb-galera:
     mountSubPath: cds/data
   serviceAccount:
     nameOverride: *dbServer
-
   mariadbConfiguration: |-
     [client]
     port=3306
@@ -204,14 +219,15 @@ mariadb-galera:
     # aria_encrypt_tables=ON
     # encrypt_tmp_disk_tables=ON
 
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: cds-mariadb-init
+
 cds-blueprints-processor:
   enabled: true
-  config:
-    cdsDB:
-      dbServer: *dbServer
-      dbPort: 3306
-      dbName: *mysqlDbName
-      dbCredsExternalSecret: *dbUserSecretName
+  mariadb-galera: *localMariadb
 
 cds-command-executor:
   enabled: true
