@@ -22,6 +22,10 @@
 global:
   persistence: {}
   aafEnabled: true
+  mariadbGalera:
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
 
 #################################################################
 # Secrets metaconfig
@@ -29,9 +33,9 @@ global:
 secrets:
   - uid: db-secret
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
-    login: '{{ .Values.db.user }}'
-    password: '{{ .Values.db.password }}'
+    externalSecret: '{{ tpl (default "" (.Values "mariadb-galera" "db" "externalSecret")) . }}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: required
   - uid: restserver-creds
     type: basicAuth
@@ -91,12 +95,14 @@ debugEnabled: false
 
 # application configuration
 
-db:
-  user: policy_user
-  password: policy_user
-  service:
-    name: policy-mariadb
-    internalPort: 3306
+# Local mariadb galera instance default name
+mariadb-galera:
+  nameOverride: policy-mariadb
+  db:
+    name: policyadmin
+    user: policy_user
+    password: policy_user
+    externalSecret: '{{ include "common.release" . }}-policy-db-user-credentials'
 
 restServer:
   user: healthcheck
