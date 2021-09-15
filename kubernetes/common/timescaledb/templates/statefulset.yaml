@@ -31,6 +31,18 @@ spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
       securityContext:
       {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: chowm-mount-path
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.runAsGroup }} /var/lib/postgresql/data
+          image: {{ include "repositoryGenerator.image.busybox" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: {{ include "common.fullname" . }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
