@@ -19,17 +19,23 @@ global:
   nodePortPrefix: 302
   loggingDirectory: /opt/app/datartr/logs
   persistence: {}
+  mariadbGalera: &mariadbGalera
+    #This flag allows DMAAP-DR to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: dmaap-dr-db-user-secret
-    name: &dbSecretName '{{ include "common.release" . }}-dmaap-dr-db-user-secret'
+  - uid: 'dmaap-dr-db-user-credentials'
+    name: &dbUserSecretName '{{ include "common.release" . }}-dmaap-dr-db-user-credentials'
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.dmaapDrDb.userCredentialsExternalSecret) . }}'
-    login: '{{ .Values.config.dmaapDrDb.userName }}'
-    password: '{{ .Values.config.dmaapDrDb.userPassword }}'
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "dmaap-dr-db-user-credentials" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
 
 #################################################################
 # Application configuration defaults.
@@ -92,31 +98,29 @@ config:
     # and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
     logLevel: "INFO"
 
-  # dr-prov db configuration
-  dmaapDrDb:
-    mariadbServiceName: dmaap-dr-db
-    mariadbServicePort: 3306
-    mariadbContName: &dmaap-dr-db dmaap-dr-db
-    userName: datarouter
-#    userPassword: password
-#    userCredentialsExternalSecret: some secret
-
 # mariadb-galera configuration
-mariadb:
-  name: *dmaap-dr-db
-  nameOverride: *dmaap-dr-db
+mariadb-galera:
+  nameOverride: &dbServer dmaap-dr-db
   replicaCount: 1
   db:
-    externalSecret: *dbSecretName
-    name: datarouter
+    name: &mysqlDbName datarouter
+    user: datarouter
+    # password:
+    externalSecret: *dbUserSecretName 
   service:
-    name: dmaap-dr-db
+    name: *dbServer
   nfsprovisionerPrefix: dmaap-dr-db
   persistence:
     size: 1Gi
     mountSubPath: data-router/dr-db-data
   serviceAccount:
-    nameOverride: *dmaap-dr-db
+    nameOverride: *dbServer
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName 
+    mysqlDatabase: *mysqlDbName
+  nameOverride: dmaap-dr-mariadb-init
 
 #################################################################
 # AAF part
