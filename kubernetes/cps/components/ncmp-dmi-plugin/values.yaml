@@ -20,7 +20,7 @@
 # Secrets.
 #################################################################
 secrets:
-  - uid: user-creds
+  - uid: app-user-creds
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.appUserExternalSecret) . }}'
     login: '{{ .Values.config.appUserName }}'
@@ -29,14 +29,14 @@ secrets:
   - uid: sdnc-creds
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.odlCredsExternalSecret) . }}'
-    login: '{{ .Values.config.sdncUser }}'
-    password: '{{ .Values.config.sdncPassword }}'
+    login: '{{ .Values.config.sdnc.username }}'
+    password: '{{ .Values.config.sdnc.password }}'
     passwordPolicy: required
-  - uid: core-creds
+  - uid: cps-core-creds
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.coreCredsExternalSecret) . }}'
-    login: '{{ .Values.config.coreUser }}'
-    password: '{{ .Values.config.corePassword }}'
+    login: '{{ .Values.config.cpsCore.username }}'
+    password: '{{ .Values.config.cpsCore.password }}'
     passwordPolicy: generate
 
 #################################################################
@@ -53,7 +53,6 @@ managementPort: &mgt_port 8081
 
 prometheus:
   enabled: true
-  interval: 60s
 
 service:
   type: ClusterIP
@@ -64,6 +63,18 @@ service:
     - name: management
       port: *mgt_port
       targetPort: *mgt_port
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    port: management
+      ## specify target port if name is not given to the port in the service definition
+      ##
+    # targetPort: 8080
+    path: /manage/prometheus
+    interval: 60s
+    basicAuth:
+      enabled: false
 
 pullPolicy: IfNotPresent
 # flag to enable debugging - application support required
@@ -132,14 +143,20 @@ config:
 
   # REST API basic authentication credentials (passsword is generated if not provided)
   appUserName: ncmpuser
+  #appUserPassword:
   spring:
     profile: helm
-  #appUserPassword:
 
-  sdncUser: admin
-  sdncPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
-
-  coreUser: cpsuser
+  dmiServiceName: onap-dmi-plugins
+  sdnc:
+    url: http://sdnc:8181
+    username: admin
+    password: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+    topologyId: topology-netconf
+  cpsCore:
+    url: http://cps:8080
+    username: cpsuser
+    #password:
 
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format insead of yaml.
@@ -154,4 +171,4 @@ logging:
 
 readinessCheck:
   wait_for:
-    - cps-postgres
+    - cps-core
