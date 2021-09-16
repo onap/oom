@@ -29,12 +29,6 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "common.name" . }}
         app.kubernetes.io/instance: {{ include "common.release" . }}
-      {{- if .Values.prometheus.enabled }}
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/path: 'manage/prometheus'
-        prometheus.io/port: {{ .Values.managementPort | quote }}
-      {{- end }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
@@ -49,17 +43,17 @@ spec:
           - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
           - name: DMI_PLUGIN_USERNAME
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "user-creds" "key" "login") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
           - name: DMI_PLUGIN_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "user-creds" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
           - name: SDNC_USERNAME
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnc-creds" "key" "login") | indent 12 }}
           - name: SDNC_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnc-creds" "key" "password") | indent 12 }}
           - name: CPS_CORE_USERNAME
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "core-creds" "key" "login") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-core-creds" "key" "login") | indent 12 }}
           - name: CPS_CORE_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "core-creds" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-core-creds" "key" "password") | indent 12 }}
         volumeMounts:
           - mountPath: /config-input
             name: init-data-input
@@ -100,9 +94,6 @@ spec:
         volumeMounts:
           - mountPath: /app/resources/application-helm.yml
             subPath: application-helm.yml
-            name: init-data
-          - mountPath: /app/resources/logback.xml
-            subPath: logback.xml
             name: init-data
           - mountPath: /tmp
             name: init-temp
