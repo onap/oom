@@ -59,4 +59,22 @@ spec:
         - /opt/app/delete_key.sh
         args:
         - {{ include "common.name" . }}
+        {{- if (include "common.onServiceMesh" .) }}
+        - name: {{ include "common.name" . }}-service-mesh-check-container
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.quitQuitQuitImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+            - /app/ready.py
+          args:
+          - --service-mesh-check
+          - {{ include "common.fullname" . }}-delete-config
+          - "-t"
+          - "45"
+          env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+        {{- end }}
 {{ end -}}
