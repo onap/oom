@@ -70,7 +70,7 @@ spec:
             export SDC_CLIENT_PASSWORD_ENC=`java -jar {{ .Values.certInitializer.credsPath }}/aaf-cadi-aaf-2.1.20-full.jar cadi digest ${SDC_CLIENT_PASSWORD} {{ .Values.certInitializer.credsPath }}/org.onap.clamp.keyfile`;
             envsubst < "/opt/policy/clamp/sdc-controllers-config.json" > "/opt/policy/clamp/sdc-controllers-config-pass.json"
           {{- end }}
-            java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./policy-clamp-backend.jar
+            java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./policy-clamp-backend.jar --spring.config.location=optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -97,6 +97,10 @@ spec:
             name: {{ include "common.fullname" . }}-config
             subPath: application.properties
           env:
+          - name: RUNTIME_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-be-secret" "key" "login") | indent 12 }}
+          - name: RUNTIME_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-be-secret" "key" "password") | indent 12 }}
           - name: MYSQL_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12 }}
           - name: MYSQL_PASSWORD
