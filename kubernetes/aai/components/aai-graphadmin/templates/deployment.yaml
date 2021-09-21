@@ -114,7 +114,7 @@ spec:
           name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
           name: {{ include "common.fullname" . }}-config
           subPath: logback.xml
@@ -174,29 +174,15 @@ spec:
       {{- end }}
 
       # side car containers
-      - name: filebeat-onap
-        image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          subPath: filebeat.yml
-          name: filebeat-conf
-        - mountPath: /var/log/onap
-          name: {{ include "common.fullname" . }}-logs
-        - mountPath: /usr/share/filebeat/data
-          name: {{ include "common.fullname" . }}-filebeat
+      {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: filebeat-conf
-        configMap:
-          name: aai-filebeat
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-filebeat
-        emptyDir: {}
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}-configmap
