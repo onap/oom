@@ -169,7 +169,7 @@ spec:
           name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-GQ
-          name: {{ include "common.fullname" . }}-logs
+          name: logs
         - mountPath: /opt/aai/logroot/AAI-GQ/misc
           name: {{ include "common.fullname" . }}-logs-misc
         - mountPath: /opt/app/aai-traversal/resources/logback.xml
@@ -243,33 +243,21 @@ spec:
       {{- end }}
 
       # side car containers
-      - name: filebeat-onap
-        image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          subPath: filebeat.yml
-          name: filebeat-conf
-        - mountPath: /var/log/onap
-          name: {{ include "common.fullname" . }}-logs
-        - mountPath: /usr/share/filebeat/data
-          name: {{ include "common.fullname" . }}-filebeat
+      {{ include "common.log.sidecar" . | nindent 6 }}
+      {{- if .Values.global.centralizedLoggingEnabled }}
         resources:
 {{ include "common.resources" . }}
+      {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
-      - name: filebeat-conf
-        configMap:
-          name: aai-filebeat
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
       - name: {{ include "common.fullname" . }}-logs-misc
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-filebeat
-        emptyDir: {}
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.global.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}
