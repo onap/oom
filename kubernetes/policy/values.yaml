@@ -45,6 +45,20 @@ secrets:
     login: '{{ index .Values "mariadb-galera" "db" "user" }}'
     password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: generate
+  - uid: policy-pap-user-creds
+    name: &policyPapCredsSecret '{{ include "common.release" . }}-policy-pap-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.restServer.policyPapUserExternalSecret) . }}'
+    login: '{{ .Values.restServer.policyPapUserName }}'
+    password: '{{ .Values.restServer.policyPapUserPassword }}'
+    passwordPolicy: generate
+  - uid: policy-api-user-creds
+    name: &policyApiCredsSecret '{{ include "common.release" . }}-policy-api-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.restServer.policyApiUserExternalSecret) . }}'
+    login: '{{ .Values.restServer.policyApiUserName }}'
+    password: '{{ .Values.restServer.policyApiUserPassword }}'
+    passwordPolicy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -52,9 +66,14 @@ db: &dbSecretsHook
 policy-api:
   enabled: true
   db: *dbSecretsHook
+  restServer:
+    apiUserExternalSecret: *policyApiCredsSecret
 policy-pap:
   enabled: true
   db: *dbSecretsHook
+  restServer:
+    papUserExternalSecret: *policyPapCredsSecret
+    apiUserExternalSecret: *policyApiCredsSecret
 policy-xacml-pdp:
   enabled: true
   db: *dbSecretsHook
@@ -72,6 +91,11 @@ policy-clamp-be:
   db: *dbSecretsHook
 policy-clamp-fe:
   enabled: true
+policy-clamp-cl-pf-ppnt:
+  enabled: true
+  restServer:
+    apiUserExternalSecret: *policyApiCredsSecret
+    papUserExternalSecret: *policyPapCredsSecret
 policy-nexus:
   enabled: false
 
@@ -133,6 +157,10 @@ mariadb-galera:
     mountSubPath: policy/maria/data
   serviceAccount:
     nameOverride: *policy-mariadb
+
+restServer:
+  policyPapUserName: healthcheck
+  policyApiUserName: healthcheck
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (small, large, or unlimited)
