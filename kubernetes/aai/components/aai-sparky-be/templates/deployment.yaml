@@ -107,7 +107,7 @@ spec:
           name: portal-config
         - mountPath: /opt/app/sparky/config/portal/BOOT-INF/classes/
           name: portal-config-props
-        - mountPath: /var/log/onap
+        - mountPath: {{ .Values.log.path }}
           name: logs
         - mountPath:  /opt/app/sparky/config/application.properties
           name: config
@@ -164,19 +164,7 @@ spec:
       {{- end }}
 
       # side car containers
-      - name: filebeat-onap
-        image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          subPath: filebeat.yml
-          name: filebeat-conf
-        - mountPath: /var/log/onap
-          name: logs
-        - mountPath: /usr/share/filebeat/data
-          name: aai-sparky-filebeat
-        resources:
-{{ include "common.resources" . }}
+      {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
@@ -197,13 +185,9 @@ spec:
       - name: auth-config
         secret:
           secretName: {{ include "common.fullname" . }}
-      - name: filebeat-conf
-        configMap:
-          name: aai-filebeat
       - name: logs
         emptyDir: {}
-      - name: aai-sparky-filebeat
-        emptyDir: {}
+        {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: modeldir
         emptyDir: {}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
