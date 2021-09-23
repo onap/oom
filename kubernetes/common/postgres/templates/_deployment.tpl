@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, AT&T, Bell Canada
 # Copyright © 2020 Samsung Electronics
+# Copyright © 2021 Orange
 # Modifications Copyright (C) 2021 Bell Canada.
 # #
 # # Licensed under the Apache License, Version 2.0 (the "License");
@@ -126,9 +127,9 @@ spec:
         - name: PG_MODE
           value: {{ $pgMode }}
         - name: PG_PRIMARY_HOST
-          value: "{{ $dot.Values.container.name.primary }}"
+          value: "{{ $dot.Values.service.name2 }}"
         - name: PG_REPLICA_HOST
-          value: "{{ $dot.Values.container.name.replica }}"
+          value: "{{ $dot.Values.service.name3 }}"
         - name: PG_PRIMARY_PORT
           value: "{{ $dot.Values.service.internalPort }}"
         - name: PG_PRIMARY_PASSWORD
