@@ -17,15 +17,15 @@
 #################################################################
 secrets:
   - uid: pg-root-pass
-    name: &pgRootPassSecretName '{{ include "common.release" . }}-cps-pg-root-pass'
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-cps-core-pg-root-pass'
     type: password
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "cps-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "cps-core-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
     password: '{{ .Values.postgres.config.pgRootpassword }}'
     policy: generate
   - uid: pg-user-creds
-    name: &pgUserCredsSecretName '{{ include "common.release" . }}-cps-pg-user-creds'
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-cps-core-pg-user-creds'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "cps-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "cps-core-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
@@ -34,6 +34,12 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.appUserExternalSecret) . }}'
     login: '{{ .Values.config.appUserName }}'
     password: '{{ .Values.config.appUserPassword }}'
+    passwordPolicy: generate
+  - uid: dmi-plugin-user-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.dmiPluginUserExternalSecret) . }}'
+    login: '{{ .Values.config.dmiPluginUserName }}'
+    password: '{{ .Values.config.dmiPluginUserPassword }}'
     passwordPolicy: generate
 
 #################################################################
@@ -47,8 +53,9 @@ global:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/cps-and-nf-proxy:1.0.1
+image: onap/cps-and-ncmp:2.0.0
 containerPort: &svc_port 8080
+managementPort: &mgt_port 8081
 
 service:
   type: ClusterIP
@@ -56,6 +63,24 @@ service:
   ports:
     - name: &port http
       port: *svc_port
+    - name: management
+      port: *mgt_port
+      targetPort: *mgt_port
+
+prometheus:
+  enabled: true
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    port: management
+      ## specify target port if name is not given to the port in the service definition
+      ##
+    # targetPort: 8080
+    path: /manage/prometheus
+    interval: 60s
+    basicAuth:
+      enabled: false
 
 pullPolicy: Always
 # flag to enable debugging - application support required
@@ -91,13 +116,13 @@ liveness:
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 readiness:
   initialDelaySeconds: 15
   periodSeconds: 15
   path: /manage/health
-  port: *port
+  port: *mgt_port
 
 ingress:
   enabled: true
@@ -130,12 +155,30 @@ config:
   spring:
     profile: helm
   #appUserPassword:
-
+  dmiPluginUserName: dmiuser
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format insead of yaml.
 #  additional:
 #    spring.config.max-size: 200
 #    spring.config.min-size: 10
+
+  eventPublisher:
+    spring.kafka.bootstrap-servers: message-router-kafka:9092
+    spring.kafka.security.protocol: SASL_PLAINTEXT
+    spring.kafka.properties.sasl.mechanism: PLAIN
+    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
+    spring.kafka.producer.client-id: cps-core
+
+  additional:
+    notification.data-updated.enabled: true
+    notification.data-updated.topic: cps.data-updated-events
+    notification.data-updated.filters.enabled-dataspaces: ""
+    notification.async.enabled: false
+    notification.async.executor.core-pool-size: 2
+    notification.async.executor.max-pool-size: 1
+    notification.async.executor.queue-capacity: 500
+    notification.async.executor.wait-for-tasks-to-complete-on-shutdown: true
+    notification.async.executor.thread-name-prefix: Async-
 
 logging:
   level: INFO
@@ -145,18 +188,18 @@ logging:
 # Postgres overriding defaults in the postgres
 #################################################################
 postgres:
-  nameOverride: &postgresName cps-postgres
+  nameOverride: &postgresName cps-core-postgres
   service:
     name: *postgresName
-    name2: cps-pg-primary
-    name3: cps-pg-replica
+    name2: cps-core-pg-primary
+    name3: cps-core-pg-replica
   container:
     name:
-      primary: cps-pg-primary
-      replica: cps-pg-replica
+      primary: cps-core-pg-primary
+      replica: cps-core-pg-replica
   persistence:
-    mountSubPath: cps/data
-    mountInitPath: cps
+    mountSubPath: cps-core/data
+    mountInitPath: cps-core
   config:
     pgUserName: cps
     pgDatabase: cpsdb
@@ -165,4 +208,10 @@ postgres:
 
 readinessCheck:
   wait_for:
-    - cps-postgres
+    - *postgresName
+
+minReadySeconds: 10
+updateStrategy:
+  type: RollingUpdate
+  maxUnavailable: 0
+  maxSurge: 1
