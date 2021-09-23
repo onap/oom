@@ -52,6 +52,16 @@ global:
   ingress:
     virtualhost:
       baseurl: "simpledemo.onap.org"
+  #Service Names of the postgres db to connect to.
+  #Override it to cps-postgres if localCluster is enabled.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 
 image: onap/cps-and-ncmp:2.0.0
 containerPort: &svc_port 8080
@@ -206,9 +216,21 @@ postgres:
     pgUserExternalSecret: *pgUserCredsSecretName
     pgRootPasswordExternalSecret: *pgRootPassSecretName
 
+postgres-init:
+  nameOverride: cps-postgres-init
+  config:
+    pgUserName: cps
+    pgDatabase: cpsdb
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
+
 readinessCheck:
   wait_for:
-    - *postgresName
+    - '{{ ternary .Values.postgres.service.name "postgres" .Values.global.postgres.localCluster }}'
 
 minReadySeconds: 10
 updateStrategy:
