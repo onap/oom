@@ -42,7 +42,7 @@ spec:
         - /app/ready.py
         args:
         - --container-name
-        - {{ .Values.config.mariadbService }}
+        - '{{ ternary (index .Values "mariadb-galera" "nameOverride") .Values.global.mariadbGalera.service .Values.global.mariadbGalera.localCluster }}'
         env:
         - name: NAMESPACE
           valueFrom:
@@ -83,7 +83,7 @@ spec:
             - name: SSL_ENABLED
               value: "{{ .Values.global.config.ssl_enabled }}"
             - name: MYSQL_ADDR
-              value: "{{ .Values.config.mariadbService }}:{{ .Values.config.mariadbPort }}"
+              value: '{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}'
             - name: MYSQL_ROOT_USER
               value: "{{ .Values.global.config.mariadb_admin }}"
             - name: MYSQL_ROOT_PASSWORD
