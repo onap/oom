@@ -42,7 +42,7 @@ spec:
         - /app/ready.py
         args:
         - --container-name
-        - {{ .Values.config.mariadbService }}
+        - '{{ ternary (index .Values "mariadb-galera" "nameOverride") .Values.global.mariadbGalera.service .Values.global.mariadbGalera.localCluster }}'
         env:
         - name: NAMESPACE
           valueFrom:
@@ -58,7 +58,7 @@ spec:
             - sh
           args:
             - -c
-            - 'MYSQL_AUTH=root:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
+            - 'MYSQL_AUTH=${MYSQL_ROOT_USER}:${MYSQL_ROOT_PASSWORD} ./docker-entrypoint.sh'
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
@@ -83,7 +83,7 @@ spec:
             - name: SSL_ENABLED
               value: "{{ .Values.global.config.ssl_enabled }}"
             - name: MYSQL_ADDR
-              value: "{{ .Values.config.mariadbService }}:{{ .Values.config.mariadbPort }}"
+              value: '{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}'
             - name: REDIS_HOST
               value: "{{ .Values.global.config.redisServiceName }}"
             - name: REDIS_PORT
