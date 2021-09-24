@@ -23,6 +23,17 @@ global:
   #AAF service
   aafEnabled: true
 
+  cassandra:
+    #This will instantiate portal cassandra cluster, default:shared cassandra.
+    localCluster: false
+    service:
+      name:
+        cassandra
+    config:
+      #default username/password for shared cassandra
+      cassandraUsername: cassandra
+      cassandraPassword: cassandra
+
 ################################################################
 # Secrets metaconfig
 #################################################################
@@ -31,8 +42,8 @@ secrets:
   - uid: portal-cass
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.cassandra.config.cassandraExternalSecret) . }}'
-    login: '{{ .Values.cassandra.config.cassandraUsername }}'
-    password: '{{ .Values.cassandra.config.cassandraPassword }}'
+    login: '{{ ternary .Values.cassandra.config.cassandraUsername .Values.global.cassandra.config.cassandraUsername .Values.global.cassandra.localCluster }}'
+    password: '{{ ternary .Values.cassandra.config.cassandraPassword .Values.global.cassandra.config.cassandraPassword .Values.global.cassandra.localCluster }}'
     passwordPolicy: required
   - uid: cipher-enc-key
     type: password
@@ -52,6 +63,7 @@ secrets:
 
 # application image
 image: onap/portal-app:3.4.2
+imageCassandra: cassandra:3.11.4
 pullPolicy: Always
 
 # application configuration
@@ -134,6 +146,8 @@ cassandra:
     # cassandraExternalSecret: some secret
     cassandraUsername: root
     cassandraPassword: Aa123456
+
+
 messageRouter:
   service:
     name: message-router
