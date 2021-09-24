@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 #   Copyright 2020 Samsung Electronics Co., Ltd.
 #
@@ -33,7 +33,8 @@ $0 --info Display howto configure target machine
 }
 
 
-target_machine_notice_info() {
+target_machine_notice_info()
+{
 cat << ==infodeploy
 Extra DNS server already deployed:
 1. You can add the DNS server to the target machine using following commands:

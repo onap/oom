@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #function to provide help
 #desc: this function provide help menu
