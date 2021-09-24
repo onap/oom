@@ -19,15 +19,20 @@ global:
   nodePortPrefix: 302
   config:
     ssl_enabled: false
+  mariadbGalera:
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: "db-root-pass"
-    externalSecret: '{{ tpl (default "" .Values.config.mariadbRootPasswordExternalSecret) . }}'
+  - uid: db-root-pass
+    externalSecret: '{{ ternary (index .Values "mariadb-galera" "rootUser" "externalSecret") (printf "%s-%s-db-root-pass" (include "common.release" .) .Values.global.mariadbGalera.nameOverride ) .Values.global.mariadbGalera.localCluster }}'
     type: password
-    password: '{{ .Values.config.mariadbRootPassword }}'
+    password: '{{ index .Values "mariadb-galera" "rootUser" "password" }}'
     policy: required
 
 #################################################################
@@ -45,12 +50,11 @@ istioSidecar: true
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-config:
-  mariadbService: vfc-mariadb
-  mariadbPort: 3306
-  mariadbRootPassword: secretpassword
-  # mariadbRootPasswordExternalSecret: some secret
+# Local mariadb galera instance default name
+mariadb-galera:
+  rootUser:
+    externalSecret: '{{ include "common.release" . }}-vfc-db-root-pass'
+  nameOverride: vfc-mariadb
 
 # default number of instances
 replicaCount: 1
