@@ -26,41 +26,46 @@ global:
 # we use this flag to determine who is responbile for serice registeration
 # and it can reduce duplicate registration.
     reg_to_msb_when_start: False
-    mariadb_admin: root
+    mariadb_admin: &mariadbAdmin root
   persistence:
     mountPath: /dockerdata-nfs
+  mariadbGalera: &mariadbGalera
+    #This flag allows VFC to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: "db-root-pass"
+  - uid: db-root-pass
     name: &dbRootPassSecret '{{ include "common.release" . }}-vfc-db-root-pass'
+    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .) (hasSuffix "db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret"))}}'
+    login: '{{ index .Values "mariadb-galera" "rootUser" "user"  }}'
+    password: '{{ index .Values "mariadb-galera" "rootUser" "password"  }}'
     type: password
-    password: '{{ .Values.config.mariadbRootPassword }}'
 
 # application configuration
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
 
-mariadb-galera:
+mariadb-galera: &localMariadb
   rootUser:
+    user: *mariadbAdmin
+  # password:
     externalSecret: *dbRootPassSecret
-  nameOverride: &vfc-mariadb vfc-mariadb
+  nameOverride: &dbServer vfc-mariadb
   nfsprovisionerPrefix: vfc
   persistence:
     mountSubPath: vfc/data
     enabled: true
   disableNfsProvisioner: true
   serviceAccount:
-    nameOverride: *vfc-mariadb
+    nameOverride: *dbServer
   replicaCount: 1
-
-db: &dbConfig
-  mariadbService: vfc-mariadb
-  mariadbPort: 3306
-  mariadbRootPasswordExternalSecret: *dbRootPassSecret
 
 vfc-generic-vnfm-driver:
   enabled: true
@@ -70,26 +75,22 @@ vfc-huawei-vnfm-driver:
 
 vfc-nslcm:
   enabled: true
-  config:
-    << : *dbConfig
+  mariadb-galera: *localMariadb
 
 vfc-redis:
   enabled: true
 
 vfc-vnflcm:
   enabled: true
-  config:
-    << : *dbConfig
+  mariadb-galera: *localMariadb
 
 vfc-vnfmgr:
   enabled: true
-  config:
-    << : *dbConfig
+  mariadb-galera: *localMariadb
 
 vfc-vnfres:
   enabled: true
-  config:
-    << : *dbConfig
+  mariadb-galera: *localMariadb
 
 # sub-chart configuration
 vfc-workflow:
