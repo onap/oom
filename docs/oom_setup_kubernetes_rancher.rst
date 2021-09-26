@@ -427,7 +427,7 @@ share a common, distributed filesystem. In this tutorial, we will setup an
 NFS Master, and configure all Worker nodes a Kubernetes cluster to play
 the role of NFS slaves.
 
-It is recommneded that a separate VM, outside of the kubernetes
+It is recommended that a separate VM, outside of the kubernetes
 cluster, be used. This is to ensure that the NFS Master does not compete for
 resources with Kubernetes Control Plane or Worker Nodes.
 
