@@ -30,7 +30,7 @@ areas:
   class provisioner
 
 * CPU and Memory limits in Helm Charts to improve Pod placement based on
-  resource availablity in Kubernetes Cluster
+  resource availability in Kubernetes Cluster
 
 * Support of Node Selectors for Pod placement
 
