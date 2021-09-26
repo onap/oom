@@ -570,7 +570,7 @@ Below is the example for the same::
 Here the Name column shows the RELEASE NAME, In our case we want to try the
 scale operation on cassandra, thus the RELEASE NAME would be dev-cassandra.
 
-Now we need to obtain the chart name for casssandra. Use the below
+Now we need to obtain the chart name for cassandra. Use the below
 command to get the chart name::
 
   > helm search cassandra
@@ -585,15 +585,15 @@ Below is the example for the same::
     local/sdc-cs            8.0.0                           ONAP Service Design and Creation Cassandra
 
 Here the Name column shows the chart name. As we want to try the scale
-operation for cassandra, thus the correponding chart name is local/cassandra
+operation for cassandra, thus the corresponding chart name is local/cassandra
 
 
 Now we have both the command's arguments, thus we can perform the
-scale opeartion for cassandra as follows::
+scale operation for cassandra as follows::
 
   > helm upgrade dev-cassandra local/cassandra --set replicaCount=3
 
-Using this command we can scale up or scale down the cassadra db instances.
+Using this command we can scale up or scale down the cassandra db instances.
 
 
 The ONAP components use Kubernetes provided facilities to build clustered,
