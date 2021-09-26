@@ -19,14 +19,12 @@
 #################################################################
 global:
   aafEnabled: true
-  mariadb:
-    # '&mariadbConfig' means we "store" the values for  later use in the file
-    # with '*mariadbConfig' pointer.
-    config: &mariadbConfig
-      mysqlDatabase: policyadmin
-    service: &mariadbService
-      name: &policy-mariadb policy-mariadb
-      internalPort: 3306
+  mariadbGalera: &mariadbGalera
+    #This flag allows Policy to instantiate its own mariadb-galera cluster
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -39,7 +37,7 @@ secrets:
     password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
     policy: generate
   - uid: db-secret
-    name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
+    name: &dbUserSecretName '{{ include "common.release" . }}-policy-db-secret'
     type: basicAuth
     externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
     login: '{{ index .Values "mariadb-galera" "db" "user" }}'
@@ -53,55 +51,10 @@ secrets:
     password: '{{ .Values.config.policyAppUserPassword }}'
     passwordPolicy: generate
 
-db: &dbSecretsHook
-  credsExternalSecret: *dbSecretName
-
-policy-api:
-  enabled: true
-  db: *dbSecretsHook
-policy-pap:
-  enabled: true
-  db: *dbSecretsHook
-policy-xacml-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-apex-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-drools-pdp:
-  enabled: true
-  db: *dbSecretsHook
-policy-distribution:
-  enabled: true
-  db: *dbSecretsHook
-policy-clamp-be:
-  enabled: true
-  db: *dbSecretsHook
-  config:
-    appUserExternalSecret: *policyAppCredsSecret
-policy-clamp-fe:
-  enabled: true
-policy-clamp-cl-k8s-ppnt:
-  enabled: true
-policy-nexus:
-  enabled: false
-policy-clamp-cl-runtime:
-  enabled: true
-  db: *dbSecretsHook
-  config:
-    appUserExternalSecret: *policyAppCredsSecret
-policy-gui:
-  enabled: true
-
-#################################################################
-# DB configuration defaults.
 #################################################################
 
 repository: nexus3.onap.org:10001
 pullPolicy: Always
-
-mariadb:
-  image: mariadb:10.5.8
 
 dbmigrator:
   image: onap/policy-db-migrator:2.3.0
@@ -133,28 +86,73 @@ readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-
 config:
   policyAppUserName: runtimeUser
+  # policyAppUserPassword: Password
+  # policyAppUserExternalSecret: External secret
 
-mariadb-galera:
-  # mariadb-galera.config and global.mariadb.config must be equals
+mariadb-galera: &localMariadb
+  nameOverride: &policy-mariadb policy-mariadb
   db:
+    name: &mysqlDbName policyadmin
     user: policy_user
     # password:
-    externalSecret: *dbSecretName
-    name: &mysqlDbName policyadmin
+    externalSecret: *dbUserSecretName
   rootUser:
     externalSecret: *dbRootPassSecretName
-  nameOverride: *policy-mariadb
-  # mariadb-galera.service and global.mariadb.service must be equals
-  service: *mariadbService
+  service:
+    name: *policy-mariadb
   replicaCount: 1
   persistence:
     enabled: true
     mountSubPath: policy/maria/data
   serviceAccount:
     nameOverride: *policy-mariadb
+
+mariadb-init:
+  config:
+    userCredentialsExternalSecret: *dbUserSecretName
+    mysqlDatabase: *mysqlDbName
+  nameOverride: policy-mariadb-init
+  dbScriptConfigMap: '{{ include "common.release" . }}-policy-db-init-configmap'
+
+#################################################################
+# Components configuration.
+#################################################################
+policy-api:
+  enabled: true
+  mariadb-galera: *localMariadb
+policy-pap:
+  enabled: true
+  mariadb-galera: *localMariadb
+policy-xacml-pdp:
+  enabled: true
+  mariadb-galera: *localMariadb
+policy-apex-pdp:
+  enabled: true
+policy-drools-pdp:
+  enabled: true
+  mariadb-galera: *localMariadb
+policy-distribution:
+  enabled: true
+policy-clamp-be:
+  enabled: true
+  mariadb-galera: *localMariadb
+  config:
+    appUserExternalSecret: *policyAppCredsSecret
+policy-clamp-fe:
+  enabled: true
+policy-clamp-cl-k8s-ppnt:
+  enabled: true
+policy-nexus:
+  enabled: false
+policy-clamp-cl-runtime:
+  enabled: true
+  mariadb-galera: *localMariadb
+  config:
+    appUserExternalSecret: *policyAppCredsSecret
+policy-gui:
+  enabled: true
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (small, large, or unlimited)
