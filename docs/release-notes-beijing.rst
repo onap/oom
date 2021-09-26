@@ -231,7 +231,7 @@ Bug
 * [`OOM-514 <https://jira.onap.org/browse/OOM-514>`_] - Readiness prob fails sometimes even though the relevant pods are running
 * [`OOM-539 <https://jira.onap.org/browse/OOM-539>`_] - Kube2MSB registrator doesn't support https REST service registration
 * [`OOM-570 <https://jira.onap.org/browse/OOM-570>`_] - Wrong value is assigned to kube2msb AUTH_TOKEN environment variable
-* [`OOM-574 <https://jira.onap.org/browse/OOM-574>`_] - OOM configuration for robot doesnt copy heat templatese in dockerdata-nfs
+* [`OOM-574 <https://jira.onap.org/browse/OOM-574>`_] - OOM configuration for robot does not copy heat templatese in dockerdata-nfs
 * [`OOM-577 <https://jira.onap.org/browse/OOM-577>`_] - Incorrect evaluation of bash command in yaml template file (portal-vnc-dep.yaml)
 * [`OOM-578 <https://jira.onap.org/browse/OOM-578>`_] - Hard coded token in oom/kubernetes/kube2msb/values.yaml file
 * [`OOM-589 <https://jira.onap.org/browse/OOM-589>`_] - Can not acces CLI in vnc-portal
@@ -299,7 +299,7 @@ Bug
 * [`OOM-913 <https://jira.onap.org/browse/OOM-913>`_] - Consul agent pod is failing
 * [`OOM-916 <https://jira.onap.org/browse/OOM-916>`_] - Used to fix testing issues related to usability
 * [`OOM-918 <https://jira.onap.org/browse/OOM-918>`_] - Policy - incorrect configmap mount causes base.conf to disappear
-* [`OOM-920 <https://jira.onap.org/browse/OOM-920>`_] - Issue with CLAMP configuation
+* [`OOM-920 <https://jira.onap.org/browse/OOM-920>`_] - Issue with CLAMP configuration
 * [`OOM-921 <https://jira.onap.org/browse/OOM-921>`_] - align onap/values.yaml and onap/resources/environments/dev.yaml - different /dockerdata-nfs
 * [`OOM-926 <https://jira.onap.org/browse/OOM-926>`_] - Disable clustering for APP-C out-of-the-box
 * [`OOM-927 <https://jira.onap.org/browse/OOM-927>`_] - Need a production grade configuration override file of ONAP deployment
@@ -316,7 +316,7 @@ Bug
 * [`OOM-948 <https://jira.onap.org/browse/OOM-948>`_] - make vfc got an error
 * [`OOM-951 <https://jira.onap.org/browse/OOM-951>`_] - Update APPC charts based on on changes for ccsdk and Nitrogen ODL
 * [`OOM-953 <https://jira.onap.org/browse/OOM-953>`_] - switch aai haproxy/hbase repo from hub.docker.com to nexus3
-* [`OOM-958 <https://jira.onap.org/browse/OOM-958>`_] - SDC-be deployment missing environment paramter
+* [`OOM-958 <https://jira.onap.org/browse/OOM-958>`_] - SDC-be deployment missing environment parameter
 * [`OOM-964 <https://jira.onap.org/browse/OOM-964>`_] - SDC Healthcheck failure on sdc-be and sdc-kb containers down
 * [`OOM-968 <https://jira.onap.org/browse/OOM-968>`_] - warning on default deployment values.yaml
 * [`OOM-969 <https://jira.onap.org/browse/OOM-969>`_] - oomk8s images have no Dockerfile's
@@ -330,7 +330,7 @@ Bug
 * [`OOM-993 <https://jira.onap.org/browse/OOM-993>`_] - AAI model-loader.properties not in sync with project file
 * [`OOM-994 <https://jira.onap.org/browse/OOM-994>`_] - DCAE cloudify controller docker image 1.1.0 N/A - use 1.2.0/1.3.0
 * [`OOM-1003 <https://jira.onap.org/browse/OOM-1003>`_] - dcae-cloudify-manager chart references obsolete image version
-* [`OOM-1004 <https://jira.onap.org/browse/OOM-1004>`_] - aai-resources constantly fails due to cassanda hostname
+* [`OOM-1004 <https://jira.onap.org/browse/OOM-1004>`_] - aai-resources constantly fails due to cassandra hostname
 * [`OOM-1005 <https://jira.onap.org/browse/OOM-1005>`_] - AAI Widgets not loading due to duplicate volumes
 * [`OOM-1007 <https://jira.onap.org/browse/OOM-1007>`_] - Update dcae robot health check config
 * [`OOM-1008 <https://jira.onap.org/browse/OOM-1008>`_] - Set default consul server replica count to 1
@@ -366,7 +366,7 @@ Bug
 * [`OOM-1068 <https://jira.onap.org/browse/OOM-1068>`_] - Update SO with new AAI cert
 * [`OOM-1076 <https://jira.onap.org/browse/OOM-1076>`_] - some charts still using readiness check image from amsterdam 1.x
 * [`OOM-1077 <https://jira.onap.org/browse/OOM-1077>`_] - AAI resources and traversal deployment failure on non-rancher envs
-* [`OOM-1079 <https://jira.onap.org/browse/OOM-1079>`_] - Robot charts dont allow over ride of pub_key, dcae_collector_ip and dcae_collector_port
+* [`OOM-1079 <https://jira.onap.org/browse/OOM-1079>`_] - Robot charts do not allow over ride of pub_key, dcae_collector_ip and dcae_collector_port
 * [`OOM-1081 <https://jira.onap.org/browse/OOM-1081>`_] - Remove component 'mock' from TOSCA deployment
 * [`OOM-1082 <https://jira.onap.org/browse/OOM-1082>`_] - Wrong pv location of dcae postgres
 * [`OOM-1085 <https://jira.onap.org/browse/OOM-1085>`_] - appc hostname is incorrect in url
