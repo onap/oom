@@ -27,8 +27,9 @@
 MYSQL_USER=${SDNC_DB_USER}
 MYSQL_PWD=${SDNC_DB_PASSWD}
 MYSQL_DB={{.Values.config.sdncdb.dbName}}
-MYSQL_HOST=${MYSQL_HOST:-{{.Values.config.mariadbGaleraSVCName}}.{{.Release.Namespace}}}
+MYSQL_HOST=${DB_HOST}.{{.Release.Namespace}}
+MYSQL_PORT=${DB_PORT}
 
-mysql --user=${MYSQL_USER} --password=${MYSQL_PWD} --host=${MYSQL_HOST} ${MYSQL_DB} <<-END
+mysql --user=${MYSQL_USER} --password=${MYSQL_PWD} --host=${MYSQL_HOST} --port=${MYSQL_PORT} ${MYSQL_DB} <<-END
 SELECT module, rpc, version, mode from SVC_LOGIC where active='Y';
 END
