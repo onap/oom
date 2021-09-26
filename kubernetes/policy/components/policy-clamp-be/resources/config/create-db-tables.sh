@@ -16,4 +16,4 @@
 # limitations under the License.
 */}}
 
-mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -f policyclamp < /dbcmd-config/policy-clamp-create-tables.sql
+mysql -h"${DB_HOST}" -P"${DB_PORT}" -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -f policyclamp < /dbcmd-config/policy-clamp-create-tables.sql
