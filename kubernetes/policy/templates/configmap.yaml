@@ -19,7 +19,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-db-configmap
+  name: {{ include "common.release" . }}-policy-db-init-configmap
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -27,4 +27,17 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 data:
-{{ tpl (.Files.Glob "resources/config/*.sh").AsConfig . | indent 2 }}
+{{ tpl (.Files.Glob "resources/config/db_cmd.sh").AsConfig . | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-db-migrator-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/db_migrator_policy_init.sh").AsConfig . | indent 2 }}
