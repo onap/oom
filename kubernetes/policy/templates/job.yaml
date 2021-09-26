@@ -40,37 +40,14 @@ spec:
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
         - /app/ready.py
-        - --container-name
-        - {{ index .Values "mariadb-galera" "service" "name" }}
+        - --job-name
+        - {{ include "common.release" . }}-policy-mariadb-init-config-job
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-      - name: {{ include "common.release" . }}-policy-galera-config
-        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadb.image }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /dbcmd-config/db.sh
-          name: {{ include "common.fullname" . }}-config
-          subPath: db.sh
-        command:
-        - /bin/sh
-        args:
-        - -x
-        - /dbcmd-config/db.sh
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 10 }}
-        - name: MYSQL_HOST
-          value: "{{ index .Values "mariadb-galera" "service" "name" }}"
-        - name: MYSQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: MYSQL_PORT
-          value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
-        resources:
-{{ include "common.resources" . }}
       containers:
       - name: {{ include "common.release" . }}-policy-galera-db-migrator
         image: {{ .Values.repository }}/{{ .Values.dbmigrator.image }}
@@ -86,7 +63,7 @@ spec:
         - /dbcmd-config/db_migrator_policy_init.sh
         env:
         - name: SQL_HOST
-          value: "{{ index .Values "mariadb-galera" "service" "name" }}"
+          value: {{ include "common.mariadbService" . }}
         - name: SQL_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: SQL_PASSWORD
@@ -102,9 +79,7 @@ spec:
       volumes:
         - name: {{ include "common.fullname" . }}-config
           configMap:
-            name: {{ include "common.fullname" . }}-db-configmap
+            name: {{ include "common.fullname" . }}-db-migrator-configmap
             items:
-              - key: db.sh
-                path: db.sh
               - key: db_migrator_policy_init.sh
                 path: db_migrator_policy_init.sh

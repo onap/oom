@@ -22,6 +22,10 @@ global: # global defaults
   centralizedLoggingEnabled: true
   #AAF service
   aafEnabled: true
+  mariadbGalera:
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
 
 #################################################################
 # AAF part
@@ -51,9 +55,9 @@ certInitializer:
 secrets:
   - uid: db-creds
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
-    login: '{{ .Values.db.user }}'
-    password: '{{ .Values.db.password }}'
+    externalSecret: '{{ tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) . }}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: required
   - uid: sdc-creds
     type: password
@@ -84,17 +88,17 @@ log:
 # Application configuration defaults.
 #################################################################
 
-#####dummy values for db user and password to pass lint!!!#######
 sdc:
   clientPassword: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
 
-db:
-  user: policy_user
-  password: policy_user
-  image: mariadb:10.5.8
-  service:
-    name: policy-mariadb
-    internalPort: 3306
+# Local mariadb galera instance default values
+mariadb-galera:
+  nameOverride: policy-mariadb
+  db:
+    name: policyadmin
+    user: policy_user
+    password: policy_user
+    externalSecret: '{{ include "common.release" . }}-policy-db-user-credentials'
 
 config:
   policyAppUserName: runtimeUser
