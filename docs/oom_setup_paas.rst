@@ -16,7 +16,7 @@ Starting from Honolulu release, Cert-Manager and Prometheus Stack are a part
 of k8s PaaS for ONAP operations and can be installed to provide
 additional functionality for ONAP engineers.
 
-The versions of PaaS compoents that are supported by OOM are as follows:
+The versions of PaaS components that are supported by OOM are as follows:
 
 .. table:: ONAP PaaS components
 

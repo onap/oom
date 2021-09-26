@@ -139,8 +139,8 @@ MetalLB Load balancer can be easily installed using automatic install script::
   > ./install-metallb-on-cluster.sh
 
 
-Configuration Ngninx ingress controller
-=======================================
+Configuration Nginx ingress controller
+======================================
 
 After installation DNS server and ingress controller we can install and
 configure ingress controller.
