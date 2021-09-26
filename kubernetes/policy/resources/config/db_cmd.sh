@@ -17,12 +17,13 @@
 # limitations under the License.
 */}}
 
-mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
+DB={{ index .Values "mariadb-galera" "db" "name" | upper }}
+eval "MYSQL_USER=\$MYSQL_USER_${DB}"
 
 for db in migration pooling policyadmin policyclamp operationshistory controlloop
 do
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
+  mysql -h${DB_HOST} -P${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${db};"
+  mysql -h${DB_HOST} -P${DB_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} -e "GRANT ALL PRIVILEGES ON ${db}.* TO '${MYSQL_USER}'@'%';"
 done
 
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
+mysql -h ${DB_HOST} -P ${DB_PORT} -uroot -p"${MYSQL_ROOT_PASSWORD}" -e "FLUSH PRIVILEGES;"
