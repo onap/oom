@@ -50,8 +50,8 @@ an override file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file
 to suit your deployment with items like the OpenStack tenant information.
 
 .. note::
-  Standard and example override files (e.g. `onap-all.yaml`, `openstack.yaml`) can be found in
-  the `oom/kubernetes/onap/resources/overrides/` directory.
+  Standard and example override files (e.g. `onap-all.yaml`, `openstack.yaml`)
+  can be found in the `oom/kubernetes/onap/resources/overrides/` directory.
 
 
  a. You may want to selectively enable or disable ONAP components by changing
@@ -62,14 +62,15 @@ to suit your deployment with items like the OpenStack tenant information.
     the Robot Helm charts or Robot section of `openstack.yaml`
 
 
- c. Encrypt the OpenStack password using the java based script for SO Helm charts
-    or SO section of `openstack.yaml`.
+ c. Encrypt the OpenStack password using the java based script for SO Helm
+    charts or SO section of `openstack.yaml`.
 
 
  d. Update the OpenStack parameters that will be used by Robot, SO and APPC Helm
     charts or use an override file to replace them.
 
- e. Add in the command line a value for the global master password (global.masterPassword).
+ e. Add in the command line a value for the global master password
+    (global.masterPassword).
 
 
 
@@ -245,9 +246,11 @@ for use::
   > kubectl get pods -n onap -o=wide
 
 .. note::
-  While all pods may be in a Running state, it is not a guarantee that all components are running fine.
+  While all pods may be in a Running state, it is not a guarantee that all
+  components are running fine.
 
-  Launch the healthcheck tests using Robot to verify that the components are healthy::
+  Launch the healthcheck tests using Robot to verify that the components are
+  healthy::
 
     > ~/oom/kubernetes/robot/ete-k8s.sh onap health
 
@@ -256,4 +259,5 @@ for use::
 
   > helm undeploy dev
 
-More examples of using the deploy and undeploy plugins can be found here: https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
+More examples of using the deploy and undeploy plugins can be found here:
+https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
