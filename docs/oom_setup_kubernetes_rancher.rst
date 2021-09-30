@@ -276,7 +276,8 @@ Download and install RKE on a VM, desktop or laptop.
 Binaries can be found here for Linux and Mac: https://github.com/rancher/rke/releases/tag/v1.0.6
 
 .. note::
-  There are several ways to install RKE. Further parts of this documentation assumes that you have rke command available.
+  There are several ways to install RKE. Further parts of this documentation
+  assumes that you have rke command available.
   If you don't know how to install RKE you may follow the below steps:
 
   * chmod +x ./rke_linux-amd64

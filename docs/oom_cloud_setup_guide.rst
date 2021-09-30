@@ -80,10 +80,11 @@ components that are needed will drastically reduce the requirements.
   =====  =====  ======  ====================
 
 .. note::
-  Kubernetes supports a maximum of 110 pods per node - configurable in the --max-pods=n setting off the
-  "additional kubelet flags" box in the kubernetes template window described in 'ONAP Development - 110 pod limit Wiki'
-  - this limit does not need to be modified . The use of many small
-  nodes is preferred over a few larger nodes (for example 14x16GB - 8 vCores each).
+  Kubernetes supports a maximum of 110 pods per node - configurable in the
+  --max-pods=n setting off the "additional kubelet flags" box in the kubernetes
+  template window described in 'ONAP Development - 110 pod limit Wiki'
+  - this limit does not need to be modified . The use of many small nodes is
+  preferred over a few larger nodes (for example 14x16GB - 8 vCores each).
   Subsets of ONAP may still be deployed on a single node.
 
 Cloud Installation

@@ -126,9 +126,10 @@ The top level of the ONAP charts is shown below:
       └── configs
 
 The common section of charts consists of a set of templates that assist with
-parameter substitution (`_name.tpl`, `_namespace.tpl` and others) and a set of charts
-for components used throughout ONAP.  When the common components are used by other charts they
-are instantiated each time or we can deploy a shared instances for several components.
+parameter substitution (`_name.tpl`, `_namespace.tpl` and others) and a set of
+charts for components used throughout ONAP.  When the common components are used
+by other charts they are instantiated each time or we can deploy a shared
+instances for several components.
 
 All of the ONAP components have charts that follow the pattern shown below:
 
