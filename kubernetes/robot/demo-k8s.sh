@@ -23,10 +23,22 @@ usage ()
     echo "Usage: demo-k8s.sh <namespace> <command> [<parameters>] [execscript]"
     echo " "
     echo "       demo-k8s.sh <namespace> init"
-    echo "               - Execute both init_customer + distribute"
+    echo "               - Execute both init_customer + distribute + registrySynch"
     echo " "
     echo "       demo-k8s.sh <namespace> init_customer"
     echo "               - Create demo customer (Demonstration) and services, etc."
+    echo " "
+    echo "       demo-k8s.sh <namespace> registrySynch [ <path to helm charts> ]"
+    echo "               - Synchronize chart museum inside of onap k8s cluster with"
+    echo "                 onap installation helm charts repository"
+    echo "                 By default following charts are synchronized:"
+    echo "                 - oom/kubernetes/dcaegen2-services/charts/,"
+    echo "                 - oom/kubernetes/common/common/charts,"
+    echo "                 - oom/kubernetes/common/postgres/charts/,"
+    echo "                 - oom/kubernetes/common/repositoryGenerator/charts/,"
+    echo "                 - oom/kubernetes/common/readinessCheck/charts/,"
+    echo "                 User is able also to synchronize custom helm charts by providing"
+    echo "                 path to charts into command"
     echo " "
     echo "       demo-k8s.sh <namespace> distribute  [<prefix>]"
     echo "               - Distribute demo models (demoVFW and demoVLB)"
@@ -45,17 +57,17 @@ usage ()
     echo " "
     echo "       demo-k8s.sh <namespace> instantiateVFWdirectso  csar_filename"
     echo "               - Instantiate vFW module using direct SO interface using previously distributed model "
-        echo "                 that is in /tmp/csar in robot container"
+    echo "                 that is in /tmp/csar in robot container"
     echo " "
-        echo "       demo-k8s.sh <namespace> instantiateVLB_CDS"
-        echo "               - Instantiate vLB module using CDS with a preloaded CBA "
-        echo " "
+    echo "       demo-k8s.sh <namespace> instantiateVLB_CDS"
+    echo "               - Instantiate vLB module using CDS with a preloaded CBA "
+    echo " "
     echo "       demo-k8s.sh <namespace> deleteVNF <module_name from instantiateVFW>"
     echo "               - Delete the module created by instantiateVFW"
     echo " "
     echo "       demo-k8s.sh <namespace> vfwclosedloop <pgn-ip-address>"
-        echo "               - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
-        echo "                 kicks in to modulate the rates back to medium"
+    echo "               - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
+    echo "                 kicks in to modulate the rates back to medium"
     echo " "
     echo "       demo-k8s.sh <namespace> <command> [<parameters>] execscript"
     echo "               - Optional parameter to execute user custom scripts located in scripts/demoscript directory"
@@ -112,6 +124,7 @@ do
             ;;
         init)
             TAG="InitDemo"
+            dcaeRegistrySynch=true
             shift
             ;;
         vescollector)
@@ -209,6 +222,13 @@ do
                         VARIABLES="$VARIABLES -v PACKET_GENERATOR_HOST:$1 -v pkg_host:$1"
                         shift
                         ;;
+       registrySynch
+                        dcaeRegistrySynch=true
+                        if [ -n "$3"  ]; then
+                          customHelmChartsPath=$3
+                        fi
+                        shift
+                        ;;
         *)
             usage
             exit
@@ -218,6 +238,7 @@ done
 set -x
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
+HELM_RELEASE=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//' | grep robot | sed 's/-.*//')
 
 DIR=$(dirname "$0")
 SCRIPTDIR=scripts/demoscript
@@ -230,10 +251,26 @@ if [ $execscript ]; then
    done
 fi
 
-export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
-OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_demo_$key
-DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
+if [ $dcaeRegistrySynch ]; then
+   CURRENT_DIR=$PWD
+   PARENT_PATH=${0%/*}
+   cd $PARENT_PATH
+   cd ../contrib/tools
+   ./registry-initialize.sh -d ../../dcaegen2-services/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   ./registry-initialize.sh -d ../../common/common/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   ./registry-initialize.sh -d ../../common/postgres/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   ./registry-initialize.sh -d ../../common/repositoryGenerator/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   ./registry-initialize.sh -d ../../common/readinessCheck/charts/ -n $NAMESPACE -r $HELM_RELEASE
+    if [ -n "$customHelmChartsPath"  ]; then
+      ./registry-initialize.sh -d $customHelmChartsPath -n $NAMESPACE -r $HELM_RELEASE
+    fi
+   cd $CURRENT_DIR
+fi
 
-VARIABLEFILES="-V /share/config/robot_properties.py"
-
-kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
+if [ -n "$TAG" ]; then
+  export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
+  OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_demo_$key
+  DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
+  VARIABLEFILES="-V /share/config/robot_properties.py"
+  kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
+fi
