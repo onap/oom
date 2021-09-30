@@ -21,9 +21,9 @@
 
 usage()
 {
-    echo "Chart Base directory must be provided as input!!"
+    echo "Chart Base directory or helm chart from local repo must be provided as input!!"
     echo "Usage: registry-initialize.sh  -d chartdirectory \
-<-n namespace override> <-r helmrelease override>"
+<-n namespace override> <-r helmrelease override> <-p chart name prefix> | <-h helm charts from local repo>"
     exit 1
 }
 
@@ -36,8 +36,10 @@ NAMESPACE=onap
 RLS_NAME=onap
 LOGIN=""
 PASSWORD=""
+PREF=""
+HELM_REPO=local
 
-while getopts ":d:n:r:" opt; do
+while getopts ":d:n:r:p:h:c:" opt; do
     case $opt in
         d) BASEDIR="$OPTARG"
         ;;
@@ -45,20 +47,52 @@ while getopts ":d:n:r:" opt; do
         ;;
         r) RLS_NAME="$OPTARG"
         ;;
+        p) PREF="$OPTARG"
+        ;;
+        h) HELM_CHART="$OPTARG"
+        ;;
+        c) HELM_REPO="$OPTARG"
+        ;;
         \?) echo "Invalid option -$OPTARG" >&2
         usage
         ;;
    esac
 done
 
-if [ -z "$BASEDIR" ]; then
-    exit "Chart base directory provided $BASEDIR is empty"
+
+if  [ -z "$BASEDIR" ] && [ -z "$HELM_CHART" ] ; then
+    echo "Chart base directory provided $BASEDIR and helm chart from local repo is empty"
+    exit
 fi
 
-if [ "$(find $BASEDIR -maxdepth 1 -name '*tgz' -print -quit)" ]; then
-    echo "$BASEDIR valid"
-else
-    exit "No chart package on $BASEDIR provided"
+if  [ -n "$BASEDIR" ] && [ -n "$HELM_CHART" ] ; then
+    echo "Both chart base directory $BASEDIR and helm chart from local repo $HELM_CHART cannot be used at the same time "
+    exit
+fi
+
+if  [ -n "$BASEDIR" ]; then
+    if [ "$(find $BASEDIR -maxdepth 1 -name '*tgz' -print -quit)" ]; then
+        echo "$BASEDIR valid"
+    else
+        echo "No chart package on $BASEDIR provided"
+        exit
+    fi
+fi
+
+if  [ -n "$HELM_CHART" ]; then
+    tmp_location=$(mktemp -d)
+    helm pull $HELM_REPO/$HELM_CHART -d $tmp_location
+    if [ $? -eq 0 ]; then
+        echo "Helm chart $HELM_CHART has been pulled out from in $HELM_REPO repo"
+        BASEDIR=$tmp_location
+    else
+        echo "No chart package $HELM_CHART on $HELM_REPO repo"
+        exit
+    fi
+fi
+
+if  [ -z "$PREF" ] and [ -z "$HELM_CHART" ] ; then
+    PREF=dcae
 fi
 
 LOGIN=$(kubectl -n "$NAMESPACE" get secret \
@@ -77,7 +111,7 @@ fi
 # Expose cluster port via port-forwarding
 kubectl -n $NAMESPACE port-forward service/chart-museum 27017:80 &
 if [ $? -ne 0 ]; then
-    echo "Error in portforwarding; registry cannot be added!!"
+    echo "Error in port forwarding; registry cannot be added!!"
     exit 1
 fi
 
@@ -96,7 +130,7 @@ fi
 
 # Initial scope is pushing only dcae charts
 # can be expanded to include all onap charts if required
-for file in $BASEDIR/dcae*tgz; do
+for file in $BASEDIR/$PREF*tgz; do
     # use helm plugin to push charts
     helm push $file k8s-registry
     if [ $? -eq 0 ]; then
