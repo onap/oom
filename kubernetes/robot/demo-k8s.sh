@@ -69,6 +69,10 @@ if [ "${!#}" = "execscript" ]; then
         execscript=true
 fi
 
+if [ "${!#}" = "init" ] || [ "${!#}" = "distribute" ]; then
+        dcaeRegistrySynch=true
+fi
+
 # Set the defaults
 
 echo "Number of parameters:"
@@ -218,6 +222,7 @@ done
 set -x
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
+HELM_RELEASE=$(kubectl --namespace onap get pods | sed 's/ .*//' | grep robot | sed 's/-.*//')
 
 DIR=$(dirname "$0")
 SCRIPTDIR=scripts/demoscript
@@ -234,6 +239,15 @@ export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bas
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_demo_$key
 DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
 
-VARIABLEFILES="-V /share/config/robot_properties.py"
+if [ $dcaeRegistrySynch ]; then
+   CURRENT_DIR=$PWD
+   PARENT_PATH=${0%/*}
+   cd $PARENT_PATH
+   cd ../contrib/tools
+   ./registry-initialize.sh -d ../../dcaegen2-services/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   cd $CURRENT_DIR
+fi
 
+VARIABLEFILES="-V /share/config/robot_properties.py"
+./registry-initialize.sh -d ../../dcaegen2-services/charts -r dev
 kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
