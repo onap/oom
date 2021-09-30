@@ -23,7 +23,7 @@ usage()
 {
     echo "Chart Base directory must be provided as input!!"
     echo "Usage: registry-initialize.sh  -d chartdirectory \
-<-n namespace override> <-r helmrelease override>"
+<-n namespace override> <-r helmrelease override> <-p chart name prefix>"
     exit 1
 }
 
@@ -37,13 +37,15 @@ RLS_NAME=onap
 LOGIN=""
 PASSWORD=""
 
-while getopts ":d:n:r:" opt; do
+while getopts ":d:n:r:p:" opt; do
     case $opt in
         d) BASEDIR="$OPTARG"
         ;;
         n) NAMESPACE="$OPTARG"
         ;;
         r) RLS_NAME="$OPTARG"
+        ;;
+        p) PREF="$OPTARG"
         ;;
         \?) echo "Invalid option -$OPTARG" >&2
         usage
@@ -59,6 +61,10 @@ if [ "$(find $BASEDIR -maxdepth 1 -name '*tgz' -print -quit)" ]; then
     echo "$BASEDIR valid"
 else
     exit "No chart package on $BASEDIR provided"
+fi
+
+if [ -z "$PREF" ]; then
+    PREF=dcae
 fi
 
 LOGIN=$(kubectl -n "$NAMESPACE" get secret \
@@ -96,7 +102,7 @@ fi
 
 # Initial scope is pushing only dcae charts
 # can be expanded to include all onap charts if required
-for file in $BASEDIR/dcae*tgz; do
+for file in $BASEDIR/$PREF*tgz; do
     # use helm plugin to push charts
     helm push $file k8s-registry
     if [ $? -eq 0 ]; then
