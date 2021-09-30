@@ -23,10 +23,31 @@ usage ()
     echo "Usage: demo-k8s.sh <namespace> <command> [<parameters>] [execscript]"
     echo " "
     echo "       demo-k8s.sh <namespace> init"
-    echo "               - Execute both init_customer + distribute"
+    echo "               - Execute both init_customer + distribute + registrySynch"
     echo " "
     echo "       demo-k8s.sh <namespace> init_customer"
     echo "               - Create demo customer (Demonstration) and services, etc."
+    echo " "
+    echo "       demo-k8s.sh <namespace> registrySynch { repo  <chart name>  | path [ <path to helm charts> ]"
+    echo "               [ <chart prefix> ] }"
+    echo "               - Synchronize chart museum inside of onap k8s cluster with"
+    echo "                 onap helm charts git repository (OOM)"
+    echo "                 By default following charts are synchronized:"
+    echo "                 - oom/kubernetes/dcaegen2-services/charts/,"
+    echo "                 - oom/kubernetes/common/common/charts,"
+    echo "                 - oom/kubernetes/common/postgres/charts/,"
+    echo "                 - oom/kubernetes/common/repositoryGenerator/charts/,"
+    echo "                 - oom/kubernetes/common/readinessCheck/charts/,"
+    echo "                 User is able also to synchronize custom helm charts by providing"
+    echo "                 flag 'path' and path to charts into command and chart name/s prefix for example:"
+    echo "                 demo-k8s.sh onap registrySynch /home/ubuntu/oom/kubernetes/common/postgres/charts/ postgres"
+    echo "               - Synchronize chart museum inside of onap k8s cluster with"
+    echo "                 onap installation server 'local' helm charts repository"
+    echo "                 By default following charts are synchronized:"
+    echo "                 - local/certInitializer"
+    echo "                 User is able also to synchronize custom helm charts by providing"
+    echo "                 flag 'repo' and chart name in 'local' repo into command for example:"
+    echo "                 demo-k8s.sh onap registrySynch repo certInitializer"
     echo " "
     echo "       demo-k8s.sh <namespace> distribute  [<prefix>]"
     echo "               - Distribute demo models (demoVFW and demoVLB)"
@@ -45,17 +66,17 @@ usage ()
     echo " "
     echo "       demo-k8s.sh <namespace> instantiateVFWdirectso  csar_filename"
     echo "               - Instantiate vFW module using direct SO interface using previously distributed model "
-        echo "                 that is in /tmp/csar in robot container"
+    echo "                 that is in /tmp/csar in robot container"
     echo " "
-        echo "       demo-k8s.sh <namespace> instantiateVLB_CDS"
-        echo "               - Instantiate vLB module using CDS with a preloaded CBA "
-        echo " "
+    echo "       demo-k8s.sh <namespace> instantiateVLB_CDS"
+    echo "               - Instantiate vLB module using CDS with a preloaded CBA "
+    echo " "
     echo "       demo-k8s.sh <namespace> deleteVNF <module_name from instantiateVFW>"
     echo "               - Delete the module created by instantiateVFW"
     echo " "
     echo "       demo-k8s.sh <namespace> vfwclosedloop <pgn-ip-address>"
-        echo "               - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
-        echo "                 kicks in to modulate the rates back to medium"
+    echo "               - vFWCL: Sets the packet generator to high and low rates, and checks whether the policy "
+    echo "                 kicks in to modulate the rates back to medium"
     echo " "
     echo "       demo-k8s.sh <namespace> <command> [<parameters>] execscript"
     echo "               - Optional parameter to execute user custom scripts located in scripts/demoscript directory"
@@ -112,6 +133,8 @@ do
             ;;
         init)
             TAG="InitDemo"
+            dcaeRegistrySynch=true
+            customHelmChartsPath=false
             shift
             ;;
         vescollector)
@@ -209,6 +232,18 @@ do
                         VARIABLES="$VARIABLES -v PACKET_GENERATOR_HOST:$1 -v pkg_host:$1"
                         shift
                         ;;
+       registrySynch)
+                        dcaeRegistrySynch=true
+                        if [ "$3"="path"  ]; then
+                          customHelmChartsPath=$4
+                          customHelmChartsPref=$5
+                        elif [ "$3"="repo"  ]; then
+                          customHelmChartFromLocalRepo=$4
+                        else
+                        echo "demo-k8s.sh <namespace> registrySynch { repo  <chart name>  | path [ <path to helm charts> ] [ <chart prefix> ] }"
+                        fi
+                        shift
+                        ;;
         *)
             usage
             exit
@@ -218,6 +253,7 @@ done
 set -x
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
+HELM_RELEASE=$(kubectl --namespace onap get pods | sed 's/ .*//' | grep robot | sed 's/-.*//')
 
 DIR=$(dirname "$0")
 SCRIPTDIR=scripts/demoscript
@@ -234,6 +270,27 @@ export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bas
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_demo_$key
 DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
 
-VARIABLEFILES="-V /share/config/robot_properties.py"
+if [ $dcaeRegistrySynch ]; then
+   CURRENT_DIR=$PWD
+   PARENT_PATH=${0%/*}
+   cd $PARENT_PATH
+   cd ../contrib/tools
+   ./registry-initialize.sh -d ../../dcaegen2-services/charts/ -n $NAMESPACE -r $HELM_RELEASE
+   ./registry-initialize.sh -d ../../dcaegen2-services/charts/ -n $NAMESPACE -r $HELM_RELEASE -p common
+   ./registry-initialize.sh -d ../../common/postgres/charts/ -n $NAMESPACE -r $HELM_RELEASE -p postgres
+   ./registry-initialize.sh -d ../../common/repositoryGenerator/charts/ -n $NAMESPACE -r $HELM_RELEASE -p repository
+   ./registry-initialize.sh -d ../../common/readinessCheck/charts/ -n $NAMESPACE -r $HELM_RELEASE -p readiness
+   ./registry-initialize.sh -h certInitializer -n $NAMESPACE -r $HELM_RELEASE
+   if [ -n "$customHelmChartsPath"  ]; then
+     ./registry-initialize.sh -d $customHelmChartsPath -n $NAMESPACE -r $HELM_RELEASE -p customHelmChartsPref
+   fi
+   if [ -n "$customHelmChartFromLocalRepo"  ]; then
+     ./registry-initialize.sh -h $customHelmChartFromLocalRepo -n $NAMESPACE -r $HELM_RELEASE
+   fi
+   cd $CURRENT_DIR
+fi
 
-kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
+if [ -n "$TAG" ]; then
+  VARIABLEFILES="-V /share/config/robot_properties.py"
+  kubectl --namespace $NAMESPACE exec ${POD} -- ${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} -i ${TAG} --display $DISPLAY_NUM 2> ${TAG}.out
+fi
