@@ -230,6 +230,12 @@ GLOBAL_INVENTORY_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "h
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "deployment-handler") }}'
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_PROTOCOL = "https"
 GLOBAL_DEPLOYMENT_HANDLER_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "deployment-handler" "port" 8443) }}'
+GLOBAL_K8S_CHART_REPOSTORY_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "chart-museum") }}'
+GLOBAL_K8S_CHART_REPOSTORY_SERVER_PROTOCOL = "http"
+GLOBAL_K8S_CHART_REPOSTORY_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "chart-museum" "port" 80) }}'
+GLOBAL_K8S_CHART_REPOSTORY_SERVER_USERNAME = '{{ .Values.k8sChartRepoUsername }}'
+GLOBAL_K8S_CHART_REPOSTORY_SERVER_PASSWORD = '{{ .Values.k8sChartRepoPassword }}'
+
 # dcae mod info
 GLOBAL_DCAEMOD_ONBOARDING_API_SERVER_PROTOCOL = "http"
 GLOBAL_DCAEMOD_ONBOARDING_API_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcaemod-onboarding-api" "port" 8080) }}'
