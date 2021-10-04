@@ -31,10 +31,12 @@
 {{- end -}}
 
 {{- define "common.log.volumes" -}}
-{{- if .Values.global.centralizedLoggingEnabled }}
+{{- $dot := default . .dot }}
+{{- if $dot.Values.global.centralizedLoggingEnabled }}
+{{- $configMapName := printf "%s-filebeat" (default (include "common.fullname" $dot) .configMapNamePrefix) }}
 - name: filebeat-conf
   configMap:
-    name: {{ include "common.fullname" . }}-filebeat
+    name: {{ $configMapName }}
 - name: filebeat-data
   emptyDir: {}
 {{- end -}}
