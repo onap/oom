@@ -15,7 +15,7 @@
 */}}
 
 
-{/*
+{{/*
   Calculate if we are on service mesh.
 */}}
 {{- define "common.onServiceMesh" -}}
@@ -26,6 +26,9 @@ true
 {{-   end -}}
 {{- end -}}
 
+{{/*
+  Kills the sidecar proxy associated with a pod.
+*/}}
 {{- define "common.serviceMesh.killSidecar" -}}
 {{-   if (include "common.onServiceMesh" .) }}
 RCODE="$?";
