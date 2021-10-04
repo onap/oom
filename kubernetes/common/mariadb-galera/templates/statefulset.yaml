@@ -35,6 +35,7 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6  | trim }}
+      {{- if or (.Values.global.manualPermissionFix.setVolumePaths) (.Values.global.manualPermissionFix.mariadbConfigurations) }}
       initContainers:
         # we shouldn't need this but for unknown reason, it's fsGroup is not
         # applied
@@ -44,10 +45,12 @@ spec:
           args:
             - -c
             - |
+              {{- if .Values.global.manualPermissionFix.setVolumePaths }}
               chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /data
-              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /bootstrap/
-              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /tmp/
-              {{- if .Values.mariadbConfiguration }}
+              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /bootstrap
+              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /tmp
+              {{- end }}
+              {{- if .Values.global.manualPermissionFix.mariadbConfigurations }}
               cp /config/my.cnf /actual/my.cnf
               chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /actual
               {{- end }}
@@ -56,19 +59,22 @@ spec:
           securityContext:
             runAsUser: 0
           volumeMounts:
+            {{- if .Values.global.manualPermissionFix.setVolumePaths }}
             - name: previous-boot
               mountPath: /bootstrap
             - name: mariadb-tmp-folder
               mountPath: /tmp
             - name: {{ include "common.fullname" . }}
               mountPath: /data
-            {{- if .Values.mariadbConfiguration }}
+            {{- end }}
+            {{- if .Values.global.manualPermissionFix.mariadbConfigurations }}
             - name: mariadb-galera-starting-config
               mountPath: /config/my.cnf
               subPath: my.cnf
             - name: mariadb-galera-actual-config
               mountPath: /actual
             {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
