@@ -26,7 +26,7 @@ Version 5.0.1 (El Alto Release)
 Summary
 -------
 
-The focus of this release was on maintanence and as such no new features were
+The focus of this release was on maintenance and as such no new features were
 delivered.
 A list of issues resolved in this release can be found here: https://jira.onap.org/projects/OOM/versions/10726
 
