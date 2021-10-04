@@ -199,6 +199,8 @@ metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $range
 spec:
   capacity:
     storage: {{ $persistenceInfos.size }}
+  mountOptions:
+   - nolock
   accessModes:
     - {{ $persistenceInfos.accessMode }}
   persistentVolumeReclaimPolicy: {{ $persistenceInfos.volumeReclaimPolicy }}
