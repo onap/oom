@@ -40,11 +40,12 @@ metadata:
 spec:
   type: NodePort
   ports:
+    {{ if not .Values.global.aafEnabled }}
     - name: "{{ .Values.service.portName }}-restconf"
-      {{ if not .Values.global.aafEnabled }}
       port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-      {{- else -}}
+    {{- else -}}
+    - name: "{{ .Values.service.portName }}s-restconf"
       port: {{ .Values.service.externalPort4 }}
       targetPort: {{ .Values.service.internalPort4 }}
       {{ end }}
@@ -69,14 +70,15 @@ metadata:
 spec:
   type: ClusterIP
   ports:
+    {{ if not .Values.global.aafEnabled }}
     - name: "{{ .Values.service.portName }}-restconf-alt"
-      {{ if .Values.global.aafEnabled }}
       port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-      {{- else -}}
+    {{- else -}}
+    - name: "{{ .Values.service.portName }}s-restconf-alt"
       port: {{ .Values.service.internalPort4 }}
       targetPort: {{ .Values.service.internalPort4 }}
-      {{ end }}
+    {{ end }}
     - name: "{{ .Values.service.portName }}-karaf"
       port: {{ .Values.service.externalPort2 }}
       targetPort: {{ .Values.service.internalPort2 }}
@@ -116,10 +118,16 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
 spec:
   ports:
-  - name: {{ .Values.service.portName }}-0-port-{{ .Values.service.internalPort4 }}
-    port: {{ .Values.service.clusterPort2 }}
+  - port: {{ .Values.service.clusterPort2 }}
+    {{ if not .Values.global.aafEnabled }}
+    name: {{ .Values.service.portName }}-0-port-{{ .Values.service.internalPort3 }}
+    targetPort: {{ .Values.service.internalPort3 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort4 }}
+    {{- else -}}    
+    name: {{ .Values.service.portName }}s-0-port-{{ .Values.service.internalPort4 }}
     targetPort: {{ .Values.service.internalPort4 }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort4 }}
+    {{- end }}
   - name: {{ .Values.service.portName }}-0-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
@@ -139,10 +147,16 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-1
 spec:
   ports:
-  - name: {{ .Values.service.portName }}-1-port-{{ .Values.service.internalPort4 }}
-    port: {{ .Values.service.clusterPort2 }}
-    targetPort: {{ .Values.service.internalPort4 }}
+  - targetPort: {{ .Values.service.internalPort4 }}
+    {{ if not .Values.global.aafEnabled }}
+    name: {{ .Values.service.portName }}-1-port-{{ .Values.service.internalPort3 }}
+    targetPort: {{ .Values.service.internalPort3 }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort5 }}
+    {{- else -}}
+    name: {{ .Values.service.portName }}s-1-port-{{ .Values.service.internalPort4 }}
+    port: {{ .Values.service.clusterPort2 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort5 }}
+    {{- end }}
   - name: {{ .Values.service.portName }}-1-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
@@ -162,10 +176,16 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-2
 spec:
   ports:
-  - name: {{ .Values.service.portName }}-2-port-{{ .Values.service.internalPort4 }}
-    port: {{ .Values.service.clusterPort2 }}
+  - port: {{ .Values.service.clusterPort2 }}
+    {{ if not .Values.global.aafEnabled }}
+    name: {{ .Values.service.portName }}-2-port-{{ .Values.service.internalPort3 }}
+    targetPort: {{ .Values.service.internalPort3 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort6 }}
+    {{- else }}
+    name: {{ .Values.service.portName }}s-2-port-{{ .Values.service.internalPort4 }}
     targetPort: {{ .Values.service.internalPort4 }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort6 }}
+    {{- end }}
   - name: {{ .Values.service.portName }}-2-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
