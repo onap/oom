@@ -1,0 +1,131 @@
+openapi: 3.0.3
+
+info:
+  title: coslaNrm
+  version: 16.4.0
+  description:
+    OAS 3.0.1 specification of the Cosla NRM
+    © 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
+    All rights reserved.
+
+externalDocs:
+  description: 3GPP TS 28.536 V16.4.0; 5G NRM, Slice NRM
+  url: http://www.3gpp.org/ftp/Specs/archive/28_series/28.536/
+
+paths: {}
+
+components:
+
+  schemas:
+
+#------------ Type definitions ---------------------------------------------------
+
+    ControlLoopLifeCyclePhase:
+      anyOf:
+        - type: string
+          enum:
+            - PREPARATION
+            - COMMISSIONING
+            - OPERATION
+            - DECOMMISSIONING
+        - type: string
+
+    TimeUnit:
+      anyOf:
+        - type: string
+          enum:
+            - SECOND
+            - MINUTE
+            - HOUR
+            - DAY
+        - type: string
+
+    OperationalState:
+      anyOf:
+        - type: string
+          enum:
+            - ENABLED
+            - DISABLED
+        - type: string
+
+    AdministrativeState:
+      anyOf:
+        - type: string
+          enum:
+            - LOCKED
+            - SHUTTING_DOWN
+            - UNLOCKED
+        - type: string
+
+    ObservationTime:
+      type: integer
+
+    ObservationTimePeriod:
+      type: object
+
+    AssuranceControlLoopGoal:
+      type: object
+
+    AssuranceGoalStatus:
+      type: object
+
+    AssuranceGoalStatusObserved:
+      type: object
+
+    AssuranceGoalStatusPredicted:
+      type: object
+
+#-------- Definition of concrete IOCs --------------------------------------------
+
+    AssuranceControlLoop-Single:
+      allOf:
+        - $ref: 'genericNrm.yaml#/components/schemas/SubNetwork-Attr'
+        - type: object
+          properties:
+            operationalState:
+              $ref: '#/components/schemas/OperationalState'
+            administrativeState:
+              $ref: '#/components/schemas/AdministrativeState'
+            controlLoopLifeCyclePhase:
+              $ref: '#/components/schemas/ControlLoopLifeCyclePhase'
+            observationTimePeriod:
+              allOf:
+                - $ref: '#/components/schemas/ObservationTimePeriod'
+                - type: object
+                  properties:
+                    observationTime:
+                      $ref: '#/components/schemas/ObservationTime'
+                    timeUnit:
+                      $ref: '#/components/schemas/TimeUnit'
+            AssuranceGoalStatus:
+              allOf:
+                - $ref: '#/components/schemas/AssuranceGoalStatus'
+                - type: object
+                  properties:
+                    assuranceGoalStatusObserved:
+                      $ref: '#/components/schemas/AssuranceGoalStatusObserved'
+                    assuranceGoalStatusPredicted:
+                      $ref: '#/components/schemas/AssuranceGoalStatusPredicted'
+            managedEntity-Multiple:
+              $ref: '#/components/schemas/ManagedEntity-Multiple'
+            assuranceControlLoopGoal:
+              $ref: '#/components/schemas/AssuranceControlLoopGoal'
+
+    ManagedEntity-Single:
+      oneOf:
+        - $ref: 'sliceNrm.yaml#/components/schemas/NetworkSlice'
+        - $ref: 'sliceNrm.yaml#/components/schemas/NetworkSliceSubnet'
+        - $ref: 'genericNrm.yaml#/components/schemas/ManagedFunction-Attr'
+        - $ref: 'genericNrm.yaml#/components/schemas/ManagedElement-Attr'
+
+#-------- Definition of JSON arrays for name-contained IOCs ----------------------
+
+    AssuranceControlLoop-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/AssuranceControlLoop-Single'
+
+    ManagedEntity-Multiple:
+      type: array
+      items:
+        $ref: '#/components/schemas/ManagedEntity-Single'

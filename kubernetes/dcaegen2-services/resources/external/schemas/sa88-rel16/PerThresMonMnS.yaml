@@ -1,0 +1,102 @@
+openapi: 3.0.1
+info:
+  title: TS 28.532 Performance Threshold Monitoring Service
+  version: 16.4.0
+  description: OAS 3.0.1 specification of the Performance Threshold Monitoring Service
+servers:
+  - url: 'http://{monitoringNotifTarget}'
+    variables:
+      monitoringNotifTarget:
+        description: >-
+          The open API server of the performance threshold monitoring service is
+          located in the consumer side, see monitoringNotifTarget attribute of
+          the IOC ThresholdMonitor defined in 3GPP TS 28.622 [11].
+        default: example.com
+paths:
+  /notificationSink:
+    post:
+      summary: Send notifications about performance threshold crossing
+      description: To send a notifyThresholdCrossing notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/notifyThresholdCrossing-NotifType'
+      responses:
+        '204':
+          description: >-
+            Success case ("204 No Content"). The notification is successfully
+            delivered. The response message body is absent.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+components:
+  schemas:
+    dateTime-Type:
+      type: string
+      format: date-Time
+    uri-Type:
+      type: string
+    long-Type:
+      type: string
+      format: long
+    thresholdLevel-Type:
+      type: integer
+    measurementTypeName-Type:
+      type: string
+    measurementValue-Type:
+      type: string
+    additionalText-Type:
+      type: string
+    error-ResponseType:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            errorInfo:
+              type: string
+    header-Type:
+      description: Header used in notifications as notification header
+      type: object
+      properties:
+        uri:
+          $ref: '#/components/schemas/uri-Type'
+        notificationId:
+          $ref: '#/components/schemas/notificationId-Type'
+        notificationType:
+          $ref: '#/components/schemas/notificationType-Type'
+        eventTime:
+          $ref: '#/components/schemas/dateTime-Type'
+    notificationId-Type:
+      $ref: '#/components/schemas/long-Type'
+    notificationType-Type:
+      type: string
+      enum:
+        - notifyThresholdCrossing
+    notifyThresholdCrossing-NotifType:
+      type: object
+      properties:
+        header:
+          $ref: '#/components/schemas/header-Type'
+        body:
+          type: object
+          properties:
+            startOfMonitoringGP:
+              $ref: '#/components/schemas/dateTime-Type'
+            endOfMonitoringGP:
+              $ref: '#/components/schemas/dateTime-Type'
+            monitoredObjectInstance:
+              $ref: '#/components/schemas/uri-Type'
+            thresholdLevel:
+              $ref: '#/components/schemas/thresholdLevel-Type'
+            measurementTypeName:
+              $ref: '#/components/schemas/measurementTypeName-Type'
+            measurementValue:
+              $ref: '#/components/schemas/measurementValue-Type'
+            additionalText:
+              $ref: '#/components/schemas/additionalText-Type'
