@@ -1,0 +1,363 @@
+openapi: 3.0.1
+info:
+  title: TS 28.550 Performance Data Streaming Service
+  version: 16.3.0
+  description: OAS 3.0.1 specification of the Performance Data Streaming Service
+servers:
+  - url: 'http://{streamTarget}/PerfDataStreamMnS/v1630'
+    description: This URL is used for posting the set of information about streams supported on the connection between the producer and the consumer.
+    variables:
+      streamTarget:
+        description: 'The open API server of the performance data streaming service is located in the consumer side,and the “streamTarget” part corresponds to the streamTarget parameter provided in the createMeasurementJob operation (see clause 6.1.1.2) or the streamTarget attribute of the MOI of MeasurementControlor MeasurementReader, see 3GPP TS 28.622 [5]).'
+        default: example.com
+  - url: 'wss://{streamTarget}/PerfDataStreamMnS/v1630/streamingConnection'
+    description: This URL is used for establishing the WebSocket connection for the performance data streaming service.
+    variables:
+      streamTarget:
+        description: 'The open API server of the performance data streaming service is located in the consumer side,and the “streamTarget” part corresponds to the streamTarget parameter provided in the createMeasurementJob operation (see clause 6.1.1.2) or the streamTarget attribute of the MOI of MeasurementControlor MeasurementReader, see 3GPP TS 28.622 [5]).'
+        default: example.com
+paths:
+  /streamInfoList:
+    post:
+      summary: The set of information about the streams sent from the producer to the consumer
+      description: To send the streamInfoList from the producer to the consumer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/streamInfoListPost-RequestType'
+      responses:
+        '201':
+          description: Success case ("201 Posted"). The streamInfoList is successfully posted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/streamInfoListPost-ResponseType'
+        '202':
+          description: Partial success case ("202 Partially posted"). The representation of the posted resource on stream information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/streamInfoListPost-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    get:
+      summary: Read resources of stream information from the streaming consumer
+      description: 'With HTTP GET, resources of stream information are read. The resources to be read are identified with the path component (base resource) and the query component (streamIdList) of the URI. The fields query component allows to select the resource properties to be returned.'
+      parameters:
+        - name: streamIdList
+          in: query
+          description: This parameter identifies the list of streamId to select from the collection resources identified with the path component of the URI.
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+      responses:
+        '200':
+          description: 'Success case ("200 OK"). The resources identified in the request for retrieval are returned in the response message body. In case the fields query parameter is used, the selected resources are returned.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listOfStreamInfoRetrieval-ResponseType'
+        '202':
+          description: Partial success case ("202 Partially retrieved"). The representation of the retrieved resources on stream information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listOfStreamInfoRetrieval-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    patch:
+      summary: Update resources of stream information to the streaming consumer
+      description: 'With HTTP PATCH, resources of stream information are to be updated. The resources to be updated are identified with the path component (base resource) and the query component (streamIdList) of the URI. The fields query component allows to select the resource properties to be updated.'
+      parameters:
+        - name: streamIdList
+          in: query
+          description: This parameter identifies the list of streamId to select from the collection resources identified with the path component of the URI.
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/listOfStreamInfoToUpdate-RequestType'
+      responses:
+        '200':
+          description: Success case ("200 OK"). The resources selected by the query parameter are updated and returned in the response message body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listOfStreamInfoUpdate-ResponseType'
+        '202':
+          description: Partial success case ("202 Partially updated"). The representation of the updated resources on stream information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listOfStreamInfoUpdate-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    delete:
+      summary: The information of streams to be deleted by the producer to the consumer
+      description: 'With HTTP DELETE, resources of stream information are to be deleted. The resources to be deleted are identified with the path component (base resource) and the query component (streamIdList) of the URI. The fields query component allows to select the resource properties to be deleted.'
+      parameters:
+        - name: streamIdList
+          in: query
+          description: This parameter identifies the list of streamId to select from the collection resources identified with the path component of the URI.
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+      responses:
+        '204':
+          description: Success case ("204 No Content"). The stream information resource has been deleted. The response message body is absent.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+  '/streamInfoList/{streamId}':
+    get:
+      summary: Read resource of the stream information from the streaming consumer
+      description: 'With HTTP GET, resource of stream information is read. The resource to be read is identified with the path component the URI.'
+      parameters:
+        - name: streamId
+          in: path
+          description: Identifies the stream for which the information is to be retrieved.
+          required: true
+          schema:
+            $ref: '#/components/schemas/uri-Type'
+      responses:
+        '200':
+          description: Success case ("200 OK"). The resource identified in the request for retrieval is returned in the response message body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/listOfStreamInfoRetrieval-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    patch:
+      summary: Update the resource of stream information to the streaming consumer
+      description: 'With HTTP PATCH, resource of stream information is to be updated. The resource to be updated is identified by the path component of the URI. '
+      parameters:
+        - name: streamId
+          in: path
+          description: Identifies the stream for which the information is to be updated.
+          required: true
+          schema:
+            $ref: '#/components/schemas/uri-Type'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/streamInfoToUpdate-RequestType'
+      responses:
+        '200':
+          description: Success case ("200 OK"). The resources identified by the path of the URI is updated and returned in the response message body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/streamInfoUpdate-ResponseType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+    delete:
+      summary: The stream information to be deleted by the producer to the consumer
+      description: 'With HTTP DELETE, resource of stream information identified by the path component of the URI is to be deleted.'
+      parameters:
+        - name: streamId
+          in: path
+          description: Identifies the stream for which the information is to be deleted
+          required: true
+          schema:
+            $ref: '#/components/schemas/uri-Type'
+      responses:
+        '204':
+          description: Success case ("204 No Content"). The stream information resource has been deleted. The response message body is absent.
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+  /streamConnection:
+    get:
+      summary: The connection for streaming from the producer to the consumer
+      description: To establish the WebSocket connection between the producer and the consumer. The HTTP version of this operation shall not be earlier than HTTP/1.1
+      parameters:
+        - in: header
+          name: Upgrade
+          required: true
+          schema:
+            $ref: '#/components/schemas/Upgrade-HeaderType'
+        - in: header
+          name: Connection
+          required: true
+          schema:
+            $ref: '#/components/schemas/Connection-HeaderType'
+        - in: header
+          name: Sec-WebSocket-Key
+          required: true
+          schema:
+            $ref: '#/components/schemas/Sec-WebSocket-Key-HeaderType'
+        - in: header
+          name: Sec-WebSocket-Version
+          required: true
+          schema:
+            $ref: '#/components/schemas/Sec-WebSocket-Version-HeaderType'
+      responses:
+        '101':
+          description: Success case ("101 Switching Protocols "). The connection has been successfully switched to WebSocket. The response message body is absent.
+          headers:
+            Upgrade:
+              schema:
+                $ref: '#/components/schemas/Upgrade-HeaderType'
+            Connection:
+              schema:
+                $ref: '#/components/schemas/Connection-HeaderType'
+            Sec-WebSocket-Accept-HeaderType:
+              schema:
+                $ref: '#/components/schemas/Sec-WebSocket-Accept-HeaderType'
+        default:
+          description: Error case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error-ResponseType'
+components:
+  schemas:
+    uri-Type:
+      type: string
+    streamInfoIn-Type:
+      type: object
+      properties:
+        streamId:
+          type: integer
+        iOCInstance:
+          $ref: '#/components/schemas/uri-Type'
+        measTypes:
+          type: array
+          items:
+            type: string
+    streamInfoOut-Type:
+      type: object
+      properties:
+        streamId:
+          $ref: '#/components/schemas/uri-Type'
+        iOCInstance:
+          $ref: '#/components/schemas/uri-Type'
+        measTypes:
+          type: array
+          items:
+            type: string
+    error-ResponseType:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            errorInfo:
+              type: string
+    streamInfoListPost-RequestType:
+      type: object
+      properties:
+        streamInfoList:
+          type: array
+          items:
+            $ref: '#/components/schemas/streamInfoIn-Type'
+    streamInfoListPost-ResponseType:
+      type: object
+      properties:
+        streamInfoListPosted:
+          type: array
+          items:
+            $ref: '#/components/schemas/streamInfoOut-Type'
+    streamInfoRetrieval-ResponseType:
+      type: object
+      properties:
+        streamInfoOut:
+          $ref: '#/components/schemas/streamInfoOut-Type'
+    listOfStreamInfoRetrieval-ResponseType:
+      type: object
+      properties:
+        listOfStreamInfoOut:
+          type: array
+          items:
+            $ref: '#/components/schemas/streamInfoOut-Type'
+    streamInfoToUpdatePropertyType:
+      type: object
+      properties:
+        iOCInstance:
+          description: 'The updated measured object instance, empty value means no update.'
+          allOf:
+            - $ref: '#/components/schemas/uri-Type'
+        measTypes:
+          description: 'The updated list of measurement type, empty value means no update.'
+          type: array
+          items:
+            type: string
+    streamInfoToUpdate-RequestType:
+      type: object
+      properties:
+        streamInfoToUpdate:
+          $ref: '#/components/schemas/streamInfoToUpdatePropertyType'
+    listOfStreamInfoToUpdate-RequestType:
+      type: object
+      properties:
+        listOfStreamInfoToUpdate:
+          type: array
+          items:
+            $ref: '#/components/schemas/streamInfoToUpdatePropertyType'
+    streamInfoUpdate-ResponseType:
+      type: object
+      properties:
+        streamInfoUpdated:
+          $ref: '#/components/schemas/streamInfoOut-Type'
+    listOfStreamInfoUpdate-ResponseType:
+      type: object
+      properties:
+        listOfStreamInfoUpdated:
+          type: array
+          items:
+            $ref: '#/components/schemas/streamInfoOut-Type'
+    Upgrade-HeaderType:
+      type: string
+      enum:
+        - websocket
+    Connection-HeaderType:
+      type: string
+      enum:
+        - Upgrade
+    Sec-WebSocket-Key-HeaderType:
+      type: string
+    Sec-WebSocket-Version-HeaderType:
+      type: string
+    Sec-WebSocket-Accept-HeaderType:
+      type: string

@@ -1,25 +1,25 @@
 openapi: 3.0.1
 info:
   title: Provisioning MnS
-  version: 16.5.0
+  version: 16.4.0
   description: >-
     OAS 3.0.1 definition of the Provisioning MnS
     © 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
     All rights reserved.
 externalDocs:
-  description: 3GPP TS 28.532; Generic management services
+  description: 3GPP TS 28.532 V16.4.0; Generic management services
   url: http://www.3gpp.org/ftp/Specs/archive/28_series/28.532/
 servers:
-  - url: '{MnSRoot}/ProvMnS/{MnSVersion}/{URI-LDN-first-part}'
+  - url: 'http://{URI-DN-prefix}/{root}/ProvMnS/v1640/{LDN-first-part}'
     variables:
-      MnSRoot:
-        description: See clause 4.4.2 of TS 32.158
-        default: http://example.com/3GPPManagement
-      MnSVersion:
-        description: Version number of the OpenAPI definition
-        default: XXX
-      URI-LDN-first-part:
-        description: See clause 4.4.2 of TS 32.158
+      URI-DN-prefix:
+        description: See subclause 4.4 of TS 32.158
+        default: example.com
+      root:
+        description: See subclause 4.4 of TS 32.158
+        default: 3GPPManagement
+      LDN-first-part:
+        description: See subclause 4.4 of TS 32.158
         default: ''
 paths:
   '/{className}={id}':
@@ -28,12 +28,12 @@ paths:
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/className-PathType'
       - name: id
         in: path
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/id-PathType'
     put:
       summary: Replaces a complete single resource or creates it if it does not exist
       description: >-
@@ -44,7 +44,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Resource'
+              $ref: '#/components/schemas/resourcePut-RequestType'
       responses:
         '200':
           description: >-
@@ -60,7 +60,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
+                $ref: '#/components/schemas/resourceUpdate-ResponseType'
         '201':
           description: >-
             Success case ("201 Created").
@@ -70,7 +70,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
+                $ref: '#/components/schemas/resourceCreation-ResponseType'
         '204':
           description: >-
             Success case ("204 No Content").
@@ -82,7 +82,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/error-ResponseType'
       callbacks:
         notifyMOICreation:
           '{request.body#/notificationRecipientAddress}':
@@ -92,7 +92,7 @@ paths:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/NotifyMoiCreation'
+                      $ref: '#/components/schemas/notifyMOICreation-NotifType'
               responses:
                 '204':
                   description: >-
@@ -104,7 +104,7 @@ paths:
                   content:
                     application/json:
                       schema:
-                        $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                        $ref: '#/components/schemas/error-ResponseType'
         notifyMOIDeletion:
           '{request.body#/notificationRecipientAddress}':
             post:
@@ -113,7 +113,7 @@ paths:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/NotifyMoiDeletion'
+                      $ref: '#/components/schemas/notifyMOIDeletion-NotifType'
               responses:
                 '204':
                   description: >-
@@ -125,8 +125,8 @@ paths:
                   content:
                     application/json:
                       schema:
-                        $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
-        notifyMOIAttributeValueChanges:
+                        $ref: '#/components/schemas/error-ResponseType'
+        notifyMOIAttributeValueChange:
           '{request.body#/notificationRecipientAddress}':
             post:
               requestBody:
@@ -134,7 +134,7 @@ paths:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/NotifyMoiAttributeValueChanges'
+                      $ref: '#/components/schemas/notifyMOIAttributeValueChange-NotifType'
               responses:
                 '204':
                   description: >-
@@ -146,7 +146,7 @@ paths:
                   content:
                     application/json:
                       schema:
-                        $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                        $ref: '#/components/schemas/error-ResponseType'
         notifyMOIChanges:
           '{request.body#/notificationRecipientAddress}':
             post:
@@ -155,7 +155,7 @@ paths:
                 content:
                   application/json:
                     schema:
-                      $ref: '#/components/schemas/NotifyMoiChanges'
+                      $ref: '#/components/schemas/notifyMOIChanges-NotifType'
               responses:
                 '204':
                   description: >-
@@ -167,7 +167,7 @@ paths:
                   content:
                     application/json:
                       schema:
-                        $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                        $ref: '#/components/schemas/error-ResponseType'
     get:
       summary: Reads one or multiple resources
       description: >-
@@ -183,7 +183,7 @@ paths:
             mechanism is specified in the present document.
           required: false
           schema:
-            $ref: '#/components/schemas/Scope'
+            $ref: '#/components/schemas/scope-QueryType'
           style: form
           explode: true
         - name: filter
@@ -196,7 +196,7 @@ paths:
             document.
           required: false
           schema:
-            $ref: 'comDefs.yaml#/components/schemas/Filter'
+            $ref: '#/components/schemas/filter-QueryType'
         - name: attributes
           in: query
           description: >-
@@ -204,9 +204,7 @@ paths:
             are returned.
           required: true
           schema:
-            type: array
-            items:
-              type: string
+            $ref: '#/components/schemas/attributes-QueryType'
           style: form
           explode: false
         - name: fields
@@ -216,9 +214,7 @@ paths:
             that are returned.
           required: false
           schema:
-            type: array
-            items:
-              type: string
+            $ref: '#/components/schemas/fields-QueryType'
           style: form
           explode: false
       responses:
@@ -233,13 +229,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
+                $ref: '#/components/schemas/resourceRetrieval-ResponseType'
         default:
           description: Error case.
           content:
             application/json:
               schema:
-                $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/error-ResponseType'
     patch:
       summary: Patches one or multiple resources
       description: >-
@@ -258,20 +254,16 @@ paths:
         content:
           application/merge-patch+json:
             schema:
-              $ref: '#/components/schemas/Resource'
+              $ref: '#/components/schemas/jsonMergePatch-RequestType'
           application/3gpp-merge-patch+json:
             schema:
-              $ref: '#/components/schemas/Resource'
+              $ref: '#/components/schemas/3gppJsonMergePatch-RequestType'
           application/json-patch+json:
             schema:
-              type: array
-              items:
-                type: object
+              $ref: '#/components/schemas/jsonPatch-RequestType'
           application/3gpp-json-patch+json:
             schema:
-              type: array
-              items:
-                type: object
+              $ref: '#/components/schemas/3gppJsonPatch-RequestType'
       responses:
         '200':
           description: >-
@@ -284,7 +276,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
+                $ref: '#/components/schemas/resourceUpdate-ResponseType'
         '204':
           description: >-
             Success case ("204 No Content").
@@ -296,7 +288,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/error-ResponseType'
     delete:
       summary: Deletes one or multiple resources
       description: >-
@@ -311,9 +303,7 @@ paths:
             mechanism is specified in the present document.
           required: false
           schema:
-            $ref: '#/components/schemas/Scope'
-          style: form
-          explode: true
+            $ref: '#/components/schemas/scope-QueryType'
         - name: filter
           in: query
           description: >-
@@ -324,7 +314,7 @@ paths:
             document.
           required: false
           schema:
-            $ref: 'comDefs.yaml#/components/schemas/Filter'
+            $ref: '#/components/schemas/filter-QueryType'
       responses:
         '200':
           description: >-
@@ -341,66 +331,136 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: 'comDefs.yaml#/components/schemas/Uri'
+                $ref: '#/components/schemas/resourceDeletion-ResponseType'
         default:
           description: Error case.
           content:
             application/json:
               schema:
-                $ref: 'comDefs.yaml#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/error-ResponseType'
 components:
   schemas:
-    CorrelatedNotification:
+    dateTime-Type:
+      type: string
+      format: date-time
+    long-Type:
+      type: integer
+      format: int64
+    uri-Type:
+      type: string
+    correlatedNotification-Type:
       type: object
       properties:
         source:
-          $ref: 'comDefs.yaml#/components/schemas/Dn'
+          $ref: '#/components/schemas/uri-Type'
         notificationIds:
           type: array
           items:
-            $ref: 'comDefs.yaml#/components/schemas/NotificationId'
-      required:
-        - source
-        - notificationIds
-    CmNotificationTypes:
+            $ref: '#/components/schemas/notificationId-Type'
+    notificationId-Type:
+      $ref: '#/components/schemas/long-Type'
+    notificationType-Type:
       type: string
       enum:
         - notifyMOICreation
         - notifyMOIDeletion
-        - notifyMOIAttributeValueChanges
-        - notifyMOIChanges
-    SourceIndicator:
+        - notifyMOIAttributeValueChange
+    systemDN-Type:
+      type: string
+    additionalText-Type:
+      type: string
+    sourceIndicator-Type:
       type: string
       enum:
-        - RESOURCE_OPERATION
-        - MANAGEMENT_OPERATION
-        - SON_OPERATION
-        - UNKNOWN
-    Operation:
-      type: string
-      enum:
-        - CREATE
-        - DELETE
-        - REPLACE
-    ScopeType:
+        - resourceOperation
+        - mangementOperation
+        - sONOperation
+        - unknown
+    header-Type:
+      type: object
+      properties:
+        href:
+          $ref: '#/components/schemas/uri-Type'
+        notificationId:
+          $ref: '#/components/schemas/notificationId-Type'
+        notificationType:
+          $ref: '#/components/schemas/notificationType-Type'
+        eventTime:
+          $ref: '#/components/schemas/dateTime-Type'
+        systemDN:
+          $ref: '#/components/schemas/systemDN-Type'
+      required:
+        - href
+        - notificationId
+        - notificationType
+        - eventTime
+        - systemDN
+    scopeType-Type:
       type: string
       enum:
         - BASE_ONLY
         - BASE_NTH_LEVEL
         - BASE_SUBTREE
         - BASE_ALL
-    Scope:
+    scopeLevel-Type:
+      type: integer
+    className-PathType:
+      type: string
+    id-PathType:
+      type: string
+    attributes-QueryType:
+      type: array
+      items:
+        type: string
+    fields-QueryType:
+      type: array
+      items:
+        type: string
+    filter-QueryType:
+      type: string
+    scope-QueryType:
       type: object
       properties:
         scopeType:
-          $ref: '#/components/schemas/ScopeType'
+          $ref: '#/components/schemas/scopeType-Type'
         scopeLevel:
-          type: integer
+          $ref: '#/components/schemas/scopeLevel-Type'
 
+    resourcePut-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    jsonMergePatch-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    3gppJsonMergePatch-RequestType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    jsonPatch-RequestType:
+      type: array
+      items:
+        type: object
+    3gppJsonPatch-RequestType:
+      type: array
+      items:
+        type: object
 
-    Resource:
+    error-ResponseType:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            errorInfo:
+              type: string
+    resourceRetrieval-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceCreation-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceUpdate-ResponseType:
+      $ref: '#/components/schemas/resourceRepresentation-Type'
+    resourceDeletion-ResponseType:
+      type: array
+      items:
+        $ref: '#/components/schemas/uri-Type'
+
+    resourceRepresentation-Type:
       oneOf:
         - type: object
           properties:
@@ -418,83 +478,102 @@ components:
             - $ref: '5gcNrm.yaml#/components/schemas/resources-5gcNrm'
             - $ref: 'sliceNrm.yaml#/components/schemas/resources-sliceNrm'
 
-    MoiChange:
+    mOIChange-Type:
       type: object
       properties:
         notificationId:
-          $ref: 'comDefs.yaml#/components/schemas/NotificationId'
+          $ref: '#/components/schemas/notificationId-Type'
         correlatedNotifications:
           type: array
           items:
-            $ref: '#/components/schemas/CorrelatedNotification'
+            $ref: '#/components/schemas/correlatedNotification-Type'
         additionalText:
-          type: string
+          $ref: '#/components/schemas/additionalText-Type'
         sourceIndicator:
-          $ref: '#/components/schemas/SourceIndicator'
+          $ref: '#/components/schemas/sourceIndicator-Type'
         path:
-          $ref: 'comDefs.yaml#/components/schemas/Uri'
+          $ref: '#/components/schemas/uri-Type'
         operation:
-          $ref: '#/components/schemas/Operation'
+          type: string
+          enum:
+            - CREATE
+            - DELETE
+            - REPLACE
         value:
           oneOf:
-            - $ref: 'comDefs.yaml#/components/schemas/AttributeNameValuePairSet'
-            - $ref: 'comDefs.yaml#/components/schemas/AttributeValueChangeSet'
+            - type: object
+              additionalProperties:
+                nullable: true
+            - type: array
+              items:
+                type: object
+              minItems: 1
+              maxItems: 2
 
-    NotifyMoiCreation:
+    notifyMOICreation-NotifType:
       allOf:
-        - $ref: 'comDefs.yaml#/components/schemas/NotificationHeader'
+        - $ref: '#/components/schemas/header-Type'
         - type: object
           properties:
             correlatedNotifications:
               type: array
               items:
-                $ref: '#/components/schemas/CorrelatedNotification'
+                $ref: '#/components/schemas/correlatedNotification-Type'
             additionalText:
-              type: string
+              $ref: '#/components/schemas/additionalText-Type'
             sourceIndicator:
-              $ref: '#/components/schemas/SourceIndicator'
+              $ref: '#/components/schemas/sourceIndicator-Type'
             attributeList:
-              $ref: 'comDefs.yaml#/components/schemas/AttributeNameValuePairSet'
-    NotifyMoiDeletion:
+              type: object
+              additionalProperties:
+                nullable: true
+    notifyMOIDeletion-NotifType:
       allOf:
-        - $ref: 'comDefs.yaml#/components/schemas/NotificationHeader'
+        - $ref: '#/components/schemas/header-Type'
         - type: object
           properties:
             correlatedNotifications:
               type: array
               items:
-                $ref: '#/components/schemas/CorrelatedNotification'
+                $ref: '#/components/schemas/correlatedNotification-Type'
             additionalText:
-              type: string
+              $ref: '#/components/schemas/additionalText-Type'
             sourceIndicator:
-              $ref: '#/components/schemas/SourceIndicator'
+              $ref: '#/components/schemas/sourceIndicator-Type'
             attributeList:
-              $ref: 'comDefs.yaml#/components/schemas/AttributeNameValuePairSet'
-    NotifyMoiAttributeValueChanges:
+              type: object
+              additionalProperties: true
+    notifyMOIAttributeValueChange-NotifType:
       allOf:
-        - $ref: 'comDefs.yaml#/components/schemas/NotificationHeader'
+        - $ref: '#/components/schemas/header-Type'
         - type: object
           properties:
             correlatedNotifications:
               type: array
               items:
-                $ref: '#/components/schemas/CorrelatedNotification'
+                $ref: '#/components/schemas/correlatedNotification-Type'
             additionalText:
-              type: string
+              $ref: '#/components/schemas/additionalText-Type'
             sourceIndicator:
-              $ref: '#/components/schemas/SourceIndicator'
-            attributeListValueChanges:
-              $ref: 'comDefs.yaml#/components/schemas/AttributeValueChangeSet'
+              $ref: '#/components/schemas/sourceIndicator-Type'
+            attributeValueChange:
+              type: object
+              additionalProperties:
+                type: array
+                minItems: 1
+                maxItems: 2
+                items:
+                  nullable: true
           required:
-            - attributeListValueChanges
-    NotifyMoiChanges:
+            - attributeValueChange
+    notifyMOIChanges-NotifType:
       allOf:
-        - $ref: 'comDefs.yaml#/components/schemas/NotificationHeader'
+        - $ref: '#/components/schemas/header-Type'
         - type: object
           properties:
-            moiChanges:
+            mOIChanges:
               type: array
               items:
-                $ref: '#/components/schemas/MoiChange'
+                $ref: '#/components/schemas/mOIChange-Type'
           required:
-            - moiChanges
+            - mOIChanges
