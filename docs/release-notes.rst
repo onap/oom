@@ -22,6 +22,87 @@ Previous Release Notes
 Abstract
 ========
 
+This document provides the release notes for the Honolulu release Maintenance
+Release 1.
+
+Summary
+=======
+
+The focus of this release is to fix bugs found after Honolulu release.
+
+Release Data
+============
+
++--------------------------------------+--------------------------------------+
+| **Project**                          | OOM                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Docker images**                    | N/A                                  |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release designation**              | Honolulu Maintenace Release 1        |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+| **Release date**                     | 2021/10/07                           |
+|                                      |                                      |
++--------------------------------------+--------------------------------------+
+
+New features
+------------
+
+**components removal**
+
+- `OOM-2778 <https://jira.onap.org/browse/OOM-2778>`_  [ONAP] Disable APPC default installation
+
+
+**Bug fixes**
+
+- `POLICY-3232 <https://jira.onap.org/browse/POLICY-3232>`_ Change
+  import-custom-cert from bash to sh
+- `OOM-2779 <https://jira.onap.org/browse/OOM-2779>`_ [DMAAP][DR] Set replica of
+  Mariadb to 1
+- `OOM-2789 <https://jira.onap.org/browse/OOM-2789>`_ [COMMON] Added
+  imagePullSecrets to common template files with some fix
+- `OOM-2762 <https://jira.onap.org/browse/OOM-2762>`_ Add missing DB service
+  entry for local DB deployment
+- `OOM-2748 <https://jira.onap.org/browse/OOM-2748>`_ [SDNC] Fix SDNC charts to
+  make it work with aaf disabled
+- `CCSDK-3275 <https://jira.onap.org/browse/CCSDK-3275>`_ [CDS] Add startup
+  probe
+- `INT-1883 <https://jira.onap.org/browse/INT-1883>`_ [COMMON][MARIADB] Align
+  conf with camunda needs
+
+
+**Known Issues**
+
+- `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
+- `OOM-2435 <https://jira.onap.org/browse/OOM-2435>`_ SDNC karaf shell:
+  log:list: Error executing command: Unrecognized configuration
+- `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
+  not complete
+- `OOM-2706 <https://jira.onap.org/browse/OOM-2706>`_ CDS Blueprint Processor
+  does not work with local DB
+- `OOM-2713 <https://jira.onap.org/browse/OOM-2713>`_ Problem on onboarding
+  custom cert to SDNC ONAP during deployment
+- `OOM-2698 <https://jira.onap.org/browse/OOM-2698>`_ SO helm override fails in
+  for value with multi-level replacement
+- `OOM-2697 <https://jira.onap.org/browse/OOM-2697>`_ SO with local MariaDB
+  deployment fails
+- `OOM-2538 <https://jira.onap.org/browse/OOM-2538>`_ strange error with
+  CertInitializer template
+- `OOM-2547 <https://jira.onap.org/browse/OOM-2547>`_ Health Check failures
+  seen after bringing down/up control plane & worker node VM instances on which
+  ONAP hosted
+- `OOM-2699 <https://jira.onap.org/browse/OOM-2699>`_ SO so-mariadb
+  readinessCheck fails for local MariaDB instance
+- `OOM-2705 <https://jira.onap.org/browse/OOM-2705>`_ SDNC DB installation fails
+  on local MariaDB instance
+- `OOM-2603 <https://jira.onap.org/browse/OOM-2603>`_ [SDNC] allign password for
+  scaleoutUser/restconfUser/odlUser
+
+Abstract
+========
+
 This document provides the release notes for the Honolulu release.
 
 Summary
