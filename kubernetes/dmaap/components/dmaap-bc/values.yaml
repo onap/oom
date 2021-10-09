@@ -18,6 +18,8 @@
 #################################################################
 global:
   nodePortPrefix: 302
+  #Service Names of the postgres db to connect to.
+  #Override it to dbc-pg if localCluster is enabled.
 
 secrets:
   - uid: pg-root-pass
@@ -117,11 +119,17 @@ service:
 
 # application configuration override for postgres
 postgres:
-  nameOverride: dbc-pg
+  localCluster: false
   service:
-    name: dbc-postgres
-    name2: dbc-pg-primary
-    name3: dbc-pg-replica
+    name: pgset
+    name2: tcp-pgset-primary
+    name3: tcp-pgset-replica
+  # service:
+  #   name: dbc-postgres
+  #   name2: dbc-pg-primary
+  #   name3: dbc-pg-replica
+  containerName: postgres
+  nameOverride: dbc-pg
   container:
     name:
       primary: dbc-pg-primary
@@ -134,6 +142,17 @@ postgres:
   persistence:
     mountSubPath: dbc/data
     mountInitPath: dbc
+
+postgres-init:
+  nameOverride: dbc-postgres-init
+  config:
+    pgUserName: dmaap_admin
+    pgDatabase: dmaap
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 
 ingress:
   enabled: false
