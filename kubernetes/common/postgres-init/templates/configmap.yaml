@@ -1,4 +1,6 @@
-# Copyright © 2018  AT&T, Amdocs, Bell Canada Intellectual Property.  All rights reserved.
+{{/*
+# Copyright © 2019 Orange
+# Modifications Copyright © 2018 AT&T
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,19 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-dependencies:
-  - name: common
-    version: ~8.x-0
-    repository: '@local'
-  - name: postgres
-    version: ~8.x-0
-    repository: '@local'
-    condition: global.postgres.localCluster
-  - name: postgres-init
-    version: ~8.x-0
-    repository: '@local'
-    condition: not global.postgres.localCluster
-  - name: repositoryGenerator
-    version: ~8.x-0
-    repository: '@local'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
