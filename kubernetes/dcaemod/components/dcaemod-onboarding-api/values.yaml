@@ -24,6 +24,16 @@ global:
   ingress:
     virtualhost:
       baseurl: "simpledemo.onap.org"
+  #Service Names of the postgres db to connect to.
+  #Override it to local name if localCluster is enabled.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 
 #################################################################
 # Secrets metaconfig
@@ -86,10 +96,21 @@ postgres:
         replica: dcaemod-pg-replica
     config:
       pgPrimaryPasswordExternalSecret: *primaryPassSecretName
-      pgRootPasswordExternalSecret: *rootPassSecretName
+      # pgRootPasswordExternalSecret: *rootPassSecretName
+      pgRootPasswordExternalSecret: '{{ include "common.namespace" . }}-postgres-db-root-password'
     persistence:
       mountSubPath: dcaemod/data
       mountInitPath: dcaemod
+
+# postgres-init:
+  # nameOverride: dcaemod-postgres-init
+  # config:
+    # pgUserName: dcaemod
+    # pgDatabase: dcaemod
+    # pgUserExternalSecret: *pgUserCredsSecretName
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 
 # application image
 image: onap/org.onap.dcaegen2.platform.mod.onboardingapi:2.12.5
