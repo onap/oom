@@ -25,6 +25,16 @@ global:
   nodePortPrefixExt: 304
   tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
   consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.1.1
+  #Service Names of the postgres db to connect to.
+  #Override it to local name if localCluster is enabled.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 
 secrets:
   - uid: pg-root-pass
@@ -84,11 +94,21 @@ postgres:
       primary: dcae-pg-primary
       replica: dcae-pg-replica
   config:
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
+    # pgRootPasswordExternalSecret: *pgRootPassSecretName
+    pgRootPasswordExternalSecret: '{{ include "common.namespace" . }}-postgres-db-root-password'
   persistence:
     mountSubPath: dcae/data
     mountInitPath: dcae
 
+# postgres-init:
+  # nameOverride: dcae-postgres-init
+  # config:
+    # pgUserName: dcae
+    # pgDatabase: dcae
+    # pgUserExternalSecret: *pgUserCredsSecretName
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 mongo:
   nameOverride: dcae-mongo
   config:
