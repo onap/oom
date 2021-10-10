@@ -54,7 +54,13 @@ spec:
           - --container-name
           - dcae-deployment-handler
           - --container-name
+          {{- if .Values.global.postgres.localCluster }}
           - {{ .Values.postgres.nameOverride }}
+          {{- else }}
+          - {{ .Values.global.postgres.container.name }}
+          - --job-name
+          - {{ index .Values "postgres-init" "nameOverride" }}-config-job
+          {{- end }}
           - "-t"
           - "45"
           env:
@@ -137,7 +143,11 @@ spec:
             - name: postgres_db_name
               value: {{ .Values.postgres.config.pgDatabase }}
             - name: postgres_ip
+              {{- if .Values.global.postgres.localCluster }}
               value: {{ .Values.postgres.service.name2 }}
+              {{- else }}
+              value: {{ .Values.global.postgres.service.name2 }}
+              {{- end }}
             - name: POD_IP
               valueFrom:
                 fieldRef:
