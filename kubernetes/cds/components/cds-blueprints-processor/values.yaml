@@ -30,6 +30,10 @@ global:
   #This configuration specifies Service and port for SDNC OAM interface
   sdncOamService: sdnc-oam
   sdncOamPort: 8282
+  mariadbGalera:
+    localCluster: false
+    service: mariadb-galera
+    internalPort: 3306
 
   #AAF is enabled by default
   #aafEnabled: true
@@ -48,9 +52,9 @@ global:
 secrets:
   - uid: 'cds-db-user-creds'
     type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.config.cdsDB.dbCredsExternalSecret) . }}'
-    login: '{{ .Values.config.cdsDB.dbUser }}'
-    password: '{{ .Values.config.cdsDB.dbPassword }}'
+    externalSecret: '{{ tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) . }}'
+    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
+    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: required
   - uid: 'sdnc-db-root-pass'
     type: password
@@ -102,15 +106,6 @@ config:
     dbName: sdnctl
     #dbRootPass: Custom root password
     dbRootPassExternalSecret: '{{ include "common.mariadb.secret.rootPassSecretName" ( dict "dot" . "chartName" .Values.config.sdncDB.dbService ) }}'
-  cdsDB:
-    dbServer: cds-db
-    dbPort: 3306
-    dbName: sdnctl
-    dbUser: sdnctl
-    dbPassword: sdnctl
-    # dbCredsExternalSecret: <some secret name>
-    # dbRootPassword: password
-    # dbRootPassExternalSecret
 
 # default number of instances
 replicaCount: 1
@@ -123,6 +118,13 @@ affinity: {}
 # custom kafka cluster.
 dmaapEnabled: true
 
+# Local mariadb galera instance default name
+mariadb-galera:
+  nameOverride: cds-db
+  db:
+    name: cdsdb
+    password: cds
+    externalSecret: '{{ include "common.release" . }}-cdsdb-user-creds'
 
 # probe configuration parameters
 startup:
