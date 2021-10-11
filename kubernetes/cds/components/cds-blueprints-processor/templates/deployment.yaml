@@ -53,8 +53,12 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst '${CDS_DB_USERNAME},${CDS_DB_PASSWORD},${SDNC_DB_USERNAME},${SDNC_DB_PASSWORD}' <${PFILE} >/config/${PFILE}; done"
+        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst '${DB_HOST},${DB_PORT},${CDS_DB_USERNAME},${CDS_DB_PASSWORD},${SDNC_DB_USERNAME},${SDNC_DB_PASSWORD}' <${PFILE} >/config/${PFILE}; done"
         env:
+        - name: DB_HOST
+          value: {{ include "common.mariadbService" . }}
+        - name: DB_PORT
+          value: {{ include "common.mariadbPort" . | quote }}
         - name: CDS_DB_USERNAME
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-db-user-creds" "key" "login") | indent 10}}
         - name: CDS_DB_PASSWORD
@@ -76,8 +80,8 @@ spec:
       - command:
         - /app/ready.py
         args:
-        - --container-name
-        - cds-db
+        - --job-name
+        - {{ include "common.release" . }}-cds-mariadb-init-config-job
         {{- if .Values.dmaapEnabled  }}
         - --container-name
         - message-router
