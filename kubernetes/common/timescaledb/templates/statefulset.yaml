@@ -29,25 +29,10 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
-      securityContext:
-      {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: chowm-mount-path
-          command:
-            - /bin/sh
-          args:
-            - -c
-            - chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.runAsGroup }} /var/lib/postgresql/data
-          image: {{ include "repositoryGenerator.image.busybox" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-            - mountPath: /var/lib/postgresql/data
-              name: {{ include "common.fullname" . }}
+      {{ include "common.podSecurityContext" . | indent 10 | trim}}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
-          securityContext:
-          {{- toYaml .Values.securityContext | nindent 12 }}
           imagePullPolicy: {{ .Values.pullPolicy }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           livenessProbe:
