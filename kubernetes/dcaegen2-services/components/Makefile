@@ -36,7 +36,7 @@ make-%:
 	@if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/requirements.yaml ]; then $(HELM_BIN) dep up $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
@@ -47,7 +47,7 @@ package-%: lint-%
 	@sleep 5
 
 clean:
-	@rm -f */requirements.lock
+	@rm -f */Chart.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
 

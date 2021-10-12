@@ -1,7 +1,7 @@
 .. This work is licensed under a Creative Commons Attribution 4.0
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
-.. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
+.. Copyright 2018-2021 Amdocs, Bell Canada, Orange, Samsung, Nordix Foundation
 .. _oom_user_guide:
 
 .. Links
@@ -15,8 +15,8 @@
 .. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
 .. _user-guide-label:
 
-OOM User Guide helm3 (experimental)
-###################################
+OOM User Guide
+##############
 
 The ONAP Operations Manager (OOM) provide the ability to manage the entire
 life-cycle of an ONAP installation, from the initial deployment to final
@@ -118,7 +118,7 @@ stable which should be removed to avoid confusion::
 
 To prepare your system for an installation of ONAP, you'll need to::
 
-  > git clone -b guilin --recurse-submodules -j2 http://gerrit.onap.org/r/oom
+  > git clone -b jakarta --recurse-submodules -j2 http://gerrit.onap.org/r/oom
   > cd oom/kubernetes
 
 
@@ -156,12 +156,12 @@ system, and looks for matches::
 
   > helm search repo local
   NAME                    VERSION    DESCRIPTION
-  local/appc              2.0.0      Application Controller
-  local/clamp             2.0.0      ONAP Clamp
-  local/common            2.0.0      Common templates for inclusion in other charts
-  local/onap              2.0.0      Open Network Automation Platform (ONAP)
-  local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
-  local/so                2.0.0      ONAP Service Orchestrator
+  local/appc              10.0.0     Application Controller
+  local/clamp             10.0.0     ONAP Clamp
+  local/common            10.0.0     Common templates for inclusion in other charts
+  local/onap              10.0.0     Open Network Automation Platform (ONAP)
+  local/robot             10.0.0     A helm Chart for kubernetes-ONAP Robot
+  local/so                10.0.0     ONAP Service Orchestrator
 
 In any case, setup of the Helm repository is a one time activity.
 
@@ -204,7 +204,7 @@ deployment::
 To install a specific version of a single ONAP component (`so` in this example)
 with the given release name enter::
 
-  > helm deploy so onap/so --version 9.0.0 --set global.masterPassword=password --set global.flavor=unlimited --namespace onap
+  > helm deploy so onap/so --version 10.0.0 --set global.masterPassword=password --set global.flavor=unlimited --namespace onap
 
 .. note::
    The dependent components should be installed for component being installed
@@ -244,9 +244,9 @@ precedence of all.
          oValues  [label="values.yaml"]
          demo     [label="onap-demo.yaml"]
          prod     [label="onap-production.yaml"]
-         oReq     [label="requirements.yaml"]
+         oReq     [label="Chart.yaml"]
          soValues [label="values.yaml"]
-         soReq    [label="requirements.yaml"]
+         soReq    [label="Chart.yaml"]
          mdValues [label="values.yaml"]
       }
       {
@@ -319,27 +319,23 @@ To deploy ONAP with this environment file, enter::
 .. include:: environments_onap_demo.yaml
    :code: yaml
 
-When deploying all of ONAP a requirements.yaml file control which and what
-version of the ONAP components are included.  Here is an excerpt of this
-file:
+When deploying all of ONAP, the dependencies section of the Chart.yaml file
+controls which and what version of the ONAP components are included.
+Here is an excerpt of this file:
 
 .. code-block:: yaml
 
-  # Referencing a named repo called 'local'.
-  # Can add this repo by running commands like:
-  # > helm serve
-  # > helm repo add local http://127.0.0.1:8879
   dependencies:
   <...>
     - name: so
-      version: ~9.0.0
+      version: ~10.0.0
       repository: '@local'
       condition: so.enabled
   <...>
 
-The ~ operator in the `so` version value indicates that the latest "8.X.X"
+The ~ operator in the `so` version value indicates that the latest "10.X.X"
 version of `so` shall be used thus allowing the chart to allow for minor
-upgrades that don't impact the so API; hence, version 8.0.1 will be installed
+upgrades that don't impact the so API; hence, version 10.0.1 will be installed
 in this case.
 
 The onap/resources/environment/dev.yaml (see the excerpt below) enables
@@ -562,10 +558,10 @@ Below is the example for the same::
 
   > helm list
     NAME                    REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE
-    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-9.0.0              Istanbul        onap
-    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-9.0.0                         onap
-    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-9.0.0                           onap
-    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-9.0.0                    onap
+    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-10.0.0             Jakarta          onap
+    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-10.0.0                         onap
+    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-10.0.0                           onap
+    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-10.0.0                    onap
 
 Here the Name column shows the RELEASE NAME, In our case we want to try the
 scale operation on cassandra, thus the RELEASE NAME would be dev-cassandra.
@@ -579,10 +575,10 @@ Below is the example for the same::
 
   > helm search cassandra
     NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-    local/cassandra         9.0.0                           ONAP cassandra
-    local/portal-cassandra  9.0.0                           Portal cassandra
-    local/aaf-cass          9.0.0                           ONAP AAF cassandra
-    local/sdc-cs            9.0.0                           ONAP Service Design and Creation Cassandra
+    local/cassandra         10.0.0                          ONAP cassandra
+    local/portal-cassandra  10.0.0                          Portal cassandra
+    local/aaf-cass          10.0.0                          ONAP AAF cassandra
+    local/sdc-cs            10.0.0                          ONAP Service Design and Creation Cassandra
 
 Here the Name column shows the chart name. As we want to try the scale
 operation for cassandra, thus the corresponding chart name is local/cassandra
@@ -644,7 +640,7 @@ Prior to doing an upgrade, determine of the status of the deployed charts::
 
   > helm list
   NAME REVISION UPDATED                  STATUS    CHART     NAMESPACE
-  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-9.0.0  onap
+  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-10.0.0 onap
 
 When upgrading a cluster a parameter controls the minimum size of the cluster
 during the upgrade while another parameter controls the maximum number of nodes
@@ -680,8 +676,8 @@ To fetch release history enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-8.0.0  Install complete
-  2        Mon Feb 5 10:10:55 2020  DEPLOYED   so-9.0.0  Upgrade complete
+  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-9.0.0  Install complete
+  2        Mon Feb 5 10:10:55 2020  DEPLOYED   so-10.0.0 Upgrade complete
 
 Unfortunately, not all upgrades are successful.  In recognition of this the
 lineup of pods within an ONAP deployment is tagged such that an administrator
@@ -703,9 +699,9 @@ For example, to roll-back back to previous system revision enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-8.0.0  Install complete
-  2        Mon Feb 5 10:10:55 2020  SUPERSEDED so-9.0.0  Upgrade complete
-  3        Mon Feb 5 10:14:32 2020  DEPLOYED   so-8.0.0  Rollback to 1
+  1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-9.0.0  Install complete
+  2        Mon Feb 5 10:10:55 2020  SUPERSEDED so-10.0.0 Upgrade complete
+  3        Mon Feb 5 10:14:32 2020  DEPLOYED   so-9.0.0  Rollback to 1
 
 .. note::
 
