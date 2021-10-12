@@ -45,6 +45,13 @@ secrets:
     login: '{{ index .Values "mariadb-galera" "db" "user" }}'
     password: '{{ index .Values "mariadb-galera" "db" "password" }}'
     passwordPolicy: generate
+  - uid: policy-app-user-creds
+    name: &policyAppCredsSecret '{{ include "common.release" . }}-policy-app-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.policyAppUserExternalSecret) . }}'
+    login: '{{ .Values.config.policyAppUserName }}'
+    password: '{{ .Values.config.policyAppUserPassword }}'
+    passwordPolicy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -70,12 +77,19 @@ policy-distribution:
 policy-clamp-be:
   enabled: true
   db: *dbSecretsHook
+  config:
+    appUserExternalSecret: *policyAppCredsSecret
 policy-clamp-fe:
   enabled: true
 policy-clamp-cl-k8s-ppnt:
   enabled: true
 policy-nexus:
   enabled: false
+policy-clamp-cl-runtime:
+  enabled: true
+  db: *dbSecretsHook
+  config:
+    appUserExternalSecret: *policyAppCredsSecret
 policy-gui:
   enabled: true
 
@@ -118,6 +132,10 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+
+
+config:
+  policyAppUserName: runtimeUser
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals

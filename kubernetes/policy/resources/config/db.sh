@@ -2,6 +2,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada, AT&T
 # Modifications Copyright © 2018, 2020 AT&T Intellectual Property
+# Modifications Copyright (C) 2021 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +19,7 @@
 
 mysql() { /usr/bin/mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
 
-for db in migration pooling policyadmin policyclamp operationshistory
+for db in migration pooling policyadmin policyclamp operationshistory controlloop
 do
     mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
     mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
