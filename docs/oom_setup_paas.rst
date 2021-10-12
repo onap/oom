@@ -24,6 +24,7 @@ The versions of PaaS components that are supported by OOM are as follows:
   Release            Cert-Manager   Prometheus Stack
   ==============     =============  =================
   honolulu           1.2.0          13.x
+  istanbul           1.5.4          19.x
   ==============     =============  =================
 
 This guide provides instructions on how to install the PaaS
@@ -46,7 +47,7 @@ date, and attempt to renew certificates at a configured time before expiry.
 Installation steps
 ------------------
 
-The recommended version of Cert-Manager for Kubernetes 1.19 is v1.2.0.
+The recommended version of Cert-Manager for Kubernetes 1.19 is v1.5.4.
 Cert-Manager is deployed using regular YAML manifests which include all
 the needed resources (the CustomResourceDefinitions, cert-manager,
 namespace, and the webhook component).
@@ -61,7 +62,7 @@ steps, please refer to `Cert-Manager kubectl plugin documentation`_.
 
 Installation can be as simple as::
 
-  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.4/cert-manager.yaml
 
 Prometheus Stack (optional)
 ===========================
@@ -79,8 +80,8 @@ Installation steps
 ------------------
 
 The recommended version of kube-prometheus-stack chart for
-Kubernetes 1.19 is 13.x (which is currently the latest major chart version),
-for example 13.3.1.
+Kubernetes 1.19 is 19.x (which is currently the latest major chart version),
+for example 19.0.2.
 
 In order to install Prometheus Stack, you must follow these steps:
 
@@ -100,6 +101,6 @@ In order to install Prometheus Stack, you must follow these steps:
 
     > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus
 
-  To install the kube-prometheus-stack Helm chart in specific version, for example 13.3.1::
+  To install the kube-prometheus-stack Helm chart in specific version, for example 19.0.2::
 
-    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --version=13.3.1
+    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --version=19.0.2
