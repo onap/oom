@@ -47,5 +47,6 @@ clean:
 	@rm -f */requirements.lock
 	@rm -f *tgz */charts/*tgz
 	@rm -rf $(PACKAGE_DIR)
+	@rm -f */Chart.lock
 %:
 	@:

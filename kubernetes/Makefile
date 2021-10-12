@@ -91,6 +91,7 @@ clean:
 	@rm -f */requirements.lock
 	@find . -type f -name '*.tgz' -delete
 	@rm -rf $(PACKAGE_DIR)/*
+	@rm -f */Chart.lock
 
 # publish helm plugins via distrubtion directory
 plugins:
