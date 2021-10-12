@@ -204,7 +204,7 @@ deployment::
 To install a specific version of a single ONAP component (`so` in this example)
 with the given release name enter::
 
-  > helm deploy so onap/so --version 8.0.0 --set global.masterPassword=password --set global.flavor=unlimited --namespace onap
+  > helm deploy so onap/so --version 9.0.0 --set global.masterPassword=password --set global.flavor=unlimited --namespace onap
 
 .. note::
    The dependent components should be installed for component being installed
@@ -332,7 +332,7 @@ file:
   dependencies:
   <...>
     - name: so
-      version: ~8.0.0
+      version: ~9.0.0
       repository: '@local'
       condition: so.enabled
   <...>
@@ -562,10 +562,10 @@ Below is the example for the same::
 
   > helm list
     NAME                    REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE
-    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-8.0.0              Honolulu        onap
-    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-8.0.0                         onap
-    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-8.0.0                           onap
-    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-8.0.0                    onap
+    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-9.0.0              Istanbul        onap
+    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-9.0.0                         onap
+    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-9.0.0                           onap
+    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-9.0.0                    onap
 
 Here the Name column shows the RELEASE NAME, In our case we want to try the
 scale operation on cassandra, thus the RELEASE NAME would be dev-cassandra.
@@ -579,10 +579,10 @@ Below is the example for the same::
 
   > helm search cassandra
     NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-    local/cassandra         8.0.0                           ONAP cassandra
-    local/portal-cassandra  8.0.0                           Portal cassandra
-    local/aaf-cass          8.0.0                           ONAP AAF cassandra
-    local/sdc-cs            8.0.0                           ONAP Service Design and Creation Cassandra
+    local/cassandra         9.0.0                           ONAP cassandra
+    local/portal-cassandra  9.0.0                           Portal cassandra
+    local/aaf-cass          9.0.0                           ONAP AAF cassandra
+    local/sdc-cs            9.0.0                           ONAP Service Design and Creation Cassandra
 
 Here the Name column shows the chart name. As we want to try the scale
 operation for cassandra, thus the corresponding chart name is local/cassandra
@@ -644,7 +644,7 @@ Prior to doing an upgrade, determine of the status of the deployed charts::
 
   > helm list
   NAME REVISION UPDATED                  STATUS    CHART     NAMESPACE
-  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-8.0.0  onap
+  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-9.0.0  onap
 
 When upgrading a cluster a parameter controls the minimum size of the cluster
 during the upgrade while another parameter controls the maximum number of nodes
@@ -681,7 +681,7 @@ To fetch release history enter::
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
   1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-8.0.0  Install complete
-  2        Mon Feb 5 10:10:55 2020  DEPLOYED   so-8.0.1  Upgrade complete
+  2        Mon Feb 5 10:10:55 2020  DEPLOYED   so-9.0.0  Upgrade complete
 
 Unfortunately, not all upgrades are successful.  In recognition of this the
 lineup of pods within an ONAP deployment is tagged such that an administrator
@@ -704,7 +704,7 @@ For example, to roll-back back to previous system revision enter::
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
   1        Mon Feb 5 10:05:22 2020  SUPERSEDED so-8.0.0  Install complete
-  2        Mon Feb 5 10:10:55 2020  SUPERSEDED so-8.0.1  Upgrade complete
+  2        Mon Feb 5 10:10:55 2020  SUPERSEDED so-9.0.0  Upgrade complete
   3        Mon Feb 5 10:14:32 2020  DEPLOYED   so-8.0.0  Rollback to 1
 
 .. note::
