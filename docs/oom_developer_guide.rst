@@ -85,7 +85,6 @@ The top level of the ONAP charts is shown below:
   common
   ├── cassandra
   │   ├── Chart.yaml
-  │   ├── requirements.yaml
   │   ├── resources
   │   │   ├── config
   │   │   │   └── docker-entrypoint.sh
@@ -121,7 +120,6 @@ The top level of the ONAP charts is shown below:
   ├── ...
   └── postgres-legacy
       ├── Chart.yaml
-      ├── requirements.yaml
       ├── charts
       └── configs
 
@@ -137,7 +135,6 @@ All of the ONAP components have charts that follow the pattern shown below:
 
   name-of-my-component
   ├── Chart.yaml
-  ├── requirements.yaml
   ├── component
   │   └── subcomponent-folder
   ├── charts
@@ -182,7 +179,7 @@ This choice is done in root `values.yaml`:
   component2:
     enabled: true
 
-Then in `requirements.yaml`, you'll use these values:
+Then in `Chart.yaml` dependencies section, you'll use these values:
 
 .. code-block:: yaml
 

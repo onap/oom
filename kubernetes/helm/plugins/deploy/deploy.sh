@@ -99,11 +99,8 @@ deploy() {
   FLAGS=$(echo ${@} | sed 's/^ *[^ ]* *[^ ]* *//')
   CHART_REPO="$(echo "$CHART_URL" | cut -d'/' -f1)"
   CHART_NAME="$(echo "$CHART_URL" | cut -d'/' -f2)"
-  if expr "$HELM_VER" : "v3\..*" ; then
-    CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
-  else
-    CACHE_DIR=~/.helm/plugins/deploy/cache
-  fi
+
+  CACHE_DIR=~/.local/share/helm/plugins/deploy/cache
   echo "Use cache dir: $CACHE_DIR"
   CHART_DIR=$CACHE_DIR/$CHART_NAME
   CACHE_SUBCHART_DIR=$CHART_DIR-subcharts
@@ -182,8 +179,8 @@ deploy() {
   mv $CACHE_SUBCHART_DIR/common $CHART_DIR/charts/
 
   # disable dependencies
-  rm $CHART_DIR/requirements.lock
-  mv $CHART_DIR/requirements.yaml $CHART_DIR/requirements.deploy
+  rm $CHART_DIR/Chart.lock
+  mv $CHART_DIR/Chart.yaml $CHART_DIR/Chart.deploy
 
   # compute overrides for parent and all subcharts
   COMPUTED_OVERRIDES=$CACHE_DIR/$CHART_NAME/computed-overrides.yaml
@@ -257,21 +254,13 @@ deploy() {
       array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
       n=${#array[*]}
       for i in $(seq $(($n-1)) -1 0); do
-        if expr "$HELM_VER" : "v3\..*" ; then
-          helm del "${array[i]}"
-        else
-          helm del "${array[i]}" --purge
-        fi
+        helm del "${array[i]}"
       done
     fi
   done
 
   # report on success/failures of installs/upgrades
-  if expr "$HELM_VER" : "v3\..*" ; then
-    helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
-  else
-    helm ls | grep FAILED | grep $RELEASE
-  fi
+  helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
 }
 HELM_VER=$(helm version --template "{{.Version}}")
 echo $HELM_VER
