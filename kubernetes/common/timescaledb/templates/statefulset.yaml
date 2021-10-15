@@ -30,6 +30,22 @@ spec:
     spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
       {{ include "common.podSecurityContext" . | indent 10 | trim}}
+      initContainers:
+        # we shouldn't need this but for unknown reason, it's fsGroup is not
+        # applied
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /var/lib/postgresql/data
+          image: {{ include "repositoryGenerator.image.busybox" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: {{ include "common.fullname" . }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
