@@ -1,0 +1,106 @@
+{{/*
+#
+# ============LICENSE_START=======================================================
+# org.onap.aai
+# ================================================================================
+# Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
+# Copyright (c) 2020 Nokia Intellectual Property. All rights reserved.
+# Copyright (c) 2020 Orange Intellectual Property. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+# In ONAP, the following job will always be run on each installation
+# The following job will go through the latest oxm and
+# create properties based on the data type defined in the oxm
+# and create the required indexes for the appropriate properties
+# This can be run multiple times as the code if the index or property already exists
+# then the index or property won't be created again
+# NOTE - During the execution of the createSchema job, there should
+# be no other janusgraph connection to the graph as its the reason
+# that resources traversal and graphadmin wait until this job is done
+# If you are using an existing cassandra cluster not coming from oom
+# then it is your job to ensure that there are no connections to the database
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata: {{ include "common.resourceMetadata" (dict "suffix" "cass-init-job" "dot" . )| nindent 2 }}
+spec:
+  backoffLimit: 20
+  template:
+    metadata: {{ include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers:
+      - command:
+        - /app/ready.py
+        args:
+        - --container-name
+        {{- if .Values.global.cassandra.localCluster }}
+        - portal-cassandra
+        {{- else }}
+        - cassandra
+        {{- end }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
+      containers:
+      - name: {{ include "common.name" . }}-job
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.imageCassandra }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - "/bin/sh"
+        - "-c"
+        - "cqlsh -u $CASSA_USER -p $CASSA_PASSWORD {{ ternary .Values.cassandra.service.name .Values.global.cassandra.service.name .Values.global.cassandra.localCluster }} < /docker-entrypoint-initdb.d/aaa_portal.cql"
+        env:
+        - name: CASSA_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass" "key" "login") | indent 10 }}
+        - name: CASSA_PASSWORD
+          {{- if .Values.global.cassandra.localCluster }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "portal-cass" "key" "password") | indent 10 }}
+          {{- else }}
+          {{- include "common.secret.envFromSecret" (dict "global" . "uid" "db-root-password" "key" "password") | indent 10 }}
+          {{- end }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+        - name: cassandra-docker-entrypoint-initdb
+          mountPath: /docker-entrypoint-initdb.d/aaa_portal.cql
+          subPath: portal.cql
+        resources:
+{{ include "common.resources" . }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      {{- end }}
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      - name: cassandra-docker-entrypoint-initdb
+        configMap:
+          name: {{ include "common.fullname" . }}-docker-entry-initd
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ include "common.namespace" . }}-docker-registry-key
