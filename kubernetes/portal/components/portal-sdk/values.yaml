@@ -24,17 +24,28 @@ global:
   #AAF service
   aafEnabled: true
 
+  cassandra:
+    #This will instantiate portal cassandra cluster, default:shared cassandra.
+    localCluster: false
+    service:
+      name:
+        cassandra
+
 ################################################################
 # Secrets metaconfig
 #################################################################
 
 secrets:
+  - uid: '{{ include "common.cassandra.secret.rootPassUID" . }}'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.cassandra.config.cassRootPasswordExternalSecret) . }}'
+    password: '{{ .Values.cassandra.config.cassRootPassword }}'
   - uid: portal-cass
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.cassandra.config.cassandraExternalSecret) . }}'
     login: '{{ .Values.cassandra.config.cassandraUsername }}'
     password: '{{ .Values.cassandra.config.cassandraPassword }}'
-    passwordPolicy: required
+    # passwordPolicy: required
   - uid: portal-backend-db
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.mariadb.config.backendDbExternalSecret) . }}'
@@ -122,13 +133,17 @@ mariadb:
 widget:
   service:
     name: portal-widget
+
 cassandra:
   service:
     name: portal-cassandra
   config:
     # cassandraExternalSecret: some secret
-    cassandraUsername: root
-    cassandraPassword: Aa123456
+    cassandraUsername: cassandra
+    #cassandraUsername: root
+    #cassandraPassword: Aa123456
+    cassRootPasswordExternalSecret: '{{ include "common.release" . }}-cassandra-db-user-credentials'
+
 messageRouter:
   service:
     name: message-router
