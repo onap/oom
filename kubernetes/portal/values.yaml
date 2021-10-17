@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018, 2020 AT&T
+# Modifications Copyright © 2021, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################################
+# Global configuration defaults.
+#################################################################
 global:
   env:
     tomcatDir: "/usr/local/tomcat"
@@ -21,6 +25,23 @@ global:
   portalFEPort: "30225"
   # application's front end hostname.  Must be resolvable on the client side environment
   portalHostName: "portal.api.simpledemo.onap.org"
+
+  cassandra:
+    #This will instantiate PORTAL cassandra cluster, default:shared cassandra.
+    localCluster: false
+
+    #Service Name of the cassandra cluster to connect to.
+    #Override it to portal-cassandra if localCluster is enabled.
+    serviceName: cassandra
+
+    #This should be same as shared cassandra instance or if localCluster is enabled
+    #then it should be same as portal-cassandra replicaCount
+    replicas: 3
+
+    #Cassanara login details
+    username: cassandra
+    password: cassandra
+
 
 #################################################################
 # Secrets metaconfig
@@ -40,12 +61,21 @@ secrets:
     password: '{{ .Values.mariadb.config.backendPassword }}'
     passwordPolicy: required
 
+#################################################################
+# Application configuration defaults.
+#################################################################
 config:
   logstashServiceName: log-ls
   logstashPort: 5044
-  cassandraUsername: root
-  cassandraPassword: Aa123456
-# casandraCredsExternalSecret: some secret
+
+  #default username/password for local portal cassandra
+  #cassandraUsername: root
+  #cassandraPassword: Aa123456
+
+  #default username/password for shared cassandra
+  cassandraUsername: cassandra
+  #cassandraPassword: cassandra
+  casandraCredsExternalSecret: '{{ include "common.namespace" . }}-cassandra-db-root-password'
 
 portal-mariadb:
   nameOverride: portal-db
@@ -60,11 +90,26 @@ mariadb:
 widget:
   service:
     name: portal-widget
+
+# cassandra:
+#   service:
+#     #Service Name of the cassandra cluster to connect to.
+#     #Override it to portal-cassandra if localCluster is enabled.
+#     #name: portal-cassandra
+#     name: cassandra
+#   config:
+#     cassandraExternalSecret: *dbSecretName
+
 cassandra:
+  #Service Name of local cassandra if localCluster is enabled
+  nameOverride: portal-cassandra
+  replicaCount: 1
   service:
     name: portal-cassandra
-  config:
-    cassandraExternalSecret: *dbSecretName
+  persistence:
+    mountSubPath: portal/cassandra
+    enabled: true
+
 portal-app:
   mariadb:
     config:
