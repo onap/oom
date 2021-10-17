@@ -1,4 +1,5 @@
 # Copyright © 2018 Amdocs, Bell Canada, AT&T
+# Modifications Copyright (c) 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################################
+# Global configuration defaults.
+#################################################################
+
 # Default values for cassandra.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -21,6 +26,29 @@ global: # global defaults
     mountPath: /dockerdata-nfs
     backup:
       mountPath: /dockerdata-nfs/backup
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: '{{ include "common.cassandra.secret.rootPassUID" . }}'
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.rootUser.externalSecret) . }}'
+    password: '{{ .Values.rootUser.password }}'
+  - uid: '{{ include "common.cassandra.secret.userCredentialsUID" . }}'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.db.externalSecret) . }}'
+    login: '{{ .Values.db.user }}'
+    password: '{{ .Values.db.password }}'
+  - uid: '{{ include "common.cassandra.secret.backupCredentialsUID" . }}'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.cassandrabackup.externalSecret) . }}'
+    login: '{{ .Values.cassandrabackup.user }}'
+    password: '{{ .Values.cassandrabackup.password }}'
+
+#################################################################
+# Application configuration defaults.
+#################################################################
 
 # application image
 image: cassandra:3.11.4
@@ -76,6 +104,43 @@ startup:
   timeoutSeconds: 10
   successThreshold: 1
   failureThreshold: 90
+
+## Database credentials for root (admin) user
+##
+rootUser:
+  ## Cassandra admin user
+  user: &cass_user cassandra
+  ## Cassandra admin password
+  ## Password is ignored if externalSecret is specified.
+  ## If not set, password will be "randomly" generated
+  ##
+  password: &cass_pass cassandra
+  # externalSecret:
+
+## Custom db configuration
+##
+db:
+  ## Cassandra username and password
+  ## Password is ignored if externalSecret is specified.
+  ## If not set, password will be "randomly" generated
+  ##
+  user: *cass_user
+  password: *cass_pass
+  # externalSecret:
+  ## Keyspace to create
+  ##
+  # name: my_keyspace
+
+  ## Credentials to perform backups
+  ##
+cassandrabackup:
+  ## MariaBackup username and password
+  ## Password is ignored if externalSecret is specified.
+  ## If not set, password will be "randomly" generated
+  ##
+  user: cassandrabackup
+  # password:
+  # externalSecret:
 
 service:
   name: cassandra
@@ -153,6 +218,7 @@ resources:
   requests:
     cpu: 0.2
     memory: 2.5Gi
+
 backup:
   enabled: false
   cron: "00 00 * * *"
