@@ -73,11 +73,19 @@ pullPolicy: Always
 
 # application configuration override for postgres
 postgres:
-  nameOverride: vnfsdk-postgres
+  #Service Names of the postgres db to connect to.
+  #Override it to cps-postgres if localCluster is enabled.
+  localCluster: false
   service:
-    name: vnfsdk-dbset
-    name2: vnfsdk-dbpri
-    name3: vnfsdk-dbrep
+    name: pgset
+    name2: tcp-pgset-primary
+    name3: tcp-pgset-replica
+  nameOverride: vnfsdk-postgres
+  # service:
+  #   name: vnfsdk-dbset
+  #   name2: vnfsdk-dbpri
+  #   name3: vnfsdk-dbrep
+  containerName: postgres
   container:
     name:
       primary: vnfsdk-dbpri
@@ -86,10 +94,26 @@ postgres:
     mountSubPath: vnfsdk/data
     mountInitPath: vnfsdk
   config:
-    pgUserName: postgres
-    pgDatabase: postgres
+    pgUserName: vnfsdk
+    pgDatabase: marketplacedb
+    #pgUserName: postgres
+    #pgDatabase: postgres
     pgUserExternalSecret: *pgUserCredsSecretName
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
+    # If using local postgres cluster, ucomment below line to use the default value
+    # pgRootPasswordExternalSecret: *pgRootPassSecretName
+    # Otherwise, if using an existing root password external secret, e.g. common postgres
+    # use the name of the external secret, below is the default pg root password secret name
+    pgRootPasswordExternalSecret: '{{ include "common.release" . }}-postgres-db-root-password'
+
+postgres-init:
+  nameOverride: vnfsdk-postgres-init
+  # dbScriptConfigMap: '{{ include "common.release" . }}-vnfsdk'
+  dbScriptConfigMap: 'onap-vnfsdk'
+  config:
+    pgUserName: vnfsdk
+    pgDatabase: marketplacedb
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
 
 # flag to enable debugging - application support required
 debugEnabled: false
