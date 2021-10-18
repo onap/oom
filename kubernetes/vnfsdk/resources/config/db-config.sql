@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS "marketplacedb";
+-- CREATE DATABASE IF NOT EXISTS "marketplacedb";
 
 \c marketplacedb;
 
