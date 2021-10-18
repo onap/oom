@@ -60,7 +60,10 @@ spec:
           export PG_PASSWORD=`prepare_password $PG_PASSWORD_INPUT`;
           export PG_ROOT_PASSWORD=`prepare_password $PG_ROOT_PASSWORD_INPUT`;
           cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done;
-          psql "postgresql://postgres:$PG_ROOT_PASSWORD@$PG_HOST" < /config/setup.sql
+          psql "postgresql://postgres:$PG_ROOT_PASSWORD@$PG_HOST" < /config/setup.sql;
+          {{- if .Values.dbScriptConfigMap }}
+          psql "postgresql://postgres:$PG_ROOT_PASSWORD@$PG_HOST" < /db-config/db-config.sql
+          {{- end }}
         env:
         - name: PG_HOST
           value: "{{ .Values.global.postgres.service.name2 }}"
@@ -78,12 +81,6 @@ spec:
           value: "{{ .Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
-        volumeMounts:
-        - mountPath: /config-input/setup.sql
-          name: config
-          subPath: setup.sql
-        - mountPath: /config
-          name: pgconf
         image: {{ include "repositoryGenerator.image.postgres" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
@@ -96,6 +93,11 @@ spec:
           subPath: setup.sql
         - mountPath: /config
           name: pgconf
+        {{- if .Values.dbScriptConfigMap }}
+        - mountPath: /db-config/db-config.sql
+          name: db-config
+          subPath: db-config.sql
+        {{- end}}
         resources:
 {{ include "common.resources" . | indent 12 }}
       {{- if .Values.nodeSelector }}
@@ -116,6 +118,11 @@ spec:
       - name: pgconf
         emptyDir:
           medium: Memory
+      {{- if .Values.dbScriptConfigMap }}
+      - name: db-config
+        configMap:
+          name: {{ .Values.dbScriptConfigMap }}
+      {{- end }}
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
