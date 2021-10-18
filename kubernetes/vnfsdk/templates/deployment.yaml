@@ -54,12 +54,20 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-
       - command:
         - /app/ready.py
         args:
+        {{- if .Values.global.postgres.localCluster }}
         - --container-name
-        - "{{ .Values.postgres.nameOverride }}"
+        - {{ .Values.postgres.nameOverride }}
+        - --job
+        - {{ include "common.fullname" . }}-init-postgres
+        {{- else }}
+        - --container-name
+        - {{ .Values.global.postgres.container.name }}
+        - --job
+        - {{ include "common.release" . }}-{{ index .Values "postgres-init" "nameOverride" }}-config-job
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
