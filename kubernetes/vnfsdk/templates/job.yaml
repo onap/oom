@@ -14,6 +14,7 @@
 # limitations under the License.
 */}}
 
+{{- if .Values.global.postgres.localCluster }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -38,7 +39,11 @@ spec:
         - /app/ready.py
         args:
         - --container-name
-        - "{{ .Values.postgres.nameOverride }}"
+        {{- if .Values.global.postgres.localCluster }}
+        - {{ .Values.postgres.nameOverride }}
+        {{- else }}
+        - {{ .Values.global.postgres.container.name }}
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -72,3 +77,4 @@ spec:
       - name: init-data
         configMap:
           name: {{ include "common.fullname" . }}
+{{- end }}

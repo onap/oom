@@ -17,6 +17,16 @@
 #################################################################
 global:
   nodePortPrefix: 302
+  #Service Names of the postgres db to connect to.
+  #Override it to cps-postgres if localCluster is enabled.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 
 secrets:
   - uid: pg-root-pass
@@ -86,10 +96,24 @@ postgres:
     mountSubPath: vnfsdk/data
     mountInitPath: vnfsdk
   config:
-    pgUserName: postgres
-    pgDatabase: postgres
+    pgUserName: vnfsdk
+    pgDatabase: marketplacedb
+    #pgUserName: postgres
+    #pgDatabase: postgres
     pgUserExternalSecret: *pgUserCredsSecretName
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
+    # pgRootPasswordExternalSecret: *pgRootPassSecretName
+    # pgUserExternalSecret: '{{ include "common.release" . }}-postgres-db-root-password'
+    pgRootPasswordExternalSecret: '{{ include "common.release" . }}-postgres-db-root-password'
+
+postgres-init:
+  nameOverride: vnfsdk-postgres-init
+  # dbScriptConfigMap: '{{ include "common.release" . }}-vnfsdk'
+  dbScriptConfigMap: 'onap-vnfsdk'
+  config:
+    pgUserName: vnfsdk
+    pgDatabase: marketplacedb
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
 
 # flag to enable debugging - application support required
 debugEnabled: false
