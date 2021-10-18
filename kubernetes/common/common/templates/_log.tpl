@@ -27,6 +27,7 @@
     mountPath: {{ .Values.log.path }}
   - name: filebeat-data
     mountPath: /usr/share/filebeat/data
+  resources: {{ include "common.resources" . | nindent 1 }}
 {{- end -}}
 {{- end -}}
 
