@@ -120,6 +120,12 @@ spec:
         - name: ENABLE_ODLUX_RBAC
           value: "{{ .Values.config.sdnr.oauth.odluxRbac.enabled | default "true" }}"
         {{ end }}
+        {{ if .Values.vesCollector.enabled }}
+        - name: VES_COLLECTOR_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-collector-secret" "key" "login") | indent 10 }}
+        - name: VES_COLLECTOR_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-collector-secret" "key" "password") | indent 10 }}
+        {{ end }}
 
 
         volumeMounts:
@@ -363,6 +369,9 @@ spec:
           - mountPath: {{ .Values.config.odl.etcDir }}/org.opendaylight.aaa.filterchain.cfg
             name: properties
             subPath: org.opendaylight.aaa.filterchain.cfg
+          - mountPath: {{ .Values.config.odl.etcDir }}/devicemanager.properties
+            name: properties
+            subPath: devicemanager.properties
           - mountPath: {{ .Values.config.odl.binDir }}/setenv
             name: properties
             subPath: setenv
