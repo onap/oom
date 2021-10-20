@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Slice NRM
-  version: 16.8.0
+  version: 16.4.0
   description: >-
     OAS 3.0.1 specification of the Slice NRM
     @ 2020, 3GPP Organizational Partners (ARIB, ATIS, CCSA, ETSI, TSDSI, TTA, TTC).
@@ -30,68 +30,17 @@ components:
       enum:
         - SHARED
         - NON-SHARED
-    NetworkSliceSharingIndicator:
-      type: string
-      enum:
-        - SHARED
-        - NON-SHARED
-    PerfReqEmbb:
-      type: object
-      properties:
-        expDataRateDL:
-          type: number
-        expDataRateUL:
-          type: number
-        areaTrafficCapDL:
-          type: number
-        areaTrafficCapUL:
-          type: number
-        userDensity:
-          type: number
-        activityFactor:
-          type: number
-    PerfReqEmbbList:
-      type: array
-      items:
-        $ref: '#/components/schemas/PerfReqEmbb'
-    PerfReqUrllc:
-      type: object
-      properties:
-        cSAvailabilityTarget:
-          type: number
-        cSReliabilityMeanTime:
-          type: string
-        expDataRate:
-          type: number
-        msgSizeByte:
-          type: string
-        transferIntervalTarget:
-          type: string
-        survivalTime:
-          type: string
-    PerfReqUrllcList:
-      type: array
-      items:
-        $ref: '#/components/schemas/PerfReqUrllc'
-    PerfReq:
-      oneOf:
-        - $ref: '#/components/schemas/PerfReqEmbbList'
-        - $ref: '#/components/schemas/PerfReqUrllcList'
     Category:
       type: string
       enum:
         - CHARACTER
         - SCALABILITY
     Tagging:
-      type: array
-      items:
-        type: string
-        enum:
-          - PERFORMANCE
-          - FUNCTION
-          - OPERATION
-
-
+      type: string
+      enum:
+        - PERFORMANCE
+        - FUNCTION
+        - OPERATION
     Exposure:
       type: string
       enum:
@@ -184,6 +133,13 @@ components:
           $ref: '#/components/schemas/ServAttrCom'
         kPIList:
           type: string
+    SupportedAccessTech:
+      type: object
+      properties:
+        servAttrCom:
+          $ref: '#/components/schemas/ServAttrCom'
+        accTechList:
+          type: integer
     UserMgmtOpen:
       type: object
       properties:
@@ -212,13 +168,15 @@ components:
           type: string
         nsName:
           type: string
-    ServiceProfile:
+    ServiceProfileList:
       type: object
-      properties:
-          serviceProfileId:
-            type: string
-          plmnInfoList:
-            $ref: 'nrNrm.yaml#/components/schemas/PlmnInfoList'
+      additionalProperties:
+        type: object
+        properties:
+          snssaiList:
+            $ref: 'nrNrm.yaml#/components/schemas/SnssaiList'
+          plmnIdList:
+            $ref: 'nrNrm.yaml#/components/schemas/PlmnIdList'
           maxNumberofUEs:
             type: number
           latency:
@@ -227,8 +185,8 @@ components:
             $ref: '#/components/schemas/MobilityLevel'
           sst:
             $ref: 'nrNrm.yaml#/components/schemas/Sst'
-          networkSliceSharingIndicator:
-            $ref: '#/components/schemas/NetworkSliceSharingIndicator'
+          resourceSharingLevel:
+            $ref: '#/components/schemas/SharingLevel'
           availability:
             type: number
           delayTolerance:
@@ -249,6 +207,8 @@ components:
             $ref: '#/components/schemas/MaxNumberofConns'
           kPIMonitoring:
             $ref: '#/components/schemas/KPIMonitoring'
+          supportedAccessTech:
+            $ref: '#/components/schemas/SupportedAccessTech'
           userMgmtOpen:
             $ref: '#/components/schemas/UserMgmtOpen'
           v2XModels:
@@ -267,16 +227,15 @@ components:
             type: string
           reliability:
             type: string
-    SliceProfile:
+    SliceProfileList:
       type: object
-      properties:
-          sliceProfileId:
-            type: string
-
-          plmnInfoList:
-            $ref: 'nrNrm.yaml#/components/schemas/PlmnInfoList'
-          perfReq:
-            $ref: '#/components/schemas/PerfReq'
+      additionalProperties:
+        type: object
+        properties:
+          snssaiList:
+            $ref: 'nrNrm.yaml#/components/schemas/SnssaiList'
+          plmnIdList:
+            $ref: 'nrNrm.yaml#/components/schemas/PlmnIdList'
           maxNumberofUEs:
             type: number
           coverageAreaTAList:
@@ -292,39 +251,10 @@ components:
       oneOf:
         - $ref: 'genericNrm.yaml#/components/schemas/Ipv4Addr'
         - $ref: 'genericNrm.yaml#/components/schemas/Ipv6Addr'
-    ServiceProfileList:
-       type: array
-       items:
-        $ref: '#/components/schemas/ServiceProfile'
-
-    SliceProfileList:
-      type: array
-      items:
-        $ref: '#/components/schemas/SliceProfile'
 
 #------------ Definition of concrete IOCs ----------------------------------------
 
-    SubNetwork-Single:
-      allOf:
-        - $ref: 'genericNrm.yaml#/components/schemas/Top-Attr'
-        - type: object
-          properties:
-            attributes:
-              allOf:
-                - $ref: 'genericNrm.yaml#/components/schemas/SubNetwork-Attr'
-        - $ref: 'genericNrm.yaml#/components/schemas/SubNetwork-ncO'
-        - type: object
-          properties:
-            SubNetwork:
-              $ref: '#/components/schemas/SubNetwork-Multiple'
-            NetworkSlice:
-              $ref: '#/components/schemas/NetworkSlice-Multiple'
-            NetworkSliceSubnet:
-              $ref: '#/components/schemas/NetworkSliceSubnet-Multiple'
-            EP_Transport:
-              $ref: '#/components/schemas/EP_Transport-Multiple'
-
-    NetworkSlice-Single:
+    NetworkSlice:
       allOf:
         - $ref: 'genericNrm.yaml#/components/schemas/Top-Attr'
         - type: object
@@ -335,15 +265,15 @@ components:
                 - type: object
                   properties:
                     networkSliceSubnetRef:
-                      $ref: 'comDefs.yaml#/components/schemas/Dn'
+                      $ref: 'genericNrm.yaml#/components/schemas/Dn'
                     operationalState:
-                      $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                      $ref: 'genericNrm.yaml#/components/schemas/OperationalState'
                     administrativeState:
-                      $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                      $ref: 'genericNrm.yaml#/components/schemas/AdministrativeState'
                     serviceProfileList:
                       $ref: '#/components/schemas/ServiceProfileList'
 
-    NetworkSliceSubnet-Single:
+    NetworkSliceSubnet:
       allOf:
         - $ref: 'genericNrm.yaml#/components/schemas/Top-Attr'
         - type: object
@@ -354,20 +284,20 @@ components:
                 - type: object
                   properties:
                     managedFunctionRefList:
-                      $ref: 'comDefs.yaml#/components/schemas/DnList'
+                      $ref: 'genericNrm.yaml#/components/schemas/DnList'
                     networkSliceSubnetRefList:
-                      $ref: 'comDefs.yaml#/components/schemas/DnList'
+                      $ref: 'genericNrm.yaml#/components/schemas/DnList'
                     operationalState:
-                      $ref: 'comDefs.yaml#/components/schemas/OperationalState'
+                      $ref: 'genericNrm.yaml#/components/schemas/OperationalState'
                     administrativeState:
-                      $ref: 'comDefs.yaml#/components/schemas/AdministrativeState'
+                      $ref: 'genericNrm.yaml#/components/schemas/AdministrativeState'
                     nsInfo:
                       $ref: '#/components/schemas/NsInfo'
                     sliceProfileList:
                       $ref: '#/components/schemas/SliceProfileList'
-                    epTransportRefList:
-                      $ref: 'comDefs.yaml#/components/schemas/DnList'
-
+            EPTransport:
+              $ref: '#/components/schemas/EP_Transport-Multiple'
+                      
     EP_Transport-Single:
       allOf:
         - $ref: 'genericNrm.yaml#/components/schemas/Top-Attr'
@@ -379,29 +309,11 @@ components:
                 ipAddress:
                   $ref: '#/components/schemas/IpAddress'
                 logicInterfaceId:
-                  type: string
+                  type: string 
                 nextHopInfo:
-                  type: string
+                  type: string 
                 qosProfile:
-                  type: string
-                epApplicationRefs:
-                  $ref: 'comDefs.yaml#/components/schemas/DnList'
-
-#-------- Definition of JSON arrays for name-contained IOCs ----------------------
-    SubNetwork-Multiple:
-      type: array
-      items:
-        $ref: '#/components/schemas/SubNetwork-Single'
-
-    NetworkSlice-Multiple:
-      type: array
-      items:
-        $ref: '#/components/schemas/NetworkSlice-Single'
-
-    NetworkSliceSubnet-Multiple:
-      type: array
-      items:
-        $ref: '#/components/schemas/NetworkSliceSubnet-Single'
+                  type: string 
 
     EP_Transport-Multiple:
       type: array
@@ -412,7 +324,5 @@ components:
 
     resources-sliceNrm:
       oneOf:
-       - $ref: '#/components/schemas/SubNetwork-Single'
-       - $ref: '#/components/schemas/NetworkSlice-Single'
-       - $ref: '#/components/schemas/NetworkSliceSubnet-Single'
-       - $ref: '#/components/schemas/EP_Transport-Single'
+        - $ref: '#/components/schemas/NetworkSlice'
+        - $ref: '#/components/schemas/NetworkSliceSubnet'
