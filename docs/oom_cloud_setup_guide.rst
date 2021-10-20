@@ -56,8 +56,8 @@ The versions of Kubernetes that are supported by OOM are as follows:
   el alto            1.15.2       2.14.2   1.15.2    18.09.x
   frankfurt          1.15.9       2.16.6   1.15.11   18.09.x
   guilin             1.15.11      2.16.10  1.15.11   18.09.x
-  Honolulu           1.19.9       3.5.2    1.19.9    19.03.x
-  Istanbul                                                    1.2.0
+  honolulu           1.19.9       3.5.2    1.19.9    19.03.x   1.2.0
+  Istanbul           1.19.11      3.6.3    1.19.11   19.03.x   1.5.4
   ==============     ===========  =======  ========  ======== ============
 
 .. note::

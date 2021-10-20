@@ -27,11 +27,18 @@ where <BRANCH> can be an official release tag, such as
 * 6.0.0 for Frankfurt
 * 7.0.0 for Guilin
 * 8.0.0 for Honolulu
+* 9.0.0 for Istanbul
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
   > cp -R ~/oom/kubernetes/helm/plugins/ ~/.local/share/helm/plugins
-  > helm plugin install https://github.com/chartmuseum/helm-push.git
+  > helm plugin install https://github.com/chartmuseum/helm-push.git \
+      --version 0.9.0
+
+.. note::
+  The ``--version 0.9.0`` is required as new version of helm (3.7.0 and up) is
+  now using ``push`` directly and helm-push is using ``cm-push`` starting
+  version ``0.10.0`` and up.
 
 **Step 3.** Install Chartmuseum::
 
