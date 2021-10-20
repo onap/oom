@@ -180,7 +180,10 @@ secrets:
     externalSecret: '{{ ternary (tpl (default "" .Values.config.sdnr.oauth.providersSecrets.keycloakExternalSecret) .) "oauth-disabled" .Values.config.sdnr.oauth.enabled }}'
     password: '{{ .Values.config.sdnr.oauth.providersSecrets.keycloak }}'
     passwordPolicy: required
-
+  - uid: ves-collector-secret
+    type: basicAuth
+    login: '{{ .Values.config.sdnr.vesCollector.username }}'
+    password: '{{ .Values.config.sdnr.vesCollector.password }}'
 #################################################################
 # Certificates
 #################################################################
@@ -260,6 +263,7 @@ config:
   ansibleUser: sdnc
   ansiblePassword: sdnc
   # ansibleCredsExternalSecret: some secret
+
   dbSdnctlDatabase: &sdncDbName sdnctl
   enableClustering: true
   sdncHome: /opt/onap/sdnc
@@ -353,6 +357,18 @@ config:
         title: ONAP Keycloak Provider
         roleMapping:
           mykeycloak: admin
+    vesCollector:
+      enabled: false
+      tls:
+        enabled: true
+      trustAllCertificates: false
+      username: sample1
+      password: sample1
+      address: dcae-ves-collector.onap
+      port: 8443
+      version: v7
+      reportingEntityName: ONAP SDN-R
+      eventLogMsgDetail: SHORT
 
 # dependency / sub-chart configuration
 certInitializer:
@@ -500,6 +516,7 @@ elasticsearch:
     dedicatednode: "no"
     nameOverride: *elasticSearchName
     cluster_name: sdnrdb-cluster
+
 # enable
 sdnc-web:
   enabled: true
