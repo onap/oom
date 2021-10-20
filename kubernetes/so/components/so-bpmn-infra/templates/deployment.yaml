@@ -55,8 +55,16 @@ spec:
           export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
           {{- if .Values.global.security.aaf.enabled }}
           export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-          {{- end }}
-          /app/start-app.sh
+          {{- end }} 
+          export SKIP_DB_CONFIG=true
+          cd /camunda/app/conf && \
+          for PFILE in `ls -1 *.xml`
+          do
+            echo "Copying ${PFILE}....."
+            cp ${PFILE} /camunda/conf
+            chmod 0755 /camunda/conf/${PFILE}
+          done
+          /camunda/start-camunda-app.sh
         {{- end }}
         env:
         - name: DB_HOST
@@ -78,10 +86,12 @@ spec:
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
         - name: logs
-          mountPath: /app/logs
+          mountPath: /camunda/app/logs
         - name: config
-          mountPath: /app/config
+          mountPath: /camunda/config
           readOnly: true
+        - name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-conf
+          mountPath: /camunda/app/conf
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /var/log/onap
 {{ include "so.helpers.livenessProbe" .| indent 8 }}
@@ -113,6 +123,10 @@ spec:
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
+      - name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-conf
+        configMap:
+          name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-configmap
+          defaultMode: 0755
       - name: {{ include "common.fullname" . }}-filebeat-conf
         configMap:
           name: {{ .Release.Name }}-so-filebeat-configmap
