@@ -1,4 +1,4 @@
-# Copyright © 2017 Amdocs, Bell Canada
+# Copyright © 2021 Amdocs, Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,66 +11,55 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Default values for uui.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global:
   uuiPortPrefix: 303
-
-subChartsOnly:
+uui-nlp:
   enabled: true
-
-flavor: small
-
+flavor: large
 # application image
 repository: nexus3.onap.org:10001
-image: onap/usecase-ui-server:4.0.5
-pullPolicy: Always
-
+image: onap/usecase-ui-nlp:1.0.1
+pullPolicy: IfNotPresent
 # application configuration
-
-msbaddr: msb-iag.{{include "common.namespace" .}}:443
 mraddr: message-router.{{include "common.namespace" .}}:3904
-
 # flag to enable debugging - application support required
 debugEnabled: false
-
 # default number of instances
 replicaCount: 1
-
 nodeSelector: {}
-
 affinity: {}
-
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 120
+  initialDelaySeconds: 180
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
-
 readiness:
-  initialDelaySeconds: 60
+  initialDelaySeconds: 180
   periodSeconds: 10
-
 service:
-  type: NodePort
-  name: uui-server
-  portName: uui-server
-  internalPort: 8082
-  nodePort: 99
-
+  internalPort: 33013
+  type: ClusterIP
+  name: uui-nlp
+  ports:
+    - name: http-online
+      port: 33011
+    - name: http-offline
+      port: 33012
+    - name: http-upload
+      port: 33013
 ingress:
   enabled: false
   service:
-    - baseaddr: uuiserver
-      name: "uui-server"
+    - baseaddr: uuinlp
+      name: "uui-nlp"
       port: 8082
   config:
     ssl: "redirect"
-
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -91,18 +80,20 @@ resources:
       memory: 245Mi
   large:
     limits:
-      cpu: 2
-      memory: 500Mi
+      cpu: 4
+      memory: 2Gi
     requests:
       cpu: 1
       memory: 500Mi
   unlimited: {}
-
 persistence:
   enabled: true
   #existingClaim:
   mountPath: /dockerdata-nfs
-  mountSubPath: "uui/uui-server"
+  mountSubPath: "uui/uui-nlp"
   volumeReclaimPolicy: Retain
   accessMode: ReadWriteOnce
   size: 5Gi
+securityContext:
+  user_id: 1000
+  group_id: 1000
