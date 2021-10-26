@@ -60,10 +60,6 @@ The versions of Kubernetes that are supported by OOM are as follows:
   Istanbul           1.19.11      3.6.3    1.19.11   19.03.x   1.5.4
   ==============     ===========  =======  ========  ======== ============
 
-.. note::
-  Guilin version also supports Kubernetes up to version 1.19.x and should work
-  with Helm with version up to 3.3.x but has not been thoroughly tested.
-
 Minimum Hardware Configuration
 ==============================
 
