@@ -64,7 +64,7 @@ Enter the following to install kubectl (on Ubuntu, there are slight differences
 on other O/Ss), the Kubernetes command line interface used to manage a
 Kubernetes cluster::
 
-  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/linux/amd64/kubectl
+  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.19.11/bin/linux/amd64/kubectl
   > chmod +x ./kubectl
   > sudo mv ./kubectl /usr/local/bin/kubectl
   > mkdir ~/.kube
@@ -88,8 +88,8 @@ Install Helm
 Helm is used by OOM for package and configuration management. To install Helm,
 enter the following::
 
-  > wget https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz
-  > tar -zxvf helm-v3.5.2-linux-amd64.tar.gz
+  > wget https://get.helm.sh/helm-v3.6.3-linux-amd64.tar.gz
+  > tar -zxvf helm-v3.6.3-linux-amd64.tar.gz
   > sudo mv linux-amd64/helm /usr/local/bin/helm
 
 Verify the Helm version with::
