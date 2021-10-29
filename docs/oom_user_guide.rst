@@ -15,8 +15,8 @@
 .. _Kubernetes LoadBalancer: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
 .. _user-guide-label:
 
-OOM User Guide helm3 (experimental)
-###################################
+OOM User Guide
+##############
 
 The ONAP Operations Manager (OOM) provide the ability to manage the entire
 life-cycle of an ONAP installation, from the initial deployment to final
