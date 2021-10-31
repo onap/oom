@@ -1,5 +1,5 @@
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2019-2021 AT&T Intellectual Property. All rights reserved.
+#   Copyright (C) 2021 Nordix Foundation. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 304
   persistence: {}
   aafEnabled: true
 
@@ -28,17 +27,17 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: db-creds
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
-    login: '{{ .Values.db.user }}'
-    password: '{{ .Values.db.password }}'
-    passwordPolicy: required
-  - uid: restserver-creds
+  - uid: api-secret
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.restServer.apiUserExternalSecret) . }}'
-    login: '{{ .Values.restServer.user }}'
-    password: '{{ .Values.restServer.password }}'
+    login: '{{ .Values.restServer.api.user }}'
+    password: '{{ .Values.restServer.api.password }}'
+    passwordPolicy: required
+  - uid: pap-secret
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.restServer.papUserExternalSecret) . }}'
+    login: '{{ .Values.restServer.pap.user }}'
+    password: '{{ .Values.restServer.pap.password }}'
     passwordPolicy: required
   - uid: keystore-password
     type: password
@@ -56,7 +55,7 @@ certStores:
   trustStorePassword: Pol1cy_0nap
 
 certInitializer:
-  nameOverride: policy-api-cert-initializer
+  nameOverride: policy-clamp-cl-pf-ppnt-cert-initializer
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
   fqdn: policy
@@ -78,51 +77,27 @@ certInitializer:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-api:2.5.1
+image: onap/policy-clamp-cl-pf-ppnt:6.1.3
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
-# application configuration
-db:
-  user: policy_user
-  password: policy_user
-  service:
-    name: policy-mariadb
-    internalPort: 3306
-
-restServer:
-  user: healthcheck
-  password: none
-
 # default number of instances
 replicaCount: 1
+
+# application configuration
+restServer:
+  api:
+    user: healthcheck
+    password: none
+  pap:
+    user: healthcheck
+    password: none
 
 nodeSelector: {}
 
 affinity: {}
-
-# probe configuration parameters
-liveness:
-  initialDelaySeconds: 20
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
-
-readiness:
-  initialDelaySeconds: 20
-  periodSeconds: 10
-
-service:
-  type: ClusterIP
-  name: policy-api
-  portName: policy-api
-  externalPort: 6969
-  internalPort: 6969
-  nodePort: 40
-
 ingress:
   enabled: false
 
@@ -143,9 +118,8 @@ resources:
       cpu: 200m
       memory: 2Gi
   unlimited: {}
-
 #Pods Service Account
 serviceAccount:
-  nameOverride: policy-api
+  nameOverride: policy-clamp-cl-pf-ppnt
   roles:
     - read
