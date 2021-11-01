@@ -1,28 +1,51 @@
 {{/*
-#============LICENSE_START========================================================
-# ================================================================================
-# Copyright (c) 2021 J. F. Lucas. All rights reserved.
-# ================================================================================
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ============LICENSE_END=========================================================
-*/}}
+    ============LICENSE_START========================================================
+    =================================================================================
+    Copyright (c) 2021 J. F. Lucas. All rights reserved.
+    =================================================================================
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+    =============LICENSE_END=========================================================
+
+    This template generates a JSON file with an array containing the names of the
+    components that the healthcheck container always expects to see--that is, the
+    components that are enabled in the top-level values.yaml file.
+
+    The code loops through the list of components ($components) and checks each component's
+    entry in the values.yaml file is set to "enabled".  It adds the name of each enabled
+    component to the list.
+
+    There is a bit of Helm trickery here--the code uses a dict ($needsComma), because that's
+    apparently the only way to set a variable outside of a range loop that can be updated
+    from within the range loop.  The code here generates the JSON array with one component
+    per line.  The comma at the end of the line is appended when the next entry is added, so
+    that the last entry doesn't get a trailing comma.  ($needsComma.needs gets set to true
+    after the first entry is added to the list of enabled components.  It actually gets set to
+    true redundantly every time a component is added to the list (after the first), but it's not a performance
+    issue and it's not worth cluttering the code with an "else" and worrying about the text
+    formatting consequences!)
+
+  */}}
 [
-{{- $ctx := . }}
-{{- $components := tuple "dcae-hv-ves-collector" "dcae-prh" "dcae-tcagen2" "dcae-ves-collector" }}
-{{- range $i, $v := $components }}
-{{- if index $ctx.Values . "enabled" }}
-{{- if $i }},{{ end }}
-{{ $v | quote | indent 2 }}
-{{- end -}}
-{{- end }}
+  {{- $ctx := . -}}
+  {{- $components := tuple "dcae-hv-ves-collector" "dcae-prh" "dcae-tcagen2" "dcae-ves-collector" }}
+  {{- $needsComma := dict "needs" false -}}
+  {{- range $components -}}
+    {{- if index $ctx.Values . "enabled" -}}
+      {{- if $needsComma.needs -}},{{- end -}}
+      {{- printf "\n" -}}
+      {{ . | quote | indent 4 }}
+      {{- $x := set $needsComma "needs" true -}}
+    {{- end -}}
+  {{- end }}
 ]
+

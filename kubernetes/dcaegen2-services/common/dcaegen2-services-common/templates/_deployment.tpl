@@ -272,6 +272,9 @@ spec:
         args:
         - --key-yaml
         - "{{ include "common.name" . }}|/app-config/application_config.yaml"
+        env:
+        - name: CONSUL_HOST
+          value: consul-server-ui.{{ include "common.namespace" . }}
         resources: {{ include "common.resources" . | nindent 2 }}
         volumeMounts:
           - mountPath: /app-config
