@@ -24,7 +24,7 @@ The versions of PaaS components that are supported by OOM are as follows:
   Release            Cert-Manager   Prometheus Stack
   ==============     =============  =================
   honolulu           1.2.0          13.x
-  istanbul           1.5.4          19.x
+  istanbul           1.6.0          19.x
   ==============     =============  =================
 
 This guide provides instructions on how to install the PaaS
