@@ -30,6 +30,16 @@ filebeatConfig:
   logstashPort: 5044
 
 #################################################################
+# Secrets Configuration.
+#################################################################
+secrets:
+  - uid: &drPubCredsUID drpubcreds
+    type: basicAuth
+    login: '{{ .Values.drPubscriberCreds.username }}'
+    password: '{{ .Values.drPubscriberCreds.password }}'
+    passwordPolicy: required
+
+#################################################################
 # InitContainer Images.
 #################################################################
 tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
@@ -112,6 +122,19 @@ applicationEnv:
 # It's a workaround because DMAAP specific env variables are not available in main container.
   CBS_CLIENT_CONFIG_PATH: ''
 
+# Data Router Publisher Credentials
+drPubscriberCreds:
+  username: username
+  password: password
+
+credentials:
+- name: DR_USERNAME
+  uid: *drPubCredsUID
+  key: login
+- name: DR_PASSWORD
+  uid: *drPubCredsUID
+  key: password
+
 # Initial Application Configuration
 applicationConfig:
   dmaap.certificateConfig.keyCert: /opt/app/datafile/etc/cert/cert.p12
@@ -135,8 +158,8 @@ applicationConfig:
         location: loc00
         log_url: ${DR_LOG_URL_0}
         publish_url: ${DR_FILES_PUBLISHER_URL_0}
-        username: ${DR_USERNAME_0}
-        password: ${DR_PASSWORD_0}
+        username: ${DR_USERNAME}
+        password: ${DR_PASSWORD}
       type: data_router
   streams_subscribes:
     dmaap_subscriber:
@@ -155,6 +178,8 @@ drFeedConfig:
 # DataRouter Publisher Configuration
 drPubConfig:
   - feedName: bulk_pm_feed
+    username: ${DR_USERNAME}
+    userpwd: ${DR_PASSWORD}
     dcaeLocationName: loc00
 
 # ConfigMap Configuration for Feed, Dr_Publisher

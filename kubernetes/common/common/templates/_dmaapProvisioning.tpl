@@ -138,6 +138,7 @@
   args:
   - -c
   - |
+    set -uex -o pipefail
     if [ -d /opt/app/config/cache ]; then
       cd /opt/app/config/cache
       for file in $(ls feed*); do
@@ -147,8 +148,6 @@
       done
       for file in $(ls drpub*); do
         NUM=$(echo "$file" | sed 's/drpubConfig-\([0-9]\+\)-resp.json/\1/')
-        export DR_USERNAME_"$NUM"="$(grep -o '"username":"[^"]*' "$file" | cut -d '"' -f4)"
-        export DR_PASSWORD_"$NUM"="$(grep -o '"userpwd":"[^"]*' "$file" | cut -d '"' -f4)"
         export DR_FILES_PUBLISHER_ID_"$NUM"="$(grep -o '"pubId":"[^"]*' "$file" | cut -d '"' -f4)"
       done
       for file in $(ls drsub*); do
