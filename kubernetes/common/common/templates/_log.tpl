@@ -27,6 +27,13 @@
     mountPath: {{ .Values.log.path }}
   - name: filebeat-data
     mountPath: /usr/share/filebeat/data
+  resources:
+    requests:
+      memory: "5Mi"
+      cpu: "10m"
+    limits:
+      memory: "20Mi"
+      cpu: "100m"
 {{- end -}}
 {{- end -}}
 
