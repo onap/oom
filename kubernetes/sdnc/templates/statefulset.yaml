@@ -130,11 +130,11 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-      {{ if .Values.dgbuilder.enabled -}}
+      {{ if or .Values.dgbuilder.enabled .Values.config.sdnr.enabled -}}
       - command:
         - /app/ready.py
         args:
-        {{ if or .Values.dgbuilder.enabled .Values.config.sdnr.enabled -}}
+        {{ if .Values.dgbuilder.enabled -}}
         - --container-name
         - {{ include "common.mariadbService" . }}
         - --job-name
@@ -200,8 +200,10 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          {{ if and .Values.config.sdnr.enabled .Values.config.sdnr.sdnronly -}}
           - name: MYSQL_ROOT_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
+          {{ end -}}
           - name: ODL_ADMIN_USERNAME
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 12 }}
           - name: ODL_USER
