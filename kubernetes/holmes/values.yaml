@@ -19,7 +19,16 @@
 global:
   nodePortPrefix: 302
   consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.0.0
-
+  #Service Names of the postgres db to connect to.
+  #Override it to dbc-pg if localCluster is enabled.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: &postgres tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 secrets:
 - uid: pg-root-pass
   name: &pgRootPassSecretName '{{ include "common.release" . }}-holmes-pg-root-pass'
@@ -65,11 +74,23 @@ postgres:
     mountSubPath: holmes/data
     mountInitPath: holmes
 
+postgres-init:
+  nameOverride: holmes-postgres-init
+  config:
+    pgUserName: holmes
+    pgDatabase: *dbName
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
+
 holmes-engine-mgmt:
   config:
     pgConfig:
       dbName: *dbName
-      dbHost: *dbHost
+      # dbHost: *dbHost
+      dbHost: *postgres
       dbPort: *dbPort
       dbUserCredsExternalSecret: *pgUserCredsSecretName
 
@@ -77,7 +98,8 @@ holmes-rule-mgmt:
   config:
     pgConfig:
       dbName: *dbName
-      dbHost: *dbHost
+      # dbHost: *dbHost
+      dbHost: *postgres
       dbPort: *dbPort
       dbUserCredsExternalSecret: *pgUserCredsSecretName
 
