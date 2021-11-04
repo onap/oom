@@ -107,17 +107,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       # Filebeat sidecar container
-        - name: {{ include "common.name" . }}-filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap/datarouter-prov
+        {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
@@ -132,11 +122,7 @@ spec:
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ include "common.fullname" . }}-dmaap-dr-prov-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
+      {{ include "common.log.volumes" . | nindent 6 }}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
       imagePullSecrets:
