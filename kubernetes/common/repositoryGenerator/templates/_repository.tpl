@@ -137,6 +137,10 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "dbcClientImage") .) }}
 {{- end -}}
 
+{{- define "repositoryGenerator.image.quitQuit" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "quitQuitImage") .) }}
+{{- end -}}
+
 {{/*
   Resolve the image repository secret token.
   The value for .Values.global.repositoryCred is used if provided:
