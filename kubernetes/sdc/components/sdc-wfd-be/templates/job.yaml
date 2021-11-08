@@ -38,7 +38,8 @@ spec:
       initContainers:
         - name: {{ include "common.name" . }}-init-readiness
           image: {{ include "repositoryGenerator.image.readiness" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          imagePullPolicy:
+            {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
           - /app/ready.py
           args:
@@ -61,22 +62,30 @@ spec:
               memory: 20Mi
       containers:
         - name: {{ include "common.name" . }}-job
-          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.configInitImage }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          image:
+            "{{ include "repositoryGenerator.repository" . }}\
+            /{{ .Values.configInitImage }}"
+          imagePullPolicy:
+            {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
-          - name: CS_HOST
-            value: "{{ .Values.global.cassandra.serviceName }}"
-          - name: CS_PORT
-            value: "{{ .Values.config.cassandraClientPort }}"
-          - name: CS_AUTHENTICATE
-            value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
-          - name: CS_USER
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_user}
-          - name: CS_PASSWORD
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
+            - name: CS_HOST
+              value: "{{ .Values.global.cassandra.serviceName }}"
+            - name: CS_PORT
+              value: "{{ .Values.config.cassandraClientPort | quote }}"
+            - name: CS_AUTHENTICATE
+              value: "{{ .Values.config.cassandraAuthenticationEnabled | quote }}"
+            - name: CS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_user
+            - name: CS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_password
           resources: {{ include "common.resources" . | nindent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end }}
