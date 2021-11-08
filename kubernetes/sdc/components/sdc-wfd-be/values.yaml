@@ -20,13 +20,14 @@ global:
   nodePortPrefix: 302
   aafEnabled: true
   cassandra:
-    #This flag allows SDC to instantiate its own cluster, serviceName
-    #should be sdc-cs if this flag is enabled
+    # This flag allows SDC to instantiate its own cluster, serviceName
+    # should be sdc-cs if this flag is enabled
     localCluster: false
-    #The cassandra service name to connect to (default: shared cassandra service)
+    # The cassandra service name to connect to
+    # (default: shared cassandra service)
     serviceName: cassandra
-    #Shared cassandra cluster replicaCount, should be changed if localCluster is enabled
-    #to match with its own cluster replica
+    # Shared cassandra cluster replicaCount, should be changed if
+    # localCluster is enabled to match with its own cluster replica
     replicaCount: 3
     clusterName: cassandra
     dataCenter: Pod
@@ -69,10 +70,10 @@ config:
   javaOptions: "-Xmx1536m -Xms1536m"
   cassandraAuthenticationEnabled: true
   cassandraClientPort: 9042
-  sdcProtocol: HTTPS
-  sdcEndpoint: sdc-be:8443
+  sdcEndpoint:
+    https: sdc-be:8443
+    http: sdc-be:8080
   sdcExternalUser: workflow
-  serverSSLEnabled: true
   serverSSLKeyStoreType: jks
   serverSSLTrustStoreType: jks
   cassandraSSLEnabled: false
@@ -90,16 +91,16 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
-liveness:
-  initialDelaySeconds: 60
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+#liveness:
+#  initialDelaySeconds: 60
+#  periodSeconds: 10
+#  # necessary to disable liveness probe when setting breakpoints
+#  # in debugger so K8s doesn't restart unresponsive container
+#  enabled: true
 
-readiness:
-  initialDelaySeconds: 60
-  periodSeconds: 10
+#readiness:
+#  initialDelaySeconds: 60
+#  periodSeconds: 10
 
 # probe configuration parameters
 liveness:
@@ -125,7 +126,7 @@ startup:
 
 service:
   type: NodePort
-  portName: sdc-wfd-be
+  portName: http
   internalPort: 8080
   externalPort: 8080
   internalPort2: 8443
@@ -166,3 +167,7 @@ serviceAccount:
   nameOverride: sdc-wfd-be
   roles:
     - read
+
+wait_for_job_container:
+  containers:
+    - '{{ include "common.name" . }}-job'
