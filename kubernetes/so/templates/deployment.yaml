@@ -83,26 +83,14 @@ spec:
           mountPath: /app/config
           readOnly: true
         - name: {{ include "common.fullname" . }}-logs
-          mountPath: /var/log/onap
+          mountPath: {{ .Values.log.path }}
 {{ include "so.helpers.livenessProbe" .| indent 8 }}
         ports:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
           protocol: TCP
       # Filebeat sidecar container
-      - name: {{ include "common.name" . }}-filebeat-onap
-        image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          mountPath: /usr/share/filebeat/filebeat.yml
-          subPath: filebeat.yml
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          mountPath: /usr/share/filebeat/data
-        - name: logs
-          mountPath: /var/log/onap/so
-        - name: {{ include "common.fullname" . }}-logs
-          mountPath: /var/log/onap
+      {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
       - name: logs
@@ -113,11 +101,7 @@ spec:
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ .Release.Name }}-so-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
+      {{ include "common.log.volumes" . | nindent 6 }}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
       imagePullSecrets:
