@@ -160,24 +160,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
         # side car containers
-        - name: {{ include "common.name" . }}-filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 3m
-              memory: 20Mi
+        {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-localtime
@@ -188,12 +171,8 @@ spec:
           emptyDir:
             medium: "Memory"
         {{- end }}
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          configMap:
-            name: {{ include "common.release" . }}-sdc-filebeat-configmap
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          emptyDir: {}
-        - name:  {{ include "common.fullname" . }}-logs
+        {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 8 }}
+        - name: logs
           emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

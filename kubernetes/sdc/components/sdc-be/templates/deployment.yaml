@@ -169,7 +169,7 @@ spec:
           - name: {{ include "common.fullname" . }}-localtime
             mountPath: /etc/localtime
             readOnly: true
-          - name: {{ include "common.fullname" . }}-logs
+          - name: logs
             mountPath: /var/log/onap
           - name: {{ include "common.fullname" . }}-logback
             mountPath: /tmp/logback.xml
@@ -179,34 +179,13 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/app/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
-        - name: {{ include "common.name" . }}-filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 3m
-              memory: 20Mi
+        {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: {{ include "common.fullname" . }}-localtime
         hostPath:
           path: /etc/localtime
-      - name: {{ include "common.fullname" . }}-filebeat-conf
-        configMap:
-          name: {{ include "common.release" . }}-sdc-filebeat-configmap
-      - name: {{ include "common.fullname" . }}-data-filebeat
-        emptyDir: {}
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: {{ include "common.fullname" . }}-logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
@@ -216,7 +195,7 @@ spec:
           defaultMode: 0755
       - name: sdc-environments-output
         emptyDir: { medium: "Memory" }
-      - name: {{ include "common.fullname" . }}-logs
+      - name: logs
         emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
