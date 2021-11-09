@@ -352,7 +352,7 @@ spec:
             subPath: blueprints-processor-adaptor.properties
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
-          - mountPath: /var/log/onap
+          - mountPath: {{ .Values.log.path }}
             name: logs
           - mountPath: {{ .Values.config.odl.salConfigDir }}/{{ .Values.config.odl.salConfigVersion}}/sal-clustering-config-{{ .Values.config.odl.salConfigVersion}}-akkaconf.xml
             name: properties
@@ -382,17 +382,7 @@ spec:
           {{ end }}
           resources: {{ include "common.resources" . | nindent 12 }}
         # side car containers
-        - name: filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - mountPath: /usr/share/filebeat/filebeat.yml
-            name: filebeat-conf
-            subPath: filebeat.yml
-          - mountPath: /var/log/onap
-            name: logs
-          - mountPath: /usr/share/filebeat/data
-            name: data-filebeat
+        {{ include "common.log.sidecar" . | nindent 8 }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end }}
@@ -408,11 +398,7 @@ spec:
             path: /etc/localtime
         - name: logs
           emptyDir: {}
-        - name: data-filebeat
-          emptyDir: {}
-        - name: filebeat-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-filebeat-configmap
+        {{ include "common.log.volumes" . | nindent 8 }}
         - name: sdnc-logging-cfg-config
           configMap:
             name: {{ include "common.fullname" . }}-log-configmap
