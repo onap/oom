@@ -1,0 +1,96 @@
+#============LICENSE_START========================================================
+#=================================================================================
+# Copyright (c) 2021 AT&T. All rights reserved.
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============LICENSE_END=========================================================
+
+# Global values
+global:
+  pullPolicy: Always
+  persistence: {}
+image: onap/usecase-ui-nlp:1.0.2
+
+uui-nlp:
+  enabled: true
+
+flavor: large
+
+onLinePort: &online_port 33011
+offLinePort: &offline_port 33012
+uploadPort: &upload_port 33013
+
+# service configuration
+service:
+  internalPort: 33013
+  type: ClusterIP
+  name: uui-nlp
+  ports:
+    - name: http-online
+      port: *online_port
+    - name: http-offline
+      port: *offline_port
+    - name: http-upload
+      port: *upload_port
+
+
+liveness:
+  initialDelaySeconds: 300
+  periodSeconds: 30
+  enabled: true
+
+readiness:
+  initialDelaySeconds: 300
+  periodSeconds: 10
+
+# Below parameter should match setting in all clients
+# including contrib\tools\registry-initialize.sh
+# which does preload
+#registryCred:
+#  username: onapinitializer
+#  password: demo123456!
+
+# Parameters for persistent storage
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 4Gi
+  mountPath: /dockerdata-nfs
+  mountSubPath: uui-nlp
+  volumeReclaimPolicy: Retain
+
+serviceAccount:
+  nameOverride: uui-nlp
+  roles:
+    - read
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 0.5
+      memory: 512Mi
+  large:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+  unlimited: {}
