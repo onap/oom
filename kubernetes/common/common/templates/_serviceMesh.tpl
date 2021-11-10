@@ -37,3 +37,28 @@ echo "*** exiting with script exit code" ;
 exit "$RCODE"
 {{-   end }}
 {{- end -}}
+
+{{- define "common.waitForJobContainer" -}}
+{{-   $dot := default . .dot -}}
+{{-   $wait_for_job_container := default $dot.Values.wait_for_job_container .wait_for_job_container -}}
+{{- if (include "common.onServiceMesh" .) }}
+- name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $wait_for_job_container.name) (empty $wait_for_job_container.name) }}-service-mesh-wait-for-job-container
+  image: {{ include "repositoryGenerator.image.quitQuit" $dot }}
+  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  command:
+  - /app/ready.py
+  args:
+  {{- range $container := $wait_for_job_container.containers }}
+  - --service-mesh-check
+  - {{ tpl $container $dot }}
+  {{- end }}
+  - "-t"
+  - "45"
+  env:
+  - name: NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace
+{{- end }}
+{{- end }}
