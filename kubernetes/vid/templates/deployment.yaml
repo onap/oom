@@ -136,7 +136,7 @@ spec:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-          - mountPath: /var/log/onap
+          - mountPath: "{{ .Values.log.path }}"
             name: vid-logs
           - mountPath: /tmp/logback.xml
             name: vid-logback
@@ -154,29 +154,15 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       # side car containers
-        - name: filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - mountPath: /usr/share/filebeat/filebeat.yml
-            name: filebeat-conf
-            subPath: filebeat.yml
-          - mountPath: /var/log/onap
-            name: vid-logs
-          - mountPath: /usr/share/filebeat/data
-            name: vid-data-filebeat
+        {{ include "common.log.sidecar" . | nindent 8 }}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
-        - name: filebeat-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-filebeat-configmap
+        {{ include "common.log.volumes" . | nindent 8 }}
         - name: vid-cache
           emptyDir: {}
         - name: vid-logs
-          emptyDir: {}
-        - name: vid-data-filebeat
           emptyDir: {}
         - name: vid-logback
           configMap:
