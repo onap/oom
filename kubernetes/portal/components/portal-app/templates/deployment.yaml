@@ -158,7 +158,7 @@ spec:
         - name: properties-onapportal
           mountPath: "{{ .Values.global.env.tomcatDir }}/temp"
         - name: var-log-onap
-          mountPath: /var/log/onap
+          mountPath: "{{ .Values.log.path }}"
         resources:
 {{ include "common.resources" . }}
       {{- if .Values.nodeSelector }}
@@ -169,17 +169,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 10 }}
       {{- end }}
-      - name: filebeat-onap
-        image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          name: filebeat-conf
-          subPath: filebeat.yml
-        - name: portal-data-filebeat
-          mountPath: /usr/share/filebeat/data
-        - name: var-log-onap
-          mountPath: /var/log/onap
+      {{ include "common.log.sidecar" . | nindent 6 }}
       volumes:
 {{ include "common.certInitializer.volumes" . | indent 8 }}
         - name: localtime
@@ -192,12 +182,8 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-onapportal
             defaultMode: 0755
-        - name: filebeat-conf
-          configMap:
-            name: portal-filebeat
+        {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 8 }}
         - name: var-log-onap
-          emptyDir: {}
-        - name: portal-data-filebeat
           emptyDir: {}
         - name: portal-tomcat-logs
           emptyDir: {}
