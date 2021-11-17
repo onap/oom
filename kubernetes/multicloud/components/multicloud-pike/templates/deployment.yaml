@@ -60,7 +60,7 @@ spec:
          value: "{{ .Values.config.ssl_enabled }}"
        name: {{ include "common.name" . }}
        volumeMounts:
-       - mountPath: /var/log/onap
+       - mountPath: "{{ .Values.log.path }}"
          name: pike-log
        - mountPath: /opt/pike/pike/pub/config/log.yml
          name: pike-logconfig
@@ -88,26 +88,12 @@ spec:
          failureThreshold: {{ .Values.liveness.failureThreshold }}
        {{ end }}
      # side car containers
-     - image: {{ include "repositoryGenerator.image.logging" . }}
-       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-       name: filebeat-onap
-       volumeMounts:
-       - mountPath: /usr/share/filebeat/filebeat.yml
-         name: filebeat-conf
-         subPath: filebeat.yml
-       - mountPath: /var/log/onap
-         name: pike-log
-       - mountPath: /usr/share/filebeat/data
-         name: pike-data-filebeat
+     {{ include "common.log.sidecar" . | nindent 5 }}
      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
      volumes:
      - name: pike-log
        emptyDir: {}
-     - name: pike-data-filebeat
-       emptyDir: {}
-     - name: filebeat-conf
-       configMap:
-         name: multicloud-filebeat-configmap
+     {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix"  (tpl .Values.logConfigMapNamePrefix .)) | nindent 5 }}
      - name: pike-logconfig
        configMap:
          name: {{ include "common.fullname" . }}-log-configmap
