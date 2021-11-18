@@ -104,20 +104,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
         # side car containers
-        - name: filebeat-onap
-          image: {{ include "repositoryGenerator.image.logging" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-          - name: {{ include "common.fullname" . }}-filebeat-conf
-            mountPath: /usr/share/filebeat/filebeat.yml
-            subPath: filebeat.yml
-          - name: {{ include "common.fullname" . }}-data-filebeat
-            mountPath: /usr/share/filebeat/data
-          - name: {{ include "common.fullname" . }}-logs
-            mountPath: /var/log/onap/msb/msb-eag
-          - mountPath: /opt/ajsc/etc/config/logback.xml
-            name: {{ include "common.fullname" . }}-log-conf
-            subPath: logback.xml
+        {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
         {{ include "common.certInitializer.volumes" . | indent 8 | trim }}
@@ -127,11 +114,7 @@ spec:
         - name: {{ include "common.fullname" . }}-nginx-conf
           configMap:
             name: {{ include "common.fullname" . }}-nginx
-        - name: {{ include "common.fullname" . }}-filebeat-conf
-          configMap:
-            name: {{ include "common.release" . }}-msb-filebeat-configmap
-        - name: {{ include "common.fullname" . }}-data-filebeat
-          emptyDir: {}
+        {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 8 }}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
         - name: localtime
