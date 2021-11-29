@@ -311,6 +311,8 @@ GLOBAL_POLICY_USERNAME = '{{ .Values.policyUsername }}'
 GLOBAL_POLICY_PASSWORD = '{{ .Values.policyPassword }}'
 GLOBAL_POLICY_HEALTHCHECK_USERNAME = '{{ .Values.policyComponentUsername }}'
 GLOBAL_POLICY_HEALTHCHECK_PASSWORD = '{{ .Values.policyComponentPassword }}'
+GLOBAL_POLICY_ADMIN_USERNAME = '{{ .Values.policyAdminUsername }}'
+GLOBAL_POLICY_ADMIN_PASSWORD = '{{ .Values.policyAdminPassword }}'
 # portal info - everything is from the private oam network (also called onap private network)
 GLOBAL_PORTAL_SERVER_PROTOCOL = "https"
 GLOBAL_PORTAL_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "portal-app" "port" 8443) }}'
