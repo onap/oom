@@ -28,6 +28,8 @@ spec:
     metadata:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}-bootstrap-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
@@ -58,7 +60,7 @@ spec:
           name: config
       containers:
       - name: {{ include "common.name" . }}-update-config
-        image: "{{ .Values.global.envsubstImage }}"
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         securityContext:
           runAsGroup: {{ .Values.groupID }}
