@@ -69,7 +69,7 @@ spec:
           value: "{{ .Values.config.ssl_enabled }}"
         name: {{ include "common.name" . }}
         volumeMounts:
-        - mountPath: /var/log/onap
+        - mountPath: "{{ .Values.log.path }}"
           name: windriver-log
         - mountPath: /opt/windriver/titanium_cloud/pub/config/log.yml
           name: windriver-logconfig
@@ -96,17 +96,7 @@ spec:
           failureThreshold: {{ .Values.liveness.failureThreshold }}
         {{ end }}
       # side car containers
-      - image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: filebeat-onap
-        volumeMounts:
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          name: filebeat-conf
-          subPath: filebeat.yml
-        - mountPath: /var/log/onap
-          name: windriver-log
-        - mountPath: /usr/share/filebeat/data
-          name: windriver-data-filebeat
+      {{ include "common.log.sidecar" . | nindent 7 }}
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.artifactImage }}
         name: framework-artifactbroker
         command: ["/opt/app/distribution/bin/artifact-dist.sh"]
@@ -124,11 +114,7 @@ spec:
       volumes:
       - name: windriver-log
         emptyDir: {}
-      - name: windriver-data-filebeat
-        emptyDir: {}
-      - name: filebeat-conf
-        configMap:
-          name: multicloud-filebeat-configmap
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 7 }}
       - name: windriver-logconfig
         configMap:
           name: {{ include "common.fullname" . }}-log-configmap
