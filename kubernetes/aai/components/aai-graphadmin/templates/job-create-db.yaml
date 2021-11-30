@@ -126,7 +126,7 @@ spec:
         - -c
         - |
            bash docker-entrypoint.sh createDBSchema.sh
-           {{- include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+           {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.securityContext.user_id | quote }}
@@ -173,12 +173,14 @@ spec:
       - name: config
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: properties-input
-        configMap:
-          name: {{ include "common.fullname" . }}-properties
       - name: properties
+      {{- if .Values.global.aafEnabled }}
         emptyDir:
           medium: Memory
+      - name: properties-input
+      {{- end }}
+        configMap:
+          name: {{ include "common.fullname" . }}-properties
       restartPolicy: Never
       imagePullSecrets:
       - name: {{ include "common.namespace" . }}-docker-registry-key
