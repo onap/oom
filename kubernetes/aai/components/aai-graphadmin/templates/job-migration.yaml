@@ -171,7 +171,7 @@ spec:
         - -c
         - |
            bash docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges ;
-           {{- include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+           {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.securityContext.user_id | quote }}
@@ -221,12 +221,14 @@ spec:
       - name: {{ include "common.fullname" . }}-snapshots
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}-migration
-      - name: properties-input
-        configMap:
-          name: {{ include "common.fullname" . }}-properties
       - name: properties
+      {{- if .Values.global.aafEnabled }}
         emptyDir:
           medium: Memory
+      - name: properties-input
+      {{- end }}
+        configMap:
+          name: {{ include "common.fullname" . }}-properties
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -322,7 +324,7 @@ spec:
         - -c
         - |
            bash docker-entrypoint.sh dataSnapshot.sh
-           {{- include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+           {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.securityContext.user_id | quote }}
