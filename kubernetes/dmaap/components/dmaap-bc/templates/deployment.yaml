@@ -23,9 +23,10 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-{{- if or .Values.global.aafEnabled .Values.PG.enabled }}
+{{- if .Values.PG.enabled }}
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-update-config
+        command:
         - sh
         args:
         - -c
@@ -42,7 +43,22 @@ spec:
           name: {{ include "common.name" . }}-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
+      - name: {{ include "common.name" . }}-postgres-readiness
+        command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - {{ .Values.postgres.nameOverride }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+{{- end }}
+{{- if .Values.global.aafEnabled }}
 {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - name: {{ include "common.name" . }}-permission-fixer
         image: {{ include "repositoryGenerator.image.busybox" . }}
@@ -59,12 +75,11 @@ spec:
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         command: ["/bin/sh"]
         args: [ "-c", "sed -i -e '/cadi_keystore_password=/d' -e '/cadi_keystore_password_jks/p' -e 's/cadi_keystore_password_jks/cadi_keystore_password/' -e 's/dmaap-bc.p12/dmaap-bc.jks/' /opt/app/osaaf/local/org.onap.dmaap-bc.cred.props" ]
-      - name: {{ include "common.name" . }}-postgres-readiness
+{{- end }}
+      - name: {{ include "common.name" . }}-dmaap-readiness
         command:
         - /app/ready.py
         args:
-        - --container-name
-        - {{ .Values.postgres.nameOverride }}
         - --container-name
         - message-router
         - --container-name
@@ -77,7 +92,6 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -88,7 +102,6 @@ spec:
             httpGet:
               port: {{ .Values.liveness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
@@ -96,7 +109,6 @@ spec:
             httpGet:
               port: {{ .Values.readiness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
