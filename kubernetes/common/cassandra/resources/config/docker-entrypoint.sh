@@ -39,6 +39,9 @@ _sed_in_place() {
 
 if [ "$1" = 'cassandra' ]; then
         : ${CASSANDRA_RPC_ADDRESS='0.0.0.0'}
+        if [ "$CASSANDRA_RPC_ADDRESS" = '0.0.0.0' ]; then
+                CASSANDRA_RPC_ADDRESS="$(_ip_address)"
+        fi
 
         : ${CASSANDRA_LISTEN_ADDRESS='auto'}
         if [ "$CASSANDRA_LISTEN_ADDRESS" = 'auto' ]; then
