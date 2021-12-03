@@ -38,6 +38,11 @@ secrets:
     login: '{{ .Values.aafCreds.identity }}'
     password: '{{ .Values.aafCreds.password }}'
     passwordPolicy: required
+  - uid: &cpsCredsUID cpscreds
+    type: basicAuth
+    login: '{{ .Values.cpsCreds.identity }}'
+    password: '{{ .Values.cpsCreds.password }}'
+    passwordPolicy: required
   - uid: &pgUserCredsSecretUid pg-user-creds
     name: &pgUserCredsSecretName '{{ include "common.release" . }}-sonhms-pg-user-creds'
     type: basicAuth
@@ -70,7 +75,7 @@ certDirectory: /opt/app/sonhms/etc/certs
 # TLS role -- set to true if microservice acts as server
 # If true, an init container will retrieve a server cert
 # and key from AAF and mount them in certDirectory.
-tlsServer: true
+tlsServer: false
 
 # Policy configuraiton properties
 # if present, policy-sync side car will be deployed
@@ -92,7 +97,7 @@ readiness:
   periodSeconds: 15
   timeoutSeconds: 1
   path: /healthcheck
-  scheme: HTTPS
+  scheme: HTTP
   port: 8080
 
 # Service Configuration
@@ -108,6 +113,9 @@ service:
 aafCreds:
   identity: dcae@dcae.onap.org
   password: demo123456!
+cpsCreds:
+  identity: cps
+  password: cpsr0cks!
 
 credentials:
 - name: AAF_IDENTITY
@@ -115,6 +123,12 @@ credentials:
   key: login
 - name: AAF_PASSWORD
   uid: *aafCredsUID
+  key: password
+- name: CPS_IDENTITY
+  uid: *cpsCredsUID
+  key: login
+- name: CPS_PASSWORD
+  uid: *cpsCredsUID
   key: password
 - name: PG_USERNAME
   uid:  *pgUserCredsSecretUid
@@ -130,6 +144,8 @@ applicationConfig:
   postgres.port: 5432
   postgres.username: ${PG_USERNAME}
   postgres.password: ${PG_PASSWORD}
+  cps.username: ${CPS_IDENTITY}
+  cps.password: ${CPS_PASSWORD}
   sonhandler.pollingInterval: 20
   sonhandler.pollingTimeout: 60
   cbsPollingInterval: 60
@@ -145,6 +161,12 @@ applicationConfig:
   sonhandler.bufferTime: 60
   sonhandler.cg: sonhms-cg
   sonhandler.cid: sonhms-cid
+  sonhandler.clientType: cps
+  cps.service.url: http://cps-tbdmt:8080
+  cps.get.celldata: execute/cps-ran-schemaset/get-cell-data
+  cps.get.nbr.list.url: execute/cps-ran-schemaset/get-nbr-list
+  cps.get.pci.url: execute/ran-network-schemaset/get-pci
+  cps.get.pnf.url: execute/ran-network-schemaset/get-pnf
   sonhandler.configDb.service: http://configdb:8080
   sonhandler.oof.service: https://oof-osdf:8698
   sonhandler.oof.endpoint: /api/oof/v1/pci
