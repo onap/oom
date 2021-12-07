@@ -49,10 +49,13 @@ Extra DNS server already deployed:
 
 list_node_with_external_addrs()
 {
-    local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
+    local WORKER_NODES
+    WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
     for worker in $WORKER_NODES; do
-        local external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
-        local internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
+        local external_ip
+        external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
+        local internal_ip
+        internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
         if [ $internal_ip != $external_ip ]; then
             echo $external_ip
             break
@@ -61,7 +64,8 @@ list_node_with_external_addrs()
 }
 
 ingress_controller_ip() {
-    local metal_ns=$(kubectl get ns --no-headers --output=custom-columns=NAME:metadata.name |grep metallb-system)
+    local metal_ns
+    metal_ns=$(kubectl get ns --no-headers --output=custom-columns=NAME:metadata.name |grep metallb-system)
     if [ -z $metal_ns ]; then
         echo $CLUSTER_IP
     else
@@ -70,13 +74,16 @@ ingress_controller_ip() {
 }
 
 deploy() {
-    local ingress_ip=$(ingress_controller_ip)
+    local ingress_ip
+    ingress_ip=$(ingress_controller_ip)
     initdir = $(pwd)
     cd $SPATH/bind9dns
     if [ $# -eq 0 ]; then
-        local cl_domain="simpledemo.onap.org"
+        local cl_domain
+        cl_domain="simpledemo.onap.org"
     else
-        local cl_domain=$1
+        local cl_domain
+        cl_domain=$1
         shift
     fi
     if [ $# -ne 0 ]; then
