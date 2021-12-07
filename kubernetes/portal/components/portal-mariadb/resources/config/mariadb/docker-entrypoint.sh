@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -eo pipefail
-shopt -s nullglob
 
 # logging functions
 mysql_log() {
