@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -eo pipefail
 shopt -s nullglob
@@ -170,11 +170,20 @@ docker_init_database_dir() {
     mysql_note "Database files initialized"
 }
 
+if [ -z "$DATADIR" ]; then
+    DATADIR='unknown'
+fi
+if [ -z "$SOCKET" ]; then
+    SOCKET='unknown'
+fi
+if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
+    DATABASE_ALREADY_EXISTS='false'
+fi
+
 # Loads various settings that are used elsewhere in the script
 # This should be called after mysql_check_config, but before any other functions
 docker_setup_env() {
     # Get config
-    declare -g DATADIR SOCKET
     DATADIR="$(mysql_get_config 'datadir' "$@")"
     SOCKET="$(mysql_get_config 'socket' "$@")"
 
@@ -186,7 +195,6 @@ docker_setup_env() {
     file_env 'MYSQL_ROOT_PASSWORD'
     file_env 'PORTAL_DB_TABLES'
 
-    declare -g DATABASE_ALREADY_EXISTS
     if [ -d "$DATADIR/mysql" ]; then
         DATABASE_ALREADY_EXISTS='true'
     fi
