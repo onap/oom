@@ -50,13 +50,6 @@ file_env() {
     unset "$fileVar"
 }
 
-# check to see if this file is being run or sourced from another script
-_is_sourced() {
-    # https://unix.stackexchange.com/a/215279
-    [ "${#FUNCNAME[@]}" -ge 2 ] \
-        && [ "${FUNCNAME[0]}" = '_is_sourced' ] \
-        && [ "${FUNCNAME[1]}" = 'source' ]
-}
 
 # usage: docker_process_init_files [file [file [...]]]
 #    ie: docker_process_init_files /always-initdb.d/*
@@ -376,6 +369,7 @@ _main() {
 }
 
 # If we are sourced from elsewhere, don't perform any further actions
-if ! _is_sourced; then
+# https://stackoverflow.com/questions/2683279/how-to-detect-if-a-script-is-being-sourced/2942183#2942183
+if [ $(basename $0) != 'docker-entrypoint.sh' ]; then
     _main "$@"
 fi
