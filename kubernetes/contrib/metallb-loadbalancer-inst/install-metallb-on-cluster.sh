@@ -29,10 +29,13 @@ $0 [cluster_ip1] ... [cluster_ipn]  Cluster address or ip ranges
 
 find_nodes_with_external_addrs()
 {
-    local WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
+    local WORKER_NODES
+    WORKER_NODES=$(kubectl get no -l node-role.kubernetes.io/worker=true -o jsonpath='{.items..metadata.name}')
     for worker in $WORKER_NODES; do
-        local external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
-        local internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
+        local external_ip
+        external_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/external-ip }')
+        local internal_ip
+        internal_ip=$(kubectl get no $worker  -o jsonpath='{.metadata.annotations.rke\.cattle\.io/internal-ip }')
         if [ $internal_ip != $external_ip ]; then
             echo $external_ip
         fi

@@ -29,7 +29,8 @@ _ip_address() {
 
 # "sed -i", but without "mv" (which doesn't work on a bind-mounted file, for example)
 _sed_in_place() {
-        local filename="$1"; shift
+        local filename
+        filename="$1"; shift
         local tempFile
         tempFile="$(mktemp)"
         sed "$@" "$filename" > "$tempFile"
