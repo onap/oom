@@ -4,7 +4,8 @@ set -eo pipefail
 
 # logging functions
 mysql_log() {
-    local type="$1"; shift
+    local type
+    type="$1"; shift
     printf '%s [%s] [Entrypoint]: %s\n' "$(date --rfc-3339=seconds)" "$type" "$*"
 }
 mysql_note() {
@@ -23,13 +24,17 @@ mysql_error() {
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
 #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
 file_env() {
-    local var="$1"
-    local fileVar="${var}_FILE"
-    local def="${2:-}"
+    local var
+    var="$1"
+    local fileVar
+    fileVar="${var}_FILE"
+    local def
+    def="${2:-}"
     if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
         mysql_error "Both $var and $fileVar are set (but are exclusive)"
     fi
-    local val="$def"
+    local val
+    val="$def"
     # val="${!var}"
     # val="$(< "${!fileVar}")"
     # eval replacement of the bashism equivalents above presents no security issue here
@@ -88,7 +93,8 @@ mysql_check_config() {
 # We use mysqld --verbose --help instead of my_print_defaults because the
 # latter only show values present in config files, and not server defaults
 mysql_get_config() {
-    local conf="$1"; shift
+    local conf
+    conf="$1"; shift
     "$@" --verbose --help --log-bin-index="$(mktemp -u)" 2>/dev/null \
         | awk -v conf="$conf" '$1 == conf && /^[^ \t]/ { sub(/^[^ \t]+[ \t]+/, ""); print; exit }'
     # match "datadir      /some/path with/spaces in/it here" but not "--xyz=abc\n     datadir (xyz)"
@@ -134,7 +140,8 @@ docker_verify_minimum_env() {
 # creates folders for the database
 # also ensures permission for user mysql of run as root
 docker_create_db_directories() {
-    local user; user="$(id -u)"
+    local user
+    user="$(id -u)"
 
     # TODO other directories that are used by default? like /var/lib/mysql-files
     # see https://github.com/docker-library/mysql/issues/562
@@ -239,7 +246,8 @@ docker_setup_db() {
         mysql_note "GENERATED ROOT PASSWORD: $MYSQL_ROOT_PASSWORD"
     fi
     # Sets root password and creates root users for non-localhost hosts
-    local rootCreate=
+    local rootCreate
+    rootCreate=
     # default root to listen for connections from anywhere
     if [ -n "$MYSQL_ROOT_HOST" ] && [ "$MYSQL_ROOT_HOST" != 'localhost' ]; then
         # no, we don't care if read finds a terminating character in this heredoc
