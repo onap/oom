@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -eo pipefail
 
@@ -49,8 +49,6 @@ file_env() {
 #    ie: docker_process_init_files /always-initdb.d/*
 # process initializer files, based on file extensions
 docker_process_init_files() {
-    # mysql here for backwards compatibility "${mysql[@]}"
-    mysql=( docker_process_sql )
 
     echo
     local f
@@ -77,9 +75,12 @@ docker_process_init_files() {
 }
 
 mysql_check_config() {
-    local toRun=( "$@" --verbose --help --log-bin-index="$(mktemp -u)" ) errors
-    if ! errors="$("${toRun[@]}" 2>&1 >/dev/null)"; then
-        mysql_error "$(printf 'mysqld failed while attempting to check config\n\tcommand was: ')${toRun[*]}$(printf'\n\t')$errors"
+    local toRun
+    toRun="$@ --verbose --help --log-bin-index=\"$(mktemp -u)\" 2>&1 >/dev/null"
+    local errors
+    errors=$($toRun)
+    if [ -n "$errors" ]; then
+        mysql_error "$(printf 'mysqld failed while attempting to check config\n\tcommand was: ')$toRun$(printf'\n\t')$errors"
     fi
 }
 
@@ -216,8 +217,9 @@ docker_setup_db() {
             # Aria in 10.4+ is slow due to "transactional" (crash safety)
             # https://jira.mariadb.org/browse/MDEV-23326
             # https://github.com/docker-library/mariadb/issues/262
-            local tztables=( time_zone time_zone_leap_second time_zone_name time_zone_transition time_zone_transition_type )
-            for table in "${tztables[@]}"; do
+            local tztables
+            local tztables=time_zone:time_zone_leap_second:time_zone_name:time_zone_transition:time_zone_transition_type
+            for table in $(echo $tztables | tr : " "); do
                 echo "/*!100400 ALTER TABLE $table TRANSACTIONAL=0 */;"
             done
 
@@ -225,7 +227,7 @@ docker_setup_db() {
             mysql_tzinfo_to_sql /usr/share/zoneinfo \
                 | sed 's/Local time zone must be set--see zic manual page/FCTY/'
 
-            for table in "${tztables[@]}"; do
+            for table in $(echo $tztables | tr : " "); do
                 echo "/*!100400 ALTER TABLE $table TRANSACTIONAL=1 */;"
             done
         } | docker_process_sql --dont-use-mysql-root-password --database=mysql
@@ -351,7 +353,7 @@ _main() {
             for i in $(echo $PORTAL_DB_TABLES | sed "s/,/ /g")
                 do
                     echo "Granting portal user ALL PRIVILEGES for table $i"
-                    echo "GRANT ALL ON \`$i\`.* TO '$MYSQL_USER'@'%' ;" | "${mysql[@]}"
+                    echo "GRANT ALL ON \`$i\`.* TO '$MYSQL_USER'@'%' ;" | docker_process_sql
                 done
 
             mysql_note "Stopping temporary server"
