@@ -143,13 +143,13 @@ GLOBAL_APPC_CDT_SERVER_PROTOCOL = "https"
 GLOBAL_APPC_CDT_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "appc-cdt" "port" 18080) }}'
 GLOBAL_APPC_CDT_USERNAME = "demo"
 # sdc info - everything is from the private oam network (also called onap private network)
-GLOBAL_SDC_SERVER_PROTOCOL = "https"
-GLOBAL_SDC_FE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-fe" "port" 9443) }}'
-GLOBAL_SDC_BE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-be" "port" 8443) }}'
-GLOBAL_SDC_BE_ONBOARD_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-onboarding-be" "port" 8445) }}'
+GLOBAL_SDC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_SDC_FE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-fe" "port" ( ternary 9443 8181 (eq "true" (include "common.needTLS" . )))) }}'
+GLOBAL_SDC_BE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-be" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
+GLOBAL_SDC_BE_ONBOARD_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-onboarding-be" "port" ( ternary 8445 8081 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_SDC_DCAE_BE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-dcae-be" "port" 8444) }}'
-GLOBAL_SDC_USERNAME = "beep"
-GLOBAL_SDC_PASSWORD = "boop"
+GLOBAL_SDC_USERNAME = '{{ .Values.sdcUsername }}'
+GLOBAL_SDC_PASSWORD = '{{ .Values.sdcPassword }}'
 GLOBAL_SDC_AUTHENTICATION = [GLOBAL_SDC_USERNAME, GLOBAL_SDC_PASSWORD]
 # clamp info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLAMP_SERVER_PROTOCOL = "https"
