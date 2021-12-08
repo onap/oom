@@ -1,0 +1,97 @@
+---
+# Copyright © 2021 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+stages:
+  - linting
+  - build
+  - test
+
+tox:defaults:
+  stage: linting
+  image: python:3.7
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt-get -qq update
+    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes libenchant-2-2 graphviz plantuml wget curl devscripts 2>&1 >/dev/null
+    - pip install -q tox
+    - tox -p auto
+
+helm:fast:
+  stage: linting
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  variables:
+    SKIP_LINT: "TRUE"
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running helm fast check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+helm:full:
+  stage: build
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running full helm check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs:
+    - helm:fast
+  timeout: 6h
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+gating:launch:
+  stage: test
+  image: busybox
+  script:
+    - . .ci/common.sh
+    - title "Launching request for a gate"
+  needs:
+    - tox:defaults
+    - helm:fast
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
