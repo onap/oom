@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 usage() {
 cat << EOF
@@ -44,45 +44,48 @@ EOF
 }
 
 generate_overrides() {
-  SUBCHART_NAMES=($(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'))
-
-  for index in "${!SUBCHART_NAMES[@]}"; do
-    START=${SUBCHART_NAMES[index]}
-    END=${SUBCHART_NAMES[index+1]}
-    if [ "$START" = "global:" ]; then
-      echo "global:" > $GLOBAL_OVERRIDES
-      cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
-        | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
-    else
-      SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
-      if [ -d "$SUBCHART_DIR" ]; then
-        if [ -z "$END" ]; then
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
-        else
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+  START=
+  END=
+  for item in $(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'); do
+    END="$START"
+    START="$item"
+    if [ -n "$END"]; then
+      if [ "$START" = "global:" ]; then
+        echo "global:" > $GLOBAL_OVERRIDES
+        cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
+          | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
+      else
+        SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
+        if [ -d "$SUBCHART_DIR" ]; then
+          if [ -z "$END" ]; then
+            cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
+              | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+          else
+            cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
+              | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+          fi
         fi
       fi
     fi
   done
 }
+
 resolve_deploy_flags() {
-  flags=($1)
-  n=${#flags[*]}
-  i=0 ; while [ "$i" -lt "$n" ]; do
-    PARAM=${flags[i]}
-    if [ "$PARAM" = "-f" ] || \
-       [ "$PARAM" = "--values" ] || \
-       [ "$PARAM" = "--set" ] || \
-       [ "$PARAM" = "--set-string" ] || \
-       [ "$PARAM" = "--version" ]; then
-       # skip param and its value
-       i=$((i + 1))
+  skip="false"
+  for param in $1; do
+    if [ "$skip" = "false" ]; then
+      if [ "$param" = "-f" ] || \
+         [ "$param" = "--values" ] || \
+         [ "$param" = "--set" ] || \
+         [ "$param" = "--set-string" ] || \
+         [ "$param" = "--version" ]; then
+        skip="true"
+      else
+        DEPLOY_FLAGS="$DEPLOY_FLAGS $param"
+      fi
     else
-      DEPLOY_FLAGS="$DEPLOY_FLAGS $PARAM"
+      skip="false"
     fi
-    i=$((i+1))
   done
   echo "$DEPLOY_FLAGS"
 }
@@ -253,10 +256,14 @@ deploy() {
         sleep 180
       fi
     else
-      array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
-      n=${#array[*]}
-      for i in $(seq $(($n-1)) -1 0); do
-        helm del "${array[i]}"
+      reverse_list=
+      for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+      do
+        reverse_list="$item $reverse_list"
+      done
+      for item in $reverse_list
+      do
+        helm del $item
       done
     fi
   done
