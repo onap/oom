@@ -1,4 +1,4 @@
-# Copyright © 2020  AT&T Intellectual Property.  All rights reserved.
+# Copyright © 2021 AT&T Intellectual Property.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,31 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+OUTPUT_DIR := $(ROOT_DIR)/../dist
+PACKAGE_DIR := $(OUTPUT_DIR)/packages
+SECRET_DIR := $(OUTPUT_DIR)/secrets
+
+EXCLUDES := dist resources templates charts docker
 HELM_BIN := helm
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
-make-dcaemod: make-dcaemod-distributor-api make-dcaemod-genprocessor make-dcaemod-designtool make-dcaemod-onboarding-api make-dcaemod-runtime-api make-dcaemod-nifi-registry make-dcaemod-healthcheck
+.PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
-make-dcaemod-distributor-api:
-	cd components && $(HELM_BIN) dep up dcaemod-genprocessor && $(HELM_BIN) lint dcaemod-genprocessor
+all: $(HELM_CHARTS)
 
-make-dcaemod-genprocessor:
-	cd components && $(HELM_BIN) dep up dcaemod-distributor-api && $(HELM_BIN) lint dcaemod-distributor-api
+$(HELM_CHARTS):
+	@echo "\n[$@]"
+	@make package-$@
 
-make-dcaemod-designtool:
-	cd components && $(HELM_BIN) dep up dcaemod-designtool && $(HELM_BIN) lint dcaemod-designtool
+make-%:
+	@if [ -f $*/Makefile ]; then make -C $*; fi
 
-make-dcaemod-onboarding-api:
-	cd components && $(HELM_BIN) dep up dcaemod-onboarding-api && $(HELM_BIN) lint dcaemod-onboarding-api
+dep-%: make-%
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
 
-make-dcaemod-runtime-api:
-	cd components && $(HELM_BIN) dep up dcaemod-runtime-api && $(HELM_BIN) lint dcaemod-runtime-api
+lint-%: dep-%
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
 
-make-dcaemod-nifi-registry:
-	cd components && $(HELM_BIN) dep up dcaemod-nifi-registry && $(HELM_BIN) lint dcaemod-nifi-registry
-
-make-dcaemod-healthcheck:
-	cd components && $(HELM_BIN) dep up dcaemod-healthcheck && $(HELM_BIN) lint dcaemod-healthcheck
+package-%: lint-%
+	@mkdir -p $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
+	@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
-	@find . -type f -name '*.tgz' -delete
-	@find . -type f -name '*.lock' -delete
+	@rm -f */Chart.lock
+	@rm -f *tgz */charts/*tgz
+	@rm -rf $(PACKAGE_DIR)
+%:
+	@:
