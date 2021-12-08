@@ -15,6 +15,7 @@
 stages:
   - linting
   - build
+#  - test
 
 cla_authors:
   stage: linting
@@ -113,3 +114,60 @@ documentation:
     - documentation:spelling
     - documentation:link-check
     - documentation:doc8
+
+helm:fast:
+  stage: linting
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  variables:
+    SKIP_LINT: "TRUE"
+  script:
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - cd kubernetes
+    - make all
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+helm:full:
+  stage: build
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  script:
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - cd kubernetes
+    - make all
+  needs:
+    - helm:fast
+  timeout: 6h
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+#gating:launch:
+#  stage: test
+#  image: busybox
+#  script:
+#  needs:
+#    - helm:fast
+#  rules:
+#    - if: $CI_MERGE_REQUEST_ID
+#      changes:
+#        - .ci/*
+#        - .gitlab-ci.yml
+#        - kubernetes/**/*
