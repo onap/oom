@@ -14,6 +14,8 @@
 # limitations under the License.
 stages:
   - linting
+  - build
+  - test
 
 tox:defaults:
   stage: linting
@@ -27,3 +29,72 @@ tox:defaults:
     # this shifts tox classical display to a quieter one
     # use simply "tox" to fallback to normal one-threaded mode with a more verbose display
     # or "-o"  ("tox -p auto -o") to restore the classical display and keep threads concurrency
+
+helm:fast:
+  stage: linting
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  variables:
+    SKIP_LINT: "TRUE"
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running helm fast check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+helm:full:
+  stage: build
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running full helm check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs:
+    - helm:fast
+  timeout: 6h
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+gating:launch:
+  stage: test
+  image: busybox
+  script:
+    - . .ci/common.sh
+    - title "Launching request for a gate"
+  needs:
+    - helm:fast
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
