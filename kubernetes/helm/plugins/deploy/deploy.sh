@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 usage() {
 cat << EOF
@@ -44,28 +44,38 @@ EOF
 }
 
 generate_overrides() {
-  SUBCHART_NAMES=($(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'))
-
-  for index in "${!SUBCHART_NAMES[@]}"; do
-    START=${SUBCHART_NAMES[index]}
-    END=${SUBCHART_NAMES[index+1]}
-    if [ "$START" = "global:" ]; then
-      echo "global:" > $GLOBAL_OVERRIDES
-      cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
-        | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
-    else
-      SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
-      if [ -d "$SUBCHART_DIR" ]; then
-        if [ -z "$END" ]; then
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
-        else
-          cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
-            | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+  START=
+  END=
+  for item in $(cat $COMPUTED_OVERRIDES | grep -v '^\s\s'); do
+    START=$END
+    END=$item
+    if [ -n "$START" ]; then
+      if [ "$START" = "global:" ]; then
+        echo "global:" > $GLOBAL_OVERRIDES
+        cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
+          | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
+      else
+        SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
+        if [ -d "$SUBCHART_DIR" ]; then
+            cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/^'"$END"'/p' \
+              | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
         fi
       fi
     fi
   done
+  if [ -n "$END" ]; then
+    if [ "$END" = "global:" ]; then
+      echo "global:" > $GLOBAL_OVERRIDES
+      cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
+        | sed -n '/^'"$END"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
+    else
+      SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$END" |cut -d':' -f1)"
+      if [ -d "$SUBCHART_DIR" ]; then
+        cat $COMPUTED_OVERRIDES | sed -n '/^'"$END"'/,/'""'/p' \
+          | sed '1d;$d' | cut -c3- > $SUBCHART_DIR/subchart-overrides.yaml
+      fi
+    fi
+  fi
 }
 
 
