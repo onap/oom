@@ -16,19 +16,26 @@ stages:
   - linting
   - build
 
+cla_authors:
+  stage: linting
+  image: bitnami/git:2
+  script:
+    - .ci/check-cla-for-multiple-commits.sh 2>&1
+  needs: []
+
 pylint:
   stage: linting
-  image: python:3.7
+  image: cytopia/pylint
   script:
-    - pip install tox
-    - tox -e pylint
+    - find kubernetes/ TOSCA/ docs/ -name '*.py' -print0 | xargs -0 pylint 2>&1
+  needs: []
 
 commit-message:
   stage: linting
-  image: python:3.7
+  image: jorisroovers/gitlint:0.16.0
   script:
-    - pip install tox
-    - tox -e gitlint
+    - gitlint 2>&1
+  needs: []
 
 trailing-whitespaces:
   stage: linting
@@ -46,38 +53,52 @@ tabs:
 
 documentation:doc8:
   stage: linting
-  image: python:3.7
+  image: testthedocs/ttd-doc8
   script:
-    - pip install tox
-    - tox -e doc8
+    - doc8 docs 2>&1
+  needs: []
 
-documentation:linkcheck:
+documentation:link-check:
   stage: linting
   image: python:3.7
   script:
-    - pip install tox
-    - tox -e docs-linkcheck
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - sphinx-build -W -b linkcheck -d /tmp/doctrees ./docs/ ./docs/_build/linkcheck 2>&1
+  needs: []
 
 documentation:spelling:
   stage: linting
   image: python:3.7
   script:
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq update
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes wget libenchant-2-2 tox 2>&1 >/dev/null
-    - tox -e spelling
+    - apt-get -qq update
+    - apt-get -qq install -qq --yes curl libenchant-2-2
+    - curl -LO https://git.onap.org/doc/plain/docs/spelling_wordlist.txt
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - sphinx-build -b spelling -d /tmp/doctrees ./docs/ ./docs/_build/spelling 2>&1
+  needs: []
 
 bashisms:
   stage: linting
-  image: python:3.7
+  image: manabu/checkbashisms-docker
   script:
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq update
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes devscripts tox 2>&1 >/dev/null
-    - tox -e checkbashisms
+    - .ci/check-bashisms 2>&1
+  needs: []
 
 documentation:
   stage: build
   image: python:3.7
   script:
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq update
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes graphviz plantuml tox 2>&1 >/dev/null
-    - tox -e docs
+    - apt-get -qq update
+    - apt-get -qq install --yes graphviz plantuml
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - sphinx-build -q -W -b html -d /tmp/doctrees ./docs/ ./docs/_build/html 2>&1
+  needs:
+    - documentation:spelling
+    - documentation:link-check
+    - documentation:doc8
