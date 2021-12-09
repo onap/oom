@@ -23,7 +23,7 @@ then
     exit 2
 fi
 
-find . -not -path '*/.*' -name '*.sh' -exec checkbashisms {} + || exit 3
+find . -not -path '*/.*' -name '*.sh' -exec checkbashisms -f {} + || exit 3
 find . -not -path '*/.*' -name '*.failover' -exec checkbashisms -f \{\} + || exit 4
 ! find . -not -path '*/.*' -name '*.sh' -exec grep 'local .*=' {} + || exit 5
 ! find . -not -path '*/.*' -name '*.failover' -exec grep 'local .*=' {} + || exit 6
