@@ -39,6 +39,23 @@ spec:
 {{ include "common.podSecurityContext" . | indent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      initContainers:
+        # we shouldn't need this but for unknown reason, it's fsGroup is not
+        # applied
+        - name: fix-permission
+          command:
+            - /bin/sh
+          args:
+            - -c
+            - |
+              chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} /data
+          image: {{ include "repositoryGenerator.image.busybox" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: {{ include "common.fullname" . }}-data
+              mountPath: /data
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
@@ -72,7 +89,7 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-data
-            mountPath: /var/lib/mongo
+            mountPath: /data/db
           resources: {{ include "common.resources" . | nindent 12 }}
 {{ include "common.containerSecurityContext" . | indent 10 }}
         {{- if .Values.nodeSelector }}
