@@ -82,9 +82,9 @@ spec:
             chmod 0755 /config-output/${PFILE}
           done
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          - name: {{ include "common.fullname" . }}-environments
+          - name: sdc-environments-input
             mountPath: /config-input/
-          - name: sdc-environments-output
+          - name: sdc-environments
             mountPath: /config-output/
         resources:
           limits:
@@ -147,23 +147,25 @@ spec:
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
           volumeMounts:
-          - name: sdc-environments-output
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
-          - name: sdc-environments-output
+          {{- if .Values.global.aafEnabled }}
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-fe/files/default/org.onap.sdc.p12
             subPath: org.onap.sdc.p12
-          - name: sdc-environments-output
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-fe/files/default/org.onap.sdc.trust.jks
             subPath: org.onap.sdc.trust.jks
-          - name: {{ include "common.fullname" . }}-localtime
+          {{- end }}
+          - name: localtime
             mountPath: /etc/localtime
             readOnly: true
           - name: logs
             mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-configs
+          - name: configs
             mountPath: /app/jetty/config/catalog-fe/plugins-configuration.yaml
             subPath: plugins-configuration.yaml
-          - name: {{ include "common.fullname" . }}-logback
+          - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
           lifecycle:
@@ -174,23 +176,25 @@ spec:
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
-        - name: {{ include "common.fullname" . }}-localtime
+        - name: localtime
           hostPath:
             path: /etc/localtime
         {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 8 }}
-        - name: {{ include "common.fullname" . }}-configs
+        - name: configs
           configMap:
             name : {{ include "common.fullname" . }}-plugins-configmap
             defaultMode: 0777
-        - name: {{ include "common.fullname" . }}-logback
+        - name: logback
           configMap:
             name : {{ include "common.fullname" . }}-logging-configmap
-        - name: {{ include "common.fullname" . }}-environments
+        - name: sdc-environments
+        {{- if .Values.global.aafEnabled }}
+          emptyDir: { medium: "Memory" }
+        - name: sdc-environments-input
+        {{- end }}
           configMap:
             name: {{ include "common.release" . }}-sdc-environments-configmap
             defaultMode: 0755
-        - name: sdc-environments-output
-          emptyDir: { medium: "Memory" }
         - name: logs
           emptyDir: {}
       imagePullSecrets:

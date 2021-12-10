@@ -98,9 +98,9 @@ spec:
             cpu: 3m
             memory: 20Mi
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - name: {{ include "common.fullname" . }}-environments
+        - name: sdc-environments-input
           mountPath: /config-input/
-        - name: sdc-environments-output
+        - name: sdc-environments
           mountPath: /config-output/
       {{- end }}
       containers:
@@ -121,7 +121,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /sdc2/rest/healthCheck
-              port: {{ .Values.service.internalPort }}
+              port: {{ .Values.service.internalPortName }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -131,7 +131,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /sdc2/rest/healthCheck
-              port: {{ .Values.service.internalPort }}
+              port: {{ .Values.service.internalPortName }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -141,7 +141,7 @@ spec:
           startupProbe:
             httpGet:
               path: /sdc2/rest/healthCheck
-              port: {{ .Values.service.internalPort }}
+              port: {{ .Values.service.internalPortName }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
@@ -160,20 +160,22 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           volumeMounts:
-          - name: sdc-environments-output
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
-          - name: sdc-environments-output
+          {{- if .Values.global.aafEnabled }}
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.p12
             subPath: org.onap.sdc.p12
-          - name: sdc-environments-output
+          - name: sdc-environments
             mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.trust.jks
             subPath: org.onap.sdc.trust.jks
-          - name: {{ include "common.fullname" . }}-localtime
+          {{- end }}
+          - name: localtime
             mountPath: /etc/localtime
             readOnly: true
           - name: logs
             mountPath: /var/log/onap
-          - name: {{ include "common.fullname" . }}-logback
+          - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
           lifecycle:
@@ -184,19 +186,21 @@ spec:
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-localtime
+      - name: localtime
         hostPath:
           path: /etc/localtime
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-logback
+      - name: logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
-      - name: {{ include "common.fullname" . }}-environments
+      - name: sdc-environments
+      {{- if .Values.global.aafEnabled }}
+        emptyDir: { medium: "Memory" }
+      - name: sdc-environments-input
+      {{- end }}
         configMap:
           name: {{ include "common.release" . }}-sdc-environments-configmap
           defaultMode: 0755
-      - name: sdc-environments-output
-        emptyDir: { medium: "Memory" }
       - name: logs
         emptyDir: {}
       imagePullSecrets:
