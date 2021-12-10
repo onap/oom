@@ -1,4 +1,4 @@
-# Copyright © 2020 Samsung Electronics
+# Copyright © 2020 Samsung Electronics, Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 # limitations under the License.
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-OUTPUT_DIR := $(ROOT_DIR)/../dist
+OUTPUT_DIR := $(ROOT_DIR)/../../dist
 PACKAGE_DIR := $(OUTPUT_DIR)/packages
 SECRET_DIR := $(OUTPUT_DIR)/secrets
 
-EXCLUDES := dist resources templates charts docker
+EXCLUDES :=
 HELM_BIN := helm
 HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
