@@ -229,10 +229,12 @@ policies:
 {{- $policy := default dict .Values.policies -}}
 {{- $policyRls := default $commonRelease $policy.policyRelease -}}
 {{- $drFeedConfig := default "" .Values.drFeedConfig -}}
-
+{{- $dcaeName := print (include "common.fullname" .) }}
+{{- $dcaeLabel := (dict "dcaeMicroserviceName" $dcaeName) -}}
+{{- $dot := . -}}
 apiVersion: apps/v1
 kind: Deployment
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "labels" $dcaeLabel) | nindent 2 }}
 spec:
   replicas: 1
   selector: {{- include "common.selectors" . | nindent 4 }}
