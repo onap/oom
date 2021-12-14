@@ -56,9 +56,19 @@ spec:
           {{- if .Values.global.security.aaf.enabled }}
           export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
           {{- end }}
-          /app/start-app.sh
+          export SKIP_DB_CONFIG=true
+          cd /camunda/app/conf && \
+          for PFILE in `ls -1 *.xml`
+          do
+            echo "Copying ${PFILE}....."
+            cp ${PFILE} /camunda/conf
+            chmod 0755 /camunda/conf/${PFILE}
+          done
+          /camunda/start-camunda-app.sh
         {{- end }}
         env:
+        - name: JAVA_OPTS
+          value: "-XX:-UseContainerSupport"
         - name: DB_HOST
           value: {{ include "common.mariadbService" . }}
         - name: DB_PORT
@@ -78,13 +88,24 @@ spec:
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
         - name: logs
-          mountPath: /app/logs
+          mountPath: /camunda/app/logs
         - name: config
-          mountPath: /app/config
+          mountPath: /camunda/config
           readOnly: true
+        - name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-conf
+          mountPath: /camunda/app/conf
         - name: {{ include "common.fullname" . }}-logs
           mountPath: {{ .Values.log.path }}
-{{ include "so.helpers.livenessProbe" .| indent 8 }}
+        livenessProbe:
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          httpGet:
+            path: {{ .Values.livenessProbe.path }}
+            port: {{ index .Values.containerPort }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.successThreshold }}
         ports:
         - containerPort: {{ index .Values.containerPort }}
           name: {{ .Values.service.portName }}
@@ -104,5 +125,9 @@ spec:
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name:  {{ include "common.fullname" . }}-logs
         emptyDir: {}
+      - name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-conf
+        configMap:
+          name: {{ include "common.fullname" . }}-tomcat-server-bpm-platform-configmap
+          defaultMode: 0755
       imagePullSecrets:
         - name: "{{ include "common.namespace" . }}-docker-registry-key"
