@@ -41,7 +41,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-policy-clamp-galera-config
+        - {{ include "common.fullname" . }}-galera-config
         env:
         - name: NAMESPACE
           valueFrom:
@@ -68,6 +68,9 @@ spec:
           {{- if .Values.global.aafEnabled }}
             export $(grep '^cadi_' {{ .Values.certInitializer.credsPath }}/org.onap.clamp.cred.props | xargs -0)
             export SDC_CLIENT_PASSWORD_ENC=`java -jar {{ .Values.certInitializer.credsPath }}/aaf-cadi-aaf-2.1.20-full.jar cadi digest ${SDC_CLIENT_PASSWORD} {{ .Values.certInitializer.credsPath }}/org.onap.clamp.keyfile`;
+            envsubst < "/opt/policy/clamp/sdc-controllers-config.json" > "/opt/policy/clamp/sdc-controllers-config-pass.json"
+          {{ else }}
+            export SDC_CLIENT_PASSWORD_ENC=${SDC_CLIENT_PASSWORD};
             envsubst < "/opt/policy/clamp/sdc-controllers-config.json" > "/opt/policy/clamp/sdc-controllers-config-pass.json"
           {{- end }}
             java -Djava.security.egd=file:/dev/./urandom ${JAVA_RAM_CONFIGURATION} -jar ./policy-clamp-backend.jar --spring.config.location=optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/
