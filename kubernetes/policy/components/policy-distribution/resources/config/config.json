@@ -26,7 +26,7 @@
         "port":6969,
         "userName":"${RESTSERVER_USER}",
         "password":"${RESTSERVER_PASSWORD}",
-        "https":true,
+        "https": {{ (eq "true" (include "common.needTLS" .)) | ternary "true" "false" }},
         "prometheus": true
     },
     "receptionHandlerParameters":{
@@ -56,7 +56,7 @@
         "sdcConfiguration":{
             "parameterClassName":"org.onap.policy.distribution.reception.handling.sdc.SdcReceptionHandlerConfigurationParameterGroup",
             "parameters":{
-                "asdcAddress": "sdc-be:8443",
+                "asdcAddress": "sdc-be.{{ include "common.namespace" . }}:{{ (eq "true" (include "common.needTLS" .)) | ternary 8443 8080 }}",
                 "messageBusAddress": [
                     "message-router.{{ include "common.namespace" . }}"
                  ],
@@ -75,7 +75,8 @@
                 "keyStorePassword": "null",
                 "activeserverTlsAuth": false,
                 "isFilterinEmptyResources": true,
-                "isUseHttpsWithDmaap": true
+                "isUseHttpsWithDmaap": {{ (eq "true" (include "common.needTLS" .)) | ternary true false }},
+                "isUseHttpsWithSDC": {{ (eq "true" (include "common.needTLS" .)) | ternary true false }}
             }
         }
     },
@@ -98,7 +99,7 @@
                     "port": 6969,
                     "userName": "${API_USER}",
                     "password": "${API_PASSWORD}",
-                    "useHttps": true
+                    "useHttps": {{ (eq "true" (include "common.needTLS" .)) | ternary "true" "false" }}
                 },
                 "papParameters": {
                     "clientName": "policy-pap",
@@ -106,7 +107,7 @@
                     "port": 6969,
                     "userName": "${PAP_USER}",
                     "password": "${PAP_PASSWORD}",
-                    "useHttps": true
+                    "useHttps": {{ (eq "true" (include "common.needTLS" .)) | ternary "true" "false" }}
                 },
                 "deployPolicies": true
              }
