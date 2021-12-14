@@ -18,7 +18,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.release" . }}-policy-clamp-galera-config
+  name: {{ include "common.fullname" . }}-galera-config
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}-policy-clamp-job
@@ -48,7 +48,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       containers:
-      - name: {{ include "common.release" . }}-policy-clamp-galera-config
+      - name: {{ include "common.name" . }}-galera-config
         image: {{ include "repositoryGenerator.image.mariadb" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
@@ -60,9 +60,11 @@ spec:
           subPath: policy-clamp-create-tables.sql
         command:
         - /bin/sh
-        args:
-        - -x
-        - /dbcmd-config/create-db-tables.sh
+        - -cx
+        - |
+           {{- if include "common.onServiceMesh" . }}
+           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+           /dbcmd-config/create-db-tables.sh
         env:
         - name: MYSQL_HOST
           value: "{{ .Values.db.service.name }}"
@@ -74,11 +76,13 @@ spec:
           value: "{{ .Values.db.service.internalPort }}"
         resources:
 {{ include "common.resources" . }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       restartPolicy: Never
       volumes:
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
+            defaultMode: 0755
             items:
               - key: create-db-tables.sh
                 path: create-db-tables.sh
