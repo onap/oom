@@ -1,0 +1,118 @@
+<!--
+  ============LICENSE_START=======================================================
+  policy-gui
+  ================================================================================
+  Copyright (C) 2021-2022 Nordix Foundation.
+  ================================================================================
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ============LICENSE_END=========================================================
+  -->
+
+<configuration scan="true" scanPeriod="30 seconds" debug="false">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>TRACE</level>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{1024} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${POLICY_LOGS}/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${POLICY_LOGS}/error.%d{yyyy-MM-dd}.%i.log.zip
+            </fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>TRACE</level>
+        </filter>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS+00:00, UTC}|%level|%logger{0}|%thread] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncError" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR" />
+    </appender>
+
+    <appender name="DEBUG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${POLICY_LOGS}/debug.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${POLICY_LOGS}/debug.%d{yyyy-MM-dd}.%i.log.zip
+            </fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS+00:00, UTC}|%level|%logger{0}|%thread] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncDebug" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="DEBUG" />
+    </appender>
+
+    <appender name="NETWORK" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${POLICY_LOGS}/network.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${POLICY_LOGS}/network.%d{yyyy-MM-dd}.%i.log.zip
+            </fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSS+00:00, UTC}|%t]%m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="asyncNetwork" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="NETWORK" />
+    </appender>
+
+    <logger name="network" level="TRACE" additivity="false">
+        <appender-ref ref="asyncNetwork" />
+    </logger>
+
+    <logger name="org.apache" level="TRACE" additivity="false">
+        <appender-ref ref="DEBUG" />
+    </logger>
+
+    <!-- Spring related loggers -->
+    <logger name="org.springframework" level="TRACE" additivity="false">
+        <appender-ref ref="DEBUG" />
+    </logger>
+
+    <!-- GUI related loggers -->
+    <logger name="org.onap.policy.gui" level="TRACE" additivity="false">
+        <appender-ref ref="ERROR" />
+        <appender-ref ref="DEBUG" />
+    </logger>
+
+    <!-- logback internals logging -->
+    <logger name="ch.qos.logback.classic" level="INFO" />
+    <logger name="ch.qos.logback.core" level="INFO" />
+
+    <root level="TRACE">
+        <appender-ref ref="asyncDebug" />
+        <appender-ref ref="asyncError" />
+        <appender-ref ref="asyncNetwork" />
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
