@@ -36,6 +36,5 @@ Usage:
 {{- define "common.subChartDot" }}
 {{- $initRoot := .initRoot }}
 {{- $dot := .dot }}
-{{/* Our version of helm doesn't support deepCopy so we need this nasty trick */}}
-{{ mergeOverwrite (deepCopy (omit $dot "Values")) (dict "Chart" (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) | toJson }}
+{{ mergeOverwrite (deepCopy (omit $dot "Values" "Chart")) (dict "Chart" (set (set (fromJson (toJson $dot.Chart)) "Name" $initRoot.nameOverride) "Version" $dot.Chart.Version) "Values" (mergeOverwrite (deepCopy $initRoot) (dict "global" $dot.Values.global))) | toJson }}
 {{- end -}}
