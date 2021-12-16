@@ -52,19 +52,6 @@ data:
   application_config.yaml: |
 {{ $appConf | toYaml | indent 4 }}
 
-{{- if .Values.logDirectory }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-filebeat-configmap
-  namespace: {{ include "common.namespace" . }}
-  labels: {{ include "common.labels" . | nindent 6 }}
-data:
-  filebeat.yml: |-
-{{ include "dcaegen2-services-common.filebeatConfiguration" . | indent 4 }}
-{{- end }}
-
 {{- if .Values.drFeedConfig }}
 ---
 apiVersion: v1
