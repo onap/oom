@@ -83,10 +83,14 @@
   {{- end }}
   env:
   - name: NAMESPACE
+  {{- if $subchartDot.Values.namespace }}
+    value: {{ $subchartDot.Values.namespace }}
+  {{- else }}
     valueFrom:
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
+  {{- end }}
   resources:
     limits:
       cpu: {{ $subchartDot.Values.limits.cpu }}
