@@ -15,13 +15,18 @@
 stages:
   - linting
   - build
-#  - test
+  - test
 
 cla_authors:
   stage: linting
   image: bitnami/git:2
   script:
-    - .ci/check-cla-for-multiple-commits.sh 2>&1
+    - . .ci/common.sh
+    - title "Running cla authors retrieval..."
+    - exit_code=0
+    - RESULT=$(.ci/check-cla-for-multiple-commits.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 pylint:
@@ -30,7 +35,12 @@ pylint:
     name: cytopia/pylint
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - find kubernetes/ TOSCA/ docs/ -name *.py -exec pylint --rcfile=.pylintrc -E {} +
+    - . .ci/common.sh
+    - title "Running pylint check..."
+    - exit_code=0
+    - RESULT=$(find kubernetes/ TOSCA/ docs/ -name *.py -exec pylint --rcfile=.pylintrc -E {} +) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 commit-message:
@@ -39,7 +49,12 @@ commit-message:
     name: jorisroovers/gitlint:0.16.0
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - gitlint 2>&1
+    - . .ci/common.sh
+    - title "*** Running gitlint..."
+    - exit_code=0
+    - RESULT=$(gitlint 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 trailing-whitespaces:
@@ -48,7 +63,12 @@ trailing-whitespaces:
     name: alpine/git:v2.24.1
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - .ci/find-trailing-whitespaces.sh 2>&1
+    - . .ci/common.sh
+    - title "Running trailing whitespaces check..."
+    - exit_code=0
+    - RESULT=$(.ci/find-trailing-whitespaces.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 tabs:
@@ -57,14 +77,24 @@ tabs:
     name: alpine/git:v2.24.1
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - .ci/find-tabs.sh 2>&1
+    - . .ci/common.sh
+    - title "*** Running gitlint..."
+    - exit_code=0
+    - RESULT=$(.ci/find-tabs.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 documentation:doc8:
   stage: linting
   image: testthedocs/ttd-doc8
   script:
-    - doc8 docs 2>&1
+    - . .ci/common.sh
+    - title "Running doc8 check..."
+    - exit_code=0
+    - RESULT=$(doc8 docs 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 documentation:link-check:
@@ -74,7 +104,12 @@ documentation:link-check:
     - pip install -r requirements.txt
       -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
       -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
-    - sphinx-build -W -b linkcheck -d /tmp/doctrees ./docs/ ./docs/_build/linkcheck 2>&1
+    - . .ci/common.sh
+    - title "Running documentation links check..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -W -b linkcheck -d /tmp/doctrees ./docs/ ./docs/_build/linkcheck 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 documentation:spelling:
@@ -87,7 +122,12 @@ documentation:spelling:
     - pip install -r requirements.txt
       -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
       -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
-    - sphinx-build -W -b spelling -d /tmp/doctrees ./docs/ ./docs/_build/spelling 2>&1
+    - . .ci/common.sh
+    - title "Running documentation spelling check..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -W -b spelling -d /tmp/doctrees ./docs/ ./docs/_build/spelling 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 
 bashisms:
@@ -96,24 +136,14 @@ bashisms:
     name: manabu/checkbashisms-docker
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - ./.ci/check-bashisms.sh
+    - . .ci/common.sh
+    - title "Running bashisms check..."
+    - exit_code=0
+    - RESULT=$(.ci/check-bashisms.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
   needs: []
 # note this linter is currently failing because bashisms are completely cleaned up yet
-
-documentation:
-  stage: build
-  image: python:3.7
-  script:
-    - apt-get -qq update
-    - apt-get -qq install --yes graphviz plantuml
-    - pip install -r requirements.txt
-      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
-      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
-    - sphinx-build -q -W -b html -d /tmp/doctrees ./docs/ ./docs/_build/html 2>&1
-  needs:
-    - documentation:spelling
-    - documentation:link-check
-    - documentation:doc8
 
 helm:fast:
   stage: linting
@@ -129,8 +159,13 @@ helm:fast:
     - apk add --no-cache make
     - helm repo add local http://chartmuseum:8080/
     - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - . .ci/common.sh
+    - title "Running helm fast check..."
     - cd kubernetes
-    - make all
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
   needs: []
   rules:
     - if: $CI_MERGE_REQUEST_ID
@@ -152,7 +187,13 @@ helm:full:
     - helm repo add local http://chartmuseum:8080/
     - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
     - cd kubernetes
-    - make all
+    - . .ci/common.sh
+    - title "Running full helm check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
   needs:
     - helm:fast
   timeout: 6h
@@ -163,15 +204,37 @@ helm:full:
         - .gitlab-ci.yml
         - kubernetes/**/*
 
-#gating:launch:
-#  stage: test
-#  image: busybox
-#  script:
-#  needs:
-#    - helm:fast
-#  rules:
-#    - if: $CI_MERGE_REQUEST_ID
-#      changes:
-#        - .ci/*
-#        - .gitlab-ci.yml
-#        - kubernetes/**/*
+documentation:
+  stage: build
+  image: python:3.7
+  script:
+    - apt-get -qq update
+    - apt-get -qq install --yes graphviz plantuml
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - . .ci/common.sh
+    - title "Running documentation build..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -q -W -b html -d /tmp/doctrees ./docs/ ./docs/_build/html 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs:
+    - documentation:spelling
+    - documentation:link-check
+    - documentation:doc8
+
+gating:launch:
+  stage: test
+  image: busybox
+  script:
+    - . .ci/common.sh
+    - title "Launching request for a gate"
+  needs:
+    - helm:fast
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
