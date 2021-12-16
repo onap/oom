@@ -30,8 +30,21 @@ security:
     password: ${APP_PASSWORD}
 
 # Event consumption properties (kafka)
-{{- if .Values.config.eventConsumption }}
-{{ toYaml .Values.config.eventConsumption | nindent 2 }}
+{{- if .Values.config.eventConsumptionOverride }}
+{{ toYaml .Values.config.eventConsumptionOverride | nindent 2 }}
+{{- else }}
+spring.kafka.bootstrap-servers: {{ .Values.config.eventConsumption.servers }}
+spring.kafka.security.protocol: {{ .Values.config.eventConsumption.protocol }}
+spring.kafka.consumer.group-id: {{ .Values.config.eventConsumption.groupId }}
+{{- if (hasPrefix "SASL" .Values.config.eventConsumption.protocol) }}
+spring.kafka.properties.sasl.mechanism: {{ .Values.config.eventConsumption.mechanism }}
+{{- end }}
+{{- if (and (hasPrefix "SASL" .Values.config.eventConsumption.protocol) (hasKey .Values.config "mechanism" )) }}
+{{-   if (eq "PLAIN" .Values.config.eventConsumption.mechanism) }}
+spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=${KAFKA_USERNAME} password=${KAFKA_PASSWORD};
+{{-   end }}
+{{- end }}
+app.listener.data-updated.topic: {{ .Values.config.eventConsumption.updatedTopics }}
 {{- end }}
 
 # Additional properties

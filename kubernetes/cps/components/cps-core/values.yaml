@@ -41,6 +41,11 @@ secrets:
     login: '{{ .Values.config.dmiPluginUserName }}'
     password: '{{ .Values.config.dmiPluginUserPassword }}'
     passwordPolicy: generate
+  - uid: kafka-user-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.eventPublisher.userExternalSecret) . }}'
+    login: '{{ .Values.config.eventPublisher.user }}'
+    password: '{{ .Values.config.eventPublisher.password }}'
 
 #################################################################
 # Global configuration defaults.
@@ -172,11 +177,20 @@ config:
 #    spring.config.min-size: 10
 
   eventPublisher:
-    spring.kafka.bootstrap-servers: message-router-kafka:9092
-    spring.kafka.security.protocol: SASL_PLAINTEXT
-    spring.kafka.properties.sasl.mechanism: PLAIN
-    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
-    spring.kafka.producer.client-id: cps-core
+    user: admin
+    # password: admin_secret
+    # userExternalSecret:
+    clientId: cps-core
+    protocol: SASL_PLAINTEXT
+    mechanism: PLAIN
+    servers: message-router-kafka:9092
+
+#  eventPublisherOverride:
+#    spring.kafka.bootstrap-servers: message-router-kafka:9092
+#    spring.kafka.security.protocol: SASL_PLAINTEXT
+#    spring.kafka.properties.sasl.mechanism: PLAIN
+#    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
+#    spring.kafka.producer.client-id: cps-core
 
   additional:
     notification.data-updated.enabled: true

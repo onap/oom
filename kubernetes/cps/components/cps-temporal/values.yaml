@@ -39,6 +39,11 @@ secrets:
     login: '{{ .Values.config.appUserName }}'
     password: '{{ .Values.config.appUserPassword }}'
     passwordPolicy: generate
+  - uid: kafka-user-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.eventConsumption.userExternalSecret) . }}'
+    login: '{{ .Values.config.eventConsumption.user }}'
+    password: '{{ .Values.config.eventConsumption.password }}'
 
 image: onap/cps-temporal:1.0.0
 containerPort: &svc_port 8080
@@ -139,13 +144,23 @@ config:
     profile: helm
   #appUserPassword:
 
-  # Event consumption (kafka) properties
-  # All Kafka properties must be in "key: value" format instead of yaml.
   eventConsumption:
-    spring.kafka.bootstrap-servers: message-router-kafka:9092
-    spring.kafka.security.protocol: PLAINTEXT
-    spring.kafka.consumer.group-id: cps-temporal-group
-    app.listener.data-updated.topic: cps.data-updated-events
+    user: admin
+    # password: admin_secret
+    # userExternalSecret
+    groupId: cps-temporal-group
+    protocol: PLAINTEXT
+    # mechanism:
+    servers: message-router-kafka:9092
+    updatedTopics: cps.data-updated-events
+
+  # Event consumption (kafka) properties overrides
+  # All Kafka properties must be in "key: value" format instead of yaml.
+  #eventConsumptionOverride:
+  #  spring.kafka.bootstrap-servers: message-router-kafka:9092
+  #  spring.kafka.security.protocol: PLAINTEXT
+  #  spring.kafka.consumer.group-id: cps-temporal-group
+  #  app.listener.data-updated.topic: cps.data-updated-events
 
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.
