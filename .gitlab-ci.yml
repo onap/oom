@@ -14,15 +14,48 @@
 # limitations under the License.
 stages:
   - linting
+  - build
 
-tox:defaults:
+pylint:
+  stage: linting
+  image: python:3.7
+  script:
+    - pip install tox
+    - tox -e pylint
+
+commit-message:
+  stage: linting
+  image: python:3.7
+  script:
+    - pip install tox
+    - tox -e gitlint
+
+pre-commit:
+  stage: linting
+  image: python:3.7
+  script:
+    - pip install tox
+    - tox -e pre-commit
+
+documentation:linkcheck:
+  stage: linting
+  image: python:3.7
+  script:
+    - pip install tox
+    - tox -e docs-linkcheck
+
+bashisms:
   stage: linting
   image: python:3.7
   script:
     - DEBIAN_FRONTEND=noninteractive apt-get -qq update
-    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes libenchant-2-2 graphviz plantuml wget devscripts tox 2>&1 >/dev/null
-    - tox -p auto
-    # "tox -p auto" enables tox jobs concurrency / parallel mode
-    # this shifts tox classical display to a quieter one
-    # use simply "tox" to fallback to normal one-threaded mode with a more verbose display
-    # or "-o"  ("tox -p auto -o") to restore the classical display and keep threads concurrency
+    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes devscripts tox 2>&1 >/dev/null
+    - tox -e checkbashisms
+
+documentation:
+  stage: build
+  image: python:3.7
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt-get -qq update
+    - DEBIAN_FRONTEND=noninteractive apt-get -qq install --yes graphviz plantuml tox 2>&1 >/dev/null
+    - tox -e docs
