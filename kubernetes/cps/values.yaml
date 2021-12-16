@@ -30,6 +30,12 @@ secrets:
     login: '{{ .Values.config.dmiPluginUserName }}'
     password: '{{ .Values.config.dmiPluginUserPassword }}'
     passwordPolicy: generate
+  - uid: kafka-user-creds
+    name: &kafka-user-creds '{{ include "common.release" . }}-cps-kafka-user-creds'
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.config.kafkaUserExternalSecret) . }}'
+    login: '{{ .Values.config.kafkaUserName }}'
+    password: '{{ .Values.config.kafkaUserPassword }}'
 
 passwordStrengthOverride: basic
 global:
@@ -39,7 +45,12 @@ global:
 
 config:
   coreUserName: cpsuser
+  # coreUserExternalSecret:
   dmiPluginUserName: dmiuser
+  # dmiPluginUserExternalSecret:
+  kafkaUserName: admin
+  kafkaUserPassword: admin_secret
+  # kafkaUserExternalSecret:
 
 # Enable all CPS components by default
 cps-core:
@@ -47,9 +58,14 @@ cps-core:
   config:
     appUserExternalSecret: *core-creds-secret
     dmiPluginUserExternalSecret: *dmi-plugin-creds-secret
+    eventPublisher:
+      userExternalSecret: *kafka-user-creds
 
 cps-temporal:
   enabled: true
+  config:
+    eventConsumption:
+      userExternalSecret: *kafka-user-creds
 
 ncmp-dmi-plugin:
   enabled: true

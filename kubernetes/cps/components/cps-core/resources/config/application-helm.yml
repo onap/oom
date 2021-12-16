@@ -49,12 +49,17 @@ dmi:
     username: ${DMI_USERNAME}
     password: ${DMI_PASSWORD}
 
-{{- if .Values.config.eventPublisher }}
-{{ toYaml .Values.config.eventPublisher | nindent 2 }}
+{{- if .Values.config.eventPublisherOverride }}
+{{ toYaml .Values.config.eventPublisherOverride | nindent 2 }}
+{{- else }}
+spring.kafka.bootstrap-servers: {{ .Values.config.eventPublisher.servers }}
+spring.kafka.security.protocol: {{ .Values.config.eventPublisher.protocol }}
+spring.kafka.properties.sasl.mechanism: {{ .Values.config.eventPublisher.mechanism }}
+spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=${KAFKA_USERNAME} password=${KAFKA_PASSWORD};
+spring.kafka.producer.client-id: {{ .Values.config.eventPublisher.clientId }}
 {{- end }}
 
 {{- if .Values.config.additional }}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
-
