@@ -88,7 +88,7 @@ plugins:
 	@cp -R helm $(PACKAGE_DIR)/
 
 check-for-staging-images:
-	$(ROOT_DIR)/../.ci/check-for-staging-images.sh
+	$(ROOT_DIR)/contrib/tools/check-for-staging-images.sh
 
 helm-repo-update:
 	@$(HELM_BIN) repo update
