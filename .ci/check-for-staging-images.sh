@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # Copyright © 2020 Samsung Electronics
+# Modification copyright © 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +16,6 @@
 # limitations under the License.
 
 BASE_URL="https://nexus3.onap.org/repository/docker.release"
-
-if [ "$GERRIT_BRANCH" = "staging" ]; then
-    exit 0
-fi
 
 USED_IMAGES=$(grep -r -E -o -h ':\s*onap/.*:.*' | sed -e 's/^: //' -e 's/^ //' | sort | uniq)
 REPO_IMAGES=$(curl -s $BASE_URL/v2/_catalog | jq -r '.repositories[]')

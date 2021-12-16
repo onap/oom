@@ -1,0 +1,269 @@
+---
+# Copyright © 2021 Orange
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+stages:
+  - linting
+  - build
+  - test
+
+cla_authors:
+  stage: linting
+  image: bitnami/git:2
+  script:
+    - . .ci/common.sh
+    - title "Running cla authors retrieval..."
+    - exit_code=0
+    - RESULT=$(.ci/check-cla-for-multiple-commits.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+
+pylint:
+  stage: linting
+  image: cytopia/pylint
+  script:
+    - . .ci/common.sh
+    - title "Running pylint check..."
+    - exit_code=0
+    - RESULT=$(find kubernetes/ TOSCA/ docs/ -name '*.py' -print0 | xargs -0 pylint 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - '**/*.py'
+
+commit-message:
+  stage: linting
+  image: jorisroovers/gitlint:0.16.0
+  script:
+    - . .ci/common.sh
+    - title "*** Running gitlint..."
+    - exit_code=0
+    - RESULT=$(gitlint 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+
+trailing-whitespaces:
+  stage: linting
+  image: alpine/git:v2.24.1
+  script:
+    - . .ci/common.sh
+    - title "Running trailing whitespaces check..."
+    - exit_code=0
+    - RESULT=$(.ci/find-trailing-whitespaces.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+tabs:
+  stage: linting
+  image: alpine/git:v2.24.1
+  script:
+    - . .ci/common.sh
+    - title "Running tabs check..."
+    - exit_code=0
+    - RESULT=$(.ci/find-tabs.sh 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+documentation:doc8:
+  stage: linting
+  image: testthedocs/ttd-doc8
+  script:
+    - . .ci/common.sh
+    - title "Running doc8 check..."
+    - exit_code=0
+    - RESULT=$(doc8 docs 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - docs/**/*
+  needs: []
+
+documentation:link-check:
+  stage: linting
+  image: python:3.7
+  script:
+    - . .ci/common.sh
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - title "Running documentation links check..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -W -b linkcheck -d /tmp/doctrees ./docs/ ./docs/_build/linkcheck 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - docs/**/*
+  needs: []
+
+documentation:spelling:
+  stage: linting
+  image: python:3.7
+  script:
+    - . .ci/common.sh
+    - apt-get update
+    - apt-get install -qq --yes curl libenchant-2-2
+    - curl -LO https://git.onap.org/doc/plain/docs/spelling_wordlist.txt
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - title "Running documentation spelling check..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -b spelling -d /tmp/doctrees ./docs/ ./docs/_build/spelling 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - docs/**/*
+  needs: []
+
+bashisms:
+  stage: linting
+  image: manabu/checkbashisms-docker
+  script:
+    - . .ci/common.sh
+    - title "Running bashisms check..."
+    - exit_code=0
+    - RESULT=$(.ci/check-bashisms 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+  needs: []
+
+helm:fast:
+  stage: linting
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  variables:
+    SKIP_LINT: "TRUE"
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running helm fast check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+helm:full:
+  stage: build
+  services:
+    - name: bitnami/chartmuseum:latest
+      alias: chartmuseum
+  image: alpine/helm:3.6.3
+  script:
+    - . .ci/common.sh
+    - apk add --no-cache make
+    - helm repo add local http://chartmuseum:8080/
+    - helm plugin install --version v0.9.0 https://github.com/chartmuseum/helm-push.git
+    - title "Running full helm check..."
+    - cd kubernetes
+    - exit_code=0
+    - make all || exit_code=$?
+    - handle_test_result $exit_code ""
+    - exit $exit_code
+  needs:
+    - helm:fast
+  timeout: 6h
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
+
+documentation:
+  stage: build
+  image: python:3.7
+  script:
+    - . .ci/common.sh
+    - apt-get update
+    - apt-get install --yes graphviz plantuml
+    - pip install -r requirements.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.os.txt
+      -chttps://git.onap.org/doc/plain/etc/upper-constraints.onap.txt
+    - title "Running documentation build..."
+    - exit_code=0
+    - RESULT=$(sphinx-build -q -W -b html -d /tmp/doctrees ./docs/ ./docs/_build/html 2>&1) || exit_code=$?
+    - handle_test_result $exit_code "$RESULT"
+    - exit $exit_code
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - docs/*
+  needs:
+    - documentation:spelling
+    - documentation:link-check
+    - documentation:doc8
+
+gating:launch:
+  stage: test
+  image: busybox
+  script:
+    - . .ci/common.sh
+    - title "Launching request for a gate"
+  needs:
+    - bashisms
+    - helm:fast
+    - tabs
+    - trailing-whitespaces
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - .ci/*
+        - .gitlab-ci.yml
+        - kubernetes/**/*
