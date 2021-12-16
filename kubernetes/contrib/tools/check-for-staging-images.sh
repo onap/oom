@@ -16,10 +16,6 @@
 
 BASE_URL="https://nexus3.onap.org/repository/docker.release"
 
-if [ "$GERRIT_BRANCH" = "staging" ]; then
-    exit 0
-fi
-
 USED_IMAGES=$(grep -r -E -o -h ':\s*onap/.*:.*' | sed -e 's/^: //' -e 's/^ //' | sort | uniq)
 REPO_IMAGES=$(curl -s $BASE_URL/v2/_catalog | jq -r '.repositories[]')
 NOT_AVAILABLE_IMAGES=$(echo "$USED_IMAGES" | grep -vE  "$(echo "$REPO_IMAGES" | tr "\n" "|" | sed 's/|$//')")
