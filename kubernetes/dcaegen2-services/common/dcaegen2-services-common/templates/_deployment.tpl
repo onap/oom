@@ -222,7 +222,7 @@ policies:
 */}}
 
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
-{{- $logDir :=  default "" .Values.logDirectory -}}
+{{- $logDir :=  default "" .Values.log.path -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
@@ -370,24 +370,7 @@ spec:
         {{- end }}
         {{- include "dcaegen2-services-common._externalVolumeMounts" . | nindent 8 }}
       {{- if $logDir }}
-      - image: {{ include "repositoryGenerator.image.logging" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: filebeat
-        env:
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
-        resources: {{ include "common.resources" . | nindent 2 }}
-        volumeMounts:
-        - mountPath: /var/log/onap/{{ include "common.name" . }}
-          name: component-log
-        - mountPath: /usr/share/filebeat/data
-          name: filebeat-data
-        - mountPath: /usr/share/filebeat/filebeat.yml
-          name: filebeat-conf
-          subPath: filebeat.yml
+      {{ include "common.log.sidecar" . | nindent 6 }}
       {{- end }}
       {{- if $policy }}
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dcaePolicySyncImage }}
@@ -449,12 +432,7 @@ spec:
       {{- if $logDir }}
       - emptyDir: {}
         name: component-log
-      - emptyDir: {}
-        name: filebeat-data
-      - configMap:
-          defaultMode: 420
-          name: {{ include "common.fullname" . }}-filebeat-configmap
-        name: filebeat-conf
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 6 }}
       {{- end }}
       {{- if $certDir }}
       - emptyDir: {}
