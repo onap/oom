@@ -284,13 +284,18 @@ deploy() {
       if [ $SUBCHART_ENABLED -eq 1 ]; then
         deploy_subchart
       else
-        array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
-        n=${#array[*]}
-        for i in $(seq $(($n-1)) -1 0); do
-          helm del "${array[i]}"
+        reverse_list=
+        for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+        do
+          reverse_list="$item $reverse_list"
+        done
+        for item in $reverse_list
+        do
+          helm del $item
         done
       fi
     done
+
 
     for subchart in * ; do
       SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
@@ -306,10 +311,14 @@ deploy() {
       if [ $SUBCHART_ENABLED -eq 1 ]; then
         deploy_subchart
       else
-        array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
-        n=${#array[*]}
-        for i in $(seq $(($n-1)) -1 0); do
-          helm del "${array[i]}"
+        reverse_list=
+        for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+        do
+          reverse_list="$item $reverse_list"
+        done
+        for item in $reverse_list
+        do
+          helm del $item
         done
       fi
     done
