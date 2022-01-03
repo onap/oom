@@ -70,21 +70,21 @@ generate_overrides() {
 
 
 resolve_deploy_flags() {
-  flags=($1)
-  n=${#flags[*]}
-  i=0 ; while [ "$i" -lt "$n" ]; do
-    PARAM=${flags[i]}
-    if [ "$PARAM" = "-f" ] || \
-       [ "$PARAM" = "--values" ] || \
-       [ "$PARAM" = "--set" ] || \
-       [ "$PARAM" = "--set-string" ] || \
-       [ "$PARAM" = "--version" ]; then
-       # skip param and its value
-       i=$((i + 1))
+  skip="false"
+  for param in $1; do
+    if [ "$skip" = "false" ]; then
+      if [ "$param" = "-f" ] || \
+         [ "$param" = "--values" ] || \
+         [ "$param" = "--set" ] || \
+         [ "$param" = "--set-string" ] || \
+         [ "$param" = "--version" ]; then
+        skip="true"
+      else
+        DEPLOY_FLAGS="$DEPLOY_FLAGS $param"
+      fi
     else
-      DEPLOY_FLAGS="$DEPLOY_FLAGS $PARAM"
+      skip="false"
     fi
-    i=$((i+1))
   done
   echo "$DEPLOY_FLAGS"
 }
