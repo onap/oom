@@ -377,3 +377,9 @@ GLOBAL_CCSDK_CDS_USERNAME = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_PASSWORD = 'ccsdkapps'
 GLOBAL_CCSDK_CDS_AUTHENTICATION = [GLOBAL_CCSDK_CDS_USERNAME, GLOBAL_CCSDK_CDS_PASSWORD]
 GLOBAL_CDS_AUTH = "Y2NzZGthcHBzOmNjc2RrYXBwcw=="
+
+#cps info - everything is from the private oam network (also called onap private network)
+GLOBAL_INJECTED_CPS_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "cps") }}'
+GLOBAL_CPS_SERVER_PROTOCOL = "http"
+GLOBAL_CPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "cps" "port" 8080) }}'
+GLOBAL_CPS_HEALTH_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "cps" "port" 8081) }}'
