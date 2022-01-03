@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 usage() {
 cat << EOF
@@ -21,11 +21,14 @@ undeploy() {
   RELEASE=$1
   FLAGS=$2
 
-  array=($(helm ls -q --all | grep $RELEASE))
-  n=${#array[*]}
-  for i in $(seq $(($n-1)) -1 0)
+  reverse_list=
+  for item in $(helm ls -q --all | grep $RELEASE)
   do
-    helm del "${array[i]}" $FLAGS
+    reverse_list="$item $reverse_list"
+  done
+  for item in $reverse_list
+  do
+    helm del $item $FLAGS
   done
 }
 
