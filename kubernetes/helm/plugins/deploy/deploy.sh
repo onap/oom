@@ -253,10 +253,14 @@ deploy() {
         sleep 180
       fi
     else
-      array=($(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}"))
-      n=${#array[*]}
-      for i in $(seq $(($n-1)) -1 0); do
-        helm del "${array[i]}"
+      reverse_list=
+      for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+      do
+        reverse_list="$item $reverse_list"
+      done
+      for item in $reverse_list
+      do
+        helm del $item
       done
     fi
   done
