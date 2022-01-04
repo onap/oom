@@ -60,6 +60,24 @@ spec:
           readOnly: true
         - name: backup-storage
           mountPath: /var/data/mariadb
+      {{- if (include "common.onServiceMesh" .) }}
+      - name: {{ include "common.name" . }}-service-mesh-check-container
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /app/ready.py
+        args:
+        - --service-mesh-check
+        - {{ include "common.fullname" . }}
+        - "-t"
+        - "45"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: localtime
@@ -157,6 +175,24 @@ spec:
         {{- end }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+      {{- if (include "common.onServiceMesh" .) }}
+      - name: {{ include "common.name" . }}-service-mesh-check-container
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /app/ready.py
+        args:
+        - --service-mesh-check
+        - {{ include "common.name" . }}-config
+        - "-t"
+        - "45"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
