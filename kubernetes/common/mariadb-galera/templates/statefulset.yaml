@@ -121,6 +121,8 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "login") | indent 14 }}
             - name: MARIADB_GALERA_MARIABACKUP_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "password") | indent 14 }}
+            - name: MARIADB_GALERA_FORCE_SAFETOBOOTSTRAP
+              value: "yes"
             {{- if .Values.extraFlags }}
             - name: MARIADB_EXTRA_FLAGS
               value: {{ .Values.extraFlags | quote }}
@@ -197,12 +199,12 @@ spec:
             - |
               DATA_SOURCE_NAME="$MARIADB_ROOT_USER:$MARIADB_ROOT_PASSWORD@(localhost:3306)/" /bin/mysqld_exporter $MARIADB_METRICS_EXTRA_FLAGS
           ports:
-            - name: metrics
+            - name: tcp-metrics
               containerPort: 9104
           livenessProbe:
             httpGet:
               path: /metrics
-              port: metrics
+              port: tcp-metrics
             initialDelaySeconds: {{ .Values.metrics.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.metrics.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.metrics.livenessProbe.timeoutSeconds }}
@@ -211,7 +213,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /metrics
-              port: metrics
+              port: tcp-metrics
             initialDelaySeconds: {{ .Values.metrics.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.metrics.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.metrics.readinessProbe.timeoutSeconds }}
