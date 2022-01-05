@@ -17,7 +17,11 @@
 aai:
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.aai.auth )}}
   version: v19
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  {{ end }}
 spring:
   datasource:
     hikari:
@@ -54,7 +58,11 @@ so:
 etsi-catalog-manager:
   base:
   {{- if .Values.global.msbEnabled }}
+    {{ if (include "common.needTLS" .) }}
     endpoint: https://msb-iag:443/api
+    {{ else }}
+    endpoint: http://msb-iag:443/api
+    {{ end }}
   http:
     client:
       ssl:
