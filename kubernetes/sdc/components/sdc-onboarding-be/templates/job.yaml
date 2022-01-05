@@ -62,6 +62,13 @@ spec:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.onboardingInitImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{- if include "common.onServiceMesh" . }}
+        args:
+        - echo "waiting 10s for istio side cars to be up"; sleep 10s; /home/sdc/startup.sh
+        command:
+        - /bin/sh
+        - -c
+        {{- end }}
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /home/sdc/chef-solo/environments/
@@ -90,6 +97,7 @@ spec:
           requests:
             cpu: 200m
             memory: 200Mi
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       volumes:
       - name: {{ include "common.fullname" . }}-environments
         configMap:
