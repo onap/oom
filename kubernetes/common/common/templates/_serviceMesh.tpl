@@ -14,8 +14,7 @@
 # limitations under the License.
 */}}
 
-
-{/*
+{{/*
   Calculate if we are on service mesh.
 */}}
 {{- define "common.onServiceMesh" -}}
@@ -26,6 +25,9 @@ true
 {{-   end -}}
 {{- end -}}
 
+{{/*
+  Kills the sidecar proxy associated with a pod.
+*/}}
 {{- define "common.serviceMesh.killSidecar" -}}
 {{-   if (include "common.onServiceMesh" .) }}
 RCODE="$?";
@@ -37,3 +39,30 @@ echo "*** exiting with script exit code" ;
 exit "$RCODE"
 {{-   end }}
 {{- end -}}
+
+{{/*
+  Wait for job container.
+*/}}
+{{- define "common.waitForJobContainer" -}}
+{{-   $dot := default . .dot -}}
+{{-   $wait_for_job_container := default $dot.Values.wait_for_job_container .wait_for_job_container -}}
+{{- if (include "common.onServiceMesh" .) }}
+- name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $wait_for_job_container.name) (empty $wait_for_job_container.name) }}-service-mesh-wait-for-job-container
+  image: {{ include "repositoryGenerator.image.quitQuit" $dot }}
+  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+  command:
+  - /bin/sh
+  - "-c"
+  args:
+  - echo "waiting 10s for istio side cars to be up"; sleep 10s;
+    {{- range $container := $wait_for_job_container.containers }}
+    /app/ready.py --service-mesh-check {{ tpl $container $dot }} -t 45;
+    {{- end }}
+  env:
+  - name: NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace
+{{- end }}
+{{- end }}
