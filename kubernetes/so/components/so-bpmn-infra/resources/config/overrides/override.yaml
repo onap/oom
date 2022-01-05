@@ -17,7 +17,11 @@ aai:
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
   dme2:
     timeout: '30000'
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  {{ end }}
   workflowAaiDistributionDelay: PT30S
   pnfEntryNotificationTimeout: P14D
 cds:
@@ -158,7 +162,11 @@ mso:
   oof:
     auth: {{ .Values.mso.oof.auth }}
     callbackEndpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
+    {{ if (include "common.needTLS" .) }}
     endpoint: https://oof-osdf.{{ include "common.namespace" . }}:8698
+    {{ else }}
+    endpoint: http://oof-osdf.{{ include "common.namespace" . }}:8698
+    {{ end }}
     timeout: PT30M
   workflow:
     CreateGenericVNFV1:
