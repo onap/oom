@@ -60,23 +60,31 @@ spec:
               cpu: 3m
               memory: 20Mi
       containers:
-        - name: {{ include "common.name" . }}-job
-          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.configInitImage }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          env:
+      - name: {{ include "common.name" . }}-job
+        image:
+          {{ include "repositoryGenerator.repository" . }}/{{ .Values.configInitImage }}
+        imagePullPolicy:
+          {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{- if include "common.onServiceMesh" . }}
+        args:
+        - echo "waiting 10s for istio side cars to be up"; sleep 10s; /start.sh
+        command:
+        - /bin/sh
+        - -c
+        {{- end }}
+        env:
           - name: CS_HOST
             value: "{{ .Values.global.sdc_cassandra.serviceName }}"
           - name: CS_PORT
-            value: "{{ .Values.config.cassandraClientPort }}"
+            value: {{ .Values.config.cassandraClientPort | quote }}
           - name: CS_AUTHENTICATE
-            value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
+            value: {{ .Values.config.cassandraAuthenticationEnabled | quote }}
           - name: CS_USER
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_user}
+            valueFrom: {secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_user}}
           - name: CS_PASSWORD
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
-          resources: {{ include "common.resources" . | nindent 12 }}
+            valueFrom: {secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}}
+        resources: {{ include "common.resources" . | nindent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+        - name: "{{ include "common.namespace" . }}-docker-registry-key"
 {{ end }}
