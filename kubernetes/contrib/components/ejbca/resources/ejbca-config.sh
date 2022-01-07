@@ -49,6 +49,8 @@ configureEjbca() {
     ejbca.sh roles changerule "Certificate Update Admin" /endentityprofilesrules/Custom_EndEntity/ ACCEPT
     ejbca.sh roles changerule "Certificate Update Admin" /ra_functionality/edit_end_entity/ ACCEPT
     ejbca.sh roles addrolemember "Certificate Update Admin" ManagementCA WITH_ORGANIZATION --value "{{ .Values.cmpv2Config.global.certificate.default.subject.organization }}"
+    # workarround to exit successfully, as a reexecution of "addrolemember" returns an error
+    exit 0
 }
 
 
