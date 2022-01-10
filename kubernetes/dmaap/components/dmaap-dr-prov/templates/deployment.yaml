@@ -34,9 +34,13 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim}}
       hostname: {{ .Values.global.dmaapDrProvName }}
       initContainers:
         - name: {{ include "common.name" . }}-readiness
+          securityContext:
+            runAsUser: 100
+            runAsGroup: 65533
           image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
@@ -55,6 +59,8 @@ spec:
         {{ include "common.certInitializer.initContainer" . | nindent 8 }}
 
         - name: {{ include "common.name" . }}-permission-fixer
+          securityContext:
+            runAsUser: 0
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
