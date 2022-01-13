@@ -1,4 +1,4 @@
-# Copyright © 2018 Amdocs, Bell Canada, AT&T
+# Copyright © 2022 Amdocs, Bell Canada, AT&T, Bitnami
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -168,3 +168,67 @@ serviceAccount:
   nameOverride: cassandra
   roles:
     - nothing
+
+# Cassandra Metrics
+metrics:
+  enabled: false
+  image: bitnami/cassandra-exporter:2.3.4-debian-10-r631
+  pullPolicy: IfNotPresent
+  ports: 
+  - name: tcp-metrics
+    port: 8080
+  
+  podAnnotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '8080'
+  
+  serviceMonitor:
+    enabled: false
+    targetPort: 8080
+    path: /metrics
+    basicAuth: 
+      enabled: false
+      externalSecretName: mysecretname
+      externalSecretUserKey: login
+      externalSecretPasswordKey: password
+
+    ## Namespace in which Prometheus is running
+    ##
+    # namespace: monitoring
+
+    ## Interval at which metrics should be scraped.
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ##
+    #interval: 30s
+
+    ## Timeout after which the scrape is ended
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ##
+    # scrapeTimeout: 10s
+
+    ## ServiceMonitor selector labels
+    ## ref: https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#prometheus-configuration
+    ##
+    selector:
+      app.kubernetes.io/name: '{{ include "common.name" . }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+
+    ## RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    relabelings: []
+
+    ## MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    metricRelabelings: []
+    #  - sourceLabels:
+    #      - "__name__"
+    #    targetLabel: "__name__"
+    #    action: replace
+    #    regex: '(.*)'
+    #    replacement: 'example_prefix_$1'
