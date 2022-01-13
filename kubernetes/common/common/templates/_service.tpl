@@ -267,6 +267,11 @@ spec:
 {{- $ports := $dot.Values.service.headlessPorts -}}
 {{- $labels := default (dict) .labels -}}
 {{- $matchLabels := default (dict) .matchLabels -}}
+{{- if ($dot.Values.metrics) }}
+{{-   range $index, $metricPort := $dot.Values.metrics.ports }}
+{{-     $ports = append $ports $metricPort }}
+{{-   end }}
+{{- end }}
 {{ include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "headless" true "labels" $labels "matchLabels" $matchLabels) }}
 {{- end -}}
 
