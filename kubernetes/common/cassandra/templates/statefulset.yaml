@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2018 Amdocs, AT&T, Bell Canada
+# Copyright © 2022 Amdocs, AT&T, Bell Canada, Bitnami
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,15 @@ spec:
     type: {{ .Values.updateStrategy.type }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+      {{- if or .Values.podAnnotations (and .Values.metrics.serviceMonitor.enabled .Values.metrics.podAnnotations) }}
+      annotations:
+        {{- if .Values.podAnnotations }}
+        {{- include "common.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.metrics.serviceMonitor.enabled .Values.metrics.podAnnotations }}
+        {{- include "common.tplValue" (dict "value" .Values.metrics.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       hostNetwork: {{ .Values.hostNetwork }}
       imagePullSecrets:
@@ -126,6 +135,41 @@ spec:
               command: ["/bin/sh", "-c", "PID=$(pidof java) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
         {{- end }}
         resources: {{ toYaml .Values.resources | nindent 10 }}
+      {{- if .Values.metrics.serviceMonitor.enabled }}
+      - name: {{ include "common.name" . }}-metrics
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.metrics.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.metrics.pullPolicy | quote}}
+        {{- if (.Values.metrics.enabled) }}
+        ports:
+        {{- range $index, $metricPort := .Values.metrics.ports }}
+        - name: {{ $metricPort.name }}
+          containerPort: {{ $metricPort.port }}
+          protocol: TCP
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.metrics.livenessProbe.httpGet.path }}
+            port: {{ .Values.metrics.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.metrics.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.metrics.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.metrics.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.metrics.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.metrics.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.metrics.readinessProbe.httpGet.path }}
+            port: {{ .Values.metrics.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.metrics.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.metrics.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.metrics.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.metrics.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.metrics.readinessProbe.failureThreshold }}
+        {{- end }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+        {{- if .Values.metrics.resources }}
+        resources: {{- toYaml .Values.metrics.resources | nindent 10 }}
+        {{- end }}
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end -}}
