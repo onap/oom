@@ -14,24 +14,45 @@
 # limitations under the License.
 -->
 <configuration scan="true" scanPeriod="3 seconds">
-    <property name="logDir" value="/var/log/onap" />
-    <property name="componentName" scope="system" value="sdc"></property>
-    <property name="subComponentName" scope="system" value="sdc-be"></property>
-    <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}" />
-    <property file="${config.home}/catalog-be/configuration.yaml" />
-    <property name="enable-all-log" scope="context" value="false" />
+    <property name="logDir" value="/var/log/onap"/>
+    <property name="componentName" scope="system" value="sdc"/>
+    <property name="subComponentName" scope="system" value="sdc-be"/>
+    <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}"/>
+    <property file="${config.home}/catalog-be/configuration.yaml"/>
+    <property name="enable-all-log" scope="context" value="false"/>
     <!--  log file names -->
-    <property name="errorLogName" value="error" />
-    <property name="metricsLogName" value="metrics" />
-    <property name="auditLogName" value="audit" />
-    <property name="debugLogName" value="debug" />
-    <property name="transactionLogName" value="transaction" />
-    <property name="allLogName" value="all" />
-    <property name="queueSize" value="256" />
-    <property name="maxFileSize" value="50MB" />
-    <property name="maxHistory" value="30" />
-    <property name="totalSizeCap" value="10GB" />
-    <property name="pattern" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n" />
+    <property name="errorLogName" value="error"/>
+    <property name="metricsLogName" value="metrics"/>
+    <property name="auditLogName" value="audit"/>
+    <property name="debugLogName" value="debug"/>
+    <property name="transactionLogName" value="transaction"/>
+    <property name="allLogName" value="all"/>
+    <property name="queueSize" value="256"/>
+    <property name="maxFileSize" value="50MB"/>
+    <property name="maxHistory" value="30"/>
+    <property name="totalSizeCap" value="10GB"/>
+    <property name="pattern"
+        value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}\t[%thread]\t%-5level\t%logger{36}\t%replace(%replace(%replace(%mdc){'\t','\\\\t'}){', ','\t'}){'\n', '\\\\n'}\t%replace(%replace(%msg){'\n', '\\\\n'}){'\t','\\\\t'}%n"/>
+
+    <!-- STDOUT -->
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- STDERR -->
+    <appender class="ch.qos.logback.core.ConsoleAppender" name="STDERR">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>"%d [%thread] %-5level %logger{1024} - %msg%n"</pattern>
+        </encoder>
+    </appender>
+
     <!-- All log -->
     <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
         <then>
@@ -50,7 +71,7 @@
                 </encoder>
             </appender>
             <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_ALL">
-                <appender-ref ref="ALL_ROLLING" />
+                <appender-ref ref="ALL_ROLLING"/>
             </appender>
         </then>
     </if>
@@ -170,30 +191,32 @@
     <!-- Asynchronicity Configurations -->
     <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_DEBUG">
         <queueSize>${queueSize}</queueSize>
-        <appender-ref ref="DEBUG_ROLLING" />
+        <appender-ref ref="DEBUG_ROLLING"/>
     </appender>
     <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_TRANSACTION">
         <queueSize>${queueSize}</queueSize>
-        <appender-ref ref="TRANSACTION_ROLLING" />
+        <appender-ref ref="TRANSACTION_ROLLING"/>
     </appender>
     <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_ERROR">
         <queueSize>${queueSize}</queueSize>
-        <appender-ref ref="ERROR_ROLLING" />
+        <appender-ref ref="ERROR_ROLLING"/>
     </appender>
     <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_AUDIT">
         <queueSize>${queueSize}</queueSize>
-        <appender-ref ref="AUDIT_ROLLING" />
+        <appender-ref ref="AUDIT_ROLLING"/>
     </appender>
     <root level="INFO">
-        <appender-ref ref="ASYNC_ERROR" />
-        <appender-ref ref="ASYNC_DEBUG" />
-        <appender-ref ref="ASYNC_AUDIT" />
-        <appender-ref ref="ASYNC_TRANSACTION" />
+        <appender-ref ref="ASYNC_ERROR"/>
+        <appender-ref ref="ASYNC_DEBUG"/>
+        <appender-ref ref="ASYNC_AUDIT"/>
+        <appender-ref ref="ASYNC_TRANSACTION"/>
         <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
             <then>
-                <appender-ref ref="ALL_ROLLING" />
+                <appender-ref ref="ALL_ROLLING"/>
             </then>
         </if>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="STDERR"/>
     </root>
-    <logger level="INFO" name="org.openecomp.sdc" />
+    <logger level="INFO" name="org.openecomp.sdc"/>
 </configuration>
