@@ -20,6 +20,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+{{- $sum := "" }}
+{{- range $path, $bytes := .Files.Glob "resources/rules/*"}}
+{{- $sum = $.Files.Get $path | sha256sum | print $sum }}
+{{- end }}
+  annotations:
+    checksum/rules: {{ $sum | sha256sum }}
 spec:
   replicas: 1
   selector: {{- include "common.selectors" . | nindent 4 }}
@@ -27,19 +33,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers: {{- include "common.certInitializer.initContainer" . | nindent 6 }}
-      - name: init-consul
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: CONSUL_HOST
-          value: {{ .Values.consulHost | default "consul-server-ui" }}.{{ include "common.namespace" . }}
-        args:
-        - --key
-        - holmes-rule-mgmt|/hrmconfigs/cfy.json
-        resources: {}
-        volumeMounts:
-        - mountPath: /hrmconfigs
-          name: {{ include "common.fullname" . }}-config
       - name: {{ include "common.name" . }}-env-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -61,7 +54,7 @@ spec:
           value: "{{ .Values.config.pgConfig.dbPort }}"
         volumeMounts:
         - mountPath: /hrmconfig
-          name: {{ include "common.fullname" . }}-config
+          name: {{ include "common.fullname" . }}-general-config
         - mountPath: /config
           name: {{ include "common.fullname" . }}-env-config
       containers:
@@ -72,6 +65,8 @@ spec:
         volumeMounts: {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-env-config
           mountPath: /opt/hrmconfig
+        - name: {{ include "common.fullname" . }}-rule-config
+          mountPath: /opt/hrmrules
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
@@ -119,10 +114,14 @@ spec:
           value: "{{ .Values.config.pgConfig.dbPort }}"
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:  {{ include "common.certInitializer.volumes" . | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-config
+      - name: {{ include "common.fullname" . }}-general-config
         configMap:
           defaultMode: 422
-          name: {{ include "common.fullname" . }}
+          name: {{ include "common.fullname" . }}-general-config
+      - name: {{ include "common.fullname" . }}-rule-config
+        configMap:
+          defaultMode: 422
+          name: {{ include "common.fullname" . }}-rule-config
       - name: {{ include "common.fullname" . }}-env-config
         emptyDir:
           medium: Memory
