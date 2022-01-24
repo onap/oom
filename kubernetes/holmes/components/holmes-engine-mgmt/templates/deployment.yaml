@@ -20,6 +20,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+{{- $sum := "" }}
+{{- range $path, $bytes := .Files.Glob "resources/config/*.json"}}
+{{- $sum = $.Files.Get $path | sha256sum | print $sum }}
+{{- end }}
+  annotations:
+    checksum/config: {{ $sum | sha256sum }}
+
 spec:
   replicas: 1
   selector: {{- include "common.selectors" . | nindent 4 }}
@@ -27,19 +34,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers: {{- include "common.certInitializer.initContainer" . | nindent 6 }}
-      - name: init-consul
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.consulLoaderImage }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: CONSUL_HOST
-          value: {{ .Values.consulHost | default "consul-server-ui" }}.{{ include "common.namespace" . }}
-        args:
-        - --key
-        - holmes-engine-mgmt|/hemconfig/cfy.json
-        resources: {}
-        volumeMounts:
-        - mountPath: /hemconfig
-          name: {{ include "common.fullname" . }}-config
       - name: {{ include "common.name" . }}-env-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -73,6 +67,8 @@ spec:
         volumeMounts: {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
         - name: {{ include "common.fullname" . }}-env-config
           mountPath: /opt/hemconfig
+        - name: {{ include "common.fullname" . }}-config
+          mountPath: /opt/hemtopics
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
