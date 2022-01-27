@@ -87,6 +87,20 @@ resolve_deploy_flags() {
   echo "$DEPLOY_FLAGS"
 }
 
+
+check_for_dep() {
+    try=0
+    retries=30
+    until (kubectl get deployment -n $RELEASE | grep -P "\b$2\b") &>/dev/null; do
+        (( ++try > retries )) && exit 1
+        echo "$1 not found. Retry $try/$retries"
+        sleep 5
+    done
+    echo "$1 found. Waiting for pod intialisation"
+    sleep 15
+}
+
+
 deploy() {
   # validate params
   if [ -z "$1" ] || [ -z "$2" ]; then
@@ -219,6 +233,13 @@ deploy() {
   #“helm ls” is an expensive command in that it can take a long time to execute.
   #So cache the results to prevent repeated execution.
   ALL_HELM_RELEASES=$(helm ls -q)
+
+  #Deploy the srtimzi-kafka chart in advance. Dependent charts require the entity-operator
+  #for management of the strimzi crds
+  helm upgrade -i "${RELEASE}-strimzi" $CACHE_SUBCHART_DIR/strimzi
+  echo "waiting for ${RELEASE}-strimzi-entity-operator to be deployed"
+  check_for_dep ${RELEASE}-strimzi-entity-operator
+
   for subchart in * ; do
     SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
