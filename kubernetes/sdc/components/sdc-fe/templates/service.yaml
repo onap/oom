@@ -39,28 +39,20 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    {{ if not .Values.security.disableHttp }}
-    # setting http port only if enabled
-    {{if eq .Values.service.type "NodePort" -}}
     - port: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
       name: {{ .Values.service.portName }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-    {{ end }}
-    {{ end }}
-
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.internalPort2 }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
-      name: {{ .Values.service.portName }}2
-    {{- else -}}
-    - port: {{ .Values.service.externalPort2 }}
+      {{ if eq .Values.service.type "NodePort" -}}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
+      {{ end }}
+    {{ if (include "common.needTLS" .) }}
+    - port:  {{ .Values.service.internalPort2 }}
       targetPort: {{ .Values.service.internalPort2 }}
-      name: {{ .Values.service.portName }}2
-    {{- end}}
+      name: {{ .Values.service.portName }}s
+      {{ if eq .Values.service.type "NodePort" -}}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
+      {{ end }}
+    {{ end }}
   selector:
     app: {{ include "common.name" . }}
     release: {{ include "common.release" . }}
