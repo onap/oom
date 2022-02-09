@@ -1,0 +1,112 @@
+#  ============LICENSE_START=======================================================
+#   Copyright (C) 2022 Bell Canada. All rights reserved.
+#  ================================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+#  ============LICENSE_END=========================================================
+
+spring:
+  security:
+    user:
+      name: "${RESTSERVER_USER}"
+      password: "${RESTSERVER_PASSWORD}"
+  http:
+    converters:
+      preferred-json-mapper: gson
+  datasource:
+    url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort}}/policyadmin
+    driverClassName: org.mariadb.jdbc.Driver
+    username: "${SQL_USER}"
+    password: "${SQL_PASSWORD}"
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.onap.policy.pap.main.CustomImplicitNamingStrategy
+
+server:
+  port: 6969
+  ssl:
+    enabled: true
+
+pap:
+  name: PapGroup
+  pdpParameters:
+    heartBeatMs: 120000
+    updateParameters:
+      maxRetryCount: 1
+      maxWaitMs: 30000
+    stateChangeParameters:
+      maxRetryCount: 1
+      maxWaitMs: 30000
+  savePdpStatisticsInDb: false
+  topicParameterGroup:
+    topicSources:
+    - topic: POLICY-PDP-PAP
+      servers:
+      - message-router
+      useHttps: true
+      fetchTimeout: 15000
+      topicCommInfrastructure: dmaap
+    - topic: POLICY-HEARTBEAT
+      effectiveTopic: POLICY-PDP-PAP
+      consumerGroup: policy-pap
+      servers:
+      - message-router
+      useHttps: true
+      fetchTimeout: 15000
+      topicCommInfrastructure: dmaap
+    topicSinks:
+    - topic: POLICY-PDP-PAP
+      servers:
+      - message-router
+      useHttps: true
+      topicCommInfrastructure: dmaap
+    - topic: POLICY-NOTIFICATION
+      servers:
+      - message-router
+      useHttps: true
+      topicCommInfrastructure: dmaap
+  healthCheckRestClientParameters:
+  - clientName: api
+    hostname: policy-api
+    port: 6969
+    userName: "${API_USER}"
+    password: "${API_PASSWORD}"
+    useHttps: true
+    basePath: policy/api/v1/healthcheck
+  - clientName: distribution
+    hostname: policy-distribution
+    port: 6969
+    userName: "${DISTRIBUTION_USER}"
+    password: "${DISTRIBUTION_PASSWORD}"
+    useHttps: true
+    basePath: healthcheck
+  - clientName: dmaap
+    hostname: message-router
+    port: 3905
+    useHttps: true
+    basePath: topics
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health, metrics, prometheus
+      path-mapping.prometheus: metrics
