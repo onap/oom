@@ -80,10 +80,10 @@ spec:
 {{- if .Values.global.aafEnabled }}
           command: ["sh","-c"]
           args: ["source {{ .Values.certInitializer.credsPath }}/.ci;\
-                  /opt/app/policy/pap/bin/policy-pap.sh /opt/app/policy/pap/etc/mounted/config.json"]
+                  /opt/app/policy/pap/bin/policy-pap.sh /opt/app/policy/pap/etc/mounted/papParameters.yaml"]
 {{- else }}
           command: ["/opt/app/policy/pap/bin/policy-pap.sh"]
-          args: ["/opt/app/policy/pap/etc/mounted/config.json"]
+          args: ["/opt/app/policy/pap/etc/mounted/papParameters.yaml"]
           env:
           - name: KEYSTORE_PASSWD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
@@ -101,10 +101,18 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: {{ .Values.readiness.api }}
               port: {{ .Values.readiness.port }}
+              httpHeaders:
+                - name: Authorization
+                  value: {{ .Values.readiness.authorization }}
+              scheme: {{ .Values.readiness.scheme }}
+            successThreshold: {{ .Values.readiness.successThreshold }}
+            failureThreshold: {{ .Values.readiness.failureThreshold }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.readiness.timeout }}
           volumeMounts:
 {{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
