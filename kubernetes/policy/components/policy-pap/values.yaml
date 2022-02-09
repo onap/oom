@@ -1,7 +1,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2019 Nordix Foundation.
 #   Modifications Copyright (C) 2019-2021 AT&T Intellectual Property.
-#   Modifications Copyright (C) 2020 Bell Canada.
+#   Modifications Copyright (C) 2020-2022 Bell Canada. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ certInitializer:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-pap:2.6.0
+image: onap/policy-pap:2.6.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -110,6 +110,7 @@ db:
 restServer:
   user: policyadmin
   password: none
+  policyPapUserPassword:
 
 healthCheckRestClient:
   api:
@@ -128,7 +129,7 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 20
+  initialDelaySeconds: 60
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
@@ -136,9 +137,14 @@ liveness:
   port: http-api
 
 readiness:
-  initialDelaySeconds: 20
-  periodSeconds: 10
+  initialDelaySeconds: 10
+  periodSeconds: 120
   port: http-api
+  api: /policy/pap/v1/healthcheck
+  scheme: HTTPS
+  successThreshold: 1
+  failureThreshold: 3
+  timeout: 60
 
 service:
   type: ClusterIP
