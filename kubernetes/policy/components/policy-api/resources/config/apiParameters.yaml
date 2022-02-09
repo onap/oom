@@ -1,0 +1,98 @@
+#  ============LICENSE_START=======================================================
+#   Copyright (C) 2022 Bell Canada. All rights reserved.
+#  ================================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+#  ============LICENSE_END=========================================================
+
+server:
+  port: {{ .Values.service.internalPort }}
+
+spring:
+  security.user:
+    name: "${RESTSERVER_USER}"
+    password: "${RESTSERVER_PASSWORD}"
+  mvc.converters.preferred-json-mapper: gson
+  datasource:
+    url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort}}/policyadmin
+    driverClassName: org.mariadb.jdbc.Driver
+    username: "${SQL_USER}"
+    password: "${SQL_PASSWORD}"
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDB103Dialect
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
+
+policy-api:
+  name: ApiGroup
+  aaf: {{ .Values.global.aafEnabled }}
+
+database:
+  name: PolicyProviderParameterGroup
+  implementation: org.onap.policy.models.provider.impl.DatabasePolicyModelsProviderImpl
+  driver: org.mariadb.jdbc.Driver
+  url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort}}/policyadmin
+  user: "${SQL_USER}"
+  password: "${SQL_PASSWORD}"
+  persistenceUnit: PolicyDb
+
+policy-preload:
+  policyTypes:
+    - policytypes/onap.policies.monitoring.tcagen2.yaml
+    - policytypes/onap.policies.monitoring.dcaegen2.collectors.datafile.datafile-app-server.yaml
+    - policytypes/onap.policies.monitoring.dcae-restconfcollector.yaml
+    - policytypes/onap.policies.monitoring.dcae-pm-subscription-handler.yaml
+    - policytypes/onap.policies.monitoring.dcae-pm-mapper.yaml
+    - policytypes/onap.policies.Optimization.yaml
+    - policytypes/onap.policies.optimization.Resource.yaml
+    - policytypes/onap.policies.optimization.Service.yaml
+    - policytypes/onap.policies.optimization.resource.AffinityPolicy.yaml
+    - policytypes/onap.policies.optimization.resource.DistancePolicy.yaml
+    - policytypes/onap.policies.optimization.resource.HpaPolicy.yaml
+    - policytypes/onap.policies.optimization.resource.OptimizationPolicy.yaml
+    - policytypes/onap.policies.optimization.resource.PciPolicy.yaml
+    - policytypes/onap.policies.optimization.service.QueryPolicy.yaml
+    - policytypes/onap.policies.optimization.service.SubscriberPolicy.yaml
+    - policytypes/onap.policies.optimization.resource.Vim_fit.yaml
+    - policytypes/onap.policies.optimization.resource.VnfPolicy.yaml
+    - policytypes/onap.policies.controlloop.guard.Common.yaml
+    - policytypes/onap.policies.controlloop.guard.common.Blacklist.yaml
+    - policytypes/onap.policies.controlloop.guard.common.FrequencyLimiter.yaml
+    - policytypes/onap.policies.controlloop.guard.common.MinMax.yaml
+    - policytypes/onap.policies.controlloop.guard.common.Filter.yaml
+    - policytypes/onap.policies.controlloop.guard.coordination.FirstBlocksSecond.yaml
+    - policytypes/onap.policies.Naming.yaml
+    - policytypes/onap.policies.Match.yaml
+    - policytypes/onap.policies.native.Drools.yaml
+    - policytypes/onap.policies.native.Xacml.yaml
+    - policytypes/onap.policies.native.Apex.yaml
+    - policytypes/onap.policies.controlloop.operational.Common.yaml
+    - policytypes/onap.policies.controlloop.operational.common.Apex.yaml
+    - policytypes/onap.policies.controlloop.operational.common.Drools.yaml
+  policies:
+    - policies/sdnc.policy.naming.input.tosca.yaml
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,metrics,prometheus
+      path-mapping.prometheus: metrics
+
