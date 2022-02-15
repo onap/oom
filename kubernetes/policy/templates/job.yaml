@@ -33,7 +33,26 @@ spec:
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      initContainers:
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      - name: {{ include "common.name" . }}-update-config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+            - sh
+        args:
+          - -c
+          - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+          - name: DB_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+
+        volumeMounts:
+          - mountPath: /config-input
+            name: init-data-input
+          - mountPath: /config
+            name: init-data
 #This container checks that all galera instances are up before initializing it.
       - name: {{ include "common.name" . }}-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
