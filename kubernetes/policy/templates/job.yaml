@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, Bell Canada
 # Modifications Copyright © 2020 AT&T Intellectual Property
-# Modifications Copyright (C) 2021 Nordix Foundation.
+# Modifications Copyright (C) 2022 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ spec:
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      initContainers:
+      initContainers: {{ if .Values.global.postgres.localCluster }}{{ include "common.readinessCheck.waitFor" . | nindent 6 }}{{ end }}
 #This container checks that all galera instances are up before initializing it.
-      - name: {{ include "common.name" . }}-readiness
+      - name: {{ include "common.name" . }}-mariadb-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
@@ -71,6 +71,33 @@ spec:
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
         resources:
 {{ include "common.resources" . }}
+      {{ if .Values.global.postgres.localCluster }}
+      - name: {{ include "common.release" . }}-policy-pg-config
+        image: {{ .Values.repository }}/{{ .Values.postgresImage }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: /docker-entrypoint-initdb.d/db-pg.sh
+            name: {{ include "common.fullname" . }}-config
+            subPath: db-pg.sh
+        command:
+          - /bin/sh
+        args:
+          - -x
+          - /docker-entrypoint-initdb.d/db-pg.sh
+        env:
+          - name: PG_ADMIN_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-root-pass" "key" "password") | indent 12 }}
+          - name: PG_HOST
+            value: "{{ .Values.postgres.service.name2 }}"
+          - name: PG_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: PG_USER_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+          - name: PG_PORT
+            value: "{{ .Values.postgres.service.internalPort }}"
+        resources:
+{{ include "common.resources" . }}
+      {{ end }}
       containers:
       - name: {{ include "common.release" . }}-policy-galera-db-migrator
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
@@ -95,8 +122,41 @@ spec:
           value: {{ .Values.dbmigrator.schema }}
         - name: POLICY_HOME
           value: {{ .Values.dbmigrator.policy_home }}
+        - name: SCRIPT_DIRECTORY
+          value: "sql"
         resources:
 {{ include "common.resources" . }}
+      {{ if .Values.global.postgres.localCluster }}
+      - name: {{ include "common.release" . }}-policy-pg-db-migrator
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+          - mountPath: /dbcmd-config/db_migrator_pg_policy_init.sh
+            name: {{ include "common.fullname" . }}-config
+            subPath: db_migrator_pg_policy_init.sh
+        command:
+          - /bin/sh
+        args:
+          - -x
+          - /dbcmd-config/db_migrator_pg_policy_init.sh
+        env:
+        - name: SQL_HOST
+          value: "{{ .Values.postgres.service.name2 }}"
+        - name: SQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: SQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        - name: SQL_DB
+          value: {{ .Values.dbmigrator.schema }}
+        - name: POLICY_HOME
+          value: {{ .Values.dbmigrator.policy_home }}
+        - name: SCRIPT_DIRECTORY
+          value: "postgres"
+        - name: PGPASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        resources:
+{{ include "common.resources" . }}
+      {{ end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -108,3 +168,8 @@ spec:
                 path: db.sh
               - key: db_migrator_policy_init.sh
                 path: db_migrator_policy_init.sh
+              - key: db-pg.sh
+                path: db-pg.sh
+              - key: db_migrator_pg_policy_init.sh
+                path: db_migrator_pg_policy_init.sh
+
