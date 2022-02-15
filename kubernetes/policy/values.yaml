@@ -27,6 +27,14 @@ global:
     service: &mariadbService
       name: &policy-mariadb policy-mariadb
       internalPort: 3306
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
 
 #################################################################
 # Secrets metaconfig
@@ -66,6 +74,19 @@ secrets:
     login: '{{ .Values.restServer.policyApiUserName }}'
     password: '{{ .Values.restServer.policyApiUserPassword }}'
     passwordPolicy: required
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-policy-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "policy-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-policy-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "policy-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -128,7 +149,7 @@ mariadb:
   image: mariadb:10.5.8
 
 dbmigrator:
-  image: onap/policy-db-migrator:2.4.1
+  image: onap/policy-db-migrator:2.4.2
   schema: policyadmin
   policy_home: "/opt/app/policy"
 
@@ -179,6 +200,31 @@ mariadb-galera:
     mountSubPath: policy/maria/data
   serviceAccount:
     nameOverride: *policy-mariadb
+
+postgresImage: library/postgres:latest
+# application configuration override for postgres
+postgres:
+  nameOverride: &postgresName policy-postgres
+  service:
+    name: *postgresName
+    name2: policy-pg-primary
+    name3: policy-pg-replica
+  container:
+    name:
+      primary: policy-pg-primary
+      replica: policy-pg-replica
+  persistence:
+    mountSubPath: policy/postgres/data
+    mountInitPath: policy
+  config:
+    pgUserName: policy_user
+    pgDatabase: policyadmin
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+
+readinessCheck:
+  wait_for:
+    - '{{ ternary .Values.postgres.service.name "postgres" .Values.global.postgres.localCluster }}'
 
 restServer:
   policyPapUserName: policyadmin
