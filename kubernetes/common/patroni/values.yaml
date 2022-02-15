@@ -1,0 +1,153 @@
+# Copyright © 2022 Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#kintohub
+#kinto:
+#  alias: ""
+#  workspace:
+#  envId:
+#  blockName:
+#  workspaceTier: "none"
+global:
+  nodePortPrefix: 302
+  persistence:
+    mountPath: /dockerdata-nfs
+    backup:
+      mountPath: /dockerdata-nfs/backup
+  clusterDomain: cluster.local
+  metrics: {}
+  masterPassword: "test"
+
+replicaCount: 5
+
+image:
+  # Image was built from
+  # https://github.com/zalando/spilo/tree/master/postgres-appliance
+  repository: registry.opensource.zalan.do/acid/spilo-10
+  tag: 1.4-p16
+  pullPolicy: IfNotPresent
+
+# Credentials used by Patroni
+# https://github.com/zalando/patroni/blob/master/docs/SETTINGS.rst#postgresql
+# https://github.com/zalando/spilo/blob/master/ENVIRONMENT.rst
+credentials:
+  superuser: policy_user
+  admin: policy_user
+  standby: policy_user
+
+# Distribution Configuration stores
+# Please note that only one of the following stores should be enabled.
+kubernetes:
+  dcs:
+    enable: true
+  configmaps:
+    enable: false
+etcd:
+  enable: false
+  deployChart: false
+  # If not deploying etcd chart, fill-in value for etcd service
+  # <service>.<namespace>.svc.cluster.local
+  host:
+  # Leave blank to use vendored etcd chart
+  discovery:
+zookeeper:
+  enable: false
+  deployChart: false
+  # If not deploying etcd chart, fill-in list of ZooKeeper members in format:
+  # 'host1:port1','host2:port2','etc...'
+  hosts:
+
+walE:
+  # Specifies whether Wal-E should be enabled
+  enable: false
+  # Cron schedule for doing base backups
+  scheduleCronJob: 00 01 * * *
+  # Amount of base backups to retain
+  retainBackups: 2
+  # Path to the S3 or GCS bucket used for WAL-E base backups
+  s3Bucket:
+  gcsBucket:
+  # Name of the secret that holds the credentials to the bucket
+  kubernetesSecret:
+  # Maximum size of the WAL segments accumulated after the base backup to
+  # consider WAL-E restore instead of pg_basebackup
+  backupThresholdMegabytes: 1024
+  # Maximum ratio (in percents) of the accumulated WAL files to the base backup
+  # to consider WAL-E restore instead of pg_basebackup
+  backupThresholdPercentage: 30
+
+persistence:
+  enabled: true
+  size: 1G
+  ## database data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+  subPath: ""
+  mountPath: "/dockerdata-nfs"
+  mountSubPath: "instances"
+  annotations: {}
+  accessMode: ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+#  storageClass: "new"
+
+resources: {}
+  # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+nodeSelector:
+  type: protier-pool
+
+# https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations:
+- key: "type"
+  operator: "Equal"
+  value: "protier-pool"
+  effect: "NoSchedule"
+
+# https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+affinityTemplate: |
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        topologyKey: "kubernetes.io/hostname"
+        labelSelector:
+          matchLabels:
+            app:  {{ template "patroni.name" . }}
+            release: {{ .Release.Name | quote }}
+
+affinity: ""
+
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: true
+
+serviceAccount:
+  # Specifies whether a ServiceAccount should be created
+  create: true
+  # The name of the ServiceAccount to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
