@@ -66,6 +66,19 @@ secrets:
     login: '{{ .Values.restServer.policyApiUserName }}'
     password: '{{ .Values.restServer.policyApiUserPassword }}'
     passwordPolicy: required
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-policy-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "policy-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-dmaap-bc-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "policy-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -181,6 +194,43 @@ mariadb-galera:
     mountSubPath: policy/maria/data
   serviceAccount:
     nameOverride: *policy-mariadb
+
+# application configuration override for postgres
+postgres:
+  localCluster: false
+  service:
+    name: pgset
+    name2: tcp-pgset-primary
+    name3: tcp-pgset-replica
+  # service:
+  #   name: dbc-postgres
+  #   name2: dbc-pg-primary
+  #   name3: dbc-pg-replica
+  containerName: postgres
+  nameOverride: policy-postgres
+  container:
+    name:
+      primary: policy-postgres-primary
+      replica: policy-postgres-replica
+  config:
+    pgUserName: policy_user
+    pgDatabase: policyadmin
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+  persistence:
+    mountSubPath: dbc/data
+    mountInitPath: dbc
+
+postgres-init:
+  nameOverride: policy-postgres-init
+  config:
+    pgUserName: policy_user
+    pgDatabase: policyadmin
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 
 restServer:
   policyPapUserName: policyadmin
