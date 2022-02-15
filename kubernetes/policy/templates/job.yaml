@@ -48,6 +48,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+    {{- if eq .Values.db.type "mariadb" }}
       - name: {{ include "common.release" . }}-policy-galera-config
         image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadb.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -70,6 +71,33 @@ spec:
         - name: MYSQL_PORT
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
         resources:
+    {{ end }}
+    {{- if eq .Values.db.type "postgres" }}
+      - name: {{ include "common.release" . }}-policy-postgres-config
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.postgres.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        volumeMounts:
+        - mountPath: /dbcmd-config/db-pg.sh
+          name: {{ include "common.fullname" . }}-config
+          subPath: db-pg.sh
+        command:
+        - /bin/sh
+        args:
+        - -x
+        - /dbcmd-config/db-pg.sh
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 10 }}
+        - name: MYSQL_HOST
+          value: "{{ index .Values "postgres" "service" "name" }}"
+        - name: MYSQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: MYSQL_PORT
+          value: "{{ index .Values "postgres" "service" "internalPort" }}"
+        - name: PG_PASSWORD
+          value: MYSQL_ROOT_PASSWORD
+        resources:
+    {{ end }}
 {{ include "common.resources" . }}
       containers:
       - name: {{ include "common.release" . }}-policy-galera-db-migrator
