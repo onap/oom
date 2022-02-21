@@ -41,7 +41,7 @@ for f in $CERTS_DIR/*; do
   if echo $f | grep '\.sh$' >/dev/null; then
     continue
   fi
-  if echo $f | grep '\.b64$' >/dev/null; then
+  if echo $f | grep '\.b64$' >/dev/null
     then
       base64 -d $f > $WORK_DIR/`basename $f .b64`
     else
