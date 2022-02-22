@@ -1,0 +1,139 @@
+#  ============LICENSE_START=======================================================
+#   Copyright (C) 2021-2022 Nordix Foundation.
+#  ================================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+#  ============LICENSE_END=========================================================
+
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  persistence: {}
+  aafEnabled: true
+
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: restserver-secret
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.restServer.credsExternalSecret) . }}'
+    login: '{{ .Values.restServer.user }}'
+    password: '{{ .Values.restServer.password }}'
+    passwordPolicy: required
+  - uid: keystore-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
+    password: '{{ .Values.certStores.keyStorePassword }}'
+    passwordPolicy: required
+  - uid: truststore-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
+    password: '{{ .Values.certStores.trustStorePassword }}'
+    passwordPolicy: required
+
+certStores:
+  keyStorePassword: Pol1cy_0nap
+  trustStorePassword: Pol1cy_0nap
+
+certInitializer:
+  nameOverride: policy-clamp-ac-http-ppnt-cert-initializer
+  aafDeployFqi: deployer@people.osaaf.org
+  aafDeployPass: demo123456!
+  fqdn: policy
+  fqi: policy@policy.onap.org
+  public_fqdn: policy.onap.org
+  cadi_latitude: "0.0"
+  cadi_longitude: "0.0"
+  credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  uid: 100
+  gid: 101
+  aaf_add_config: >
+    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
+    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
+    chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/policy-clamp-ac-http-ppnt:6.2.1
+pullPolicy: Always
+
+# application configuration
+restServer:
+  user: participantUser
+  password: zb!XztG34
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# default number of instances
+replicaCount: 1
+
+nodeSelector: {}
+
+affinity: {}
+ingress:
+  enabled: false
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+  port: http-api
+
+readiness:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  port: http-api
+
+service:
+  type: ClusterIP
+  name: policy-clamp-ac-http-ppnt
+  useNodePortExt: true
+  ports:
+    - name: http-api
+      port: 8084
+      nodePort: 42
+
+
+flavor: small
+resources:
+  small:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  large:
+    limits:
+      cpu: 2
+      memory: 8Gi
+    requests:
+      cpu: 200m
+      memory: 2Gi
+  unlimited: {}
+#Pods Service Account
+serviceAccount:
+  nameOverride: policy-clamp-ac-http-ppnt
+  roles:
+    - read
