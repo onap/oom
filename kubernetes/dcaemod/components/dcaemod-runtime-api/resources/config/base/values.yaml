@@ -1,6 +1,6 @@
 #============LICENSE_START========================================================
 #=================================================================================
-# Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
+# Copyright (c) 2021-2022 AT&T Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,9 +48,31 @@ dcaePolicySyncImage: onap/org.onap.dcaegen2.deployments.dcae-services-policy-syn
 postgres:
   enabled: false
 
+#mongo enable/disable
+mongo:
+  enabled: false
+  nameOverride: dcae-mongo
+  config:
+    dbName: dcaecommondb
+  service:
+    name: dcae-mongohost
+    internalPort: 27017
+  nfsprovisionerPrefix: dcaemongo
+  sdnctlPrefix: tcagen2
+  persistence:
+    mountSubPath: dcae/mongo/data
+    enabled: true
+  disableNfsProvisioner: true
+
 # log directory where logging sidecar should look for log files
 # if absent, no sidecar will be deployed
 #logDirectory: TBD  #/opt/app/VESCollector/logs #DONE
+
+# Following requires manual override until fix for DCAEGEN2-3087 
+# is available to switch logDirectory setting to log.path
+log:
+  path: /opt/app/
+logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
 # directory where TLS certs should be stored
 # if absent, no certs will be retrieved and stored
@@ -64,7 +86,6 @@ postgres:
 # dependencies
 readinessCheck:
   wait_for:
-    - dcae-config-binding-service
     - aaf-cm
 
 # probe configuration  #NEED DISCUSSION
