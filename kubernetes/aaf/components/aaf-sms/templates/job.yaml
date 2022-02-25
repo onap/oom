@@ -52,7 +52,9 @@ spec:
            export OSDF_OPT_ENGINE_PASS=${OSDF_OPT_ENGINE_PASS_PLAIN};
            export SO_PASS=${SO_PASS_PLAIN};
            export SDC_PASS=${SDC_PASS_PLAIN};
+           {{- if .Values.cps.enabled }}
            export CPS_PASS=${CPS_PASS_PLAIN};
+           {{-  end }}
            cd /config-input;
            for PFILE in `find . -not -type d | grep -v -F ..`; do
              envsubst <${PFILE} >/config/${PFILE};
@@ -137,11 +139,12 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-creds" "key" "login") | indent 10 }}
         - name: SDC_PASS_PLAIN
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-creds" "key" "password") | indent 10 }}
-
+        {{- if .Values.cps.enabled }}
         - name: CPS_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-creds" "key" "login") | indent 10 }}
         - name: CPS_PASS_PLAIN
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-creds" "key" "password") | indent 10 }}
+        {{- end }}
 
         volumeMounts:
         - mountPath: /config-input
