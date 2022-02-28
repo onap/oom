@@ -1,6 +1,6 @@
 {{/*
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021 Nordix Foundation.
+#   Copyright (C) 2021-2022 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -62,6 +62,20 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+{{- if .Values.global.aafEnabled }}
+          command: ["sh","-c"]
+          args: ["source {{ .Values.certInitializer.credsPath }}/.ci;/opt/app/policy/gui/bin/policy-gui.sh"]
+          env:
+{{- else }}
+          command: ["/opt/app/policy/gui/bin/policy-gui.sh"]
+          env:
+          - name: KEYSTORE_PASSWD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
+          - name: TRUSTSTORE_PASSWD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 12 }}
+{{- end }}
+          - name: CLAMP_URL
+            value: https://policy-clamp-be:8443
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -81,9 +95,6 @@ spec:
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - name: logs
             mountPath: {{ .Values.log.path }}
-          - mountPath: /etc/nginx/conf.d/default.conf
-            name: {{ include "common.fullname" . }}-config
-            subPath: default.conf
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -99,9 +110,6 @@ spec:
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
-            items:
-            - key: default.conf
-              path: default.conf
         - name:  logs
           emptyDir: {}
         {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.volumes" . | nindent 8 }}{{ end }}
