@@ -1,5 +1,5 @@
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021 Nordix Foundation.
+#   Copyright (C) 2021-2022 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,36 +26,46 @@ global: # global defaults
   aafEnabled: true
 
 #################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: keystore-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
+    password: '{{ .Values.certStores.keyStorePassword }}'
+    passwordPolicy: required
+  - uid: truststore-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
+    password: '{{ .Values.certStores.trustStorePassword }}'
+    passwordPolicy: required
+
+certStores:
+  keyStorePassword: Pol1cy_0nap
+  trustStorePassword: Pol1cy_0nap
+
+#################################################################
 # AAF part
 #################################################################
 certInitializer:
-  permission_user: 1000
-  permission_group: 999
-  addconfig: true
-  keystoreFile: "org.onap.clamp.p12"
-  truststoreFile: "org.onap.clamp.trust.jks"
-  keyFile: "org.onap.clamp.keyfile"
-  truststoreFileONAP: "truststoreONAPall.jks"
-  clamp_key: "clamp.key"
-  clamp_pem: "clamp.pem"
-  clamp_ca_certs_pem: "clamp-ca-certs.pem"
   nameOverride: policy-gui-cert-initializer
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: clamp
-  fqi: clamp@clamp.onap.org
-  public_fqdn: clamp.onap.org
-  cadi_longitude: "0.0"
+  fqdn: policy
+  fqi: policy@policy.onap.org
+  public_fqdn: policy.onap.org
   cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
+  cadi_longitude: "0.0"
   credsPath: /opt/app/osaaf/local
+  app_ns: org.osaaf.aaf
+  uid: 100
+  gid: 101
   aaf_add_config: >
-    cd {{ .Values.credsPath }};
-    openssl pkcs12 -in {{ .Values.keystoreFile }} -nocerts -nodes -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_key }};
-    openssl pkcs12 -in {{ .Values.keystoreFile }} -clcerts -nokeys -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_pem }};
-    openssl pkcs12 -in {{ .Values.keystoreFile }} -cacerts -nokeys -chain -passin pass:$cadi_keystore_password_p12 > {{ .Values.clamp_ca_certs_pem }};
-    chmod a+rx *;
+    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
+    echo "export TRUSTSTORE='{{ .Values.credsPath }}/org.onap.policy.trust.jks'" >> {{ .Values.credsPath }}/.ci;
+    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
+    echo "export TRUSTSTORE_PASSWD='${cadi_truststore_password}'" >> {{ .Values.credsPath }}/.ci;
+    chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
 
 subChartsOnly:
   enabled: true
@@ -63,7 +73,7 @@ subChartsOnly:
 flavor: small
 
 # application image
-image: onap/policy-gui:2.2.0
+image: onap/policy-gui:2.2.2
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -71,7 +81,7 @@ debugEnabled: false
 
 # log configuration
 log:
-  path: /var/log/nginx/
+  path: /var/log/onap/policy/gui
 
 #################################################################
 # Application configuration defaults.
