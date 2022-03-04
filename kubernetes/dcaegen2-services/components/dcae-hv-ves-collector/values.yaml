@@ -2,6 +2,7 @@
 # ================================================================================
 # Copyright (c) 2021-2022 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021-2022 Nokia.  All rights reserved.
+# Copyright © 2022 Nordix Foundation
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,11 +62,15 @@ certDirectory: /etc/ves-hv/ssl
 tlsServer: true
 
 secrets:
-  - uid: &aafCredsUID aafcreds
-    type: basicAuth
-    login: '{{ .Values.aafCreds.user }}'
-    password: '{{ .Values.aafCreds.password }}'
-    passwordPolicy: required
+  - uid: hv-ves-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+config:
+  someConfig: blah
 
 # CMPv2 certificate
 # It is used only when:
@@ -113,17 +118,9 @@ service:
       port_protocol: http
       nodePort: 22
 
-aafCreds:
-  user: admin
-  password: admin_secret
-
-credentials:
-- name: AAF_USER
-  uid: *aafCredsUID
-  key: login
-- name: AAF_PASSWORD
-  uid: *aafCredsUID
-  key: password
+#strimzi kafka config
+hvVesKafkaUser: dcae-hv-ves-kafka-user
+kafkaBootstrap: strimzi-kafka-bootstrap
 
 # initial application configuration
 applicationConfig:
@@ -139,48 +136,38 @@ applicationConfig:
   streams_publishes:
     ves-3gpp-fault-supervision:
       type: kafka
-      aaf_credentials:
-        username: ${AAF_USER}
-        password: ${AAF_PASSWORD}
       kafka_info:
-        bootstrap_servers: message-router-kafka:9092
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
         topic_name: SEC_3GPP_FAULTSUPERVISION_OUTPUT
     ves-3gpp-provisioning:
       type: kafka
-      aaf_credentials:
-        username: ${AAF_USER}
-        password: ${AAF_PASSWORD}
       kafka_info:
-        bootstrap_servers: message-router-kafka:9092
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
         topic_name: SEC_3GPP_PROVISIONING_OUTPUT
     ves-3gpp-heartbeat:
       type: kafka
-      aaf_credentials:
-        username: ${AAF_USER}
-        password: ${AAF_PASSWORD}
       kafka_info:
-        bootstrap_servers: message-router-kafka:9092
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
         topic_name: SEC_3GPP_HEARTBEAT_OUTPUT
     ves-3gpp-performance-assurance:
       type: kafka
-      aaf_credentials:
-        username: ${AAF_USER}
-        password: ${AAF_PASSWORD}
       kafka_info:
-        bootstrap_servers: message-router-kafka:9092
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
         topic_name: SEC_3GPP_PERFORMANCEASSURANCE_OUTPUT
     perf3gpp:
       type: kafka
-      aaf_credentials:
-        username: ${AAF_USER}
-        password: ${AAF_PASSWORD}
       kafka_info:
-        bootstrap_servers: message-router-kafka:9092
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
         topic_name: HV_VES_PERF3GPP
 
 applicationEnv:
   JAVA_OPTS: '-Dlogback.configurationFile=/etc/ONAP/dcae-hv-ves-collector/logback.xml'
   CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
+  KAFKA_BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-{{ .Values.kafkaBootstrap }}:9092'
+  USE_SCRAM: 'true'
+  JAAS_CONFIG:
+    secretUid: hv-ves-kafka-secret
+    key: sasl.jaas.config
 
 # Resource Limit flavor -By Default using small
 flavor: small
