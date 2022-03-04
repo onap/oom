@@ -1,6 +1,7 @@
 {{/*
 # Copyright (c) 2019 IBM, Bell Canada
 # Copyright (c) 2020 Samsung Electronics
+# Modification Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,10 +79,6 @@ spec:
         args:
         - --container-name
         - cds-db
-        {{- if .Values.dmaapEnabled  }}
-        - --container-name
-        - message-router
-        {{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -121,6 +118,10 @@ spec:
                 fieldPath: metadata.name
           - name: CLUSTER_CONFIG_FILE
             value: {{ .Values.config.appConfigDir }}/hazelcast.yaml
+          {{ if .Values.useStrimziKafka }}
+          - name: JAAS_PASS
+            value: {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-kafka-secret" "key" "password") | indent 12 }}
+          {{ end }}
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}

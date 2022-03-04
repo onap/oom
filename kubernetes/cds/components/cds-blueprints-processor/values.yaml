@@ -1,5 +1,6 @@
 # Copyright (c) 2019 IBM, Bell Canada
 # Copyright (c) 2020 Samsung Electronics
+# Modification Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,6 +58,13 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.sdncDB.dbRootPassExternalSecret) . }}'
     password: '{{ .Values.config.sdncDB.dbRootPass }}'
     passwordPolicy: required
+  - uid: cds-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: password
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 #################################################################
 # AAF part
@@ -111,6 +119,7 @@ config:
     # dbCredsExternalSecret: <some secret name>
     # dbRootPassword: password
     # dbRootPassExternalSecret
+  someConfig: blah
 
 # default number of instances
 replicaCount: 1
@@ -119,10 +128,40 @@ nodeSelector: {}
 
 affinity: {}
 
-# flag for kafka-listener dependency. Set to true if you are using message-router otherwise set to false if you are using
-# custom kafka cluster.
-dmaapEnabled: true
+# If useStrimziKafka is true, the following also applies:
+# strimzi will create an associated kafka user and the topics defined for Request and Audit elements below.
+# The connection type must be kafka-scram-plain-text-auth
+# The bootstrapServers will target the strimzi kafka cluster by default
+useStrimziKafka: false
+cdsKafkaUser: cds-kafka-user
 
+kafkaRequestConsumer:
+  enabled: false
+  type: kafka-scram-plain-text-auth
+  bootstrapServers: host:port
+  groupId: cds-consumer
+  topic: cds.blueprint-processor.self-service-api.request
+  clientId: request-receiver-client-id
+  pollMillSec: 1000
+kafkaRequestProducer:
+  type: kafka-scram-plain-text-auth
+  bootstrapServers: host:port
+  clientId: request-producer-client-id
+  topic: cds.blueprint-processor.self-service-api.response
+  enableIdempotence: false
+kafkaAuditRequest:
+  enabled: false
+  type: kafka-scram-plain-text-auth
+  bootstrapServers: host:port
+  clientId: audit-request-producer-client-id
+  topic: cds.blueprint-processor.self-service-api.audit.request
+  enableIdempotence: false
+kafkaAuditResponse:
+  type: kafka-scram-plain-text-auth
+  bootstrapServers: host:port
+  clientId: audit-response-producer-client-id
+  topic: cds.blueprint-processor.self-service-api.audit.response
+  enableIdempotence: false
 
 # probe configuration parameters
 startup:
