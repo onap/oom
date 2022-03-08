@@ -23,8 +23,12 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim}}
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 8 }}
         - name: {{ include "common.name" . }}-readiness
+          securityContext:
+            runAsUser: 100
+            runAsGroup: 65533
           image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
@@ -39,6 +43,8 @@ spec:
                 apiVersion: v1
                 fieldPath: metadata.namespace
         - name: {{ include "common.name" . }}-permission-fixer
+          securityContext:
+            runAsUser: 0
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
