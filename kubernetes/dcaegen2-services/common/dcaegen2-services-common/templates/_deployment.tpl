@@ -1,7 +1,7 @@
 {{/*
 #============LICENSE_START========================================================
 # ================================================================================
-# Copyright (c) 2021 J. F. Lucas. All rights reserved.
+# Copyright (c) 2021-2022 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2021 Nokia. All rights reserved.
 # Copyright (c) 2021 Nordix Foundation.
@@ -176,7 +176,7 @@ The Deployment always includes a single Pod, with a container that uses
 the DCAE microservice image.
 
 The Deployment Pod may also include a logging sidecar container.
-The sidecar is included if .Values.logDirectory is set.  The
+The sidecar is included if .Values.log.path is set.  The
 logging sidecar and the DCAE microservice container share a
 volume where the microservice logs are written.
 
@@ -222,7 +222,8 @@ policies:
 */}}
 
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
-{{- $logDir :=  default "" .Values.log.path -}}
+{{- $log := default dict .Values.log -}}
+{{- $logDir :=  default "" $log.path -}}
 {{- $certDir := default "" .Values.certDirectory . -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
