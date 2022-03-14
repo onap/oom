@@ -1,5 +1,6 @@
 # Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
 # Modifications Copyright (C) 2022 Bell Canada
+# Modifications Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,6 +43,13 @@ secrets:
     login: '{{ .Values.config.dmiPluginUserName }}'
     password: '{{ .Values.config.dmiPluginUserPassword }}'
     passwordPolicy: generate
+  - uid: cps-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 #################################################################
 # Global configuration defaults.
@@ -170,17 +178,24 @@ config:
   #appUserPassword:
   dmiPluginUserName: dmiuser
 # Any new property can be added in the env by setting in overrides in the format mentioned below
-# All the added properties must be in "key: value" format insead of yaml.
+# All the added properties must be in "key: value" format instead of yaml.
 #  additional:
 #    spring.config.max-size: 200
 #    spring.config.min-size: 10
 
-  eventPublisher:
-    spring.kafka.bootstrap-servers: message-router-kafka:9092
-    spring.kafka.security.protocol: SASL_PLAINTEXT
-    spring.kafka.properties.sasl.mechanism: PLAIN
-    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
-    spring.kafka.producer.client-id: cps-core
+# kafka config
+  useStrimziKafka: false
+  kafkaBootstrap: strimzi-kafka-bootstrap
+# If targeting a custom kafka cluster, ie useStrimziKakfa: false
+# uncomment below config and target your kafka bootstrap servers,
+# along with any other security config.
+
+#  eventPublisher:
+#    spring.kafka.bootstrap-servers: <kafka-bootstrap>:9092
+#    spring.kafka.security.protocol: SASL_PLAINTEXT
+#    spring.kafka.properties.sasl.mechanism: PLAIN
+#    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
+#    spring.kafka.producer.client-id: cps-core
 
   additional:
     notification.data-updated.enabled: true
