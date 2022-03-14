@@ -1,7 +1,7 @@
 {{/*
 #  Copyright (C) 2021 Pantheon.tech
 #  Modifications Copyright (C) 2020 Bell Canada.
-#  Modifications Copyright (C) 2021 Nordix Foundation.
+#  Modifications Copyright (C) 2021-2022 Nordix Foundation.
 #  Modifications Copyright (C) 2021 Orange
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,17 +28,21 @@ spring:
     password: ${DB_PASSWORD}
     driverClassName: org.postgresql.Driver
     initialization-mode: always
-
   liquibase:
     change-log: classpath:changelog/changelog-master.yaml
     labels: {{ .Values.config.liquibaseLabels }}
 
+  kafka:
+    producer:
+      client-id: cps-core
+
 security:
-    # comma-separated uri patterns which do not require authorization
-    permit-uri: /manage/**,/swagger-ui/**,/swagger-resources/**,/api-docs
-    auth:
-        username: ${CPS_USERNAME}
-        password: ${CPS_PASSWORD}
+  # comma-separated uri patterns which do not require authorization
+  permit-uri: /manage/**,/swagger-ui/**,/swagger-resources/**,/api-docs
+  auth:
+    username: ${CPS_USERNAME}
+    password: ${CPS_PASSWORD}
+
 logging:
   level:
     org:
@@ -49,12 +53,18 @@ dmi:
     username: ${DMI_USERNAME}
     password: ${DMI_PASSWORD}
 
-{{- if .Values.config.eventPublisher }}
+{{- if .Values.config.useStrimziKafka }}
+spring.kafka.bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+spring.kafka.security.protocol: SASL_PLAINTEXT
+spring.kafka.properties.sasl.mechanism: SCRAM-SHA-512
+spring.kafka.properties.sasl.jaas.config: ${JAASLOGIN}
+{{ else }}
 {{ toYaml .Values.config.eventPublisher | nindent 2 }}
 {{- end }}
 
 {{- if .Values.config.additional }}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
+
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
 
