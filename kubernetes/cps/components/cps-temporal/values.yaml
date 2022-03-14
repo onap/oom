@@ -1,5 +1,6 @@
 # ============LICENSE_START=======================================================
 #  Copyright (c) 2021 Bell Canada.
+# Modifications Copyright © 2022 Nordix Foundation
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +40,13 @@ secrets:
     login: '{{ .Values.config.appUserName }}'
     password: '{{ .Values.config.appUserPassword }}'
     passwordPolicy: generate
+  - uid: cps-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 image: onap/cps-temporal:1.1.0
 containerPort: &svc_port 8080
@@ -139,13 +147,21 @@ config:
     profile: helm
   #appUserPassword:
 
-  # Event consumption (kafka) properties
-  # All Kafka properties must be in "key: value" format instead of yaml.
-  eventConsumption:
-    spring.kafka.bootstrap-servers: message-router-kafka:9092
-    spring.kafka.security.protocol: PLAINTEXT
-    spring.kafka.consumer.group-id: cps-temporal-group
-    app.listener.data-updated.topic: cps.data-updated-events
+# Event consumption (kafka) properties
+  useStrimziKafka: true
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  strimziKafkaTopic:
+    name: cps.data-updated-events
+    consumer:
+      groupId: cps-temporal-group
+# If targeting a custom kafka cluster, ie useStrimziKakfa: false
+# uncomment below config and target your kafka bootstrap servers,
+# along with any other security config.
+
+#  eventConsumption:
+#    spring.kafka.bootstrap-servers: <kafka-bootstrap>:9092
+#    spring.kafka.security.protocol: PLAINTEXT
+#    spring.kafka.consumer.group-id: cps-temporal-group
 
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.

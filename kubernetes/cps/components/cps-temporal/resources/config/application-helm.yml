@@ -1,6 +1,7 @@
 {{/*
 # ============LICENSE_START=======================================================
 #  Copyright (c) 2021 Bell Canada.
+# Modifications Copyright © 2022 Nordix Foundation
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,19 +25,31 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+  kafka:
+    consumer:
+      group-id: {{ .Values.config.strimziKafkaTopic.consumer.groupId }}
+
+  app:
+    listener:
+      data-updated:
+        topic: {{ .Values.config.strimziKafkaTopic.name }}
+
+{{- if .Values.config.useStrimziKafka }}
+spring.kafka.bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+spring.kafka.security.protocol: SASL_PLAINTEXT
+spring.kafka.properties.sasl.mechanism: SCRAM-SHA-512
+spring.kafka.properties.sasl.jaas.config: ${JAASLOGIN}
+{{ else }}
+{{ toYaml .Values.config.eventPublisher | nindent 2 }}
+{{- end }}
+
+{{- if .Values.config.additional }}
+{{ toYaml .Values.config.additional | nindent 2 }}
+{{- end }}
+
 security:
   auth:
     username: ${APP_USERNAME}
     password: ${APP_PASSWORD}
-
-# Event consumption properties (kafka)
-{{- if .Values.config.eventConsumption }}
-{{ toYaml .Values.config.eventConsumption | nindent 2 }}
-{{- end }}
-
-# Additional properties
-{{- if .Values.config.additional }}
-{{ toYaml .Values.config.additional | nindent 2 }}
-{{- end }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
