@@ -1,4 +1,5 @@
 # Copyright (C) 2021 Bell Canada
+# Modifications Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +41,20 @@ global:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  cpsKafkaUser: cps-kafka-user
+
 config:
   coreUserName: cpsuser
   dmiPluginUserName: dmiuser
+  useStrimziKafka: true
+  dataUpdatedTopic:
+    name: cps.data-updated-events
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: cps-temporal-group
 
 # Enable all CPS components by default
 cps-core:
@@ -50,9 +62,12 @@ cps-core:
   config:
     appUserExternalSecret: *core-creds-secret
     dmiPluginUserExternalSecret: *dmi-plugin-creds-secret
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.cpsKafkaUser }}'
 
 cps-temporal:
   enabled: true
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.cpsKafkaUser }}'
 
 ncmp-dmi-plugin:
   enabled: true
