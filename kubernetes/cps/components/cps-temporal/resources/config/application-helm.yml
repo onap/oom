@@ -1,6 +1,7 @@
 {{/*
 # ============LICENSE_START=======================================================
 #  Copyright (c) 2021 Bell Canada.
+# Modifications Copyright © 2022 Nordix Foundation
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,19 +25,34 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-security:
-  auth:
-    username: ${APP_USERNAME}
-    password: ${APP_PASSWORD}
-
+{{- if eq .Values.config.useStrimziKafka true }}
+  kafka:
+    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl:
+        mechanism: SCRAM-SHA-512
+        jaas:
+          config: ${JAASLOGIN}
+    consumer:
+      group-id: cps-temporal-group
+app:
+  listener:
+    data-updated:
+      topic: cps.data-updated-events
+{{ else }}
 # Event consumption properties (kafka)
-{{- if .Values.config.eventConsumption }}
 {{ toYaml .Values.config.eventConsumption | nindent 2 }}
 {{- end }}
-
 # Additional properties
 {{- if .Values.config.additional }}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
+
+security:
+  auth:
+    username: ${APP_USERNAME}
+    password: ${APP_PASSWORD}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
