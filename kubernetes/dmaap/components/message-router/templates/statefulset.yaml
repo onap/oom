@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2021-2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,22 +27,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - {{ .Values.kafka.name }}
-        - --container-name
-        - {{ .Values.zookeeper.name }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
       {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
       {{- if  .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-update-config
@@ -82,6 +67,45 @@ spec:
           - name: jmx-config
             mountPath: /etc/jmx-kafka
       {{- end }}
+        - name: srimzi-zk-entrance
+          image: 'docker.io/scholzj/zoo-entrance:latest'
+          command:
+            - /opt/stunnel/stunnel_run.sh
+          ports:
+            - containerPort: {{ .Values.global.zkTunnelService.internalPort }}
+              name: zoo
+              protocol: TCP
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: STRIMZI_ZOOKEEPER_CONNECT
+              value: '{{ include "common.release" . }}-strimzi-zookeeper-client:{{ .Values.global.zkTunnelService.internalPort }}'
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.global.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.global.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /etc/cluster-operator-certs/
+              name: cluster-operator-certs
+            - mountPath: /etc/cluster-ca-certs/
+              name: cluster-ca-certs
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -123,6 +147,10 @@ spec:
             successThreshold: {{ .Values.startup.successThreshold }}
             failureThreshold: {{ .Values.startup.failureThreshold }}
           env:
+          - name: JAASLOGIN
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "mr-kafka-admin-secret" "key" "sasl.jaas.config") | indent 12 }}
+          - name: SASLMECH
+            value: {{ .Values.global.saslMechanism }}
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
@@ -135,9 +163,6 @@ spec:
           - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
             subPath: logback.xml
             name: logback
-          - mountPath: /appl/dmaapMR1/etc/keyfile
-            subPath: mykey
-            name: mykey
           {{- if  .Values.global.aafEnabled }}
           - mountPath: /appl/dmaapMR1/etc/runner-web.xml
             subPath: runner-web.xml
@@ -168,13 +193,38 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-prometheus-configmap
         {{- end }}
-        - name: mykey
-          secret:
-            secretName: {{ include "common.fullname" . }}-secret
         - name: sys-props
           configMap:
             name: {{ include "common.fullname" . }}-sys-props
         - name: jetty
           emptyDir: {}
+        - name: cluster-operator-certs
+          secret:
+            defaultMode: 288
+            secretName: {{ include "common.release" . }}-strimzi-cluster-operator-certs
+        - name: cluster-ca-certs
+          secret:
+            defaultMode: 288
+            secretName: {{ include "common.release" . }}-strimzi-cluster-ca-cert
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "common.fullname" . }}-zk-network-policy
+  namespace: {{ include "common.namespace" . }}
+spec:
+  podSelector:
+    matchLabels:
+      strimzi.io/name: {{ include "common.release" . }}-strimzi-zookeeper
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: {{ include "common.name" . }}
+    ports:
+    - port: {{ .Values.global.zkTunnelService.internalPort }}
+      protocol: TCP
+  policyTypes:
+  - Ingress
