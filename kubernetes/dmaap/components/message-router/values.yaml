@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2021-2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +19,14 @@
 #################################################################
 global:
   nodePortPrefix: 302
-
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  saslMechanism: scram-sha-512
+  kafkaInternalPort: 9092
+  zkTunnelService:
+    type: ClusterIP
+    name: zk-tunnel-svc
+    portName: tcp-zk-tunnel
+    internalPort: 2181
 
 #################################################################
 # AAF part
@@ -63,18 +71,21 @@ certInitializer:
 image: onap/dmaap/dmaap-mr:1.3.2
 pullPolicy: Always
 
-kafka:
-  name: message-router-kafka
-  port: 9092
-zookeeper:
-  name: message-router-zookeeper
-  port: 2181
+secrets:
+  - uid: mr-kafka-admin-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
-config: {}
+config:
+  someConfig: blah
 
 # default number of instances
 replicaCount: 1
