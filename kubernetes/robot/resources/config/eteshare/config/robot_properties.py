@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
+
+def decode(s):
+    base64_message = s
+    base64_bytes = base64_message.encode('ascii')
+    message_bytes = base64.b64decode(base64_bytes)
+    message = message_bytes.decode('ascii')
+    return message
+
 GLOBAL_INJECTED_AAF_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "aaf-service") }}'
 GLOBAL_INJECTED_AAI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "aai") }}'
 GLOBAL_INJECTED_APPC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "appc") }}'
@@ -52,7 +61,7 @@ GLOBAL_INJECTED_MUSIC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" 
 GLOBAL_INJECTED_NBI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "nbi") }}'
 GLOBAL_INJECTED_NETWORK = '{{ .Values.openStackPrivateNetId }}'
 GLOBAL_INJECTED_NEXUS_DOCKER_REPO = '{{ include "common.repository" . }}'
-GLOBAL_INJECTED_NEXUS_PASSWORD = 'docker'
+GLOBAL_INJECTED_NEXUS_PASSWORD = decode(Nexus_Pass())
 GLOBAL_INJECTED_NEXUS_REPO ='https://nexus.onap.org/content/sites/raw'
 GLOBAL_INJECTED_NEXUS_USERNAME = 'docker'
 GLOBAL_INJECTED_OOF_IP_ADDR = 'N/A'
@@ -309,7 +318,7 @@ GLOBAL_OOF_CMSO_PASSWORD = "{{ .Values.oofCmsoPassword }}"
 # packet generate vnf info - everything is from the private oam network (also called onap private network)
 GLOBAL_PACKET_GENERATOR_PORT = "8183"
 GLOBAL_PACKET_GENERATOR_USERNAME = "admin"
-GLOBAL_PACKET_GENERATOR_PASSWORD = "admin"
+GLOBAL_PACKET_GENERATOR_PASSWORD = decode(generator_pass())
 GLOBAL_PGN_PORT = "2831"
 # policy info - everything is from the private oam network (also called onap private network)
 GLOBAL_POLICY_SERVER_PROTOCOL = "https"
@@ -355,7 +364,7 @@ GLOBAL_DCAE_VES_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "ho
 GLOBAL_DCAE_VES_HTTPS_PROTOCOL = "https"
 GLOBAL_DCAE_VES_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-ves-collector-https" "port" 8443) }}'
 GLOBAL_DCAE_VES_USERNAME = 'sample1'
-GLOBAL_DCAE_VES_PASSWORD = 'sample1'
+GLOBAL_DCAE_VES_PASSWORD = decode(Ves_pass())
 
 
 #global selenium info
@@ -374,7 +383,7 @@ GLOBAL_TOSCA_ONBOARDING_PACKAGES_FOLDER = "/var/opt/ONAP/demo/tosca"
 GLOBAL_CCSDK_CDS_SERVER_PROTOCOL = "http"
 GLOBAL_CCSDK_CDS_HEALTH_SERVER_PORT = "8080"
 GLOBAL_CCSDK_CDS_USERNAME = 'ccsdkapps'
-GLOBAL_CCSDK_CDS_PASSWORD = 'ccsdkapps'
+GLOBAL_CCSDK_CDS_PASSWORD = decode(CDS_pass())
 GLOBAL_CCSDK_CDS_AUTHENTICATION = [GLOBAL_CCSDK_CDS_USERNAME, GLOBAL_CCSDK_CDS_PASSWORD]
 GLOBAL_CDS_AUTH = "Y2NzZGthcHBzOmNjc2RrYXBwcw=="
 
