@@ -16,6 +16,8 @@
 
 import base64
 
+from credentials import *
+
 def decode(s):
     base64_message = s
     base64_bytes = base64_message.encode('ascii')
