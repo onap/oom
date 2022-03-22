@@ -110,7 +110,11 @@ namespace: {{ $dot.Values.metrics.serviceMonitor.namespace }}
 {{- else }}
 namespace: {{ include "common.namespace" $dot }}
 {{- end }}
+{{- if $dot.Values.metrics.serviceMonitor.labels }}
+labels: {{- include "common.tplValue" ( dict "value" $dot.Values.metrics.serviceMonitor.labels "context" $dot) | nindent 2 }}
+{{- else }}
 labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 2 }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -133,14 +137,31 @@ spec:
     {{- else }}
     port: metrics
     {{- end }}
+    {{- if $dot.Values.metrics.serviceMonitor.isHttps }}
+    scheme: https
+    {{- if $dot.Values.metrics.serviceMonitor.tlsConfig }}
+    tlsConfig: {{- include "common.tplValue" ( dict "value" $dot.Values.metrics.serviceMonitor.tlsConfig "context" $dot) | nindent 6 }}
+    {{- else }}
+    tlsConfig:
+      insecureSkipVerify: true
+    {{- end }}
+    {{- end }}
     {{- if $dot.Values.metrics.serviceMonitor.basicAuth.enabled }}
     basicAuth:
       username:
         key: {{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretUserKey }}
+        {{- if $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretNameSuffix }}
+        name: {{ include "common.release" . }}-{{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretNameSuffix }}
+        {{- else }}
         name: {{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretName }}
+        {{- end }}
       password:
         key: {{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretPasswordKey }}
+        {{- if $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretNameSuffix }}
+        name: {{ include "common.release" . }}-{{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretNameSuffix }}
+        {{- else }}
         name: {{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretName }}
+        {{- end }}
     {{- end }}
     {{- if $dot.Values.metrics.serviceMonitor.interval }}
     interval: {{ $dot.Values.metrics.serviceMonitor.interval }}
