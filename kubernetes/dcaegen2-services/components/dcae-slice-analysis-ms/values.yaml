@@ -2,6 +2,7 @@
 # ============================================================================
 # Copyright (C) 2021-2022 Wipro Limited.
 # Copyright (c) 2022 J. F. Lucas. All rights reserved.
+# Copyright (C) 2022 Huawei Canada Limited.
 # ============================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +58,7 @@ tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
 # Application Configuration Defaults.
 #################################################################
 # Application Image
-image: onap/org.onap.dcaegen2.services.components.slice-analysis-ms:1.0.7
+image: onap/org.onap.dcaegen2.services.components.slice-analysis-ms:1.1.0
 
 # Log directory where logging sidecar should look for log files
 # if path is set to null sidecar won't be deployed in spite of
@@ -144,6 +145,17 @@ applicationConfig:
   sliceanalysisms.rannfnssiDetailsTemplateId: get-rannfnssiid-details
   sliceanalysisms.desUrl: http://dl-des:1681/datalake/v1/exposure/pm_data
   sliceanalysisms.pmDataDurationInWeeks: 4
+  sliceanalysisms.vesNotifPollingInterval: 5
+  sliceanalysisms.vesNotifChangeIdentifier: PM_BW_UPDATE
+  sliceanalysisms.vesNotifChangeType: BandwidthChanged
+  sliceanalysisms.aaiNotif.targetAction: UPDATE
+  sliceanalysisms.aaiNotif.targetSource: UUI
+  sliceanalysisms.aaiNotif.targetEntity: service-instance
+  sliceanalysisms.ccvpnEvalInterval: 5
+  sliceanalysisms.ccvpnEvalThreshold: 0.8
+  sliceanalysisms.ccvpnEvalPrecision: 100.0
+  sliceanalysisms.ccvpnEvalPeriodicCheckOn: true
+  sliceanalysisms.ccvpnEvalOnDemandCheckOn: true
   streams_publishes:
     CL_topic:
       type: message-router
@@ -170,6 +182,19 @@ applicationConfig:
       aaf_password: ${AAF_PASSWORD}
       dmaap_info:
         topic_url: http://message-router:3904/events/DCAE_CL_RSP
+    ves_ccvpn_notification_topic:
+      type: message-router
+      dmaap_info:
+        topic_url: http://message-router:3904/events/unauthenticated.VES_NOTIFICATION_OUTPUT
+    aai_subscriber:
+      type: message-router
+      servers : [message-router]
+      consumer_group: dcae_ccvpn_cl
+      consumer_instance: dcae_ccvpn_cl_aaievent
+      fetch_timeout: 15000
+      fetch_limit: 100
+      dmaap_info:
+        topic_url: http://message-router:3904/events/AAI_EVENT
 
 applicationEnv:
   STANDALONE: 'false'
