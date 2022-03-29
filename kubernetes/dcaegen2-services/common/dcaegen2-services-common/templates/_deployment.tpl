@@ -366,12 +366,12 @@ spec:
         - name: POLICY_SYNC_PDP_USER
           valueFrom:
             secretKeyRef:
-              name: {{ $policyRls }}-policy-xacml-pdp-api-creds
+              name: {{ $policyRls }}-policy-xacml-pdp-restserver-creds
               key: login
         - name: POLICY_SYNC_PDP_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ $policyRls }}-policy-xacml-pdp-api-creds
+              name: {{ $policyRls }}-policy-xacml-pdp-restserver-creds
               key: password
         - name: POLICY_SYNC_PDP_URL
           value : http{{ if (include "common.needTLS" .) }}s{{ end }}://policy-xacml-pdp:6969
