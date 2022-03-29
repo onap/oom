@@ -45,6 +45,7 @@ spec:
         - "aai.ui.simpledemo.onap.org"
         - "cli.api.simpledemo.onap.org"
         - "so-monitoring"
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}"
@@ -63,7 +64,7 @@ spec:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        volumeMounts:
+        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
         - name: dshm
           mountPath: /dev/shm
         - name: localtime
@@ -73,8 +74,6 @@ spec:
           mountPath: /share/config
         - name: robot-lighttpd
           mountPath: /etc/lighttpd
-        - name: robot-lighttpd-ssl
-          mountPath: /etc/lighttpd/ssl
         - name: robot-logs
           mountPath: /share/logs
         resources:
@@ -87,7 +86,7 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
     {{- if .Values.persistence.enabled }}
       - name: robot-logs
         persistentVolumeClaim:
@@ -109,9 +108,5 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-lighttpd-configmap
           defaultMode: 0755
-      - name: robot-lighttpd-ssl
-        configMap:
-          name: {{ include "common.fullname" . }}-lighttpd-ssl-configmap
-          defaultMode: 0600
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
