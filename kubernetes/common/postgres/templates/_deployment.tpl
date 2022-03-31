@@ -33,6 +33,8 @@ metadata:
     name: "{{ index $dot.Values "container" "name" $pgMode }}"
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: {{ include "common.name" $dot }}-{{ $pgMode }}
