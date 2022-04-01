@@ -6,6 +6,7 @@
 .. Links
 .. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/kubernetes/
 .. _Cert-Manager kubectl plugin documentation: https://cert-manager.io/docs/usage/kubectl-plugin/
+.. _Strimzi Apache Kafka Operator helm Installation documentation: https://strimzi.io/docs/operators/in-development/deploying.html#deploying-cluster-operator-helm-chart-str
 
 .. _oom_setup_paas:
 
@@ -15,17 +16,20 @@ ONAP PaaS set-up
 Starting from Honolulu release, Cert-Manager and Prometheus Stack are a part
 of k8s PaaS for ONAP operations and can be installed to provide
 additional functionality for ONAP engineers.
+Starting from Jakarta release, Strimzi Apache Kafka is deployed to provide
+Apache kafka as the default messaging bus for ONAP.
 
 The versions of PaaS components that are supported by OOM are as follows:
 
 .. table:: ONAP PaaS components
 
-  ==============     =============  =================
-  Release            Cert-Manager   Prometheus Stack
-  ==============     =============  =================
+  ==============     =============  =================  =======
+  Release            Cert-Manager   Prometheus Stack   Strimzi
+  ==============     =============  =================  =======
   honolulu           1.2.0          13.x
   istanbul           1.5.4          19.x
-  ==============     =============  =================
+  jakarta                                              0.28.0
+  ==============     =============  =================  =======
 
 This guide provides instructions on how to install the PaaS
 components for ONAP.
@@ -34,6 +38,40 @@ components for ONAP.
    :depth: 1
    :local:
 ..
+
+Strimzi Apache Kafka Operator
+=============================
+
+Strimzi provides a way to run an Apache Kafka cluster on Kubernetes
+in various deployment configurations by using kubernetes operators.
+Operators are a method of packaging, deploying, and managing a
+Kubernetes application.
+Strimzi Operators extend Kubernetes functionality, automating common
+and complex tasks related to a Kafka deployment. By implementing
+knowledge of Kafka operations in code, Kafka administration
+tasks are simplified and require less manual intervention.
+
+Installation steps
+------------------
+
+The recommended version of Strimzi for Kubernetes 1.19 is v0.28.0.
+The Strimzi cluster operator is deployed using helm to install the parent chart
+containing all of the required custom resource definitions. This should be done
+by a kubernetes administrator to allow for deployment of custom resources in to
+any kubernetes namespace within the cluster.
+
+Full installation instructions can be found in the
+`Strimzi Apache Kafka Operator helm Installation documentation`_.
+
+Installation can be as simple as:
+
+- Add the helm repo::
+
+    > helm repo add strimzi https://strimzi.io/charts/
+
+- Install the operator::
+
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
 
 Cert-Manager
 ============

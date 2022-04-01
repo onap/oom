@@ -53,6 +53,18 @@ where <BRANCH> can be an official release tag, such as
 
 More details can be found :doc:`here <oom_setup_paas>`.
 
+**Step 4.1** Install Strimzi Kafka Operator:
+
+- Add the helm repo::
+
+    > helm repo add strimzi https://strimzi.io/charts/
+
+- Install the operator::
+
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
+
+More details can be found :doc:`here <oom_setup_paas>`.
+
 **Step 5.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
 an override file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file
 to suit your deployment with items like the OpenStack tenant information.
