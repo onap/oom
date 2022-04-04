@@ -91,7 +91,7 @@ resolve_deploy_flags() {
 check_for_dep() {
     try=0
     retries=30
-    until (kubectl get deployment -n $RELEASE | grep -P "\b$2\b") &>/dev/null; do
+    until (kubectl get deployment -n $RELEASE | grep -P "\b$1\b") &>/dev/null; do
         (( ++try > retries )) && exit 1
         echo "$1 not found. Retry $try/$retries"
         sleep 5
