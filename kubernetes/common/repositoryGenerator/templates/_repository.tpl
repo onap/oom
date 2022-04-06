@@ -154,6 +154,7 @@
     mail: email (optional)
   You can also set the same things for dockerHub, elastic and googleK8s if
   needed.
+  if not needed, set global.repositoryCred.user to empty value.
 */}}
 {{- define "repositoryGenerator.secret" -}}
   {{- $dot := default . .dot -}}
@@ -164,9 +165,11 @@
   {{- if $subchartDot.Values.global.repositoryCred }}
   {{-   $repo := $subchartDot.Values.global.repository }}
   {{-   $cred := $subchartDot.Values.global.repositoryCred }}
-  {{-   $mail := default "@" $cred.mail }}
-  {{-   $auth := printf "%s:%s" $cred.user $cred.password | b64enc }}
-  {{-   $repoCreds = printf "\"%s\": {\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}" $repo $cred.user $cred.password $mail $auth }}
+  {{-   if $cred.user }}
+  {{-     $mail := default "@" $cred.mail }}
+  {{-     $auth := printf "%s:%s" $cred.user $cred.password | b64enc }}
+  {{-     $repoCreds = printf "\"%s\": {\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}" $repo $cred.user $cred.password $mail $auth }}
+  {{-   end }}
   {{- end }}
   {{- if $subchartDot.Values.global.dockerHubRepositoryCred }}
   {{-   $dhRepo := $subchartDot.Values.global.dockerHubRepository }}
