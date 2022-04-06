@@ -81,12 +81,20 @@ spec:
   zookeeper:
     template:
       pod:
+        {{- if and (include "common.onServiceMesh" .) (not .Values.serviceMesh.enableSidecar) }}
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: false
+        {{- end }}
         securityContext:
           runAsUser: 0
           fsGroup: 0
     replicas: {{ .Values.replicaCount }}
     config:
       ssl.hostnameVerification: false
+      {{- if (include "common.onServiceMesh" .) }}
+      sslQuorum: false
+      {{- end }}
     storage:
       type: persistent-claim
       size: {{ .Values.persistenceZk.size }}
