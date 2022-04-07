@@ -295,6 +295,8 @@ if [ $dcaeRegistrySynch ]; then
      ./registry-initialize.sh -h dcaegen2-services-common -n $NAMESPACE -r $HELM_RELEASE
      ./registry-initialize.sh -h postgres -n $NAMESPACE -r $HELM_RELEASE
      ./registry-initialize.sh -h serviceAccount -n $NAMESPACE -r $HELM_RELEASE
+     ./registry-initialize.sh -h mongo -n $NAMESPACE -r $HELM_RELEASE
+     ./registry-initialize.sh -h common -n $NAMESPACE -r $HELM_RELEASE
    fi
    cd $CURRENT_DIR
 fi
