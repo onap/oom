@@ -59,6 +59,8 @@ spec:
           - /bin/sh
           - -c
           - |
+            {{- if include "common.onServiceMesh" . }}
+            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
             /db_init/db_init.sh {{ if or .Values.dbScriptConfigMap .Values.dbScript }} &&
             /db_config/db_cmd.sh{{ end }}
         env:
@@ -91,6 +93,7 @@ spec:
 {{- end }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
