@@ -135,7 +135,7 @@ spec:
     {{- else if $dot.Values.metrics.serviceMonitor.targetPort }}
     targetPort: {{ $dot.Values.metrics.serviceMonitor.targetPort }}
     {{- else }}
-    port: metrics
+    port: tcp-metrics
     {{- end }}
     {{- if $dot.Values.metrics.serviceMonitor.isHttps }}
     scheme: https
