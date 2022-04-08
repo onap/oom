@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2019 Amdocs, Bell Canada, Orange
+# Modifications Copyright (C) 2022 Bell Canada
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -281,7 +282,7 @@ apiVersion: v1
 {{- $persistenceInfos := default $dot.Values.persistence .persistenceInfos -}}
 {{- $suffix := default "data" .suffix -}}
 {{- $metadata_suffix := ternary "" $suffix (eq $suffix "data") -}}
-metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $metadata_suffix "annotations" $persistenceInfos.annotations) | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" $dot "suffix" $metadata_suffix "annotations" $persistenceInfos.annotations "ignoreHelmChart" .ignoreHelmChart) | nindent 2 }}
 spec:
   accessModes:
   - {{ $persistenceInfos.accessMode }}
