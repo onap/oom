@@ -30,6 +30,12 @@ secrets:
     login: '{{ .Values.db.user }}'
     password: '{{ .Values.db.password }}'
     passwordPolicy: required
+  - uid: telemetry-creds
+    type: basicAuth
+    externalSecret: '{{ tpl (default "" .Values.telemetry.credsExternalSecret) . }}'
+    login: '{{ .Values.telemetry.user }}'
+    password: '{{ .Values.telemetry.password }}'
+    passwordPolicy: required
 
 #################################################################
 # Application configuration defaults.
@@ -51,7 +57,8 @@ affinity: {}
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 180
-  periodSeconds: 10
+  periodSeconds: 60
+  timeoutSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
@@ -195,3 +202,27 @@ serviceAccount:
   nameOverride: policy-drools-pdp
   roles:
     - read
+
+prometheus:
+  enabled: true
+
+metrics:
+  serviceMonitor:
+    # Override the labels based on the Prometheus config parameter: serviceMonitorSelector.
+    # The default operator for prometheus enforces the below label.
+    labels:
+      release: prometheus
+    enabled: true
+    port: policy-drools-pdp
+    interval: 60s
+    isHttps: true
+    basicAuth:
+      enabled: true
+      externalSecretNameSuffix: policy-drools-pdp-telemetry-creds
+      externalSecretUserKey: login
+      externalSecretPasswordKey: password
+    selector:
+      app: '{{ include "common.name" . }}'
+      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      release: '{{ include "common.release" . }}'
+      heritage: '{{ .Release.Service }}'
