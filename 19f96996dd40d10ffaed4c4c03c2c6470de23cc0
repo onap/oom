@@ -1,0 +1,176 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a2727932_8d2f666f",
+        "filename": "kubernetes/cps/components/cps-core/resources/config/application-helm.yml",
+        "patchSetId": 4
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "Non blocking: Might be simply \n\n  {{- if .Values.config.useStrimziKafka }}\n\nSame comment for some others similar if conditions",
+      "range": {
+        "startLine": 34,
+        "startChar": 4,
+        "endLine": 34,
+        "endChar": 45
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5261cc70_4993cbf8",
+        "filename": "kubernetes/cps/components/cps-core/resources/config/application-helm.yml",
+        "patchSetId": 4
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "producer client id does not specific for onap strimzi kafka. Then, it should not be part of `useStrimziKafka` conditional block. By doing that it needs to be duplicated for other non strimzi kafka config.\n\nThe problem would become worst if some additional common kafka configuration need to be added later. It will bring many duplication.\n\nThen, I\u0027m proposing to only keep all common kafka configuration here:\n\n  kafka:\n    producer:\n      client-id: cps-core\n\nand move all specific kafka connectivity configurations and the conditional logic at the end of the file in the form:\n\n  {{- if eq .Values.config.useStrimziKafka true }}\n  spring.kafka.bootstrap-servers: {{ include \"common.release\" . }}-{{ .Values.config.kafkaBootstrap }}:9092\n  spring.kafka.security.protocol: SASL_PLAINTEXT\n  spring.kafka.properties.sasl.mechanism: SCRAM-SHA-512\n  spring.kafka.properties.sasl.jaas.config: ${JAASLOGIN}\n  {{ else }}\n  {{ toYaml .Values.config.eventPublisher | nindent 2 }}\n  {{- end }}\n\n  {{- if .Values.config.additional }}\n  {{ toYaml .Values.config.additional | nindent 2 }}\n  {{- end }}\n\nThe same comment also applies to cps temporal",
+      "range": {
+        "startLine": 45,
+        "startChar": 6,
+        "endLine": 45,
+        "endChar": 25
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4855c4e2_ea5cb430",
+        "filename": "kubernetes/cps/components/cps-temporal/resources/config/application-helm.yml",
+        "patchSetId": 4
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "consumer group id (and some how topic name below) are common properties that are not specific to strimzi kafka, then maybe good to have them outside from this conditonal block. \n\nSee the related comment in cps core application-helm.yaml",
+      "range": {
+        "startLine": 39,
+        "startChar": 6,
+        "endLine": 39,
+        "endChar": 34
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a3ec87bf_8910d035",
+        "filename": "kubernetes/cps/components/cps-temporal/values.yaml",
+        "patchSetId": 4
+      },
+      "lineNbr": 161,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "Not needed if moved outside from the conditional section. See other comment in application.yaml.",
+      "range": {
+        "startLine": 161,
+        "startChar": 5,
+        "endLine": 161,
+        "endChar": 61
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0fc4ffa2_7406c1fd",
+        "filename": "kubernetes/cps/templates/cps-kafka-user.yaml",
+        "patchSetId": 4
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "`config.useStrimziKafka` is not defined at this scope level. It is defined in cps core and temporal sub-charts.\nMaybe good to move this variable one level up, in one place, in cps chart.",
+      "range": {
+        "startLine": 16,
+        "startChar": 0,
+        "endLine": 16,
+        "endChar": 48
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "adc3c3e5_482984c4",
+        "filename": "kubernetes/cps/templates/cps-topic.yaml",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "Suggestion: Rename file `cps-kafka-topic.yaml` for consistency with `cps-kafka-user.yaml`",
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1c8c9462_45a1b04a",
+        "filename": "kubernetes/cps/templates/cps-topic.yaml",
+        "patchSetId": 4
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "Same comment as cps-kafka-user.yaml",
+      "range": {
+        "startLine": 16,
+        "startChar": 11,
+        "endLine": 16,
+        "endChar": 40
+      },
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8594f9b8_88ce3431",
+        "filename": "kubernetes/cps/templates/cps-topic.yaml",
+        "patchSetId": 4
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 5658
+      },
+      "writtenOn": "2022-04-08T21:51:58Z",
+      "side": 1,
+      "message": "It would be good to also have following topic properties configurable.",
+      "revId": "19f96996dd40d10ffaed4c4c03c2c6470de23cc0",
+      "serverId": "14b4e41f-c4e3-4fb9-9955-6a9b5656895a",
+      "unresolved": true
+    }
+  ]
+}
