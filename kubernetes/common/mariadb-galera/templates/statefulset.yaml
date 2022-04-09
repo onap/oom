@@ -86,6 +86,9 @@ spec:
                     export MARIADB_GALERA_CLUSTER_BOOTSTRAP=yes
                     export MARIADB_GALERA_FORCE_SAFETOBOOTSTRAP={{ ternary "yes" "no" .Values.galera.bootstrap.forceSafeToBootstrap }}
                 fi
+                if [[ "$MY_POD_NAME" == *"-0" ]]; then
+                    export MARIADB_EXTRA_FLAGS=--wsrep-new-cluster
+                fi
                 {{- end }}
                 exec /opt/bitnami/scripts/mariadb-galera/entrypoint.sh /opt/bitnami/scripts/mariadb-galera/run.sh
           env:
@@ -121,10 +124,6 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "login") | indent 14 }}
             - name: MARIADB_GALERA_MARIABACKUP_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mariadb.secret.backupCredentialsUID" .) "key" "password") | indent 14 }}
-            {{- if .Values.extraFlags }}
-            - name: MARIADB_EXTRA_FLAGS
-              value: {{ .Values.extraFlags | quote }}
-            {{- end }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
