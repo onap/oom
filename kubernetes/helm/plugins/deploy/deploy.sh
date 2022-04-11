@@ -67,6 +67,8 @@ generate_overrides() {
     fi
   done
 }
+
+
 resolve_deploy_flags() {
   flags=($1)
   n=${#flags[*]}
@@ -90,11 +92,11 @@ resolve_deploy_flags() {
 
 check_for_dep() {
     try=0
-    retries=30
-    until (kubectl get deployment -n $RELEASE | grep -P "\b$1\b") &>/dev/null; do
+    retries=60
+    until (kubectl get deployment -n $HELM_NAMESPACE | grep -P "\b$1\b") &>/dev/null; do
         (( ++try > retries )) && exit 1
         echo "$1 not found. Retry $try/$retries"
-        sleep 5
+        sleep 10
     done
     echo "$1 found. Waiting for pod intialisation"
     sleep 15
@@ -125,7 +127,7 @@ deploy_subchart() {
         # Add annotation last-applied-configuration if set-last-applied flag is set
         if [ "$SET_LAST_APPLIED" = "true" ]; then
           helm get manifest "${RELEASE}-${subchart}" \
-          | kubectl apply set-last-applied --create-annotation -n onap -f - \
+          | kubectl apply set-last-applied --create-annotation -n $HELM_NAMESPACE -f - \
           > $LOG_FILE.log 2>&1
         fi
       fi
@@ -257,7 +259,7 @@ deploy() {
     # Add annotation last-applied-configuration if set-last-applied flag is set
     if [ "$SET_LAST_APPLIED" = "true" ]; then
       helm get manifest ${RELEASE} \
-      | kubectl apply set-last-applied --create-annotation -n onap -f - \
+      | kubectl apply set-last-applied --create-annotation -n $HELM_NAMESPACE -f - \
       > $LOG_FILE.log 2>&1
     fi
   fi
