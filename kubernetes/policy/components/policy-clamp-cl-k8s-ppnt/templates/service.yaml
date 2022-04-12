@@ -1,6 +1,6 @@
 {{/*
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021 Nordix Foundation. All rights reserved.
+#   Copyright (C) 2021-2022 Nordix Foundation. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -18,4 +18,28 @@
 #  ============LICENSE_END=========================================================
 */}}
 
-{{ include "common.service" . }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: policy-clamp-cl-k8s-ppnt
+  namespace: {{ include "common.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "common.namespace" . }}-policy-clamp-cl-k8s-ppnt-binding
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: policy-clamp-cl-k8s-ppnt
+    namespace: {{ include "common.namespace" . }}
+
