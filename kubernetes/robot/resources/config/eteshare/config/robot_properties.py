@@ -188,6 +188,9 @@ GLOBAL_DMAAP_KAFKA_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root"
 GLOBAL_DMAAP_KAFKA_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router-kafka" "port" 9092) }}'
 GLOBAL_DMAAP_KAFKA_JAAS_USERNAME = '{{ .Values.kafkaJaasUsername }}'
 GLOBAL_DMAAP_KAFKA_JAAS_PASSWORD = '{{ .Values.kafkaJaasPassword }}'
+# strimzi kafka
+GLOBAL_KAFKA_BOOTSTRAP_SERVICE = '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
+GLOBAL_KAFKA_USER = '{{ .Values.kafkaJaasUsername }}'
 # DROOL server port and credentials
 GLOBAL_DROOLS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "policy-drools-pdp" "port" 9696) }}'
 GLOBAL_DROOLS_USERNAME = '{{ .Values.droolsUsername }}'
