@@ -58,7 +58,7 @@ the the literal string "An example value".
     {{- range $envName, $envValue := .Values.applicationEnv }}
       {{- if kindIs "string" $envValue }}
 - name: {{ $envName }}
-  value: {{ $envValue | quote }}
+  value: {{ tpl $envValue $global | quote }}
       {{- else }}
         {{ if or (not $envValue.secretUid) (not $envValue.key) }}
           {{ fail (printf "Env %s definition is not a string and does not contain secretUid or key fields" $envName) }}
