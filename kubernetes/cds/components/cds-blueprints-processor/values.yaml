@@ -28,9 +28,16 @@ global:
   persistence:
     mountPath: /dockerdata-nfs
 
-  #This configuration specifies Service and port for SDNC OAM interface
+  # This configuration specifies Service and port for SDNC OAM interface
   sdncOamService: sdnc-oam
   sdncOamPort: 8282
+
+  # This concerns CDS/AAI communication through HTTP when TLS is not being needed
+  # Port value should match the one in aai/values.yml : service.externalPlainPort
+  aaiData:
+    ExternalPlainPort: 80 # when TLS is not needed
+    ServiceName: aai  # domain
+    # http://aai:80 or https://aai:443
 
   #AAF is enabled by default
   #aafEnabled: true
@@ -108,7 +115,7 @@ config:
     dbService: mariadb-galera
     dbPort: 3306
     dbName: sdnctl
-    #dbRootPass: Custom root password
+    # dbRootPass: Custom root password
     dbRootPassExternalSecret: '{{ include "common.mariadb.secret.rootPassSecretName" ( dict "dot" . "chartName" .Values.config.sdncDB.dbService ) }}'
   cdsDB:
     dbServer: cds-db
@@ -170,12 +177,12 @@ startup:
   periodSeconds: 10
 
 liveness:
-  initialDelaySeconds: 0
+  initialDelaySeconds: 1
   periodSeconds: 20
-  timeoutSeconds: 20
+  timeoutSeconds: 30
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+  enabled: false
 
 readiness:
   initialDelaySeconds: 120
@@ -185,17 +192,17 @@ readiness:
 service:
   http:
     type: ClusterIP
-    portName: blueprints-processor-http
+    portName: http
     internalPort: 8080
     externalPort: 8080
   grpc:
     type: ClusterIP
-    portName: blueprints-processor-grpc
+    portName: grpc
     internalPort: 9111
     externalPort: 9111
   cluster:
     type: ClusterIP
-    portName: blueprints-processor-cluster
+    portName: tcp-cluster
     internalPort: 5701
     externalPort: 5701
 
@@ -223,8 +230,8 @@ ingress:
     - baseaddr: "blueprintsprocessorhttp"
       name: "cds-blueprints-processor-http"
       port: 8080
-  config:
-    ssl: "none"
+      config:
+        ssl: "none"
 
 logback:
   rootLogLevel: INFO
