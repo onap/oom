@@ -23,6 +23,10 @@ spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+      {{- if (include "common.onServiceMesh" .) }}
+      annotations:
+        sidecar.istio.io/inject: "false"
+      {{- end }}
     spec: {{ include "aaf.initContainers" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
