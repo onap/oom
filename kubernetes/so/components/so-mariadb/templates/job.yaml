@@ -53,13 +53,17 @@ spec:
         command:
         - /bin/bash
         - -c
-        - mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb nfvo > /var/data/mariadb/backup-`date +%s`.sql
+        - |
+          {{- if include "common.onServiceMesh" . }}
+          echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+          mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb nfvo > /var/data/mariadb/backup-`date +%s`.sql
         volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - name: backup-storage
           mountPath: /var/data/mariadb
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: localtime
@@ -105,6 +109,8 @@ spec:
         - /bin/bash
         - -c
         - >
+          {{- if include "common.onServiceMesh" . }}
+          echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
           mysql() { /usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
           export -f mysql;
           mysql --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
@@ -157,6 +163,7 @@ spec:
         {{- end }}
         resources:
 {{ include "common.resources" . | indent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}

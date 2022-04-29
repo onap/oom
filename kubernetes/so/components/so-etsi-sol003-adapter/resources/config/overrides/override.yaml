@@ -16,7 +16,11 @@
 aai:
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.aai.auth )}}
   version: v15
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  {{ end }}
 spring:
   security:
     usercredentials:
@@ -42,7 +46,11 @@ sdc:
   username: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.username "value2" .Values.sdc.username )}}
   password: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.password "value2" .Values.sdc.password )}}
   key: {{ .Values.sdc.key }}
+  {{ if (include "common.needTLS" .) }}
   endpoint: https://sdc-be.{{ include "common.namespace" . }}:8443
+  {{ else }}
+  endpoint: http://sdc-be.{{ include "common.namespace" . }}:8080
+  {{ end }}
 vnfmadapter:
   endpoint: http://so-etsi-sol003-adapter.{{ include "common.namespace" . }}:9092
 etsi-catalog-manager:
