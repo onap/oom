@@ -12,7 +12,7 @@
 .. _Onboarding and Distributing a Vendor Software Product: https://wiki.onap.org/pages/viewpage.action?pageId=1018474
 .. _README.md: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/README.md
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 .. _onap-on-kubernetes-with-rancher:
@@ -157,10 +157,10 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for Control Plane VMs
 ------------------------------------------------
 
-Click :download:`openstack-k8s-controlnode.sh <openstack-k8s-controlnode.sh>`
+Click :download:`openstack-k8s-controlnode.sh <shell/openstack-k8s-controlnode.sh>`
 to download the script.
 
-.. literalinclude:: openstack-k8s-controlnode.sh
+.. literalinclude:: shell/openstack-k8s-controlnode.sh
    :language: bash
 
 This customization script will:
@@ -229,10 +229,10 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for Kubernetes VM(s)
 -----------------------------------------------
 
-Click :download:`openstack-k8s-workernode.sh <openstack-k8s-workernode.sh>` to
+Click :download:`openstack-k8s-workernode.sh <shell/openstack-k8s-workernode.sh>` to
 download the script.
 
-.. literalinclude:: openstack-k8s-workernode.sh
+.. literalinclude:: shell/openstack-k8s-workernode.sh
    :language: bash
 
 This customization script will:
@@ -287,10 +287,10 @@ RKE requires a *cluster.yml* as input. An example file is show below that
 describes a Kubernetes cluster that will be mapped onto the OpenStack VMs
 created earlier in this guide.
 
-Click :download:`cluster.yml <cluster.yml>` to download the
+Click :download:`cluster.yml <yaml/cluster.yml>` to download the
 configuration file.
 
-.. literalinclude:: cluster.yml
+.. literalinclude:: yaml/cluster.yml
    :language: yaml
 
 Prepare cluster.yml
@@ -467,10 +467,10 @@ Assign the key pair that was created/selected previously (e.g. onap_key).
 Apply customization script for NFS Server VM
 --------------------------------------------
 
-Click :download:`openstack-nfs-server.sh <openstack-nfs-server.sh>` to download
+Click :download:`openstack-nfs-server.sh <shell/openstack-nfs-server.sh>` to download
 the script.
 
-.. literalinclude:: openstack-nfs-server.sh
+.. literalinclude:: shell/openstack-nfs-server.sh
    :language: bash
 
 This customization script will:
@@ -499,15 +499,15 @@ Resulting floating IP assignments in this example.
 To properly set up an NFS share on Master and Slave nodes, the user can run the
 scripts below.
 
-Click :download:`master_nfs_node.sh <master_nfs_node.sh>` to download the
+Click :download:`master_nfs_node.sh <shell/master_nfs_node.sh>` to download the
 script.
 
-.. literalinclude:: master_nfs_node.sh
+.. literalinclude:: shell/master_nfs_node.sh
    :language: bash
 
-Click :download:`slave_nfs_node.sh <slave_nfs_node.sh>` to download the script.
+Click :download:`slave_nfs_node.sh <shell/slave_nfs_node.sh>` to download the script.
 
-.. literalinclude:: slave_nfs_node.sh
+.. literalinclude:: shell/slave_nfs_node.sh
    :language: bash
 
 The master_nfs_node.sh script runs in the NFS Master node and needs the list of

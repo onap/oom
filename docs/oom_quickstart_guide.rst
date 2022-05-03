@@ -8,7 +8,7 @@
 OOM Quick Start Guide
 #####################
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 Once a Kubernetes environment is available (follow the instructions in
@@ -166,12 +166,12 @@ observe the following constraints.
 
 Example Keystone v2.0
 
-.. literalinclude:: example-integration-override.yaml
+.. literalinclude:: yaml/example-integration-override.yaml
    :language: yaml
 
 Example Keystone v3  (required for Rocky and later releases)
 
-.. literalinclude:: example-integration-override-v3.yaml
+.. literalinclude:: yaml/example-integration-override-v3.yaml
    :language: yaml
 
 
@@ -203,7 +203,7 @@ follows::
   > helm repo update
   > helm search repo onap
 
-.. literalinclude:: helm-search.txt
+.. literalinclude:: helm/helm-search.txt
 
 .. note::
   The setup of the Helm repository is a one time activity. If you make changes

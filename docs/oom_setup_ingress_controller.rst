@@ -12,7 +12,7 @@
 .. _Onboarding and Distributing a Vendor Software Product: https://wiki.onap.org/pages/viewpage.action?pageId=1018474
 .. _README.md: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/README.md
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 .. _oom_setup_ingress_controller:
