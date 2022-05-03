@@ -19,7 +19,10 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES :=
 HELM_BIN := helm
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
+PROCESSED_FIRST := aaf-templates
+TO_FILTER := $(PROCESSED_FIRST) $(EXCLUDES)
+
+HELM_CHARTS := $(PROCESSED_FIRST) $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
