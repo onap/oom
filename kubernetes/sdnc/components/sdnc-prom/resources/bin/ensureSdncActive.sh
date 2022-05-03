@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 {{/*
 # Copyright © 2018 Amdocs
@@ -33,8 +33,8 @@ failover(){
     debugLog "Currently running sdnc and dns failover"
     return
   fi
-  trap "rm -f ${lockFile}" INT TERM RETURN
-  echo $BASHPID > ${lockFile}
+  trap "rm -f ${lockFile}" INT TERM EXIT
+  echo $$ > ${lockFile}
 
   # perform takeover
   debugLog "Started executing sdnc.failover for $SITE_NAME"
