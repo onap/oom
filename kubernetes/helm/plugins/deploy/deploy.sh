@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 usage() {
 cat << EOF
@@ -95,8 +95,9 @@ resolve_deploy_flags() {
 check_for_dep() {
     try=0
     retries=60
-    until (kubectl get deployment -n $HELM_NAMESPACE | grep -P "\b$1\b") &>/dev/null; do
-        (( ++try > retries )) && exit 1
+    until (kubectl get deployment -n $HELM_NAMESPACE | grep -P "\b$1\b") >/dev/null 2>&1; do
+        try=$(($try + 1))
+        [ $try -gt $retries ] && exit 1
         echo "$1 not found. Retry $try/$retries"
         sleep 10
     done
