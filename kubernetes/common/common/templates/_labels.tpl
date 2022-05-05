@@ -26,6 +26,7 @@ The function takes several arguments (inside a dictionary):
 {{- define "common.labels" -}}
 {{- $dot := default . .dot -}}
 app.kubernetes.io/name: {{ include "common.name" $dot }}
+app: {{ include "common.name" $dot }}
 {{ if not .ignoreHelmChart }}
 helm.sh/chart: {{ include "common.chart" $dot }}
 {{- end }}
@@ -47,6 +48,7 @@ The function takes several arguments (inside a dictionary):
 {{- $matchLabels := default (dict) .matchLabels -}}
 {{- if not $matchLabels.nameNoMatch -}}
 app.kubernetes.io/name: {{ include "common.name" $dot }}
+app: {{ include "common.name" $dot }}
 {{- end }}
 app.kubernetes.io/instance: {{ include "common.release" $dot }}
 {{- if $matchLabels }}
