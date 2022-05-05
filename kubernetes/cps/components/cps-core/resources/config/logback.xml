@@ -19,17 +19,55 @@
 
 <configuration scan="true" scanPeriod="30 seconds" debug="false">
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d - %highlight(%-5level) [%-20.20thread] %cyan(%logger{36}) - %msg%n</pattern>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <springProperty scope="context" name="springAppName" source="spring.application.name"/>
+    <springProperty scope="context" name="username" source="security.auth.username"/>
+    <springProperty scope="context" name="loggingFormat" source="logging.format"/>
+    <property name="currentTimeStamp" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC}"/>
+
+    <appender name="jsonConsole"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <pattern>
+                    <omitEmptyFields>true</omitEmptyFields>
+                    <pattern>
+                        {
+                        "logTimeStamp": "${currentTimeStamp:-}",
+                        "logTypeName": "",
+                        "logLevel": "%level",
+                        "traceId": "%X{traceId:-}",
+                        "statusCode": "",
+                        "principalId": "${username:-}",
+                        "serviceName": "${springAppName:-}",
+                        "message": "%message",
+                        "spanId": "%X{spanId:-}",
+                        "processId": "${PID:-}",
+                        "threadName": "%thread",
+                        "class": "%logger{40}",
+                        "exception": "%wEx"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
         </encoder>
     </appender>
-    <appender name="AsyncSysOut" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="STDOUT" />
+
+    <appender name="asyncConsole" class="ch.qos.logback.classic.AsyncAppender">
+        <if condition='property("loggingFormat").equalsIgnoreCase("json")'>
+            <then>
+                <appender-ref ref="jsonConsole" />
+            </then>
+            <else>
+                <appender-ref ref="CONSOLE" />
+            </else>
+        </if>
     </appender>
 
     <root level="INFO">
-        <appender-ref ref="AsyncSysOut" />
+        <appender-ref ref="asyncConsole" />
     </root>
 
 </configuration>
