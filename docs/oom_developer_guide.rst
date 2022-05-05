@@ -22,7 +22,7 @@
 OOM Developer Guide
 ###################
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 ONAP consists of a large number of components, each of which are substantial
@@ -687,7 +687,7 @@ The relationship between these objects is shown in the following figure:
 ..   database PV
 ..   @enduml
 
-.. figure:: kubernetes_objects.png
+.. figure:: images/k8s/kubernetes_objects.png
 
 OOM uses these Kubernetes objects as described in the following sections.
 
@@ -1074,7 +1074,7 @@ MSB Integration with OOM
 ------------------------
 A preliminary view of the OOM-MSB integration is as follows:
 
-.. figure:: MSB-OOM-Diagram.png
+.. figure:: images/msb/MSB-OOM-Diagram.png
 
 A message sequence chart of the registration process:
 

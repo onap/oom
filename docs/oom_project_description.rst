@@ -17,7 +17,7 @@ bare-metal servers or on VMs hosted by a 3rd party management system. OOM
 ensures that ONAP is easily deployable and maintainable throughout its life
 cycle while using hardware resources efficiently.
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 In summary OOM provides the following capabilities:

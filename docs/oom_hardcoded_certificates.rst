@@ -15,4 +15,4 @@ ONAP current installation have hardcoded certificates.
 Here's the list of these certificates:
 
 .. csv-table::
-  :file: hardcoded_certificates.csv
+  :file: certs/hardcoded_certificates.csv

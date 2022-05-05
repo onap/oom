@@ -27,7 +27,7 @@ This guide provides many examples of Helm command line operations.  For a
 complete description of these commands please refer to the `Helm
 Documentation`_.
 
-.. figure:: oomLogoV2-medium.png
+.. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 The following sections describe the life-cycle operations:
@@ -41,7 +41,7 @@ The following sections describe the life-cycle operations:
   impact
 - Delete_ - cleanup individual containers or entire deployments
 
-.. figure:: oomLogoV2-Deploy.png
+.. figure:: images/oom_logo/oomLogoV2-Deploy.png
    :align: right
 
 Deploy
@@ -221,7 +221,7 @@ To display details of a specific resource or group of resources type::
 
 where the pod identifier refers to the auto-generated pod identifier.
 
-.. figure:: oomLogoV2-Configure.png
+.. figure:: images/oom_logo/oomLogoV2-Configure.png
    :align: right
 
 Configure
@@ -321,7 +321,7 @@ To deploy ONAP with this environment file, enter::
 
   > helm deploy local/onap -n onap -f onap/resources/environments/onap-production.yaml --set global.masterPassword=password
 
-.. include:: environments_onap_demo.yaml
+.. include:: yaml/environments_onap_demo.yaml
    :code: yaml
 
 When deploying all of ONAP, the dependencies section of the Chart.yaml file
@@ -464,7 +464,7 @@ the portal and then simply access now the new ssl-encrypted URL:
       you can grab this public IP directly (as compared to trying to find the
       floating IP first) and map this IP in /etc/hosts.
 
-.. figure:: oomLogoV2-Monitor.png
+.. figure:: images/oom_logo/oomLogoV2-Monitor.png
    :align: right
 
 Monitor
@@ -493,7 +493,7 @@ The Consul server provides a user interface that allows a user to graphically
 view the current health status of all of the ONAP components for which agents
 have been created - a sample from the ONAP Integration labs follows:
 
-.. figure:: consulHealth.png
+.. figure:: images/consul/consulHealth.png
    :align: center
 
 To see the real-time health of a deployment go to: ``http://<kubernetes IP>:30270/ui/``
@@ -503,7 +503,7 @@ where a GUI much like the following will be found:
   If Consul GUI is not accessible, you can refer this
   `kubectl port-forward <https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/>`_ method to access an application
 
-.. figure:: oomLogoV2-Heal.png
+.. figure:: images/oom_logo/oomLogoV2-Heal.png
    :align: right
 
 Heal
@@ -532,7 +532,7 @@ creation of a replacement pod::
 
   > kubectl get pods --all-namespaces -o=wide
 
-.. figure:: oomLogoV2-Scale.png
+.. figure:: images/oom_logo/oomLogoV2-Scale.png
    :align: right
 
 Scale
@@ -626,7 +626,7 @@ even if the pods are physically distributed across multiple nodes. An example
 of how these capabilities can be used is described in the Running Consul on
 Kubernetes tutorial.
 
-.. figure:: oomLogoV2-Upgrade.png
+.. figure:: images/oom_logo/oomLogoV2-Upgrade.png
    :align: right
 
 Upgrade
@@ -756,7 +756,7 @@ release v1.1.2:
 The previous so pod will be terminated and a new so pod with an updated so
 container will be created.
 
-.. figure:: oomLogoV2-Delete.png
+.. figure:: images/oom_logo/oomLogoV2-Delete.png
    :align: right
 
 Delete
