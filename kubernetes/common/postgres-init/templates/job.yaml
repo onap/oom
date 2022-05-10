@@ -59,6 +59,8 @@ spec:
           }
           export PG_PASSWORD=`prepare_password $PG_PASSWORD_INPUT`;
           export PG_ROOT_PASSWORD=`prepare_password $PG_ROOT_PASSWORD_INPUT`;
+          {{- if include "common.onServiceMesh" . }}
+          echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
           cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done;
           psql "postgresql://postgres:$PG_ROOT_PASSWORD@$PG_HOST" < /config/setup.sql
         env:
@@ -98,6 +100,7 @@ spec:
           name: pgconf
         resources:
 {{ include "common.resources" . | indent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
