@@ -55,51 +55,14 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have the Kubernetes `kubectl` with Strimzi Apache Kafka, Cert-Manager
-and Helm setup as a one time activity.
+Your kubernetes environment must have the following installed and configured:
 
-Install Kubectl
-~~~~~~~~~~~~~~~
-Enter the following to install kubectl (on Ubuntu, there are slight differences
-on other O/Ss), the Kubernetes command line interface used to manage a
-Kubernetes cluster::
+* Kubernetes `kubectl`
+* Helm 3
+* Strimzi Apache Kafka
+* Cert-Manager
 
-  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.19.11/bin/linux/amd64/kubectl
-  > chmod +x ./kubectl
-  > sudo mv ./kubectl /usr/local/bin/kubectl
-  > mkdir ~/.kube
-
-Paste kubectl config from Rancher (see the :ref:`cloud-setup-guide-label` for
-alternative Kubernetes environment setups) into the `~/.kube/config` file.
-
-Verify that the Kubernetes config is correct::
-
-  > kubectl get pods --all-namespaces
-
-At this point you should see Kubernetes pods running.
-
-Install Helm
-~~~~~~~~~~~~
-Helm is used by OOM for package and configuration management. To install Helm,
-enter the following::
-
-  > wget https://get.helm.sh/helm-v3.6.3-linux-amd64.tar.gz
-  > tar -zxvf helm-v3.6.3-linux-amd64.tar.gz
-  > sudo mv linux-amd64/helm /usr/local/bin/helm
-
-Verify the Helm version with::
-
-  > helm version
-
-Install Strimzi Apache Kafka Operator
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Details on how to install Strimzi Apache Kafka can be found
-:doc:`here <oom_setup_paas>`.
-
-Install Cert-Manager
-~~~~~~~~~~~~~~~~~~~~
-Details on how to install Cert-Manager can be found
-:doc:`here <oom_setup_paas>`.
+See the relevant section in the cloud seup guide :doc:`here <cloud-setup-guide-label>`.
 
 Install the Helm Repo
 ---------------------

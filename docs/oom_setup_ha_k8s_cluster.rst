@@ -11,14 +11,80 @@
 .. _http://cd.onap.info:30223/mso/logging/debug: http://cd.onap.info:30223/mso/logging/debug
 .. _Onboarding and Distributing a Vendor Software Product: https://wiki.onap.org/pages/viewpage.action?pageId=1018474
 .. _README.md: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/README.md
+.. _Curated applications for Kubernetes: https://github.com/kubernetes/charts
+
 
 .. figure:: images/oom_logo/oomLogoV2-medium.png
    :align: right
 
-.. _onap-on-kubernetes-with-rancher:
+.. _cloud-setup-guide-label:
 
 ONAP on HA Kubernetes Cluster
 #############################
+
+OOM deploys and manages ONAP on a pre-established Kubernetes_ cluster - the
+creation of this cluster is outside of the scope of the OOM project as there
+are many options including public clouds with pre-established environments.
+However, this guide includes instructions for how to create and use some of the
+more popular environments which could be used to host ONAP. If creation of a
+Kubernetes cluster is required, the life-cycle of this cluster is independent
+of the life-cycle of the ONAP components themselves. Much like an OpenStack
+environment, the Kubernetes environment may be used for an extended period of
+time, possibly spanning multiple ONAP releases.
+
+.. note::
+  Inclusion of a cloud technology or provider in this guide does not imply an
+  endorsement.
+
+.. _Kubernetes: https://kubernetes.io/
+
+Software Requirements
+=====================
+
+The versions of software that are supported by OOM are as follows:
+
+.. _versions_table:
+
+.. table:: OOM Software Requirements
+
+  ==============     ===========  =======  ========  ========  ============  =================  =======
+  Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager  Prometheus Stack   Strimzi
+  ==============     ===========  =======  ========  ========  ============  =================  =======
+  Istanbul           1.19.11      3.6.3    1.19.11   19.03.x   1.5.4         19.x               NA
+  Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0         35.x               0.28.0
+  Kohn               1.23.8       3.8.2    1.23.8    20.10.x   ?             ?                  0.31.0
+  ==============     ===========  =======  ========  ========  ============  =================  =======
+
+
+Minimum Hardware Configuration
+==============================
+
+The hardware requirements are provided below. Note that this is for a
+full ONAP deployment (all components). Customizing ONAP to deploy only
+components that are needed will drastically reduce the requirements.
+
+.. table:: OOM Hardware Requirements
+
+  =====  =====  ======  ====================
+  RAM    HD     vCores  Ports
+  =====  =====  ======  ====================
+  224GB  160GB  112     0.0.0.0/0 (all open)
+  =====  =====  ======  ====================
+
+.. note::
+  Kubernetes supports a maximum of 110 pods per node - configurable in the
+  --max-pods=n setting off the "additional kubelet flags" box in the kubernetes
+  template window described in 'ONAP Development - 110 pod limit Wiki'
+  - this limit does not need to be modified . The use of many small nodes is
+  preferred over a few larger nodes (for example 14x16GB - 8 vCores each).
+  Subsets of ONAP may still be deployed on a single node.
+
+Cloud Installation
+==================
+
+OOM can be deployed on a private set of physical hosts or VMs (or even a
+combination of the two). The following guide describes the recommended method to
+set up a Kubernetes cluster.
 
 This guide provides instructions on how to setup a Highly-Available Kubernetes
 Cluster. For this, we are hosting our cluster on OpenStack VMs and using the
@@ -41,9 +107,10 @@ The result at the end of this tutorial will be:
 
 #. Installation and configuration of kubectl
 
+#. Creation of an NFS Server to be used by ONAP as shared persistance
+
 #. Installation and configuration of Helm
 
-#. Creation of an NFS Server to be used by ONAP as shared persistance
 
 There are many ways one can execute the above steps. Including automation
 through the use of HEAT to setup the OpenStack VMs. To better illustrate the
@@ -273,7 +340,7 @@ Configure Rancher Kubernetes Engine (RKE)
 Install RKE
 -----------
 Download and install RKE on a VM, desktop or laptop.
-Binaries can be found here for Linux and Mac: https://github.com/rancher/rke/releases/tag/v1.0.6
+Binaries can be found here for Linux and Mac: https://github.com/rancher/rke/releases/tag/v1.3.10
 
 .. note::
   There are several ways to install RKE. Further parts of this documentation
@@ -346,26 +413,20 @@ The output will look something like::
   INFO[0322] [addons] no user addons defined
   INFO[0322] Finished building Kubernetes cluster successfully
 
+
 Install Kubectl
 ===============
+Enter the following to install kubectl (on Ubuntu, there are slight differences
+on other O/Ss), the Kubernetes command line interface used to manage a
+Kubernetes cluster::
 
-Download and install kubectl. Binaries can be found here for Linux and Mac:
+  > curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.19.11/bin/linux/amd64/kubectl
 
-https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/linux/amd64/kubectl
-https://storage.googleapis.com/kubernetes-release/release/v1.15.11/bin/darwin/amd64/kubectl
+  > chmod +x ./kubectl
 
-You only need to install kubectl where you'll launch Kubernetes command. This
-can be any machines of the Kubernetes cluster or a machine that has IP access
-to the APIs.
-Usually, we use the first controller as it has also access to internal
-Kubernetes services, which can be convenient.
+  > sudo mv ./kubectl /usr/local/bin/kubectl
 
-Validate deployment
--------------------
-
-::
-
-  > mkdir -p ~/.kube
+  > mkdir ~/.kube
 
   > cp kube_config_cluster.yml ~/.kube/config.onap
 
@@ -375,50 +436,28 @@ Validate deployment
 
   > kubectl get nodes -o=wide
 
+Validate deployment::
+
+  > kubectl get nodes -o=wide
+
 ::
 
   NAME             STATUS   ROLES               AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
-  onap-control-1   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-control-2   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-control-3   Ready    controlplane,etcd   3h53m   v1.15.2   10.0.0.12     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-1       Ready    worker              3h53m   v1.15.2   10.0.0.14     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-10      Ready    worker              3h53m   v1.15.2   10.0.0.16     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-11      Ready    worker              3h53m   v1.15.2   10.0.0.18     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-12      Ready    worker              3h53m   v1.15.2   10.0.0.7      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-2       Ready    worker              3h53m   v1.15.2   10.0.0.26     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-3       Ready    worker              3h53m   v1.15.2   10.0.0.5      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-4       Ready    worker              3h53m   v1.15.2   10.0.0.6      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-5       Ready    worker              3h53m   v1.15.2   10.0.0.9      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-6       Ready    worker              3h53m   v1.15.2   10.0.0.17     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-7       Ready    worker              3h53m   v1.15.2   10.0.0.20     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-8       Ready    worker              3h53m   v1.15.2   10.0.0.10     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-  onap-k8s-9       Ready    worker              3h53m   v1.15.2   10.0.0.4      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
-
-
-Install Helm
-============
-
-Example Helm client install on Linux::
-
-  > wget https://get.helm.sh/helm-v2.16.6-linux-amd64.tar.gz
-
-  > tar -zxvf helm-v2.16.6-linux-amd64.tar.gz
-
-  > sudo mv linux-amd64/helm /usr/local/bin/helm
-
-Initialize Kubernetes Cluster for use by Helm
----------------------------------------------
-
-::
-
-  > kubectl -n kube-system create serviceaccount tiller
-
-  > kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-
-  > helm init --service-account tiller
-
-  > kubectl -n kube-system  rollout status deploy/tiller-deploy
-
+  onap-control-1   Ready    controlplane,etcd   3h53m   v1.22.9   10.0.0.8      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-2   Ready    controlplane,etcd   3h53m   v1.22.9   10.0.0.11     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-control-3   Ready    controlplane,etcd   3h53m   v1.22.9   10.0.0.12     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-1       Ready    worker              3h53m   v1.22.9   10.0.0.14     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-10      Ready    worker              3h53m   v1.22.9   10.0.0.16     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-11      Ready    worker              3h53m   v1.22.9   10.0.0.18     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-12      Ready    worker              3h53m   v1.22.9   10.0.0.7      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-2       Ready    worker              3h53m   v1.22.9   10.0.0.26     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-3       Ready    worker              3h53m   v1.22.9   10.0.0.5      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-4       Ready    worker              3h53m   v1.22.9   10.0.0.6      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-5       Ready    worker              3h53m   v1.22.9   10.0.0.9      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-6       Ready    worker              3h53m   v1.22.9   10.0.0.17     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-7       Ready    worker              3h53m   v1.22.9   10.0.0.20     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-8       Ready    worker              3h53m   v1.22.9   10.0.0.10     <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
+  onap-k8s-9       Ready    worker              3h53m   v1.22.9   10.0.0.4      <none>        Ubuntu 18.04 LTS   4.15.0-22-generic   docker://18.9.5
 
 
 Setting up an NFS share for Multinode Kubernetes Clusters
@@ -521,11 +560,96 @@ the NFS Master node as input, e.g.::
     > sudo ./slave_nfs_node.sh master_node_ip
 
 
+Install & configure Helm
+========================
+Helm is used by OOM for package and configuration management. To install Helm,
+execute the following, replacing the <recommended-helm-version> with the version defined
+in the :ref:`versions_table` table::
+
+  > wget https://get.helm.sh/helm-v<recommended-helm-version>-linux-amd64.tar.gz
+
+  > tar -zxvf helm-v<recommended-helm-version>-linux-amd64.tar.gz
+
+  > sudo mv linux-amd64/helm /usr/local/bin/helm
+
+Verify the Helm version with::
+
+  > helm version
+
+Helm is able to use charts served up from a repository and comes setup with a
+default CNCF provided `Curated applications for Kubernetes`_ repository called
+stable which should be removed to avoid confusion::
+
+  > helm repo remove stable
+
+Install additional plugins required to deploy the OOM helm charts::
+
+  > git clone http://gerrit.onap.org/r/oom
+
+  > cp -R ~/oom/kubernetes/helm/plugins/ /usr/local/bin/helm/plugins
+
+
+Install Cert-Manager
+====================
+
+Cert-manager is required to provide an external Certificate Authority.
+To install Cert Manager, execute the following, replacing the <recommended-cm-version> with the version defined
+in the :ref:`versions_table` table::
+
+  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v<recommended-cm-version>/cert-manager.yaml
+
+More details can be found :doc:`here <oom_setup_paas>`.
+
+Install Strimzi Kafka Operator
+==============================
+
+Strimzi Apache Kafka Operator provides the kafka cluster used in ONAP.
+To install the operator, execute the following, replacing the
+<recommended-sko-version> with the version defined in the :ref:`versions_table` table
+
+- Add the helm repo::
+
+    > helm repo add strimzi https://strimzi.io/charts/
+
+- Install the operator::
+
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version <recommended-sko-version> --set watchAnyNamespace=true --create-namespace
+
+More details can be found :doc:`here <oom_setup_paas>`.
+
+
+Install Prometheus Stack (optional)
+===================================
+
+Prometheus is an open-source systems monitoring and alerting toolkit. This is an optional
+ addition to the ONAP deployment.
+
+To install the stack, execute the following, replacing the <recommended-ps-version>
+with the version defined in the :ref:`versions_table` table
+
+- Create the namespace for Prometheus Stack::
+
+    > kubectl create namespace prometheus
+
+- Add the prometheus-community Helm repository::
+
+    > helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+- Update your local Helm chart repository cache::
+
+    > helm repo update
+
+- To install the latest version of kube-prometheus-stack::
+
+    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus
+
+- To install a specific version of kube-prometheus-stack::
+
+    > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --version=<recommended-ps-version>
+
 ONAP Deployment via OOM
 =======================
 Now that Kubernetes and Helm are installed and configured you can prepare to
-deploy ONAP. Follow the instructions in the README.md_ or look at the official
-documentation to get started:
+deploy ONAP. Follow the instructions in the official documentation to get started:
 
-- :ref:`quick-start-label` - deploy ONAP on an existing cloud
 - :ref:`user-guide-label` - a guide for operators of an ONAP instance
