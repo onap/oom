@@ -55,7 +55,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-
+https://jira.onap.org/projects/OOM/versions/11498
 
 
 **Known Issues**
