@@ -8,19 +8,6 @@
 ONAP Operations Manager Release Notes
 *************************************
 
-Previous Release Notes
-======================
-
-- :ref:`Istanbul <release_notes_istanbul>`
-- :ref:`Honolulu <release_notes_honolulu>`
-- :ref:`Guilin <release_notes_guilin>`
-- :ref:`Frankfurt <release_notes_frankfurt>`
-- :ref:`El Alto <release_notes_elalto>`
-- :ref:`Dublin <release_notes_dublin>`
-- :ref:`Casablanca <release_notes_casablanca>`
-- :ref:`Beijing <release_notes_beijing>`
-- :ref:`Amsterdam <release_notes_amsterdam>`
-
 Abstract
 ========
 
@@ -75,7 +62,7 @@ Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :doc:`Project Description <../oom_project_description>`
-- :doc:`Cloud Setup Guide <../oom_cloud_setup_guide>`
+- :doc:`Cloud Setup Guide <../oom_setup_ha_k8s_cluster>`
 - :doc:`Quick Start Guide <../oom_quickstart_guide>`
 - :doc:`Setup Ingress Controller <../oom_setup_ingress_controller>`
 - :doc:`Developer Guide <../oom_developer_guide>`
