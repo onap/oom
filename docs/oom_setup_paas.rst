@@ -19,18 +19,6 @@ additional functionality for ONAP engineers.
 Starting from Jakarta release, Strimzi Apache Kafka is deployed to provide
 Apache kafka as the default messaging bus for ONAP.
 
-The versions of PaaS components that are supported by OOM are as follows:
-
-.. table:: ONAP PaaS components
-
-  ==============     =============  =================  =======
-  Release            Cert-Manager   Prometheus Stack   Strimzi
-  ==============     =============  =================  =======
-  honolulu           1.2.0          13.x
-  istanbul           1.5.4          19.x
-  jakarta                                              0.28.0
-  ==============     =============  =================  =======
-
 This guide provides instructions on how to install the PaaS
 components for ONAP.
 
@@ -54,7 +42,6 @@ tasks are simplified and require less manual intervention.
 Installation steps
 ------------------
 
-The recommended version of Strimzi for Kubernetes 1.19 is v0.28.0.
 The Strimzi cluster operator is deployed using helm to install the parent chart
 containing all of the required custom resource definitions. This should be done
 by a kubernetes administrator to allow for deployment of custom resources in to
@@ -71,7 +58,7 @@ Installation can be as simple as:
 
 - Install the operator::
 
-    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version <recommended-sko-version> --set watchAnyNamespace=true --create-namespace
 
 Cert-Manager
 ============
@@ -85,7 +72,6 @@ date, and attempt to renew certificates at a configured time before expiry.
 Installation steps
 ------------------
 
-The recommended version of Cert-Manager for Kubernetes 1.19 is v1.5.4.
 Cert-Manager is deployed using regular YAML manifests which include all
 the needed resources (the CustomResourceDefinitions, cert-manager,
 namespace, and the webhook component).
@@ -100,7 +86,7 @@ steps, please refer to `Cert-Manager kubectl plugin documentation`_.
 
 Installation can be as simple as::
 
-  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.4/cert-manager.yaml
+  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v<recommended-cm-version>/cert-manager.yaml
 
 Prometheus Stack (optional)
 ===========================
@@ -117,10 +103,6 @@ Operator and Grafana dashboards, there is no need to set up them separately.
 Installation steps
 ------------------
 
-The recommended version of kube-prometheus-stack chart for
-Kubernetes 1.19 is 19.x (which is currently the latest major chart version),
-for example 19.0.2.
-
 In order to install Prometheus Stack, you must follow these steps:
 
 - Create the namespace for Prometheus Stack::
@@ -135,10 +117,10 @@ In order to install Prometheus Stack, you must follow these steps:
 
     > helm repo update
 
-- To install the kube-prometheus-stack Helm chart in latest version::
+- To install the latest version of kube-prometheus-stack::
 
     > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus
 
-  To install the kube-prometheus-stack Helm chart in specific version, for example 19.0.2::
+- To install a specific version of kube-prometheus-stack, for example 19.0.2::
 
     > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --version=19.0.2
