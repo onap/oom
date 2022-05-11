@@ -11,11 +11,13 @@ OOM Documentation Repository
   :maxdepth: 2
 
   oom_project_description.rst
+  oom_developer_guide.rst
   oom_quickstart_guide.rst
+  oom_nexus_deploy.rst
+  oom_setup_ha_k8s_cluster.rst
+  oom_customize_overrides.rst
   oom_user_guide.rst
   oom_setup_paas.rst
-  oom_developer_guide.rst
-  oom_cloud_setup_guide.rst
-  release_notes/release-notes.rst
-  oom_setup_kubernetes_rancher.rst
   oom_setup_ingress_controller.rst
+  release_notes/release-notes.rst
+
