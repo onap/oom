@@ -17,56 +17,70 @@ available), follow the following instructions to deploy ONAP.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
-  > git clone -b <BRANCH> http://gerrit.onap.org/r/oom --recurse-submodules
+  > git clone http://gerrit.onap.org/r/oom
+
   > cd oom/kubernetes
 
-where <BRANCH> can be an official release tag, such as
 
-* 4.0.0-ONAP for Dublin
-* 5.0.1-ONAP for El Alto
-* 6.0.0 for Frankfurt
-* 7.0.0 for Guilin
-* 8.0.0 for Honolulu
-* 9.0.0 for Istanbul
-* 10.0.0 for Jakarta
+**Step 2.** Install Helm Plugin required to push helm charts to local repo::
 * 11.0.0 for Kohn
 
-**Step 2.** Install Helm Plugins required to deploy ONAP::
-
-  > cp -R ~/oom/kubernetes/helm/plugins/ ~/.local/share/helm/plugins
-  > helm plugin install https://github.com/chartmuseum/helm-push.git \
-      --version 0.9.0
+  > helm plugin install https://github.com/chartmuseum/helm-push.git --version 0.9.0
 
 .. note::
   The ``--version 0.9.0`` is required as new version of helm (3.7.0 and up) is
   now using ``push`` directly and helm-push is using ``cm-push`` starting
   version ``0.10.0`` and up.
 
-**Step 3.** Install Chartmuseum::
+**Step 3.** Install Chartmuseum
+
+Chart museum is required to host the helm charts locally when deploying in a development environment::
 
   > curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+
   > chmod +x ./chartmuseum
+
   > mv ./chartmuseum /usr/local/bin
 
-**Step 4.** Install Cert-Manager::
+**Step 4.** To setup a local Helm server to store the ONAP charts::
 
-  > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+  > mkdir -p ~/helm3-storage
 
-More details can be found :doc:`here <oom_setup_paas>`.
+  > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
 
-**Step 4.1** Install Strimzi Kafka Operator:
+Note the port number that is listed and use it in the Helm repo add as
+follows::
 
-- Add the helm repo::
+  > helm repo add local http://127.0.0.1:8879
 
-    > helm repo add strimzi https://strimzi.io/charts/
+**Step 5.** Verify your Helm repository setup with::
 
-- Install the operator::
+  > helm repo list
+  NAME   URL
+  local  http://127.0.0.1:8879
 
-    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
+**Step 6.** Build a local Helm repository (from the kubernetes directory)::
 
-More details can be found :doc:`here <oom_setup_paas>`.
+  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all
 
-**Step 5.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
+`HELM_BIN`
+  Sets the helm binary to be used. The default value use helm from PATH
+
+
+**Step 7.** Display the onap charts that are available to be deployed::
+
+  > helm repo update
+
+  > helm search repo local
+
+.. literalinclude:: helm/helm-search.txt
+
+.. note::
+  The setup of the Helm repository is a one time activity. If you make changes
+  to your deployment charts or values be sure to use ``make`` to update your
+  local Helm repository.
+
+**Step 4.** Customize the Helm charts like `oom/kubernetes/onap/values.yaml` or
 an override file like `onap-all.yaml`, `onap-vfw.yaml` or `openstack.yaml` file
 to suit your deployment with items like the OpenStack tenant information.
 
@@ -87,7 +101,7 @@ to suit your deployment with items like the OpenStack tenant information.
     charts or SO section of `openstack.yaml`.
 
 
- d. Update the OpenStack parameters that will be used by Robot, SO and APPC Helm
+ d. Update the OpenStack parameters that will be used by Robot and SO Helm
     charts or use an override file to replace them.
 
  e. Add in the command line a value for the global master password
@@ -175,41 +189,6 @@ Example Keystone v3  (required for Rocky and later releases)
 .. literalinclude:: yaml/example-integration-override-v3.yaml
    :language: yaml
 
-
-**Step 6.** To setup a local Helm server to server up the ONAP charts::
-
-  > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
-
-Note the port number that is listed and use it in the Helm repo add as
-follows::
-
-  > helm repo add local http://127.0.0.1:8879
-
-**Step 7.** Verify your Helm repository setup with::
-
-  > helm repo list
-  NAME   URL
-  local  http://127.0.0.1:8879
-
-**Step 8.** Build a local Helm repository (from the kubernetes directory)::
-
-  > make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] all ; make SKIP_LINT=TRUE [HELM_BIN=<HELM_PATH>] onap
-
-`HELM_BIN`
-  Sets the helm binary to be used. The default value use helm from PATH
-
-
-**Step 9.** Display the onap charts that available to be deployed::
-
-  > helm repo update
-  > helm search repo onap
-
-.. literalinclude:: helm/helm-search.txt
-
-.. note::
-  The setup of the Helm repository is a one time activity. If you make changes
-  to your deployment charts or values be sure to use ``make`` to update your
-  local Helm repository.
 
 **Step 10.** Once the repo is setup, installation of ONAP can be done with a
 single command
