@@ -18,7 +18,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.service.portName }}
+  name: {{ .Values.service.name }}
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
@@ -33,7 +33,11 @@ metadata:
       "url": "/api/multicloud/v0",
       "protocol": "REST",
       "port": "{{ .Values.service.externalPort }}",
-      "enable_ssl": {{ .Values.config.ssl_enabled }},
+      {{if (include "common.needTLS" .) -}}
+      "enable_ssl": true,
+      {{- else -}}
+      "enable_ssl": false,
+      {{- end}}
       "visualRange": "1"
     },
     {
@@ -42,7 +46,7 @@ metadata:
       "url": "/api/multicloud/v1",
       "protocol": "REST",
       "port": "{{ .Values.service.externalPort }}",
-      "enable_ssl": {{ .Values.config.ssl_enabled }},
+      "enable_ssl": {{ if (include "common.needTLS" .) }}true{{ else }}false{{ end }},
       "visualRange": "1"
     }
     ]'
