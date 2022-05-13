@@ -50,15 +50,15 @@ spec:
       containers:
       - env:
         - name: MSB_PROTO
-          value: {{ .Values.config.msbprotocol }}
+          value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}"
         - name: MSB_ADDR
           value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
         - name: MSB_PORT
-          value: "{{ .Values.config.msbPort }}"
+          value: "{{- if (include "common.needTLS" .) }}443{{ else }}80{{ end }}"
         - name: AAI_ADDR
-          value: aai.{{ include "common.namespace" . }}
+          value: "aai.{{ include "common.namespace" . }}"
         - name: AAI_PORT
-          value: "{{ .Values.config.aai.port }}"
+          value: "{{- if (include "common.needTLS" .) }}8443{{ else }}8080{{ end }}"
         - name: AAI_SCHEMA_VERSION
           value: "{{ .Values.config.aai.schemaVersion }}"
         - name: AAI_USERNAME
@@ -66,7 +66,7 @@ spec:
         - name: AAI_PASSWORD
           value: "{{ .Values.config.aai.password }}"
         - name: SSL_ENABLED
-          value: "{{ .Values.config.ssl_enabled }}"
+          value: "{{- if (include "common.needTLS" .) }}true{{ else }}false{{ end }}"
         name: {{ include "common.name" . }}
         volumeMounts:
         - mountPath: "{{ .Values.log.path }}"
@@ -88,7 +88,7 @@ spec:
           httpGet:
             path: /api/multicloud-titaniumcloud/v1/swagger.json
             port: {{ .Values.service.internalPort }}
-            scheme: HTTPS
+            scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
           timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
