@@ -5,7 +5,7 @@
         "port":9014,
         "userName":"healthcheck",
         "password":"zb!XztG34",
-        "https":true
+        "https":{{ (eq "true" (include "common.needTLS" .)) | ternary true false }}
     },
     "receptionHandlerParameters":{
         "SDCReceptionHandler":{
@@ -27,7 +27,7 @@
         "sdcConfiguration":{
             "parameterClassName":"org.onap.policy.distribution.reception.handling.sdc.SdcReceptionHandlerConfigurationParameterGroup",
             "parameters":{
-            "asdcAddress": "sdc-be.{{ include "common.namespace" . }}:8443",
+            "asdcAddress": "sdc-be.{{ include "common.namespace" . }}:{{ (eq "true" (include "common.needTLS" .)) | ternary 8443 8080 }}",
                 "messageBusAddress": [
                     "message-router.{{ include "common.namespace" . }}"
                  ],
@@ -54,7 +54,12 @@
                 "keystorePassword": "null",
                 "activeserverTlsAuth": false,
                 "isFilterinEmptyResources": true,
-                "isUseHttpsWithDmaap": false
+                "isUseHttpsWithDmaap": false,
+                "isUseHttpsWithSDC": {{ (eq "true" (include "common.needTLS" .)) | ternary true false }},
+                "httpsproxyHost": "null",
+                "httpproxyHost": "null",
+                "httpsproxyPort": 8181,
+                "httpproxyPort": 8080
             }
         }
     },
@@ -62,7 +67,7 @@
         "k8sConfiguration":{
             "parameterClassName":"org.onap.policy.distribution.forwarding.k8s.K8sArtifactForwarderParameterGroup",
             "parameters":{
-                "useHttps": true,
+                "useHttps": {{ (eq "true" (include "common.needTLS" .)) | ternary true false }},
                 "hostname": "pdp",
                 "port": 8081,
                 "userName": "testpdp",
