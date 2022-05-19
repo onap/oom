@@ -1,6 +1,6 @@
 from docs_conf.conf import *
 
-branch = 'latest'
+branch = 'jakarta'
 master_doc = 'index'
 
 linkcheck_ignore = [
