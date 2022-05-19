@@ -94,7 +94,7 @@ spec:
             httpGet:
               port: {{ .Values.liveness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+              scheme: HTTP
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
@@ -102,7 +102,7 @@ spec:
             httpGet:
               port: {{ .Values.readiness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+              scheme: HTTP
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
@@ -113,6 +113,9 @@ spec:
 #       since there may be more than one file in each mountPath
           - name: {{ include "common.name" . }}-config
             mountPath: /opt/app/config/conf/
+          - mountPath: /opt/app/dmaapbc/etc/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
@@ -128,6 +131,9 @@ spec:
         - name: {{ include "common.name" . }}-config-input
           configMap:
             name: {{ include "common.fullname" . }}-config
+        - name: {{ include "common.fullname" . }}-log-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-log
         - name: {{ include "common.name" . }}-config
           emptyDir:
             medium: Memory

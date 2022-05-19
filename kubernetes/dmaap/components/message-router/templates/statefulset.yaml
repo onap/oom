@@ -26,47 +26,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
-      {{- if  .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-update-config
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0);
-          cd /config-input  && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - mountPath: /config
-          name: jetty
-        - mountPath: /config-input
-          name: etc
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      {{- end }}
       containers:
-      {{- if .Values.prometheus.jmx.enabled }}
-        - name: prometheus-jmx-exporter
-          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-          - java
-          - -XX:+UnlockExperimentalVMOptions
-          - -XX:+UseCGroupMemoryLimitForHeap
-          - -XX:MaxRAMFraction=1
-          - -XshowSettings:vm
-          - -jar
-          - jmx_prometheus_httpserver.jar
-          - {{ .Values.prometheus.jmx.port | quote }}
-          - /etc/jmx-kafka/jmx-mrservice-prometheus.yml
-          ports:
-          - containerPort: {{ .Values.prometheus.jmx.port }}
-          resources:
-          volumeMounts:
-          - name: jmx-config
-            mountPath: /etc/jmx-kafka
-      {{- end }}
         - name: srimzi-zk-entrance
           image: 'docker.io/scholzj/zoo-entrance:latest'
           command:
@@ -109,16 +69,6 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if  .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - -c
-          - |
-            cp /jetty-config/ajsc-jetty.xml /appl/dmaapMR1/etc/
-            cp /jetty-config/cadi.properties {{ .Values.certInitializer.appMountPath }}/local/cadi.properties
-            /bin/sh /appl/startup.sh
-          {{- end }}
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -152,8 +102,8 @@ spec:
           - name: SASLMECH
             value: {{ .Values.global.saslMechanism }}
           - name: enableCadi
-            value: "{{ .Values.global.aafEnabled }}"
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+            value: "true"
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -163,41 +113,18 @@ spec:
           - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
             subPath: logback.xml
             name: logback
-          {{- if  .Values.global.aafEnabled }}
-          - mountPath: /appl/dmaapMR1/etc/runner-web.xml
-            subPath: runner-web.xml
-            name: etc
-          - mountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops/sys-props.properties
-            subPath: sys-props.properties
-            name: sys-props
-          - mountPath: /jetty-config
-            name: jetty
-          {{- end }}
           resources: {{ include "common.resources" . | nindent 12 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
         - name: appprops
           configMap:
             name: {{ include "common.fullname" . }}-msgrtrapi-prop-configmap
-        - name: etc
-          configMap:
-            name: {{ include "common.fullname" . }}-etc
         - name: logback
           configMap:
             name: {{ include "common.fullname" . }}-logback-xml-configmap
-        {{- if .Values.prometheus.jmx.enabled }}
-        - name: jmx-config
-          configMap:
-            name: {{ include "common.fullname" . }}-prometheus-configmap
-        {{- end }}
-        - name: sys-props
-          configMap:
-            name: {{ include "common.fullname" . }}-sys-props
-        - name: jetty
-          emptyDir: {}
         - name: cluster-operator-certs
           secret:
             defaultMode: 288

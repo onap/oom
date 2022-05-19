@@ -29,46 +29,10 @@ global:
     internalPort: 2181
 
 #################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: dmaap-mr-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: dmaap-mr
-  fqi: dmaapmr@mr.dmaap.onap.org
-  public_fqdn: mr.dmaap.onap.org
-  cadi_longitude: "-122.26147"
-  cadi_latitude: "37.78187"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  appMountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops
-  fqi_namespace: org.onap.dmaap.mr
-  aaf_add_config: |
-    cd {{ .Values.credsPath }}
-    echo "*** change jks password into shell safe one"
-    export KEYSTORE_PASSWD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
-    keytool -storepasswd -new "${KEYSTORE_PASSWD}" \
-      -storepass "${cadi_keystore_password_jks}" \
-      -keystore {{ .Values.fqi_namespace }}.jks
-    echo "*** set key password as same password as jks keystore password"
-      keytool -keypasswd -new "${KEYSTORE_PASSWD}" \
-        -keystore {{ .Values.fqi_namespace }}.jks \
-        -keypass "${cadi_keystore_password_jks}" \
-        -storepass "${KEYSTORE_PASSWD}" -alias {{ .Values.fqi }}
-    echo "*** store the passwords"
-    echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWD}" > mycreds.prop
-    echo "KEYSTORE_PASSWORD_P12=${cadi_keystore_password_p12}" >> mycreds.prop
-    echo "TRUSTSTORE_PASSWORD=${cadi_truststore_password}" >> mycreds.prop
-    echo "*** give ownership of files to the user"
-    chown -R 1000 .
-
-#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/dmaap/dmaap-mr:1.3.2
+image: onap/dmaap/dmaap-mr:1.4.0
 pullPolicy: Always
 
 secrets:
@@ -93,6 +57,23 @@ replicaCount: 1
 nodeSelector: {}
 
 affinity: {}
+
+containerPort: &svc_port 3904
+
+service:
+  type: ClusterIP
+  name: message-router
+  ports:
+    - name: api
+      port: *svc_port
+      port_protocol: http
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "mr.api"
+      name: "message-router"
+      port: *svc_port
 
 # probe configuration parameters
 liveness:
@@ -121,41 +102,6 @@ startup:
   successThreshold: 1
   failureThreshold: 70
   port: api
-
-service:
-  type: NodePort
-  name: message-router
-  both_tls_and_plain: true
-  msb:
-    - port: 3904
-      url: "/"
-      version: "v1"
-      protocol: "REST"
-      visualRange: "1"
-  ports:
-    - name: api
-      port: 3905
-      plain_port: 3904
-      port_protocol: http
-      nodePort: 26
-
-prometheus:
-  jmx:
-    enabled: false
-    image: solsson/kafka-prometheus-jmx-exporter@sha256
-    imageTag: 6f82e2b0464f50da8104acd7363fb9b995001ddff77d248379f8788e78946143
-    port: 5556
-    targetPort: 5555
-
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "mr.api"
-      name: "message-router"
-      port: 3905
-  config:
-    ssl: "redirect"
-
 
 # Resource Limit flavor -By Default using small
 flavor: small
