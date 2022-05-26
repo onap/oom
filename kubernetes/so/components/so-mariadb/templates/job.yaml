@@ -105,12 +105,11 @@ spec:
         - /bin/sh
         - -c
         - >
-          mysql() { /usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
-          export -f mysql;
-          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
-          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; "${mysql[@]}" < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${mysql[@]}"; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
+          mysql_cmd="/usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT}"
+          $mysql_cmd --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
+          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; $mysql_cmd < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | $mysql_cmd; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
           {{- if .Values.global.migration.enabled }}
-          mysql -vv --user=root --password=${MYSQL_ROOT_PASSWORD} < `ls -tr /var/data/mariadb/* | tail -1`;
+          $mysql_cmd -vv --user=root --password=${MYSQL_ROOT_PASSWORD} < `ls -tr /var/data/mariadb/* | tail -1`;
           {{- end }}
         env:
         - name: DB_HOST
