@@ -97,7 +97,7 @@ OUTPUT_DIRECTORY=/tmp/vnfdata.${BUILDNUM}
 set -x
 
 POD=$(kubectl --namespace $NAMESPACE get pods | sed 's/ .*//'| grep robot)
-export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
+export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- sh -c "ls -1q /share/logs/ | wc -l")
 TAGS="-i $TAG"
 ETEHOME=/var/opt/ONAP
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_ete_instantiate_vnf
@@ -112,19 +112,19 @@ kubectl --namespace $NAMESPACE cp $FOLDER ${POD}:/tmp/vnfdata.${BUILDNUM}
 echo "Executing instantiation..."
 
 if [ $POLL = 1 ]; then
-  kubectl --namespace $NAMESPACE exec ${POD} -- bash -c "${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --listener ${ETEHOME}/testsuite/eteutils/robotframework-onap/listeners/OVPListener.py --display $DISPLAY_NUM > /tmp/vnf_instantiation.$BUILDNUM.log 2>&1 &"
+  kubectl --namespace $NAMESPACE exec ${POD} -- sh -c "${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --listener ${ETEHOME}/testsuite/eteutils/robotframework-onap/listeners/OVPListener.py --display $DISPLAY_NUM > /tmp/vnf_instantiation.$BUILDNUM.log 2>&1 &"
 
-  pid=`kubectl --namespace $NAMESPACE exec ${POD} -- bash -c "pgrep runTags.sh -n"`
+  pid=`kubectl --namespace $NAMESPACE exec ${POD} -- sh -c "pgrep runTags.sh -n"`
 
   if [ -z "$pid" ]; then
     echo "robot testsuite unable to start"
     exit 1
   fi
 
-  kubectl --namespace $NAMESPACE exec ${POD} -- bash -c "while ps -p \"$pid\" --no-headers | grep -v defunct; do echo \$'\n\n'; echo \"Testsuite still running \"\`date\`; echo \"LOG FILE: \"; tail -10 /tmp/vnf_instantiation.$BUILDNUM.log; sleep 30; done"
+  kubectl --namespace $NAMESPACE exec ${POD} -- sh -c "while ps -p \"$pid\" --no-headers | grep -v defunct; do echo \$'\n\n'; echo \"Testsuite still running \"\`date\`; echo \"LOG FILE: \"; tail -10 /tmp/vnf_instantiation.$BUILDNUM.log; sleep 30; done"
 
 else
-  kubectl --namespace $NAMESPACE exec ${POD} -- bash -c "${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --listener ${ETEHOME}/testsuite/eteutils/robotframework-onap/listeners/OVPListener.py --display $DISPLAY_NUM"
+  kubectl --namespace $NAMESPACE exec ${POD} -- sh -c "${ETEHOME}/runTags.sh ${VARIABLEFILES} ${VARIABLES} -d /share/logs/${OUTPUT_FOLDER} ${TAGS} --listener ${ETEHOME}/testsuite/eteutils/robotframework-onap/listeners/OVPListener.py --display $DISPLAY_NUM"
 fi
 
 set +x
