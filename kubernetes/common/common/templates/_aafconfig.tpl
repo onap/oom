@@ -98,7 +98,7 @@
     - sh
     - -c
     - |
-      #!/usr/bin/env bash
+      #!/bin/sh
       /opt/app/aaf_config/bin/agent.sh
 {{-     if $aafRoot.addconfig }}
       /opt/app/aaf_config/bin/aaf-add-config.sh
