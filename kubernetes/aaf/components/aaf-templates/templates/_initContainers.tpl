@@ -50,7 +50,7 @@
   image: {{ include "repositoryGenerator.repository" . }}/{{.Values.global.aaf.config.image}}
   imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
   command:
-  - /bin/bash
+  - /bin/sh
   args:
   - -c
   - |
