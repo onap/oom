@@ -50,7 +50,7 @@ if [ "${!#}" = "execscript" ]; then
    done
 fi
 
-export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- bash -c "ls -1q /share/logs/ | wc -l")
+export GLOBAL_BUILD_NUMBER=$(kubectl --namespace $NAMESPACE exec  ${POD}  -- sh -c "ls -1q /share/logs/ | wc -l")
 OUTPUT_FOLDER=$(printf %04d $GLOBAL_BUILD_NUMBER)_ete_helmlist
 DISPLAY_NUM=$(($GLOBAL_BUILD_NUMBER + 90))
 
