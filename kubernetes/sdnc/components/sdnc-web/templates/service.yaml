@@ -13,5 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-{{- include "common.service" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: "{{ .Values.service.type }}"
+  ports:
+    - name: "{{ .Values.service.portName }}-web"
+      {{ if not .Values.global.needTLS -}}
+      port: {{ .Values.service.externalPort }}
+      targetPort: {{ .Values.service.internalPort }}
+      {{- else -}}
+      port: {{ .Values.service.externalPort2 }}
+      targetPort: {{ .Values.service.internalPort2 }}
+      {{ end }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort2 }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+  selector:
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    app.kubernetes.io/instance: {{ include "common.release" . }}
 
