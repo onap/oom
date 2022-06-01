@@ -52,8 +52,13 @@ spec:
       - name: {{ include "common.name" . }}-sdnrdb-init-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command: ["/bin/bash"]
-        args: ["-c", "{{ .Values.config.binDir }}/startODL.sh"]
+        command: 
+          - /bin/bash
+          - -c
+          - >
+            {{- if include "common.onServiceMesh" . }}
+            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+            {{.Values.config.binDir }}/startODL.sh;
         env:
           - name: SDNC_AAF_ENABLED
             value: "{{ .Values.global.aafEnabled}}"
@@ -76,6 +81,23 @@ spec:
             value: "-k"
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
         resources: {{ include "common.resources" . | nindent 12 }}
+      {{- if (include "common.onServiceMesh" .) }}
+      - name: sdncrdb-service-mesh-wait-for-job-container
+        image: nexus3.onap.org:10001/onap/oom/readiness:4.1.0
+        imagePullPolicy: Always
+        command:
+        - /bin/sh
+        - "-c"
+        args:
+        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
+          /app/ready.py --service-mesh-check {{ include "common.name" . }}-sdnrdb-init-job -t 45;
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
       {{- end -}}
