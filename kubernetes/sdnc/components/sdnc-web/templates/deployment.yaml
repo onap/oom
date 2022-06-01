@@ -49,26 +49,42 @@ spec:
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
+              {{ if .Values.global.needTLS }}
+              port: {{ .Values.service.internalPort2 }}
+              {{- else -}}
               port: {{ .Values.service.internalPort }}
+              {{ end }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
+              {{ if .Values.global.needTLS }}
+              port: {{ .Values.service.internalPort2 }}
+              {{- else -}}
               port: {{ .Values.service.internalPort }}
+              {{ end }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: WEBPROTOCOL
-            value: {{ .Values.config.webProtocol }}
+            value: {{ .Values.config.webProtocol }}{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
           - name: WEBPORT
-            value: {{ .Values.config.webPort | quote }}
+            {{ if .Values.global.needTLS }}
+            value: {{ .Values.service.internalPort2 | quote }}
+            {{- else -}}
+            value: {{ .Values.service.internalPort | quote }}
+            {{ end }}
           - name: SDNRPROTOCOL
-            value: {{ .Values.config.sdnrProtocol }}
+            value: {{ .Values.config.sdnrProtocol }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}
           - name: SDNRHOST
             value: {{ .Values.config.sdnrHost }}.{{ include "common.namespace" . }}
           - name: SDNRPORT
-            value: {{ .Values.config.sdnrPort | quote }}
+            {{ if .Values.global.needTLS }}
+            value: {{ .Values.config.sdnrPortHttps | quote }}
+            {{- else -}}
+            value: {{ .Values.config.sdnrPortHttp | quote }}
+            {{ end }}
           - name: SSL_CERT_DIR
             value: {{ .Values.config.sslCertDir }}
           - name: SSL_CERTIFICATE

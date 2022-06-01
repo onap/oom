@@ -130,9 +130,29 @@ spec:
             subPath: dblib.properties
         command:
           - /bin/bash
-        args:
-          - {{.Values.config.binDir }}/installSdncDb.sh
+          - -c
+          - >
+            {{- if include "common.onServiceMesh" . }}
+            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+            {{.Values.config.binDir }}/installSdncDb.sh;
         resources: {{ include "common.resources" . | nindent 10 }}
+      {{- if (include "common.onServiceMesh" .) }}
+      - name: sdncrdb-service-mesh-wait-for-job-container
+        image: nexus3.onap.org:10001/onap/oom/readiness:4.1.0
+        imagePullPolicy: Always
+        command:
+        - /bin/sh
+        - "-c"
+        args:
+        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
+          /app/ready.py --service-mesh-check {{ include "common.name" . }} -t 45;
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end }}
