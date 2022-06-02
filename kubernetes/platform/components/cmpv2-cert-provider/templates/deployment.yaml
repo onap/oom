@@ -32,6 +32,16 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+      {{- if (include "common.onServiceMesh" . | nindent 6 ) }}
+      annotations:
+      {{- if eq ( .Values.global.serviceMesh.engine ) "linkerd" }}
+        linkerd.io/inject: disabled
+      {{- end }}
+      {{- if eq ( .Values.global.serviceMesh.engine ) "istio" }}
+          traffic.sidecar.istio.io/excludeInboundPorts: "8080,8443"
+          traffic.sidecar.istio.io/includeInboundPorts: '*'
+      {{- end }}
+      {{- end }}
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
