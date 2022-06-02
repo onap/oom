@@ -97,6 +97,22 @@ spec:
           name: properties
           subPath: ueb-listener.properties
         resources: {{ include "common.resources" . | nindent 10 }}
+      - name: ueb-listener-service-mesh-wait-for-job-container
+        image: {{ include "repositoryGenerator.image.quitQuit" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /bin/sh
+          - "-c"
+        args:
+          - |
+            echo "waiting 20s for istio side cars to be up"; sleep 20s;
+            /app/ready.py --service-mesh-check ueb-listener -t 45;
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end }}

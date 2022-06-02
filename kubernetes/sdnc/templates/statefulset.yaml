@@ -29,6 +29,18 @@ spec:
   podManagementPolicy: Parallel
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+      {{- if (include "common.onServiceMesh" . ) }}
+      annotations:
+      {{- if eq ( .Values.global.serviceMesh.engine ) "linkerd" }}
+        linkerd.io/inject: disabled
+      {{- end }}
+      {{- if eq ( .Values.global.serviceMesh.engine ) "istio" }}
+        traffic.sidecar.istio.io/excludeOutboundPorts: "9200,3306"
+        traffic.sidecar.istio.io/includeInboundPorts: '*'        
+        sidecar.istio.io/rewriteAppHTTPProbers: "false"
+        proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+      {{- end }}
+      {{- end }}
     spec:
       initContainers:
       - command:
