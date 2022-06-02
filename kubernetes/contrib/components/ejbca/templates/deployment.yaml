@@ -22,6 +22,16 @@ spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+      {{- if (include "common.onServiceMesh" . ) }}
+      annotations:
+      {{- if eq ( .Values.global.serviceMesh.engine ) "linkerd" }}
+        linkerd.io/inject: disabled
+      {{- end }}
+      {{- if eq ( .Values.global.serviceMesh.engine ) "istio" }}
+        sidecar.istio.io/rewriteAppHTTPProbers: "false"
+        proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+      {{- end }}
+      {{- end }}
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -51,7 +61,11 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "/opt/primekey/scripts/ejbca-config.sh"]
+              command:
+                - sh
+                - -c
+                - |
+                  sleep 60; /opt/primekey/scripts/ejbca-config.sh
         volumeMounts:
           - name: "{{ include "common.fullname" . }}-volume"
             mountPath: /opt/primekey/scripts/
