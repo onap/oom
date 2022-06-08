@@ -97,18 +97,18 @@ data:
   {{- end }}
 {{- end }}
 
-{{- if .Values.mrTopicsConfig }}
+{{- if .Values.customEnvVars }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-topics-config
+  name: {{ include "common.fullname" . }}-custom-env
   namespace: {{ include "common.namespace" . }}
   labels: {{ include "common.labels" . | nindent 6 }}
 data:
-  {{- range $i, $topics := .Values.mrTopicsConfig }}
-  topicsConfig-{{$i}}.json: |-
-  {{ $topics | toJson | indent 2 }}
+  {{- $global := . }}
+  {{- range $var := .Values.customEnvVars }}
+  {{ $var.name }}: {{ tpl $var.value $global }}
   {{- end }}
 {{- end }}
 {{- end }}
