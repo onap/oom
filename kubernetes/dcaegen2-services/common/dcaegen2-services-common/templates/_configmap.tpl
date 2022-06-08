@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2019 AT&T
-# Copyright (c) 2021 J. F. Lucas.  All rights reserved.
+# Copyright (c) 2021-2022 J. F. Lucas.  All rights reserved.
 # Copyright (c) 2021 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,14 +30,21 @@ use of templates from the ONAP "common" collection) references data in
 .Release.
 
 The template always produces a configMap containing the microservice's
-initial configuration data.  This configMap is used by an initContainer
-that loads the configuration into Consul.  (See the documentation for
+initial configuration data.  (See the documentation for
 dcaegen2-services-common.microserviceDeployment for more details.)
 
-If the microservice is using a logging sidecar (again, see the documentation
-for dcaegen2-services-common.microserviceDeployment for more details), the
-template generates an additiona configMap that supplies configuration
-information for the logging sidecar.
+If the microservice is using one or more Data Router (DR) feeds, the
+template produces a configMap containing the information needed to
+provision the feed(s).  An init container performs the provisioning.
+
+If the microservice acts as a DR publisher for one or more feeds, the
+template produces a configMap containing the information needed to
+provision the publisher(s).  An init container performs the provisioning.
+
+If the microservice acts as a DR subscriber for one or more feeds, the
+template produces a configMap containing the information needed to
+provision the subscribeer(s).  An init container performs the provisioning.
+
 */}}
 
 {{- define "dcaegen2-services-common.configMap" -}}
@@ -94,21 +101,6 @@ data:
   {{- range $i, $drsub := .Values.drSubConfig }}
   drsubConfig-{{$i}}.json: |-
   {{ $drsub | toJson | indent 2 }}
-  {{- end }}
-{{- end }}
-
-{{- if .Values.mrTopicsConfig }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-topics-config
-  namespace: {{ include "common.namespace" . }}
-  labels: {{ include "common.labels" . | nindent 6 }}
-data:
-  {{- range $i, $topics := .Values.mrTopicsConfig }}
-  topicsConfig-{{$i}}.json: |-
-  {{ $topics | toJson | indent 2 }}
   {{- end }}
 {{- end }}
 {{- end }}
