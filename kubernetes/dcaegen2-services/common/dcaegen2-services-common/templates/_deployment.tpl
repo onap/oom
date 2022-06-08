@@ -33,7 +33,7 @@ provided to all microservices.
 The template expects a single argument, pointing to the caller's global context.
 
 Microservice-specific environment variables can be specified in two ways:
-  1. As literal string values.
+  1. As literal string values. (The values can also be Helm template fragments.)
   2. As values that are sourced from a secret, identified by the secret's
      uid and the key within the secret that provides the value.
 
@@ -236,30 +236,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{- if not $drFeedConfig }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-        {{- range $var := .Values.customEnvVars }}
-          export {{ $var.name }}="{{ $var.value }}";
-        {{- end }}
-          cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
-        env:
-        {{- range $cred := .Values.credentials }}
-        - name: {{ $cred.name }}
-          {{- include "common.secret.envFromSecretFast" (dict "global" $ "uid" $cred.uid "key" $cred.key) | indent 10 }}
-        {{- end }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: app-config-input
-        - mountPath: /config
-          name: app-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-      {{- end }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
       {{- if $certDir }}
@@ -331,7 +307,7 @@ spec:
         resources: {{ include "common.resources" . | nindent 2 }}
         volumeMounts:
         - mountPath: /app-config
-          name: app-config
+          name: {{ ternary "app-config-input" "app-config" (not $drFeedConfig) }}
         - mountPath: /app-config-input
           name: app-config-input
         {{- if $logDir }}
