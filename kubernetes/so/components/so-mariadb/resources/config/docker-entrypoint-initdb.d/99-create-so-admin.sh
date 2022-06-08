@@ -4,6 +4,7 @@
 # ============LICENSE_START==========================================
 # ===================================================================
 # Copyright © 2017 AT&T Intellectual Property. All rights reserved.
+# Modifications Copyright (C) 2022/23 Nordix Foundation
 # ===================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +41,7 @@ GRANT ALL PRIVILEGES ON camundabpmn.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
 GRANT ALL PRIVILEGES ON requestdb.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
 GRANT ALL PRIVILEGES ON catalogdb.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
 GRANT ALL PRIVILEGES ON nfvo.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON cnfm.* TO '${DB_ADMIN}'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
