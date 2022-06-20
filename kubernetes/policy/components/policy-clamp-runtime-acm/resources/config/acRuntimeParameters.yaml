@@ -86,3 +86,16 @@ management:
     web:
       exposure:
         include: health, metrics, prometheus
+
+{{- if .Values.config.useStrimziKafka }}
+spring.kafka.bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+spring.kafka.security.protocol: SASL_PLAINTEXT
+spring.kafka.properties.sasl.mechanism: SCRAM-SHA-512
+spring.kafka.properties.sasl.jaas.config: ${JAASLOGIN}
+{{ else }}
+{{ toYaml .Values.config.eventPublisher | nindent 2 }}
+{{- end }}
+
+{{- if .Values.config.additional }}
+{{ toYaml .Values.config.additional | nindent 2 }}
+{{- end }}
