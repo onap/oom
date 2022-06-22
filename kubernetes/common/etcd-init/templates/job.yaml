@@ -55,6 +55,8 @@ spec:
           - /bin/sh
           - -ec
           - |
+            {{- if include "common.onServiceMesh" . }}
+            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
             # Create users
             export ETCDCTL_ENDPOINTS=http://${ETCD_HOST}:${ETCD_PORT}
             export ETCDCTL_API=3
@@ -89,6 +91,7 @@ spec:
           name: localtime
           readOnly: true
         resources: {{ include "common.resources" . | nindent 12 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
       {{- end -}}
