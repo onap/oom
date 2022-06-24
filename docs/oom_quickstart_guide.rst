@@ -29,6 +29,7 @@ where <BRANCH> can be an official release tag, such as
 * 8.0.0 for Honolulu
 * 9.0.0 for Istanbul
 * 10.0.0 for Jakarta
+* 11.0.0 for Kohn
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
@@ -148,7 +149,7 @@ observe the following constraints.
   ports on the VMs that are created by the heat template but its important that
   neutron allow ports to be created on them.
 
-``openStackPrivateNetCidr: "10.0.0.0/16"``
+``openStackPrivateNetCidr: "11.0.0.0/16"``
   This ip address block is used to assign OA&M addresses on VNFs to allow ONAP
   connectivity. The demonstration Heat templates assume that 10.0 prefix can be
   used by the VNFs and the demonstration ip addressing plan embodied in the
