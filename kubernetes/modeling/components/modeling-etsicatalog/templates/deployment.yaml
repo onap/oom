@@ -84,18 +84,30 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
+          {{- if and (include "common.needTLS" .) (eq .Values.config.ssl_enabled true) }}
           - name: SSL_ENABLED
-            value: "{{ .Values.config.ssl_enabled }}"
+            value: "true"
+          {{- else }}
+          - name: SSL_ENABLED
+            value: "false"
+          {{- end }}
           - name: MSB_ENABLED
             value: "{{ .Values.config.msb_enabled }}"
+          {{- if (include "common.needTLS" .) }}
           - name: MSB_ADDR
-            value: "{{ .Values.config.msbProtocol }}://{{ .Values.config.msbServiceName }}:{{ .Values.config.msbPort }}"
+            value: "{{ .Values.config.msbProtocol }}s://{{ .Values.config.msbServiceName }}:{{ .Values.config.msbPort }}"
           - name: SDC_ADDR
-            value: "{{ .Values.config.sdcProtocol }}://{{ .Values.config.sdcServiceName }}:{{ .Values.config.sdcPort }}"
+            value: "{{ .Values.config.sdcProtocol }}s://{{ .Values.config.sdcServiceName }}:{{ .Values.config.sdcPort }}"
+          {- else }
+          - name: MSB_ADDR
+            value: "{{ .Values.config.msbProtocol }}://{{ .Values.config.msbServiceName }}:{{ .Values.config.msbPlainPort }}"
+          - name: SDC_ADDR
+            value: "{{ .Values.config.sdcProtocol }}://{{ .Values.config.sdcServiceName }}:{{ .Values.config.sdcPlainPort }}"
+          {- end }
           - name: DMAAP_ENABLED
             value: "{{ .Values.config.dmaap_enabled }}"
           - name: DMAAP_ADDR
-            value: "{{ .Values.config.dmaapProtocol }}://{{ .Values.config.dmaapServiceName }}:{{ .Values.config.dmaapPort }}"
+            value: "{{ .Values.config.dmaapProtocol }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}://{{ .Values.config.dmaapServiceName }}:{{ .Values.config.dmaapPort }}"
           - name: DB_IP
             value: "{{ include "common.mariadbService" . }}"
           - name: DB_PORT
