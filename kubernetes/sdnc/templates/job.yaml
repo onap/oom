@@ -131,8 +131,28 @@ spec:
         command:
           - /bin/bash
         args:
-          - {{.Values.config.binDir }}/installSdncDb.sh
+          - -c
+          - |
+            sleep 60; {{.Values.config.binDir }}/installSdncDb.sh
         resources: {{ include "common.resources" . | nindent 10 }}
+      {{- if include "common.onServiceMesh" . }}
+      - name: sdnc-service-mesh-wait-for-job-container
+        image: {{ include "repositoryGenerator.image.quitQuit" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /bin/sh
+          - "-c"
+        args:
+          - |
+            echo "waiting 20s for istio side cars to be up"; sleep 20s;
+            /app/ready.py --service-mesh-check sdnc -t 45;
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
       {{- end }}

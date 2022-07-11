@@ -53,7 +53,10 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command: ["/bin/bash"]
-        args: ["-c", "{{ .Values.config.binDir }}/startODL.sh"]
+        args:
+          - -c
+          - |
+            sleep 90; "{{ .Values.config.binDir }}/startODL.sh"
         env:
           - name: SDNC_AAF_ENABLED
             value: "{{ .Values.global.aafEnabled}}"
@@ -76,6 +79,24 @@ spec:
             value: "-k"
         volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
         resources: {{ include "common.resources" . | nindent 12 }}
+      {{- if include "common.onServiceMesh" . }}
+      - name: sdnrdb-service-mesh-wait-for-job-container
+        image: {{ include "repositoryGenerator.image.quitQuit" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+          - /bin/sh
+          - "-c"
+        args:
+          - |
+            echo "waiting 30s for istio side cars to be up"; sleep 30s;
+            /app/ready.py --service-mesh-check sdnc-sdnrdb-init-job -t 45;
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
       {{- end -}}
