@@ -25,50 +25,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - "sdc-onboarding-be"
-        - --container-name
-        - "message-router"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
-      - name: {{ include "common.name" . }}-job-completion
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-sdc-onboarding-be-cassandra-init
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
       {{- if .Values.global.aafEnabled }}
       - name: {{ include "common.name" . }}-update-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
@@ -159,6 +115,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+          {{- if .Values.config.useStrimziKafka }}
+          - name: JAASLOGIN
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-be-kafka-secret" "key" "sasl.jaas.config") | indent 12 }}
+          {{- end }}
           volumeMounts:
           - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
@@ -178,6 +138,11 @@ spec:
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          {{- if .Values.config.useStrimziKafka }}
+          - name: spring-kafka
+            mountPath: /tmp/application.yaml
+            subPath: application.yaml
+          {{- end }}
           lifecycle:
             postStart:
               exec:
@@ -190,6 +155,11 @@ spec:
         hostPath:
           path: /etc/localtime
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
+      {{- if .Values.config.useStrimziKafka }}
+      - name: spring-kafka
+        configMap:
+          name: {{ include "common.fullname" . }}-spring-configmap
+      {{- end }}
       - name: logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap

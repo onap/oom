@@ -27,3 +27,18 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
 {{ tpl (.Files.Glob "resources/config/logging/*").AsConfig . | indent 2 }}
+{{- if .Values.config.useStrimziKafka }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-spring-configmap
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+data:
+{{ tpl (.Files.Glob "resources/config/application.yaml").AsConfig . | indent 2 }}
+{{- end }}

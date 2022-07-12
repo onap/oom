@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T, ZTE
+# Modifications Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,9 +71,33 @@ certInitializer:
 #################################################################
 # SDC Config part
 #################################################################
+
+secrets:
+  - uid: sdc-be-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+
 config:
   javaOptions: "-Xmx1536m -Xms1536m"
   cassandraSslEnabled: "false"
+  # Strimzi kafka config
+  useStrimziKafka: true
+  kafkaBootstrap: strimzi-kafka-bootstrap:9092
+  sdcBeKafkaUser: sdc-be-kafka-user
+  saslMech: scram-sha-512
+  securityProtocol: SASL_PLAINTEXT
+  topics:
+    sdcDistNotifTopic: SDC-DISTR-NOTIF-TOPIC-AUTO
+    sdcDistStatusTopic: SDC-DISTR-STATUS-TOPIC-AUTO
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: sdc-group
 
 # default number of instances
 replicaCount: 1
@@ -171,6 +196,12 @@ serviceAccount:
 wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
+    - '{{ include "common.release" . }}-sdc-onboarding-be-cassandra-init'
+
+readinessCheck:
+  wait_for:
+    - sdc-onboarding-be
+    - message-router
 
 #Log configuration
 log:
