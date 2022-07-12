@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T, ZTE
+# Modifications Copyright © 2022 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,13 +31,20 @@ global:
     replicaCount: 3
     clusterName: cassandra
     dataCenter: Pod
+  # Strimzi kafka config
+  kafka:
+    useKafka: overridden-from-parent-values-yaml
+    sdcBeKafkaUser: overridden-from-parent-values-yaml
+    topics:
+      sdcDistNotifTopic: overridden-from-parent-values-yaml
+      sdcDistStatusTopic: overridden-from-parent-values-yaml
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/sdc-backend-all-plugins:1.11.9
-backendInitImage: onap/sdc-backend-init:1.11.9
+image: onap/sdc-backend-all-plugins:1.12-STAGING-latest
+backendInitImage: onap/sdc-backend-init:1.12-STAGING-latest
 
 pullPolicy: Always
 
@@ -70,9 +78,29 @@ certInitializer:
 #################################################################
 # SDC Config part
 #################################################################
+
+secrets:
+  - uid: sdc-be-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+
 config:
   javaOptions: "-Xmx1536m -Xms1536m"
   cassandraSslEnabled: "false"
+  # Strimzi kafka config
+  kafka:
+    saslMech: scram-sha-512
+    securityProtocol: SASL_PLAINTEXT
+    authType: simple
+    topicRetentionMs: 7200000
+    topicSegmentBytes: 1073741824
+    topicConsumer:
+      pattern: SDC-DIST
+      groupId: sdc
 
 # default number of instances
 replicaCount: 1
