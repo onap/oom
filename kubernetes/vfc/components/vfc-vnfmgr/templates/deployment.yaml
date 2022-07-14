@@ -79,9 +79,14 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
             - name: MSB_HOST
-              value: "{{ .Values.global.config.msbprotocol }}://{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+              value: "{{ .Values.global.config.msbprotocol }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}://{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+            {{- if and (include "common.needTLS" .) (eq .Values.global.config.ssl_enabled true) }}
             - name: SSL_ENABLED
-              value: "{{ .Values.global.config.ssl_enabled }}"
+              value: "true"
+            {{- else }}
+            - name: SSL_ENABLED
+              value: "false"
+            {{- end }}
             - name: MYSQL_ADDR
               value: '{{ include "common.mariadbService" . }}:{{ include "common.mariadbPort" . }}'
             - name: REDIS_HOST

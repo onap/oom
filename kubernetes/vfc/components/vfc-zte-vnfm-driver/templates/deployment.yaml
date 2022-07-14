@@ -59,9 +59,14 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
             - name: MSB_HOST
-              value: "{{ .Values.global.config.msbprotocol }}://{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+              value: "{{ .Values.global.config.msbprotocol }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}://{{ .Values.global.config.msbServiceName }}:{{ .Values.global.config.msbPort }}"
+            {{- if and (include "common.needTLS" .) (eq .Values.global.config.ssl_enabled true) }}
             - name: SSL_ENABLED
-              value: "{{ .Values.global.config.ssl_enabled }}"
+              value: "true"
+            {{- else }}
+            - name: SSL_ENABLED
+              value: "false"
+            {{- end }}
             - name: REG_TO_MSB_WHEN_START
               value: "{{ .Values.global.config.reg_to_msb_when_start }}"
           volumeMounts:
