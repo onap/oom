@@ -28,6 +28,21 @@
 {{- end }}
 {{- end -}}
 
+{{- define "istio.config.route" -}}
+{{-   $dot := default . .dot -}}
+{{ range .Values.ingress.service }}
+  http:
+  - route:
+    - destination:
+        port:
+        {{- if kindIs "string" .port }}
+          name: {{ .port }}
+        {{- else }}
+          number: {{ .port }}
+        {{- end }}
+        host: {{ .name }}
+{{- end -}}
+{{- end -}}
 
 {{- define "ingress.config.annotations.ssl" -}}
 {{- if .Values.ingress.config -}}
@@ -71,11 +86,66 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
 {{- end -}}
 
 {{- define "common.ingress" -}}
+{{-   $dot := default . .dot -}}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
 {{- if .Values.ingress -}}
   {{- $ingressEnabled := default false .Values.ingress.enabled -}}
   {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" (default (dict) .Values.global.ingress) "var" "enabled") }}
   {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" .Values.ingress "var" "enabledOverride") }}
-  {{- if $ingressEnabled }}
+{{- if $ingressEnabled }}
+{{- if (include "common.onServiceMesh" .) }}
+{{- if eq (default "istio" .Values.global.serviceMesh.engine) "istio" }}
+      {{-   $dot := default . .dot -}}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ include "common.fullname" . }}-gateway
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+    {{- end }}
+{{- if .Values.ingress.config -}}
+{{- if .Values.ingress.config.ssl -}}
+{{- if eq .Values.ingress.config.ssl "redirect" -}}
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      credentialName: ingress-tls-secret
+      mode: SIMPLE
+    hosts:
+    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+    {{- end }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "common.fullname" . }}-service
+spec:
+  hosts:
+  {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+  {{- end }}
+  gateways:
+  - {{ include "common.fullname" . }}-gateway
+  {{ include "istio.config.route" . | trim }}
+      {{- end -}}
+    {{- else -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -96,7 +166,6 @@ spec:
 {{- end -}}
 {{- if .Values.ingress.config -}}
 {{- if .Values.ingress.config.tls -}}
-{{-   $dot := default . .dot }}
   tls:
   - hosts:
   {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
@@ -108,3 +177,5 @@ spec:
 {{- end -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
