@@ -51,11 +51,16 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       containers:
-      - command: ["/bin/sh","-c"]
-        args: ["/etc/tower/job-entrypoint.sh"]
+      - name: {{ include "common.name" . }}-mgnt
+        command:
+        - /bin/sh
+        - -cx
+        - |
+           {{- if include "common.onServiceMesh" . }}
+           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+           /etc/tower/job-entrypoint.sh
         image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image.task }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-mgnt
         resources:
           requests:
             cpu: 1500m
@@ -78,7 +83,7 @@ spec:
           name: awx-secret-key
           readOnly: true
           subPath: SECRET_KEY
-
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       volumes:
       - configMap:
           defaultMode: 0777
