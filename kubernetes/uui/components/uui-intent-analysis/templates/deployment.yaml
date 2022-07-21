@@ -1,0 +1,103 @@
+{{/*
+# Copyright © 2022 Huawei Technologies Co., Ltd. All rights reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  replicas: {{ .Values.global.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+    spec:
+      {{- if .Values.global.aafEnabled }}
+      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      {{- end }}
+      containers:
+        - name: {{ include "common.name" . }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.global.aafEnabled }}
+          command: ["sh", "-c"]
+          args:
+            - "export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0); . /uui/run.sh"
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: POSTGRES_IP
+              value: uui-postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USERNAME
+              value: "{{ .Values.config.postgresUser }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ .Values.config.postgresPassword }}"
+            - name: POSTGRES_DB_NAME
+              value: "{{ .Values.config.postgresDB }}"
+            {{- if .Values.global.aafEnabled }}
+            - name: SPRING_OPTS
+              value: --spring.config.location=file:/config/application.yaml
+            {{- end }}
+          {{- if eq .Values.liveness.enabled true }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources: {{ include "common.resources" . | nindent 10 }}
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector: {{ toYaml .Values.global.nodeSelector | nindent 10 }}
+          {{- end }}
+          {{- if .Values.global.affinity }}
+          affinity: {{ toYaml .Values.global.affinity | nindent 10 }}
+          {{- end }}
+          {{- if .Values.global.aafEnabled }}
+          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - mountPath: /uui/run.sh
+            name: entrypoint
+            subPath: run.sh
+          - mountPath: /config/application.yaml
+            name: config
+            subPath: application.yaml
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      - name: config
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: entrypoint
+        configMap:
+          name: {{ include "common.fullname" . }}-entrypoint
+          defaultMode: 0755
+      {{- end }}
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
