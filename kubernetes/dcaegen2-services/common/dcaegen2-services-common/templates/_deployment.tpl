@@ -231,7 +231,7 @@ post-processing.
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $log := default dict .Values.log -}}
 {{- $logDir :=  default "" $log.path -}}
-{{- $certDir := default "" .Values.certDirectory . -}}
+{{- $certDir := (eq "true" (include "common.needTLS" .)) | ternary (default "" .Values.certDirectory . ) "" -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
 {{- $policy := default dict .Values.policies -}}
