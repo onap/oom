@@ -36,6 +36,8 @@ global:
       name3: tcp-pgset-replica
     container:
       name: postgres
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  policyKafkaUser: policy-kafka-user
 
 #################################################################
 # Secrets metaconfig
@@ -97,47 +99,71 @@ policy-api:
   db: *dbSecretsHook
   restServer:
     apiUserExternalSecret: *policyApiCredsSecret
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-pap:
   enabled: true
   db: *dbSecretsHook
   restServer:
     papUserExternalSecret: *policyPapCredsSecret
     apiUserExternalSecret: *policyApiCredsSecret
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-xacml-pdp:
   enabled: true
   db: *dbSecretsHook
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-apex-pdp:
   enabled: true
   db: *dbSecretsHook
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-drools-pdp:
   enabled: true
   db: *dbSecretsHook
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-distribution:
   enabled: true
   db: *dbSecretsHook
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-be:
   enabled: true
   db: *dbSecretsHook
   config:
     appUserExternalSecret: *policyAppCredsSecret
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-k8s-ppnt:
   enabled: true
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-pf-ppnt:
   enabled: true
   restServer:
     apiUserExternalSecret: *policyApiCredsSecret
     papUserExternalSecret: *policyPapCredsSecret
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-http-ppnt:
   enabled: true
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-nexus:
   enabled: false
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-runtime-acm:
   enabled: true
   db: *dbSecretsHook
   config:
     appUserExternalSecret: *policyAppCredsSecret
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-gui:
   enabled: true
+  config:
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 
 #################################################################
 # DB configuration defaults.
@@ -182,6 +208,35 @@ readiness:
 
 config:
   policyAppUserName: runtimeUser
+  useStrimziKafka: true
+  acRuntimeTopic:
+    name: policy-acruntime-participant
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: policy-group
+  policyPdpPapTopic:
+    name: policy-pdp-pap
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: policy-group
+  policyHeartbeatTopic:
+    name: policy-heartbeat
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: policy-group
+  policyNotificationTopic:
+    name: policy-notification
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+    consumer:
+      groupId: policy-group
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals

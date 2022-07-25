@@ -40,6 +40,20 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
+{{- if .Values.config.useStrimziKafka }}
+  kafka:
+    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+    security.protocol: SASL_PLAINTEXT
+    properties.sasl:
+      mechanism: SCRAM-SHA-512
+      jaas.config: ${JAASLOGIN}
+{{ else }}
+{{ toYaml .Values.config.eventPublisher | nindent 2 }}
+{{- end }}
+
+{{- if .Values.config.additional }}
+{{ toYaml .Values.config.additional | nindent 2 }}
+{{- end }}
 
 server:
   port: 6969
