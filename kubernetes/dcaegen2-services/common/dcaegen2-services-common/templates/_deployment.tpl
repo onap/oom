@@ -231,7 +231,7 @@ post-processing.
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $log := default dict .Values.log -}}
 {{- $logDir :=  default "" $log.path -}}
-{{- $certDir := default "" .Values.certDirectory . -}}
+{{- $certDir := (eq "true" (include "common.needTLS" .)) | ternary (default "" .Values.certDirectory . ) "" -}}
 {{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
 {{- $policy := default dict .Values.policies -}}
@@ -250,9 +250,32 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
+      {{- if .Values.readinessCheck }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      {{- end }}
       {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
       {{- if $certDir }}
+      - name: {{ include "common.name" . }}-aaf-init-readiness
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - aaf-cm
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
       - name: init-tls
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.tlsImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
