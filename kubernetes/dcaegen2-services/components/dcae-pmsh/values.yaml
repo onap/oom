@@ -74,13 +74,13 @@ certDirectory: /opt/app/pmsh/etc/certs
 # TLS role -- set to true if microservice acts as server
 # If true, an init container will retrieve a server cert
 # and key from AAF and mount them in certDirectory.
-tlsServer: true
+tlsServer: false
 
 # Dependencies
 readinessCheck:
   wait_for:
-    - aaf-cm
     - &postgresName dcae-pmsh-postgres
+    - message-router
 
 # Probe Configuration
 readiness:
@@ -88,7 +88,7 @@ readiness:
   periodSeconds: 15
   timeoutSeconds: 1
   path: /healthcheck
-  scheme: HTTPS
+  scheme: HTTP
   port: 8443
 
 # Service Configuration
@@ -96,8 +96,9 @@ service:
   type: ClusterIP
   name: dcae-pmsh
   ports:
-    - name: https
+    - name: http
       port: 8443
+      plain_port: 8080
       port_protocol: http
 
 # AAF Credentials
@@ -115,7 +116,7 @@ credentials:
 
 # Initial Application Configuration
 applicationConfig:
-  enable_tls: true
+  enable_tls: false
   aaf_identity: ${AAF_IDENTITY}
   aaf_password: ${AAF_PASSWORD}
   key_path: /opt/app/pmsh/etc/certs/key.pem
@@ -135,16 +136,16 @@ applicationConfig:
     policy_pm_publisher:
       type: message_router
       dmaap_info:
-        topic_url: "https://message-router:3905/events/unauthenticated.DCAE_CL_OUTPUT"
+        topic_url: "http://message-router:3904/events/unauthenticated.DCAE_CL_OUTPUT"
   streams_subscribes:
     policy_pm_subscriber:
       type: message_router
       dmaap_info:
-        topic_url: "https://message-router:3905/events/unauthenticated.PMSH_CL_INPUT"
+        topic_url: "http://message-router:3904/events/unauthenticated.PMSH_CL_INPUT"
     aai_subscriber:
       type: message_router
       dmaap_info:
-        topic_url: "https://message-router:3905/events/AAI-EVENT"
+        topic_url: "http://message-router:3904/events/AAI-EVENT"
 
 applicationEnv:
   PMSH_PG_URL: &dcaePmshPgPrimary dcae-pmsh-pg-primary
@@ -154,6 +155,7 @@ applicationEnv:
   PMSH_PG_PASSWORD:
      secretUid: *pgUserCredsSecretUid
      key: password
+  PMSH_API_PORT: 8080
 
 # Resource Limit Flavor -By Default Using Small
 flavor: small
