@@ -83,5 +83,27 @@ chart:
     enabled: false
 
 # Permitted list of helm repositories. Values are updated from values.yaml
+# Sample Permitted list of helm repositories. Before deployment update the repositories where the helm charts are located.
+# The Kubernetes participant accept only HTTPS Address
+helm:
+  repos:
+    -
+      repoName: bitnami
+      address: https://charts.bitnami.com/bitnami
 
+{{- if .Values.config.useStrimziKafka }}
+spring:
+  kafka:
+    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+    security.protocol: SASL_PLAINTEXT
+    properties.sasl:
+      mechanism: SCRAM-SHA-512
+      jaas.config: ${JAASLOGIN}
+{{ else }}
+{{ toYaml .Values.config.eventPublisher | nindent 2 }}
+{{- end }}
+
+{{- if .Values.config.additional }}
+{{ toYaml .Values.config.additional | nindent 2 }}
+{{- end }}
 
