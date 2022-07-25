@@ -90,13 +90,14 @@ certDirectory: /opt/app/sliceanalysisms/etc/cert/
 # TLS role -- set to true if microservice acts as server
 # If true, an init container will retrieve a server cert
 # and key from AAF and mount them in certDirectory.
-tlsServer: true
+tlsServer: false
 
 # Dependencies
 readinessCheck:
   wait_for:
-    - aaf-cm
+#    - aaf-cm
     - &postgresName dcae-sliceanalysisms-postgres
+    - message-router
 
 # Probe Configuration
 readiness:
@@ -112,7 +113,7 @@ service:
   type: ClusterIP
   name: dcae-slice-analysis-ms
   ports:
-    - name: https
+    - name: http
       port: 8080
       port_protocol: http
 
@@ -153,8 +154,8 @@ applicationConfig:
   sliceanalysisms.cid: sliceanalysisms-cid
   sliceanalysisms.configDb.service: http://config-db:8080
   sliceanalysisms.configDbEnabled: true
-  sliceanalysisms.aai.url: https://aai.onap.svc.cluster.local:8443/aai/v21
-  sliceanalysisms.cps.url: https://cps:8088
+  sliceanalysisms.aai.url: http://aai.onap.svc.cluster.local:8080/aai/v21
+  sliceanalysisms.cps.url: http://cps:8080
   sliceanalysisms.samples: 3
   sliceanalysisms.minPercentageChange: 5
   sliceanalysisms.initialDelaySeconds: 120000
@@ -205,6 +206,9 @@ applicationConfig:
         topic_url: http://message-router:3904/events/AAI-EVENT
 
 applicationEnv:
+  CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
+  #Temporary Dummy CBS Port Value until internal SDK library is updated
+  CONFIG_BINDING_SERVICE_SERVICE_PORT: '0000'
   STANDALONE: 'false'
 
 # Resource Limit Flavor -By Default Using Small
