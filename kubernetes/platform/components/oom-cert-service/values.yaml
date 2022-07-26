@@ -22,6 +22,16 @@ global:
   # Standard OOM
   pullPolicy: "Always"
   repository: "nexus3.onap.org:10001"
+  ingress:
+    enabled: true
+    # All http requests via ingress will be redirected
+    config:
+      ssl: "redirect"
+    # you can set an own Secret containing a certificate
+    #  tls:
+    #    secret: 'my-ingress-cert'
+    # optional: Namespace of the Istio IngressGateway
+    namespace: &ingressNamespace istio-ingress
 
 
 # Service configuration
@@ -82,6 +92,14 @@ tls:
       name: &caIssuer cmpv2-issuer-onap
       secret:
         name: &caKeyPairSecret  cmpv2-ca-key-pair
+    ingressSelfsigned:
+      name: ingress-selfsigned-issuer
+      namespace: *ingressNamespace
+    ingressCa:
+      name: ingress-ca-issuer
+      namespace: *ingressNamespace
+      secret:
+        name: ingress-ca-key-pair
   server:
     secret:
       name: &serverSecret oom-cert-service-server-tls-secret
