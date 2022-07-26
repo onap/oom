@@ -14,4 +14,57 @@
 # limitations under the License.
 */}}
 
+{{- if .Values.global.cmpv2Enabled }}
 {{ include "certManagerCertificate.certificate" . }}
+{{- end -}}
+
+{{- if (include "common.onServiceMesh" .) }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingress-ca-certificate
+  namespace: {{ .Values.tls.issuer.ingressCa.namespace }}
+spec:
+  isCA: true
+  commonName: "{{ .Values.global.ingress.virtualhost.baseurl }}" #not important as it is self signed
+  secretName: {{ .Values.tls.issuer.ingressCa.secret.name }}
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: {{ .Values.tls.issuer.ingressSelfsigned.name }}
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingress-selfsigned-certificate
+  namespace: {{ .Values.tls.issuer.ingressSelfsigned.namespace }}
+spec:
+  secretName: ingress-tls-secret
+  privateKey:
+    rotationPolicy: Always
+    algorithm: RSA
+    encoding: PKCS1
+    size: 4096
+  duration: 9000h0m0s # 1 Year
+  renewBefore: 4000h0m0s #9 months
+  commonName: "*.{{ .Values.global.ingress.virtualhost.baseurl }}"
+#  usages:
+#    - server auth
+#    - client auth
+  dnsNames:
+    - {{ .Values.global.ingress.virtualhost.baseurl }}
+    - "*.{{ .Values.global.ingress.virtualhost.baseurl }}"
+    - "*.*.{{ .Values.global.ingress.virtualhost.baseurl }}"
+    - "*.*.*.{{ .Values.global.ingress.virtualhost.baseurl }}"
+  issuerRef:
+    name: {{ .Values.tls.issuer.ingressCa.name }}
+    kind: Issuer
+    group: cert-manager.io
+{{- end -}}
