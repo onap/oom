@@ -19,16 +19,26 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 
 EXCLUDES :=
 HELM_BIN := helm
+ifneq ($(SKIP_LINT),TRUE)
+	HELM_LINT_CMD := $(HELM_BIN) lint
+else
+	HELM_LINT_CMD := echo "Skipping linting of"
+endif
+
 PROCESSED_FIRST := aaf-templates
 TO_FILTER := $(PROCESSED_FIRST) $(EXCLUDES)
 
-HELM_CHARTS := $(PROCESSED_FIRST) $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.))))
+HELM_CHARTS := $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS)
 
 all: $(HELM_CHARTS)
 
-$(HELM_CHARTS):
+$(PROCESSED_FIRST):
+	@echo "\n[$@]"
+	@make package-$@
+
+$(HELM_CHARTS): $(PROCESSED_FIRST)
 	@echo "\n[$@]"
 	@make package-$@
 
@@ -39,12 +49,13 @@ dep-%: make-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME local; fi
+	@sleep 3
+	#@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */Chart.lock
