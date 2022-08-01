@@ -132,7 +132,7 @@ fi
 # can be expanded to include all onap charts if required
 for file in $BASEDIR/$PREF*tgz; do
     # use helm plugin to push charts
-    helm push $file k8s-registry
+    helm cm-push $file k8s-registry
     if [ $? -eq 0 ]; then
         echo "$file uploaded to registry successfully"
     else
