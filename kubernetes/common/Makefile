@@ -21,18 +21,36 @@ COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
 PROCESSED_LAST := cert-wrapper repository-wrapper
-PROCESSED_FIRST := repositoryGenerator readinessCheck serviceAccount certInitializer
-TO_FILTER := $(PROCESSED_FIRST) $(EXCLUDES) $(PROCESSED_LAST)
+PROCESSED_FIRST := repositoryGenerator readinessCheck serviceAccount certInitializer cmpv2Config
+TO_FILTER := $(COMMON_CHARTS_DIR) $(PROCESSED_FIRST) $(EXCLUDES) $(PROCESSED_LAST)
 
 HELM_BIN := helm
-HELM_CHARTS := $(PROCESSED_FIRST) $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PROCESSED_LAST)
+ifneq ($(SKIP_LINT),TRUE)
+	HELM_LINT_CMD := $(HELM_BIN) lint
+else
+	HELM_LINT_CMD := echo "Skipping linting of"
+endif
+
+HELM_CHARTS := $(filter-out $(TO_FILTER), $(sort $(patsubst %/.,%,$(wildcard */.))))
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}")
 
 .PHONY: $(HELM_CHARTS) $(TO_FILTER)
 
-all: $(COMMON_CHARTS_DIR) $(HELM_CHARTS)
+all: $(COMMON_CHARTS_DIR) $(PROCESSED_FIRST) $(HELM_CHARTS) $(PROCESSED_LAST)
 
-$(HELM_CHARTS):
+$(COMMON_CHARTS_DIR):
+	@echo "\n[$@]"
+	@make package-$@
+
+$(PROCESSED_FIRST): $(COMMON_CHARTS_DIR)
+	@echo "\n[$@]"
+	@make package-$@
+
+$(HELM_CHARTS): $(PROCESSED_FIRST)
+	@echo "\n[$@]"
+	@make package-$@
+
+$(PROCESSED_LAST): $(HELM_CHARTS)
 	@echo "\n[$@]"
 	@make package-$@
 
@@ -43,16 +61,13 @@ dep-%: make-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-ifeq "$(findstring v3,$(HELM_VER))" "v3"
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME local; fi
-else
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) package -d $(PACKAGE_DIR) $*; fi
-endif
-	@$(HELM_BIN) repo index $(PACKAGE_DIR)
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME local; fi
+	@sleep 3
+	#@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */Chart.lock
