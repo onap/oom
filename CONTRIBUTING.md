@@ -28,8 +28,8 @@ install some binaries:
 
 * helm (satisfying the targeted version as seen in [setup guide](
 docs/oom_cloud_setup_guide.rst#software-requirements).
-* chartmuseum (in order to push dependency charts)
-* helm push (version 0.9.0 as of today)
+* chartmuseum (in order to cm-push dependency charts)
+* helm cm-push (version 0.10.1 as of today)
 * make
 
 ### Linting and testing
