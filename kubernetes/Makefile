@@ -24,7 +24,7 @@ HELM_BIN := helm
 
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
 
-# use this if you would like to push onap charts to repo with other name
+# use this if you would like to cm-push onap charts to repo with other name
 # WARNING: Helm v3+ only
 # WARNING: Make sure to edit also Chart files
 HELM_REPO := local
@@ -36,24 +36,28 @@ else
 endif
 
 SUBMODS := robot
-EXCLUDES := config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
-HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.)))) $(PARENT_CHART)
+EXCLUDES := common config oneclick readiness test dist helm $(PARENT_CHART) dcae $(SUBMODS)
+HELM_CHARTS := $(filter-out $(EXCLUDES), $(sort $(patsubst %/.,%,$(wildcard */.))))
 
 .PHONY: $(EXCLUDES) $(HELM_CHARTS) check-for-staging-images
 
-all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) helm-repo-update plugins
+all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) $(PARENT_CHART) helm-repo-update plugins
 
-$(COMMON_CHARTS):
+$(COMMON_CHARTS_DIR):
 	@echo "\n[$@]"
 	@make package-$@
 
-$(HELM_CHARTS):
+$(HELM_CHARTS): $(COMMON_CHARTS_DIR)
 	@echo "\n[$@]"
 	@make package-$@
 
-$(SUBMODS):
+$(SUBMODS): $(COMMON_CHARTS_DIR)
 	@echo "\n[$@]"
 	@make submod-$@
+	@make package-$@
+
+$(PARENT_CHART): $(HELM_CHARTS)
+	@echo "\n[$@]"
 	@make package-$@
 
 submod-%:
@@ -76,7 +80,8 @@ lint-%: dep-%
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME $(HELM_REPO); fi
+	@sleep 3
 
 clean:
 	@rm -f */Chart.lock
@@ -85,12 +90,13 @@ clean:
 
 # publish helm plugins via distrubtion directory
 plugins:
+	@mkdir -p $(PACKAGE_DIR)
 	@cp -R helm $(PACKAGE_DIR)/
 
 check-for-staging-images:
 	$(ROOT_DIR)/../.ci/check-for-staging-images.sh
 
-helm-repo-update:
+helm-repo-update: $(PARENT_CHART)
 	@$(HELM_BIN) repo update
 
 %:
