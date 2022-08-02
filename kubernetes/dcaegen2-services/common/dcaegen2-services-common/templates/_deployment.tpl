@@ -173,7 +173,14 @@ The exact content of the Deployment generated from this template
 depends on the content of .Values.
 
 The Deployment always includes a single Pod, with a container that uses
-the DCAE microservice image.
+the DCAE microservice image.  The image name and tag are specified by
+.Values.image.  By default, the image comes from the ONAP repository
+(registry) set up by the common repositoryGenerator template.  A different
+repository for the microservice image can be set using
+.Values.imageRepositoryOverride.   Note that this repository must not
+require authentication, because there is no way to specify credentials for
+the override repository.  imageRepositoryOverride is intended primarily
+for testing purposes.
 
 The Deployment Pod may also include a logging sidecar container.
 The sidecar is included if .Values.log.path is set.  The
@@ -271,7 +278,7 @@ spec:
       {{- end }}
       {{ include "dcaegen2-services-common._certPostProcessor" .  | nindent 4 }}
       containers:
-      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+      - image: {{ default ( include "repositoryGenerator.repository" . ) .Values.imageRepositoryOverride }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
         env:
