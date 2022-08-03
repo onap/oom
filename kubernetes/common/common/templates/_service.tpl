@@ -241,6 +241,9 @@ spec:
 {{-   $both_tls_and_plain:= default false $dot.Values.service.both_tls_and_plain }}
 {{-   $labels := default (dict) .labels -}}
 {{-   $matchLabels := default (dict) .matchLabels -}}
+{{-   if and (include "common.onServiceMesh" $dot) (eq $serviceType "NodePort") }}
+{{-   $serviceType = "ClusterIP" }}
+{{-   end }}
 
 {{-   if (and (include "common.needTLS" $dot) $both_tls_and_plain) }}
 {{      include "common.genericService" (dict "suffix" $suffix "annotations" $annotations "msb_informations" $msb_informations "dot" $dot "publishNotReadyAddresses" $publishNotReadyAddresses "ports" $ports "serviceType" "ClusterIP" "add_plain_port" true $labels "matchLabels" $matchLabels) }}
