@@ -1,6 +1,7 @@
 {{/*
 ################################################################################
 #   Copyright (C) 2021 Nordix Foundation.                                      #
+#   Copyright (c) 2022 J. F. Lucas.  All rights reserved.                      #
 #                                                                              #
 #   Licensed under the Apache License, Version 2.0 (the "License");            #
 #   you may not use this file except in compliance with the License.           #
@@ -18,14 +19,14 @@
 
 {{/*
   This template generates a Kubernetes init containers common template to enable applications to provision
-  DMaaP topics (on Message Router) and feeds (on Data Router), with associated authorization (on AAF).
+  DMaaP feeds (on Data Router), with associated authorization.
   DMaap Bus Controller endpoints are used to provision:
-  - Authorized topic on MR, and to create and grant permission for publishers and subscribers.
+
   - Feed on DR, with associated user authentication.
 
   common.dmaap.provisioning.initContainer:
   This template make use of Dmaap Bus Controller docker image to create resources on Dmaap Data Router
-  microservice, with the help of dbc-client.sh script it makes use of Bus Controller API to create Feed, Topics.
+  microservice, with the help of dbc-client.sh script it makes use of Bus Controller API to create Feeds.
   If the resource creation is successful via script response is logged back at particular location with
   appropriate naming convention.
 
@@ -57,20 +58,7 @@
       privilegedSubscriber: True
       deliveryURL: https://dcae-pm-mapper:8443/delivery
 
-  # MessageRouter Topic, Publisher Configuration
-  mrTopicsConfig:
-    - topicName: PERFORMANCE_MEASUREMENTS
-      topicDescription: Description about Topic
-      owner: dcaecm
-      tnxEnabled: false
-      clients:
-        - dcaeLocationName: san-francisco
-          clientRole: org.onap.dcae.pmPublisher
-          action:
-            - pub
-            - view
-
-  # ConfigMap Configuration for DR Feed, Dr_Publisher, Dr_Subscriber, MR Topics
+  # ConfigMap Configuration for DR Feed, Dr_Publisher, Dr_Subscriber
   volumes:
     - name: feeds-config
       path: /opt/app/config/feeds
@@ -78,8 +66,6 @@
       path: /opt/app/config/dr_pubs
     - name: drsub-config
       path: /opt/app/config/dr_subs
-    - name: topics-config
-      path: /opt/app/config/topics
 
   In deployments/jobs/stateful include:
   initContainers:
@@ -113,8 +99,7 @@
 {{- define "common.dmaap.provisioning.initContainer" -}}
 {{- $dot := default . .dot -}}
 {{- $drFeedConfig := default $dot.Values.drFeedConfig .drFeedConfig -}}
-{{- $mrTopicsConfig := default $dot.Values.mrTopicsConfig .mrTopicsConfig -}}
-{{- if or $drFeedConfig $mrTopicsConfig -}}
+{{- if $drFeedConfig -}}
 - name: {{ include "common.name" $dot }}-init-dmaap-provisioning
   image: {{ include "repositoryGenerator.image.dbcClient" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
