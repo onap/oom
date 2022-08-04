@@ -49,6 +49,16 @@
 {{- end -}}
 
 {{/*
+  Resolve the name of the Quay.io image repository.
+
+  - .Values.global.quayRepository  : default image quayRepository for all quay.io images
+  - .Values.quayRepositoryOverride : override global quay.io repository on a per chart basis
+*/}}
+{{- define "repositoryGenerator.quayRepository" -}}
+  {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "quayRepository") .) }}
+{{- end -}}
+
+{{/*
   Resolve the name of the elasticRepository image repository.
 
   - .Values.global.elasticRepository  : default image elasticRepository for all images using elastic repository
