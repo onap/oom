@@ -1,0 +1,60 @@
+{{/*
+#  ============LICENSE_START=======================================================
+#   Copyright (C) 2022 Codecentric
+#   Modifications (C) 2022 Deutsche Telekom
+#  ================================================================================
+#  Original licence (https://github.com/codecentric/helm-charts/blob/master/LICENSE)
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+#  ============LICENSE_END=========================================================
+*/}}
+{{- $route := .Values.route -}}
+{{- if $route.enabled -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "keycloak.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  {{- with $route.annotations }}
+  annotations:
+    {{- range $key, $value := . }}
+    {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+    {{- range $key, $value := $route.labels }}
+    {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 4 }}
+    {{- end }}
+spec:
+{{- if $route.host }}
+  host: {{ tpl $route.host $ | quote }}
+{{- end }}
+  path: {{ $route.path }}
+  port:
+    {{- if or (not $route.tls.enabled) (eq $route.tls.termination "edge") }}
+    targetPort: http
+    {{- else}}
+    targetPort: https
+    {{- end}}
+  to:
+    kind: Service
+    name: {{ include "keycloak.fullname" $ }}-http
+    weight: 100
+  {{- if $route.tls.enabled }}
+  tls:
+    insecureEdgeTerminationPolicy: {{ $route.tls.insecureEdgeTerminationPolicy }}
+    termination: {{ $route.tls.termination }}
+  {{- end }}
+{{- end -}}
