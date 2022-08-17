@@ -22,6 +22,12 @@ HELM_REPO := local
 
 EXCLUDES :=
 HELM_BIN := helm
+ifneq ($(SKIP_LINT),TRUE)
+	HELM_LINT_CMD := $(HELM_BIN) lint
+else
+	HELM_LINT_CMD := echo "Skipping linting of"
+endif
+
 # Helm v2 and helm v3 uses different version format so we first try in helm v3 format
 # and if it fails then we fallback to helm v2 one
 HELM_VER := $(shell $(HELM_BIN) version --template "{{.Version}}" 2>/dev/null)
@@ -46,12 +52,13 @@ dep-%: make-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
 
 lint-%: dep-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) lint $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
 
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
-	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) push -f $$PACKAGE_NAME $(HELM_REPO); fi
+	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME $(HELM_REPO); fi
 	@sleep 3
+	#@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
 	@rm -f */Chart.lock
