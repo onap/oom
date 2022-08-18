@@ -52,12 +52,13 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+      {{- if (include "common.needTLS" .) }}
       - command:
         - sh
         - -c
         - resp="FAILURE";
           until [ $resp = "200" ]; do
-          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/osdf/secret);
+          resp=$(curl -s -o /dev/null -k --write-out %{http_code} http{{ if (include "common.needTLS" .) }}s{{ end }}://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/osdf/secret);
           echo $resp;
           sleep 2;
           done
@@ -70,6 +71,7 @@ spec:
         image: {{ include "repositoryGenerator.image.curl" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-osdf-sms-readiness
+        {{- end }}
 {{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
@@ -80,8 +82,10 @@ spec:
           args:
           - "-c"
           - |
+            {{- if (include "common.needTLS" .) }}
             grep -v '^$'  /opt/osdf/osaaf/local/org.onap.oof.crt > /tmp/oof.crt
             cat /tmp/oof.crt /opt/app/ssl_cert/intermediate_root_ca.pem /opt/app/ssl_cert/aaf_root_ca.cer >> /opt/osdf/org.onap.oof.crt
+            {{ end }}
             python osdfapp.py
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -108,12 +112,14 @@ spec:
           - mountPath: /opt/osdf/config/osdf_config.yaml
             name: {{ include "common.fullname" . }}-config
             subPath: osdf_config.yaml
+          {{- if (include "common.needTLS" .) }}
           - mountPath: /opt/app/ssl_cert/aaf_root_ca.cer
             name: {{ include "common.fullname" . }}-onap-certs
             subPath: aaf_root_ca.cer
           - mountPath: /opt/app/ssl_cert/intermediate_root_ca.pem
             name: {{ include "common.fullname" . }}-onap-certs
             subPath: intermediate_root_ca.pem
+          {{- end }}
           - mountPath: /opt/osdf/config/common_config.yaml
             name: {{ include "common.fullname" . }}-config
             subPath: common_config.yaml
