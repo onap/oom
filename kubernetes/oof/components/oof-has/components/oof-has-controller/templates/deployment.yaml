@@ -43,8 +43,10 @@ spec:
         args:
         - --job-name
         - {{ include "common.release" . }}-{{ .Values.config.etcd.configJobNameOverride }}-job
+        {{- if (include "common.needTLS" .) }}
         - --container-name
         - aaf-sms
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -54,6 +56,7 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 
+      {{- if (include "common.needTLS" .) }}
       - name: {{ include "common.name" . }}-cont-sms-readiness
         command:
         - sh
@@ -72,6 +75,7 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.curl" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.image.optf_has }}
@@ -113,9 +117,11 @@ spec:
           - mountPath: /usr/local/bin/healthy.sh
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: healthy.sh
+          {{- if (include "common.needTLS" .) }}
           - mountPath: /usr/local/bin/AAF_RootCA.cer
             name: {{ include "common.fullname" . }}-onap-certs
             subPath: aaf_root_ca.cer
+          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -141,6 +147,8 @@ spec:
               path: log.conf
             - key: healthy.sh
               path: healthy.sh
+{{- if (include "common.needTLS" .) }}
 {{ include "oof.certificate.volume" . | indent 8 }}
+{{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
