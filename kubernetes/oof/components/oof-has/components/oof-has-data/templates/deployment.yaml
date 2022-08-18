@@ -52,6 +52,7 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
 
+      {{- if (include "common.needTLS" .) }}
       - name: {{ include "common.name" . }}-data-sms-readiness
         command:
         - sh
@@ -70,6 +71,7 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.curl" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+      {{- end }}
 
       containers:
         - name: {{ include "common.name" . }}
@@ -112,6 +114,7 @@ spec:
           - mountPath: /usr/local/bin/healthy.sh
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: healthy.sh
+          {{- if (include "common.needTLS" .) }}
           - mountPath: /usr/local/bin/aai_cert.cer
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: aai_cert.cer
@@ -121,6 +124,7 @@ spec:
           - mountPath: /usr/local/bin/AAF_RootCA.cer
             name: {{ include "common.fullname" . }}-onap-certs
             subPath: aaf_root_ca.cer
+          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -146,10 +150,14 @@ spec:
               path: log.conf
             - key: healthy.sh
               path: healthy.sh
+            {{- if (include "common.needTLS" .) }}
             - key: aai_cert.cer
               path: aai_cert.cer
             - key: aai_key.key
               path: aai_key.key
+            {{- end }}
+{{- if (include "common.needTLS" .) }}
 {{ include "oof.certificate.volume" . | indent 8 }}
+{{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
