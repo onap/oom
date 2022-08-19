@@ -44,6 +44,13 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
     password: '{{ .Values.certStores.keyStorePassword }}'
     passwordPolicy: required
+  - uid: policy-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -160,3 +167,26 @@ metrics:
       chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
       release: '{{ include "common.release" . }}'
       heritage: '{{ .Release.Service }}'
+
+# application configuration
+config:
+# Event consumption (kafka) properties
+  useStrimziKafka: true
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  kafka:
+    consumer:
+      groupId: policy-group
+  app:
+    listener:
+      policyPdpPapTopic: policy-pdp-pap
+# If targeting a custom kafka cluster, ie useStrimziKakfa: false
+# uncomment below config and target your kafka bootstrap servers,
+# along with any other security config.
+#
+# eventConsumption:
+#   spring.kafka.bootstrap-servers: <kafka-bootstrap>:9092
+#   spring.kafka.security.protocol: PLAINTEXT
+#   spring.kafka.consumer.group-id: policy-group
+#
+# Any new property can be added in the env by setting in overrides in the format mentioned below
+# All the added properties must be in "key: value" format instead of yaml.
