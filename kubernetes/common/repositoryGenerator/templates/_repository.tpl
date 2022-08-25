@@ -59,6 +59,16 @@
 {{- end -}}
 
 {{/*
+  Resolve the name of the quay.io Repository image repository.
+
+  - .Values.global.quayRepository  : default image quayRepository for all images using quay repository
+  - .Values.quayRepositoryOverride : override global quaiRepository repository on a per chart basis
+*/}}
+{{- define "repositoryGenerator.quayRepository" -}}
+  {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "quayRepository") .) }}
+{{- end -}}
+
+{{/*
   Resolve the name of the googleK8sRepository image repository.
 
   - .Values.global.googleK8sRepository  : default image dockerHubRepository for all dockerHub images
