@@ -1,0 +1,74 @@
+onap-oauth2-proxy:
+  # Oauth client configuration specifics
+  config:
+    cookieSecret: "CbgXFXDJ16laaCfChtFBpKy1trNEmJZDIjaiaIMLyRA="
+    configFile: |-
+      email_domains = [ "*" ]        # Restrict to these E-Mail Domains, a wildcard "*" allows any email
+
+  alphaConfig:
+    enabled: true
+    configData:
+      providers:
+      - clientID: "oauth2-proxy"
+        clientSecret: "5YSOkJz99WHv8enDZPknzJuGqVSerELp"
+        id: oidc-istio
+        provider: oidc   # We use the generic 'oidc' provider
+        loginURL: https://keycloak-ui.simpledemo.onap.org/auth/realms/ONAP/protocol/openid-connect/auth
+        #redeemURL: https://keycloak-ui.simpledemo.onap.org/auth/realms/ONAP/protocol/openid-connect/token
+        redeemURL: http://keycloak-http.keycloak/auth/realms/ONAP/protocol/openid-connect/token
+        profileURL: https://keycloak-ui.simpledemo.onap.org/auth/realms/ONAP/protocol/openid-connect/userinfo
+        validateURL: https://keycloak-ui.simpledemo.onap.org/auth/realms/ONAP/protocol/openid-connect/userinfo
+        scope: "openid email profile groups"
+        #allowedGroups:
+        # - admins # List all groups managed at our your IdP which should be allowed access
+        # - infrateam
+        # - anothergroup
+        oidcConfig:
+          emailClaim: email  # Name of the clain in JWT containing the E-Mail
+          groupsClaim: groups # Name of the claim in JWT containing the Groups
+          userIDClaim: email  # Name of the claim in JWT containing the User ID
+          audienceClaims: ["aud"]
+          insecureAllowUnverifiedEmail: true
+          insecureSkipIssuerVerification: true
+          skipDiscovery: true # You can try using the well-knwon endpoint directly for auto discovery, here we won't use it
+          issuerURL: https://keycloak-ui.simpledemo.onap.org/auth/realms/ONAP
+          jwksURL: http://keycloak-http.keycloak/auth/realms/ONAP/protocol/openid-connect/certs
+      upstreamConfig:
+        upstreams:
+          - id: static_200
+            path: /
+            static: true
+            staticCode: 200
+      # Headers that should be added to responses from the proxy
+      injectResponseHeaders: # Send this headers in responses from oauth2-proxy
+        - name: X-Auth-Request-Preferred-Username
+          values:
+            - claim: preferred_username
+        - name: X-Auth-Request-Email
+          values:
+            - claim: email
+
+  extraArgs:
+    cookie-secure: "false"
+    cookie-domain: ".simpledemo.onap.org"    # Replace with your base domain
+    cookie-samesite: lax
+    cookie-expire: 12h               # How long our Cookie is valid
+    auth-logging: true               # Enable / Disable auth logs
+    request-logging: true            # Enable / Disable request logs
+    standard-logging: true           # Enable / Disable the standart logs
+    show-debug-on-error: true        # Disable in production setups
+    skip-provider-button: true       # We only have one provider configured (Keycloak)
+    silence-ping-logging: true       # Keeps our logs clean
+    whitelist-domain: ".simpledemo.onap.org" # Replace with your base domain
+
+  # Enables and configure the automatic deployment of the redis subchart
+  redis:
+    # provision an instance of the redis sub-chart
+    enabled: false
+
+
+serviceAccount:
+  nameOverride: oauth2-proxy
+  roles:
+    - read
+
