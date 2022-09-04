@@ -110,7 +110,7 @@ docker_temp_server_start() {
         # only use the root password if the database has already been initializaed
         # so that it won't try to fill in a password file when it hasn't been set yet
         extraArgs=""
-        if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
+        if [ "$DATABASE_ALREADY_EXISTS" = "false" ]; then
             extraArgs=${extraArgs}" --dont-use-mysql-root-password"
         fi
         if echo 'SELECT 1' |docker_process_sql ${extraArgs} --database=mysql >/dev/null 2>&1; then
@@ -344,7 +344,7 @@ _main() {
         fi
 
         # there's no database, so it needs to be initialized
-        if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
+        if [ "$DATABASE_ALREADY_EXISTS" = "false" ]; then
             docker_verify_minimum_env
 
             # check dir permissions to reduce likelihood of half-initialized database
