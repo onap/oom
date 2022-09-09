@@ -40,19 +40,17 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
-{{- if .Values.config.useStrimziKafka }}
   kafka:
+    consumer:
+      group-id: {{ .Values.config.kafka.consumer.groupId }}
+{{- if .Values.config.useStrimziKafka }}
     bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
     security.protocol: SASL_PLAINTEXT
     properties.sasl:
       mechanism: SCRAM-SHA-512
       jaas.config: ${JAASLOGIN}
 {{ else }}
-{{ toYaml .Values.config.eventPublisher | nindent 2 }}
-{{- end }}
-
-{{- if .Values.config.additional }}
-{{ toYaml .Values.config.additional | nindent 2 }}
+{{ toYaml .Values.config.eventConsumption | nindent 2 }}
 {{- end }}
 
 server:
@@ -99,6 +97,15 @@ pap:
       - message-router
       useHttps: true
       topicCommInfrastructure: dmaap
+# If Strimzi Kafka to be used for communication, replace following configuration for topicSources and topicSinks
+#          servers:
+#            - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+#          topicCommInfrastructure: kafka
+#          additionalProps:
+#            security.protocol: SASL_PLAINTEXT
+#            sasl.mechanism: SCRAM-SHA-512
+#            sasl.jaas.config: ${JAASLOGIN}
+
   healthCheckRestClientParameters:
   - clientName: api
     hostname: policy-api
