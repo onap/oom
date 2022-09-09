@@ -44,19 +44,17 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MariaDB103Dialect
         format_sql: true
-{{- if .Values.config.useStrimziKafka }}
   kafka:
+    consumer:
+      group-id: {{ .Values.config.kafka.consumer.groupId }}
+{{- if .Values.config.useStrimziKafka }}
     bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
     security.protocol: SASL_PLAINTEXT
     properties.sasl:
       mechanism: SCRAM-SHA-512
       jaas.config: ${JAASLOGIN}
 {{ else }}
-{{ toYaml .Values.config.eventPublisher | nindent 2 }}
-{{- end }}
-
-{{- if .Values.config.additional }}
-{{ toYaml .Values.config.additional | nindent 2 }}
+{{ toYaml .Values.config.eventConsumption | nindent 2 }}
 {{- end }}
 
 security:
@@ -94,6 +92,32 @@ runtime:
           - ${topicServer:message-router}
         topicCommInfrastructure: dmaap
         useHttps: true
+
+# If Strimzi Kafka to be used for communication, replace clampAutomationCompositionTopics configuration with below
+#  topicParameterGroup:
+#    topicSources:
+#      -
+#        topic: policy-acruntime-participant
+#        servers:
+#          - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+#        topicCommInfrastructure: kafka
+#        useHttps: true
+#        fetchTimeout: 15000
+#        additionalProps:
+#          security.protocol: SASL_PLAINTEXT
+#          sasl.mechanism: SCRAM-SHA-512
+#          sasl.jaas.config: ${JAASLOGIN}
+#    topicSinks:
+#      -
+#        topic: policy-acruntime-participant
+#        servers:
+#          - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
+#        topicCommInfrastructure: kafka
+#        useHttps: true
+#        additionalProps:
+#          security.protocol: SASL_PLAINTEXT
+#          sasl.mechanism: SCRAM-SHA-512
+#          sasl.jaas.config: ${JAASLOGIN}
 
 management:
   endpoints:
