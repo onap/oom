@@ -90,6 +90,13 @@ secrets:
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
+  - uid: policy-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -237,6 +244,8 @@ config:
     segmentBytes: 1073741824
     consumer:
       groupId: policy-group
+  someConfig: blah
+  jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 
 mariadb-galera:
   # mariadb-galera.config and global.mariadb.config must be equals
