@@ -222,8 +222,8 @@ GLOBAL_MSB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostnam
 GLOBAL_MR_SERVER_PROTOCOL = "http"
 GLOBAL_MR_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
 # bus controller info
-GLOBAL_BC_SERVER_PROTOCOL = "https"
-GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" 8443) }}'
+GLOBAL_BC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
 GLOBAL_BC_PASSWORD = '{{ .Values.bcPassword }}'
 # dcae inventory and deployment handler info
@@ -315,7 +315,7 @@ GLOBAL_PACKET_GENERATOR_USERNAME = "admin"
 GLOBAL_PACKET_GENERATOR_PASSWORD = "admin"
 GLOBAL_PGN_PORT = "2831"
 # policy info - everything is from the private oam network (also called onap private network)
-GLOBAL_POLICY_SERVER_PROTOCOL = "https"
+GLOBAL_POLICY_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_POLICY_SERVER_PORT = "8081"
 GLOBAL_POLICY_HEALTHCHECK_PORT = "6969"
 GLOBAL_POLICY_AUTH = '{{ .Values.policyAuth}}'
@@ -332,9 +332,9 @@ GLOBAL_PORTAL_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "host
 GLOBAL_PORTAL_USERNAME = '{{ .Values.portalUsername }}'
 GLOBAL_PORTAL_PASSWORD = '{{ .Values.portalPassword }}'
 # sdnc info - everything is from the private oam network (also called onap private network)
-GLOBAL_SDNC_SERVER_PROTOCOL = "https"
-GLOBAL_SDNC_REST_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc" "port" 8443) }}'
-GLOBAL_SDNC_ADMIN_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc-portal" "port" 8443) }}'
+GLOBAL_SDNC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_SDNC_REST_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc" "port" ( ternary 8443 8282 (eq "true" (include "common.needTLS" . )))) }}'
+GLOBAL_SDNC_ADMIN_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc-portal" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_SDNC_USERNAME = '{{ .Values.sdncUsername }}'
 GLOBAL_SDNC_PASSWORD = '{{ .Values.sdncPassword }}'
 GLOBAL_SDNC_AUTHENTICATION = [GLOBAL_SDNC_USERNAME, GLOBAL_SDNC_PASSWORD]
