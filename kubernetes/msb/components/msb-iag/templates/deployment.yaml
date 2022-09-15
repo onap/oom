@@ -16,26 +16,12 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      annotations:
-        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
@@ -57,23 +43,19 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-            name: {{ .Values.service.name }}
-          - containerPort: {{ .Values.service.internalPortHttps }}
-            name: {{ .Values.service.name }}-https
+          ports: {{- include "common.containerPorts" . | indent 10 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -90,9 +72,11 @@ spec:
             readOnly: true
           - mountPath: /usr/local/apiroute-works/logs
             name: {{ include "common.fullname" . }}-logs
+          {{- if (include "common.needTLS" .) }}
           - mountPath: /usr/local/openresty/nginx/msb-enabled/msbhttps.conf
             name: {{ include "common.fullname" . }}-nginx-conf
             subPath: msbhttps.conf
+          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -111,9 +95,11 @@ spec:
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
+        {{- if (include "common.needTLS" .) }}
         - name: {{ include "common.fullname" . }}-nginx-conf
           configMap:
             name: {{ include "common.fullname" . }}-nginx
+        {{- end }}
         {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 8 }}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
