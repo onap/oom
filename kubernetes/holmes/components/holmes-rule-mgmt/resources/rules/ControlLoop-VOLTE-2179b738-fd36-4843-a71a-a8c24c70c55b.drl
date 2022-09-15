@@ -4,7 +4,7 @@ import org.onap.holmes.common.dmaap.DmaapService;
 import org.onap.holmes.common.api.stat.VesAlarm;
 import org.onap.holmes.common.aai.CorrelationUtil;
 import org.onap.holmes.common.dmaap.entity.PolicyMsg;
-import org.onap.holmes.common.dropwizard.ioc.utils.ServiceLocatorHolder;
+import org.onap.holmes.common.utils.SpringContextUtil;
 import org.onap.holmes.common.utils.DroolsLog;
 
 rule "Relation_analysis_Rule"
@@ -20,7 +20,7 @@ no-loop true
         $child : VesAlarm( eventId != $eventId, parentId == null,
             CorrelationUtil.getInstance().isTopologicallyRelated(sourceId, $sourceId, $sourceName),
             eventName in ("Fault_MME_eNodeB out of service alarm"),
-            startEpochMicrosec < $startEpochMicrosec + 60000 && startEpochMicrosec > $startEpochMicrosec - 60000 )
+            startEpochMicrosec < $startEpochMicrosec + 60000 && startEpochMicrosec > $startEpochMicrosec - 60000)
     then
         DroolsLog.printInfo("===========================================================");
         DroolsLog.printInfo("Relation_analysis_Rule: rootId=" + $root.getEventId() + ", childId=" + $child.getEventId());
@@ -37,7 +37,7 @@ no-loop true
     then
         DroolsLog.printInfo("===========================================================");
         DroolsLog.printInfo("root_has_child_handle_Rule: rootId=" + $root.getEventId() + ", childId=" + $child.getEventId());
-        DmaapService dmaapService = ServiceLocatorHolder.getLocator().getService(DmaapService.class);
+        DmaapService dmaapService = SpringContextUtil.getBean(DmaapService.class);
         PolicyMsg policyMsg = dmaapService.getPolicyMsg($root, $child, "org.onap.holmes.droolsRule");
         dmaapService.publishPolicyMsg(policyMsg, "dcae_cl_out");
         $root.setRootFlag(1);
@@ -55,7 +55,7 @@ no-loop true
     then
         DroolsLog.printInfo("===========================================================");
         DroolsLog.printInfo("root_no_child_handle_Rule: rootId=" + $root.getEventId());
-        DmaapService dmaapService = ServiceLocatorHolder.getLocator().getService(DmaapService.class);
+        DmaapService dmaapService = SpringContextUtil.getBean(DmaapService.class);
         PolicyMsg policyMsg = dmaapService.getPolicyMsg($root, null, "org.onap.holmes.droolsRule");
         dmaapService.publishPolicyMsg(policyMsg, "dcae_cl_out");
         $root.setRootFlag(1);
@@ -70,7 +70,7 @@ no-loop true
     then
         DroolsLog.printInfo("===========================================================");
         DroolsLog.printInfo("root_cleared_handle_Rule: rootId=" + $root.getEventId());
-        DmaapService dmaapService = ServiceLocatorHolder.getLocator().getService(DmaapService.class);
+        DmaapService dmaapService = SpringContextUtil.getBean(DmaapService.class);
         PolicyMsg policyMsg = dmaapService.getPolicyMsg($root, null, "org.onap.holmes.droolsRule");
         dmaapService.publishPolicyMsg(policyMsg, "dcae_cl_out");
         retract($root);
