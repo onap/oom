@@ -18,10 +18,14 @@ aai:
   {{ if (include "common.needTLS" .) }}
   endpoint: https://aai.{{ include "common.namespace" . }}:8443
   {{ else }}
-  endpoint: http://aai.{{ include "common.namespace" . }}:8080
+  endpoint: http://aai.{{ include "common.namespace" . }}:80
   {{ end }}
 server:
+  {{- if include "common.onServiceMesh" . }}
+  forward-headers-strategy: none
+  {{- end }}
   port: {{ index .Values.containerPort }}
+SW  port: {{ index .Values.containerPort }}
 spring:
   datasource:
     hikari:
@@ -117,8 +121,8 @@ mso:
   auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.encrypted "value2" .Values.mso.auth )}}
   logPath: ./logs/openstack
   msb-ip: msb-iag
-  msb-port: 443
-  msb-scheme: https
+  msb-port: 80
+  msb-scheme: http
   workflow:
     endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
   msoKey: {{ .Values.mso.msoKey }}
