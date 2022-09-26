@@ -69,6 +69,7 @@ spec:
       {{- end }}
         - name: srimzi-zk-entrance
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.zookeeper.entrance.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command:
             - /opt/stunnel/stunnel_run.sh
           ports:
@@ -80,7 +81,6 @@ spec:
               value: debug
             - name: STRIMZI_ZOOKEEPER_CONNECT
               value: '{{ include "common.release" . }}-strimzi-zookeeper-client:{{ .Values.global.zkTunnelService.internalPort }}'
-          imagePullPolicy: Always
           livenessProbe:
             exec:
               command:
@@ -153,6 +153,8 @@ spec:
             value: {{ .Values.global.saslMechanism }}
           - name: enableCadi
             value: "{{ .Values.global.aafEnabled }}"
+          - name: useZkTopicStore
+            value: "false"
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
