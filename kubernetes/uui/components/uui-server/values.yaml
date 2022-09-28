@@ -15,8 +15,28 @@
 # Default values for uui.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+
+#################################################################
+# Global configuration defaults.
+#################################################################
 global:
   uuiPortPrefix: 303
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-uui-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "uui-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-uui-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "uui-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
+
 
 #################################################################
 # AAF part
@@ -56,6 +76,11 @@ certInitializer:
     echo "*** change ownership of certificates to targeted user"
     chown -R 1000 {{ .Values.credsPath }}
 
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+
 subChartsOnly:
   enabled: true
 
@@ -70,6 +95,28 @@ pullPolicy: Always
 
 msbaddr: msb-iag.{{include "common.namespace" .}}:443
 mraddr: message-router.{{include "common.namespace" .}}:3904
+
+# application configuration override for postgres
+postgres:
+  nameOverride: uui-postgres
+  service:
+    name: uui-dbset
+    name2: uui-dbpri
+    name3: uui-dbrep
+  container:
+    name:
+      primary: uui-dbpri
+      replica: uui-dbrep
+  persistence:
+    mountSubPath: uui/data
+    mountInitPath: uui
+  config:
+    pgUserName: uui
+    pgDatabase: uui
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+
+
 
 # flag to enable debugging - application support required
 debugEnabled: false
