@@ -36,6 +36,39 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: POSTGRES_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: POSTGRES_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: init-data-input
+        - mountPath: /config
+          name: init-data
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - "{{ .Values.postgres.nameOverride }}"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -59,7 +92,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{- end }}
           resources: {{ include "common.resources" . | nindent 12 }}
           readinessProbe:
             tcpSocket:
@@ -71,17 +104,36 @@ spec:
             value: {{tpl .Values.msbaddr .}}
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
-          {{- if .Values.global.aafEnabled }}
+          - name: POSTGRES_IP
+            value: "$(UUI_SERVER_DBSET_SERVICE_HOST)"
+          - name: POSTGRES_PORT
+            value: "$(UUI_SERVER_POSTGRES_SERVICE_PORT)"
           - name: SPRING_OPTS
             value: --spring.config.location=file:/config/application.properties
+          - name: POSTGRES_DB_NAME
+            value: {{ .Values.postgres.config.pgDatabase }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          - mountPath: /tmp
+            name: init-temp
           - mountPath: /uui/run.sh
             name: entrypoint
             subPath: run.sh
           - mountPath: /config/application.properties
             name: config
             subPath: application.properties
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+          - name: init-data
+            mountPath: /opt/app/config/conf/
+      volumes:
+      - name: init-data-input
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: init-data
+        emptyDir:
+          medium: Memory
+      - name: init-temp
+        emptyDir: {}
+      {{- if .Values.global.aafEnabled }}
+      {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: config
         configMap:
           name: {{ include "common.fullname" . }}
@@ -90,5 +142,6 @@ spec:
           name: {{ include "common.fullname" . }}-entrypoint
           defaultMode: 0755
       {{- end }}
+
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
