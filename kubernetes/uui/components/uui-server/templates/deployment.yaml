@@ -36,6 +36,39 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: POSTGRES_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: POSTGRES_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: init-data-input
+        - mountPath: /config
+          name: init-data
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - "{{ .Values.postgres.nameOverride }}"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -71,6 +104,10 @@ spec:
             value: {{tpl .Values.msbaddr .}}
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
+          - name: POSTGRES_IP
+            value: "$(UUI_DBSET_SERVICE_HOST)"
+          - name: POSTGRES_PORT
+            value: "$(UUI_DBSET_SERVICE_PORT)"
           {{- if .Values.global.aafEnabled }}
           - name: SPRING_OPTS
             value: --spring.config.location=file:/config/application.properties
@@ -90,5 +127,12 @@ spec:
           name: {{ include "common.fullname" . }}-entrypoint
           defaultMode: 0755
       {{- end }}
+      volumes:
+      - name: init-data-input
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: init-data
+        emptyDir:
+          medium: Memory
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
