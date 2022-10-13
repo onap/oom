@@ -46,7 +46,7 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.internalPort }}
+            - containerPort: {{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort }}{{ else }}{{ .Values.service.internalPlainPort }}{{ end }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{- if .Values.global.aafEnabled }}
@@ -68,17 +68,17 @@ spec:
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             httpGet:
-              port: {{ .Values.liveness.port }}
+              port: {{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort }}{{ else }}{{ .Values.service.internalPlainPort }}{{ end }}
               path: {{ .Values.liveness.path }}
-              scheme: HTTPS
+              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             httpGet:
-              port: {{ .Values.readiness.port }}
+              port: {{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort }}{{ else }}{{ .Values.service.internalPlainPort }}{{ end }}
               path: {{ .Values.readiness.path }}
-              scheme: HTTPS
+              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -105,15 +105,15 @@ spec:
             - name: ONAP_K8SCLOUDOWNER
               value: {{ .Values.config.k8sCloudOwner }}
             - name: NBI_URL
-              value: "https://nbi.{{ include "common.namespace" . }}:8443/nbi/api/v4"
+              value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}://nbi.{{ include "common.namespace" . }}:{{ if (include "common.needTLS" .) }}{{ .Values.service.internalPort }}{{ else }}{{ .Values.service.internalPlainPort }}{{ end }}/nbi/api/v4"
             - name: SDC_HOST
-              value: "https://sdc-be.{{ include "common.namespace" . }}:8443"
+              value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}://sdc-be.{{ include "common.namespace" . }}:{{ if (include "common.needTLS" .) }}8443{{ else }}8080{{ end }}"
             - name: SDC_HEADER_ECOMPINSTANCEID
               value: {{ .Values.config.ecompInstanceId }}
             - name: SDC_HEADER_AUTHORIZATION
               value: {{ .Values.sdc_authorization }}
             - name: AAI_HOST
-              value: "https://aai.{{ include "common.namespace" . }}:8443"
+              value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}://aai.{{ include "common.namespace" . }}:{{ if (include "common.needTLS" .) }}8443{{ else }}80{{ end }}"
             - name: AAI_HEADER_AUTHORIZATION
               value: {{ .Values.aai_authorization }}
             - name: SO_HOST
@@ -123,11 +123,11 @@ spec:
               value: {{ .Values.so_authorization }}
             {{- end }}
             - name: DMAAP_HOST
-              value: "https://message-router.{{ include "common.namespace" . }}:3905"
+              value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}://message-router.{{ include "common.namespace" . }}:{{ if (include "common.needTLS" .) }}3905{{ else }}3904{{ end }}"
             - name: LOGGING_LEVEL_ORG_ONAP_NBI
               value: {{ .Values.config.loglevel }}
             - name: MSB_ENABLED
-              value: "true"
+              value: "{{ .Values.global.msbEnabled }}"
             - name: MSB_DISCOVERY_HOST
               value: "msb-discovery.{{ include "common.namespace" . }}"
             - name: MSB_DISCOVERY_PORT
