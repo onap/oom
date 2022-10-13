@@ -35,11 +35,6 @@ filebeatConfig:
 # Secrets Configuration.
 #################################################################
 secrets:
-  - uid: &aafCredsUID aafcreds
-    type: basicAuth
-    login: '{{ .Values.aafCreds.identity }}'
-    password: '{{ .Values.aafCreds.password }}'
-    passwordPolicy: required
   - uid: &pgUserCredsSecretUid pg-user-creds
     name: &pgUserCredsSecretName '{{ include "common.release" . }}-datalake-pg-user-creds'
     type: basicAuth
@@ -47,11 +42,21 @@ secrets:
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
+  - uid: feeder-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+config:
+  someConfig: blah
 
 #################################################################
 # InitContainer Images.
 #################################################################
 tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
+certPostProcessorImage: onap/org.onap.oom.platform.cert-service.oom-certservice-post-processor:2.5.0
 
 #################################################################
 # Application Configuration Defaults.
@@ -105,6 +110,9 @@ aafCreds:
   identity: dcae@dcae.onap.org
   password: demo123456!
 
+#strimzi kafka config
+feederKafkaUser: dcae-datalake-feeder-kafka-user  
+
 credentials:
 - name: PG_USER
   uid:  *pgUserCredsSecretUid
@@ -121,8 +129,14 @@ applicationConfig:
   PG_PASSWORD: ${PG_PASSWORD}
   PG_DB: datalake
   HOSTNAME: dcae-datalake-feeder
-  CONSUL_HOST: consul
-  CONFIG_BINDING_SERVICE: 30408
+  #  CONSUL_HOST: consul
+  #  CONFIG_BINDING_SERVICE: 30408
+  streams_publishes:
+    hdfs:
+      type: kafka
+      kafka_info:
+        bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
+        topic_name: HDFS
 
 applicationEnv:
   PG_HOST: dcae-datalake-pg-primary
@@ -134,6 +148,13 @@ applicationEnv:
     secretUid: *pgUserCredsSecretUid
     key: password
   PG_DB: datalake
+
+applicationEnv:
+  KAFKA_BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
+  USE_SCRAM: 'true'
+  JAAS_CONFIG:
+    secretUid: feeder-kafka-secret
+    key: sasl.jaas.config
 
 # Resource Limit Flavor -By Default Using Small
 flavor: small
