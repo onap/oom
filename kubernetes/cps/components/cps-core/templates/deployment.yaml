@@ -97,6 +97,24 @@ spec:
         env:
           - name: SPRING_PROFILES_ACTIVE
             value: {{ .Values.config.spring.profile }}
+          - name: DB_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+          - name: LIQUIBASE_LABELS
+            value: {{ .Values.config.liquibaseLabels }}
+          - name: CPS_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
+          - name: CPS_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
+          - name: DMI_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "login") | indent 12 }}
+          - name: DMI_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "password") | indent 12 }}
+          {{- if .Values.config.useStrimziKafka }}
+          - name: JAASLOGIN
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-kafka-user" "key" "sasl.jaas.config") | indent 12 }}
+          {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 12 }}
