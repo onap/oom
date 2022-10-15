@@ -1,0 +1,84 @@
+# Copyright (c) 2022 Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################################################################
+global:
+  pullPolicy: IfNotPresent
+  cmpv2Enabled: false
+  aafEnabled: false
+  passwordStrength: basic
+  passwordStrengthOverride: basic
+  centralizedLoggingEnabled: false
+  serviceMesh:
+    enabled: false
+    tls: true
+    engine: "istio"
+
+cps:
+  enabled: true
+  cps-temporal:
+    enabled: false
+  cps-core:
+    config:
+      jaasConfExternalSecret: strimzi-kafka-admin
+      additional:
+        notification.async.executor.max-pool-size: 2
+        notification.async.executor.maxPoolSize: 2
+    postgres:
+      config:
+        pgUserExternalSecret: '{{ .Release.Name }}-postgres-{{ include "common.postgres.secret.userCredentialsUID" . }}'
+    postgres-init:
+      config:
+        pgUserExternalSecret: '{{ .Release.Name }}-postgres-{{ include "common.postgres.secret.userCredentialsUID" . }}'
+strimzi:
+  enabled: true
+  replicaCount: 1
+mariadb-galera:
+  enabled: true
+  replicaCount: 1
+  galera:
+    bootstrap:
+      forceSafeToBootstrap: yes
+sdnc:
+  enabled: true
+  network-name-gen:
+    enabled: false
+  common:
+    onServiceMesh: false
+  ueb-listener:
+    enabled: false
+  sdnc-ansible-server:
+    enabled: false
+  dgbuilder:
+    config:
+      db:
+        rootPasswordExternalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.rootPassUID" . }}'
+        userCredentialsExternalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.userCredentialsUID" . }}'
+  sdnc-web:
+    enabled: false
+  certpersistence:
+    enabled: true
+  dmaap-listener:
+    enabled: false
+  elasticsearch:
+    master:
+      replicaCount: 3
+  mariadb-galera:
+    config:
+      rootPasswordExternalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.rootPassUID" . }}'
+      userCredentialsExternalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.userCredentialsUID" . }}'
+    rootUser:
+      externalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.rootPassUID" . }}'
+    db:
+      externalSecret: '{{ .Release.Name }}-mariadb-galera-{{ include "common.mariadb.secret.userCredentialsUID" . }}'
