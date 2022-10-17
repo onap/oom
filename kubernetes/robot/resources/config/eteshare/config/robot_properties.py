@@ -152,11 +152,11 @@ GLOBAL_SDC_USERNAME = '{{ .Values.sdcUsername }}'
 GLOBAL_SDC_PASSWORD = '{{ .Values.sdcPassword }}'
 GLOBAL_SDC_AUTHENTICATION = [GLOBAL_SDC_USERNAME, GLOBAL_SDC_PASSWORD]
 # clamp info - everything is from the private oam network (also called onap private network)
-GLOBAL_CLAMP_SERVER_PROTOCOL = "https"
+GLOBAL_CLAMP_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "policy-gui" "port" 2443) }}'
 # nbi info - everything is from the private oam network (also called onap private network)
-GLOBAL_NBI_SERVER_PROTOCOL = "https"
-GLOBAL_NBI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "nbi" "port" 8443) }}'
+GLOBAL_NBI_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_NBI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "nbi" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 # cli info - everything is from the private oam network (also called onap private network)
 GLOBAL_CLI_SERVER_PROTOCOL = "https"
 GLOBAL_CLI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "cli" "port" 443) }}'
@@ -176,10 +176,10 @@ GLOBAL_DCAE_AUTHENTICATION = [GLOBAL_DCAE_USERNAME, GLOBAL_DCAE_PASSWORD]
 GLOBAL_DCAE_HVVES_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-hv-ves-collector") }}'
 GLOBAL_DCAE_HVVES_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-hv-ves-collector" "port" 6061) }}'
 # data router info - everything is from the private oam network (also called onap private network)
-GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = "https"
+GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_DMAAP_DR_PROV_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-dr-prov" "port" 443) }}'
-GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = "https"
-GLOBAL_DMAAP_DR_NODE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmapp-dr-node" "port" 8443) }}'
+GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_DMAAP_DR_NODE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmapp-dr-node" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 # dmaap message router info
 GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "message-router") }}'
 GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
@@ -216,14 +216,14 @@ GLOBAL_POMBA_ELASTICSEARCH_PORT = '{{include "robot.ingress.port" (dict "root" .
 GLOBAL_POMBA_CONTEXTAGGREGATOR_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "pomba-contextaggregator" "port" 9529) }}'
 
 # microservice bus info - everything is from the private oam network (also called onap private network)
-GLOBAL_MSB_SERVER_PROTOCOL = "https"
-GLOBAL_MSB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "clamp" "port" 443) }}'
+GLOBAL_MSB_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_MSB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "msb-iag" "port" ( ternary 443 80 (eq "true" (include "common.needTLS" . )))) }}'
 # message router info - everything is from the private oam network (also called onap private network)
 GLOBAL_MR_SERVER_PROTOCOL = "http"
 GLOBAL_MR_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
 # bus controller info
-GLOBAL_BC_SERVER_PROTOCOL = "https"
-GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" 8443) }}'
+GLOBAL_BC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
 GLOBAL_BC_PASSWORD = '{{ .Values.bcPassword }}'
 # dcae inventory and deployment handler info
@@ -290,7 +290,7 @@ GLOBAL_SO_NSSMF_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_NSSMF_IP_ADDR + ':' + 
 GLOBAL_MUSIC_SERVER_PROTOCOL = "https"
 GLOBAL_MUSIC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "music" "port" 8443) }}'
 # oof global info - everything is from the private oam network (also called onap private network)
-GLOBAL_OOF_SERVER_PROTOCOL = "https"
+GLOBAL_OOF_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 # oof-homing info - everything is from the private oam network (also called onap private network)
 GLOBAL_OOF_HOMING_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "oof-has-api" "port" 8091) }}'
 GLOBAL_OOF_HOMING_USERNAME="{{ .Values.oofHomingUsername }}"
@@ -315,7 +315,7 @@ GLOBAL_PACKET_GENERATOR_USERNAME = "admin"
 GLOBAL_PACKET_GENERATOR_PASSWORD = "admin"
 GLOBAL_PGN_PORT = "2831"
 # policy info - everything is from the private oam network (also called onap private network)
-GLOBAL_POLICY_SERVER_PROTOCOL = "https"
+GLOBAL_POLICY_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_POLICY_SERVER_PORT = "8081"
 GLOBAL_POLICY_HEALTHCHECK_PORT = "6969"
 GLOBAL_POLICY_AUTH = '{{ .Values.policyAuth}}'
@@ -332,9 +332,9 @@ GLOBAL_PORTAL_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "host
 GLOBAL_PORTAL_USERNAME = '{{ .Values.portalUsername }}'
 GLOBAL_PORTAL_PASSWORD = '{{ .Values.portalPassword }}'
 # sdnc info - everything is from the private oam network (also called onap private network)
-GLOBAL_SDNC_SERVER_PROTOCOL = "https"
-GLOBAL_SDNC_REST_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc" "port" 8443) }}'
-GLOBAL_SDNC_ADMIN_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc-portal" "port" 8443) }}'
+GLOBAL_SDNC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_SDNC_REST_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc" "port" ( ternary 8443 8282 (eq "true" (include "common.needTLS" . )))) }}'
+GLOBAL_SDNC_ADMIN_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdnc-portal" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_SDNC_USERNAME = '{{ .Values.sdncUsername }}'
 GLOBAL_SDNC_PASSWORD = '{{ .Values.sdncPassword }}'
 GLOBAL_SDNC_AUTHENTICATION = [GLOBAL_SDNC_USERNAME, GLOBAL_SDNC_PASSWORD]
@@ -350,7 +350,7 @@ GLOBAL_VID_PASSWORD = '{{ .Values.vidPassword}}'
 GLOBAL_VID_HEALTH_USERNAME = '{{ .Values.vidHealthUsername }}'
 GLOBAL_VID_HEALTH_PASSWORD = '{{ .Values.vidHealthPassword }}'
 # vnfsdk info - everything is from the private oam network (also called onap private network)
-GLOBAL_VNFSDK_SERVER_PROTOCOL = "https"
+GLOBAL_VNFSDK_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_VNFSDK_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "refrepo" "port" 8703) }}'
 
 GLOBAL_DCAE_VES_PROTOCOL = "http"
