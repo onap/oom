@@ -355,8 +355,8 @@ GLOBAL_VNFSDK_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "host
 
 GLOBAL_DCAE_VES_PROTOCOL = "http"
 GLOBAL_DCAE_VES_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-ves-collector" "port" 8080) }}'
-GLOBAL_DCAE_VES_HTTPS_PROTOCOL = "https"
-GLOBAL_DCAE_VES_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-ves-collector-https" "port" 8443) }}'
+GLOBAL_DCAE_VES_HTTPS_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
+GLOBAL_DCAE_VES_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-ves-collector-https" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 GLOBAL_DCAE_VES_USERNAME = 'sample1'
 GLOBAL_DCAE_VES_PASSWORD = 'sample1'
 
