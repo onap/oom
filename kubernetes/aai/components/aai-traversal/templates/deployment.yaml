@@ -221,18 +221,35 @@ spec:
         # so K8s doesn't restart unresponsive container
         {{ if .Values.liveness.enabled }}
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /aai/util/echo?action=checkDB
             port: {{ .Values.service.internalPort }}
+            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            httpHeaders:
+            - name: X-FromAppId
+              value: LivenessCheck
+            - name: X-TransactionId
+              value: LiveCheck_TID
+            - name: Accept
+              value: application/json
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end }}
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /aai/util/echo?action=checkDB
             port: {{ .Values.service.internalPort }}
+            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            httpHeaders:
+            - name: X-FromAppId
+              value: ReadinessCheck
+            - name: X-TransactionId
+              value: ReadinessCheck_TID
+            - name: Accept
+              value: application/json
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        resources:
-{{ include "common.resources" . }}
+        resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
