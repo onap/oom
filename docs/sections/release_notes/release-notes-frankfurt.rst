@@ -94,29 +94,15 @@ Deliverables
 Software Deliverables
 ~~~~~~~~~~~~~~~~~~~~~
 
-OOM provides `Helm charts <https://git.onap.org/oom/>`_ that needs to be
-"compiled" into Helm package. see step 6 in
-:doc:`quickstart guide <../oom_quickstart_guide>`.
 
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :doc:`Project Description <../oom_project_description>`
-- :doc:`Cloud Setup Guide <../oom_cloud_setup_guide>`
-- :doc:`Quick Start Guide <../oom_quickstart_guide>`
-- :doc:`Setup Ingress Controller <../oom_setup_ingress_controller>`
-- :doc:`Developer Guide <../oom_developer_guide>`
-- :doc:`Hardcoded Certificates <../oom_hardcoded_certificates>`
 
 Known Limitations, Issues and Workarounds
 =========================================
 
 Known Vulnerabilities
 ---------------------
-
-- Hard coded password used for all OOM deployments
-  [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
-- :doc:`Hard coded certificates <../oom_hardcoded_certificates>` in Helm packages
 
 Workarounds
 -----------

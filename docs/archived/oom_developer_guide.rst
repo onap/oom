@@ -2,6 +2,7 @@
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
+.. Modification copyright (C) 2022 Nordix Foundation
 
 .. Links
 .. _Helm: https://docs.helm.sh/
@@ -22,7 +23,7 @@
 OOM Developer Guide
 ###################
 
-.. figure:: images/oom_logo/oomLogoV2-medium.png
+.. figure:: ../../resources/images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 ONAP consists of a large number of components, each of which are substantial
@@ -687,7 +688,7 @@ The relationship between these objects is shown in the following figure:
 ..   database PV
 ..   @enduml
 
-.. figure:: images/k8s/kubernetes_objects.png
+.. figure:: ../../resources/images/k8s/kubernetes_objects.png
 
 OOM uses these Kubernetes objects as described in the following sections.
 
@@ -1074,7 +1075,7 @@ MSB Integration with OOM
 ------------------------
 A preliminary view of the OOM-MSB integration is as follows:
 
-.. figure:: images/msb/MSB-OOM-Diagram.png
+.. figure:: ../../resources/images/msb/MSB-OOM-Diagram.png
 
 A message sequence chart of the registration process:
 

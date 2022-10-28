@@ -2,31 +2,26 @@
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2020, Samsung Electronics
+.. Modification copyright (C) 2022 Nordix Foundation
 
 .. Links
-.. _HELM Best Practices Guide: https://docs.helm.sh/chart_best_practices/#requirements
-.. _kubectl Cheat Sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
-.. _Kubernetes documentation for emptyDir: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
 .. _metallb Metal Load Balancer installation: https://metallb.universe.tf/installation/
-.. _http://cd.onap.info:30223/mso/logging/debug: http://cd.onap.info:30223/mso/logging/debug
-.. _Onboarding and Distributing a Vendor Software Product: https://wiki.onap.org/pages/viewpage.action?pageId=1018474
-.. _README.md: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/README.md
-
-.. figure:: images/oom_logo/oomLogoV2-medium.png
-   :align: right
 
 .. _oom_setup_ingress_controller:
 
+OOM Ingress controller setup
+############################
 
-Ingress controller setup on HA Kubernetes Cluster
-#################################################
+.. warning::
+    This guide should prob go in the Optional addons section
 
-This guide provides instruction how to setup experimental ingress controller
+This optional guide provides instruction how to setup experimental ingress controller
 feature. For this, we are hosting our cluster on OpenStack VMs and using the
 Rancher Kubernetes Engine (RKE) to deploy and manage our Kubernetes Cluster and
 ingress controller
 
 .. contents::
+   :backlinks: top
    :depth: 1
    :local:
 ..
@@ -47,7 +42,7 @@ The result at the end of this tutorial will be:
    controller
 
 Customize cluster.yml file
-==========================
+**************************
 Before setup cluster for ingress purposes DNS cluster IP and ingress provider
 should be configured and following:
 
@@ -91,7 +86,7 @@ is internal node IP address if it is required.
 
 
 DNS server configuration and installation
-=========================================
+*****************************************
 DNS server deployed on the Kubernetes cluster makes it easy to use services
 exposed through ingress controller because it resolves all subdomain related to
 the ONAP cluster to the load balancer IP. Testing ONAP cluster requires a lot
@@ -125,7 +120,7 @@ Example output depends on the IP address and example output looks like bellow::
 
 
 MetalLB Load Balancer installation and configuration
-====================================================
+****************************************************
 
 By default pure Kubernetes cluster requires external load balancer if we want
 to expose external port using LoadBalancer settings. For this purpose MetalLB
@@ -139,10 +134,10 @@ MetalLB Load balancer can be easily installed using automatic install script::
   > ./install-metallb-on-cluster.sh
 
 
-Configuration Nginx ingress controller
-======================================
+Configuration of the Nginx ingress controller
+*********************************************
 
-After installation DNS server and ingress controller we can install and
+After installation of the DNS server and ingress controller, we can install and
 configure ingress controller.
 It can be done using the following commands::
 
@@ -152,8 +147,8 @@ It can be done using the following commands::
 
   > kubectl apply -f nginx_ingress_enable_optional_load_balacer_service.yaml
 
-After deploy NGINX ingress controller you can ensure that the ingress port is
-exposed as load balancer service with external IP address::
+After deploying the NGINX ingress controller, you can ensure that the ingress port is
+exposed as load balancer service with an external IP address::
 
   > kubectl get svc -n ingress-nginx
   NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                      AGE
@@ -162,9 +157,9 @@ exposed as load balancer service with external IP address::
 
 
 ONAP with ingress exposed services
-==================================
+**********************************
 If you want to deploy onap with services exposed through ingress controller you
-can use full onap deploy script::
+can use full onap deploy yaml::
 
   > onap/resources/overrides/onap-all-ingress-nginx-vhost.yaml
 
