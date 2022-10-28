@@ -2,7 +2,9 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes:
+.. _release_notes_istanbul:
+
+:orphan:
 
 *************************************
 ONAP Operations Manager Release Notes
@@ -11,7 +13,6 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
-- :ref:`Istanbul <release_notes_istanbul>`
 - :ref:`Honolulu <release_notes_honolulu>`
 - :ref:`Guilin <release_notes_guilin>`
 - :ref:`Frankfurt <release_notes_frankfurt>`
@@ -24,7 +25,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Jakarta release.
+This document provides the release notes for the Istanbul release.
 
 Summary
 =======
@@ -41,7 +42,7 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Jakarta                              |
+| **Release designation**              | Istanbul                             |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 | **Release date**                     |                                      |
@@ -55,7 +56,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11498
+https://jira.onap.org/projects/OOM/versions/11074
 
 
 **Known Issues**
@@ -67,19 +68,11 @@ Deliverables
 Software Deliverables
 ~~~~~~~~~~~~~~~~~~~~~
 
-OOM provides `Helm charts <https://git.onap.org/oom/>`_ that needs to be
-"compiled" into Helm package. see step 6 in
-:doc:`quickstart guide <../oom_quickstart_guide>`.
+OOM provides `Helm charts <https://nexus3.onap.org/service/rest/repository/browse/onap-helm-release/>`_
+
 
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :doc:`Project Description <../oom_project_description>`
-- :doc:`Cloud Setup Guide <../oom_cloud_setup_guide>`
-- :doc:`Quick Start Guide <../oom_quickstart_guide>`
-- :doc:`Setup Ingress Controller <../oom_setup_ingress_controller>`
-- :doc:`Developer Guide <../oom_developer_guide>`
-- :doc:`Hardcoded Certificates <../oom_hardcoded_certificates>`
 
 Known Limitations, Issues and Workarounds
 =========================================
@@ -93,7 +86,7 @@ Workarounds
 
 - `OOM-2754 <https://jira.onap.org/browse/OOM-2754>`_
   Because of *updateEndpoint* property added to *cmpv2issuer* CRD
-  it is impossible to upgrade platform component from Istanbul to Jakarta
+  it is impossible to upgrade platform component from Honolulu to Istanbul
   release without manual steps. Actions that should be performed:
 
   #. Update the CRD definition::
