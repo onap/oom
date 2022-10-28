@@ -2,7 +2,7 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes_guilin:
+.. _release_notes_honolulu:
 
 :orphan:
 
@@ -13,6 +13,7 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
+- :ref:`Guilin <release_notes_guilin>`
 - :ref:`Frankfurt <release_notes_frankfurt>`
 - :ref:`El Alto <release_notes_elalto>`
 - :ref:`Dublin <release_notes_dublin>`
@@ -23,7 +24,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Guilin release.
+This document provides the release notes for the Honolulu release.
 
 Summary
 =======
@@ -40,49 +41,66 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Guilin                               |
+| **Release designation**              | Honolulu                             |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2020/12/03                           |
+| **Release date**                     | 2021/04/29                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
-* Kubernetes support for version up to 1.19
-* Helm (experimental) support for version up to 3.3
+* Kubernetes support for version up to 1.20
+* Helm support for version up to 3.5
 * Limits are set for most of the components
+* Portal-Cassandra image updated to Bitnami, supporting IPv4/IPv6 Dual Stack
+* CMPv2 external issuer implemented which extends Cert-Manager with ability  to
+  enroll X.509 certificates from CMPv2 servers
+* New version for mariadb galera using Bitnami image, supporting IPv4/IPv6 Dual
+  Stack
+* Bump version of common PostgreSQL and ElasticSearch
+* Move to automatic certificates retrieval for 80% of the components
+* Consistent retrieval of docker images, with ability to configure proxy for
+  the 4 repositories used by ONAP
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/10826
+https://jira.onap.org/projects/OOM/versions/11073
+
+major issues solved:
+
+* Better handling of persistence on PostgreSQL
+* Better Ingress templating
+* Better Service templating
 
 **Known Issues**
 
-- `OOM-1237 <https://jira.onap.org/browse/OOM-1237>`_ Source Helm Charts from
-  ONAP Repo. Having helm charts repo is not possible for Frankfurt release.
-- `OOM-1720 <https://jira.onap.org/browse/OOM-1237>`_ galera container is
-  outdated. containers used for mariadb are outdated and not supported anymore.
-- `OOM-1817 <https://jira.onap.org/browse/OOM-1817>`_ Use of global.repository
-  inconsistent across Helm Charts. it's then may be hard to retrieve some
-  containers when deploying in constrained environment.
-- `OOM-2227 <https://jira.onap.org/browse/OOM-2227>`_ Cassandra Backup Mechanism
-  works only on "static PV" mode.
-- `OOM-2285 <https://jira.onap.org/browse/OOM-2285>`_ deploy.sh does not work
-  for mariadb-galera. deploy script doesn't behave well with "-" in the
-  component name.
-- `OOM-2421 <https://jira.onap.org/browse/OOM-2421>`_ OOM nbi chart deployment
-  error
-- `OOM-2534 <https://jira.onap.org/browse/OOM-2534>`_ Cert-Service leverages
-  runtime external dependency
 - `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
-- `OOM-2588 <https://jira.onap.org/browse/OOM-2588>`_ Various subcharts not
-  installing due to helm size issues
+- `OOM-2435 <https://jira.onap.org/browse/OOM-2435>`_ SDNC karaf shell:
+  log:list: Error executing command: Unrecognized configuration
 - `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
   not complete
-
+- `OOM-2706 <https://jira.onap.org/browse/OOM-2706>`_ CDS Blueprint Processor
+  does not work with local DB
+- `OOM-2713 <https://jira.onap.org/browse/OOM-2713>`_ Problem on onboarding
+  custom cert to SDNC ONAP during deployment
+- `OOM-2698 <https://jira.onap.org/browse/OOM-2698>`_ SO helm override fails in
+  for value with multi-level replacement
+- `OOM-2697 <https://jira.onap.org/browse/OOM-2697>`_ SO with local MariaDB
+  deployment fails
+- `OOM-2538 <https://jira.onap.org/browse/OOM-2538>`_ strange error with
+  CertInitializer template
+- `OOM-2547 <https://jira.onap.org/browse/OOM-2547>`_ Health Check failures
+  seen after bringing down/up control plane & worker node VM instances on which
+  ONAP hosted
+- `OOM-2699 <https://jira.onap.org/browse/OOM-2699>`_ SO so-mariadb
+  readinessCheck fails for local MariaDB instance
+- `OOM-2705 <https://jira.onap.org/browse/OOM-2705>`_ SDNC DB installation fails
+  on local MariaDB instance
+- `OOM-2603 <https://jira.onap.org/browse/OOM-2603>`_ [SDNC] allign password for
+  scaleoutUser/restconfUser/odlUser
 
 Deliverables
 ------------
@@ -91,18 +109,11 @@ Software Deliverables
 ~~~~~~~~~~~~~~~~~~~~~
 
 OOM provides `Helm charts <https://git.onap.org/oom/>`_ that needs to be
-"compiled" into Helm package. see step 6 in
-:doc:`quickstart guide <../oom_quickstart_guide>`.
+"compiled".
 
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- :doc:`Project Description <../oom_project_description>`
-- :doc:`Cloud Setup Guide <../oom_cloud_setup_guide>`
-- :doc:`Quick Start Guide <../oom_quickstart_guide>`
-- :doc:`Setup Ingress Controller <../oom_setup_ingress_controller>`
-- :doc:`Developer Guide <../oom_developer_guide>`
-- :doc:`Hardcoded Certificates <../oom_hardcoded_certificates>`
 
 Known Limitations, Issues and Workarounds
 =========================================
@@ -112,21 +123,15 @@ Known Vulnerabilities
 
 - Hard coded password used for all OOM deployments
   [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
-- :doc:`Hard coded certificates <../oom_hardcoded_certificates>` in Helm packages
+- `Hard coded certificates <../oom_hardcoded_certificates>` in Helm packages
 
 Workarounds
 -----------
 
-- `OOM-1237 <https://jira.onap.org/browse/OOM-1237>`_ Workaround is to generate
-  them as explained in documentation.
-- `OOM-1817 <https://jira.onap.org/browse/OOM-1817>`_ Workaround is to use
-  offline installer if needed.
-- `OOM-2227 <https://jira.onap.org/browse/OOM-2227>`_ Workaround is to stick to
-  "static PV" (so, not using storage class) if backup is needed.
-- `OOM-2285 <https://jira.onap.org/browse/OOM-2285>`_ Workaround is to use
-  directly helm upgrade if needed.
-- `OOM-2534 <https://jira.onap.org/browse/OOM-2534>`_ Workaround is to download
-  in advance docker.io/openjdk:11-jre-slim where you will generate the charts
+- `<https://github.com/bitnami/bitnami-docker-mariadb-galera/issues/35>`_
+  Workaround is to generate a password with "short" strength or pregenerate
+  passwords without single quote in it. Default deployment is using "short"
+  password generation for mariadb.
 
 Security Notes
 --------------
