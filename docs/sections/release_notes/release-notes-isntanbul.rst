@@ -68,19 +68,11 @@ Deliverables
 Software Deliverables
 ~~~~~~~~~~~~~~~~~~~~~
 
-OOM provides `Helm charts <https://git.onap.org/oom/>`_ that needs to be
-"compiled" into Helm package. see step 6 in
-:doc:`quickstart guide <../oom_quickstart_guide>`.
+OOM provides `Helm charts <https://nexus3.onap.org/#browse/browse:onap-helm-release>`_
+
 
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :doc:`Project Description <../oom_project_description>`
-- :doc:`Cloud Setup Guide <../oom_cloud_setup_guide>`
-- :doc:`Quick Start Guide <../oom_quickstart_guide>`
-- :doc:`Setup Ingress Controller <../oom_setup_ingress_controller>`
-- :doc:`Developer Guide <../oom_developer_guide>`
-- :doc:`Hardcoded Certificates <../oom_hardcoded_certificates>`
 
 Known Limitations, Issues and Workarounds
 =========================================
