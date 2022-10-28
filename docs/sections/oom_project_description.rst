@@ -2,10 +2,16 @@
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2018-2020 Amdocs, Bell Canada, Orange, Samsung
+.. Modification copyright (C) 2022 Nordix Foundation
+
 .. _oom_project_description:
 
 ONAP Operations Manager Project
 ###############################
+
+.. warning::
+
+    THIS PAGE PROB NEEDS A REWRITE ALSO
 
 The ONAP Operations Manager (OOM) is responsible for life-cycle management of
 the ONAP platform itself; components such as SO, SDNC, etc. It is not
@@ -17,7 +23,7 @@ bare-metal servers or on VMs hosted by a 3rd party management system. OOM
 ensures that ONAP is easily deployable and maintainable throughout its life
 cycle while using hardware resources efficiently.
 
-.. figure:: images/oom_logo/oomLogoV2-medium.png
+.. figure:: resources/images/oom_logo/oomLogoV2-medium.png
    :align: right
 
 In summary OOM provides the following capabilities:
@@ -39,13 +45,13 @@ Azure, Amazon AWS, Google GCD, VMware VIO, and OpenStack.
 The OOM documentation is broken into four different areas each targeted at a
 different user:
 
-- :ref:`quick-start-label` - deploy ONAP on an existing cloud
-- :ref:`user-guide-label` - a guide for operators of an ONAP instance
-- :ref:`developer-guide-label` - a guide for developers of OOM and ONAP
-- :ref:`cloud-setup-guide-label` - a guide for those setting up cloud
-  environments that ONAP will use
-- :ref:`hardcoded-certificates-label` - the list of all hardcoded certificates
-  set in ONAP installation
+- :ref:`oom_dev_guide` - a guide for developers of OOM
+- :ref:`oom_infra_setup_guide` - a guide for those setting up the environments that OOM will use
+- :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing cloud
+- :ref:`oom_user_guide` - a guide for operators of an OOM instance
+- :ref:`oom_access_info_guide` - a guide for operators who require access to OOM applications
+
+
 
 The :ref:`release_notes` for OOM describe the incremental features per release.
 
