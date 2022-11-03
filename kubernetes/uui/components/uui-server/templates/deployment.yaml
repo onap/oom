@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2018 ZTE
 # Modifications Copyright © 2018 AT&T, Amdocs, Bell Canada
+# Modifications Copyright © 2022 CMCC Corporation
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,31 +17,56 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+      {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      - command:
+        - sh
+        args:
+        - -c
+        - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        env:
+        - name: KEYSTORE_PASSWORD
+          value: "${KEYSTORE_PASSWORD}"
+        - name: POSTGRES_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: POSTGRES_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input
+          name: init-data-input
+        - mountPath: /config
+          name: init-data
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-update-config
+
+      - command:
+        - /app/ready.py
+        args:
+        - --container-name
+        - "{{ .Values.postgres.nameOverride }}"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}-readiness
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
           command:
           - sh
           args:
@@ -48,7 +74,6 @@ spec:
           - |
             export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
             bash /uui/run.sh
-          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -59,7 +84,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{- end }}
           resources: {{ include "common.resources" . | nindent 12 }}
           readinessProbe:
             tcpSocket:
@@ -71,24 +96,32 @@ spec:
             value: {{tpl .Values.msbaddr .}}
           - name: MR_ADDR
             value: {{tpl .Values.mraddr .}}
-          {{- if .Values.global.aafEnabled }}
+          - name: POSTGRES_IP
+            value: {{.Values.postgres.service.name2}}
+          - name: POSTGRES_PORT
+            value: "$(UUI_SERVER_POSTGRES_SERVICE_PORT)"
           - name: SPRING_OPTS
             value: --spring.config.location=file:/config/application.properties
+          - name: POSTGRES_DB_NAME
+            value: {{ .Values.postgres.config.pgDatabase }}
           volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /uui/run.sh
             name: entrypoint
             subPath: run.sh
           - mountPath: /config/application.properties
-            name: config
+            name: init-data
             subPath: application.properties
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
-      - name: config
+      volumes:
+      - name: init-data-input
         configMap:
           name: {{ include "common.fullname" . }}
+      - name: init-data
+        emptyDir:
+          medium: Memory
       - name: entrypoint
         configMap:
           name: {{ include "common.fullname" . }}-entrypoint
           defaultMode: 0755
-      {{- end }}
+      {{ include "common.certInitializer.volumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
