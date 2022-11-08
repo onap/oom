@@ -2,20 +2,20 @@
 .. International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. Copyright 2018-2021 Amdocs, Bell Canada, Orange, Samsung, Nokia
-.. _master_index:
+.. Modification copyright (C) 2022 Nordix Foundation
 
+.. _master_index:
 
 OOM Documentation Repository
 ----------------------------
 .. toctree::
   :maxdepth: 2
 
-  oom_project_description.rst
-  oom_quickstart_guide.rst
-  oom_user_guide.rst
-  oom_setup_paas.rst
-  oom_developer_guide.rst
-  oom_cloud_setup_guide.rst
-  release_notes/release-notes.rst
-  oom_setup_kubernetes_rancher.rst
-  oom_setup_ingress_controller.rst
+  sections/oom_project_description.rst
+  sections/guides/development_guides/oom_development.rst
+  sections/guides/infra_guides/oom_infra_setup.rst
+  sections/guides/deployment_guides/oom_deployment.rst
+  sections/guides/user_guides/oom_user_guide.rst
+  sections/guides/access_guides/oom_access_info.rst
+  sections/release_notes/release-notes.rst
+
