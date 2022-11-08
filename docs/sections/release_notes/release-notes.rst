@@ -25,7 +25,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Jakarta release.
+This document provides the release notes for the Kohn release.
 
 Summary
 =======
@@ -42,7 +42,7 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Jakarta                              |
+| **Release designation**              | Kohn                                 |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 | **Release date**                     |                                      |
@@ -52,11 +52,19 @@ Release Data
 New features
 ------------
 
+* Kubernetes support for version up to 1.23.8
+* Helm support for version up to Helm: 3.8.2
+* Kubespray version used for automated deployment 2.19 (used for automated deployment)
+* Initial Setup for "ONAP on ServiceMesh" deployment
+
+  * using Istio 1.14.1 as SM platform
+  * including Istio Ingress Gateway for external access
+  * modify 90% of ONAP component charts to support SeviceMesh
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11498
+https://jira.onap.org/projects/OOM/versions/11499
 
 
 **Known Issues**
@@ -86,32 +94,20 @@ Known Limitations, Issues and Workarounds
 Known Vulnerabilities
 ---------------------
 
+* Cassandra version needs to be updated to support new Python version
+  see `OOM-2900 <https://jira.onap.org/browse/OOM-2900>`_
 
 Workarounds
 -----------
-
-- `OOM-2754 <https://jira.onap.org/browse/OOM-2754>`_
-  Because of *updateEndpoint* property added to *cmpv2issuer* CRD
-  it is impossible to upgrade platform component from Istanbul to Jakarta
-  release without manual steps. Actions that should be performed:
-
-  #. Update the CRD definition::
-
-     > kubectl -n onap apply -f oom/kubernetes/platform/components/cmpv2-cert-provider/crds/cmpv2issuer.yaml
-  #. Upgrade the component::
-
-     > helm -n onap upgrade dev-platform oom/kubernetes/platform
-  #. Make sure that *cmpv2issuer* contains correct value for
-     *spec.updateEndpoint*. The value should be: *v1/certificate-update*.
-     If it's not, edit the resource::
-
-     > kubectl -n onap edit cmpv2issuer cmpv2-issuer-onap
 
 
 Security Notes
 --------------
 
 **Fixed Security Issues**
+
+* Fixed vulnerabilities for oom-platform-cert-service
+  see `Fixes <https://wiki.onap.org/pages/viewpage.action?spaceKey=SV&title=Kohn+OOM>`_
 
 References
 ==========
