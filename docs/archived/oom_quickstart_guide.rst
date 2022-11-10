@@ -30,6 +30,7 @@ where <BRANCH> can be an official release tag, such as
 * 9.0.0 for Istanbul
 * 10.0.0 for Jakarta
 * 11.0.0 for Kohn
+* 12.0.0 for London
 
 **Step 2.** Install Helm Plugins required to deploy ONAP::
 
