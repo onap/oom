@@ -135,7 +135,7 @@ Known Vulnerabilities
 Workarounds
 -----------
 
-- `<https://github.com/bitnami/bitnami-docker-mariadb-galera/issues/35>`_
+- `<https://github.com/bitnami/charts/issues>`_
   Workaround is to generate a password with "short" strength or pregenerate
   passwords without single quote in it. Default deployment is using "short"
   password generation for mariadb.
