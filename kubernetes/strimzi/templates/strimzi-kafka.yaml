@@ -15,25 +15,18 @@
 */}}
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   kafka:
-    version: {{ .Values.version }}
+    version: {{ .Values.config.kafkaVersion }}
     replicas: {{ .Values.replicaCount }}
     listeners:
       - name: plain
-        port: {{ .Values.kafkaInternalPort }}
+        port: {{ .Values.config.kafkaInternalPort }}
         type: internal
         tls: false
         authentication:
-          type: {{ .Values.saslMechanism }}
+          type: {{ .Values.config.saslMechanism }}
       - name: tls
         port: 9093
         type: internal
@@ -57,9 +50,9 @@ spec:
             - broker: 2
               nodePort: {{ .Values.global.nodePortPrefixExt }}92
     authorization:
-      type: simple
+      type: {{ .Values.config.authType }}
       superUsers:
-        - {{ .Values.kafkaStrimziAdminUser }}
+        - {{ .Values.config.strimziKafkaAdminUser }}
     template:
       pod:
         securityContext:
@@ -67,21 +60,21 @@ spec:
           fsGroup: 0
     config:
       default.replication.factor: {{ .Values.replicaCount }}
-      min.insync.replicas: {{ .Values.replicaCount }}
+      min.insync.replicas: {{ (eq 1.0 (.Values.replicaCount)) | ternary 1 (sub .Values.replicaCount 1) }}
       offsets.topic.replication.factor: {{ .Values.replicaCount }}
+      num.partitions: {{ mul .Values.replicaCount 2 }}
       transaction.state.log.replication.factor: {{ .Values.replicaCount }}
-      num.partitions: {{ .Values.numPartitions }}
-      transaction.state.log.min.isr: {{ .Values.replicaCount }}
-      log.message.format.version: {{ .Values.version }}
-      inter.broker.protocol.version: {{ .Values.version }}
+      transaction.state.log.min.isr: {{ (eq 1.0 (.Values.replicaCount)) | ternary 1 (sub .Values.replicaCount 1) }}
+      log.message.format.version: {{ .Values.config.kafkaVersion }}
+      inter.broker.protocol.version: {{ .Values.config.kafkaVersion }}
     storage:
       type: jbod
       volumes:
       - id: 0
         type: persistent-claim
-        size: {{ .Values.persistenceKafka.size }}
+        size: {{ .Values.persistence.kafka.size }}
         deleteClaim: true
-        class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistenceKafka) }}
+        class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
   zookeeper:
     template:
       pod:
@@ -97,9 +90,9 @@ spec:
       {{- end }}
     storage:
       type: persistent-claim
-      size: {{ .Values.persistenceZk.size }}
+      size: {{ .Values.persistence.zookeeper.size }}
       deleteClaim: true
-      class: {{ include "common.storageClass" (dict "dot" . "suffix" "zk" "persistenceInfos" .Values.persistenceZk) }}
+      class: {{ include "common.storageClass" (dict "dot" . "suffix" "zk" "persistenceInfos" .Values.persistence.zookeeper) }}
   entityOperator:
     topicOperator: {}
     userOperator: {}

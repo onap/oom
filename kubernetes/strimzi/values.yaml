@@ -19,35 +19,49 @@ global:
   nodePortPrefixExt: 304
   persistence:
     mountPath: /dockerdata-nfs
-
 #################################################################
 # Application configuration defaults.
 #################################################################
 replicaCount: 3
-numPartitions: 10
-kafkaInternalPort: 9092
-saslMechanism: scram-sha-512
-version: 3.2.3
-kafkaStrimziAdminUser: strimzi-kafka-admin
-persistence: {}
+config:
+  kafkaVersion: 3.2.3
+  authType: simple
+  saslMechanism: &saslMech scram-sha-512
+  kafkaInternalPort: &plainPort 9092
+  strimziKafkaAdminUser: &adminUser strimzi-kafka-admin
 
-persistenceKafka:
-  enabled: true
-  size: 2Gi
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteOnce
+persistence:
+  enabled: &pvenabled true
   mountPath: /dockerdata-nfs
-  mountSubPath: strimzi-kafka/kafka
-persistenceZk:
-  enabled: true
-  size: 2Gi
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteOnce
-  mountPath: /dockerdata-nfs
-  mountSubPath: strimzi-kafka/zk
+  kafka:
+    enabled: *pvenabled
+    # default values of 2Gi for dev env.
+    # Production values should be dimensioned according to requirements. ie >= 10Gi
+    size: 2Gi
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteOnce
+    mountPath: /dockerdata-nfs
+    mountSubPath: strimzi-kafka/kafka
+  zookeeper:
+    enabled: *pvenabled
+    size: 1Gi
+    volumeReclaimPolicy: Retain
+    accessMode: ReadWriteOnce
+    mountPath: /dockerdata-nfs
+    mountSubPath: strimzi-kafka/zk
 
 #Pods Service Account
 serviceAccount:
   nameOverride: strimzi-kafka
   roles:
     - read
+
+######################
+#  Component overrides
+######################
+strimzi-kafka-bridge:
+  enabled: true
+  config:
+    saslMechanism: *saslMech
+    kafkaInternalPort: *plainPort
+    strimziKafkaAdminUser: *adminUser
