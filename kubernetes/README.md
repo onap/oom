@@ -1,5 +1,8 @@
 ## **Quick Start Guide**
 
+> **WARNING**: This README is no longer maintained and will be deprecated.
+> Please refer to the official OOM guide here - [OOM Guide](https://docs.onap.org/projects/onap-oom/en/latest/sections/oom_project_description.html)
+
 
 This is a quick start guide describing how to deploy ONAP on Kubernetes using Helm.
 

@@ -15,23 +15,16 @@
 */}}
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaBridge
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  replicas: {{ .Values.kafkaBridgeReplicaCount }}
-  enableMetrics: false
-  bootstrapServers: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}:{{ .Values.global.kafkaInternalPort }}
+  replicas: {{ .Values.replicaCount }}
+  bootstrapServers: {{ include "common.release" . }}-strimzi-kafka-bootstrap:{{ .Values.config.kafkaInternalPort }}
   authentication:
-    type: {{ .Values.global.saslMechanism }}
-    username: {{ .Values.global.kafkaStrimziAdminUser }}
+    type: {{ .Values.config.saslMechanism }}
+    username: {{ .Values.config.strimziKafkaAdminUser }}
     passwordSecret:
-      secretName: {{ .Values.global.kafkaStrimziAdminUser }}
+      secretName: {{ .Values.config.strimziKafkaAdminUser }}
       password: password
+  enableMetrics: {{ .Values.config.enableMetrics }}
   http:
-    port: {{ .Values.kafkaBridgePort }}
+    port: {{ .Values.config.port }}
