@@ -36,3 +36,23 @@ spec:
   selector:
     app: {{ include "common.name" . }}
   clusterIP: {{ .Values.service.aaiServiceClusterIp }}
+  sessionAffinity: {{ .Values.service.sessionAffinity }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.servicename" . }}-internal
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  ports:
+    - name: {{ .Values.service.portName }}
+      port: {{ .Values.service.externalPlainPort }}
+      targetPort: {{ .Values.service.internalPlainPort }}
+  type: ClusterIP
+  selector:
+    app: {{ include "common.name" . }}
