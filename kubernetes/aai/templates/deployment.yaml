@@ -66,6 +66,13 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
+        resources:
+          requests:
+            memory: {{ .Values.haproxy.initContainers.resources.memory }}
+            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
+          limits:
+            memory: {{ .Values.haproxy.initContainers.resources.memory }}
+            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
       containers:
       - name: {{ include "common.name" . }}
         image: "{{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}"
@@ -87,6 +94,7 @@ spec:
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPlainPort }}
+        - containerPort: {{ .Values.metricsService.internalPort }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
