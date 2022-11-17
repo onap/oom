@@ -328,7 +328,7 @@ certInitializer:
 
 # application image
 dockerhubRepository: registry.hub.docker.com
-image: aaionap/haproxy:1.4.2
+image: aaionap/haproxy:1.9.6
 pullPolicy: Always
 
 flavor: small
@@ -351,9 +351,16 @@ affinity: {}
 
 # HAProxy configuration to block HTTP requests to AAI based on configurable URL patterns
 haproxy:
+  initContainers:
+    resources:
+      memory: 100Mi
+      cpu: 50m
   requestBlocking:
     enabled: false
     customConfigs: []
+  replicas:
+    aaiResources: 1
+    aaiTraversal: 1
 
 # probe configuration parameters
 liveness:
@@ -392,6 +399,30 @@ service:
   externalPlainPort: 80
   internalPlainPort: 8080
   nodeport: 33
+
+metricsService:
+  type: ClusterIP
+  portName: prometheus
+  externalPort: 8448
+  internalPort: 8448
+
+metrics:
+  serviceMonitor:
+    enabled: false
+    targetPort: 8448
+    path: /metrics
+    basicAuth:
+      enabled: false
+
+    selector:
+      app: '{{ include "common.name" . }}-metrics'
+      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      release: '{{ include "common.release" . }}'
+      heritage: '{{ .Release.Service }}'
+
+    relabelings: []
+
+    metricRelabelings: []
 
 ingress:
   enabled: false
