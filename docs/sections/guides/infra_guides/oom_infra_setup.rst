@@ -58,7 +58,7 @@ The versions of software that are supported by OOM are as follows:
   Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager  Prometheus Stack   Strimzi
   ==============     ===========  =======  ========  ========  ============  =================  =======
   Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0         35.x               0.28.0
-  Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0         35.x               0.31.1
+  Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0         35.x               0.32.0
   ==============     ===========  =======  ========  ========  ============  =================  =======
 
 
