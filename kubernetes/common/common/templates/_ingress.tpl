@@ -46,7 +46,6 @@
 
 {{- define "istio.config.route" -}}
 {{-   $dot := default . .dot -}}
-{{ range .Values.ingress.service }}
   http:
   - route:
     - destination:
@@ -65,7 +64,6 @@
         {{- end }}
         {{- end }}
         host: {{ .name }}
-{{- end -}}
 {{- end -}}
 
 {{- define "ingress.config.annotations.ssl" -}}
@@ -118,7 +116,8 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
 {{- if $ingressEnabled }}
 {{- if (include "common.onServiceMesh" .) }}
 {{- if eq (default "istio" .Values.global.serviceMesh.engine) "istio" }}
-      {{-   $dot := default . .dot -}}
+{{-   $dot := default . .dot -}}
+{{ range .Values.ingress.service }}
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
@@ -132,9 +131,7 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- end }}
 {{- if .Values.global.ingress.config }}
 {{- if .Values.global.ingress.config.ssl }}
 {{- if eq .Values.global.ingress.config.ssl "redirect" }}
@@ -156,9 +153,7 @@ spec:
 {{- end }}
       mode: SIMPLE
     hosts:
-    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -169,12 +164,11 @@ metadata:
   name: {{ include "common.fullname" . }}-service
 spec:
   hosts:
-  {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-  {{- end }}
   gateways:
   - {{ include "common.fullname" . }}-gateway
   {{ include "istio.config.route" . | trim }}
+{{- end -}}
 {{- end -}}
 {{- else -}}
 apiVersion: networking.k8s.io/v1
