@@ -21,6 +21,36 @@
 {{ printf "%s.%s" $baseaddr $burl }}
 {{- end -}}
 
+{{- define "ingress.config.tls" -}}
+{{-   $dot := default . .dot -}}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   if $dot.Values.global.ingress.config }}
+{{-     if $dot.Values.global.ingress.config.ssl }}
+{{-       if eq $dot.Values.global.ingress.config.ssl "redirect" }}
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+{{-         if $dot.Values.global.ingress.config }}
+{{-           if $dot.Values.global.ingress.config.tls }}
+      credentialName: {{ default "ingress-tls-secret" $dot.Values.global.ingress.config.tls.secret }}
+{{-           else }}
+      credentialName: "ingress-tls-secret"
+{{-           end }}
+{{-         else }}
+      credentialName: "ingress-tls-secret"
+{{-         end }}
+      mode: SIMPLE
+    hosts:
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+{{-       end }}
+{{-     end }}
+{{-   end }}
+{{- end -}}
+
 {{- define "ingress.config.port" -}}
 {{-   $dot := default . .dot -}}
 {{ range .Values.ingress.service }}
@@ -46,7 +76,6 @@
 
 {{- define "istio.config.route" -}}
 {{-   $dot := default . .dot -}}
-{{ range .Values.ingress.service }}
   http:
   - route:
     - destination:
@@ -65,7 +94,6 @@
         {{- end }}
         {{- end }}
         host: {{ .name }}
-{{- end -}}
 {{- end -}}
 
 {{- define "ingress.config.annotations.ssl" -}}
@@ -109,20 +137,15 @@ nginx.ingress.kubernetes.io/ssl-redirect: "false"
   {{- end -}}
 {{- end -}}
 
-{{- define "common.ingress" -}}
+{{- define "common.istioIngress" -}}
 {{-   $dot := default . .dot -}}
-{{- if .Values.ingress -}}
-  {{- $ingressEnabled := default false .Values.ingress.enabled -}}
-  {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" (default (dict) .Values.global.ingress) "var" "enabled") }}
-  {{- $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" .Values.ingress "var" "enabledOverride") }}
-{{- if $ingressEnabled }}
-{{- if (include "common.onServiceMesh" .) }}
-{{- if eq (default "istio" .Values.global.serviceMesh.engine) "istio" }}
-      {{-   $dot := default . .dot -}}
+{{    range $dot.Values.ingress.service }}
+{{-     $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) }}
+---
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: {{ include "common.fullname" . }}-gateway
+  name: {{ include "common.fullname" $dot }}-{{ .name }}-gateway
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation
@@ -132,80 +155,69 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- end }}
-{{- if .Values.global.ingress.config }}
-{{- if .Values.global.ingress.config.ssl }}
-{{- if eq .Values.global.ingress.config.ssl "redirect" }}
-    tls:
-      httpsRedirect: true
-  - port:
-      number: 443
-      name: https
-      protocol: HTTPS
-    tls:
-{{- if .Values.global.ingress.config }}
-{{- if .Values.global.ingress.config.tls }}
-      credentialName: {{ default "ingress-tls-secret" .Values.global.ingress.config.tls.secret }}
-{{- else }}
-      credentialName: "ingress-tls-secret"
-{{- end }}
-{{- else }}
-      credentialName: "ingress-tls-secret"
-{{- end }}
-      mode: SIMPLE
-    hosts:
-    {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
-    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
+    {{ include "ingress.config.tls" (dict "dot" $dot "baseaddr" $baseaddr) }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: {{ include "common.fullname" . }}-service
+  name: {{ include "common.fullname" $dot }}-{{ .name }}-service
 spec:
   hosts:
-  {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-  {{- end }}
   gateways:
-  - {{ include "common.fullname" . }}-gateway
+  - {{ include "common.fullname" $dot }}-{{ .name }}-gateway
   {{ include "istio.config.route" . | trim }}
+{{-   end -}}
 {{- end -}}
-{{- else -}}
+
+{{- define "common.nginxIngress" -}}
+{{- $dot := default . .dot -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "common.fullname" . }}-ingress
+  name: {{ include "common.fullname" $dot }}-ingress
   annotations:
     {{ include "ingress.config.annotations" . }}
   labels:
-    app: {{ .Chart.Name }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+    app: {{ $dot.Chart.Name }}
+    chart: {{ $dot.Chart.Name }}-{{ $dot.Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" $dot }}
+    heritage: {{ $dot.Release.Service }}
 spec:
   rules:
   {{ include "ingress.config.port" . | trim }}
-{{- if .Values.ingress.tls }}
+{{- if $dot.Values.ingress.tls }}
   tls:
-{{ toYaml .Values.ingress.tls | indent 4 }}
+{{ toYaml $dot.Values.ingress.tls | indent 4 }}
 {{- end -}}
-{{- if .Values.ingress.config -}}
-{{- if .Values.ingress.config.tls -}}
+{{- if $dot.Values.ingress.config -}}
+{{-   if $dot.Values.ingress.config.tls -}}
   tls:
   - hosts:
-  {{- range .Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
+  {{-   range $dot.Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-  {{- end }}
-    secretName: {{ required "secret" (tpl (default "" .Values.ingress.config.tls.secret) $dot) }}
+  {{-   end }}
+    secretName: {{ required "secret" (tpl (default "" $dot.Values.ingress.config.tls.secret) $dot) }}
+{{-   end -}}
 {{- end -}}
 {{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+
+
+{{- define "common.ingress" -}}
+{{-   $dot := default . .dot -}}
+{{-   if .Values.ingress -}}
+{{-     $ingressEnabled := default false .Values.ingress.enabled -}}
+{{-     $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" (default (dict) .Values.global.ingress) "var" "enabled") }}
+{{-     $ingressEnabled := include "common.ingress._overrideIfDefined" (dict "currVal" $ingressEnabled "parent" .Values.ingress "var" "enabledOverride") }}
+{{-     if $ingressEnabled }}
+{{-       if (include "common.onServiceMesh" .) }}
+{{-         if eq (default "istio" .Values.global.serviceMesh.engine) "istio" }}
+{{            include "common.istioIngress" (dict "dot" $dot) }}
+{{-         else -}}
+{{            include "common.nginxIngress" (dict "dot" $dot) }}
+{{-         end -}}
+{{-       end -}}
+{{-     end -}}
+{{-   end -}}
 {{- end -}}
