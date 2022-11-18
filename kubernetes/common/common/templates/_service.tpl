@@ -242,7 +242,7 @@ spec:
 {{-   $labels := default (dict) .labels -}}
 {{-   $matchLabels := default (dict) .matchLabels -}}
 {{-   if and (include "common.onServiceMesh" $dot) (eq $serviceType "NodePort") }}
-{{-   $serviceType = "ClusterIP" }}
+{{-     $serviceType = "ClusterIP" }}
 {{-   end }}
 
 {{-   if (and (include "common.needTLS" $dot) $both_tls_and_plain) }}
