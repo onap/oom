@@ -54,5 +54,6 @@ def setup(app):
 
 
 linkcheck_ignore = [
+  "https://istio-release.storage.googleapis.com/charts",
   r'http://localhost:\d+/'
 ]
