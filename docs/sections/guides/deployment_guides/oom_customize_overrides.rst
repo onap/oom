@@ -32,7 +32,7 @@ Users can customize the override files to suit their required deployment.
 
 
 Enabling/Disabling Components
------------------------------
+*****************************
 Here is an example of the nominal entries that need to be provided.
 Different values files are available for different contexts.
 
@@ -43,6 +43,59 @@ Different values files are available for different contexts.
 
 |
 
-Some other heading
-------------------
-adva
+(Optional) "ONAP on Service Mesh" configuration
+***********************************************
+
+To enable "ONAP on Service Mesh" both "ServiceMesh" and "Ingress"
+configuration entries need to be configured before deployment.
+
+Global settings relevant for ServiceMesh:
+
+.. code-block:: yaml
+
+  #ingress virtualhost based configuration
+  global:
+    ingress:
+      enabled: true
+      virtualhost:
+        baseurl: "simpledemo.onap.org"
+      # All http requests via ingress will be redirected
+      config:
+        ssl: "redirect"
+      # you can set an own Secret containing a certificate
+      #  tls:
+      #    secret: 'my-ingress-cert'
+      # optional: Namespace of the Istio IngressGateway
+      namespace: istio-ingress
+  ...
+    serviceMesh:
+      enabled: true
+      tls: true
+      # be aware that linkerd is not well tested
+      engine: "istio" # valid value: istio or linkerd
+    aafEnabled: false
+    cmpv2Enabled: false
+    tlsEnabled: false
+    msbEnabled: false
+
+ServiceMesh settings:
+
+- enabled: true → enables ServiceMesh functionality in the ONAP Namespace (Istio: enables Sidecar deployment)
+- tls: true → enables mTLS encryption in Sidecar communication
+- engine: istio → sets the SM engine (currently only Istio is supported)
+- aafEnabled: false → disables AAF usage for TLS interfaces
+- tlsEnabled: false → disables creation of TLS in component services
+- cmpv2Enabled: false → disable cmpv2 feature
+- msbEnabled: false → MSB is not used in Istio setup (Open, if all components are MSB independend)
+
+Ingress settings:
+
+- enabled: true → enables Ingress using: Nginx (when SM disabled), Istio IngressGateway (when SM enabled)
+- virtualhost.baseurl: "simpledemo.onap.org" → sets globally the URL for all Interfaces set by the components, resulting in e.g. "aai-api.simpledemo.onap.org"
+- config.ssl: redirect → sets in the Ingress globally the redirection of all Interfaces from http (port 80) to https (port 443)
+- config.tls.secret: "..." → (optional) overrides the default selfsigned SSL certificate with a certificate stored in the specified secret
+- namespace: istio-ingress → (optional) overrides the namespace of the ingress gateway which is used for the created SSL certificate
+
+.. note::
+  For "ONAP on Istio" an example override file (`onap-all-ingress-istio.yaml`)
+  can be found in the `oom/kubernetes/onap/resources/overrides/` directory.
