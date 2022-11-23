@@ -30,6 +30,13 @@ spec:
     matchLabels:
       app: {{ include "common.name" . }}
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    {{- if (eq "RollingUpdate" .Values.updateStrategy.type) }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
+    {{- end }}
   template:
     metadata:
       labels:
@@ -39,6 +46,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       - command:
         - /app/ready.py
