@@ -28,6 +28,7 @@ global:
   mariadbGalera:
     serviceName: mariadb-galera
     servicePort: '3306'
+  soSdcListenerKafkaUser: so-sdc-list-user
 
 readinessCheck:
   wait_for:
@@ -50,6 +51,13 @@ secrets:
     login: '{{ .Values.db.adminName }}'
     password: '{{ .Values.db.adminPassword }}'
     passwordPolicy: required
+  - uid: so-sdc-kafka-secret
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 
 #secretsFilePaths: |
 #  - 'my file 1'
@@ -58,7 +66,7 @@ secrets:
 #################################################################
 # Application configuration defaults.
 #################################################################
-image: onap/so/sdc-controller:1.11.0
+image: onap/so/sdc-controller:1.12.0
 pullPolicy: Always
 
 db:
@@ -81,6 +89,16 @@ mso:
   asdc-connections:
     asdc-controller1:
       password: 76966BDD3C7414A03F7037264FF2E6C8EEC6C28F2B67F2840A1ED857C0260FEE731D73F47F828E5527125D29FD25D3E0DE39EE44C058906BF1657DE77BF897EECA93BDC07FA64F
+config:
+  someConfig: blah
+  kafka:
+    securityProtocol: SASL_PLAINTEXT
+    saslMechanism: SCRAM-SHA-512
+    authType: simple
+    sdcTopic:
+      pattern: SDC-DIST
+      consumerGroup: so
+      clientId: so-sdc-controller
 
 replicaCount: 1
 minReadySeconds: 10
