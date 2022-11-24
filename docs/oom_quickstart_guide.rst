@@ -61,7 +61,7 @@ More details can be found :doc:`here <oom_setup_paas>`.
 
 - Install the operator::
 
-    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.32.0 --set watchAnyNamespace=true --create-namespace
 
 More details can be found :doc:`here <oom_setup_paas>`.
 

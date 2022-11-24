@@ -28,7 +28,7 @@ The versions of PaaS components that are supported by OOM are as follows:
   ==============     =============  =================  =======
   honolulu           1.2.0          13.x
   istanbul           1.5.4          19.x
-  jakarta                                              0.28.0
+  jakarta            1.8.0          35.x               0.32.0
   ==============     =============  =================  =======
 
 This guide provides instructions on how to install the PaaS
@@ -54,7 +54,7 @@ tasks are simplified and require less manual intervention.
 Installation steps
 ------------------
 
-The recommended version of Strimzi for Kubernetes 1.19 is v0.28.0.
+The recommended version of Strimzi for Kubernetes 1.19 is v0.32.0
 The Strimzi cluster operator is deployed using helm to install the parent chart
 containing all of the required custom resource definitions. This should be done
 by a kubernetes administrator to allow for deployment of custom resources in to
@@ -71,7 +71,7 @@ Installation can be as simple as:
 
 - Install the operator::
 
-    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.28.0 --set watchAnyNamespace=true --create-namespace
+    > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version 0.32.0 --set watchAnyNamespace=true --create-namespace
 
 Cert-Manager
 ============
