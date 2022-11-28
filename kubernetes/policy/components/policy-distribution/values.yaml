@@ -55,7 +55,13 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
     password: '{{ .Values.certStores.trustStorePassword }}'
     passwordPolicy: required
-
+  - uid: policy-dist-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
 #################################################################
 # Global configuration defaults.
 #################################################################
@@ -67,13 +73,24 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-distribution:2.8.2
+image: onap/policy-distribution:2.9.0
 pullPolicy: Always
 
 # flag to enable debugging - application support required
 debugEnabled: false
 
 # application configuration
+config:
+  someConfig: blah
+  kafka:
+    bootstrapServer: strimzi-kafka-bootstrap:9092
+    securityProtocol: SASL_PLAINTEXT
+    saslMechanism: SCRAM-SHA-512
+    authType: simple
+    sdcTopic:
+      pattern: SDC-DIST
+      consumerGroup: policy-group
+      clientId: policy-distribution
 
 restServer:
   user: healthcheck
