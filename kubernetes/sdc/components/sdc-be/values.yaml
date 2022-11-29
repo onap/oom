@@ -31,13 +31,10 @@ global:
     replicaCount: 3
     clusterName: cassandra
     dataCenter: Pod
-  # Strimzi kafka config
+  # Global Strimzi kafka config overridden
+  # from parent values.yaml
   kafka:
     useKafka: overridden-from-parent-values-yaml
-    sdcBeKafkaUser: overridden-from-parent-values-yaml
-    topics:
-      sdcDistNotifTopic: overridden-from-parent-values-yaml
-      sdcDistStatusTopic: overridden-from-parent-values-yaml
 
 #################################################################
 # Application configuration defaults.
@@ -53,7 +50,7 @@ debugEnabled: false
 
 #environment file
 env:
-  name: AUTO
+  name: &env AUTO
 
 certInitializer:
   nameOverride: sdc-be-cert-init
@@ -78,29 +75,21 @@ certInitializer:
 #################################################################
 # SDC Config part
 #################################################################
-
-secrets:
-  - uid: sdc-be-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
-
 config:
   javaOptions: "-Xmx1536m -Xms1536m"
   cassandraSslEnabled: "false"
-  # Strimzi kafka config
-  kafka:
-    saslMech: scram-sha-512
-    securityProtocol: SASL_PLAINTEXT
-    authType: simple
-    topicRetentionMs: 7200000
-    topicSegmentBytes: 1073741824
-    topicConsumer:
-      pattern: SDC-DIST
-      groupId: sdc
+
+kafkaUser:
+  acls:
+    - name: sdc
+      suffix: *env
+      type: group
+      operations: [Read]
+    - name: SDC-DISTR
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
+
 
 # default number of instances
 replicaCount: 1

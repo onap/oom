@@ -42,29 +42,32 @@ global:
    clusterName: cassandra
    dataCenter: Pod
   centralizedLoggingEnabled: true
-  # Kafka config
+  # global Kafka config passed to sdc-be chart
   kafka:
+    # If true, the following Strimzi KafkaTopics will be created
     useKafka: true
-    sdcBeKafkaUser: sdc-be-kafka-user
-    kafkaBootstrap: strimzi-kafka-bootstrap:9092
     topics:
-      sdcDistNotifTopic: SDC-DISTR-NOTIF-TOPIC
-      sdcDistStatusTopic: SDC-DISTR-STATUS-TOPIC
+      sdcDistNotifTopic: &notif-topic-name SDC-DISTR-NOTIF-TOPIC
+      sdcDistStatusTopic: &status-topic-name SDC-DISTR-STATUS-TOPIC
+
+# Environment file
+env:
+  name: &env AUTO
+
+kafkaTopic:
+  - name: *notif-topic-name
+    suffix: *env
+  - name: *status-topic-name
+    suffix: *env
 
 sdc-be:
   logConfigMapNamePrefix: '{{ include "common.release" . }}-sdc'
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.kafka.sdcBeKafkaUser }}'
 sdc-fe:
   logConfigMapNamePrefix: '{{ include "common.release" . }}-sdc'
 sdc-onboarding-be:
   logConfigMapNamePrefix: '{{ include "common.release" . }}-sdc'
 sdc-wfd-fe:
   logConfigMapNamePrefix: '{{ include "common.release" . }}-sdc'
-
-# Environment file
-env:
-  name: AUTO
 
 config:
   logstashServiceName: log-ls
