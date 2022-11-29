@@ -45,10 +45,16 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           env:
-            - name: ASDC_ADDRESS
-              value: {{ .Values.externalServices.sdc_be_https }}
-            - name: SCHEMA_MAP_PATH
-              value: {{ .Values.schemaMap.directory }}/{{ .Values.schemaMap.filename }}
+          - name: SDC_ADDRESS
+            value: {{ .Values.externalServices.sdc_be_https }}
+          - name: SCHEMA_MAP_PATH
+            value: {{ .Values.schemaMap.directory }}/{{ .Values.schemaMap.filename }}
+          - name: SECURITY_PROTOCOL
+            value: {{ .Values.config.kafka.securityProtocol }}
+          - name: SASL_MECHANISM
+            value: {{ .Values.config.kafka.saslMechanism }}
+          - name: SASL_JAAS_CONFIG
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-openapi-kafka-secret" "key" "sasl.jaas.config") | indent 12 }}
           volumeMounts:
             - name: schema-map
               mountPath: {{ .Values.schemaMap.directory }}
