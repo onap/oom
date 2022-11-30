@@ -52,14 +52,23 @@ The versions of software that are supported by OOM are as follows:
 
 .. _versions_table:
 
-.. table:: OOM Software Requirements
+.. table:: OOM Software Requirements (base)
 
-  ==============     ===========  =======  ========  ========  ============  =================  =======
-  Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager  Prometheus Stack   Strimzi
-  ==============     ===========  =======  ========  ========  ============  =================  =======
-  Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0         35.x               0.28.0
-  Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0         35.x               0.32.0
-  ==============     ===========  =======  ========  ========  ============  =================  =======
+  ==============     ===========  =======  ========  ========  ============  =======
+  Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager  Strimzi
+  ==============     ===========  =======  ========  ========  ============  =======
+  Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0         0.28.0
+  Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0         0.32.0
+  ==============     ===========  =======  ========  ========  ============  =======
+
+.. table:: OOM Software Requirements (optional)
+
+  ==============     =================  ======
+  Release            Prometheus Stack   Istio
+  ==============     =================  ======
+  Jakarta            35.x               ---
+  Kohn               35.x               1.15.1
+  ==============     =================  ======
 
 
 .. toctree::
