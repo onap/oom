@@ -24,68 +24,44 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
-{{- if .Values.PG.enabled }}
-      initContainers:
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      {{- if .Values.usePostgres }}
       - command:
         - sh
         args:
         - -c
         - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
-        - name: PG_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
-        - name: PG_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+          - name: PG_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+          - name: PG_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
         volumeMounts:
-        - mountPath: /config-input
-          name: {{ include "common.name" . }}-config-input
-        - mountPath: /config
-          name: {{ include "common.name" . }}-config
+          - mountPath: /config-input
+            name: {{ include "common.name" . }}-config-input
+          - mountPath: /config
+            name: {{ include "common.name" . }}-config
+        name: {{ include "common.name" . }}-update-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-{{ include "common.certInitializer.initContainer" . | nindent 6 }}
-{{- if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-permission-fixer
-        securityContext:
-          runAsUser: 0
-        image: {{ include "repositoryGenerator.image.busybox" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        command: ["chown","-Rf","1000:1001", "/opt/app/"]
-#       See AAF-425 for explanation of why this is needed.
-#       This artifact is provisioned in AAF for both pks12 and jks format and apparently
-#       the cadi library is not using the jks password on the jks keystore.
-#       So, this attempts to "fix" the credential property file until this is fixed properly.
-      - name: {{ include "common.name" . }}-cred-fixer
-        image: {{ include "repositoryGenerator.image.busybox" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        command: ["/bin/sh"]
-        args: [ "-c", "sed -i -e '/cadi_keystore_password=/d' -e '/cadi_keystore_password_jks/p' -e 's/cadi_keystore_password_jks/cadi_keystore_password/' -e 's/dmaap-bc.p12/dmaap-bc.jks/' /opt/app/osaaf/local/org.onap.dmaap-bc.cred.props" ]
-{{- end }}
-      - name: {{ include "common.name" . }}-postgres-readiness
-        securityContext:
-          runAsUser: 100
-          runAsGroup: 65533
-        command:
+      - command:
         - /app/ready.py
         args:
         - --container-name
         - {{ .Values.postgres.nameOverride }}
-        - --container-name
-        - message-router
-        - --container-name
-        - dmaap-dr-node
+        securityContext:
+          runAsUser: 100
+          runAsGroup: 65533
         env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        name: {{ include "common.name" . }}-postgres-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- end }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -96,7 +72,6 @@ spec:
             httpGet:
               port: {{ .Values.liveness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
@@ -104,18 +79,19 @@ spec:
             httpGet:
               port: {{ .Values.readiness.port }}
               path: /webapi/topics
-              scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
-# NOTE: on the following several configMaps, careful to include / at end
-#       since there may be more than one file in each mountPath
           - name: {{ include "common.name" . }}-config
             mountPath: /opt/app/config/conf/
-          resources: {{ include "common.resources" . | nindent 12 }}
+          - mountPath: /opt/app/dmaapbc/etc/logback.xml
+            name: {{ include "common.fullname" . }}-log-conf
+            subPath: logback.xml
+          resources:
+{{ include "common.resources" . }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
         {{- end -}}
@@ -123,15 +99,24 @@ spec:
         affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
+        - name: {{ include "common.fullname" . }}-log-conf
+          configMap:
+            name: {{ include "common.fullname" . }}-log
+        {{- if .Values.usePostgres }}
         - name: {{ include "common.name" . }}-config-input
           configMap:
             name: {{ include "common.fullname" . }}-config
         - name: {{ include "common.name" . }}-config
           emptyDir:
             medium: Memory
+        {{- else }}
+        - name: {{ include "common.name" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-config
+        {{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
