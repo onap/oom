@@ -25,8 +25,6 @@ GLOBAL_INJECTED_DCAE_COLLECTOR_IP = "{{ .Values.dcaeCollectorIp }}"
 GLOBAL_INJECTED_DCAE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-healthcheck") }}'
 GLOBAL_INJECTED_DCAE_MS_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-ms-healthcheck") }}'
 GLOBAL_INJECTED_DCAE_VES_HOST = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-ves-collector") }}'
-GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-prov") }}'
-GLOBAL_INJECTED_DMAAP_DR_NODE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-node") }}'
 GLOBAL_INJECTED_DNS_IP_ADDR = 'N/A'
 GLOBAL_INJECTED_DOCKER_VERSION = '1.2-STAGING-latest'
 GLOBAL_INJECTED_EXTERNAL_DNS = 'N/A'
@@ -44,8 +42,6 @@ GLOBAL_INJECTED_POMBA_KIBANA_IP_ADDR = '{{include "robot.ingress.svchost" (dict 
 GLOBAL_INJECTED_POMBA_ELASTIC_SEARCH_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "pomba-es") }}'
 GLOBAL_INJECTED_POMBA_CONTEX_TAGGREGATOR_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "pomba-contextaggregator") }}'
 GLOBAL_INJECTED_KEYSTONE = '{{ .Values.openStackKeyStoneUrl }}'
-GLOBAL_INJECTED_MR_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "message-router") }}'
-GLOBAL_INJECTED_BC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-bc") }}'
 GLOBAL_INJECTED_MUSIC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "music") }}'
 GLOBAL_INJECTED_NBI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "nbi") }}'
 GLOBAL_INJECTED_NETWORK = '{{ .Values.openStackPrivateNetId }}'
@@ -164,22 +160,32 @@ GLOBAL_DCAE_AUTHENTICATION = [GLOBAL_DCAE_USERNAME, GLOBAL_DCAE_PASSWORD]
 # dcae hv-ves info
 GLOBAL_DCAE_HVVES_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dcae-hv-ves-collector") }}'
 GLOBAL_DCAE_HVVES_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-hv-ves-collector" "port" 6061) }}'
-# data router info - everything is from the private oam network (also called onap private network)
-GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
-GLOBAL_DMAAP_DR_PROV_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-dr-prov" "port" 443) }}'
-GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
-GLOBAL_DMAAP_DR_NODE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmapp-dr-node" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
-# dmaap message router info
+
+#DMAAP
+# message router info - everything is from the private oam network (also called onap private network)
+GLOBAL_MR_SERVER_PROTOCOL = "http"
+GLOBAL_MR_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
+GLOBAL_INJECTED_MR_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "message-router") }}'
 GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "message-router") }}'
 GLOBAL_DMAAP_MESSAGE_ROUTER_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
-# dmaap kafka info
-GLOBAL_DMAAP_KAFKA_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "message-router-kafka") }}'
-GLOBAL_DMAAP_KAFKA_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router-kafka" "port" 9092) }}'
-GLOBAL_DMAAP_KAFKA_JAAS_USERNAME = '{{ .Values.kafkaJaasUsername }}'
-GLOBAL_DMAAP_KAFKA_JAAS_PASSWORD = '{{ .Values.kafkaJaasPassword }}'
+# bus controller info
+GLOBAL_INJECTED_BC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-bc") }}'
+GLOBAL_BC_SERVER_PROTOCOL = 'http'
+GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" 8080) }}'
+GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
+GLOBAL_BC_PASSWORD = '{{ .Values.bcPassword }}'
+# data router info - everything is from the private oam network (also called onap private network)
+GLOBAL_DMAAP_DR_PROV_SERVER_PROTOCOL = 'http'
+GLOBAL_DMAAP_DR_PROV_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-dr-prov" "port" 8080) }}'
+GLOBAL_INJECTED_DMAAP_DR_PROV_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-prov") }}'
+GLOBAL_DMAAP_DR_NODE_SERVER_PROTOCOL = 'http'
+GLOBAL_DMAAP_DR_NODE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmapp-dr-node" "port" 8080) }}'
+GLOBAL_INJECTED_DMAAP_DR_NODE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "dmaap-dr-node") }}'
+
 # strimzi kafka
 GLOBAL_KAFKA_BOOTSTRAP_SERVICE = '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
-GLOBAL_KAFKA_USER = '{{ .Values.strimziKafkaJaasUsername }}'
+GLOBAL_KAFKA_USER = '{{ .Values.strimziKafkaUsername }}'
+
 # DROOL server port and credentials
 GLOBAL_DROOLS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "policy-drools-pdp" "port" 9696) }}'
 GLOBAL_DROOLS_USERNAME = '{{ .Values.droolsUsername }}'
@@ -207,14 +213,7 @@ GLOBAL_POMBA_CONTEXTAGGREGATOR_PORT = '{{include "robot.ingress.port" (dict "roo
 # microservice bus info - everything is from the private oam network (also called onap private network)
 GLOBAL_MSB_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_MSB_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "msb-iag" "port" ( ternary 443 80 (eq "true" (include "common.needTLS" . )))) }}'
-# message router info - everything is from the private oam network (also called onap private network)
-GLOBAL_MR_SERVER_PROTOCOL = "http"
-GLOBAL_MR_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "message-router" "port" 3904) }}'
-# bus controller info
-GLOBAL_BC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
-GLOBAL_BC_HTTPS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dmaap-bc" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
-GLOBAL_BC_USERNAME = '{{ .Values.bcUsername }}'
-GLOBAL_BC_PASSWORD = '{{ .Values.bcPassword }}'
+
 # dcae inventory and deployment handler info
 GLOBAL_INVENTORY_SERVER_NAME = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "inventory") }}'
 GLOBAL_INVENTORY_SERVER_PROTOCOL = "https"

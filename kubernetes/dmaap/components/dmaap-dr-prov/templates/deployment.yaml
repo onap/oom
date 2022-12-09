@@ -15,93 +15,48 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
-      hostname: {{ .Values.global.dmaapDrProvName }}
-      initContainers:
-        - name: {{ include "common.name" . }}-readiness
-          securityContext:
-            runAsUser: 100
-            runAsGroup: 65533
-          image: {{ include "repositoryGenerator.image.readiness" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-          - /app/ready.py
-          args:
-          - --job-name
-          - {{ include "common.release" . }}-dmaap-dr-mariadb-init-config-job
-          env:
-          - name: NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-        {{- if .Values.global.aafEnabled }}
-
-        {{ include "common.certInitializer.initContainer" . | nindent 8 }}
-
-        - name: {{ include "common.name" . }}-permission-fixer
-          securityContext:
-            runAsUser: 0
-          image: {{ include "repositoryGenerator.image.busybox" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          command: ["chown","-Rf","1000:1001", "/opt/app/"]
-
-        {{ end }}
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.config.dmaapDrProv.internalPort }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.config.dmaapDrProv.internalPort }}
+            httpGet:
+              port: {{ .Values.liveness.port }}
+              path: /internal/prov
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.config.dmaapDrProv.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readiness.periodSeconds }}
+            httpGet:
+              port: {{ .Values.liveness.port }}
+              path: /internal/prov
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
           env:
           - name: DB_USERNAME
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-dr-db-user-credentials" "key" "login") | indent 12 }}
           - name: DB_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-dr-db-user-credentials" "key" "password") | indent 12 }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: false
-          - mountPath: /opt/app/datartr/etc/provserver.properties
-            name: {{ include "common.fullname" . }}-config
-            subPath: provserver.properties
-          - mountPath: /opt/app/datartr/etc/logback.xml
-            name: {{ include "common.fullname" . }}-log-conf
-            subPath: logback.xml
-          - mountPath: {{ .Values.global.loggingDirectory }}
-            name: logs
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: false
+            - mountPath: /opt/app/datartr/etc/provserver.properties
+              name: {{ include "common.fullname" . }}-config
+              subPath: provserver.properties
+            - mountPath: /opt/app/datartr/etc/logback.xml
+              name: {{ include "common.fullname" . }}-log-conf
+              subPath: logback.xml
           resources:
 {{ include "common.resources" . }}
         {{- if .Values.nodeSelector }}
@@ -112,10 +67,8 @@ spec:
         affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
-      # Filebeat sidecar container
-        {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -128,8 +81,5 @@ spec:
       - name: {{ include "common.fullname" . }}-log-conf
         configMap:
           name: {{ include "common.fullname" . }}-log
-      {{ include "common.log.volumes" . | nindent 6 }}
-      - name: logs
-        emptyDir: {}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
