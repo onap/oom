@@ -104,6 +104,10 @@
   image: {{ include "repositoryGenerator.image.dbcClient" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
   env:
+  - name: PROTO
+    value: "http"
+  - name: PORT
+    value: "8080"
   - name: RESP_CACHE
     value: /opt/app/config/cache
   - name: REQUESTID

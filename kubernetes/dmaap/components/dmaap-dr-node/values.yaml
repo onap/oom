@@ -16,41 +16,15 @@
 # Global configuration defaults.
 #################################################################
 global:
-  loggingDirectory: /var/log/onap/datarouter
   persistence: {}
-  aafEnabled: true
-  centralizedLoggingEnabled: true
-
-#################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: dmaap-dr-node-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: dmaap-dr-node
-  fqi: dmaap-dr-node@dmaap-dr.onap.org
-  public_fqdn: dmaap-dr.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: >
-    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
-    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.credsPath }}/mycreds.prop
+  dmaapDrProvName: dmaap-dr-prov
 
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/dmaap/datarouter-node:2.1.11
+image: onap/dmaap/datarouter-node:2.1.12
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
-
-# application configuration - see parent values chart
 
 # default number of instances
 replicaCount: 1
@@ -59,6 +33,29 @@ nodeSelector: {}
 
 affinity: {}
 
+# application configuration - see parent values chart
+# dr uses the EELF Logging framework https://github.com/att/EELF
+# and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+logLevel: "DEBUG"
+
+containerPort: &svc_port 8080
+
+service:
+  type: ClusterIP
+  name: dmaap-dr-node
+  ports:
+    - name: http
+      port: *svc_port
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "dmaap-dr-node-api"
+      name: "dmaap-dr-node"
+      port: *svc_port
+  config:
+    ssl: "redirect"
+
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 30
@@ -66,14 +63,14 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
-  port: api
+  port: *svc_port
 
 readiness:
   initialDelaySeconds: 30
   periodSeconds: 10
-  port: api
+  port: *svc_port
 
-## Persist data to a persitent volume
+## Persist data to a persistent volume
 persistence:
   enabled: true
   mountPath: /dockerdata-nfs
@@ -97,27 +94,8 @@ persistence:
     labels:
       app.kubernetes.io/component: event-logs
 
-#################################################################
-# Secrets metaconfig
-#################################################################
-secrets: {}
-
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "dmaap-dr-node-api"
-      name: "dmaap-dr-node"
-      port: 8443
-      plain_port: 8080
-  config:
-    ssl: "redirect"
-
 # Resource Limit flavor -By Default using small
 flavor: small
-
-securityContext:
-  user_id: 1000
-  group_id: 1000
 
 # Segregation for Different environment (Small and Large)
 resources:
@@ -137,33 +115,16 @@ resources:
       memory: 2Gi
   unlimited: {}
 
-service:
-  type: NodePort
-  name: dmaap-dr-node
-  useNodePortExt: true
-  both_tls_and_plain: true
-  annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  ports:
-    - name: api
-      port: 8443
-      plain_port: 8080
-      port_protocol: http
-      nodePort: 94
-
-config:
-  # dr node server configuration
-  dmaapDrNode:
-    # dr uses the EELF Logging framework https://github.com/att/EELF
-    # and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
-    logLevel: "INFO"
-
 #Pods Service Account
 serviceAccount:
   nameOverride: dmaap-dr-node
   roles:
     - read
 
-#Log configuration
-log:
-  path: /var/log/onap
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+readinessCheck:
+  wait_for:
+    - dmaap-dr-prov

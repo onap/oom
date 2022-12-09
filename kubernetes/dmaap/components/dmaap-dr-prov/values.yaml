@@ -16,10 +16,6 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
-  loggingDirectory: /opt/app/datartr/logs
-  persistence: {}
-  centralizedLoggingEnabled: true
   mariadbGalera: &mariadbGalera
     #This flag allows DMAAP-DR to instantiate its own mariadb-galera cluster
     localCluster: false
@@ -42,13 +38,8 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/dmaap/datarouter-prov:2.1.11
+image: onap/dmaap/datarouter-prov:2.1.12
 pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
-
-# application configuration - see parent values chart
 
 # default number of instances
 replicaCount: 1
@@ -57,48 +48,46 @@ nodeSelector: {}
 
 affinity: {}
 
-# probe configuration parameters
-liveness:
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
+containerPort: &svc_port 8080
 
-readiness:
-  initialDelaySeconds: 30
-  periodSeconds: 10
-
-## Persist data to a persitent volume
-persistence:
-  enabled: true
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteOnce
-  mountPath: /dockerdata-nfs
+service:
+  type: ClusterIP
+  name: dmaap-dr-prov
+  ports:
+    - name: &port http
+      port: *svc_port
 
 ingress:
   enabled: false
   service:
     - baseaddr: "dmaap-dr-prov-api"
       name: "dmaap-dr-prov"
-      port: 8443
-      plain_port: 8080
+      port: *svc_port
   config:
     ssl: "redirect"
 
-config:
-  # dr provisioning server configuration
-  dmaapDrProv:
-    servicetype: NodePort
-    internalPort: 8080
-    internalPort2: 8443
-    portName: dr-prov-port
-    portName2: dr-prov-port2
-    nodePort: 59
-    nodePort2: 69
-    # dr uses the EELF Logging framework https://github.com/att/EELF
-    # and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
-    logLevel: "INFO"
+readinessCheck:
+  wait_for:
+    jobs:
+      - '{{ include "common.release" . }}-dmaap-dr-mariadb-init-config-job'
+
+# dr uses the EELF Logging framework https://github.com/att/EELF
+# and supports the following log levels: TRACE, DEBUG, INFO, WARN, ERROR, OFF
+logLevel: "DEBUG"
+
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+  port: *svc_port
+
+readiness:
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  port: *svc_port
 
 # mariadb-galera configuration
 mariadb-galera:
@@ -124,29 +113,8 @@ mariadb-init:
     mysqlDatabase: *mysqlDbName
   nameOverride: dmaap-dr-mariadb-init
 
-#################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: dmaap-dr-prov-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-# aafDeployCredsExternalSecret: some secret
-  fqdn: dmaap-dr-prov
-  fqi: dmaap-dr-prov@dmaap-dr.onap.org
-  publicFqdn: dmaap-dr.onap.org
-  cadiLatitude: 0.0
-  cadiLongitude: 0.0
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-
-
 # Resource Limit flavor -By Default using small
 flavor: small
-
-securityContext:
-  user_id: 1000
-  group_id: 1000
 
 # Segregation for Different environment (Small and Large)
 resources:
@@ -166,12 +134,13 @@ resources:
       memory: 2Gi
   unlimited: {}
 
+#Pods Security Context
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
 #Pods Service Account
 serviceAccount:
   nameOverride: dmaap-dr-prov
   roles:
     - read
-
-#Log configuration
-log:
-  path: /var/log/onap
