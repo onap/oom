@@ -22,103 +22,14 @@ metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
   serviceName: {{ include "common.servicename" . }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
-      {{- if  .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-update-config
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0);
-          cd /config-input  && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - mountPath: /config
-          name: jetty
-        - mountPath: /config-input
-          name: etc
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      {{- end }}
       containers:
-      {{- if .Values.prometheus.jmx.enabled }}
-        - name: prometheus-jmx-exporter
-          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.prometheus.jmx.image }}:{{ .Values.prometheus.jmx.imageTag }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-          - java
-          - -XX:+UnlockExperimentalVMOptions
-          - -XX:+UseCGroupMemoryLimitForHeap
-          - -XX:MaxRAMFraction=1
-          - -XshowSettings:vm
-          - -jar
-          - jmx_prometheus_httpserver.jar
-          - {{ .Values.prometheus.jmx.port | quote }}
-          - /etc/jmx-kafka/jmx-mrservice-prometheus.yml
-          ports:
-          - containerPort: {{ .Values.prometheus.jmx.port }}
-          resources:
-          volumeMounts:
-          - name: jmx-config
-            mountPath: /etc/jmx-kafka
-      {{- end }}
-        - name: srimzi-zk-entrance
-          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.zookeeper.entrance.image }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-            - /opt/stunnel/stunnel_run.sh
-          ports:
-            - containerPort: {{ .Values.global.zkTunnelService.internalPort }}
-              name: zoo
-              protocol: TCP
-          env:
-            - name: LOG_LEVEL
-              value: debug
-            - name: STRIMZI_ZOOKEEPER_CONNECT
-              value: '{{ include "common.release" . }}-strimzi-zookeeper-client:{{ .Values.global.zkTunnelService.internalPort }}'
-          livenessProbe:
-            exec:
-              command:
-                - /opt/stunnel/stunnel_healthcheck.sh
-                - '{{ .Values.global.zkTunnelService.internalPort }}'
-            failureThreshold: 3
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-          readinessProbe:
-            exec:
-              command:
-                - /opt/stunnel/stunnel_healthcheck.sh
-                - '{{ .Values.global.zkTunnelService.internalPort }}'
-            failureThreshold: 3
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-          volumeMounts:
-            - mountPath: /etc/cluster-operator-certs/
-              name: cluster-operator-certs
-            - mountPath: /etc/cluster-ca-certs/
-              name: cluster-ca-certs
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if  .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - -c
-          - |
-            cp /jetty-config/ajsc-jetty.xml /appl/dmaapMR1/etc/
-            cp /jetty-config/cadi.properties {{ .Values.certInitializer.appMountPath }}/local/cadi.properties
-            /bin/sh /appl/startup.sh
-          {{- end }}
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -148,58 +59,78 @@ spec:
             failureThreshold: {{ .Values.startup.failureThreshold }}
           env:
           - name: JAASLOGIN
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "mr-kafka-admin-secret" "key" "sasl.jaas.config") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: strimzi-kafka-admin
+                key: sasl.jaas.config
           - name: SASLMECH
             value: scram-sha-512
           - name: enableCadi
-            value: "{{ .Values.global.aafEnabled }}"
+            value: "true"
           - name: useZkTopicStore
             value: "false"
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          - mountPath: /etc/localtime
-            name: localtime
-            readOnly: true
-          - mountPath: /appl/dmaapMR1/bundleconfig/etc/appprops/MsgRtrApi.properties
-            subPath: MsgRtrApi.properties
-            name: appprops
-          - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
-            subPath: logback.xml
-            name: logback
-          {{- if  .Values.global.aafEnabled }}
-          - mountPath: /appl/dmaapMR1/etc/runner-web.xml
-            subPath: runner-web.xml
-            name: etc
-          - mountPath: /appl/dmaapMR1/bundleconfig/etc/sysprops/sys-props.properties
-            subPath: sys-props.properties
-            name: sys-props
-          - mountPath: /jetty-config
-            name: jetty
-          {{- end }}
-          resources: {{ include "common.resources" . | nindent 12 }}
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+            - mountPath: /appl/dmaapMR1/bundleconfig/etc/appprops/MsgRtrApi.properties
+              subPath: MsgRtrApi.properties
+              name: appprops
+            - mountPath: /appl/dmaapMR1/bundleconfig/etc/logback.xml
+              subPath: logback.xml
+              name: logback
+          resources:
+{{ include "common.resources" . }}
+        - name: {{ .Values.zkTunnelService.name }}
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.zkTunnelService.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+            - /opt/stunnel/stunnel_run.sh
+          ports:
+            - containerPort: {{ .Values.zkTunnelService.internalPort }}
+              name: {{ .Values.zkTunnelService.portName }}
+              protocol: {{ .Values.zkTunnelService.protocol }}
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.zkTunnelService.logLevel }}
+            - name: STRIMZI_ZOOKEEPER_CONNECT
+              value: '{{ include "common.release" . }}-strimzi-zookeeper-client:{{ .Values.zkTunnelService.internalPort }}'
+          livenessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /opt/stunnel/stunnel_healthcheck.sh
+                - '{{ .Values.zkTunnelService.internalPort }}'
+            failureThreshold: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /etc/cluster-operator-certs/
+              name: cluster-operator-certs
+            - mountPath: /etc/cluster-ca-certs/
+              name: cluster-ca-certs
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
         - name: appprops
           configMap:
             name: {{ include "common.fullname" . }}-msgrtrapi-prop-configmap
-        - name: etc
-          configMap:
-            name: {{ include "common.fullname" . }}-etc
         - name: logback
           configMap:
             name: {{ include "common.fullname" . }}-logback-xml-configmap
-        {{- if .Values.prometheus.jmx.enabled }}
-        - name: jmx-config
-          configMap:
-            name: {{ include "common.fullname" . }}-prometheus-configmap
-        {{- end }}
-        - name: sys-props
-          configMap:
-            name: {{ include "common.fullname" . }}-sys-props
-        - name: jetty
-          emptyDir: {}
         - name: cluster-operator-certs
           secret:
             defaultMode: 288
@@ -226,7 +157,7 @@ spec:
         matchLabels:
           app.kubernetes.io/name: {{ include "common.name" . }}
     ports:
-    - port: {{ .Values.global.zkTunnelService.internalPort }}
-      protocol: TCP
+    - port: {{ .Values.zkTunnelService.internalPort }}
+      protocol: {{ .Values.zkTunnelService.protocol }}
   policyTypes:
   - Ingress
