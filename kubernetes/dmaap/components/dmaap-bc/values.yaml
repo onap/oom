@@ -17,8 +17,11 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
+  persistence: {}
 
+#################################################################
+# Secrets metaconfig
+#################################################################
 secrets:
   - uid: pg-root-pass
     name: &pgRootPassSecretName '{{ include "common.release" . }}-dmaap-bc-pg-root-pass'
@@ -37,57 +40,39 @@ secrets:
 #################################################################
 # Application configuration defaults.
 #################################################################
+# application images
+image: onap/dmaap/dmaap-bc:2.0.11-latest
 pullPolicy: Always
 
-# application images
-image: onap/dmaap/dmaap-bc:2.0.10
-
+#DMaaP Bus Controller client image for provisioning at deploy time
+dbcClientImage: onap/dmaap/dbc-client:2.0.11-latest
 
 # application configuration
-dmaapMessageRouterService: message-router
-
-# change the following value to point to Windriver instance maintained
-# by AAF team.
-# e.g.
-#aafURL: https://aaf-onap-test.osaaf.org:8095/proxy/
-aafURL: https://aaf-service:8100/
-aafLocateUrl: https://aaf-locate:8095
-topicMgrUser: dmaap-bc@dmaap-bc.onap.org
-topicMgrPwd: demo123456!
-adminUser: aaf_admin@people.osaaf.org
-adminPwd: demo123456!
-
-#################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: dmaap-bc-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: dmaap-bc
-  fqi: dmaap-bc@dmaap-bc.onap.org
-  publicFqdn: dmaap-bc.onap.org
-  cadiLatitude: 0.0
-  cadiLongitude: 0.0
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-
-persistence:
-  aafCredsPath: /opt/app/osaaf/local/
-
-# for Casablanca default deployment, leave this true to
-# get a topic namespace that matches MR.  When set to false,
-# it will compose the topic namespace using the kubernetes namespace value
-fixedTopicNamespace: true
-
-# for quicker deployments in dev, ability to disable using postgres
-PG:
-  enabled: true
+dmaapMessageRouterService: &mr_name message-router
+dmaapDataRouterProvService: &dr_prov_name dmaap-dr-prov
+dmaapDataRouterNodeService: &dr_node_name dmaap-dr-node
 
 nodeSelector: {}
 
 affinity: {}
+
+containerPort: &svc_port 8080
+
+service:
+  type: ClusterIP
+  name: &svc_name dmaap-bc
+  ports:
+    - name: &port http
+      port: *svc_port
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "dmaap-bc-api"
+      name: *svc_name
+      port: *svc_port
+  config:
+    ssl: "redirect"
 
 # probe configuration parameters
 liveness:
@@ -95,31 +80,24 @@ liveness:
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
-  port: api
+  port: *svc_port
   enabled: true
 
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
-  port: api
+  port: *svc_port
 
+usePostgres: &use_pg true
 
-service:
-  type: NodePort
-  name: dmaap-bc
-  ports:
-    - name: api
-      port: 8443
-      plain_port: 8080
-      port_protocol: http
-      nodePort: 42
-
-
-# application configuration override for postgres
 postgres:
-  nameOverride: dbc-pg
+# For Dev deployments, use in memory DB
+# postgres
+#   enabled: false
+  enabled: true
+  nameOverride: &pg_name dbc-postgres
   service:
-    name: dbc-postgres
+    name: *pg_name
     name2: dbc-pg-primary
     name3: dbc-pg-replica
   container:
@@ -135,22 +113,8 @@ postgres:
     mountSubPath: dbc/data
     mountInitPath: dbc
 
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "dmaap-bc-api"
-      name: "dmaap-bc"
-      port: 8443
-      plain_port: 8080
-  config:
-    ssl: "redirect"
-
 # Resource Limit flavor -By Default using small
 flavor: small
-
-securityContext:
-  user_id: 1000
-  group_id: 101
 
 # Segregation for Different environment (Small and Large)
 resources:
@@ -170,13 +134,17 @@ resources:
       memory: 2Gi
   unlimited: {}
 
+securityContext:
+  user_id: 1000
+  group_id: 101
+
 #Pods Service Account
 serviceAccount:
-  nameOverride: dmaap-bc
+  nameOverride: *svc_name
   roles:
     - read
 
-wait_for_job_container:
-  containers:
-    - 'dmaap-provisioning-job'
-
+readinessCheck:
+  wait_for:
+    - *mr_name
+    - *dr_node_name
