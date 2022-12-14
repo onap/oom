@@ -55,9 +55,6 @@ usage ()
     echo "       demo-k8s.sh <namespace> preload <vnf_name> <module_name>"
     echo "               - Preload data for VNF for the <module_name>"
     echo " "
-    echo "       demo-k8s.sh <namespace> appc <module_name>"
-    echo "               - provide APPC with vFW module mount point for closed loop"
-    echo " "
     echo "       demo-k8s.sh <namespace> init_robot [ <etc_hosts_prefix> ]"
     echo "               - Initialize robot after all ONAP VMs have started"
     echo " "
@@ -165,16 +162,6 @@ do
             fi
             VARIABLES="$VARIABLES -v VNF_NAME:$1"
             shift
-            VARIABLES="$VARIABLES -v MODULE_NAME:$1"
-            shift
-            ;;
-        appc)
-            TAG="APPCMountPointDemo"
-            shift
-            if [ $# -ne 1 ];then
-                    echo "Usage: demo-k8s.sh <namespace> appc <module_name>"
-                    exit
-                fi
             VARIABLES="$VARIABLES -v MODULE_NAME:$1"
             shift
             ;;

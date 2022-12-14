@@ -16,8 +16,6 @@
 
 GLOBAL_INJECTED_AAF_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "aaf-service") }}'
 GLOBAL_INJECTED_AAI_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "aai") }}'
-GLOBAL_INJECTED_APPC_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "appc") }}'
-GLOBAL_INJECTED_APPC_CDT_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "appc-cdt") }}'
 GLOBAL_INJECTED_ARTIFACTS_VERSION = '{{.Values.demoArtifactsVersion}}'
 GLOBAL_INJECTED_ARTIFACTS_REPO_URL = "{{ .Values.demoArtifactsRepoUrl }}"
 GLOBAL_INJECTED_CLAMP_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "policy-gui") }}'
@@ -133,15 +131,6 @@ GLOBAL_AAI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostnam
 GLOBAL_AAI_USERNAME = '{{ .Values.aaiUsername }}'
 GLOBAL_AAI_PASSWORD = '{{ .Values.aaiPassword}}'
 GLOBAL_AAI_AUTHENTICATION = [GLOBAL_AAI_USERNAME, GLOBAL_AAI_PASSWORD]
-# appc info - everything is from the private oam network (also called onap private network)
-GLOBAL_APPC_SERVER_PROTOCOL = "https"
-GLOBAL_APPC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "appc" "port" 8443) }}'
-GLOBAL_APPC_USERNAME = '{{ .Values.appcUsername }}'
-GLOBAL_APPC_PASSWORD = '{{ .Values.appcPassword }}'
-GLOBAL_APPC_AUTHENTICATION = [GLOBAL_APPC_USERNAME, GLOBAL_APPC_PASSWORD]
-GLOBAL_APPC_CDT_SERVER_PROTOCOL = "https"
-GLOBAL_APPC_CDT_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "appc-cdt" "port" 18080) }}'
-GLOBAL_APPC_CDT_USERNAME = "demo"
 # sdc info - everything is from the private oam network (also called onap private network)
 GLOBAL_SDC_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_SDC_FE_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "sdc-fe" "port" ( ternary 9443 8181 (eq "true" (include "common.needTLS" . )))) }}'

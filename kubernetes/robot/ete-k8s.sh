@@ -31,7 +31,7 @@ if [ "$1" = "" ] || [ "$2" = "" ]; then
    echo "              InitDistribution, PreloadDemo, deleteVNF, instantiateDemoVFWCL, instantiateVFW,    "
    echo "              instantiateVFWCL, instantiateVFWDT, instantiateVFWCLDN"
    echo ""
-   echo "  health-check.robot: health, core, small, medium, 3rdparty, api, datarouter, externalapi, health-aaf, health-aai, health-appc,"
+   echo "  health-check.robot: health, core, small, medium, 3rdparty, api, datarouter, externalapi, health-aaf, health-aai,"
    echo "                      health-clamp, health-cli, health-dcae, health-dmaap, health-log, health-modeling, health-msb,"
    echo "                      health-multicloud, health-oof, health-policy, health-pomba, health-portal, health-sdc, health-sdnc,"
    echo "                      health-so, health-uui, health-vfc, health-vid, health-vnfsdk, healthdist, healthlogin, healthmr,"

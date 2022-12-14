@@ -32,7 +32,6 @@ ENV portal_branch=$branch
 #ENV vid_branch: $branch
 #ENV clamp_branch: $branch
 
-#ENV appc_repo: http://gerrit.onap.org/r/appc/deployment.git
 ENV so_repo=http://gerrit.onap.org/r/so/docker-config.git
 #ENV policy_repo: http://gerrit.onap.org/r/policy/docker.git
 ENV portal_repo=http://gerrit.onap.org/r/portal.git

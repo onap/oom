@@ -54,7 +54,6 @@ Step 5. Display the charts that are available to be deployed:
 ```
 > helm search -l
 NAME                    VERSION    DESCRIPTION
-local/appc              2.0.0      Application Controller
 local/clamp             2.0.0      ONAP Clamp
 local/onap              2.0.0      Open Network Automation Platform (ONAP)
 local/robot             2.0.0      A helm Chart for kubernetes-ONAP Robot
