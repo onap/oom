@@ -60,9 +60,17 @@ Global settings relevant for ServiceMesh:
       # enable all component's Ingress interfaces
       enable_all: false
       # default Ingress base URL
-      # can be overwritten in component by setting ingress.baseurlOverride
+      # All http requests via ingress will be redirected
       virtualhost:
+        # Default Ingress base URL
+        # can be overwritten in component by setting ingress.baseurlOverride
         baseurl: "simpledemo.onap.org"
+        # prefix for baseaddr
+        # can be overwritten in component by setting ingress.preaddrOverride
+        preaddr: ""
+        # postfix for baseaddr
+        # can be overwritten in component by setting ingress.postaddrOverride
+        postaddr: ""
       # All http requests via ingress will be redirected on Ingress controller
       # only valid for Istio Gateway (ServiceMesh enabled)
       config:
@@ -101,6 +109,10 @@ Ingress settings:
 - enable_all: true → enables Ingress configuration in each component
 - virtualhost.baseurl: "simpledemo.onap.org" → sets globally the URL for all Interfaces set by the components,
     resulting in e.g. "aai-api.simpledemo.onap.org", can be overwritten in the component via: ingress.baseurlOverride
+- virtualhost.preaddr: "pre-" → sets globally a prefix for the Application name for all Interfaces set by the components,
+    resulting in e.g. "pre-aai-api.simpledemo.onap.org", can be overwritten in the component via: ingress.preaddrOverride
+- virtualhost.postaddr: "-post" → sets globally a postfix for the Application name for all Interfaces set by the components,
+    resulting in e.g. "aai-api-post.simpledemo.onap.org", can be overwritten in the component via: ingress.postaddrOverride
 - config.ssl: redirect → sets in the Ingress globally the redirection of all Interfaces from http (port 80) to https (port 443)
 - config.tls.secret: "..." → (optional) overrides the default selfsigned SSL certificate with a certificate stored in the specified secret
 - namespace: istio-ingress → (optional) overrides the namespace of the ingress gateway which is used for the created SSL certificate
