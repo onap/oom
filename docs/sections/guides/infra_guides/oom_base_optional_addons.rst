@@ -128,7 +128,7 @@ Install Istio Gateway
   <recommended-istio-version> with the version defined in
   the :ref:`versions_table` table::
 
-    > helm upgrade -i istio-ingressgateway istio/gateway -n istio-ingress
+    > helm upgrade -i istio-ingress istio/gateway -n istio-ingress
     --version <recommended-istio-version> --wait
 
 Kiali Installation
