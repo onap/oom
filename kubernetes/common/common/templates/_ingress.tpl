@@ -23,42 +23,84 @@
 {{- define "ingress.config.host" -}}
 {{-   $dot := default . .dot -}}
 {{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   $preaddr := default "" $dot.Values.global.ingress.virtualhost.preaddr -}}
+{{-   $preaddr := include "common.ingress._overrideIfDefined" (dict "currVal" $preaddr "parent" (default (dict) $dot.Values.ingress) "var" "preaddrOverride") -}}
+{{-   $postaddr := default "" $dot.Values.global.ingress.virtualhost.postaddr -}}
+{{-   $postaddr := include "common.ingress._overrideIfDefined" (dict "currVal" $postaddr "parent" (default (dict) $dot.Values.ingress) "var" "postaddrOverride") -}}
 {{-   $burl := (required "'baseurl' param, set to the generic part of the fqdn, is required." $dot.Values.global.ingress.virtualhost.baseurl) -}}
 {{-   $burl := include "common.ingress._overrideIfDefined" (dict "currVal" $burl "parent" (default (dict) $dot.Values.ingress) "var" "baseurlOverride") -}}
-{{ printf "%s.%s" $baseaddr $burl }}
+{{ printf "%s%s%s.%s" $preaddr $baseaddr $postaddr $burl }}
 {{- end -}}
 
 {{/*
-  Helper function to add the tls route
+  Istio Helper function to add the tls route
 */}}
-{{- define "ingress.config.tls" -}}
+{{- define "istio.config.tls_simple" -}}
 {{-   $dot := default . .dot -}}
-{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+    tls:
 {{-   if $dot.Values.global.ingress.config }}
-{{-     if $dot.Values.global.ingress.config.ssl }}
-{{-       if eq $dot.Values.global.ingress.config.ssl "redirect" }}
+{{-     if $dot.Values.global.ingress.config.tls }}
+      credentialName: {{ default "ingress-tls-secret" $dot.Values.global.ingress.config.tls.secret }}
+{{-     else }}
+      credentialName: "ingress-tls-secret"
+{{-     end }}
+{{-   else }}
+      credentialName: "ingress-tls-secret"
+{{-   end }}
+      mode: SIMPLE
+{{- end -}}
+
+{{/*
+  Istio Helper function to add the tls route
+*/}}
+{{- define "istio.config.tls" -}}
+{{-   $dot := default . .dot -}}
+{{-   $service := (required "'service' param, set to the specific service, is required." .service) -}}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   if $service.exposedPort }}
+{{-     if $service.exposedProtocol }}
+{{-       if eq $service.exposedProtocol "TLS" }}
+    {{ include "istio.config.tls_simple" (dict "dot" $dot ) }}
+{{-       end }}
+{{-     end }}
+{{-   else }}
+{{-     if $dot.Values.global.ingress.config }}
+{{-       if $dot.Values.global.ingress.config.ssl }}
+{{-         if eq $dot.Values.global.ingress.config.ssl "redirect" }}
     tls:
       httpsRedirect: true
   - port:
       number: 443
       name: https
       protocol: HTTPS
-    tls:
-{{-         if $dot.Values.global.ingress.config }}
-{{-           if $dot.Values.global.ingress.config.tls }}
-      credentialName: {{ default "ingress-tls-secret" $dot.Values.global.ingress.config.tls.secret }}
-{{-           else }}
-      credentialName: "ingress-tls-secret"
-{{-           end }}
-{{-         else }}
-      credentialName: "ingress-tls-secret"
-{{-         end }}
-      mode: SIMPLE
+    {{ include "istio.config.tls_simple" (dict "dot" $dot ) }}
     hosts:
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+{{-         end }}
 {{-       end }}
 {{-     end }}
 {{-   end }}
+{{- end -}}
+
+{{/*
+  Istio Helper function to add the external port of the service
+*/}}
+{{- define "istio.config.port" -}}
+{{-   $dot := default . .dot -}}
+{{-   if .exposedPort }}
+      number: {{ .exposedPort }}
+{{-     if .exposedProtocol }}
+      name: {{ .baseaddr }}
+      protocol: {{ .exposedProtocol }}
+{{-     else -}}
+      name: http
+      protocol: HTTP
+{{-     end -}}
+{{-   else -}}
+      number: 80
+      name: http
+      protocol: HTTP
+{{-   end -}}
 {{- end -}}
 
 {{/*
@@ -88,7 +130,7 @@
 {{- end -}}
 
 {{/*
-  Helper function to add the route to the service
+  Istio Helper function to add the route to the service
 */}}
 {{- define "istio.config.route" -}}
 {{-   $dot := default . .dot -}}
@@ -199,12 +241,10 @@ spec:
     istio: ingressgateway # use Istio default gateway implementation
   servers:
   - port:
-      number: 80
-      name: http
-      protocol: HTTP
+      {{- include "istio.config.port" . }}
     hosts:
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{ include "ingress.config.tls" (dict "dot" $dot "baseaddr" $baseaddr) }}
+    {{- include "istio.config.tls" (dict "dot" $dot "service" . "baseaddr" $baseaddr) }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
