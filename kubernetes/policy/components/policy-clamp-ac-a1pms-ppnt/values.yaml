@@ -1,7 +1,5 @@
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2018 Ericsson. All rights reserved.
-#   Modifications Copyright (C) 2019-2021 AT&T Intellectual Property.
-#   Modifications Copyright © 2022 Nordix Foundation
+#  Copyright (C) 2022 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,28 +20,29 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
-  aafEnabled: true
+  nodePortPrefixExt: 304
   persistence: {}
+  aafEnabled: true
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: restserver-creds
+  - uid: restserver-secret
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.restServer.credsExternalSecret) . }}'
     login: '{{ .Values.restServer.user }}'
     password: '{{ .Values.restServer.password }}'
-  - uid: truststore-pass
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.trustStorePassword }}'
     passwordPolicy: required
-  - uid: keystore-pass
+  - uid: keystore-password
     type: password
     externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
     password: '{{ .Values.certStores.keyStorePassword }}'
+    passwordPolicy: required
+  - uid: truststore-password
+    type: password
+    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
+    password: '{{ .Values.certStores.trustStorePassword }}'
     passwordPolicy: required
   - uid: policy-kafka-user
     externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
@@ -53,29 +52,12 @@ secrets:
         value: '{{ .Values.config.someConfig }}'
         policy: generate
 
-#################################################################
-# Application configuration defaults.
-#################################################################
-# application image
-image: onap/policy-apex-pdp:2.9.0
-pullPolicy: Always
-
-# flag to enable debugging - application support required
-debugEnabled: false
-
-# application configuration
-
-restServer:
-  user: healthcheck
-  password: zb!XztG34
-truststore:
-  password: Pol1cy_0nap
 certStores:
   keyStorePassword: Pol1cy_0nap
   trustStorePassword: Pol1cy_0nap
 
 certInitializer:
-  nameOverride: policy-apex-pdp-cert-initializer
+  nameOverride: policy-clamp-ac-a1pms-ppnt-cert-initializer
   aafDeployFqi: deployer@people.osaaf.org
   aafDeployPass: demo123456!
   fqdn: policy
@@ -85,12 +67,28 @@ certInitializer:
   cadi_longitude: "0.0"
   credsPath: /opt/app/osaaf/local
   app_ns: org.osaaf.aaf
-  uid: 101
-  gid: 102
+  uid: 100
+  gid: 101
   aaf_add_config: >
-    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" >> {{ .Values.credsPath }}/.ci;
-    echo "export KEYSTORE_PASSWORD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
+    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
+    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
     chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
+
+
+#################################################################
+# Application configuration defaults.
+#################################################################
+# application image
+image: onap/policy-clamp-ac-a1pms-ppnt:6.4.0
+pullPolicy: Always
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+# application configuration
+restServer:
+  user: participantUser
+  password: zb!XztG34
 
 # default number of instances
 replicaCount: 1
@@ -98,7 +96,6 @@ replicaCount: 1
 nodeSelector: {}
 
 affinity: {}
-
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 20
@@ -106,24 +103,25 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: http-api
 
 readiness:
   initialDelaySeconds: 20
   periodSeconds: 10
+  port: http-api
 
 service:
   type: ClusterIP
-  name: policy-apex-pdp
-  portName: http
-  externalPort: 6969
-  internalPort: 6969
-  nodePort: 37
+  name: policy-clamp-ac-a1pms-ppnt
+  useNodePortExt: true
+  ports:
+  - name: http-api
+    port: 8083
+    nodePort: 42
 
 ingress:
   enabled: false
 
-# Resource Limit flavor -By Default using small
-# Segregation for Different environment (Small and Large)
 flavor: small
 resources:
   small:
@@ -131,45 +129,37 @@ resources:
       cpu: 1
       memory: 4Gi
     requests:
-      cpu: 10m
+      cpu: 100m
       memory: 1Gi
   large:
     limits:
       cpu: 2
       memory: 8Gi
     requests:
-      cpu: 20m
+      cpu: 200m
       memory: 2Gi
   unlimited: {}
 
 #Pods Service Account
 serviceAccount:
-  nameOverride: policy-apex-pdp
+  nameOverride: policy-clamp-ac-a1pms-ppnt
   roles:
-    - read
+    - create
+# Update the config here for permitting repositories and protocols
+repoList:
+  helm:
+    repos:
+      -
+        repoName: kong
+        address: https://charts.konghq.com
+      -
+        repoName: bitnami
+        address: https://charts.bitnami.com/bitnami
 
-metrics:
-  serviceMonitor:
-    # Override the labels based on the Prometheus config parameter: serviceMonitorSelector.
-    # The default operator for prometheus enforces the below label.
-    labels:
-      release: prometheus
-    enabled: true
-    port: policy-apex-pdp
-    interval: 60s
-    isHttps: true
-    basicAuth:
-      enabled: true
-      externalSecretNameSuffix: policy-apex-pdp-restserver-creds
-      externalSecretUserKey: login
-      externalSecretPasswordKey: password
-    selector:
-      app: '{{ include "common.name" . }}'
-      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-      release: '{{ include "common.release" . }}'
-      heritage: '{{ .Release.Service }}'
+    protocols:
+      - http
+      - https
 
-# application configuration
 config:
 # Event consumption (kafka) properties
   useStrimziKafka: true
@@ -179,7 +169,7 @@ config:
       groupId: policy-group
   app:
     listener:
-      policyPdpPapTopic: policy-pdp-pap
+      acRuntimeTopic: policy-acruntime-participant
 # If targeting a custom kafka cluster, ie useStrimziKakfa: false
 # uncomment below config and target your kafka bootstrap servers,
 # along with any other security config.
@@ -191,3 +181,6 @@ config:
 #
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.
+# additional:
+#   spring.config.max-size: 200
+#   spring.config.min-size: 10
