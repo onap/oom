@@ -18,18 +18,6 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
-  aaiSdcListenerKafkaUser: aai-sdc-list-user
-#################################################################
-# Secrets metaconfig
-#################################################################
-secrets:
-  - uid: aai-sdc-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
 
 #################################################################
 # Certificate configuration
@@ -74,17 +62,16 @@ restartPolicy: Always
 flavor: small
 flavorOverride: small
 
-# application configuration
-config:
-  someConfig: blah
-  kafka:
-    securityProtocol: SASL_PLAINTEXT
-    saslMechanism: SCRAM-SHA-512
-    authType: simple
-    sdcTopic:
-      pattern: SDC-DIST
-      consumerGroup: aai
-      clientId: aai-model-loader
+# Strimzi KafkaUser config
+kafkaUser:
+  acls:
+    - name: aai
+      type: group
+      operations: [Read]
+    - name: SDC-DISTR
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
 
 # default number of instances
 replicaCount: 1
