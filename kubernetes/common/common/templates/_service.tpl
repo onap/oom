@@ -131,9 +131,6 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-       else }}
   name: {{ $port.name }}
 {{-       end }}
-{{-       if (eq $serviceType "NodePort") }}
-  nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "useNodePortExt" $port.useNodePortExt) }}{{ $port.nodePort }}
-{{-       end }}
 {{-     else }}
 - port: {{ default $port.port $port.plain_port }}
   targetPort: {{ $port.name }}
@@ -148,15 +145,18 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   name: {{ $port.name }}
 {{-       end }}
 {{-     end }}
+{{-     if (eq $serviceType "NodePort") }}
+  nodePort: {{ include "common.nodePortPrefix" (dict "dot" $dot "useNodePortExt" $port.useNodePortExt) }}{{ $port.nodePort }}
+{{-     end }}
 {{-     if (and (and (include "common.needTLS" $dot) $add_plain_port) $port.plain_port)  }}
 {{-       if (eq $serviceType "ClusterIP")  }}
 - port: {{ $port.plain_port }}
   targetPort: {{ $port.name }}-plain
-{{-       if $port.plain_l4_port_protocol }}
+{{-         if $port.plain_l4_port_protocol }}
   protocol: {{ $port.plain_port_l4_protocol }}
-{{-       else }}
+{{-         else }}
   protocol: {{ default "TCP" $port.l4_protocol  }}
-{{-       end }}
+{{-         end }}
 {{-         if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-         else }}
