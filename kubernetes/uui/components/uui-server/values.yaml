@@ -143,18 +143,31 @@ readiness:
 service:
   type: NodePort
   name: uui-server
-  portName: http
   internalPort: 8082
-  nodePort: 99
+  ports:
+    - name: http
+      port: 8082
+      nodePort: '99'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "usecaseui-server",
+          "version": "v1",
+          "url": "/api/usecase-server/v1",
+          "path":"/iui/usecaseui",
+          "protocol": "REST",
+          "visualRange":"1",
+          "port": "{{ .Values.service.port }}",
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
   service:
-    - baseaddr: uui-server-api
+    - baseaddr: "uui-server-api"
       name: "uui-server"
       port: 8082
-  config:
-    ssl: "redirect"
 
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
