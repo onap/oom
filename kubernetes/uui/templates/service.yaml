@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2018 AT&T, ZTE
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,41 +15,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.servicename" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-  annotations:
-    msb.onap.org/service-info: '[
-      {
-          "serviceName": "usecaseui-ui",
-          "version": "v1",
-          "url": "/usecase-ui",
-          "path":"/iui/usecaseui",
-          "protocol": "UI",
-          "port": "{{ .Values.service.internalPort }}",
-          "visualRange":"1",
-          "enable_ssl": true
-      }
-      ]'
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.uuiPortPrefix | default .Values.uuiPortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+{{ include "common.service" . }}
