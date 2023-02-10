@@ -19,19 +19,6 @@ global:
   nodePortPrefixExt: 304
   persistence: {}
   artifactImage: onap/multicloud/framework-artifactbroker:1.9.0
-  multicloudK8sKafkaUser: mc-k8s-sdc-list-kafka-user
-
-#################################################################
-# Secrets metaconfig
-#################################################################
-secrets:
-  - uid: multicloud-k8s-sdc-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -40,16 +27,16 @@ secrets:
 image: onap/multicloud/k8s:0.10.1
 pullPolicy: Always
 
-config:
-  someConfig: blah
-  kafka:
-    securityProtocol: SASL_PLAINTEXT
-    saslMechanism: SCRAM-SHA-512
-    authType: simple
-    sdcTopic:
-      pattern: SDC-DIST
-      consumerGroup: multicloud
-      clientId: multicloud-k8s
+# Strimzi KafkaUser config
+kafkaUser:
+  acls:
+    - name: multicloud
+      type: group
+      operations: [Read]
+    - name: SDC-DISTR
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
 
 # flag to enable debugging - application support required
 debugEnabled: false
