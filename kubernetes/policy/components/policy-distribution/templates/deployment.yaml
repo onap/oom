@@ -76,12 +76,11 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
-          - name: SECURITY_PROTOCOL
-            value: {{ .Values.config.kafka.securityProtocol }}
-          - name: SASL_MECHANISM
-            value: {{ .Values.config.kafka.saslMechanism }}
           - name: SASL_JAAS_CONFIG
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-dist-kafka-user" "key" "sasl.jaas.config") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
 {{- if .Values.global.aafEnabled }}
           command: ["sh","-c"]
           args: ["source {{ .Values.certInitializer.credsPath }}/.ci;\
