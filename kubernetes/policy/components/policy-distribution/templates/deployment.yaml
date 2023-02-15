@@ -76,24 +76,22 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
-          - name: SECURITY_PROTOCOL
-            value: {{ .Values.config.kafka.securityProtocol }}
-          - name: SASL_MECHANISM
-            value: {{ .Values.config.kafka.saslMechanism }}
           - name: SASL_JAAS_CONFIG
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-dist-kafka-user" "key" "sasl.jaas.config") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
 {{- if .Values.global.aafEnabled }}
           command: ["sh","-c"]
           args: ["source {{ .Values.certInitializer.credsPath }}/.ci;\
                   /opt/app/policy/distribution/bin/policy-dist.sh /opt/app/policy/distribution/etc/mounted/config.json"]
 {{- else }}
-          command: ["/opt/app/policy/distribution/bin/policy-dist.sh"]
-          args: ["/opt/app/policy/distribution/etc/mounted/config.json"]
-          env:
           - name: KEYSTORE_PASSWD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
           - name: TRUSTSTORE_PASSWD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 12 }}
+          command: ["/opt/app/policy/distribution/bin/policy-dist.sh"]
+          args: ["/opt/app/policy/distribution/etc/mounted/config.json"]
 {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
