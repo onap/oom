@@ -55,7 +55,6 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaUser
 metadata:
   name: {{ include "common.name" . }}-ku
-  namespace: {{ include "common.namespace" $global }}
   labels:
     strimzi.io/cluster: {{ include "common.release" . }}-strimzi
 spec:
