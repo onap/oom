@@ -1,4 +1,5 @@
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,63 +17,45 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
-
-#################################################################
-# Certificate configuration
-#################################################################
-certInitializer:
-  nameOverride: cli-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: "cli"
-  app_ns: "org.osaaf.aaf"
-  fqi_namespace: "org.onap.cli"
-  fqi: "cli@cli.onap.org"
-  public_fqdn: "aaf.osaaf.org"
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: |
-    echo "*** transform AAF certs into pem files"
-    mkdir -p {{ .Values.credsPath }}/certs
-    keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
-      -keystore {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.trust.jks \
-      -alias ca_local_0 \
-      -storepass $cadi_truststore_password
-    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
-      -nokeys -out {{ .Values.credsPath }}/certs/cert.pem \
-      -passin pass:$cadi_keystore_password_p12 \
-      -passout pass:$cadi_keystore_password_p12
-    echo "*** generating needed file"
-    cat {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key \
-        {{ .Values.credsPath }}/certs/cert.pem \
-        {{ .Values.credsPath }}/certs/cacert.pem \
-        > {{ .Values.credsPath }}/certs/fullchain.pem;
-    cat {{ .Values.credsPath }}/certs/fullchain.pem
-    echo "*** change ownership of certificates to targeted user"
-    chown -R 33 {{ .Values.credsPath }}
-
-
+  persistence: {}
 #################################################################
 # Application configuration defaults.
 #################################################################
 # application image
 image: onap/cli:6.0.1
-pullPolicy: Always
+pullPolicy: IfNotPresent
+
+# flag to enable debugging - application support required
+debugEnabled: false
+
+nodeSelector: {}
+affinity: {}
+
+# Resource Limit flavor -By Default using small
 flavor: small
+# default number of instances
+replicaCount: 1
 
 # application configuration
 config:
   climode: daemon
 
-# default number of instances
-replicaCount: 1
+containerPort: &svc_port 8080
+service:
+  type: ClusterIP
+  name: cli
+  ports:
+    - name: http
+      port: *svc_port
+      targetPort: *svc_port
 
-nodeSelector: {}
-
-affinity: {}
+ingress:
+  enabled: true
+  service:
+    - baseaddr: "cli-api"
+      path: "/"
+      name: "cps"
+      port: *svc_port
 
 # probe configuration parameters
 liveness:
@@ -81,32 +64,15 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  port: *svc_port
+  path: /
 
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+  port: *svc_port
+  path: /
 
-service:
-  type: NodePort
-  name: cli
-  externalPort: 443
-  externalPort1: 9443
-  internalPort: "443"
-  internalPort1: 9443
-  nodePort: "60"
-  nodePort1: "71"
-
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "cli-api"
-      name: "cli"
-      port: 443
-    - baseaddr: "cli2-api"
-      name: cli
-      port: 9443
-  config:
-    ssl: "redirect"
 
 # Configure resource requests and limits
 # ref: http://kubernetes.io/docs/user-guide/compute-resources/
