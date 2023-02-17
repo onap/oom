@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,36 +15,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.service.name }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.name }}{{ .Values.service.externalPort }}
-    - port: {{ .Values.service.externalPort1 }}
-      targetPort: {{ .Values.service.internalPort1 }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort1 }}
-      name: {{ .Values.service.name }}{{ .Values.service.externalPort1 }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.name }}{{ .Values.service.externalPort }}
-    - port: {{ .Values.service.externalPort1 }}
-      targetPort: {{ .Values.service.internalPort1 }}
-      name: {{ .Values.service.name }}{{ .Values.service.externalPort1 }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+{{ include "common.service" . }}
