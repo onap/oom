@@ -126,6 +126,9 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-       else }}
   protocol: TCP
 {{-       end }}
+{{-       if $port.app_protocol }}
+  appProtocol: {{ $port.app_protocol }}
+{{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%ss-%s" $port.port_protocol $port.name }}
 {{-       else }}
@@ -138,6 +141,9 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
   protocol: {{ $port.plain_port_l4_protocol }}
 {{-       else }}
   protocol: {{ default "TCP" $port.l4_protocol  }}
+{{-       end }}
+{{-       if $port.app_protocol }}
+  appProtocol: {{ $port.app_protocol }}
 {{-       end }}
 {{-       if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
@@ -157,6 +163,9 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{-         else }}
   protocol: {{ default "TCP" $port.l4_protocol  }}
 {{-         end }}
+{{-       if $port.app_protocol }}
+  appProtocol: {{ $port.app_protocol }}
+{{-       end }}
 {{-         if $port.port_protocol }}
   name: {{ printf "%s-%s" $port.port_protocol $port.name }}
 {{-         else }}
