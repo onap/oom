@@ -143,8 +143,8 @@ GLOBAL_CLAMP_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostn
 GLOBAL_NBI_SERVER_PROTOCOL = 'http{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}'
 GLOBAL_NBI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "nbi" "port" ( ternary 8443 8080 (eq "true" (include "common.needTLS" . )))) }}'
 # cli info - everything is from the private oam network (also called onap private network)
-GLOBAL_CLI_SERVER_PROTOCOL = "https"
-GLOBAL_CLI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "cli" "port" 443) }}'
+GLOBAL_CLI_SERVER_PROTOCOL = "http"
+GLOBAL_CLI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "cli" "port" 8080) }}'
 # dcae info - everything is from the private oam network (also called onap private network)
 GLOBAL_DCAE_SERVER_PROTOCOL = "http"
 GLOBAL_DCAE_HEALTH_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "dcae-healthcheck" "port" 80) }}'
