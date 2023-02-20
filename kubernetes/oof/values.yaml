@@ -20,22 +20,10 @@ global:
   persistence: {}
 
 #################################################################
-# Secrets metaconfig
-#################################################################
-secrets:
-  - uid: oof-onap-certs
-    name: &oof-certs '{{ include "common.release" . }}-oof-onap-certs'
-    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
-    type: generic
-    filePaths:
-      - resources/config/certs/intermediate_root_ca.pem
-      - resources/config/certs/aaf_root_ca.cer
-
-#################################################################
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/optf-osdf:3.0.7
+image: onap/optf-osdf:3.0.8
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -57,7 +45,6 @@ config:
 
   # Url and credentials for Conductor.
   conductorUrl:
-    https: https://oof-has-api:8091/v1/plans/
     http: http://oof-has-api:8091/v1/plans/
   conductorPingWaitTime: 10
   conductorMaxRetries: 30
@@ -65,7 +52,6 @@ config:
   conductorMinorVersion: 0
   # Url and credentials for the Policy Platform
   policyPlatformUrl:
-    https: https://policy-xacml-pdp:6969/policy/pdpx/v1/decision  # Policy Dev platform URL
     http: http://policy-xacml-pdp:8080/policy/pdpx/v1/decision
   policyPlatformEnv: TEST # Environment for policy platform
   # Credentials for the message reader - A placeholder.
@@ -74,28 +60,14 @@ config:
   # Credentials for the SDC interface - A placeholder.
   sdcUrl: NA
   sdcONAPInstanceID: NA
-  #AAF Authentication
-  is_aaf_enabled: False
-  aaf_cache_expiry_mins: 5
-  aaf_url:
-    https: https://aaf-service:8100
-    http: http://aaf-service:8080
-  aaf_user_roles:
-      - '/placement:org.onap.oof.access|*|read ALL'
-      - '/pci:org.onap.oof.access|*|read ALL'
-  # Secret Management Service from AAF
-  aaf_sms_url:
-    https: https://aaf-sms
-    http: http://aaf-sms
-  aaf_sms_port: 10443
-  aaf_sms_timeout: 30
-  secret_domain: osdf
-  aaf_ca_certs: /opt/app/ssl_cert/aaf_root_ca.cer
+
   configClientType: cps
+
   # config db api
   configDbUrl: http://configdb:8080
   configDbGetCellListUrl: 'api/sdnc-config-db/v3/getCellList'
   configDbGetNbrListUrl: 'api/sdnc-config-db/v3/getNbrList'
+
   # cps api
   cps:
     url: cps-tbdmt:8080/execute
@@ -104,8 +76,7 @@ config:
 
   #aai api
   aaiUrl:
-    https: https://aai:8443
-    http: http://aai:8080
+    http: http://aai:80
   aaiGetLinksUrl: /aai/v16/network/logical-links
   aaiServiceInstanceUrl : /aai/v20/nodes/service-instances/service-instance/
   aaiGetControllersUrl: /aai/v19/external-system/esr-thirdparty-sdnc-list
@@ -113,7 +84,6 @@ config:
   aaiGetInterDomainLinksUrl: /aai/v19/network/logical-links?link-type=inter-domain&operational-status=up
   #des api
   desUrl:
-    https: https://des.url:9000
     http: http://des.url:8080
   desApiPath: /datalake/v1/exposure/
   desUsername: ''
@@ -133,14 +103,10 @@ certInitializer:
   fqi: "oof@oof.onap.org"
   fqi_namespace: org.onap.oof
   public_fqdn: "oof.onap.org"
-  aafDeployFqi: "deployer@people.osaaf.org"
-  aafDeployPass: demo123456!
   cadi_latitude: "0.0"
   cadi_longitude: "0.0"
   credsPath: /opt/app/osaaf/local
   appMountPath: /opt/osdf/osaaf
-  aaf_add_config: >
-    chmod 444 {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key;
 
 # Segregation for Different environment (Small and Large)
 resources:
@@ -188,7 +154,6 @@ ingress:
 
 oof-has:
   enabled: true
-  certSecret: *oof-certs
 
 #Pods Service Account
 serviceAccount:
