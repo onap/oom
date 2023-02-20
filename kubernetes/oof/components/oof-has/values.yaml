@@ -27,11 +27,6 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: oof-onap-certs
-    name: &oof-certs  '{{ include "common.release" . }}-oof-onap-certs'
-    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
-    type: generic
-    filePaths: '{{ .Values.secretsFilePaths }}'
   - uid: oof-has-etcd-root-password
     name: &root-password '{{ include "common.release" . }}-has-etcd-root-password'
     type: password
@@ -50,31 +45,20 @@ nodePortPrefix: 302
 dataRootDir: /dockerdata-nfs
 config:
   dbBackend: etcd
-  aaf:
-    serviceName: aaf-service
-    port: 8100
   aai:
     serviceName: aai
-    port: 8443
-    plainPort: 80
+    port: 80
   msb:
     serviceName: msb-iag
     port: 80
-  music:
-    serviceName: music
-    port: 8443
-  sms:
-    serviceName: aaf-sms
-    port: 10443
   sdc:
     serviceName: sdc-be
-    port: 8443
-    plainPort: 8080
+    port: 8080
   cps:
-    service: cps-tbdmt
+    serviceName: cps-tbdmt
     port: 8080
   dcae:
-    service: dcae-slice-analysis-ms
+    serviceName: dcae-slice-analysis-ms
     port: 8080
   etcd:
     serviceName: &etcd-service oof-has-etcd
@@ -106,7 +90,6 @@ resources:
 #component overrides
 oof-has-api: &has-config
   enabled: true
-  certSecret: *oof-certs
   config:
     etcd:
       userCredentialsExternalSecret: *user-creds
@@ -115,8 +98,6 @@ oof-has-controller: *has-config
 oof-has-data: *has-config
 oof-has-reservation: *has-config
 oof-has-solver: *has-config
-music:
-  enabled: false
 
 #etcd subchart configurations
 etcd:
