@@ -1,6 +1,6 @@
 # Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
 # Modifications Copyright (C) 2022 Bell Canada
-# Modifications Copyright © 2022 Nordix Foundation
+# Modifications Copyright © 2022-2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -173,8 +173,7 @@ securityContext:
 #################################################################
 
 config:
-
-  # Set it for pre loading xnfdata, else set to null
+  # Set it for preloading xnfdata, else set to null
   liquibaseLabels: xnf-data-preload
 
   # REST API basic authentication credentials (passsword is generated if not provided)
@@ -189,22 +188,9 @@ config:
 #    spring.config.max-size: 200
 #    spring.config.min-size: 10
 
-# kafka config
-  useStrimziKafka: true
-  kafkaBootstrap: strimzi-kafka-bootstrap
-# If targeting a custom kafka cluster, ie useStrimziKakfa: false
-# uncomment below config and target your kafka bootstrap servers,
-# along with any other security config.
-
-#  eventPublisher:
-#    spring.kafka.bootstrap-servers: <kafka-bootstrap>:9092
-#    spring.kafka.security.protocol: SASL_PLAINTEXT
-#    spring.kafka.properties.sasl.mechanism: PLAIN
-#    spring.kafka.properties.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin_secret;
-
   additional:
     notification.data-updated.enabled: true
-    notification.data-updated.topic: cps.data-updated-events
+    notification.data-updated.topic: &dataUpdatedTopic cps.data-updated-events
     notification.data-updated.filters.enabled-dataspaces: ""
     notification.async.enabled: false
     notification.async.executor.core-pool-size: 2
@@ -212,6 +198,14 @@ config:
     notification.async.executor.queue-capacity: 500
     notification.async.executor.wait-for-tasks-to-complete-on-shutdown: true
     notification.async.executor.thread-name-prefix: Async-
+
+# Strimzi KafkaUser config
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: *dataUpdatedTopic
+      type: topic
+      operations: [Write]
 
 logging:
   level: INFO
