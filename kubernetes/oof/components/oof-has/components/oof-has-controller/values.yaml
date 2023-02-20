@@ -20,10 +20,6 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: oof-onap-certs
-    externalSecret: '{{ tpl (default "" .Values.certSecret) . }}'
-    type: generic
-    filePaths: '{{ .Values.secretsFilePaths }}'
   - uid: oof-has-etcd-secret
     name: &user-creds '{{ include "common.release" . }}-oof-has-etcd-secret'
     type: basicAuth
@@ -71,6 +67,11 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+
+readinessCheck:
+  wait_for:
+    jobs:
+      - '{{ include "common.release" . }}-{{ .Values.config.etcd.configJobNameOverride }}-job'
 
 #Pods Service Account
 serviceAccount:

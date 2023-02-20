@@ -17,62 +17,15 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-{{ .Values.config.etcd.configJobNameOverride }}-job
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-
-      {{- if (include "common.needTLS" .) }}
-      - name: {{ include "common.name" . }}-data-sms-readiness
-        command:
-        - sh
-        - -c
-        - resp="FAILURE";
-          until [ $resp = "200" ]; do
-          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/has/secret);
-          echo $resp;
-          sleep 2;
-          done
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.curl" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      {{- end }}
-
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.image.optf_has }}
@@ -114,17 +67,6 @@ spec:
           - mountPath: /usr/local/bin/healthy.sh
             name: {{ .Values.global.commonConfigPrefix }}-config
             subPath: healthy.sh
-          {{- if (include "common.needTLS" .) }}
-          - mountPath: /usr/local/bin/aai_cert.cer
-            name: {{ .Values.global.commonConfigPrefix }}-config
-            subPath: aai_cert.cer
-          - mountPath: /usr/local/bin/aai_key.key
-            name: {{ .Values.global.commonConfigPrefix }}-config
-            subPath: aai_key.key
-          - mountPath: /usr/local/bin/AAF_RootCA.cer
-            name: {{ include "common.fullname" . }}-onap-certs
-            subPath: aaf_root_ca.cer
-          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -150,14 +92,5 @@ spec:
               path: log.conf
             - key: healthy.sh
               path: healthy.sh
-            {{- if (include "common.needTLS" .) }}
-            - key: aai_cert.cer
-              path: aai_cert.cer
-            - key: aai_key.key
-              path: aai_key.key
-            {{- end }}
-{{- if (include "common.needTLS" .) }}
-{{ include "oof.certificate.volume" . | indent 8 }}
-{{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
