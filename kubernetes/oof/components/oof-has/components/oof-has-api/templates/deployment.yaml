@@ -18,24 +18,12 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - name: {{ include "common.name" . }}-readiness
@@ -44,10 +32,6 @@ spec:
         args:
         - --container-name
         - oof-has-controller
-        {{- if (include "common.needTLS" .) }}
-        - --container-name
-        - aaf-service
-        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -56,29 +40,6 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-
-      {{- if (include "common.needTLS" .) }}
-      - name: {{ include "common.name" . }}-has-sms-readiness
-        command:
-        - sh
-        - -c
-        - resp="FAILURE";
-          until [ $resp = "200" ]; do
-          resp=$(curl -s -o /dev/null -k --write-out %{http_code} https://aaf-sms.{{ include "common.namespace" . }}:10443/v1/sms/domain/has/secret);
-          echo $resp;
-          sleep 2;
-          done
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.curl" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-      {{- end }}
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
-
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.global.image.optf_has }}
@@ -112,11 +73,6 @@ spec:
           - mountPath: /usr/local/bin/log.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: log.conf
-          {{- if (include "common.needTLS" .) }}
-          - mountPath: /usr/local/bin/AAF_RootCA.cer
-            name: {{ include "common.fullname" . }}-onap-certs
-            subPath: aaf_root_ca.cer
-          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         - name: {{ include "common.name" . }}-nginx
@@ -127,10 +83,6 @@ spec:
           args:
           - "-c"
           - |
-            {{- if (include "common.needTLS" .) }}
-            grep -v '^$'  /opt/bitnami/nginx/ssl/local/org.onap.oof.crt > /tmp/oof.crt
-            cat /tmp/oof.crt /tmp/intermediate_root_ca.pem /tmp/AAF_RootCA.cer >> /opt/bitnami/nginx/org.onap.oof.crt
-            {{- end }}
             /opt/bitnami/scripts/nginx/entrypoint.sh /opt/bitnami/scripts/nginx/run.sh
           ports:
           - containerPort: {{ .Values.service.internalPort }}
@@ -147,21 +99,12 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
           - mountPath: /opt/bitnami/nginx/conf/nginx.conf
             name: {{ .Values.global.commonConfigPrefix  }}-config
             subPath: nginx.conf
-          {{- if (include "common.needTLS" .) }}
-          - mountPath: /tmp/AAF_RootCA.cer
-            name: {{ include "common.fullname" . }}-onap-certs
-            subPath: aaf_root_ca.cer
-          - mountPath: /tmp/intermediate_root_ca.pem
-            name: {{ include "common.fullname" . }}-onap-certs
-            subPath: intermediate_root_ca.pem
-          {{- end }}
           resources:
 {{ include "common.resources" . | indent 12 }}
         {{- if .Values.nodeSelector }}
@@ -174,7 +117,6 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-        {{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -188,8 +130,5 @@ spec:
               path: conductor.conf
             - key: log.conf
               path: log.conf
-{{- if (include "common.needTLS" .) }}
-{{ include "oof.certificate.volume" . | indent 8 }}
-{{- end }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
