@@ -1,0 +1,112 @@
+#  ============LICENSE_START=======================================================
+#  Copyright (C) 2023 Nordix Foundation. All rights reserved.
+#  ================================================================================
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#       http://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+#  SPDX-License-Identifier: Apache-2.0
+#  ============LICENSE_END=========================================================
+
+spring:
+  cloud:
+    kubernetes:
+      enabled: false
+    discovery:
+      enabled: false
+  security:
+    user:
+      name: ${RESTSERVER_USER}
+      password: ${RESTSERVER_PASSWORD}
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration
+      - io.kubernetes.client.spring.extended.manifests.config.KubernetesManifestsAutoConfiguration
+      - io.kubernetes.client.spring.extended.network.config.KubernetesLoadBalancerAutoConfiguration
+
+security:
+  enable-csrf: false
+
+participant:
+  intermediaryParameters:
+    reportingTimeIntervalMs: 120000
+    description: Participant Description
+    participantId: 101c62b3-8918-41b9-a747-d21eb79c6c04
+    clampAutomationCompositionTopics:
+      topicSources:
+        -
+          useHttps: false
+          fetchTimeout: 15000
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            group.id: {{ (first .Values.kafkaUser.acls).name }}
+            allow.auto.create.topics: false
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
+          topicCommInfrastructure: dmaap
+          servers:
+            - ${topicServer:message-router}
+          {{ end }}
+      topicSinks:
+        -
+          useHttps: false
+          fetchTimeout: 15000
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            client.id: {{ (first .Values.kafkaUser.acls).name }}-client-id
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
+          topicCommInfrastructure: dmaap
+          servers:
+            - ${topicServer:message-router}
+          {{ end }}
+    participantSupportedElementTypes:
+      -
+        typeName: org.onap.policy.clamp.acm.KserveAutomationCompositionElement
+        typeVersion: 1.0.1
+      -
+        typeName: org.onap.policy.clamp.acm.AutomationCompositionElement
+        typeVersion: 1.0.0
+
+customresourcedefinition:
+  group: serving.kserve.io
+  version: v1beta1
+  plural: inferenceservices
+  grace-period: 10
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health, metrics, prometheus
+server:
+  port: 8087
+  servlet:
+    context-path: /onap/policy/clamp/acm/kserveparticipant
+  ssl:
+    enabled: false
+
+
