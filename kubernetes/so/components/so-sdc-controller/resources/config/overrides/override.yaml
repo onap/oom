@@ -51,42 +51,32 @@ request:
 mso:
   msoKey: {{ index .Values.mso.msoKey }}
   logPath: ./logs/sdc
-  config:
-     cadi: {{ include "so.cadi.keys" . | nindent 8}}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.requestDb.auth )}}
+    auth: {{ .Values.mso.requestDb.auth }}
   site-name: onapheat
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.requestDb.auth )}}
+      auth: {{ .Values.mso.requestDb.auth }}
   aai:
-    {{ if (include "common.needTLS" .) }}
-    endpoint: https://aai.{{ include "common.namespace" . }}:8443
-    {{ else }}
     endpoint: http://aai.{{ include "common.namespace" . }}:80
-    {{ end }}
   asdc-connections:
     asdc-controller1:
       user: mso
       consumerGroup: {{ .Values.config.kafka.sdcTopic.consumerGroup }}
       consumerId: {{ .Values.config.kafka.sdcTopic.clientId }}
       environmentName: AUTO
-      {{ if (include "common.needTLS" .) }}
-      sdcAddress: sdc-be.{{ include "common.namespace" . }}:8443
-      {{ else }}
       sdcAddress: sdc-be.{{ include "common.namespace" . }}:8080
-      {{ end }}
       password: {{ index .Values "mso" "asdc-connections" "asdc-controller1" "password" }}
       pollingInterval: 60
       pollingTimeout: 60
       relevantArtifactTypes: HEAT,HEAT_ENV,HEAT_VOL
-      useHttpsWithSdc: {{ (eq "true" (include "common.needTLS" .)) | ternary true false }}
+      useHttpsWithSdc: false
       activateServerTLSAuth: false
       keyStorePassword:
       keyStorePath:

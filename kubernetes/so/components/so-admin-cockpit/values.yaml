@@ -27,17 +27,9 @@ global:
   nodePortPrefixExt: 304
   repository: nexus3.onap.org:10001
   readinessImage: onap/oom/readiness:3.0.1
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
   envsubstImage: dibi/envsubst
-  aafEnabled: true
   persistence:
     mountPath: /dockerdata-nfs
-  security:
-    aaf:
-      enabled: true
-  aaf:
-    auth:
-      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
   mariadbGalera:
     serviceName: mariadb-galera
     servicePort: '3306'
@@ -93,10 +85,6 @@ app: so-admin-cockpit
 # soHelpers part
 #################################################################
 soHelpers:
-  nameOverride: so-cockpit-cert-init
-  certInitializer:
-    nameOverride: so-cockpit-cert-init
-    credsPath: /opt/app/osaaf/local
   cadi:
     apiEnforcement: org.onap.so.monitoringPerm
   containerPort: *containerPort
@@ -108,12 +96,12 @@ server:
     # soMonitoringCredsExternalSecret: some secret
 
 service:
-#Since this is a feature for monitoring the service type is changed to internal, users can change it to NodePort on need basis...
-    type: NodePort
-    nodePort: 24
-    internalPort: *containerPort
-    externalPort: *containerPort
-    portName: http
+  type: NodePort
+  ports:
+    - port: *containerPort
+      name: http
+      nodePort: 24
+
 updateStrategy:
     type: RollingUpdate
     maxUnavailable: 1

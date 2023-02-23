@@ -15,18 +15,10 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  replicas: {{ .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ index .Values.replicaCount }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -34,34 +26,17 @@ spec:
       maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         resources: {{ include "common.resources" . | nindent 12 }}
-        {{- if .Values.global.aafEnabled }}
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-          export KEYSTORE="{{ .Values.soHelpers.certInitializer.credsPath }}/org.onap.so.p12"
-          /app/start-app.sh
-        {{- end }}
-        env:
-        {{ include "so.certificates.env" . | indent 8 | trim }}
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: config
@@ -74,12 +49,9 @@ spec:
           periodSeconds: {{ .Values.livenessProbe.periodSeconds}}
           successThreshold: {{ .Values.livenessProbe.successThreshold}}
           failureThreshold: {{ .Values.livenessProbe.failureThreshold}}
-        ports:
-        - containerPort: {{ .Values.containerPort }}
-          name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
-          protocol: TCP
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      volumes:
       - name: logs
         emptyDir: {}
       - name: config

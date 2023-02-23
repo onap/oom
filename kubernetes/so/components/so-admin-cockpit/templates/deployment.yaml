@@ -21,18 +21,10 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  replicas: {{ index .Values.replicaCount }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
   minReadySeconds: {{ index .Values.minReadySeconds }}
   strategy:
     type: {{ index .Values.updateStrategy.type }}
@@ -40,12 +32,9 @@ spec:
       maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ index .Values.updateStrategy.maxSurge }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
+      initContainers:
       - name: so-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         volumeMounts:
@@ -64,14 +53,6 @@ spec:
         - -c
         - |
           export SO_COCKPIT_PASSWORD=`htpasswd -bnBC 10 "" $SO_COCKPIT_PASS | tr -d ':\n' | sed 's/\$2y/\$2a/'`
-          {{- if .Values.global.aafEnabled }}
-          export $(grep '^c' {{ .Values.soHelpers.certInitializer.credsPath }}/org.onap.so.cred.props | xargs -0)
-          export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          export KEYSTORE=file://$cadi_keystore
-          export KEYSTORE_PASSWORD=$cadi_keystore_password_p12
-          export TRUSTSTORE=file://$cadi_truststore
-          export TRUSTSTORE_PASSWORD=$cadi_truststore_password
-          {{- end }}
           /app/start-app.sh
         env:
         - name: DB_HOST
@@ -95,7 +76,7 @@ spec:
         - configMapRef:
             name: {{ include "common.fullname" . }}
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: config
@@ -114,12 +95,9 @@ spec:
           successThreshold: {{ index .Values.livenessProbe.successThreshold}}
           failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
 
-        ports:
-        - containerPort: {{ index .Values.containerPort }}
-          name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
-          protocol: TCP
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      volumes:
       - name: logs
         emptyDir: {}
       - name: config
