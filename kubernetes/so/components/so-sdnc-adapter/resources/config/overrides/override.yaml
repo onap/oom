@@ -20,20 +20,21 @@ server:
     port: {{ index .Values.containerPort }}
 mso:
     msoKey: ${MSO_KEY}
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" "${AAF_AUTH}" "value2" "${MSO_AUTH}" )}}
+    auth: ${MSO_AUTH}
     async:
         core-pool-size: 50
         max-pool-size: 50
         queue-capacity: 500
     logPath: ./logs/sdnc
     config:
-        cadi: {{ include "so.cadi.keys" . | nindent 14}}
+        cadi:
+          aafId: so@so.onap.org
     catalog:
         db:
           spring:
             endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
     db:
-      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
+      auth: {{ .Values.mso.adapters.requestDb.auth }}
     site-name: onapheat
     #needs to be confirmed TODO
     workflow:
@@ -112,7 +113,7 @@ org:
                             changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
-                    bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.bpelauth )}}
+                    bpelauth: {{ .Values.org.onap.so.adapters.sdnc.bpelauth }}
                     bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
                     opticalservice:
                         optical-service-create:
@@ -157,7 +158,7 @@ org:
                     myurl: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/rest/SDNCNotify
                     rest:
                         bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage
-                    sdncauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.sdnc.sdncauth )}}
+                    sdncauth: {{ .Values.org.onap.so.adapters.sdnc.sdncauth }}
                     sdncconnecttime: 5000
                     sdncurl10: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/GENERIC-RESOURCE-API:'
                     sdncurl11: 'http://{{ .Values.global.sdncOamService }}.{{ include "common.namespace" . }}:{{ .Values.global.sdncOamPort }}/restconf/operations/VNFTOPOLOGYAIC-API:'

@@ -18,7 +18,6 @@
 global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
   centralizedLoggingEnabled: true
   mariadbGalera:
     nameOverride: mariadb-galera
@@ -46,21 +45,10 @@ global:
     dbPassword: secretpassword
     # dbCredsExternalSecret: some secret
   msbEnabled: true
-  security:
-    aaf:
-      enabled: false
-  aaf:
-    auth:
-      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
-      encrypted: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
   app:
     siteName: onapheat
     auth: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
     defaultCloudOwner: onap
-
-  certificates:
-    path: /etc/ssl/certs
-    share_path: /usr/local/share/ca-certificates/
 
   soSdcListenerKafkaUser: so-sdc-list-user
 
@@ -131,13 +119,6 @@ secrets:
     login: '{{ .Values.server.bpel.username }}'
     password: '{{ .Values.server.bpel.password }}'
     passwordPolicy: required
-  - uid: so-aaf-creds
-    name: &aaf-secrets '{{ include "common.release" . }}-so-server-aaf-creds'
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.server.aafCredsExternalSecret) . }}'
-    login: '{{ .Values.server.aaf.username }}'
-    password: '{{ .Values.server.aaf.password }}'
-    passwordPolicy: required
   - uid: so-aai-creds
     name: &aai-secrets '{{ include "common.release" . }}-so-server-aai-creds'
     type: basicAuth
@@ -146,32 +127,7 @@ secrets:
     password: '{{ .Values.server.aai.password }}'
     passwordPolicy: required
 
-aafConfig:
-  permission_user: 1000
-  permission_group: 999
-
-aaf:
-  trustore: org.onap.so.trust.jks
-
-#################################################################
-# AAF part for Ingress
-#################################################################
-certInitializer:
-  nameOverride: so-tls-cert
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: so
-  fqi: so@so.onap.org
-  public_fqdn: so.onap.org
-  fqi_namespace: org.onap.so
-  cadi_longitude: '0.0'
-  cadi_latitude: '0.0'
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  ingressTlsSecret: '{{ include "common.release" . }}-so-ingress-certs'
-
-#################################################################
+##################################################################
 # Application configuration defaults.
 #################################################################
 
@@ -187,10 +143,6 @@ dbCreds:
 image: onap/so/api-handler-infra:1.11.0
 
 server:
-  aaf:
-    username: so@so.onap.org
-    password: demo123456
-  # aafCredsExternalSecret: some secret
   aai:
     username: aai@aai.onap.org
     password: demo123456!
@@ -212,30 +164,390 @@ logPath: ./logs/apih/
 app: api-handler-infra
 service:
   type: NodePort
-  nodePort: 77
   internalPort: *containerPort
-  externalPort: *containerPort
-  portName: http
+  ports:
+    - name: http
+      port: *containerPort
+      nodePort: '77'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/cloudResources/{version:[vV][1]}/operationalEnvironments",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/cloudResources/{version:[vV][1]}/operationalEnvironments/{operationalEnvironmentId}/activate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/cloudResources/{version:[vV][1]}/operationalEnvironments/{operationalEnvironmentId}/deactivate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/cloudResourcesRequests/{version:[vV][1]}/{requestId}/unlock",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/cloudResourcesRequests/{version:[vV][1]}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/orchestrationRequests/{version:[vV][4-7]}/{requestId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/orchestrationRequests/{version:[vV][4-7]}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/orchestrationRequests/{version:[vV][4-7]}/{requestId}/unlock",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/activate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/deactivate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][7]}/serviceInstances/assign",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][7]}/serviceInstances/{serviceInstanceId}/unassign",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations/{configurationInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations/{configurationInstanceId}/enablePort",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations/{configurationInstanceId}/disablePort",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations/{configurationInstanceId}/activate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/configurations/{configurationInstanceId}/deactivate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][6-7]}/serviceInstances/{serviceInstanceId}/addRelationships",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][6-7]}/serviceInstances/{serviceInstanceId}/removeRelationships",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/replace",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][6-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/applyUpdatedConfig",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules/{vfmoduleInstanceId}/replace",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules/{vfmoduleInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][6-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/inPlaceSoftwareUpdate",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules/{vfmoduleInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules/{vfmoduleInstanceId}/deactivateAndCloudDelete",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/vfModules/scaleOut",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/volumeGroups",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/volumeGroups/{volumeGroupInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/vnfs/{vnfInstanceId}/volumeGroups/{volumeGroupInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiation/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/networks",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/networks/{networkInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        },
+        {
+          "serviceName": "so",
+          "version": "v1",
+          "url": "/onap/so/infra/serviceInstantiationRequests/{version:[vV][5-7]}/serviceInstances/{serviceInstanceId}/networks/{networkInstanceId}",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0",
+          "lb_policy":"ip_hash"
+        }
+      ]{{ end }}
+
 updateStrategy:
   type: RollingUpdate
   maxUnavailable: 1
   maxSurge: 1
 
-#################################################################
+################################################################
 # soHelpers part
 #################################################################
 soHelpers:
-  nameOverride: so-apih-cert-init
-  certInitializer:
-    nameOverride: so-apih-cert-init
-  credsPath: /opt/app/osaaf/local
   containerPort: *containerPort
 
 # Resource Limit flavor -By Default using small
 flavor: small
 # Segregation for Different environment (Small and Large)
-persistence:
-  certificatesPath: /certificates
 resources:
   small:
     limits:
@@ -285,9 +597,6 @@ ingress:
     - baseaddr: 'so-api'
       name: 'so'
       port: 8080
-  config:
-    tls:
-      secret: '{{ include "common.release" . }}-so-ingress-certs'
 
 mso:
   adapters:
@@ -310,13 +619,6 @@ mso:
   health:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
 
-so-appc-orchestrator:
-  enabled: false
-  server:
-    actuatorCredsExternalSecret: *actuator-secrets
-  db:
-    <<: *dbSecrets
-
 so-bpmn-infra:
   db:
     <<: *dbSecrets
@@ -332,7 +634,6 @@ so-cnf-adapter:
   db:
     <<: *dbSecrets
   server:
-    aafCredsExternalSecret: *aaf-secrets
     aaiCredsExternalSecret: *aai-secrets
     actuatorCredsExternalSecret: *actuator-secrets
   mso:

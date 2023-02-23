@@ -13,39 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.servicename" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-  annotations:
-    msb.onap.org/service-info: '[
-      {
-          "serviceName": "{{ include "common.servicename" . }}",
-          "version": "v1",
-          "url": "/so/vnfm-adapter/v1",
-          "protocol": "REST",
-          "port": "{{.Values.service.externalPort}}",
-          "visualRange":"1"
-      }
-      ]'
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+
+{{ include "common.service" . }}

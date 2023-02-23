@@ -14,12 +14,8 @@
 # limitations under the License.
 */}}
 aai:
-  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.aai.auth )}}
-  {{ if (include "common.needTLS" .) }}
-  endpoint: https://aai.{{ include "common.namespace" . }}:8443
-  {{ else }}
+  auth: {{ .Values.aai.auth }}
   endpoint: http://aai.{{ include "common.namespace" . }}:80
-  {{ end }}
 server:
   {{- if include "common.onServiceMesh" . }}
   forward-headers-strategy: none
@@ -72,7 +68,7 @@ org:
         {{- end }}
         default_keystone_reg_ex: "/[vV][0-9]"
         vnf:
-          bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
+          bpelauth: {{ .Values.org.onap.so.adapters.bpelauth }}
           checkRequiredParameters: true
           addGetFilesOnVolumeReq: false
           sockettimeout: 30
@@ -83,7 +79,7 @@ org:
           valet_enabled: false
           fail_requests_on_valet_failure: false
         network:
-          bpelauth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.org.onap.so.adapters.bpelauth )}}
+          bpelauth: {{ .Values.org.onap.so.adapters.bpelauth }}
           sockettimeout: 5
           connecttimeout: 5
           retrycount: 5
@@ -117,8 +113,8 @@ mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
-  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.aaf.auth.encrypted "value2" .Values.mso.auth )}}
+      auth: {{ .Values.mso.db.auth }}
+  auth: {{ .Values.mso.auth }}
   logPath: ./logs/openstack
   msb-ip: msb-iag
   msb-port: 80
@@ -127,18 +123,14 @@ mso:
     endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/sobpmnengine
   msoKey: {{ .Values.mso.msoKey }}
   config:
-    {{ if eq .Values.global.security.aaf.enabled true }}
-    cadi: {{ include "so.cadi.keys" . | nindent 8}}
-    {{- else }}
     cadi:
       aafId: {{ .Values.mso.basicUser }}
-    {{- end }}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.db.auth )}}
+    auth: {{ .Values.mso.db.auth }}
   site-name: localDevEnv
   async:
     core-pool-size: 50
