@@ -15,6 +15,21 @@
 # limitations under the License.
 */}}
 {{/*
+  Helper function to check, if Ingress is globally enabled
+*/}}
+{{- define "common.ingressEnabled" -}}
+{{-   $dot := default . .dot -}}
+{{-   if $dot.Values.ingress -}}
+{{-     if $dot.Values.global.ingress -}}
+{{-       if (default false $dot.Values.global.ingress.enabled) -}}
+true
+{{-       end -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+
+
+{{/*
   Create the hostname as concatination <baseaddr>.<baseurl>
   - baseaddr: from component values: ingress.service.baseaddr
   - baseurl: from values: global.ingress.virtualhost.baseurl

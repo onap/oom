@@ -35,20 +35,34 @@ spec:
           type: tls
       - name: external
         port: 9094
-        type: nodeport
+        type: {{ if (include "common.ingressEnabled" .) }}cluster-ip{{ else }}nodeport{{ end }}
         tls: true
         authentication:
           type: tls
         configuration:
+          {{- if not (include "common.ingressEnabled" .) }}
           bootstrap:
             nodePort: {{ .Values.global.nodePortPrefixExt }}93
+          {{- end }}
           brokers:
             - broker: 0
+              advertisedHost: {{ .Values.config.advertisedHost }}
+              advertisedPort: {{ .Values.config.advertizedPortBroker0 }}
+              {{- if not (include "common.ingressEnabled" .) }}
               nodePort: {{ .Values.global.nodePortPrefixExt }}90
+              {{- end }}
             - broker: 1
+              advertisedHost: {{ .Values.config.advertisedHost }}
+              advertisedPort: {{ .Values.config.advertizedPortBroker1 }}
+              {{- if not (include "common.ingressEnabled" .) }}
               nodePort: {{ .Values.global.nodePortPrefixExt }}91
+              {{- end }}
             - broker: 2
+              advertisedHost: {{ .Values.config.advertisedHost }}
+              advertisedPort: {{ .Values.config.advertizedPortBroker2 }}
+              {{- if not (include "common.ingressEnabled" .) }}
               nodePort: {{ .Values.global.nodePortPrefixExt }}92
+              {{- end }}
     authorization:
       type: {{ .Values.config.authType }}
       superUsers:
