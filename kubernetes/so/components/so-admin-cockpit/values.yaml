@@ -27,17 +27,9 @@ global:
   nodePortPrefixExt: 304
   repository: nexus3.onap.org:10001
   readinessImage: onap/oom/readiness:3.0.1
-  aafAgentImage: onap/aaf/aaf_agent:2.1.20
   envsubstImage: dibi/envsubst
-  aafEnabled: true
   persistence:
     mountPath: /dockerdata-nfs
-  security:
-    aaf:
-      enabled: true
-  aaf:
-    auth:
-      header: Basic c29Ac28ub25hcC5vcmc6ZGVtbzEyMzQ1Ngo=
   mariadbGalera:
     serviceName: mariadb-galera
     servicePort: '3306'
@@ -93,10 +85,6 @@ app: so-admin-cockpit
 # soHelpers part
 #################################################################
 soHelpers:
-  nameOverride: so-cockpit-cert-init
-  certInitializer:
-    nameOverride: so-cockpit-cert-init
-    credsPath: /opt/app/osaaf/local
   cadi:
     apiEnforcement: org.onap.so.monitoringPerm
   containerPort: *containerPort
@@ -108,54 +96,55 @@ server:
     # soMonitoringCredsExternalSecret: some secret
 
 service:
-#Since this is a feature for monitoring the service type is changed to internal, users can change it to NodePort on need basis...
-    type: NodePort
-    nodePort: 24
-    internalPort: *containerPort
-    externalPort: *containerPort
-    portName: http
+  type: NodePort
+  ports:
+    - port: *containerPort
+      name: http
+      nodePort: 24
+
 updateStrategy:
-    type: RollingUpdate
-    maxUnavailable: 1
-    maxSurge: 1
+  type: RollingUpdate
+  maxUnavailable: 1
+  maxSurge: 1
 # Resource Limit flavor -By Default using small
 flavor: small
 #Segregation for different environment (Small or large)
 resources:
-    small:
-        requests:
-            memory: 1Gi
-            cpu: 10m
-        limits:
-            memory: 4Gi
-            cpu: 1
-    large:
-        requests:
-            memory: 2Gi
-            cpu: 20m
-        limits:
-            memory: 8Gi
-            cpu: 2
+  small:
+    requests:
+      memory: 1Gi
+      cpu: 10m
+    limits:
+      memory: 4Gi
+      cpu: 1
+  large:
+    requests:
+      memory: 2Gi
+      cpu: 20m
+    limits:
+      memory: 8Gi
+      cpu: 2
+  unlimited: {}
 readinessProbe:
-    port: 9091
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    timeoutSeconds: 10
+  port: 9091
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 10
 livenessProbe:
-    port: 9091
-    initialDelaySeconds: 40
-    periodSeconds: 10
-    timeoutSeconds: 10
-    successThreshold: 1
-    failureThreshold: 3
+  port: 9091
+  initialDelaySeconds: 40
+  periodSeconds: 10
+  timeoutSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
 ingress:
-    enabled: false
-    service:
-        - baseaddr: "so-admin-cockpit-ui"
-          name: "so-admin-cockpit"
-          port: 9091
-    config:
-        ssl: "none"
+  enabled: false
+  service:
+  - baseaddr: "so-admin-cockpit-ui"
+    name: "so-admin-cockpit"
+    port: 9091
+  config:
+    ssl: "none"
 nodeSelector: {}
 tolerations: []
 affinity: {}

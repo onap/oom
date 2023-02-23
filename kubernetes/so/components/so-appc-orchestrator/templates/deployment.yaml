@@ -27,10 +27,9 @@ spec:
       maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ index .Values.updateStrategy.maxSurge }}
   template:
-    metadata:
-      labels: {{- include "common.labels" . | nindent 8 }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-pass-encoder
         command:
         - sh
@@ -54,25 +53,18 @@ spec:
           - -c
           - |
             export ACTUATOR_PASSWORD="$(cat /tmp/app/encoded)"
-            {{- if .Values.global.aafEnabled }}
-            export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-            {{- if .Values.global.security.aaf.enabled }}
-            export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-            {{- end }}
-            {{- end }}
             /app/start-app.sh
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         resources: {{ include "common.resources" . | nindent 12 }}
         env:
         - name: ACTUATOR_USERNAME
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 10 }}
-        {{ include "so.certificates.env" . | indent 8 | trim }}
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports: {{- include "common.containerPorts" . | nindent 10 }}
-        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: encoder
@@ -82,7 +74,7 @@ spec:
           readOnly: true
 {{ include "so.helpers.livenessProbe" .| indent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      volumes:
       - name: logs
         emptyDir: {}
       - name: encoder

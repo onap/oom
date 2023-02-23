@@ -26,11 +26,9 @@ spec:
       maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ index .Values.updateStrategy.maxSurge }}
   template:
-    metadata:
-      labels: {{- include "common.labels" . | nindent 8 }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{ include "so.certificate.container_importer" . | indent 6 | trim }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
@@ -41,12 +39,6 @@ spec:
             - |
               export BPEL_PASSWORD=`htpasswd -bnBC 10 "" $BPEL_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
               export ACTUATOR_PASSWORD=`htpasswd -bnBC 10 "" $ACTUATOR_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
-              {{- if .Values.global.aafEnabled }}
-              export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-              {{- if .Values.global.security.aaf.enabled }}
-              export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-              {{- end }}
-              {{- end }}
               ./start-app.sh
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           resources: {{ include "common.resources" . | nindent 12 }}
@@ -72,12 +64,11 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 14 }}
             - name: ACTUATOR_PASSWORD_INPUT
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 14 }}
-            {{ include "so.certificates.env" . | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-env
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+          volumeMounts:
             - name: logs
               mountPath: /app/logs
             - name: config
@@ -94,7 +85,7 @@ spec:
             successThreshold: {{ index .Values.livenessProbe.successThreshold}}
             failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+      volumes:
         - name: logs
           emptyDir: {}
         - name: config
