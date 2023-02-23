@@ -30,7 +30,7 @@ spec:
     metadata:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 8 }}
+      initContainers:
         - name: {{ include "common.name" . }}-encrypter
           command:
             - sh
@@ -59,33 +59,20 @@ spec:
           args:
             - -c
             - |
-              export AAF_BASE64=$(echo -n "${AAF_USERNAME}:${AAF_PASSWORD}" | base64)
-              export AAF_AUTH=$(echo "Basic ${AAF_BASE64}")
               export AAI_AUTH=$(cat /input/.aai_creds)
-              {{- if .Values.global.aafEnabled }}
-              export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-              {{- if .Values.global.security.aaf.enabled }}
-              export KEYSTORE_PASSWORD="${cadi_keystore_password}"
-              {{- end }}
-              {{- end }}
               ./start-app.sh
           resources: {{ include "common.resources" . | nindent 12 }}
           ports: {{- include "common.containerPorts" . | nindent 12  }}
           env:
-            - name: AAF_USERNAME
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aaf-creds" "key" "login") | indent 14 }}
-            - name: AAF_PASSWORD
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aaf-creds" "key" "password") | indent 14 }}
             - name: ACTUATOR_USERNAME
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 14 }}
             - name: ACTUATOR_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 14 }}
-            {{ include "so.certificates.env" . | indent 12 | trim }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-env
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+          volumeMounts:
             - name: logs
               mountPath: /app/logs
             - name: config
@@ -105,7 +92,7 @@ spec:
             successThreshold: {{ index .Values.livenessProbe.successThreshold}}
             failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+      volumes:
         - name: logs
           emptyDir: {}
         - name: config

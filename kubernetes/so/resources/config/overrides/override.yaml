@@ -1,10 +1,6 @@
 aai:
-  {{ if (include "common.needTLS" .) }}
-  endpoint: https://aai.{{ include "common.namespace" . }}:8443
-  {{ else }}
   endpoint: http://aai.{{ include "common.namespace" . }}:80
-  {{ end }}
-  auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.aai.auth )}}
+  auth: {{ .Values.mso.aai.auth }}
 server:
     port: {{ index .Values.containerPort }}
     tomcat:
@@ -17,16 +13,15 @@ mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
+      auth: {{ .Values.mso.adapters.requestDb.auth }}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
   db:
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.adapters.requestDb.auth )}}
+    auth: {{ .Values.mso.adapters.requestDb.auth }}
   config:
     path: /src/main/resources/
-    cadi: {{ include "so.cadi.keys" . | nindent 10}}
   infra:
     default:
       alacarte:
@@ -38,33 +33,25 @@ mso:
           default:
             testApi: GR_API
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
-  camundaAuth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.camundaAuth )}}
+  camundaAuth: {{ .Values.mso.camundaAuth }}
   async:
     core-pool-size: 50
     max-pool-size: 50
     queue-capacity: 500
   sdc:
     client:
-      auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.sdc.client.auth )}}
+      auth: {{ .Values.mso.sdc.client.auth }}
     activate:
       instanceid: test
       userid: cs0008
-    {{ if (include "common.needTLS" .) }}
-    endpoint: https://sdc-be.{{ include "common.namespace" . }}:8443
-    {{ else }}
     endpoint: http://sdc-be.{{ include "common.namespace" . }}:8080
-    {{ end }}
   tenant:
     isolation:
       retry:
         count: 3
   aai:
-    {{ if (include "common.needTLS" .) }}
-    endpoint: https://aai.{{ include "common.namespace" . }}:8443
-    {{ else }}
     endpoint: http://aai.{{ include "common.namespace" . }}:80
-    {{ end }}
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.aai.auth )}}
+    auth: {{ .Values.mso.aai.auth }}
 
   extApi:
     endpoint: http://nbi.onap:8080/nbi/api/v3
@@ -74,11 +61,11 @@ mso:
         username: testuser
         password: VjR5NDcxSzA=
         host: http://dmaap-bc.{{ include "common.namespace" . }}:8080
-        auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.encrypted "value2" .Values.mso.so.operationalEnv.dmaap.auth )}}
+        auth: {{ .Values.mso.so.operationalEnv.dmaap.auth }}
       publisher:
         topic: com.att.ecomp.mso.operationalEnvironmentEvent
   health:
-    auth: {{ include "so.helpers.profileProperty" (dict "condition" .Values.global.security.aaf.enabled "value1" .Values.global.aaf.auth.header "value2" .Values.mso.health.auth )}}
+    auth: {{ .Values.mso.health.auth }}
     endpoints:
       - subsystem: apih
         uri: http://so-bpmn-infra:8081

@@ -29,7 +29,6 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "so.certificate.container_importer" . | nindent 8 }}
       containers:
         - name: {{ include "common.name" . }}
           command:
@@ -38,12 +37,6 @@ spec:
             - -c
             - |
               export ETSI_NFVO_PASSWORD=`htpasswd -bnBC 10 "" $ETSI_NFVO_PASSWORD_INPUT | tr -d ':\n' | sed 's/\$2y/\$2a/'`
-              {{- if .Values.global.aafEnabled }}
-              export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-              {{- if .Values.global.security.aaf.enabled }}
-              export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-              {{- end }}
-              {{- end }}
               ./start-app.sh
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           resources: {{ include "common.resources" . | nindent 12 }}
@@ -64,12 +57,11 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "login") | indent 14 }}
             - name: DB_ADMIN_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-admin-creds" "key" "password") | indent 14 }}
-            {{ include "so.certificates.env" . | indent 12 | trim }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-configmap
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 12 }}
+          volumeMounts:
             - name: logs
               mountPath: /app/logs
             - name: config
@@ -84,7 +76,7 @@ spec:
             failureThreshold: {{ index .Values.livenessProbe.failureThreshold}}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 8 }}
+      volumes:
         - name: logs
           emptyDir: {}
         - name: config

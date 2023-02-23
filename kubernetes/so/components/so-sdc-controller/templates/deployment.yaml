@@ -15,17 +15,9 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.fullname" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ index .Values.replicaCount }}
   minReadySeconds: {{ index .Values.minReadySeconds }}
   strategy:
@@ -34,30 +26,14 @@ spec:
       maxUnavailable: {{ index .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ index .Values.updateStrategy.maxSurge }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{ include "so.certificate.container_importer" . | indent 6 | trim }}
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
-        resources: {{ include "common.resources" . | nindent 12 }}
-        {{- if .Values.global.aafEnabled }}
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          export $(cat {{ .Values.soHelpers.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          {{- if .Values.global.security.aaf.enabled }}
-          export KEYSTORE_PASSWORD="${cadi_keystore_password_p12}"
-          {{- end }}
-          /app/start-app.sh
-        {{- end }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         env:
         - name: DB_HOST
           value: {{ include "common.mariadbService" . }}
@@ -77,12 +53,11 @@ spec:
           value: {{ .Values.config.kafka.saslMechanism }}
         - name: SASL_JAAS_CONFIG
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-sdc-kafka-secret" "key" "sasl.jaas.config") | indent 10 }}
-        {{ include "so.certificates.env" . | indent 8 | trim }}
         envFrom:
         - configMapRef:
             name: {{ include "common.fullname" . }}-configmap
         imagePullPolicy:  {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts: {{ include "so.certificate.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: config
@@ -91,14 +66,11 @@ spec:
         - name: {{ include "common.fullname" . }}-logs
           mountPath: /var/log/onap
 {{ include "so.helpers.livenessProbe" .| indent 8 }}
-        ports:
-        - containerPort: {{ index .Values.containerPort }}
-          name: {{ .Values.service.portName }}{{ if (include "common.needTLS" .) }}s{{ end }}
-          protocol: TCP
+        ports: {{- include "common.containerPorts" . | nindent 10  }}
       # Filebeat sidecar container
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "so.certificate.volumes" . | nindent 6 }}
+      volumes:
       - name: logs
         emptyDir: {}
       - name: config
