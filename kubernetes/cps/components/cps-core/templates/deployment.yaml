@@ -1,7 +1,7 @@
 {{/*
 # Copyright (C) 2021 Pantheon.tech, Orange
 # Modifications Copyright (C) 2021 Bell Canada.
-# Modifications Copyright (C) 2021-2022 Nordix Foundation.
+# Modifications Copyright (C) 2021-2023 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,10 +57,11 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "login") | indent 12 }}
           - name: DMI_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "password") | indent 12 }}
-          {{- if .Values.config.useStrimziKafka }}
-          - name: JAASLOGIN
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-kafka-user" "key" "sasl.jaas.config") | indent 12 }}
-          {{- end }}
+          - name: SASL_JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
         volumeMounts:
           - mountPath: /config-input
             name: init-data-input
@@ -111,10 +112,11 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "login") | indent 12 }}
           - name: DMI_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "password") | indent 12 }}
-          {{- if .Values.config.useStrimziKafka }}
-          - name: JAASLOGIN
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-kafka-user" "key" "sasl.jaas.config") | indent 12 }}
-          {{- end }}
+          - name: SASL_JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 12 }}
