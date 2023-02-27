@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
+# Modifications © 2023 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,26 +17,14 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - command:
         - sh
         args:
@@ -54,28 +43,13 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-
-      - command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - "{{ .Values.postgres.nameOverride }}"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
-        resources:
-{{ include "common.resources" . | indent 12 }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
+        volumeMounts:
         - mountPath: /service/webapps/ROOT/WEB-INF/classes/mybatis/configuration/configuration.xml
           name: init-data
           subPath: configuration.xml
@@ -89,7 +63,7 @@ spec:
           periodSeconds: {{ .Values.readiness.periodSeconds }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: init-data-input
         configMap:
           name: {{ include "common.fullname" . }}
