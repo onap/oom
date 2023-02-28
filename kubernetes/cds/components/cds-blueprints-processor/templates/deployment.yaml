@@ -1,7 +1,7 @@
 {{/*
 # Copyright (c) 2019 IBM, Bell Canada
 # Copyright (c) 2020 Samsung Electronics
-# Modification Copyright © 2022 Nordix Foundation
+# Modification Copyright © 2022-2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,38 +18,26 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      # This allow a new pod to be ready before terminating the old one
+      # This allows a new pod to be ready before terminating the old one
       # causing no downtime when replicas is set to 1
       maxUnavailable: 0
-
       # maxSurge to 1 is very important for the hazelcast integration
       # we only want one pod at a time to restart not multiple
       # and break the hazelcast cluster. We should not use % maxSurge value
       # ref : https://hazelcast.com/blog/rolling-upgrade-hazelcast-imdg-on-kubernetes/
       maxSurge: 1
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       - command:
         - sh
         args:
@@ -75,21 +63,6 @@ spec:
         name: {{ include "common.name" . }}-update-config
 
       - command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - cds-db
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-      - name: fix-permission
-        command:
         - chown
         - -R
         - 1000:1000
@@ -99,6 +72,8 @@ spec:
         volumeMounts:
         - mountPath: {{ .Values.persistence.deployedBlueprint }}
           name: {{ include "common.fullname" . }}-blueprints
+        name: fix-permission
+
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -110,8 +85,6 @@ spec:
             value: {{ if (gt (int (.Values.replicaCount)) 2) }} {{ .Values.cluster.enabled | quote }} {{ else }} "false" {{ end }}
           - name: CLUSTER_ID
             value: {{ .Values.cluster.clusterName }}
-          - name: AAF_CREDSPATH
-            value: {{ .Values.certInitializer.credsPath }}
           - name: CLUSTER_NODE_ID
             valueFrom:
               fieldRef:
@@ -122,10 +95,11 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-creds" "key" "login") | indent 12 }}
           - name: CPS_PASS_PLAIN
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cps-creds" "key" "password") | indent 12 }}
-          {{ if .Values.useStrimziKafka }}
-          - name: JAAS_PASS
-            value: {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-kafka-secret" "key" "password") | indent 12 }}
-          {{ end }}
+          - name: SASL_JAAS_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: password
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
@@ -133,7 +107,7 @@ spec:
           startupProbe:
             httpGet:
               path: /api/v1/execution-service/health-check
-              port: {{ .Values.service.http.internalPort }}
+              port: {{ .Values.startup.port }}
               httpHeaders:
                 - name: Authorization
                   value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
@@ -146,7 +120,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /api/v1/execution-service/health-check
-              port: {{ .Values.service.http.internalPort }}
+              port: {{ .Values.liveness.port }}
               httpHeaders:
               - name: Authorization
                 value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
@@ -157,14 +131,14 @@ spec:
           readinessProbe:
             httpGet:
               path: /api/v1/execution-service/health-check
-              port: {{ .Values.service.http.internalPort }}
+              port: {{ .Values.readiness.port }}
               httpHeaders:
               - name: Authorization
                 value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -180,15 +154,10 @@ spec:
           - mountPath: {{ .Values.config.appConfigDir }}/hazelcast.yaml
             name: {{ include "common.fullname" . }}-config
             subPath: hazelcast.yaml
-
-          - mountPath: {{ .Values.config.appConfigDir }}/ONAP_RootCA.cer
-            name: {{ include "common.fullname" . }}-config
-            subPath: ONAP_RootCA.cer
-
           - mountPath: {{ .Values.persistence.deployedBlueprint }}
             name: {{ include "common.fullname" . }}-blueprints
           resources:
-{{ include "common.resources" . | indent 12 }}
+{{ include "common.resources" . }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
@@ -198,7 +167,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
@@ -214,8 +183,6 @@ spec:
               path: logback.xml
             - key: hazelcast.yaml
               path: hazelcast.yaml
-            - key: ONAP_RootCA.cer
-              path: ONAP_RootCA.cer
         - name: {{ include "common.fullname" . }}-blueprints
           persistentVolumeClaim:
             claimName: {{ include "common.release" . }}-cds-blueprints
