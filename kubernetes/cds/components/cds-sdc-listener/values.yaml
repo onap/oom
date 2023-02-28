@@ -26,8 +26,6 @@ global:
   persistence:
     mountPath: /dockerdata-nfs
 
-  cdsSdcListenerKafkaUser: cds-sdc-list-user
-
 #################################################################
 # Application configuration defaults.
 #################################################################
@@ -39,27 +37,18 @@ pullPolicy: Always
 # flag to enable debugging - application support required
 debugEnabled: false
 
-secrets:
-  - uid: cds-sdc-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
+kafkaUser:
+  acls:
+    - name: cds
+      type: group
+      operations: [Read]
+    - name: SDC-DISTR
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
 
-# application configuration
 config:
   appConfigDir: /opt/app/onap/config
-  someConfig: blah
-  kafka:
-    securityProtocol: SASL_PLAINTEXT
-    saslMechanism: SCRAM-SHA-512
-    authType: simple
-    sdcTopic:
-      pattern: SDC-DIST
-      consumerGroup: cds
-      clientId: cds-sdc-listener
 
 # default number of instances
 replicaCount: 1

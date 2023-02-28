@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,12 +59,11 @@ spec:
           env:
           - name: APP_CONFIG_HOME
             value: {{ .Values.config.appConfigDir }}
-          - name: SECURITY_PROTOCOL
-            value: {{ .Values.config.kafka.securityProtocol }}
-          - name: SASL_MECHANISM
-            value: {{ .Values.config.kafka.saslMechanism }}
           - name: SASL_JAAS_CONFIG
-            value: {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-sdc-kafka-secret" "key" "sasl.jaas.config") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
             name: {{ .Values.service.http.portName }}
