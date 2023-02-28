@@ -1,6 +1,6 @@
 # Copyright (c) 2019 IBM, Bell Canada
 # Copyright (c) 2020 Samsung Electronics
-# Modification Copyright © 2022 Nordix Foundation
+# Modification Copyright © 2022-2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,29 +18,19 @@
 # Global configuration defaults.
 #################################################################
 global:
-  # Change to an unused port prefix range to prevent port conflicts
-  # with other instances running within the same k8s cluster
-  nodePortPrefixExt: 304
-
   # image pull policy
   pullPolicy: Always
-
   persistence:
     mountPath: /dockerdata-nfs
-
   # This configuration specifies Service and port for SDNC OAM interface
   sdncOamService: sdnc-oam
   sdncOamPort: 8282
-
   # This concerns CDS/AAI communication through HTTP when TLS is not being needed
   # Port value should match the one in aai/values.yml : service.externalPlainPort
   aaiData:
     ExternalPlainPort: 80 # when TLS is not needed
     ServiceName: aai  # domain
     # http://aai:80 or https://aai:443
-
-  #AAF is enabled by default
-  #aafEnabled: true
 
   #enable importCustomCerts to add custom CA to blueprint processor pod
   #importCustomCertsEnabled: true
@@ -65,44 +55,12 @@ secrets:
     externalSecret: '{{ tpl (default "" .Values.config.sdncDB.dbRootPassExternalSecret) . }}'
     password: '{{ .Values.config.sdncDB.dbRootPass }}'
     passwordPolicy: required
-  - uid: cds-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: password
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
   - uid: cps-creds
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.config.cps.cpsUserExternalSecret) . }}'
     login: '{{ .Values.config.cps.cpsUsername }}'
     password: '{{ .Values.config.cps.cpsPassword }}'
     passwordPolicy: required
-
-#################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: cds-blueprints-processor-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: sdnc-cds
-  fqi: sdnc-cds@sdnc-cds.onap.org
-  public_fqdn: sdnc-cds.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  fqi_namespace: org.onap.sdnc-cds
-  #enable below if we need custom CA to be added to blueprint processor pod
-  #importCustomCertsEnabled: true
-  #truststoreMountpath: /opt/onap/cds
-  #truststoreOutputFileName: truststoreONAPall.jks
-  aaf_add_config: >
-    /opt/app/aaf_config/bin/agent.sh;
-    /opt/app/aaf_config/bin/agent.sh local showpass
-    {{.Values.fqi}} {{ .Values.fqdn }} > {{ .Values.credsPath }}/mycreds.prop
 
 #################################################################
 # Application configuration defaults.
@@ -132,7 +90,6 @@ config:
     # dbCredsExternalSecret: <some secret name>
     # dbRootPassword: password
     # dbRootPassExternalSecret
-  someConfig: blah
   cps:
     cpsUsername: ''
     cpsPassword: ''
@@ -145,46 +102,52 @@ nodeSelector: {}
 
 affinity: {}
 
-# If useStrimziKafka is true, the following also applies:
-# strimzi will create an associated kafka user and the topics defined for Request and Audit elements below.
-# The connection type must be kafka-scram-plain-text-auth
-# The bootstrapServers will target the strimzi kafka cluster by default
-useStrimziKafka: false
-cdsKafkaUser: cds-kafka-user
+# Strimzi KafkaUser config
+kafkaUser:
+  acls:
+    - name: cds-bp-processor
+      type: group
+      operations: [Read]
+    - name: cds.blueprint-processor
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
+# Strimzi KafkaTopic config
+kafkaTopic:
+  - name: cds.blueprint-processor.self-service-api.request
+  - name: cds.blueprint-processor.self-service-api.response
+  - name: cds.blueprint-processor.self-service-api.audit.request
+  - name: cds.blueprint-processor.self-service-api.audit.response
 
-kafkaRequestConsumer:
-  enabled: false
-  type: kafka-scram-plain-text-auth
-  bootstrapServers: host:port
-  groupId: cds-consumer
-  topic: cds.blueprint-processor.self-service-api.request
-  clientId: request-receiver-client-id
-  pollMillSec: 1000
-kafkaRequestProducer:
-  type: kafka-scram-plain-text-auth
-  bootstrapServers: host:port
-  clientId: request-producer-client-id
-  topic: cds.blueprint-processor.self-service-api.response
-  enableIdempotence: false
-kafkaAuditRequest:
-  enabled: false
-  type: kafka-scram-plain-text-auth
-  bootstrapServers: host:port
-  clientId: audit-request-producer-client-id
-  topic: cds.blueprint-processor.self-service-api.audit.request
-  enableIdempotence: false
-kafkaAuditResponse:
-  type: kafka-scram-plain-text-auth
-  bootstrapServers: host:port
-  clientId: audit-response-producer-client-id
-  topic: cds.blueprint-processor.self-service-api.audit.response
-  enableIdempotence: false
+
+containerHttpPort: &svc_http_port 8080
+containerGrpcPort: &svc_grpc_port 9111
+containerTcpPort: &svc_tcp_port 5701
+
+service:
+  http:
+    type: ClusterIP
+    portName: http
+    internalPort: *svc_http_port
+    externalPort: *svc_http_port
+  grpc:
+    type: ClusterIP
+    portName: grpc
+    internalPort: *svc_grpc_port
+    externalPort: *svc_grpc_port
+  cluster:
+    type: ClusterIP
+    portName: tcp-cluster
+    internalPort: *svc_tcp_port
+    externalPort: *svc_tcp_port
+  port: *svc_http_port
 
 # probe configuration parameters
 startup:
   initialDelaySeconds: 10
   failureThreshold: 30
   periodSeconds: 10
+  port: *svc_http_port
 
 liveness:
   initialDelaySeconds: 1
@@ -193,28 +156,13 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: false
+  port: *svc_http_port
 
 readiness:
   initialDelaySeconds: 120
   periodSeconds: 10
   timeoutSeconds: 20
-
-service:
-  http:
-    type: ClusterIP
-    portName: http
-    internalPort: 8080
-    externalPort: 8080
-  grpc:
-    type: ClusterIP
-    portName: grpc
-    internalPort: 9111
-    externalPort: 9111
-  cluster:
-    type: ClusterIP
-    portName: tcp-cluster
-    internalPort: 5701
-    externalPort: 5701
+  port: *svc_http_port
 
 persistence:
   volumeReclaimPolicy: Retain
@@ -227,9 +175,7 @@ persistence:
 cluster:
   # Cannot have cluster enabled if the replicaCount is not at least 3
   enabled: false
-
   clusterName: cds-cluster
-
   # Defines the number of node to be part of the CP subsystem/raft algorithm. This value should be
   # between 3 and 7 only.
   groupSize: 3
@@ -270,6 +216,10 @@ resources:
       cpu: 2
       memory: 4Gi
   unlimited: {}
+
+readinessCheck:
+  wait_for:
+    - cds-db
 
 #Pods Service Account
 serviceAccount:
