@@ -71,6 +71,7 @@ GLOBAL_INJECTED_OPENSTACK_USER_DOMAIN = '{{ .Values.openStackUserDomain }}'
 GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION = '{{ .Values.openStackKeystoneAPIVersion }}'
 GLOBAL_INJECTED_REGION_THREE = '{{ .Values.openStackRegionRegionThree }}'
 GLOBAL_INJECTED_KEYSTONE_REGION_THREE = '{{ .Values.openStackKeyStoneUrlRegionThree }}'
+GLOBAL_INJECTED_MODEL_PARSER_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "modeling-etsicatalog") }}'
 GLOBAL_INJECTED_OPENSTACK_KEYSTONE_API_VERSION_REGION_THREE = '{{ .Values.openStackKeystoneAPIVersionRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_USERNAME_REGION_THREE = '{{ .Values.openStackUserNameRegionThree }}'
 GLOBAL_INJECTED_OPENSTACK_SO_ENCRYPTED_PASSWORD_REGION_THREE  = '{{ .Values.openSackMsoEncryptdPasswordRegionThree }}'
@@ -308,6 +309,9 @@ GLOBAL_SO_VFC_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_VFC_IP_ADDR + ':' + GLOB
 GLOBAL_SO_VNFM_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_VNFM_IP_ADDR + ':' + GLOBAL_SO_VNFM_SERVER_PORT
 GLOBAL_SO_NSSMF_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_NSSMF_IP_ADDR + ':' + GLOBAL_SO_NSSMF_SERVER_PORT
 #GLOBAL_SO_VNFM_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_VNFM_IP_ADDR + ':' + GLOBAL_SO_VNFM_SERVER_PORT
+# modeling info
+GLOBAL_MODEL_PARSER_SERVER_PROTOCOL = "http"
+GLOBAL_MODEL_PARSER_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "modeling-etsicatalog" "port" 8806) }}'
 # music info - everything is from the private oam network (also called onap private network)
 GLOBAL_MUSIC_SERVER_PROTOCOL = "https"
 GLOBAL_MUSIC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "music" "port" 8443) }}'
