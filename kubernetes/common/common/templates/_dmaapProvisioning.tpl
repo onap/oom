@@ -118,7 +118,7 @@
   {{- end }}
   volumeMounts:
   {{- include "common.dmaap.provisioning._volumeMounts" $dot | trim | nindent 2 }}
-  resources: {{ include "common.resources" $dot | nindent 1 }}
+  resources: {{ include "common.resources" $dot | nindent 4 }}
 - name: {{ include "common.name" $dot }}-init-merge-config
   image: {{ include "repositoryGenerator.image.envsubst" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
