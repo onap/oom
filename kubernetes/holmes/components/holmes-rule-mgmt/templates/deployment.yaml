@@ -32,7 +32,10 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{- include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
+      {{- if not .Values.global.postgres.localCluster }}
+      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      {{- end }}
       - name: {{ include "common.name" . }}-env-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -62,7 +65,7 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         ports: {{ include "common.containerPorts" . | nindent 8  }}
-        volumeMounts: {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: {{ include "common.fullname" . }}-env-config
           mountPath: /opt/hrmconfig
         - name: {{ include "common.fullname" . }}-rule-config
@@ -117,7 +120,7 @@ spec:
         - name: DB_PORT
           value: "{{ .Values.config.pgConfig.dbPort }}"
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:  {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: {{ include "common.fullname" . }}-general-config
         configMap:
           defaultMode: 422
