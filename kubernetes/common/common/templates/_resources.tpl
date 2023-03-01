@@ -55,5 +55,5 @@
 */ -}}
 {{- define "common.resources" -}}
 {{- $flavor := include "common.flavor" . -}}
-{{- toYaml (pluck $flavor .Values.resources | first) | indent 12 -}}
+{{- toYaml (pluck $flavor .Values.resources | first) -}}
 {{- end -}}
