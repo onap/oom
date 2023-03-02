@@ -28,6 +28,8 @@ GLOBAL_INJECTED_DCAE_VES_HOST = '{{include "robot.ingress.svchost" (dict "root" 
 GLOBAL_INJECTED_DNS_IP_ADDR = 'N/A'
 GLOBAL_INJECTED_DOCKER_VERSION = '1.2-STAGING-latest'
 GLOBAL_INJECTED_EXTERNAL_DNS = 'N/A'
+GLOBAL_INJECTED_HOLMES_ENGINE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "holmes-engine-mgmt") }}'
+GLOBAL_INJECTED_HOLMES_RULE_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "holmes-rule-mgmt") }}'
 GLOBAL_INJECTED_LOG_ELASTICSEARCH_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "log-es") }}'
 GLOBAL_INJECTED_LOG_KIBANA_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "log-kibana") }}'
 GLOBAL_INJECTED_LOG_LOGSTASH_IP_ADDR = '{{include "robot.ingress.svchost" (dict "root" . "hostname" "log-ls-http") }}'
@@ -208,6 +210,13 @@ GLOBAL_DROOLS_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "host
 GLOBAL_DROOLS_USERNAME = '{{ .Values.droolsUsername }}'
 GLOBAL_DROOLS_PASSWORD = '{{ .Values.droolsPassword }}'
 GLOBAL_DROOLS_AUTHENTICATION = [GLOBAL_DROOLS_USERNAME, GLOBAL_DROOLS_PASSWORD]
+
+# holmes info
+GLOBAL_HOLMES_ENGINE_SERVER_PROTOCOL = 'http'
+GLOBAL_HOLMES_ENGINE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "holmes-engine-mgmt" "port" 9102) }}'
+GLOBAL_HOLMES_RULE_SERVER_PROTOCOL = 'http'
+GLOBAL_HOLMES_RULE_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "holmes-rule-mgmt" "port" 9101) }}'
+
 # log server config - NOTE: no log server is run in HEAT; only on OOM
 GLOBAL_LOG_SERVER_PROTOCOL = "http"
 GLOBAL_LOG_ELASTICSEARCH_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "log-es" "port" 9200) }}'
