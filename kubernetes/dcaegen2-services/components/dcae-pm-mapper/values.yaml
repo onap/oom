@@ -2,7 +2,7 @@
 # =========================================================================
 #  Copyright (C) 2021 Nordix Foundation.
 #  Copyright (c) 2022 Nokia.  All rights reserved.
-#  Copyright (c) 2022 J. F. Lucas. All rights reserved.
+#  Copyright (c) 2022-2023 J. F. Lucas. All rights reserved.
 # =========================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,21 +36,11 @@ filebeatConfig:
 # Secrets Configuration.
 #################################################################
 secrets:
-  - uid: &aafCredsUID aafcreds
-    type: basicAuth
-    login: '{{ .Values.aafCreds.identity }}'
-    password: '{{ .Values.aafCreds.password }}'
-    passwordPolicy: required
   - uid: &drSubCredsUID drsubcreds
     type: basicAuth
     login: '{{ .Values.drSubscriberCreds.username }}'
     password: '{{ .Values.drSubscriberCreds.password }}'
     passwordPolicy: required
-
-#################################################################
-# InitContainer Images.
-#################################################################
-tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
 
 #################################################################
 # Application Configuration Defaults.
@@ -65,15 +55,6 @@ pullPolicy: Always
 log:
   path: /var/log/ONAP/dcaegen2/services/pm-mapper
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
-
-# Directory where TLS certs should be stored
-# if absent, no certs will be retrieved and stored
-certDirectory: /opt/app/pm-mapper/etc/cert
-
-# TLS role -- set to true if microservice acts as server
-# If true, an init container will retrieve a server cert
-# and key from AAF and mount them in certDirectory.
-tlsServer: false
 
 # Dependencies
 readinessCheck:
@@ -104,23 +85,12 @@ service:
       plain_port: 8081
       port_protocol: http
 
-# AAF Credentials
-aafCreds:
-  identity: dcae@dcae.onap.org
-  password: demo123456!
-
 # Data Router Subscriber Credentials
 drSubscriberCreds:
   username: username
   password: password
 
 credentials:
-- name: AAF_IDENTITY
-  uid: *aafCredsUID
-  key: login
-- name: AAF_PASSWORD
-  uid: *aafCredsUID
-  key: password
 - name: DR_USERNAME
   uid: *drSubCredsUID
   key: login

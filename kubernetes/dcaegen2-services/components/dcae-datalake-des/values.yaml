@@ -1,7 +1,7 @@
 # ============= LICENSE_START ================================================
 # ============================================================================
 # Copyright (C) 2021 Wipro Limited.
-#  Copyright (c) 2022 J. F. Lucas. All rights reserved.
+#  Copyright (c) 2022-2023 J. F. Lucas. All rights reserved.
 # ============================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,21 +36,11 @@ filebeatConfig:
 # Secrets Configuration.
 #################################################################
 secrets:
-  - uid: &aafCredsUID aafcreds
-    type: basicAuth
-    login: '{{ .Values.aafCreds.identity }}'
-    password: '{{ .Values.aafCreds.password }}'
-    passwordPolicy: required
   - uid: &pgUserCredsSecretUid pg-user-creds
     externalSecret: '{{ include "common.release" . }}-datalake-pg-user-creds'
     type: basicAuth
     login: '{{ .Values.postgres.config.pgUserName }}'
     passwordPolicy: required
-
-################################aafcreds#################################
-# InitContainer Images.
-#################################################################
-tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
 
 #################################################################
 # Application Configuration Defaults.
@@ -64,15 +54,6 @@ image: onap/org.onap.dcaegen2.services.datalake.exposure.service:1.1.1
 log:
   path: /var/log/ONAP/dcaegen2/services/datalake
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
-
-# Directory where TLS certs should be stored
-# if absent, no certs will be retrieved and stored
-certDirectory: /opt/app/datalake/etc/cert/
-
-# TLS role -- set to true if microservice acts as server
-# If true, an init container will retrieve a server cert
-# and key from AAF and mount them in certDirectory.
-tlsServer: false
 
 # Dependencies
 readinessCheck:
@@ -96,11 +77,6 @@ service:
     - name: http
       port: 1681
       port_protocol: http
-
-# AAF Credentials
-aafCreds:
-  identity: dcae@dcae.onap.org
-  password: demo123456!
 
 #postgres configuration
 postgres:
