@@ -1,5 +1,5 @@
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021-2022 Nordix Foundation.
+#   Copyright (C) 2021-2023 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,7 +22,12 @@
 global:
   nodePortPrefixExt: 304
   persistence: {}
-  aafEnabled: true
+  aafEnabled: false
+  #Strimzi Kafka properties
+  useStrimziKafka: set-via-parent-chart-global-value
+  kafkaTopics:
+    acRuntimeTopic:
+      name: &acRuntimeTopic policy.clamp-runtime-acm
 
 #################################################################
 # Secrets metaconfig
@@ -50,13 +55,6 @@ secrets:
     login: '{{ .Values.config.policyAppUserName }}'
     password: '{{ .Values.config.policyAppUserPassword }}'
     passwordPolicy: required
-  - uid: policy-kafka-user
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
 
 certStores:
   keyStorePassword: Pol1cy_0nap
@@ -88,6 +86,8 @@ certInitializer:
 image: onap/policy-clamp-runtime-acm:6.4.1
 pullPolicy: Always
 
+componentName: &componentName policy-clamp-runtime-acm
+
 # flag to enable debugging - application support required
 debugEnabled: false
 
@@ -95,30 +95,25 @@ debugEnabled: false
 config:
   policyAppUserName: runtimeUser
   policyAppUserPassword: none
-
-# Event consumption (kafka) properties
-  useStrimziKafka: true
-  kafkaBootstrap: strimzi-kafka-bootstrap
-  kafka:
-    consumer:
-      groupId: policy-group
-  app:
-    listener:
-      acRuntimeTopic: policy.policy-acruntime-participant
-# If targeting a custom kafka cluster, ie useStrimziKakfa: false
-# uncomment below config and target your kafka bootstrap servers,
-# along with any other security config.
-#
-# eventConsumption:
-#   spring.kafka.bootstrap-servers: <kafka-bootstrap>:9092
-#   spring.kafka.security.protocol: PLAINTEXT
-#   spring.kafka.consumer.group-id: policy-group
-#
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.
 # additional:
 #   spring.config.max-size: 200
 #   spring.config.min-size: 10
+
+# Strimzi Kafka config
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: *componentName
+      type: group
+      operations: [Read]
+    - name: *acRuntimeTopic
+      type: topic
+      operations: [Read, Write]
+
+kafkaTopic:
+  - name: *acRuntimeTopic
 
 db:
   user: policy_user
@@ -150,7 +145,7 @@ readiness:
 
 service:
   type: ClusterIP
-  name: policy-clamp-runtime-acm
+  name: *componentName
   useNodePortExt: true
   ports:
   - name: http-api
@@ -180,6 +175,14 @@ resources:
 
 #Pods Service Account
 serviceAccount:
-  nameOverride: policy-clamp-runtime-acm
+  nameOverride: *componentName
   roles:
     - read
+
+readinessCheck:
+  wait_for:
+    - message-router
+
+wait_for_job_container:
+  containers:
+    - '{{ include "common.release" . }}-policy-galera-config'
