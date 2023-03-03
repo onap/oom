@@ -1,7 +1,7 @@
 {{/*
 #============LICENSE_START========================================================
 # ================================================================================
-# Copyright (c) 2021-2022 J. F. Lucas. All rights reserved.
+# Copyright (c) 2021-2023 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2021 Nokia. All rights reserved.
 # Copyright (c) 2021 Nordix Foundation.
@@ -228,16 +228,6 @@ process into the microservice's configuration.  See the documentation for
 the common DMaaP provisioning template
 (oom/kubernetes/common/common/templates/_dmaapProvisioning.tpl).
 
-If the microservice acts as a TLS client or server, the Deployment will
-include an initContainer that retrieves certificate information from
-the AAF certificate manager.  The information is mounted at the
-mount point specified in .Values.certDirectory.  If the microservice is
-a TLS server (indicated by setting .Values.tlsServer to true), the
-certificate information will include a server cert and key, in various
-formats.  It will also include the AAF CA cert.   If the microservice is
-a TLS client only (indicated by setting .Values.tlsServer to false), the
-certificate information includes only the AAF CA cert.
-
 If the microservice uses certificates from an external CMPv2 provider,
 the Deployment will include an initContainer that performs certificate
 post-processing.
@@ -247,7 +237,6 @@ post-processing.
 {{- $log := default dict .Values.log -}}
 {{- $logDir :=  default "" $log.path -}}
 {{- $certDir := (eq "true" (include "common.needTLS" .)) | ternary (default "" .Values.certDirectory . ) "" -}}
-{{- $tlsServer := default "" .Values.tlsServer -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
 {{- $policy := default dict .Values.policies -}}
 {{- $policyRls := default $commonRelease $policy.policyRelease -}}
@@ -269,44 +258,6 @@ spec:
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       {{- end }}
       {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
-      {{- if $certDir }}
-      - name: {{ include "common.name" . }}-aaf-init-readiness
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - aaf-cm
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
-      - name: init-tls
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.tlsImage }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        env:
-        - name: TLS_SERVER
-          value: {{ $tlsServer | quote }}
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
-        resources: {{ include "common.resources" . | nindent 10 }}
-        volumeMounts:
-        - mountPath: /opt/app/osaaf
-          name: tls-info
-      {{- end }}
       {{ include "dcaegen2-services-common._certPostProcessor" .  | nindent 4 }}
       containers:
       - image: {{ default ( include "repositoryGenerator.repository" . ) .Values.imageRepositoryOverride }}/{{ .Values.image }}
@@ -423,10 +374,6 @@ spec:
         volumeMounts:
         - mountPath: /etc/policies
           name: policy-shared
-        {{- if $certDir }}
-        - mountPath: /opt/ca-certificates/
-          name: tls-info
-        {{- end }}
       {{- end }}
       hostname: {{ include "common.name" . }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}

@@ -1,7 +1,7 @@
 # ================================ LICENSE_START =============================
 # ============================================================================
 #  Copyright (C) 2021 Nordix Foundation.
-#  Copyright (c) 2022 J. F. Lucas. All rights reserved.
+#  Copyright (c) 2022-2023 J. F. Lucas. All rights reserved.
 # ============================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,11 +35,6 @@ filebeatConfig:
 # Secrets Configuration.
 #################################################################
 secrets:
-  - uid: &aafCredsUID aafcreds
-    type: basicAuth
-    login: '{{ .Values.aafCreds.identity }}'
-    password: '{{ .Values.aafCreds.password }}'
-    passwordPolicy: required
   - uid: &pgUserCredsSecretUid pg-user-creds
     name: &pgUserCredsSecretName '{{ include "common.release" . }}-pmsh-pg-user-creds'
     type: basicAuth
@@ -47,11 +42,6 @@ secrets:
     login: '{{ .Values.postgres.config.pgUserName }}'
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
-
-#################################################################
-# InitContainer Images.
-#################################################################
-tlsImage: onap/org.onap.dcaegen2.deployments.tls-init-container:2.1.0
 
 #################################################################
 # Application Configuration Defaults.
@@ -66,15 +56,6 @@ pullPolicy: Always
 log:
   path: /var/log/ONAP/dcaegen2/services/pmsh
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
-
-# Directory where TLS certs should be stored
-# if absent, no certs will be retrieved and stored
-certDirectory: /opt/app/pmsh/etc/certs
-
-# TLS role -- set to true if microservice acts as server
-# If true, an init container will retrieve a server cert
-# and key from AAF and mount them in certDirectory.
-tlsServer: false
 
 # Dependencies
 readinessCheck:
@@ -101,24 +82,11 @@ service:
       plain_port: 8080
       port_protocol: http
 
-# AAF Credentials
-aafCreds:
-  identity: dcae@dcae.onap.org
-  password: demo123456!
-
-credentials:
-- name: AAF_IDENTITY
-  uid: *aafCredsUID
-  key: login
-- name: AAF_PASSWORD
-  uid: *aafCredsUID
-  key: password
-
 # Initial Application Configuration
 applicationConfig:
   enable_tls: false
-  aaf_identity: ${AAF_IDENTITY}
-  aaf_password: ${AAF_PASSWORD}
+  aaf_identity: dummy_value
+  aaf_password: dummy_value
   key_path: /opt/app/pmsh/etc/certs/key.pem
   cert_path: /opt/app/pmsh/etc/certs/cert.pem
   ca_cert_path: /opt/app/pmsh/etc/certs/cacert.pem
