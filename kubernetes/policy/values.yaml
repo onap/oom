@@ -36,8 +36,13 @@ global:
       name3: tcp-pgset-replica
     container:
       name: postgres
+  #Strimzi Kafka properties
+  useStrimziKafka: true
   kafkaBootstrap: strimzi-kafka-bootstrap
   policyKafkaUser: policy-kafka-user
+  kafkaTopics:
+    acRuntimeTopic:
+      name: policy.clamp-runtime-acm
 
 #################################################################
 # Secrets metaconfig
@@ -129,32 +134,23 @@ policy-distribution:
   db: *dbSecretsHook
 policy-clamp-ac-k8s-ppnt:
   enabled: true
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-pf-ppnt:
   enabled: true
   restServer:
     apiUserExternalSecret: *policyApiCredsSecret
     papUserExternalSecret: *policyPapCredsSecret
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-http-ppnt:
   enabled: true
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-ac-a1pms-ppnt:
   enabled: true
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
-policy-nexus:
-  enabled: false
-  config:
-    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-clamp-runtime-acm:
   enabled: true
   db: *dbSecretsHook
   config:
     appUserExternalSecret: *policyAppCredsSecret
+policy-nexus:
+  enabled: false
+  config:
     jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-gui:
   enabled: false
@@ -199,13 +195,6 @@ readiness:
 config:
   policyAppUserName: runtimeUser
   useStrimziKafka: true
-  acRuntimeTopic:
-    name: policy-acruntime-participant
-    partitions: 10
-    retentionMs: 7200000
-    segmentBytes: 1073741824
-    consumer:
-      groupId: policy-group
   policyPdpPapTopic:
     name: policy-pdp-pap
     partitions: 10
