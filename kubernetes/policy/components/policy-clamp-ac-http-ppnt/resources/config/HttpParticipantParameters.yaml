@@ -1,5 +1,5 @@
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021-2022 Nordix Foundation.
+#   Copyright (C) 2021-2023 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,18 +26,6 @@ spring:
     user:
       name: ${RESTSERVER_USER}
       password: ${RESTSERVER_PASSWORD}
-{{- if .Values.config.useStrimziKafka }}
-  kafka:
-    consumer:
-      group-id: {{ .Values.config.kafka.consumer.groupId }}
-    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
-    security.protocol: SASL_PLAINTEXT
-    properties.sasl:
-      mechanism: SCRAM-SHA-512
-      jaas.config: ${JAASLOGIN}
-{{ else }}
-{{ toYaml .Values.config.eventConsumption | nindent 2 }}
-{{- end }}
 
 security:
   enable-csrf: false
@@ -54,41 +42,44 @@ participant:
       version: 2.3.4
     clampAutomationCompositionTopics:
       topicSources:
-        - topic: POLICY-ACRUNTIME-PARTICIPANT
-          servers:
-            - ${topicServer:message-router}
-          topicCommInfrastructure: dmaap
+        -
+          useHttps: false
           fetchTimeout: 15000
-          useHttps: "false"
-      topicSinks:
-        - topic: POLICY-ACRUNTIME-PARTICIPANT
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            group.id: {{ (first .Values.kafkaUser.acls).name }}
+            allow.auto.create.topics: false
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
+          topicCommInfrastructure: dmaap
           servers:
             - ${topicServer:message-router}
+          {{ end }}
+      topicSinks:
+        -
+          useHttps: false
+          fetchTimeout: 15000
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            client.id: {{ (first .Values.kafkaUser.acls).name }}-client-id
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
           topicCommInfrastructure: dmaap
-          useHttps: "false"
-# If Strimzi Kafka to be used for communication, replace clampAutomationCompositionTopics configuration with below
-#    clampAutomationCompositionTopics:
-#      topicSources:
-#        - topic: policy-acruntime-participant
-#          servers:
-#            - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
-#          topicCommInfrastructure: kafka
-#          fetchTimeout: 15000
-#          useHttps: true
-#          additionalProps:
-#            security.protocol: SASL_PLAINTEXT
-#            sasl.mechanism: SCRAM-SHA-512
-#            sasl.jaas.config: ${JAASLOGIN}
-#      topicSinks:
-#        - topic: policy-acruntime-participant
-#          servers:
-#            - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
-#          topicCommInfrastructure: kafka
-#          useHttps: true
-#          additionalProps:
-#            security.protocol: SASL_PLAINTEXT
-#            sasl.mechanism: SCRAM-SHA-512
-#            sasl.jaas.config: ${JAASLOGIN}
+          servers:
+            - ${topicServer:message-router}
+          {{ end }}
 
 management:
   endpoints:
