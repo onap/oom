@@ -2,6 +2,7 @@
 #============LICENSE_START========================================================
 # ================================================================================
 # Copyright (c) 2021 Nokia. All rights reserved.
+# Modifications Copyright © 2023 Nordix Foundation.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +33,6 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          resources: {{ include "common.resources" . | nindent 12 }}
           ports: {{ include "common.containerPorts" . | nindent 12 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -46,20 +46,21 @@ spec:
           {{ end }}
           env:
           - name: SDC_ADDRESS
-            value: {{ .Values.externalServices.sdc_be_https }}
+            value: sdc-be.{{include "common.namespace" .}}:8080
           - name: SCHEMA_MAP_PATH
             value: {{ .Values.schemaMap.directory }}/{{ .Values.schemaMap.filename }}
-          - name: SECURITY_PROTOCOL
-            value: {{ .Values.config.kafka.securityProtocol }}
-          - name: SASL_MECHANISM
-            value: {{ .Values.config.kafka.saslMechanism }}
           - name: SASL_JAAS_CONFIG
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-openapi-kafka-secret" "key" "sasl.jaas.config") | indent 12 }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
           volumeMounts:
             - name: schema-map
               mountPath: {{ .Values.schemaMap.directory }}
             - name: app-config
               mountPath: /app/config/
+          resources:
+{{ include "common.resources" . }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
         - name: schema-map

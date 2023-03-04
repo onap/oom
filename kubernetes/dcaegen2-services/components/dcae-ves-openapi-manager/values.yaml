@@ -1,6 +1,7 @@
 #============LICENSE_START========================================================
 #=================================================================================
 # Copyright (c) 2021-2022 Nokia. All rights reserved.
+# Modifications Copyright © 2023 Nordix Foundation.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,37 +22,10 @@ global:
 image: onap/org.onap.dcaegen2.platform.ves-openapi-manager:1.3.0
 containerPort: &svc_port 8080
 
-secrets:
-  - uid: ves-openapi-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
-
-# application configuration
-config:
-  someConfig: blah
-  kafka:
-    bootstrapServer: strimzi-kafka-bootstrap:9092
-    securityProtocol: SASL_PLAINTEXT
-    saslMechanism: SCRAM-SHA-512
-    authType: simple
-    sdcTopic:
-      pattern: SDC-DIST
-      consumerGroup: dcaegen2
-      clientId: ves-openapi-manager
-
-vesOpenApiKafkaUser: ves-open-api-kafka-user
-
 service:
   ports:
     - name: &port http
       port: *svc_port
-
-externalServices:
-  sdc_be_https: "sdc-be:8080"
 
 schemaMap:
   filename: "schema-map.json"
@@ -95,6 +69,17 @@ serviceAccount:
   roles:
     - read
 
+# Strimzi KafkaUser config
+kafkaUser:
+  acls:
+    - name: dcae-ves-openapi-manager-group
+      type: group
+      operations: [Read]
+    - name: SDC-DISTR
+      type: topic
+      patternType: prefix
+      operations: [Read, Write]
+
 # initial application configuration
 applicationConfig:
   vesopenapimanager:
@@ -108,8 +93,8 @@ applicationConfig:
       password: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
       pollingInterval: 20
       pollingTimeout: 20
-      consumerGroup: dcaegen2
+      consumerGroup: dcae-ves-openapi-manager-group
       environmentName: AUTO
-      consumerID: ves-openapi-manager
+      consumerID: dcae-ves-openapi-manager
       activateServerTLSAuth: false
       isFilterInEmptyResources: false
