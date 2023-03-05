@@ -294,7 +294,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        resources: {{ include "common.resources" . | nindent 2 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /opt/app/osaaf
           name: tls-info
@@ -348,7 +348,7 @@ spec:
             {{- end }}
           {{- end }}
         {{- end }}
-        resources: {{ include "common.resources" . | nindent 2 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /app-config
           name: {{ ternary "app-config-input" "app-config" (not $drFeedConfig) }}
@@ -411,7 +411,7 @@ spec:
         - name: POLICY_SYNC_DURATION
           value: "{{ $policy.duration }}"
         {{- end }}
-        resources: {{ include "common.resources" . | nindent 2 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /etc/policies
           name: policy-shared
