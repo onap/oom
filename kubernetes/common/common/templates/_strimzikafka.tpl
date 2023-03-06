@@ -112,7 +112,11 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
+  {{- if (hasKey $topic "strimziTopicName") }}
+  name: {{ ($topic.strimziTopicName) }}-kt
+  {{- else }}
   name: {{ ($topic.name) | lower }}-kt
+  {{- end }}
   labels:
     strimzi.io/cluster: {{ include "common.release" $ }}-strimzi
 spec:
