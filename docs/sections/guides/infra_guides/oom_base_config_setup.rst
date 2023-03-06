@@ -147,6 +147,8 @@ Verify the installation::
     strimzi-cluster-operator-7f7d6b46cf-mnpjr   1/1     Running   0              2m
 
 
+.. _oom_base_setup_cert_manager:
+
 Install Cert-Manager
 ********************
 

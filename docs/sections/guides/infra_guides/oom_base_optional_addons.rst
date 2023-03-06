@@ -9,6 +9,7 @@
 .. _Istio best practices: https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/namespaces/
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Kiali setup guide: https://kiali.io/docs/installation/installation-guide/example-install/
+.. _Kserve setup guide: https://kserve.github.io/website/0.10/admin/kubernetes_deployment/
 
 .. _oom_base_optional_addons:
 
@@ -58,6 +59,8 @@ ONAP on Service Mesh
 ONAP is currenty planned to support Istio as default ServiceMesh platform.
 Therefor the following instructions describe the setup of Istio and required tools.
 Used `Istio best practices`_ and `Istio setup guide`_
+
+.. _oom_base_optional_addons_istio_installation:
 
 Istio Platform Installation
 ===========================
@@ -180,3 +183,39 @@ Jaeger Installation
 ===================
 
 To be done...
+
+
+Kserve Installation
+********************
+
+KServe is a standard Model Inference Platform on Kubernetes. It supports RawDeployment mode to enable InferenceService deployment with Kubernetes resources. Comparing to serverless deployment it unlocks Knative limitations such as mounting multiple volumes, on the other hand Scale down and from Zero is not supported in RawDeployment mode.
+
+This installation is necessary for the ML models to be deployed as inference service. Once deployed, the inference services can be queried for the prediction.
+
+**Kserve participant component in Policy ACM requires this installation. Kserve participant deploy/undeploy inference services in Kserve.**
+
+Dependent component version compatibility details and installation instructions can be found at `Kserve setup guide`_
+
+Kserve installation requires the following components:
+
+-  Istio. Its installation instructions can be found at :ref:`oom_base_optional_addons_istio_installation`
+
+-  Cert-Manager. Its installation instructions can be found at :ref:`oom_base_setup_cert_manager`
+
+Installation instructions as follows,
+
+- Create kserve namespace::
+
+    > kubectl create namespace kserve
+
+- Install Kserve::
+
+    > kubectl apply -f https://github.com/kserve/kserve/releases/download/v<recommended-kserve-version>/kserve.yaml
+
+- Install Kserve default serving runtimes::
+
+    > kubectl apply -f https://github.com/kserve/kserve/releases/download/v<recommended-kserve-version>/kserve-runtimes.yaml
+
+- Patch ConfigMap inferenceservice-config as follows::
+
+    > kubectl patch configmap/inferenceservice-config -n kserve --type=strategic -p '{"data": {"deploy": "{\"defaultDeploymentMode\": \"RawDeployment\"}"}}'
