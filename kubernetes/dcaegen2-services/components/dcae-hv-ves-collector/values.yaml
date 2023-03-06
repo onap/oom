@@ -2,7 +2,7 @@
 # ================================================================================
 # Copyright (c) 2021-2022 J. F. Lucas. All rights reserved.
 # Copyright (c) 2021-2022 Nokia.  All rights reserved.
-# Copyright © 2022 Nordix Foundation
+# Modifications Copyright (C) 2022-2023 Nordix Foundation.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,6 +45,9 @@ certPostProcessorImage: onap/org.onap.oom.platform.cert-service.oom-certservice-
 image: onap/org.onap.dcaegen2.collectors.hv-ves.hv-collector-main:1.11.0
 pullPolicy: Always
 
+commonName: &commonName dcae-hv-ves-collector
+containerPort: &containerPort 6061
+
 # log directory where logging sidecar should look for log files
 # if path is set to null sidecar won't be deployed in spite of
 # global.centralizedLoggingEnabled setting.
@@ -61,17 +64,6 @@ certDirectory: /etc/ves-hv/ssl
 # and key from AAF and mount them in certDirectory.
 tlsServer: false
 
-secrets:
-  - uid: hv-ves-kafka-secret
-    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
-    type: genericKV
-    envs:
-      - name: sasl.jaas.config
-        value: '{{ .Values.config.someConfig }}'
-        policy: generate
-config:
-  someConfig: blah
-
 # CMPv2 certificate
 # It is used only when:
 # - certDirectory is set
@@ -81,9 +73,9 @@ config:
 useCmpv2Certificates: false
 certificates:
   - mountPath: /etc/ves-hv/ssl/external
-    commonName: dcae-hv-ves-collector
+    commonName: *commonName
     dnsNames:
-      - dcae-hv-ves-collector
+      - *commonName
       - hv-ves-collector
       - hv-ves
     keystore:
@@ -106,16 +98,16 @@ readiness:
 # since there are problems receiving binary data via the sidecar
 # the service port is excluded in the sidecar processing
 podAnnotations:
-  traffic.sidecar.istio.io/excludeInboundPorts: "6061"
+  traffic.sidecar.istio.io/excludeInboundPorts: '6061'
   traffic.sidecar.istio.io/includeInboundPorts: '*'
 
 # service configuration
 service:
   type: NodePort
-  name: dcae-hv-ves-collector
+  name: *commonName
   ports:
     - name: tcp
-      port: 6061
+      port: *containerPort
       port_protocol: tcp
       app_protocol: tcp
       nodePort: 22
@@ -124,19 +116,16 @@ ingress:
   enabled: false
   service:
     - baseaddr: "dcae-hv-ves-collector-api"
-      name: "dcae-hv-ves-collector"
-      port: 6061
+      name: *commonName
+      port: *containerPort
   config:
     ssl: "redirect"
-
-#strimzi kafka config
-hvVesKafkaUser: dcae-hv-ves-kafka-user
 
 # initial application configuration
 applicationConfig:
   logLevel: INFO
   server.idleTimeoutSec: 300
-  server.listenPort: 6061
+  server.listenPort: *containerPort
   cbs.requestIntervalSec: 5
   security.sslDisable: true
   security.keys.keyStoreFile: /etc/ves-hv/ssl/cert.jks
@@ -145,40 +134,66 @@ applicationConfig:
   security.keys.trustStorePasswordFile: /etc/ves-hv/ssl/trust.pass
   streams_publishes:
     ves-3gpp-fault-supervision:
-      type: kafka
+      type: ${MESSAGING_TYPE}
       kafka_info:
         bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-        topic_name: SEC_3GPP_FAULTSUPERVISION_OUTPUT
+        topic_name: &ves3gppFaultSupervision SEC_3GPP_FAULTSUPERVISION_OUTPUT
     ves-3gpp-provisioning:
-      type: kafka
+      type: ${MESSAGING_TYPE}
       kafka_info:
         bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-        topic_name: SEC_3GPP_PROVISIONING_OUTPUT
+        topic_name: &ves3gppProvisioning SEC_3GPP_PROVISIONING_OUTPUT
     ves-3gpp-heartbeat:
-      type: kafka
+      type: ${MESSAGING_TYPE}
       kafka_info:
         bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-        topic_name: SEC_3GPP_HEARTBEAT_OUTPUT
+        topic_name: &ves3gppHeartbeat SEC_3GPP_HEARTBEAT_OUTPUT
     ves-3gpp-performance-assurance:
-      type: kafka
+      type: ${MESSAGING_TYPE}
       kafka_info:
         bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-        topic_name: SEC_3GPP_PERFORMANCEASSURANCE_OUTPUT
-    perf3gpp:
-      type: kafka
+        topic_name: &ves3gppPerformanceAssurance SEC_3GPP_PERFORMANCEASSURANCE_OUTPUT
+    ves-3gpp-perf:
+      type: ${MESSAGING_TYPE}
       kafka_info:
         bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS}
-        topic_name: HV_VES_PERF3GPP
+        topic_name: &perf3gpp HV_VES_PERF3GPP
+
+# Strimzi Kafka config
+kafkaUser:
+  acls:
+    - name: dcae-ves-3gpp
+      type: topic
+      patternType: prefix
+      operations: [Write]
+
+kafkaTopic:
+  - name: *ves3gppFaultSupervision
+    strimziTopicName: dcae-ves-3gpp-fault-supervision
+    # the default retention values below can be updated
+    # to meet use case requirements for each topic.
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+  - name: *ves3gppProvisioning
+    strimziTopicName: dcae-ves-3gpp-provisioning
+  - name: *ves3gppHeartbeat
+    strimziTopicName: dcae-ves-3gpp-heartbeat
+  - name: *ves3gppPerformanceAssurance
+    strimziTopicName: dcae-ves-3gpp-performance-assurance
+  - name: *perf3gpp
+    strimziTopicName: dcae-ves-3gpp-perf
+
 
 applicationEnv:
   JAVA_OPTS: '-Dlogback.configurationFile=/etc/ONAP/dcae-hv-ves-collector/logback.xml'
   CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
   #Temporary Dummy CBS Port Value until internal SDK library is updated
   CONFIG_BINDING_SERVICE_SERVICE_PORT: '0000'
+  MESSAGING_TYPE: 'kafka'
   KAFKA_BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
   USE_SCRAM: 'true'
   JAAS_CONFIG:
-    secretUid: hv-ves-kafka-secret
+    strimziKafkaUserSecretUid: '{{ include "common.name" . }}-ku'
     key: sasl.jaas.config
 
 # Resource Limit flavor -By Default using small
@@ -203,6 +218,6 @@ resources:
 
 #Pods Service Account
 serviceAccount:
-  nameOverride: dcae-hv-ves-collector
+  nameOverride: *commonName
   roles:
     - read

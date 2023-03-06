@@ -60,11 +60,19 @@ the the literal string "An example value".
 - name: {{ $envName }}
   value: {{ tpl $envValue $global | quote }}
       {{- else }}
-        {{ if or (not $envValue.secretUid) (not $envValue.key) }}
-          {{ fail (printf "Env %s definition is not a string and does not contain secretUid or key fields" $envName) }}
-        {{- end }}
+        {{- if (hasKey $envValue "strimziKafkaUserSecretUid") }}
+- name: {{ $envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ tpl $envValue.strimziKafkaUserSecretUid $global | quote }}
+      key: {{ tpl $envValue.key $global | quote }}
+        {{- else }}
+          {{ if or (not $envValue.secretUid) (not $envValue.key) }}
+            {{ fail (printf "Env %s definition is not a string and does not contain secretUid or key fields" $envName) }}
+          {{- end }}
 - name: {{ $envName }}
   {{- include "common.secret.envFromSecretFast" (dict "global" $global "uid" $envValue.secretUid "key" $envValue.key) | indent 2 }}
+        {{- end }}
       {{- end -}}
     {{- end }}
   {{- end }}
