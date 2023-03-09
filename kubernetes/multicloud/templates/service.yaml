@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2023 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,53 +16,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.service.name }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-  annotations:
-    msb.onap.org/service-info: '[
-    {
-      "serviceName": "multicloud",
-      "version": "v0",
-      "url": "/api/multicloud/v0",
-      "protocol": "REST",
-      "port": "{{ .Values.service.externalPort }}",
-      {{if (include "common.needTLS" .) -}}
-      "enable_ssl": {{ .Values.config.ssl_enabled }},
-      {{- else -}}
-      "enable_ssl": false,
-      {{- end}}
-      "visualRange": "1"
-    },
-    {
-      "serviceName": "multicloud",
-      "version": "v1",
-      "url": "/api/multicloud/v1",
-      "protocol": "REST",
-      "port": "{{ .Values.service.externalPort }}",
-      "enable_ssl": {{ if (include "common.needTLS" .) }}{{ .Values.config.ssl_enabled }}{{ else }}false{{ end }},
-      "visualRange": "1"
-    }
-    ]'
-spec:
-  ports:
-  {{if eq .Values.service.type "NodePort" -}}
-  - port: {{ .Values.service.externalPort }}
-    nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-    name: {{ .Values.service.portName }}
-  {{- else -}}
-  - port: {{ .Values.service.externalPort }}
-    targetPort: {{ .Values.service.internalPort }}
-    name: {{ .Values.service.portName }}
-  {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
-  type: {{ .Values.service.type }}
+{{ include "common.service" . }}

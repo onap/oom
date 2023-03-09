@@ -26,17 +26,12 @@ global:
 image: onap/multicloud/vio:1.4.2
 pullPolicy: Always
 
-#Istio sidecar injection policy
-istioSidecar: true
-
 # application configuration
 config:
   msbgateway: msb-iag
-  msbPort: 443
-  msbPlainPort: 80
+  msbPort: 80
   aai:
-    aaiPort: 8443
-    aaiPlainPort: 8080
+    aaiPort: 80
     schemaVersion: v13
     username: AAI
     password: AAI
@@ -58,15 +53,41 @@ liveness:
   enabled: true
 
 service:
-  type: ClusterIP
-  name: multicloud-vio
-  portName: http
-  externalPort: 9004
+  type: NodePort
   internalPort: 9004
-  nodePort: 92
+  ports:
+    - name: http
+      port: 9004
+      nodePort: '92'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud-vio",
+          "version": "v0",
+          "url": "/api/multicloud-vio/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud-vio",
+          "version": "v1",
+          "url": "/api/multicloud-vio/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: 'multicloud-vio'
+      name: 'multicloud-vio'
+      port: 9004
 
 # Resource Limit flavor -By Default using small
 flavor: small
