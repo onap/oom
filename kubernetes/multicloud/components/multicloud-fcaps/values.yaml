@@ -30,13 +30,10 @@ istioSidecar: true
 
 # application configuration
 config:
-  ssl_enabled: true
   msbgateway: msb-iag
-  msbPort: 443
-  msbPlainPort: 80
+  msbPort: 80
   aai:
-    aaiPort: 8443
-    aaiPlainPort: 8080
+    aaiPort: 80
     schemaVersion: v13
     username: AAI
     password: AAI
@@ -58,15 +55,41 @@ liveness:
   enabled: true
 
 service:
-  type: ClusterIP
-  name: multicloud-fcaps
-  portName: http
-  externalPort: 9011
+  type: NodePort
   internalPort: 9011
-  nodePort: 87
+  ports:
+    - name: http
+      port: 9011
+      nodePort: '87'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud-fcaps",
+          "version": "v0",
+          "url": "/api/multicloud-fcaps/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud-fcaps",
+          "version": "v1",
+          "url": "/api/multicloud-fcaps/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: 'multicloud-fcaps'
+      name: 'multicloud-fcaps'
+      port: 9011
 
 # Resource Limit flavor -By Default using small
 flavor: small

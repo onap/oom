@@ -16,40 +16,25 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}
-      annotations:
-        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       containers:
       - env:
         - name: MSB_PROTO
-          value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}"
+          value: "http"
         - name: MSB_ADDR
           value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
         - name: MSB_PORT
-          value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.msbPort }}{{ else }}{{ .Values.config.msbPlainPort }}{{ end }}"
+          value: "{{ .Values.config.msbPort }}"
         - name: AAI_ADDR
           value: "aai.{{ include "common.namespace" . }}"
         - name: AAI_PORT
-          value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.aai.aaiPort }}{{ else }}{{ .Values.config.aai.aaiPlainPort }}{{ end }}"
+          value: "{{ .Values.config.aai.aaiPort }}"
         - name: AAI_SCHEMA_VERSION
           value: "{{ .Values.config.aai.schemaVersion }}"
         - name: AAI_USERNAME
@@ -57,7 +42,7 @@ spec:
         - name: AAI_PASSWORD
           value: "{{ .Values.config.aai.password }}"
         - name: SSL_ENABLED
-          value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.ssl_enabled }}{{ else }}false{{ end }}"
+          value: "false"
         name: {{ include "common.name" . }}
         volumeMounts:
         - mountPath: "{{ .Values.log.path }}"
@@ -67,11 +52,10 @@ spec:
           subPath: log.yml
         - mountPath: /opt/artifacts/
           name: artifact-data
-        resources: {{ include "common.resources" . | nindent 12 }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{ if .Values.liveness.enabled }}
@@ -79,7 +63,7 @@ spec:
           httpGet:
             path: /api/multicloud-starlingx/v0/swagger.json
             port: {{ .Values.service.internalPort }}
-            scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+            scheme: HTTP
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
           timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -87,7 +71,7 @@ spec:
           failureThreshold: {{ .Values.liveness.failureThreshold }}
         {{ end }}
       # side car containers
-      {{ include "common.log.sidecar" . | nindent 7 }}
+      {{ include "common.log.sidecar" . | nindent 6 }}
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.memcached }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: memcached
@@ -108,7 +92,7 @@ spec:
       volumes:
       - name: starlingx-log
         emptyDir: {}
-      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 7 }}
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 6 }}
       - name: starlingx-logconfig
         configMap:
           name: {{ include "common.fullname" . }}-log-configmap

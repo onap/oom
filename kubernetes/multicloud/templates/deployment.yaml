@@ -17,91 +17,77 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-     containers:
-     - env:
-       - name: MSB_PROTO
-         value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}"
-       - name: MSB_ADDR
-         value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
-       - name: MSB_PORT
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.msbPort }}{{ else }}{{ .Values.config.msbPlainPort }}{{ end }}"
-       - name: AAI_ADDR
-         value: "aai.{{ include "common.namespace" . }}"
-       - name: AAI_PORT
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.aai.aaiPort }}{{ else }}{{ .Values.config.aai.aaiPlainPort }}{{ end }}"
-       - name: AAI_SCHEMA_VERSION
-         value: "{{ .Values.config.aai.schemaVersion }}"
-       - name: AAI_USERNAME
-         value: "{{ .Values.config.aai.username }}"
-       - name: AAI_PASSWORD
-         value: "{{ .Values.config.aai.password }}"
-       - name: AAI_PROTOCOL
-         value: "{{- if (include "common.needTLS" .) }}https{{ else }}http{{ end }}"
-       - name: SSL_ENABLED
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.ssl_enabled }}{{ else }}false{{ end }}"
-       resources: {{ include "common.resources" . | nindent 9 }}
-       image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
-       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-       name: {{ include "common.name" . }}
-       volumeMounts:
-       - mountPath: "{{ .Values.log.path }}"
-         name: framework-log
-       - mountPath: /opt/multivimbroker/multivimbroker/pub/config/log.yml
-         name: framework-logconfig
-         subPath: log.yml
-       - mountPath: /opt/multivimbroker/multivimbroker/pub/config/provider-plugin.json
-         name: provider-plugin
-         subPath: provider-plugin.json
-       ports:
-       - containerPort: {{ .Values.service.internalPort }}
-       # disable liveness probe when breakpoints set in debugger
-       # so K8s doesn't restart unresponsive container
-       {{- if eq .Values.liveness.enabled true }}
-       livenessProbe:
-         httpGet:
-           path: /api/multicloud/v0/swagger.json
-           port: {{ .Values.service.internalPort }}
-           scheme: "{{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}"
-         initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-         periodSeconds: {{ .Values.liveness.periodSeconds }}
-         timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
-         successThreshold: {{ .Values.liveness.successThreshold }}
-         failureThreshold: {{ .Values.liveness.failureThreshold }}
-       {{ end -}}
+      containers:
+      - env:
+        - name: MSB_PROTO
+          value: "http"
+        - name: MSB_ADDR
+          value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
+        - name: MSB_PORT
+          value: "{{ .Values.config.msbPort }}"
+        - name: AAI_ADDR
+          value: "aai.{{ include "common.namespace" . }}"
+        - name: AAI_PORT
+          value: "{{ .Values.config.aai.aaiPlainPort }}"
+        - name: AAI_SCHEMA_VERSION
+          value: "{{ .Values.config.aai.schemaVersion }}"
+        - name: AAI_USERNAME
+          value: "{{ .Values.config.aai.username }}"
+        - name: AAI_PASSWORD
+          value: "{{ .Values.config.aai.password }}"
+        - name: AAI_PROTOCOL
+          value: "http"
+        - name: SSL_ENABLED
+          value: "false"
+        resources: {{ include "common.resources" . | nindent 10 }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: {{ include "common.name" . }}
+        volumeMounts:
+        - mountPath: "{{ .Values.log.path }}"
+          name: framework-log
+        - mountPath: /opt/multivimbroker/multivimbroker/pub/config/log.yml
+          name: framework-logconfig
+          subPath: log.yml
+        - mountPath: /opt/multivimbroker/multivimbroker/pub/config/provider-plugin.json
+          name: provider-plugin
+          subPath: provider-plugin.json
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path: /api/multicloud/v0/swagger.json
+            port: {{ .Values.service.internalPort }}
+            scheme: "HTTP"
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
+        {{ end -}}
 
       # side car containers
-     {{ include "common.log.sidecar" . | nindent 5 }}
-     serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-     volumes:
-     - name: framework-log
-       emptyDir: {}
-     - name: provider-plugin
-       configMap:
-         name: {{ include "common.fullname" . }}-provider-plugin-configmap
-     {{ include "common.log.volumes" . | nindent 5 }}
-     - name: framework-logconfig
-       configMap:
-         name: {{ include "common.fullname" . }}-log-configmap
-     imagePullSecrets:
-     - name: "{{ include "common.namespace" . }}-docker-registry-key"
-     restartPolicy: Always
+      {{ include "common.log.sidecar" . | nindent 6 }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+      - name: framework-log
+        emptyDir: {}
+      - name: provider-plugin
+        configMap:
+          name: {{ include "common.fullname" . }}-provider-plugin-configmap
+      {{ include "common.log.volumes" . | nindent 6 }}
+      - name: framework-logconfig
+        configMap:
+          name: {{ include "common.fullname" . }}-log-configmap
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      restartPolicy: Always

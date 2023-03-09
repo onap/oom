@@ -56,15 +56,12 @@ multicloud-windriver:
 
 # application configuration
 config:
-  ssl_enabled: true
   msbgateway: msb-iag
   logstashServiceName: log-ls
   logstashPort: 5044
-  msbPort: 443
-  msbPlainPort: 80
+  msbPort: 80
   aai:
-    aaiPort: 8443
-    aaiPlainPort: 80
+    aaiPort: 80
     schemaVersion: v13
     username: AAI
     password: AAI
@@ -86,15 +83,41 @@ liveness:
   enabled: true
 
 service:
-  type: ClusterIP
-  name: multicloud
-  portName: http
-  externalPort: 9001
+  type: NodePort
   internalPort: 9001
-  nodePort: 91
+  ports:
+    - name: http
+      port: 9001
+      nodePort: '91'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud",
+          "version": "v0",
+          "url": "/api/multicloud/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud",
+          "version": "v1",
+          "url": "/api/multicloud/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: 'multicloud-api'
+      name: 'multicloud'
+      port: 9001
 
 # Resource Limit flavor -By Default using small
 flavor: small
