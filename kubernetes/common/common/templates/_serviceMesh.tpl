@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2020 Amdocs, Bell Canada, Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,3 +67,83 @@ exit "$RCODE"
         fieldPath: metadata.namespace
 {{- end }}
 {{- end }}
+
+{{/*
+  Use Authorization Policies or not.
+*/}}
+{{- define "common.useAuthorizationPolicies" -}}
+{{-   if (include "common.onServiceMesh" .) }}
+{{-     if .Values.global.authorizationPolicies -}}
+{{-       if (default false .Values.global.authorizationPolicies.enabled) -}}
+true
+{{-       end -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+
+{{/*
+  Create Authorization Policy template.
+    If common.useAuthorizationPolicies returns true:
+      Will create authorization policy, provided with array of authorized principals in .Values.serviceMesh.authorizationPolicy.authorizedPrincipals
+        in the format:
+          authorizedPrincipals:
+          - serviceAccount: <serviceaccount name>                       (Mandatory)
+            namespace: <namespace name>                                 (Optional, will default to onap)
+            allowedOperationMethods: <list of allowed HTTP operations   (Optional, will default to ["GET", "POST", "PUT", "PATCH", "DELETE"])
+
+      If no authorizedPrincipals provided, will default to denying all requests to the app matched under the
+        spec:
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: <app-to-match>    ("app.kubernetes.io/name" corresponds to key defined in "common.labels", which is included in "common.service")
+
+    If common.useAuthorizationPolicies returns false:
+      Will create an authorization policy without rules, i.e., an allow-all policy
+*/}}
+{{- define "common.authorizationPolicy" -}}
+{{-   $dot := default . .dot -}}
+{{-   $trustedDomain := default "cluster.local" $dot.Values.serviceMesh.authorizationPolicy.trustedDomain -}}
+{{-   $authorizedPrincipals := default list $dot.Values.serviceMesh.authorizationPolicy.authorizedPrincipals -}}
+{{-   $defaultOperationMethods := list "GET" "POST" "PUT" "PATCH" "DELETE" -}}
+{{-   $relName := include "common.release" . -}}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ include "common.fullname" (dict "suffix" "authz" "dot" . )}}
+  namespace: {{ include "common.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "common.servicename" . }}
+  action: ALLOW
+  rules:
+{{-   if (include "common.useAuthorizationPolicies" .) }}
+{{-     if $authorizedPrincipals }}
+{{-       range $principal := $authorizedPrincipals }}
+  - from:
+    - source:
+        principals:
+{{-         $namespace := default "onap" $principal.namespace -}}
+{{-         if eq "onap" $namespace }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $relName }}-{{ $principal.serviceAccount }}"
+{{-         else }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $principal.serviceAccount }}"
+{{-         end }}
+    to:
+    - operation:
+        methods:
+{{-         if $principal.allowedOperationMethods }}
+{{-           range $method := $principal.allowedOperationMethods }}
+        - {{ $method }}
+{{-           end }}
+{{-         else }}
+{{-           range $method := $defaultOperationMethods }}
+        - {{ $method }}
+{{-           end }}
+{{-         end }}
+{{-       end }}
+{{-     end }}
+{{-   else }}
+    - {}
+{{-   end }}
+{{- end -}}
