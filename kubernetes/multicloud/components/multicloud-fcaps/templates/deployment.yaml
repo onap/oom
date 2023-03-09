@@ -16,90 +16,74 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}
-      annotations:
-        sidecar.istio.io/inject: "{{.Values.istioSidecar}}"
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-     containers:
-     - env:
-       - name: MSB_PROTO
-         value: "{{ if (include "common.needTLS" .) }}https{{ else }}http{{ end }}"
-       - name: MSB_ADDR
-         value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
-       - name: MSB_PORT
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.msbPort }}{{ else }}{{ .Values.config.msbPlainPort }}{{ end }}"
-       - name: AAI_ADDR
-         value: "aai.{{ include "common.namespace" . }}"
-       - name: AAI_PORT
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.aai.aaiPort }}{{ else }}{{ .Values.config.aai.aaiPlainPort }}{{ end }}"
-       - name: AAI_SCHEMA_VERSION
-         value: "{{ .Values.config.aai.schemaVersion }}"
-       - name: AAI_USERNAME
-         value: "{{ .Values.config.aai.username }}"
-       - name: AAI_PASSWORD
-         value: "{{ .Values.config.aai.password }}"
-       - name: SSL_ENABLED
-         value: "{{- if (include "common.needTLS" .) }}{{ .Values.config.ssl_enabled }}{{ else }}false{{ end }}"
-       name: {{ include "common.name" . }}
-       volumeMounts:
-       - mountPath: "{{ .Values.log.path }}"
-         name: fcaps-log
-       - mountPath: /opt/fcaps/fcaps/pub/config/log.yml
-         name: fcaps-logconfig
-         subPath: log.yml
-       resources: {{ include "common.resources" . | nindent 9 }}
-       image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
-       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-       ports:
-       - containerPort: {{ .Values.service.internalPort }}
-       # disable liveness probe when breakpoints set in debugger
-       # so K8s doesn't restart unresponsive container
-       {{ if .Values.liveness.enabled }}
-       livenessProbe:
-         httpGet:
-           path: /api/multicloud-fcaps/v1/healthcheck
-           port: {{ .Values.service.internalPort }}
-           scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
-         initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-         periodSeconds: {{ .Values.liveness.periodSeconds }}
-         timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
-         successThreshold: {{ .Values.liveness.successThreshold }}
-         failureThreshold: {{ .Values.liveness.failureThreshold }}
-       {{ end }}
-     # side car containers
-     {{ include "common.log.sidecar" . | nindent 5 }}
-     - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.rabbitmq }}
-       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-       name: rabbit-mq
-     - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.memcached }}
-       imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-       name: memcached
-     serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-     volumes:
-     - name: fcaps-log
-       emptyDir: {}
-     {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 5 }}
-     - name: fcaps-logconfig
-       configMap:
-         name: {{ include "common.fullname" . }}-log-configmap
-     imagePullSecrets:
-     - name: "{{ include "common.namespace" . }}-docker-registry-key"
-     restartPolicy: Always
+      containers:
+      - env:
+        - name: MSB_PROTO
+          value: "http"
+        - name: MSB_ADDR
+          value: "{{ .Values.config.msbgateway }}.{{ include "common.namespace" . }}"
+        - name: MSB_PORT
+          value: "{{ .Values.config.msbPort }}"
+        - name: AAI_ADDR
+          value: "aai.{{ include "common.namespace" . }}"
+        - name: AAI_PORT
+          value: "{{ .Values.config.aai.aaiPort }}"
+        - name: AAI_SCHEMA_VERSION
+          value: "{{ .Values.config.aai.schemaVersion }}"
+        - name: AAI_USERNAME
+          value: "{{ .Values.config.aai.username }}"
+        - name: AAI_PASSWORD
+          value: "{{ .Values.config.aai.password }}"
+        - name: SSL_ENABLED
+          value: "false"
+        name: {{ include "common.name" . }}
+        volumeMounts:
+        - mountPath: "{{ .Values.log.path }}"
+          name: fcaps-log
+        - mountPath: /opt/fcaps/fcaps/pub/config/log.yml
+          name: fcaps-logconfig
+          subPath: log.yml
+        resources: {{ include "common.resources" . | nindent 10 }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
+        # disable liveness probe when breakpoints set in debugger
+        # so K8s doesn't restart unresponsive container
+        {{ if .Values.liveness.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /api/multicloud-fcaps/v1/healthcheck
+            port: {{ .Values.service.internalPort }}
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
+        {{ end }}
+      # side car containers
+      {{ include "common.log.sidecar" . | nindent 6 }}
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.rabbitmq }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: rabbit-mq
+      - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.memcached }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: memcached
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+      - name: fcaps-log
+        emptyDir: {}
+      {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 6 }}
+      - name: fcaps-logconfig
+        configMap:
+          name: {{ include "common.fullname" . }}-log-configmap
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      restartPolicy: Always

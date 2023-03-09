@@ -27,18 +27,12 @@ repository: nexus3.onap.org:10001
 image: onap/multicloud/openstack-starlingx:1.5.7
 pullPolicy: Always
 
-#Istio sidecar injection policy
-istioSidecar: false
-
 # application configuration
 config:
-  ssl_enabled: true
   msbgateway: msb-iag
-  msbPort: 443
-  msbPlainPort: 80
+  msbPort: 80
   aai:
-    aaiPort: 8443
-    aaiPlainPort: 8080
+    aaiPort: 80
     schemaVersion: v13
     username: AAI
     password: AAI
@@ -60,15 +54,41 @@ liveness:
   enabled: true
 
 service:
-  type: ClusterIP
-  name: multicloud-starlingx
-  portName: multicloud-starlingx
-  externalPort: 9009
+  type: NodePort
   internalPort: 9009
-  nodePort: 85
+  ports:
+    - name: http
+      port: 9009
+      nodePort: '85'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud-starlingx",
+          "version": "v0",
+          "url": "/api/multicloud-starlingx/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud-starlingx",
+          "version": "v1",
+          "url": "/api/multicloud-starlingx/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: 'multicloud-starlingx-api'
+      name: 'multicloud-starlingx'
+      port: 9009
 
 # Resource Limit flavor -By Default using small
 flavor: small

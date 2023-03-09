@@ -28,29 +28,62 @@ global:
 image: onap/multicloud/openstack-windriver:1.5.7
 pullPolicy: Always
 
-#Istio sidecar injection policy
-istioSidecar: true
-
 # application configuration
 config:
   ssl_enabled: true
   msbgateway: msb-iag
-  msbPort: 443
-  msbPlainPort: 80
+  msbPort: 80
   aai:
-    aaiPort: 8443
-    aaiPlainPort: 8080
+    aaiPort: 80
     schemaVersion: v13
     username: AAI
     password: AAI
 
 service:
-  type: ClusterIP
-  name: multicloud-titaniumcloud
-  portName: multicloud-titaniumcloud
-  externalPort: 9005
+  type: NodePort
   internalPort: 9005
-  nodePort: 94
+  ports:
+    - name: http
+      port: 9005
+      nodePort: '94'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud-titanium_cloud",
+          "version": "v0",
+          "url": "/api/multicloud-titanium_cloud/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud-titaniumcloud",
+          "version": "v0",
+          "url": "/api/multicloud-titaniumcloud/v0",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        },
+        {
+          "serviceName": "multicloud-titaniumcloud",
+          "version": "v1",
+          "url": "/api/multicloud-titaniumcloud/v1",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: 'multicloud-titaniumcloud-api'
+      name: 'multicloud-titaniumcloud'
+      port: 9005
 
 # default number of instances
 replicaCount: 1
@@ -67,9 +100,6 @@ liveness:
   successThreshold: 1
   failureThreshold: 5
   enabled: true
-
-ingress:
-  enabled: false
 
 persistence:
   enabled: true
