@@ -63,12 +63,32 @@ readiness:
   periodSeconds: 30
 
 service:
-  type: ClusterIP
-  name: multicloud-k8s
-  portName: http
+  type: NodePort
   internalPort: 9015
-  externalPort: 9015
-  nodePort: 98
+  ports:
+    - name: http
+      port: 9015
+      nodePort: '98'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "multicloud-k8s",
+          "version": "v1",
+          "url": "/",
+          "protocol": "REST",
+          "port": "{{ .Values.service.internalPort }}",
+          "enable_ssl": false,
+          "visualRange": "1"
+        }
+      ]{{ end }}
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: 'multicloud-k8s-api'
+      name: 'multicloud-k8s'
+      port: 9015
 
 #Mongo chart overrides for k8splugin
 mongo:
@@ -119,9 +139,6 @@ persistence:
   size: 1Gi
   mountPath: /dockerdata-nfs
   mountSubPath: multicloud-k8s/data
-
-ingress:
-  enabled: false
 
 artifactbroker:
   internalPort: 9014
