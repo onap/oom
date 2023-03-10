@@ -250,7 +250,7 @@ spec:
 {{-   $both_tls_and_plain:= default false $dot.Values.service.both_tls_and_plain }}
 {{-   $labels := default (dict) .labels -}}
 {{-   $matchLabels := default (dict) .matchLabels -}}
-{{-   if and (include "common.onServiceMesh" $dot) (eq $serviceType "NodePort") }}
+{{-   if and (include "common.ingressEnabled" $dot) (eq $serviceType "NodePort") -}}
 {{-     $serviceType = "ClusterIP" }}
 {{-   end }}
 
