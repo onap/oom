@@ -16,16 +16,17 @@
 #  ============LICENSE_END=========================================================
 
 spring:
-  security:
-    user:
-      name: ${RESTSERVER_USER}
-      password: ${RESTSERVER_PASSWORD}
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
       - org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration
+  security:
+    user:
+      name: ${RESTSERVER_USER}
+      password: ${RESTSERVER_PASSWORD}
+
 security:
   enable-csrf: false
 
@@ -36,17 +37,44 @@ participant:
     participantId: 101c62b3-8918-41b9-a747-d21eb79c6c00
     clampAutomationCompositionTopics:
       topicSources:
-        - topic: POLICY-ACRUNTIME-PARTICIPANT
-          servers:
-            - ${topicServer:message-router}
-          topicCommInfrastructure: dmaap
+        -
+          useHttps: false
           fetchTimeout: 15000
-
-      topicSinks:
-        - topic: POLICY-ACRUNTIME-PARTICIPANT
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            group.id: {{ (first .Values.kafkaUser.acls).name }}
+            allow.auto.create.topics: false
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
+          topicCommInfrastructure: dmaap
           servers:
             - ${topicServer:message-router}
+          {{ end }}
+      topicSinks:
+        -
+          useHttps: false
+          fetchTimeout: 15000
+          topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+          {{ if .Values.global.useStrimziKafka }}
+          topicCommInfrastructure: kafka
+          servers:
+            - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          additionalProps:
+            client.id: {{ (first .Values.kafkaUser.acls).name }}-client-id
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+            sasl.jaas.config: ${SASL_JAAS_CONFIG}
+          {{ else }}
           topicCommInfrastructure: dmaap
+          servers:
+            - ${topicServer:message-router}
+          {{ end }}
     participantSupportedElementTypes:
       -
         typeName: org.onap.policy.clamp.acm.A1PMSAutomationCompositionElement

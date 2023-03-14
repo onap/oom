@@ -1,6 +1,6 @@
 {{/*
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021-2022 Nordix Foundation.
+#   Copyright (C) 2021-2023 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
+{{- if not .Values.global.useStrimziKafka }}
+{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+{{- end }}
       - command:
         - /app/ready.py
         args:
@@ -41,7 +44,7 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        name: {{ include "common.name" . }}-galera-config-readiness
       - command:
         - sh
         args:
@@ -56,9 +59,12 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "login") | indent 10 }}
         - name: RUNTIME_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "password") | indent 10 }}
-{{- if .Values.config.useStrimziKafka }}
-        - name: JAASLOGIN
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-kafka-user" "key" "sasl.jaas.config") | indent 10 }}
+{{- if .Values.global.useStrimziKafka }}
+        - name: SASL_JAAS_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
 {{- end }}
         volumeMounts:
         - mountPath: /config-input
