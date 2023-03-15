@@ -31,7 +31,7 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/holmes/rule-management:11.0.0
+image: onap/holmes/rule-management:12.0.0
 consulLoaderImage: onap/org.onap.dcaegen2.deployments.consul-loader-container:1.0.0
 
 #################################################################
@@ -71,16 +71,34 @@ service:
   - name: http-ui
     port: 9104
     nodePort: 93
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "holmes-rule-mgmt",
+          "version": "v1",
+          "url": "/api/holmes-rule-mgmt/v1",
+          "path":"/api/holmes-rule-mgmt/v1",
+          "protocol": "REST",
+          "visualRange":"0|1",
+          "port": "9101",
+          "enable_ssl": false
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
   service:
-    - baseaddr: 'holmes-api'
-      name: 'holmes-rule-mgmt'
-      port: 9101
-    - baseaddr: 'holmes-ui'
-      name: 'holmes-rule-mgmt'
-      port: 9104
+    - baseaddr: "holmes-rule-mgmt"
+      name: "holmes-rule-mgmt"
+      path: "/api/holmes-rule-mgmt/v1"
+      plain_port: 9101
+    - baseaddr: "holmes-rule-mgmt-ui"
+      name: "holmes-rule-mgmt-ui"
+      path: "/iui/holmes"
+      plain_port: 9104
+  config:
+    ssl: "redirect"
 
 # probe configuration parameters
 liveness:
