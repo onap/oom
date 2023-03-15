@@ -30,7 +30,7 @@ spec:
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-bootstrap-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -39,10 +39,6 @@ spec:
         args:
         - -c
         - |
-          {{- if (include "common.needTLS" .) }}
-          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop\
-            | xargs -0)
-          {{- end }}
           cd /config-input
           for PFILE in `ls -1`
           do
@@ -55,7 +51,7 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
         - name: A1CONTROLLER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /config-input
           name: {{ include "common.fullname" . }}-policy-conf-input
         - mountPath: /config
@@ -97,10 +93,10 @@ spec:
           httpGet:
             path: /status
             port: {{ .Values.liveness.port }}
-            scheme: {{ if (include "common.needTLS" .) }}HTTPS{{ else }}HTTP{{ end }}
+            scheme: HTTP
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - name: config
           mountPath: /opt/app/policy-agent/data/application_configuration.json
           subPath: application_configuration.json
@@ -111,7 +107,7 @@ spec:
           mountPath: "/var/policy-management-service/database"
         resources: {{ include "common.resources" . | nindent 10 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: {{ include "common.fullname" . }}-policy-conf-input
           configMap:
             name: {{ include "common.fullname" . }}-policy-conf
