@@ -89,6 +89,14 @@ spec:
         size: {{ .Values.persistence.kafka.size }}
         deleteClaim: true
         class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
+    {{- if .Values.metrics.enabled }}
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+    {{- end }}
   zookeeper:
     template:
       pod:
@@ -107,7 +115,43 @@ spec:
       size: {{ .Values.persistence.zookeeper.size }}
       deleteClaim: true
       class: {{ include "common.storageClass" (dict "dot" . "suffix" "zk" "persistenceInfos" .Values.persistence.zookeeper) }}
+    {{- if .Values.metrics.enabled }}
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: zookeeper-metrics-config.yml
+    {{- end }}
   entityOperator:
     topicOperator: {}
     userOperator: {}
-
+  {{- if .Values.metrics.cruiseControl.enabled }}
+  cruiseControl:
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: cruise-control-metrics
+          key: metrics-config.yml
+  {{- end }}
+  {{- if .Values.metrics.enabled }}
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+    resources:
+      requests:
+        cpu: 2000m
+        memory: 640Mi
+      limits:
+        cpu: 5000m
+        memory: 1280Mi
+    logging: debug
+    enableSaramaLogging: true
+    readinessProbe:
+      initialDelaySeconds: 15
+      timeoutSeconds: 5
+    livenessProbe:
+      initialDelaySeconds: 15
+      timeoutSeconds: 5
+  {{- end }}
