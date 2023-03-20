@@ -18,7 +18,6 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  aafEnabled: true
   sdc_cassandra:
     # This flag allows SDC to instantiate its own cluster, serviceName
     # should be sdc-cs if this flag is enabled
@@ -31,29 +30,6 @@ global:
     replicaCount: 3
     clusterName: cassandra
     dataCenter: Pod
-
-#################################################################
-# AAF Part
-#################################################################
-certInitializer:
-  nameOverride: sdc-wfd-be-cert-init
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: sdc
-  fqi: sdc@sdc.onap.org
-  public_fqdn: sdc.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  addconfig: true
-  keystoreFile: "org.onap.sdc.p12"
-  truststoreFile: "org.onap.sdc.trust.jks"
-  permission_user: 352070
-  permission_group: 35953
-  aaf_add_config: |
-    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
-    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.credsPath }}/mycreds.prop
 
 #################################################################
 # Application configuration defaults.
@@ -71,7 +47,6 @@ config:
   cassandraAuthenticationEnabled: true
   cassandraClientPort: 9042
   sdcEndpoint:
-    https: sdc-be:8443
     http: sdc-be:8080
   sdcExternalUser: workflow
   serverSSLKeyStoreType: jks
@@ -126,20 +101,18 @@ startup:
 
 service:
   type: NodePort
-  portName: http
   internalPort: 8080
-  externalPort: 8080
-  internalPort2: 8443
-  externalPort2: 8443
-  nodePort: "57" # only one node port. set to http or https port depending on isHttpsEnabled property
+  ports:
+    - name: http
+      port: 8080
+      nodePort: "57"
 
 ingress:
   enabled: false
   service:
     - baseaddr: "sdc-wfd-be-api"
       name: "sdc-wfd-be"
-      port: 8443
-      plain_port: 8080
+      port: 8080
   config:
     ssl: "redirect"
 

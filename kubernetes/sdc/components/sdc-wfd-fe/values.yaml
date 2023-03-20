@@ -18,30 +18,6 @@
 global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
-  aafEnabled: true
-
-#################################################################
-# AAF Part
-#################################################################
-certInitializer:
-  nameOverride: sdc-wfd-fe-cert-init
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: sdc
-  fqi: sdc@sdc.onap.org
-  public_fqdn: sdc.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  addconfig: true
-  keystoreFile: "org.onap.sdc.p12"
-  truststoreFile: "org.onap.sdc.trust.jks"
-  permission_user: 352070
-  permission_group: 35953
-  aaf_add_config: |
-    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
-    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.credsPath }}/mycreds.prop
 
 #################################################################
 # Application configuration defaults.
@@ -56,7 +32,6 @@ debugEnabled: false
 config:
   javaOptions: "-Xmx256m -Xms256m"
   backendServerURL:
-    https: "https://sdc-wfd-be:8443"
     http: "http://sdc-wfd-be:8080"
   # following flag decides whether to check the certificate on the outgoing proxy request or whether to trust all parties
   isTrustAll: true
@@ -101,26 +76,30 @@ startup:
 service:
   type: NodePort
   internalPort: 8080
-  externalPort: 8080
-  internalPort2: 8443
-  externalPort2: 8443
-  portName: sdc-wfd-fe
-  nodePort: "56" # only one node port. set to http or https port depending on isHttpsEnabled property
+  ports:
+    - name: http
+      port: 8080
+      port_protocol: http
+      nodePort: '56'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "wf-gui",
+          "version": "v1",
+          "url": "/",
+          "protocol": "UI",
+          "port": "{{ .Values.service.internalPort }}",
+          "visualRange":"0|1"
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
   service:
     - baseaddr: "sdc-wfd-fe-ui"
       name: "sdc-wfd-fe"
-      port: 8443
-      plain_port: 8080
-  annotations:
-    ingress.kubernetes.io/secure-backends: "false"
-    nginx.ingress.kubernetes.io/secure-backends: "false"
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/rewrite-target: "/workflows/"
+      port: 8080
 
 # Resource Limit flavor -By Default using small
 # Segregation for Different environment (Small and Large)
