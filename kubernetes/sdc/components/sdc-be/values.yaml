@@ -19,7 +19,6 @@
 #################################################################
 global:
   nodePortPrefix: 302
-  aafEnabled: true
   sdc_cassandra:
     #This flag allows SDC to instantiate its own cluster, serviceName
     #should be sdc-cs if this flag is enabled
@@ -51,26 +50,6 @@ debugEnabled: false
 #environment file
 env:
   name: &env AUTO
-
-certInitializer:
-  nameOverride: sdc-be-cert-init
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: sdc
-  fqi: sdc@sdc.onap.org
-  public_fqdn: sdc.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  addconfig: true
-  keystoreFile: "org.onap.sdc.p12"
-  truststoreFile: "org.onap.sdc.trust.jks"
-  permission_user: 352070
-  permission_group: 35953
-  aaf_add_config: |
-    echo "cadi_keystore_password_p12=$cadi_keystore_password_p12" > {{ .Values.credsPath }}/mycreds.prop
-    echo "cadi_truststore_password=$cadi_truststore_password" >> {{ .Values.credsPath }}/mycreds.prop
 
 #################################################################
 # SDC Config part
@@ -126,36 +105,32 @@ startup:
 service:
   type: NodePort
   name: sdc-be
-  both_tls_and_plain: true
   internalPort: 8080
-  msb:
-    - port: 8443
-      url: "/sdc/v1"
-      version: "v1"
-      protocol: "REST"
-      visualRange: "1"
-      serviceName: sdc
-      enable_ssl: true
-    - port: 8080
-      url: "/sdc/v1"
-      version: "v1"
-      protocol: "REST"
-      visualRange: "1"
-      serviceName: sdc-deprecated
   ports:
     - name: tcp-api
-      port: 8443
-      plain_port: 8080
+      port: 8080
       port_protocol: http
       nodePort: '04'
+  annotations:
+    msb.onap.org/service-info: |
+      {{ if .Values.global.msbEnabled -}}[
+        {
+          "serviceName": "sdc-be",
+          "version": "v1",
+          "url": "/sdc/v1",
+          "path":"/sdc/v1",
+          "protocol": "REST",
+          "visualRange":"1",
+          "port": "{{ .Values.service.internalPort }}",
+        }
+      ]{{ end }}
 
 ingress:
   enabled: false
   service:
     - baseaddr: "sdc-be-api"
       name: "sdc-be"
-      port: 8443
-      plain_port: 8080
+      port: 8080
   config:
     ssl: "redirect"
 

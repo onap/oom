@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2018 ZTE
 # Modifications Copyright © 2018 AT&T, Amdocs, Bell Canada
+# Modifications Copyright © 2023 Deutsche Telekom
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,39 +15,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.servicename" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-  annotations:
-    msb.onap.org/service-info: '[
-      {
-          "serviceName": "wf-gui",
-          "version": "v1",
-          "url": "/",
-          "protocol": "UI",
-          "port": "{{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}",
-          "visualRange":"0|1"
-      }
-      ]'
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName  }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}
-    {{- else -}}
-    - port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.externalPort2 .Values.service.externalPort }}
-      targetPort: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+{{ include "common.service" . }}
