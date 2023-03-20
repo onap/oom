@@ -84,6 +84,52 @@ ingress:
     exposedPort: *advertizedPortBroker2
     exposedProtocol: TLS
 
+#Kafka Exporter for metrics
+metrics:
+  enabled: true
+  kafkaExporter:
+    enabled: true
+    metricsConfig:
+      type: jmxPrometheusExporter
+    topicRegex: ".*"
+    groupRegex: ".*"
+    resources:
+      requests:
+        cpu: 2000m
+        memory: 640Mi
+      limits:
+        cpu: 5000m
+        memory: 1280Mi
+    logging: debug
+    enableSaramaLogging: true
+    readinessProbe:
+      initialDelaySeconds: 15
+      timeoutSeconds: 5
+    livenessProbe:
+      initialDelaySeconds: 15
+      timeoutSeconds: 5  
+  podMonitor:
+    enabled: true
+    # default port for strimzi metrics
+    port: "tcp-prometheus"
+    # podMonitor labels for prometheus to pick up the podMonitor
+    # dummy value
+    labels:
+      release: test
+    relabelings: []
+    metricRelabelings: []
+
+cruiseControl:
+## Cruise Control provides a Kafka metrics reporter implementation
+## once installed into the Kafka brokers, filters and records a wide range of metrics provided by the brokers themselves.
+  metricsConfig:
+    type: jmxPrometheusExporter
+  enabled: true
+  ## Custom resource for Kafka that can rebalance your cluster
+  # ref. https://strimzi.io/blog/2020/06/15/cruise-control/
+  kafkaRebalance:
+    enabled: true
+
 ######################
 #  Component overrides
 ######################

@@ -89,6 +89,14 @@ spec:
         size: {{ .Values.persistence.kafka.size }}
         deleteClaim: true
         class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
+    {{- if .Values.metrics.kafkaExporter.enabled }}
+    metricsConfig:
+      type: {{ .Values.metrics.kafkaExporter.metricsConfig.type }}
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+    {{- end }}
   zookeeper:
     template:
       pod:
@@ -107,7 +115,46 @@ spec:
       size: {{ .Values.persistence.zookeeper.size }}
       deleteClaim: true
       class: {{ include "common.storageClass" (dict "dot" . "suffix" "zk" "persistenceInfos" .Values.persistence.zookeeper) }}
+    {{- if .Values.metrics.kafkaExporter.enabled }}
+    metricsConfig:
+      type: {{ .Values.metrics.kafkaExporter.metricsConfig.type }}
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: zookeeper-metrics-config.yml
+    {{- end }}
   entityOperator:
     topicOperator: {}
     userOperator: {}
+  {{- if .Values.cruiseControl.enabled }}
+  cruiseControl:
+    metricsConfig:
+      type: {{ .Values.cruiseControl.metricsConfig.type }}
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: cruisecontrol-metrics-config.yml
+  {{- end }}
+  {{- if .Values.metrics.kafkaExporter.enabled }}
+  kafkaExporter:
+    topicRegex: {{ .Values.metrics.kafkaExporter.topicRegex }}
+    groupRegex: {{ .Values.metrics.kafkaExporter.groupRegex }}
+    resources:
+      requests:
+        cpu: {{ .Values.metrics.kafkaExporter.resources.requests.cpu }}
+        memory: {{ .Values.metrics.kafkaExporter.resources.requests.memory }}
+      limits:
+        cpu: {{ .Values.metrics.kafkaExporter.resources.limits.cpu }}
+        memory: {{ .Values.metrics.kafkaExporter.resources.limits.memory }}
+    logging: {{ .Values.metrics.kafkaExporter.logging }}
+    enableSaramaLogging: {{ .Values.metrics.kafkaExporter.enableSaramaLogging }}
+    readinessProbe:
+      initialDelaySeconds: {{ .Values.metrics.kafkaExporter.readinessProbe.initialDelaySeconds }}
+      timeoutSeconds: {{ .Values.metrics.kafkaExporter.readinessProbe.timeoutSeconds }}
+    livenessProbe:
+      initialDelaySeconds: {{ .Values.metrics.kafkaExporter.livenessProbe.initialDelaySeconds }}
+      timeoutSeconds: {{ .Values.metrics.kafkaExporter.livenessProbe.timeoutSeconds }}
+  {{- end }}
 
+
+  
