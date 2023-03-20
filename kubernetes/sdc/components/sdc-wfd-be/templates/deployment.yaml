@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, AT&T, Bell Canada
 # Modifications Copyright © 2018  ZTE
+# Modifications Copyright © 2023 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,26 +18,14 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       {{- if .Values.initJob.enabled }}
       - name: {{ include "common.name" . }}-job-completion
         image: {{ include "repositoryGenerator.image.readiness" . }}
@@ -45,7 +34,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.fullname" . }}-workflow-init
+        - {{ include "common.fullname" . }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -64,28 +53,13 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - "-c"
-          - |
-            export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-            export SERVER_SSL_KEY_PASSWORD=$cadi_keystore_password_p12
-            export KEYMANAGER_PASS=$cadi_keystore_password_p12
-            export SERVER_SSL_TRUST_PASSWORD=$cadi_truststore_password
-            export SERVER_SSL_KEYSTORE_PATH={{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.keystoreFile }}
-            export SERVER_SSL_TRUSTSTORE_PATH={{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.truststoreFile }}
-            ./startup.sh
-          {{- end }}
-          ports:
-          - containerPort: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             successThreshold: {{ .Values.liveness.successThreshold }}
@@ -93,14 +67,14 @@ spec:
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             successThreshold: {{ .Values.readiness.successThreshold }}
             failureThreshold: {{ .Values.readiness.failureThreshold }}
           startupProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort2 .Values.service.internalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             successThreshold: {{ .Values.startup.successThreshold }}
@@ -128,28 +102,17 @@ spec:
             valueFrom:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: cs_truststore_password}
           - name: SDC_PROTOCOL
-            value: "{{ (eq "true" (include "common.needTLS" .)) | ternary "HTTPS" "HTTP" }}"
+            value: "HTTP"
           - name: SDC_ENDPOINT
-            value: "{{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdcEndpoint.https .Values.config.sdcEndpoint.http }}"
+            value: "{{ .Values.config.sdcEndpoint.http }}"
           - name: SDC_USER
             value: "{{ .Values.config.sdcExternalUser }}"
           - name: SDC_PASSWORD
             valueFrom:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: wf_external_user_password}
-          {{- if (include "common.needTLS" .) }}
-          - name: SERVER_SSL_ENABLED
-            value: "true"
-          - name: SERVER_SSL_KEYSTORE_TYPE
-            value: "{{ .Values.config.serverSSLKeyStoreType }}"
-          - name: SERVER_SSL_TRUSTSTORE_TYPE
-            value: "{{ .Values.config.serverSSLTrustStoreType }}"
-          {{- else }}
           - name: SERVER_SSL_ENABLED
             value: "false"
-          {{- end }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           resources: {{ include "common.resources" . | nindent 12 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"

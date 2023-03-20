@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T, ZTE
+# Modifications Copyright © 2023 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,26 +18,14 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-job-completion
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
@@ -44,7 +33,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-sdc-be-config-backend
+        - {{ include "common.release" . }}-sdc-be
         - "-t"
         - "35"
         env:
@@ -60,60 +49,15 @@ spec:
           requests:
             cpu: 3m
             memory: 20Mi
-      {{- if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-update-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - sh
-        args:
-        - "-c"
-        - |
-          export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          export KEYSTORE_PASS=$cadi_keystore_password_p12
-          export KEYMANAGER_PASS=$cadi_keystore_password_p12
-          export TRUSTSTORE_PASS=$cadi_truststore_password
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.keystoreFile }} /config-output
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.truststoreFile }} /config-output
-          cd /config-input && \
-          for PFILE in `find . -not -type d | grep -v -F ..`
-          do
-            envsubst <${PFILE} >/config-output/${PFILE}
-            chmod 0755 /config-output/${PFILE}
-          done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          - name: sdc-environments-input
-            mountPath: /config-input/
-          - name: sdc-environments
-            mountPath: /config-output/
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
-      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - "-c"
-          - |
-            sed -i '/trustStorePassword/d' ${JETTY_BASE}/startup.sh
-            ${JETTY_BASE}/startup.sh
-          {{- end }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -122,7 +66,7 @@ spec:
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -130,7 +74,7 @@ spec:
             failureThreshold: {{ .Values.readiness.failureThreshold }}
           startupProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
@@ -149,14 +93,6 @@ spec:
           volumeMounts:
           - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
-          {{- if .Values.global.aafEnabled }}
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-fe/files/default/org.onap.sdc.p12
-            subPath: org.onap.sdc.p12
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-fe/files/default/org.onap.sdc.trust.jks
-            subPath: org.onap.sdc.trust.jks
-          {{- end }}
           - name: localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -175,7 +111,7 @@ spec:
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime

@@ -18,26 +18,14 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-job-completion
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
@@ -45,7 +33,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-sdc-onboarding-be-cassandra-init
+        - {{ include "common.release" . }}-sdc-onboarding-be
         env:
         - name: NAMESPACE
           valueFrom:
@@ -59,73 +47,16 @@ spec:
           requests:
             cpu: 3m
             memory: 20Mi
-      {{- if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-update-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - sh
-        args:
-        - "-c"
-        - |
-          export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          export KEYSTORE_PASS=$cadi_keystore_password_p12
-          export KEYMANAGER_PASS=$cadi_keystore_password_p12
-          export TRUSTSTORE_PASS=$cadi_truststore_password
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.keystoreFile }} /config-output
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.truststoreFile }} /config-output
-          cd /config-input && \
-          for PFILE in `find . -not -type d | grep -v -F ..`
-          do
-            envsubst <${PFILE} >/config-output/${PFILE}
-            chmod 0755 /config-output/${PFILE}
-          done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
-          - name: sdc-environments-input
-            mountPath: /config-input/
-          - name: sdc-environments
-            mountPath: /config-output/
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
-      {{- end }}
-      - name: volume-permissions
-        image: {{ include "repositoryGenerator.image.busybox" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-          - sh
-        args:
-          - "-c"
-          - |
-            chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.fsGroup }} //onboard/cert
-        securityContext:
-          runAsUser: 0
-        volumeMounts:
-          - name: cert-storage
-            mountPath: "/onboard/cert"
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
-          - containerPort: {{ .Values.service.internalPort2 }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             httpGet:
               path: /onboarding-api/v1.0/healthcheck
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -135,7 +66,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /onboarding-api/v1.0/healthcheck
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -144,7 +75,7 @@ spec:
           startupProbe:
             httpGet:
               path: /onboarding-api/v1.0/healthcheck
-              port: {{ .Values.service.internalPort2 }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
@@ -171,25 +102,15 @@ spec:
             valueFrom:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
           - name: SDC_CERT_DIR
-            value: {{ .Values.cert.certDir }}
+            value: ""
           volumeMounts:
           - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
-          {{- if .Values.global.aafEnabled }}
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-onboard-backend/files/default/org.onap.sdc.p12
-            subPath: org.onap.sdc.p12
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-onboard-backend/files/default/org.onap.sdc.trust.jks
-            subPath: org.onap.sdc.trust.jks
-          {{- end }}
           - name: localtime
             mountPath: /etc/localtime
             readOnly: true
           - name: logs
             mountPath: /var/log/onap
-          - name: cert-storage
-            mountPath: "{{ .Values.cert.certDir }}"
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
@@ -200,27 +121,19 @@ spec:
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
-
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
       - name: sdc-environments
-      {{- if .Values.global.aafEnabled }}
-        emptyDir: { medium: "Memory" }
-      - name: sdc-environments-input
-      {{- end }}
         configMap:
           name: {{ include "common.release" . }}-sdc-environments-configmap
           defaultMode: 0755
       - name:  logs
         emptyDir: {}
-      - name:  cert-storage
-        persistentVolumeClaim:
-          claimName: {{ include "common.fullname" . }}-cert
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
