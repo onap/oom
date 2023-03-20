@@ -1,0 +1,45 @@
+{{/*
+# Copyright (c) 2023 Deutsche Telekom
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License..
+*/}}
+{{- if .Values.metrics.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "common.fullname" . }}-podmonitor
+    ## podMonitor labels for prometheus to pick up the podMonitor
+    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.PodMonitor
+    ##
+    # labels:
+    #   prometheus: kube-prometheus
+  labels: {{- toYaml $.Values.metrics.podMonitor.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      strimzi.io/cluster: {{ include "common.release" . }}-strimzi
+  podMetricsEndpoints:
+  - port: {{ .Values.metrics.podMonitor.port }}
+    {{- if .Values.metrics.podMonitor.relabelings }}
+    ## RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    relabelings: {{- toYaml .Values.metrics.podMonitor.relabelings | nindent 6 }}
+    {{- end }}
+    {{- if .Values.metrics.podMonitor.metricRelabelings }}
+    metricRelabelings: {{- toYaml .Values.metrics.podMonitor.metricRelabelings | nindent 6 }}
+    ## MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    {{- end }}
+{{- end }}
