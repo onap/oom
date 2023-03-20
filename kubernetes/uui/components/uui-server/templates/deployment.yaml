@@ -26,7 +26,7 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - command:
         - sh
         args:
@@ -71,7 +71,6 @@ spec:
           args:
           - -c
           - |
-            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
             bash /uui/run.sh
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           # disable liveness probe when breakpoints set in debugger
@@ -102,7 +101,7 @@ spec:
             value: --spring.config.location=file:/config/application.properties
           - name: POSTGRES_DB_NAME
             value: {{ .Values.postgres.config.pgDatabase }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /uui/run.sh
             name: entrypoint
             subPath: run.sh
@@ -120,6 +119,5 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-entrypoint
           defaultMode: 0755
-      {{ include "common.certInitializer.volumes" . | nindent 6 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
