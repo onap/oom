@@ -23,19 +23,18 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - command:
         - sh
         args:
         - -c
         - |
-          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
           cd /config-input && for PFILE in `ls -1`
           do
             envsubst <${PFILE} >/config/${PFILE}
           done
           cat /config/server.xml
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /config-input
           name: config-input
         - mountPath: /config
@@ -55,10 +54,6 @@ spec:
               ls -lh /opt/
               echo "*** /opt/app"
               ls -lh /opt/app/
-              echo "*** /opt/app/osaaf/"
-              ls -lh /opt/app/osaaf/
-              echo "*** /opt/app/osaaf/local"
-              ls -lh /opt/app/osaaf/local/
               /home/uui/uuiStartup.sh
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           # disable liveness probe when breakpoints set in debugger
@@ -75,15 +70,13 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /home/uui/server.xml
             name: config
             subPath: server.xml
-          {{ if not (include "common.needTLS" .) }}
           - mountPath: /home/uui/web.xml
             name: config
             subPath: web.xml
-          {{ end }}
           env:
           - name: MSB_ADDR
             value: {{ tpl .Values.msbaddr . }}
@@ -94,7 +87,7 @@ spec:
         {{- if .Values.affinity }}
         affinity: {{ toYaml .Values.affinity | nindent 10 }}
         {{- end }}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: config-input
         configMap:
           name: {{ include "common.fullname" . }}
