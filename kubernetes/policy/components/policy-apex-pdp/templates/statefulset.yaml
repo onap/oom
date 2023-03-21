@@ -3,6 +3,7 @@
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #   Modifications Copyright (C) 2020 AT&T Intellectual Property.
 #   Modifications Copyright © 2022 Nordix Foundation
+#   Modification (C) 2023 Deutsche Telekom. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -22,25 +23,13 @@
 
 apiVersion: apps/v1
 kind: StatefulSet
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -49,10 +38,6 @@ spec:
         - -c
         - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
-        - name: TRUSTSTORE_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-pass" "key" "password") | indent 10 }}
-        - name: KEYSTORE_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-pass" "key" "password") | indent 10 }}
         - name: RESTSERVER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
         - name: RESTSERVER_PASSWORD
@@ -69,40 +54,29 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["sh","-c"]
-          args: ["if [ -f {{ .Values.certInitializer.credsPath }}/.ci ]; then \
-                  . {{ .Values.certInitializer.credsPath }}/.ci; fi;\
-                  /opt/app/policy/apex-pdp/bin/apexOnapPf.sh -c /home/apexuser/config/OnapPfConfig.json"]
-          ports:
-          - containerPort: {{ .Values.service.externalPort }}
+          args: ["/opt/app/policy/apex-pdp/bin/apexOnapPf.sh -c /home/apexuser/config/OnapPfConfig.json"]
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.externalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{- end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.externalPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: REPLICAS
             value: "{{ .Values.replicaCount }}"
-{{- if not .Values.global.aafEnabled }}
-          - name: KEYSTORE_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-pass" "key" "password") | indent 12 }}
-          - name: TRUSTSTORE_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-pass" "key" "password") | indent 12 }}
-{{- end }}
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -121,7 +95,6 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-{{ include "common.certInitializer.volumes" . | indent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
