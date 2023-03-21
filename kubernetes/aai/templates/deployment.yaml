@@ -1,6 +1,7 @@
 {{/*
 # Copyright (c) 2018 Amdocs, Bell Canada, AT&T
 # Modifications Copyright (c) 2020 Nokia, Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +18,9 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -46,36 +38,11 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-      - command:
-        - /app/ready.py
-        args:
-        - --container-name
-        - aai-resources
-        - --container-name
-        - aai-traversal
-        - --container-name
-        - aai-graphadmin
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          requests:
-            memory: {{ .Values.haproxy.initContainers.resources.memory }}
-            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
-          limits:
-            memory: {{ .Values.haproxy.initContainers.resources.memory }}
-            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
+      terminationGracePeriodSeconds: 120
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}"
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/localtime
@@ -84,15 +51,10 @@ spec:
         - mountPath: /dev/log
           name: aai-service-log
         - mountPath: /usr/local/etc/haproxy/haproxy.cfg
-        {{ if .Values.global.installSidecarSecurity }}
-          subPath: haproxy-pluggable-security.cfg
-        {{ else }}
           subPath: haproxy.cfg
-        {{ end }}
           name: haproxy-cfg
-        {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
+        - containerPort: {{ .Values.service.externalPlainPort }}
         - containerPort: {{ .Values.service.internalPlainPort }}
         - containerPort: {{ .Values.metricsService.internalPort }}
         # disable liveness probe when breakpoints set in debugger
@@ -100,23 +62,19 @@ spec:
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+            port: {{ .Values.service.internalPlainPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
           httpGet:
             path: /aai/util/echo
-            port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+            port: {{ .Values.service.internalPlainPort }}
             #scheme: HTTPS
-            scheme: {{ (eq "true" (include "common.needTLS" .)) | ternary "HTTPS" "HTTP" }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: OOM_ReadinessCheck
-      {{ if .Values.global.installSidecarSecurity }}
-            - name: Authorization
-              value: Basic YWFpQGFhaS5vbmFwLm9yZzpkZW1vMTIzNDU2IQ==
-      {{ end }}
             - name: X-TransactionId
               value: OOM_ReadinessCheck_TID
             - name: Accept
@@ -142,7 +100,6 @@ spec:
             path: "/dev/log"
         - name: haproxy-cfg
           configMap:
-            name: aai-deployment-configmap
-        {{ include "common.certInitializer.volumes" . | nindent 8 }}
+            name: {{ include "common.fullname" . }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
