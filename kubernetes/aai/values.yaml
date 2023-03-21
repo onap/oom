@@ -2,6 +2,7 @@
 # Modifications Copyright (c) 2018 AT&T
 # Modifications Copyright (c) 2020 Nokia, Orange
 # Modifications Copyright (c) 2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,21 +20,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global: # global defaults
-  nodePortPrefix: 302
-  repository: nexus3.onap.org:10001
-  dockerhubRepository: docker.io
-  busyboxImage: busybox
-
-  readinessImage: onap/oom/readiness:3.0.1
-
-  loggingRepository: docker.elastic.co
-  loggingImage: beats/filebeat:5.5.0
-
   restartPolicy: Always
-
-  aafEnabled: true
-  msbEnabled: true
-  centralizedLoggingEnabled: true
+  aafEnabled: false
+  msbEnabled: false
+  centralizedLoggingEnabled: false
 
   cassandra:
     #This will instantiate AAI cassandra cluster, default:shared cassandra.
@@ -55,26 +45,16 @@ global: # global defaults
     serviceName: aai
   babel:
     serviceName: aai-babel
-  aaiElasticsearch:
-    serviceName: aai-elasticsearch
   resources:
     serviceName: aai-resources
   sparkyBe:
     serviceName: aai-sparky-be
-  dataRouter:
-    serviceName: aai-data-router
-  gizmo:
-    serviceName: aai-gizmo
   modelloader:
     serviceName: aai-modelloader
-  searchData:
-    serviceName: aai-search-data
   traversal:
     serviceName: aai-traversal
   graphadmin:
     serviceName: aai-graphadmin
-  spike:
-    serviceName: aai-spike
 
   initContainers:
     enabled: true
@@ -203,9 +183,8 @@ global: # global defaults
         passwd: AAI
 
     # Active spring profiles for the resources microservice
-    # aaf-auth profile will be automatically set if aaf enabled is set to true
     profiles:
-      active: production,dmaap #,aaf-auth
+      active: production,dmaap
 
     # Notification event specific properties
     notification:
@@ -217,7 +196,7 @@ global: # global defaults
       # Specifies if the connection should be one way ssl, two way ssl or no auth
       # will be set to no-auth if tls is disabled
       service:
-        client: one-way-ssl
+        client: no-auth
       # Specifies which translator to use if it has schema-service, then it will make a rest request to schema service
       translator:
         list: schema-service
@@ -292,40 +271,6 @@ aai-sparky-be:
 aai-traversal:
   logConfigMapNamePrefix: '{{ include "common.release" . }}-aai'
 
-#################################################################
-# Certificate configuration
-#################################################################
-certInitializer:
-  nameOverride: aai-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: "aai"
-  app_ns: "org.osaaf.aaf"
-  fqi_namespace: "org.onap.aai"
-  fqi: "aai@aai.onap.org"
-  public_fqdn: "aaf.osaaf.org"
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: |
-    echo "*** transform AAF certs into pem files"
-    mkdir -p {{ .Values.credsPath }}/certs
-    keytool -exportcert -rfc -file {{ .Values.credsPath }}/certs/cacert.pem \
-      -keystore {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.trust.jks \
-      -alias ca_local_0 \
-      -storepass $cadi_truststore_password
-    openssl pkcs12 -in {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.p12 \
-      -nokeys -out {{ .Values.credsPath }}/certs/cert.pem \
-      -passin pass:$cadi_keystore_password_p12 \
-      -passout pass:$cadi_keystore_password_p12
-    echo "*** generating needed file"
-    cat {{ .Values.credsPath }}/certs/cert.pem \
-        {{ .Values.credsPath }}/certs/cacert.pem \
-        {{ .Values.credsPath }}/{{ .Values.fqi_namespace }}.key \
-        > {{ .Values.credsPath }}/certs/fullchain.pem;
-    chown 1001 {{ .Values.credsPath }}/certs/*
-
 # application image
 dockerhubRepository: registry.hub.docker.com
 image: onap/aai-haproxy:1.11.0
@@ -367,13 +312,6 @@ haproxy:
     aaiResources: 1
     aaiTraversal: 1
 
-# probe configuration parameters
-liveness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: true
 
 #This section is used when localCluster is enabled. AAI will create its own cassandra cluster for its specific use.
 #Below command will instantiate the aai cassandra instances:
@@ -391,32 +329,49 @@ cassandra:
     mountSubPath: aai/cassandra
     enabled: true
 
+
+conatinerPort1: &container_port1 8080
+conatinerPort2: &container_port2 80
+conatinerPort3: &container_port3 8448
+# probe configuration parameters
+liveness:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  # necessary to disable liveness probe when setting breakpoints
+  # in debugger so K8s doesn't restart unresponsive container
+  enabled: true
+
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
 
 service:
-  type: NodePort
+  type: ClusterIP
   portName: http
-  externalPort: 8443
-  internalPort: 8443
-  nodePort: 33
-  externalPlainPort: 80
-  internalPlainPort: 8080
-  nodeport: 33
-  aaiServiceClusterIp:
+  externalPlainPort: *container_port2
+  internalPlainPort: *container_port1
   sessionAffinity: None
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "aai-api"
+      name: "aai"
+      port: *container_port2
+      config:
+       ssl: "redirect"
+
 
 metricsService:
   type: ClusterIP
   portName: prometheus
-  externalPort: 8448
-  internalPort: 8448
+  externalPort: *container_port3
+  internalPort: *container_port3
 
 metrics:
   serviceMonitor:
     enabled: false
-    targetPort: 8448
+    targetPort: *container_port3
     path: /metrics
     basicAuth:
       enabled: false
@@ -431,15 +386,6 @@ metrics:
 
     metricRelabelings: []
 
-ingress:
-  enabled: false
-  service:
-    - baseaddr: "aai-api"
-      name: "aai"
-      port: 8443
-      plain_port: 80
-      config:
-       ssl: "redirect"
 
 resources:
   small:
@@ -463,3 +409,9 @@ serviceAccount:
   nameOverride: aai
   roles:
     - read
+
+readinessCheck:
+  wait_for:
+    - aai-resources
+    - aai-traversal
+    - aai-graphadmin
