@@ -6,6 +6,7 @@
 # Copyright (c) 2018 AT&T Intellectual Property. All rights reserved.
 # Copyright (c) 2020 Nokia Intellectual Property. All rights reserved.
 # Copyright (c) 2020-2021 Orange Intellectual Property. All rights reserved.
+# Modifications Copyright © 2023 Nordix Foundation
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,50 +54,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-      {{- if .Values.global.aafEnabled }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
-          echo "*** obfuscate them "
-          export JETTY_UTIL_JAR=$(find /usr/local/jetty/lib/ -regextype sed -regex ".*jetty-util-[0-9].*.jar")
-          export KEYSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${KEYSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          export KEYSTORE_JKS_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${KEYSTORE_JKS_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          export TRUSTSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${TRUSTSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-          echo "KEYSTORE_JKS_PASSWORD=${KEYSTORE_JKS_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-          echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-        image: {{ include "repositoryGenerator.image.jetty" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-obfuscate
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        securityContext:
-          runAsUser: {{ .Values.securityContext.user_id }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** Set obfuscated Truststore and Keystore password into configuration file"
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
-          cd /config-input
-          for PFILE in `ls -1`
-          do
-            envsubst <${PFILE} >/config/${PFILE}
-          done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - mountPath: /config-input
-          name: properties-input
-        - mountPath: /config
-          name: properties
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-      {{- end }}
+      initContainers:
       - command:
         - /app/ready.py
         args:
@@ -135,7 +93,7 @@ spec:
           value: {{ .Values.securityContext.user_id | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.securityContext.group_id | quote }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -166,7 +124,7 @@ spec:
       {{- if .Values.affinity }}
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
       {{- end }}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -177,11 +135,6 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}
       - name: properties
-      {{- if .Values.global.aafEnabled }}
-        emptyDir:
-          medium: Memory
-      - name: properties-input
-      {{- end }}
         configMap:
           name: {{ include "common.fullname" . }}-properties
       restartPolicy: Never

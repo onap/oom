@@ -3,6 +3,7 @@
 # Modifications Copyright (c) 2018 AT&T
 # Modifications Copyright (c) 2020 Nokia, Orange
 # Modifications Copyright (c) 2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,14 +20,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   minReadySeconds: {{ .Values.minReadySeconds }}
@@ -35,9 +29,7 @@ spec:
     rollingUpdate:
       maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   template:
     metadata:
       labels:
@@ -46,59 +38,10 @@ spec:
       name: {{ include "common.name" . }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      {{- if .Values.global.msbEnabled }}
-        {{ $values := .Values }}
-        msb.onap.org/service-info: '[
-        {{- range $api_endpoint := $values.aai_enpoints -}}
-          {{- range $api_version := $values.api_list }}
-          {
-              "serviceName": "_{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1",
-              "path": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}"
-          },
-          {
-              "serviceName": "{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1"
-          },
-          {{- end }}
-        {{- end }}
-          {
-              "serviceName": "_aai-named-query",
-              "url": "/aai/search",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1",
-              "path": "/aai/search"
-          },
-          {
-              "serviceName": "aai-named-query",
-              "url": "/aai/search",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1"
-          }
-          ]'
-      {{- end }}
     spec:
       hostname: aai-traversal
-      terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      terminationGracePeriodSeconds: 120
+      initContainers:
       - command:
         - /app/ready.py
         args:
@@ -133,18 +76,15 @@ spec:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
         command:
         - sh
         args:
         - -c
         - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
           echo "*** actual launch of AAI Resources"
           /bin/bash /opt/app/aai-traversal/docker-entrypoint.sh
         env:
-        - name: TRUSTORE_ALL_PASSWORD
-          value: {{ .Values.certInitializer.truststorePassword }}
         - name: DISABLE_UPDATE_QUERY
           value: {{ .Values.config.disableUpdateQuery | quote }}
         - name: LOCAL_USER_ID
@@ -152,62 +92,43 @@ spec:
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
         - name: INTERNAL_PORT_1
-          value: {{ .Values.service.internalPort | quote }}
+          value: {{ .Values.conatinerPort1 | quote }}
         - name: INTERNAL_PORT_2
-          value: {{ .Values.service.internalPort2 | quote }}
+          value: {{ .Values.conatinerPort2 | quote }}
         - name: INTERNAL_PORT_3
-          value: {{ .Values.service.internalPort3 | quote }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+          value: {{ .Values.conatinerPort1 | quote }}
+        volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
-          name: {{ include "common.fullname" . }}-config
+          name: app-config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
+          name: app-config
           subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
-          name: {{ include "common.fullname" . }}-config
+          name: app-config
           subPath: aaiconfig.properties
+        - mountPath: /opt/app/aai-traversal/resources/logback.xml
+          name: app-config
+          subPath: logback.xml
+        - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
+          name: app-config
+          subPath: localhost-access-logback.xml
+        - mountPath: /opt/app/aai-traversal/resources/etc/auth/realm.properties
+          name: app-config
+          subPath: realm.properties
+        - mountPath: /opt/app/aai-traversal/resources/application.properties
+          name: app-config
+          subPath: application.properties
+        - mountPath: /opt/app/aai-traversal/resources/application-keycloak.properties
+          name: app-config
+          subPath: application-keycloak.properties
         - mountPath: /opt/aai/logroot/AAI-GQ
           name: logs
         - mountPath: /opt/aai/logroot/AAI-GQ/misc
-          name: {{ include "common.fullname" . }}-logs-misc
-        - mountPath: /opt/app/aai-traversal/resources/logback.xml
-          name: {{ include "common.fullname" . }}-config
-          subPath: logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
-          subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-traversal/resources/etc/auth/realm.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: realm.properties
-        - mountPath: /opt/app/aai-traversal/resources/aaf/bath_config.csv
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: bath_config.csv
-        - mountPath: /opt/app/aai-traversal/resources/aaf/org.onap.aai.props
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: org.onap.aai.props
-        - mountPath: /opt/app/aai-traversal/resources/aaf/org.osaaf.location.props
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: org.osaaf.location.props
-        - mountPath: /opt/app/aai-traversal/resources/aaf/permissions.properties
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: permissions.properties
-        - mountPath: /opt/app/aai-traversal/resources/cadi.properties
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: cadi.properties
-        - mountPath: /opt/app/aai-traversal/resources/application.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: application.properties
-        - mountPath: /opt/app/aai-traversal/resources/application-keycloak.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: application-keycloak.properties
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.internalPort2 }}
-        - containerPort: {{ .Values.service.internalPort3 }}
+          name: log-misc
         lifecycle:
           # wait for active requests (long-running tasks) to be finished
           # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
@@ -226,8 +147,8 @@ spec:
         livenessProbe:
           httpGet:
             path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.internalPort }}
-            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            port: {{ .Values.liveness.port }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: LivenessCheck
@@ -241,8 +162,8 @@ spec:
         readinessProbe:
           httpGet:
             path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.internalPort }}
-            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            port: {{ .Values.readiness.port }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: ReadinessCheck
@@ -265,27 +186,18 @@ spec:
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: logs
         emptyDir: {}
-      - name: {{ include "common.fullname" . }}-logs-misc
+      - name: log-misc
         emptyDir: {}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
-      - name: {{ include "common.fullname" . }}-config
+      - name: app-config
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: {{ include "common.fullname" . }}-aaf-properties
-        configMap:
-          name: {{ include "common.fullname" . }}-aaf-props
-      - name: {{ include "common.fullname" . }}-aaf-certs
-        secret:
-          secretName: {{ include "common.fullname" . }}-aaf
-      - name: aai-common-aai-auth-mount
-        secret:
-          secretName: aai-common-aai-auth
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
