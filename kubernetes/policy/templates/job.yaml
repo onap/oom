@@ -31,6 +31,8 @@ spec:
         app: {{ include "common.name" . }}-galera-init
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-galera-init
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -60,8 +62,6 @@ spec:
         - /bin/sh
         - -cx
         - |
-           {{- if include "common.onServiceMesh" . }}
-           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            /dbcmd-config/db.sh
         env:
         - name: MYSQL_ROOT_PASSWORD
@@ -73,23 +73,6 @@ spec:
         - name: MYSQL_PORT
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-galera-config -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -118,6 +101,8 @@ spec:
         app: {{ include "common.name" . }}-pg-init
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-pg-init
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -134,8 +119,6 @@ spec:
           - /bin/sh
           - -cx
           - |
-             {{- if include "common.onServiceMesh" . }}
-             echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
              /docker-entrypoint-initdb.d/db-pg.sh
         env:
           - name: PG_ADMIN_PASSWORD
@@ -149,23 +132,6 @@ spec:
           - name: PG_PORT
             value: "{{ .Values.postgres.service.internalPort }}"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-pg-config -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -194,6 +160,8 @@ spec:
         app: {{ include "common.name" . }}-galera-config
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-galera-config
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -224,8 +192,6 @@ spec:
         - /bin/sh
         - -cx
         - |
-           {{- if include "common.onServiceMesh" . }}
-           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            /dbcmd-config/db_migrator_policy_init.sh
         env:
         - name: SQL_HOST
@@ -241,23 +207,6 @@ spec:
         - name: SCRIPT_DIRECTORY
           value: "sql"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-galera-db-migrator -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -286,6 +235,8 @@ spec:
         app: {{ include "common.name" . }}-pg-config
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-pg-config
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
@@ -316,8 +267,6 @@ spec:
           - /bin/sh
           - -cx
           - |
-             {{- if include "common.onServiceMesh" . }}
-             echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
              /dbcmd-config/db_migrator_pg_policy_init.sh
         env:
         - name: SQL_HOST
@@ -335,23 +284,6 @@ spec:
         - name: PGPASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-pg-db-migrator -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-      {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:

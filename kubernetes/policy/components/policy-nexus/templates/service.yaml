@@ -15,28 +15,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.servicename" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    {{if eq .Values.service.type "NodePort" -}}
-    - port: {{ .Values.service.externalPort }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      name: {{ .Values.service.portName }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}
-    {{- else -}}
-    - port: {{ .Values.service.externalPort }}
-      targetPort: {{ .Values.service.internalPort }}
-      name: {{ .Values.service.portName }}{{ (eq "true" (include "common.needTLS" .)) | ternary "s" "" }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+{{ include "common.service" . }}

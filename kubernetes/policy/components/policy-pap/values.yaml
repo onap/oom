@@ -25,7 +25,6 @@
 global:
   nodePortPrefixExt: 304
   persistence: {}
-  aafEnabled: true
 
 #################################################################
 # Secrets metaconfig
@@ -55,16 +54,6 @@ secrets:
     login: '{{ .Values.healthCheckRestClient.distribution.user }}'
     password: '{{ .Values.healthCheckRestClient.distribution.password }}'
     passwordPolicy: required
-  - uid: keystore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.keyStorePassword }}'
-    passwordPolicy: required
-  - uid: truststore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.trustStorePassword }}'
-    passwordPolicy: required
   - uid: policy-kafka-user
     externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
     type: genericKV
@@ -72,29 +61,6 @@ secrets:
       - name: sasl.jaas.config
         value: '{{ .Values.config.someConfig }}'
         policy: generate
-
-certStores:
-  keyStorePassword: Pol1cy_0nap
-  trustStorePassword: Pol1cy_0nap
-
-certInitializer:
-  nameOverride: policy-pap-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: policy
-  fqi: policy@policy.onap.org
-  public_fqdn: policy.onap.org
-  cadi_latitude: "0.0"
-  cadi_longitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  app_ns: org.osaaf.aaf
-  uid: 100
-  gid: 101
-  aaf_add_config: >
-    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
-    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
-    chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
-
 
 #################################################################
 # Application configuration defaults.
@@ -155,11 +121,9 @@ readiness:
 service:
   type: ClusterIP
   name: policy-pap
-  useNodePortExt: true
   ports:
   - name: http-api
     port: 6969
-    nodePort: 42
 
 ingress:
   enabled: false
@@ -197,7 +161,7 @@ metrics:
     enabled: true
     port: http-api
     interval: 60s
-    isHttps: true
+    isHttps: false
     basicAuth:
       enabled: true
       externalSecretNameSuffix: policy-pap-user-creds

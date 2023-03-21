@@ -64,24 +64,12 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- if .Values.global.aafEnabled }}
-          command: ["sh","-c"]
-          args: ["source {{ .Values.certInitializer.credsPath }}/.ci;\
-                  /opt/app/policy/clamp/bin/policy-participant.sh /opt/app/policy/clamp/etc/mounted/PolicyParticipantParameters.yaml"]
-{{- else }}
           command: ["/opt/app/policy/clamp/bin/policy-participant.sh"]
           args: ["/opt/app/policy/clamp/etc/mounted/PolicyParticipantParameters.yaml"]
-          env:
-          - name: KEYSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
-          - name: TRUSTSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 12 }}
-{{- end }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -98,7 +86,6 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -115,7 +102,6 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-{{ include "common.certInitializer.volumes" . | indent 8 }}
         - name: localtime
           hostPath:
              path: /etc/localtime
