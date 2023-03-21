@@ -20,24 +20,12 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -46,14 +34,6 @@ spec:
           - -c
           - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
         env:
-        - name: KEYSTORE
-          value: {{ .Values.certStores.keystoreLocation }}
-        - name: KEYSTORE_PASSWD
-          value: {{ .Values.certStores.keyStorePassword }}
-        - name: TRUSTSTORE
-          value: {{ .Values.certStores.truststoreLocation }}
-        - name: TRUSTSTORE_PASSWD
-          value: {{ .Values.certStores.trustStorePassword }}
         - name: POLICY_LOGS
           value: {{ .Values.log.path }}
         volumeMounts:
@@ -78,7 +58,6 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-{{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
         # side car containers
         {{ if .Values.global.centralizedLoggingEnabled }}{{ include "common.log.sidecar" . | nindent 8 }}{{ end }}
@@ -86,18 +65,8 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- if not (include "common.onServiceMesh" .)  }}
-          command: ["sh","-c"]
-          args: ["source {{ .Values.certInitializer.credsPath }}/.ci;/opt/app/policy/gui/bin/policy-gui.sh"]
-          env:
-{{ else }}
           command: ["/opt/app/policy/gui/bin/policy-gui.sh"]
           env:
-          - name: KEYSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
-          - name: TRUSTSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 12 }}
-{{ end }}
           - name: CLAMP_URL
             value: http://policy-clamp-runtime-acm:6969
           ports:
@@ -116,7 +85,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
-          volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - name: logs
             mountPath: {{ .Values.log.path }}
           - mountPath: /opt/app/policy/gui/etc/application.yml
@@ -135,7 +104,7 @@ spec:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: {{ include "common.fullname" . }}-config
           configMap:
             name: {{ include "common.fullname" . }}
