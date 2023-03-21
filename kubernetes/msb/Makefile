@@ -35,8 +35,8 @@ $(HELM_CHARTS):
 	@echo "\n[$@]"
 	@make package-$@
 
-make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+#make-%:
+#	@if [ -f $*/Makefile ]; then make -C $*; fi
 
 dep-%: make-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
