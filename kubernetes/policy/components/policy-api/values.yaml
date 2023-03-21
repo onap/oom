@@ -1,6 +1,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2019-2021 AT&T Intellectual Property. All rights reserved.
 #   Modifications Copyright (C) 2022 Bell Canada. All rights reserved.
+#   Modification (C) 2023 Deutsche Telekom. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -23,7 +24,6 @@
 global:
   nodePortPrefix: 304
   persistence: {}
-  aafEnabled: true
 
 #################################################################
 # Secrets metaconfig
@@ -41,39 +41,6 @@ secrets:
     login: '{{ .Values.restServer.user }}'
     password: '{{ .Values.restServer.password }}'
     passwordPolicy: required
-  - uid: keystore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.keyStorePassword }}'
-    passwordPolicy: required
-  - uid: truststore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.trustStorePassword }}'
-    passwordPolicy: required
-
-certStores:
-  keyStorePassword: Pol1cy_0nap
-  trustStorePassword: Pol1cy_0nap
-
-certInitializer:
-  nameOverride: policy-api-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: policy
-  fqi: policy@policy.onap.org
-  public_fqdn: policy.onap.org
-  cadi_latitude: "0.0"
-  cadi_longitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  app_ns: org.osaaf.aaf
-  uid: 100
-  gid: 101
-  aaf_add_config: >
-    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
-    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
-    chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
-
 
 #################################################################
 # Application configuration defaults.
@@ -123,10 +90,11 @@ readiness:
 service:
   type: ClusterIP
   name: policy-api
-  portName: http
-  externalPort: 6969
   internalPort: 6969
-  nodePort: 40
+  ports:
+    - name: http
+      port: 6969
+
 
 ingress:
   enabled: false
@@ -164,7 +132,7 @@ metrics:
     enabled: true
     port: policy-api
     interval: 60s
-    isHttps: true
+    isHttps: false
     basicAuth:
       enabled: true
       externalSecretNameSuffix: policy-api-user-creds
