@@ -2,6 +2,7 @@
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
 # Modifications Copyright © 2020,2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +19,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector:
     matchLabels:
@@ -43,47 +37,33 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
+      name: {{ include "common.name" . }}
     spec:
-      initContainers:  {{ include "common.certInitializer.initContainer" . | nindent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - -c
-          - |
-            echo "*** retrieve Truststore and Keystore password"
-            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-            echo "*** actual launch of AAI Babel"
-            /bin/bash /opt/app/babel/bin/start.sh
-          {{- end }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          ports: {{ include "common.containerPorts" . | nindent 10  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ .Values.liveness.port }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ .Values.readiness.port }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-            {{- if not (include "common.needTLS" .) }}
             - name: KEY_STORE_PASSWORD
               value: NotUsed
-            {{- end }}
             - name: CONFIG_HOME
               value: /opt/app/babel/config
-          volumeMounts:  {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -101,7 +81,7 @@ spec:
             subPath: babel-auth.properties
           - mountPath: /opt/app/babel/config/auth
             name: secrets
-          - mountPath: {{ .Values.log.path }}
+          - mountPath: '{{ .Values.log.path }}'
             name: logs
           - mountPath: /opt/app/babel/config/logback.xml
             name: config
@@ -115,17 +95,16 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-
         # side car containers
       {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
         - name: config
           configMap:
-            name: {{ include "common.fullname" . }}-configmap
+            name: {{ include "common.fullname" . }}
         - name: secrets
           secret:
             secretName: {{ include "common.fullname" . }}-babel-secrets

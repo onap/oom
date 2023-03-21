@@ -2,6 +2,7 @@
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
 # Modifications Copyright © 2020-2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,15 +19,11 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -35,9 +32,6 @@ spec:
       maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
     {{- end }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
     metadata:
       labels:
@@ -45,56 +39,6 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      {{- if .Values.nodeSelector }}
-      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
-      {{- end -}}
-      {{- if .Values.affinity }}
-      affinity: {{ toYaml .Values.affinity | nindent 8 }}
-      {{- end }}
-      {{- if .Values.global.aafEnabled }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
-          echo "*** obfuscate them "
-          export KEYSTORE_PLAIN_PASSWORD=${KEYSTORE_PLAIN_PASSWORD}
-          export TRUSTSTORE_PLAIN_PASSWORD=${TRUSTSTORE_PLAIN_PASSWORD}
-          export JETTY_UTIL_JAR=$(find /usr/local/jetty/lib/ -regextype sed -regex ".*jetty-util-[0-9].*.jar")
-          export KEYSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${KEYSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          export TRUSTSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${TRUSTSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-          echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-        image: {{ include "repositoryGenerator.image.jetty" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-obfuscate
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        securityContext:
-          runAsUser: {{ .Values.securityContext.user_id }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** Set obfuscated Truststore and Keystore password into configuration file"
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
-          cd /config-input
-          for PFILE in `ls -1`
-          do
-            envsubst <${PFILE} >/config/${PFILE}
-          done
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - mountPath: /config-input
-          name: prop-config-input
-        - mountPath: /config
-          name: prop-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -107,39 +51,42 @@ spec:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
         - mountPath: /opt/app/model-loader/config/model-loader.properties
           subPath: model-loader.properties
           name: prop-config
-        - mountPath: /opt/app/model-loader/config/auth/
-          name: auth-config
-        - mountPath: {{ .Values.log.path }}
+#        - mountPath: /opt/app/model-loader/config/auth/
+#          name: auth-config
+        - mountPath: '{{ .Values.log.path }}'
           name: logs
         - mountPath: /opt/app/model-loader/logback.xml
           name: log-config
           subPath: logback.xml
         resources: {{ include "common.resources" . | nindent 10 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+      {{ toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity: {
+      { toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
       # side car containers
         {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
       - name: prop-config
-      {{- if .Values.global.aafEnabled }}
-        emptyDir:
-          medium: Memory
-      - name: prop-config-input
-      {{- end }}
         configMap:
           name: {{ include "common.fullname" . }}-prop
-      - name: auth-config
-        secret:
-          secretName: {{ include "common.fullname" . }}
+#      - name: auth-config
+#        secret:
+#          secretName: {{ include "common.fullname" . }}
       - name: logs
         emptyDir: {}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}

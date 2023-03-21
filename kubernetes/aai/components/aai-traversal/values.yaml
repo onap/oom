@@ -1,6 +1,7 @@
 # Copyright (c) 2018 Amdocs, Bell Canada, AT&T
 # Modifications Copyright (c) 2020 Nokia
 # Modifications Copyright (c) 2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +19,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global: # global defaults
-  nodePortPrefix: 302
-  aafEnabled: true
-
   cassandra:
     #Service Name of the cassandra cluster to connect to.
     #Override it to aai-cassandra if localCluster is enabled.
@@ -59,7 +57,7 @@ global: # global defaults
 
     # Active spring profiles for the resources microservice
     profiles:
-      active: production,dmaap #,aaf-auth ,keycloak
+      active: production,dmaap
 
     # Notification event specific properties
     notification:
@@ -70,7 +68,7 @@ global: # global defaults
     schema:
       # Specifies if the connection should be one way ssl, two way ssl or no auth
       service:
-        client: one-way-ssl
+        client: no-auth
       # Specifies which translator to use if it has schema-service, then it will make a rest request to schema service
       translator:
         list: schema-service
@@ -105,39 +103,6 @@ global: # global defaults
     # Specifies which clients should always default to realtime graph connection
     realtime:
       clients: SDNC,MSO,SO,robot-ete
-
-#################################################################
-# Certificate configuration
-#################################################################
-certInitializer:
-  nameOverride: aai-traversal-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  # aafDeployCredsExternalSecret: some secret
-  fqdn: aai-traversal
-  fqi: aai-traversal@aai-traversal.onap.org
-  public_fqdn: aai-traversal.onap.org
-  cadi_longitude: "0.0"
-  cadi_latitude: "0.0"
-  app_ns: org.osaaf.aaf
-  credsPath: /opt/app/osaaf/local
-  fqi_namespace: org.onap.aai-traversal
-  aaf_add_config: |
-    echo "*** changing them into shell safe ones"
-    export KEYSTORE_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
-    export TRUSTSTORE_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w64 | head -n1)
-    cd {{ .Values.credsPath }}
-    keytool -storepasswd -new "${KEYSTORE_PASSWORD}" \
-      -storepass "${cadi_keystore_password_p12}" \
-      -keystore {{ .Values.fqi_namespace }}.p12
-    keytool -storepasswd -new "${TRUSTSTORE_PASSWORD}" \
-      -storepass "${cadi_truststore_password}" \
-      -keystore {{ .Values.fqi_namespace }}.trust.jks
-    echo "*** save the generated passwords"
-    echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" > mycreds.prop
-    echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> mycreds.prop
-    echo "*** change ownership of certificates to targeted user"
-    chown -R 1000 {{ .Values.credsPath }}
 
 # application image
 image: onap/aai-traversal:1.11.2
@@ -175,7 +140,6 @@ aai_enpoints:
 
 # application configuration
 config:
-
   # configure keycloak according to your environment.
   # don't forget to add keycloak in active profiles above (global.config.profiles)
   keycloak:
@@ -231,16 +195,13 @@ persistence:
 # default number of instances
 replicaCount: 1
 
-minReadySeconds: 10
-updateStrategy:
-  type: RollingUpdate
-  maxUnavailable: 0
-  maxSurge: 1
-
 nodeSelector: {}
 
 affinity: {}
 
+conatinerPort1: &container_port1 8446
+conatinerPort2: &container_port2 5005
+conatinerPort3: &container_port3 8448
 # probe configuration parameters
 liveness:
   initialDelaySeconds: 60
@@ -248,24 +209,32 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: false
+  port: *container_port1
 
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
+  port: *container_port1
 
 service:
   type: ClusterIP
-  portName: http
-  internalPort: 8446
-  portName2: tcp-5005
-  internalPort2: 5005
-  portName3: aai-traversal-8448
-  internalPort3: 8448
-  terminationGracePeriodSeconds: 120
-  sessionAffinity: None
+  name: aai-traversal
+  ports:
+    - name: http
+      port: *container_port1
+    - name: tcp-5005
+      port: *container_port2
+    - name: aai-trav-8448
+      port: *container_port3
 
 ingress:
   enabled: false
+  service:
+    - baseaddr: "aai-traversal-api"
+      name: "aai-traversal"
+      port: *container_port1
+  config:
+    ssl: "redirect"
 
 # To make logback capping values configurable
 logback:
