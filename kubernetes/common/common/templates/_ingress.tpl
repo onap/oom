@@ -149,6 +149,30 @@ true
 */}}
 {{- define "istio.config.route" -}}
 {{-   $dot := default . .dot -}}
+{{- if .protocol }}
+{{-   if eq .protocol "tcp" }}
+  tcp:
+  - match:
+    - port: {{ .exposedPort }}
+    route:
+    - destination:
+        port:
+        {{- if .plain_port }}
+        {{- if kindIs "string" .plain_port }}
+          name: {{ .plain_port }}
+        {{- else }}
+          number: {{ .plain_port }}
+        {{- end }}
+        {{- else }}
+        {{- if kindIs "string" .port }}
+          name: {{ .port }}
+        {{- else }}
+          number: {{ .port }}
+        {{- end }}
+        {{- end }}
+        host: {{ .name }}
+{{-   end -}}
+{{- else }}
   http:
   - route:
     - destination:
@@ -167,6 +191,7 @@ true
         {{- end }}
         {{- end }}
         host: {{ .name }}
+{{- end -}}
 {{- end -}}
 
 {{/*
