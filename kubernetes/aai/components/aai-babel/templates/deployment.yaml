@@ -2,6 +2,7 @@
 # Copyright © 2018 Amdocs, AT&T
 # Modifications Copyright © 2018 Bell Canada
 # Modifications Copyright © 2020,2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,22 +45,11 @@ spec:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
     spec:
-      initContainers:  {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - -c
-          - |
-            echo "*** retrieve Truststore and Keystore password"
-            export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-            echo "*** actual launch of AAI Babel"
-            /bin/bash /opt/app/babel/bin/start.sh
-          {{- end }}
           ports:
           - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
@@ -77,13 +67,11 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
-            {{- if not (include "common.needTLS" .) }}
             - name: KEY_STORE_PASSWORD
               value: NotUsed
-            {{- end }}
             - name: CONFIG_HOME
               value: /opt/app/babel/config
-          volumeMounts:  {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
+          volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -119,7 +107,7 @@ spec:
         # side car containers
       {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 8 }}
+      volumes:
         - name: localtime
           hostPath:
             path: /etc/localtime
