@@ -2,6 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
 # Modifications Copyright © 2020 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,51 +48,16 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      {{- if .Values.global.aafEnabled }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop | xargs -0)
-          echo "*** obfuscate them "
-          export KEYSTORE_PLAIN_PASSWORD=${KEYSTORE_PLAIN_PASSWORD}
-          export TRUSTSTORE_PLAIN_PASSWORD=${TRUSTSTORE_PLAIN_PASSWORD}
-          export JETTY_UTIL_JAR=$(find /usr/local/jetty/lib/ -regextype sed -regex ".*jetty-util-[0-9].*.jar")
-          export KEYSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${KEYSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          export TRUSTSTORE_PASSWORD=`java -cp ${JETTY_UTIL_JAR} org.eclipse.jetty.util.security.Password ${TRUSTSTORE_PLAIN_PASSWORD} 2>&1 | grep "OBF:"`
-          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-          echo "TRUSTSTORE_PASSWORD=${TRUSTSTORE_PASSWORD}" >> {{ .Values.certInitializer.appMountPath }}/local/mycreds.prop
-        image: {{ include "repositoryGenerator.image.jetty" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-obfuscate
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        securityContext:
-          runAsUser: {{ .Values.securityContext.user_id }}
-      {{- end }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{- if .Values.global.aafEnabled }}
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          echo "*** actual launch of AAI Schema Service"
-          /bin/bash /opt/app/aai-schema-service/docker-entrypoint.sh
-        {{- end }}
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.securityContext.user_id | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.securityContext.group_id | quote }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -142,7 +108,7 @@ spec:
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: aai-common-aai-auth-mount
         secret:
           secretName: aai-common-aai-auth

@@ -1,6 +1,7 @@
 {{/*
 # Copyright (c) 2018 Amdocs, Bell Canada, AT&T
 # Modifications Copyright (c) 2020 Nokia, Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +48,7 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - command:
         - /app/ready.py
         args:
@@ -90,7 +91,6 @@ spec:
           subPath: haproxy.cfg
         {{ end }}
           name: haproxy-cfg
-        {{- include "common.certInitializer.volumeMount" . | nindent 8 }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         - containerPort: {{ .Values.service.internalPlainPort }}
@@ -100,16 +100,15 @@ spec:
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
-            port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+            port: {{ .Values.service.internalPlainPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
         readinessProbe:
           httpGet:
             path: /aai/util/echo
-            port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
-            #scheme: HTTPS
-            scheme: {{ (eq "true" (include "common.needTLS" .)) | ternary "HTTPS" "HTTP" }}
+            port: {{ .Values.service.internalPlainPort }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: OOM_ReadinessCheck
@@ -143,6 +142,5 @@ spec:
         - name: haproxy-cfg
           configMap:
             name: aai-deployment-configmap
-        {{ include "common.certInitializer.volumes" . | nindent 8 }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
