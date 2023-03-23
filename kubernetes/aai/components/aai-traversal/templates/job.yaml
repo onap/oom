@@ -2,6 +2,7 @@
 # Copyright (c) 2017-2018 AT&T
 # Modifications Copyright (c) 2018 Amdocs, Bell Canada
 # Modifications Copyright (c) 2020 Nokia, Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,10 +49,6 @@ spec:
         args:
         - --container-name
         - aai
-        {{ if eq .Values.global.aafEnabled true }}
-        - --container-name
-        - aaf-locate
-        {{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -71,14 +68,10 @@ spec:
         - |
            set -x
            if [ ! -d /opt/aai/logroot/AAI-GQ/misc ]; then mkdir -p /opt/aai/logroot/AAI-GQ/misc; fi
-          {{- if (include "common.needTLS" .) }}
-           until nc -w10 -z -v aai.{{.Release.Namespace}} 8443; do echo "Retrying to reach aai on port 8443"; done;
-           bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh
-          {{- else }}
            until nc -w10 -z -v aai.{{.Release.Namespace}} 80; do echo "Retrying to reach aai on port 80"; done;
            bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh ;
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
-          {{- end }}
+
         env:
         - name: LOCAL_USER_ID
           value: {{ .Values.global.config.userId | quote }}
