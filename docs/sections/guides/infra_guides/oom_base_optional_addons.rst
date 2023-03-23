@@ -127,12 +127,20 @@ Install Istio Gateway
 
     > kubectl label namespace istio-ingress istio-injection=enabled
 
-- Install the Istio Gateway chart,replacing the
+- To expose additional ports besides HTTP/S (e.g. for external Kafka access)
+  create an override file (e.g. istio-ingress.yaml)
+
+    .. collapse:: istio-ingress.yaml
+
+      .. include:: ../../resources/yaml/istio-ingress.yaml
+         :code: yaml
+
+- Install the Istio Gateway chart using the override file, replacing the
   <recommended-istio-version> with the version defined in
   the :ref:`versions_table` table::
 
     > helm upgrade -i istio-ingress istio/gateway -n istio-ingress
-    --version <recommended-istio-version> --wait
+    --version <recommended-istio-version> -f ingress-istio.yaml --wait
 
 Kiali Installation
 ==================
