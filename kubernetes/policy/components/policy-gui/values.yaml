@@ -22,52 +22,6 @@
 global: # global defaults
   nodePortPrefix: 304
   centralizedLoggingEnabled: true
-  #AAF service
-  aafEnabled: true
-
-#################################################################
-# Secrets metaconfig
-#################################################################
-secrets:
-  - uid: keystore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.keyStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.keyStorePassword }}'
-    passwordPolicy: required
-  - uid: truststore-password
-    type: password
-    externalSecret: '{{ tpl (default "" .Values.certStores.trustStorePasswordExternalSecret) . }}'
-    password: '{{ .Values.certStores.trustStorePassword }}'
-    passwordPolicy: required
-
-certStores:
-  keyStorePassword: Pol1cy_0nap
-  keystoreLocation: /opt/app/policy/gui/etc/ssl/policy-keystore
-  truststoreLocation: /opt/app/policy/gui/etc/ssl/policy-truststore
-  trustStorePassword: Pol1cy_0nap
-
-#################################################################
-# AAF part
-#################################################################
-certInitializer:
-  nameOverride: policy-gui-cert-initializer
-  aafDeployFqi: deployer@people.osaaf.org
-  aafDeployPass: demo123456!
-  fqdn: policy
-  fqi: policy@policy.onap.org
-  public_fqdn: policy.onap.org
-  cadi_latitude: "0.0"
-  cadi_longitude: "0.0"
-  credsPath: /opt/app/osaaf/local
-  app_ns: org.osaaf.aaf
-  uid: 100
-  gid: 101
-  aaf_add_config: >
-    echo "export KEYSTORE='{{ .Values.credsPath }}/org.onap.policy.p12'" > {{ .Values.credsPath }}/.ci;
-    echo "export TRUSTSTORE='{{ .Values.credsPath }}/org.onap.policy.trust.jks'" >> {{ .Values.credsPath }}/.ci;
-    echo "export KEYSTORE_PASSWD='${cadi_keystore_password_p12}'" >> {{ .Values.credsPath }}/.ci;
-    echo "export TRUSTSTORE_PASSWD='${cadi_truststore_password}'" >> {{ .Values.credsPath }}/.ci;
-    chown -R {{ .Values.uid }}:{{ .Values.gid }} $(dirname {{ .Values.credsPath }});
 
 subChartsOnly:
   enabled: true
@@ -118,9 +72,11 @@ readiness:
 service:
   type: NodePort
   name: policy-gui
-  portName: http
   internalPort: 2443
-  nodePort: 43
+  ports:
+    - name: http
+      port: 2443
+      nodePort: 43
 
   # see https://wiki.onap.org/display/DW/OOM+NodePort+List
 

@@ -77,24 +77,12 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-{{- if .Values.global.aafEnabled }}
-          command: ["sh","-c"]
-          args: ["source {{ .Values.certInitializer.credsPath }}/.ci;\
-                  /opt/app/policy/pap/bin/policy-pap.sh /opt/app/policy/pap/etc/mounted/papParameters.yaml"]
-{{- else }}
           command: ["/opt/app/policy/pap/bin/policy-pap.sh"]
           args: ["/opt/app/policy/pap/etc/mounted/papParameters.yaml"]
-          env:
-          - name: KEYSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keystore-password" "key" "password") | indent 12 }}
-          - name: TRUSTSTORE_PASSWD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "truststore-password" "key" "password") | indent 12 }}
-{{- end }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -112,14 +100,13 @@ spec:
               httpHeaders:
                 - name: Authorization
                   value: Basic {{ printf "%s:%s" .Values.restServer.user .Values.restServer.password | b64enc }}
-              scheme: {{ (eq "true" (include "common.needTLS" .)) | ternary "HTTPS" "HTTP" }}
+              scheme: "HTTP"
             successThreshold: {{ .Values.readiness.successThreshold }}
             failureThreshold: {{ .Values.readiness.failureThreshold }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeout }}
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -136,7 +123,6 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-{{ include "common.certInitializer.volumes" . | indent 8 }}
         - name: localtime
           hostPath:
              path: /etc/localtime
