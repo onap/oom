@@ -24,7 +24,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-readiness
         command:
         - /app/ready.py
@@ -57,7 +57,7 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-sdc-onboarding-be-cassandra-init
+        - {{ include "common.release" . }}-sdc-onboarding-be
         env:
         - name: NAMESPACE
           valueFrom:
@@ -71,54 +71,11 @@ spec:
           requests:
             cpu: 3m
             memory: 20Mi
-      {{- if .Values.global.aafEnabled }}
-      - name: {{ include "common.name" . }}-update-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - sh
-        args:
-        - "-c"
-        - |
-          export $(grep '^c' {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
-          export KEYSTORE_PASS=$cadi_keystore_password_p12
-          export KEYMANAGER_PASS=$cadi_keystore_password_p12
-          export TRUSTSTORE_PASS=$cadi_truststore_password
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.keystoreFile }} /config-output
-          cp {{ .Values.certInitializer.credsPath }}/{{ .Values.certInitializer.truststoreFile }} /config-output
-          cd /config-input && \
-          for PFILE in `find . -not -type d | grep -v -F ..`
-          do
-            envsubst <${PFILE} >/config-output/${PFILE}
-            chmod 0755 /config-output/${PFILE}
-          done
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 3m
-            memory: 20Mi
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
-        - name: sdc-environments-input
-          mountPath: /config-input/
-        - name: sdc-environments
-          mountPath: /config-output/
-      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.global.aafEnabled }}
-          command:
-          - sh
-          args:
-          - "-c"
-          - |
-            sed -i '/trustStorePassword/d' ${JETTY_BASE}/startup.sh
-            ${JETTY_BASE}/startup.sh
-          {{- end }}
-          ports: {{ include "common.containerPorts" . | nindent 10  }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             httpGet:
@@ -173,14 +130,6 @@ spec:
           volumeMounts:
           - name: sdc-environments
             mountPath: /app/jetty/chef-solo/environments/
-          {{- if .Values.global.aafEnabled }}
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.p12
-            subPath: org.onap.sdc.p12
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/cookbooks/sdc-catalog-be/files/default/org.onap.sdc.trust.jks
-            subPath: org.onap.sdc.trust.jks
-          {{- end }}
           - name: localtime
             mountPath: /etc/localtime
             readOnly: true
@@ -196,7 +145,7 @@ spec:
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -205,10 +154,6 @@ spec:
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
       - name: sdc-environments
-      {{- if .Values.global.aafEnabled }}
-        emptyDir: { medium: "Memory" }
-      - name: sdc-environments-input
-      {{- end }}
         configMap:
           name: {{ include "common.release" . }}-sdc-environments-configmap
           defaultMode: 0755
