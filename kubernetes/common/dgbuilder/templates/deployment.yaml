@@ -16,24 +16,12 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
       - command:
@@ -70,7 +58,6 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
       - command:
         - /app/ready.py
         args:
@@ -90,9 +77,8 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/bash"]
-          args: ["-c", "cd /opt/onap/ccsdk/dgbuilder/ && {{ if .Values.global.aafEnabled}} cp /opt/app/osaaf/local/node-*.pem certs && {{end}}./start.sh sdnc1.0 && wait"]
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          args: ["-c", "cd /opt/onap/ccsdk/dgbuilder/ && ./start.sh sdnc1.0 && wait"]
+          ports: {{- include "common.containerPorts" . | indent 10 }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -102,7 +88,6 @@ spec:
           - name: SDNC_CONFIG_DIR
             value: /opt/onap/sdnc/data/properties
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -129,7 +114,6 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-{{ include "common.certInitializer.volumes" . | nindent 8 }}
         - name: localtime
           hostPath:
             path: /etc/localtime
