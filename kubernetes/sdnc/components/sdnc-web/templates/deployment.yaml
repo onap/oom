@@ -23,7 +23,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers: {{ include "common.certInitializer.initContainer" . | indent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -49,34 +49,26 @@ spec:
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: WEBPROTOCOL
-            value: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.webProtocol .Values.config.webPlainProtocol }}
+            value: {{ .Values.config.webProtocol }}
           - name: WEBPORT
-            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.webPort .Values.config.webPlainPort | quote }}
+            value : {{ .Values.config.webPort | quote }}
           - name: SDNRPROTOCOL
-            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrProtocol .Values.config.sdnrPlainProtocol }}
+            value : {{ .Values.config.sdnrProtocol }}
           - name: SDNRHOST
-            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrHost .Values.config.sdnrPlainHost }}.{{ include "common.namespace" . }}
+            value : {{ .Values.config.sdnrHost }}.{{ include "common.namespace" . }}
           - name: SDNRPORT
-            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrPort .Values.config.sdnrPlainPort | quote }}
-          {{ if (include "common.needTLS" .) }}
-          - name: SSL_CERT_DIR
-            value: {{ .Values.config.sslCertDir }}
-          - name: SSL_CERTIFICATE
-            value: {{ .Values.config.sslCertiticate }}
-          - name: SSL_CERTIFICATE_KEY
-            value: {{ .Values.config.sslCertKey }}
-          {{ end }}
+            value : {{ .Values.config.sdnrPort | quote }}
           {{ if .Values.config.transportpce.enabled }}
           - name: TRPCEURL
             value: {{ .Values.config.transportpce.transportpceUrl }}
