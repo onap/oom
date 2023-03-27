@@ -22,7 +22,6 @@ global:
   nodePortPrefixExt: 304
   persistence:
     mountPath: /dockerdata-nfs
-  aafEnabled: true
   centralizedLoggingEnabled: true
   mariadbGalera:
     #This flag allows SO to instantiate its own mariadb-galera cluster
@@ -372,23 +371,6 @@ config:
       eventLogMsgDetail: SHORT
 
 # dependency / sub-chart configuration
-certInitializer:
-  nameOverride: sdnc-cert-initializer
-  truststoreMountpath: /opt/onap/sdnc/data/stores
-  fqdn: "sdnc"
-  app_ns: "org.osaaf.aaf"
-  fqi: "sdnc@sdnc.onap.org"
-  fqi_namespace: org.onap.sdnc
-  public_fqdn: "sdnc.onap.org"
-  aafDeployFqi: "deployer@people.osaaf.org"
-  aafDeployPass: demo123456!
-  cadi_latitude: "38.0"
-  cadi_longitude: "-72.0"
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: >
-    echo "$cadi_keystore_password" > {{ .Values.credsPath }}/.pass 2>&1
-
-# dependency / sub-chart configuration
 network-name-gen:
   enabled: true
 mariadb-galera: &mariadbGalera
@@ -460,8 +442,6 @@ sdnc-ansible-server:
 dgbuilder:
   enabled: true
   nameOverride: sdnc-dgbuilder
-  certInitializer:
-    nameOverride: sdnc-dgbuilder-cert-initializer
   config:
     db:
       dbName: *sdncDbName
@@ -490,8 +470,7 @@ dgbuilder:
         port: 3000
       - baseaddr: "sdnc-web-service-api"
         name: "sdnc-web-service"
-        port: 8443
-        plain_port: 8080
+        port: 8080
     config:
       ssl: "redirect"
 
@@ -502,10 +481,6 @@ localElasticCluster: true
 elasticsearch:
   nameOverride: &elasticSearchName sdnrdb
   name: sdnrdb-cluster
-  certInitializer:
-    fqdn: "sdnc"
-    fqi_namespace: org.onap.sdnc
-    fqi: "sdnc@sdnc.onap.org"
   service:
     name: *elasticSearchName
   master:
@@ -547,7 +522,6 @@ service:
   internalPort: 8181
   internalPort2: 8101
   internalPort3: 8080
-  internalPort4: 8443
 
   #port
   externalPort: 8282
@@ -556,7 +530,6 @@ service:
 
   externalPort3: 8280
 
-  externalPort4: 8443
   nodePort4: 67
 
   clusterPort: 2550
@@ -598,29 +571,12 @@ persistence:
   journalPath: /opt/opendaylight/segmented-journal
   snapshotsPath: /opt/opendaylight/snapshots
 
-certpersistence:
-  enabled: true
-
-  ## A manually managed Persistent Volume and Claim
-  ## Requires persistence.enabled: true
-  ## If defined, PVC must be created manually before volume will be bound
-  # existingClaim:
-
-  volumeReclaimPolicy: Retain
-  accessMode: ReadWriteOnce
-  size: 50Mi
-  mountPath: /dockerdata-nfs
-  mountSubPath: sdnc/certs
-  certPath: /opt/app/osaaf
-  ##storageClass: "manual"
-
 ingress:
   enabled: false
   service:
     - baseaddr: "sdnc-api"
       name: "sdnc"
-      port: 8443
-      plain_port: 8282
+      port: 8282
   config:
     ssl: "redirect"
 
