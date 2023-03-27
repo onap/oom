@@ -130,40 +130,20 @@ readiness:
 service:
   type: NodePort
   name: dgbuilder
-  portName: http
-  externalPort: 3000
   internalPort: 3100
-  nodePort: 28
+  ports:
+    - name: http
+      port: 3100
+      nodePort: 28
 
 ingress:
   enabled: false
   service:
     - baseaddr: "dgbuilder"
       name: "dgbuilder"
-      port: 3000
+      port: 3100
   config:
     ssl: "redirect"
-
- # dependency / sub-chart configuration
-certInitializer:
-  nameOverride: dgbuilder-cert-initializer
-  truststoreMountpath: /opt/onap/ccsdk/dgbuilder/certs
-  fqdn: "sdnc"
-  app_ns: "org.osaaf.aaf"
-  fqi: "sdnc@sdnc.onap.org"
-  fqi_namespace: org.onap.sdnc
-  public_fqdn: "dgbuilder.onap.org"
-  aafDeployFqi: "deployer@people.osaaf.org"
-  aafDeployPass: demo123456!
-  cadi_latitude: "38.0"
-  cadi_longitude: "-72.0"
-  credsPath: /opt/app/osaaf/local
-  aaf_add_config: >
-    cd /opt/app/osaaf/local;
-    /opt/app/aaf_config/bin/agent.sh local showpass {{.Values.fqi}} {{ .Values.fqdn }} | grep cadi_keystore_password= | cut -d= -f 2 > {{ .Values.credsPath }}/.pass 2>&1 ;
-    cp {{ .Values.fqi_namespace }}.crt node-cert.pem;
-    cp {{ .Values.fqi_namespace }}.key node-key.pem;
-    chmod go+r node-*.pem
 
 #Resource Limit flavor -By Default using small
 flavor: small
