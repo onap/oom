@@ -102,18 +102,20 @@ true
 */}}
 {{- define "istio.config.port" -}}
 {{-   $dot := default . .dot -}}
-{{-   if .exposedPort }}
-      number: {{ .exposedPort }}
-{{-     if .exposedProtocol }}
-      name: {{ .baseaddr }}
-      protocol: {{ .exposedProtocol }}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   $protocol := (required "'protocol' param, set to the name of the port, is required." .protocol) -}}
+{{-   if $dot.exposedPort }}
+      number: {{ $dot.exposedPort }}
+{{-     if $dot.exposedProtocol }}
+      name: {{ $protocol }}-{{ $dot.exposedPort }}
+      protocol: {{ $dot.exposedProtocol }}
 {{-     else }}
-      name: http
+      name: {{ $protocol }}
       protocol: HTTP
 {{-     end -}}
 {{-   else }}
       number: 80
-      name: http
+      name: {{ $protocol }}
       protocol: HTTP
 {{-   end -}}
 {{- end -}}
@@ -148,25 +150,47 @@ true
   Istio Helper function to add the route to the service
 */}}
 {{- define "istio.config.route" -}}
-{{-   $dot := default . .dot -}}
-  http:
+{{- $dot := default . .dot -}}
+{{- $protocol := (required "'protocol' param, is required." .protocol) -}}
+{{- if eq $protocol "tcp" }}
+  - match:
+    - port: {{ $dot.exposedPort }}
+    route:
+    - destination:
+        port:
+        {{- if $dot.plain_port }}
+        {{- if kindIs "string" $dot.plain_port }}
+          name: {{ $dot.plain_port }}
+        {{- else }}
+          number: {{ $dot.plain_port }}
+        {{- end }}
+        {{- else }}
+        {{- if kindIs "string" $dot.port }}
+          name: {{ $dot.port }}
+        {{- else }}
+          number: {{ $dot.port }}
+        {{- end }}
+        {{- end }}
+        host: {{ $dot.name }}
+{{- else if eq $protocol "http" }}
   - route:
     - destination:
         port:
-        {{- if .plain_port }}
-        {{- if kindIs "string" .plain_port }}
-          name: {{ .plain_port }}
+        {{- if $dot.plain_port }}
+        {{- if kindIs "string" $dot.plain_port }}
+          name: {{ $dot.plain_port }}
         {{- else }}
-          number: {{ .plain_port }}
+          number: {{ $dot.plain_port }}
         {{- end }}
         {{- else }}
-        {{- if kindIs "string" .port }}
-          name: {{ .port }}
+        {{- if kindIs "string" $dot.port }}
+          name: {{ $dot.port }}
         {{- else }}
-          number: {{ .port }}
+          number: {{ $dot.port }}
         {{- end }}
         {{- end }}
-        host: {{ .name }}
+        host: {{ $dot.name }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -240,12 +264,27 @@ true
 {{- end -}}
 
 {{/*
+  Create Port entry in the Gateway resource
+*/}}
+{{- define "istio.config.gatewayPort" -}}
+{{-   $dot := default . .dot -}}
+{{-   $service := (required "'service' param, set to the specific service, is required." .service) -}}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) -}}
+{{-   $protocol := (required "'protocol' param, set to the specific port, is required." .protocol) -}}
+  - port:
+      {{- include "istio.config.port" (dict "dot" $service "baseaddr" $baseaddr "protocol" $protocol) }}
+    hosts:
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
+    {{- include "istio.config.tls" (dict "dot" $dot "service" $service "baseaddr" $baseaddr) }}
+{{- end -}}
+
+{{/*
   Create Istio Ingress resources per defined service
 */}}
 {{- define "common.istioIngress" -}}
-{{-   $dot := default . .dot -}}
-{{    range $dot.Values.ingress.service }}
-{{-     $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) }}
+{{- $dot := default . .dot -}}
+{{  range $dot.Values.ingress.service }}
+{{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
@@ -255,11 +294,17 @@ spec:
   selector:
     istio: ingress # use Istio default gateway implementation
   servers:
-  - port:
-      {{- include "istio.config.port" . }}
-    hosts:
-    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
-    {{- include "istio.config.tls" (dict "dot" $dot "service" . "baseaddr" $baseaddr) }}
+{{-   if .tcpRoutes }}
+{{      range .tcpRoutes }}
+  {{ include "istio.config.gatewayPort" (dict "dot" $dot "service" . "baseaddr" $baseaddr "protocol" "tcp") | trim }}
+{{      end -}}
+{{-   else }}
+  {{-   if .protocol }}
+  {{ include "istio.config.gatewayPort" (dict "dot" $dot "service" . "baseaddr" $baseaddr "protocol" .protocol) | trim }}
+  {{-   else }}
+  {{ include "istio.config.gatewayPort" (dict "dot" $dot "service" . "baseaddr" $baseaddr "protocol" "http") | trim }}
+  {{    end }}
+{{    end }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -270,8 +315,21 @@ spec:
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
   gateways:
   - {{ $baseaddr }}-gateway
-  {{ include "istio.config.route" . | trim }}
-{{-   end -}}
+{{-   if .tcpRoutes }}
+  tcp:
+{{      range .tcpRoutes }}
+  {{ include "istio.config.route" (dict "dot" . "protocol" "tcp") | trim }}
+{{      end -}}
+{{-   else  }}
+  {{-   if .protocol }}
+  {{ .protocol }}:
+  {{ include "istio.config.route" (dict "dot" . "protocol" .protocol) | trim }}
+  {{-   else }}
+  http:
+  {{ include "istio.config.route" (dict "dot" . "protocol" "http") | trim }}
+  {{    end }}
+{{    end }}
+{{- end -}}
 {{- end -}}
 
 {{/*
