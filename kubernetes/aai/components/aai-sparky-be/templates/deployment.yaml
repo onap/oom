@@ -19,15 +19,9 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -36,9 +30,6 @@ spec:
       maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
     {{- end }}
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
   template:
     metadata:
       annotations:
@@ -107,9 +98,7 @@ spec:
         - mountPath:  /opt/app/sparky/config/logging/logback.xml
           name: config
           subPath: logback.xml
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
-        - containerPort: {{ .Values.service.internalPlainPort }}
+        ports: {{ include "common.containerPorts" . | nindent 10  }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
