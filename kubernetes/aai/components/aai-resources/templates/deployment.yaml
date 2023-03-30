@@ -3,6 +3,7 @@
 # Modifications Copyright (c) 2018 AT&T
 # Modifications Copyright (c) 2020 Nokia
 # Modifications Copyright (c) 2021 Orange
+# Modifications Copyright © 2023 Nordix Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,7 +80,7 @@ spec:
     spec:
       hostname: aai-resources
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
-      initContainers: {{ include "common.certInitializer.initContainer" . | nindent 6 }}
+      initContainers:
       - name: {{ include "common.name" . }}-readiness
         command:
         - /app/ready.py
@@ -119,8 +120,6 @@ spec:
         args:
         - -c
         - |
-          echo "*** retrieve Truststore and Keystore password"
-          export $(cat {{ .Values.certInitializer.credsPath }}/mycreds.prop | xargs -0)
           echo "*** actual launch of AAI Resources"
           /bin/bash /opt/app/aai-resources/docker-entrypoint.sh
         env:
@@ -128,17 +127,13 @@ spec:
           value: {{ .Values.global.config.userId | quote }}
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
-        - name: POST_JAVA_OPTS
-          value: '-Djavax.net.ssl.trustStore={{ .Values.certInitializer.credsPath }}/truststoreONAPall.jks -Djavax.net.ssl.trustStorePassword={{ .Values.certInitializer.truststorePassword }}'
-        - name: TRUSTORE_ALL_PASSWORD
-          value: {{ .Values.certInitializer.truststorePassword }}
         - name: INTERNAL_PORT_1
           value: {{ .Values.service.internalPort | quote }}
         - name: INTERNAL_PORT_2
           value: {{ .Values.service.internalPort2 | quote }}
         - name: INTERNAL_PORT_3
           value: {{ .Values.service.internalPort3 | quote }}
-        volumeMounts: {{ include "common.certInitializer.volumeMount" . | nindent 8 }}
+        volumeMounts:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
@@ -162,21 +157,6 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/etc/auth/realm.properties
           name: {{ include "common.fullname" . }}-config
           subPath: realm.properties
-        - mountPath: /opt/app/aai-resources/resources/aaf/bath_config.csv
-          name: {{ include "common.fullname" . }}-aaf-certs
-          subPath: bath_config.csv
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.onap.aai.props
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: org.onap.aai.props
-        - mountPath: /opt/app/aai-resources/resources/aaf/org.osaaf.location.props
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: org.osaaf.location.props
-        - mountPath: /opt/app/aai-resources/resources/aaf/permissions.properties
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: permissions.properties
-        - mountPath: /opt/app/aai-resources/resources/cadi.properties
-          name: {{ include "common.fullname" . }}-aaf-properties
-          subPath: cadi.properties
         - mountPath: /opt/app/aai-resources/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
@@ -206,7 +186,7 @@ spec:
           httpGet:
             path: /aai/util/echo?action=checkDB
             port: {{ .Values.service.internalPort }}
-            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: LivenessCheck
@@ -221,7 +201,7 @@ spec:
           httpGet:
             path: /aai/util/echo?action=checkDB
             port: {{ .Values.service.internalPort }}
-            scheme: HTTP{{ (eq "true" (include "common.needTLS" .)) | ternary "S" "" }}
+            scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
               value: ReadinessCheck
@@ -241,7 +221,7 @@ spec:
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
+      volumes:
       - name: localtime
         hostPath:
           path: /etc/localtime
@@ -251,12 +231,6 @@ spec:
       - name: {{ include "common.fullname" . }}-config
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: {{ include "common.fullname" . }}-aaf-properties
-        configMap:
-          name: {{ include "common.fullname" . }}-aaf-props
-      - name: {{ include "common.fullname" . }}-aaf-certs
-        secret:
-          secretName: {{ include "common.fullname" . }}-aaf-keys
       restartPolicy: {{ .Values.restartPolicy }}
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
