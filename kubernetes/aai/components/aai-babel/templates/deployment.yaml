@@ -19,18 +19,9 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
+  selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -40,18 +31,13 @@ spec:
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
     {{- end }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports:
-          - containerPort: {{ .Values.service.internalPort }}
+          ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
