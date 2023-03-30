@@ -127,7 +127,7 @@ Install Istio Gateway
 
     > kubectl label namespace istio-ingress istio-injection=enabled
 
-- To expose additional ports besides HTTP/S (e.g. for external Kafka access)
+- To expose additional ports besides HTTP/S (e.g. for external Kafka access, SDNC-callhome)
   create an override file (e.g. istio-ingress.yaml)
 
     .. collapse:: istio-ingress.yaml

@@ -20,13 +20,10 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ include "common.name" . }}
-  serviceName: {{ include "common.servicename" . }}-cluster
-  replicas: {{ .Values.replicaCount }}
   selector: {{- include "common.selectors" . | nindent 4 }}
+  serviceName: {{ include "common.servicename" . }}-cluster
   podManagementPolicy: Parallel
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
@@ -116,7 +113,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "oauth-token-secret" "key" "password") | indent 10 }}
         - name: KEYCLOAK_SECRET
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "keycloak-secret" "key" "password") | indent 10 }}
-
         - name: ENABLE_ODLUX_RBAC
           value: "{{ .Values.config.sdnr.oauth.odluxRbac.enabled | default "true" }}"
         {{ end }}
@@ -152,8 +148,7 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-readiness
-        {{ end -}}
-{{ include "common.certInitializer.initContainer" . | indent 6 }}
+        {{ end }}
       - name: {{ include "common.name" . }}-chown
         image: {{ include "repositoryGenerator.image.busybox" . }}
         command:
@@ -165,11 +160,7 @@ spec:
            mkdir {{ .Values.persistence.mdsalPath }}/snapshots
            mkdir {{ .Values.persistence.mdsalPath }}/daexim
            chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.persistence.mdsalPath }}
-{{- if .Values.global.aafEnabled }}
-           chown -R {{ .Values.config.odlUid }}:{{ .Values.config.odlGid}} {{ .Values.certInitializer.credsPath }}
-{{- end }}
         volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
           - mountPath: {{ .Values.persistence.mdsalPath }}
             name: {{ include "common.fullname" . }}-data
       containers:
@@ -268,7 +259,7 @@ spec:
           - name: GEO_ENABLED
             value: "{{ .Values.config.geoEnabled}}"
           - name: SDNC_AAF_ENABLED
-            value: "{{ .Values.global.aafEnabled}}"
+            value: "false"
           - name: SDNC_REPLICAS
             value: "{{ .Values.replicaCount }}"
           - name: MYSQL_HOST
@@ -298,8 +289,7 @@ spec:
           - name: SDNRONLY
             value: "{{ .Values.config.sdnr.sdnronly | default "false" }}"
           - name: SDNRDBURL
-            {{- $prefix := ternary "https" "http" .Values.global.aafEnabled}}
-            value: "{{$prefix}}://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+            value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
           {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
           - name: SDNRDBTRUSTALLCERTS
             value: "true"
@@ -334,7 +324,6 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-collector-secret" "key" "password") | indent 12 }}
 
           volumeMounts:
-{{ include "common.certInitializer.volumeMount" . | indent 10 }}
 {{- if .Values.global.cmpv2Enabled }}
 {{ include "common.certManager.volumeMounts" . | indent 10 }}
 {{- end }}
@@ -441,7 +430,6 @@ spec:
         - name: {{ include "common.fullname" . }}-data
           emptyDir: {}
   {{ else }}
-{{ include "common.certInitializer.volumes" . | nindent 8 }}
 {{- if .Values.global.cmpv2Enabled }}
 {{ include "common.certManager.volumes" . | nindent 8 }}
 {{- end }}
