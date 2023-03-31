@@ -33,8 +33,10 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{- if not .Values.global.postgres.localCluster }}
-      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+      {{- if .Values.global.postgres.localCluster }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local ) | indent 6 | trim }}
+      {{ else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global ) | indent 6 | trim }}
       {{- end }}
       - name: {{ include "common.name" . }}-env-config
         image: {{ include "repositoryGenerator.image.envsubst" . }}
