@@ -38,14 +38,17 @@ metadata:
       }
       ]'
 spec:
-  type: {{ if (include "common.ingressEnabled" .) }}ClusterIP{{ else }}NodePort{{ end }}
+  type: NodePort
   ports:
     - name: "{{ .Values.service.portName }}-restconf"
+      {{ if not .Values.global.aafEnabled }}
       port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
-      {{ if not (include "common.ingressEnabled" .) }}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
+      {{- else -}}
+      port: {{ .Values.service.externalPort4 }}
+      targetPort: {{ .Values.service.internalPort4 }}
       {{ end }}
+      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort4 }}
   {{ if .Values.config.sdnr.enabled }}
   sessionAffinity:  ClientIP
   {{ end }}
@@ -108,13 +111,15 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
 spec:
   ports:
+  - name: {{ .Values.service.portName }}-0-port-{{ .Values.service.internalPort4 }}
+    port: {{ .Values.service.clusterPort2 }}
+    targetPort: {{ .Values.service.internalPort4 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort4 }}
   - name: {{ .Values.service.portName }}-0-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
-    {{ if not (include "common.ingressEnabled" .) }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort1 }}
-    {{ end }}
-  type: {{ if (include "common.ingressEnabled" .) }}ClusterIP{{ else }}NodePort{{ end }}
+  type: NodePort
   selector:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-0
 {{ end }}
@@ -129,13 +134,15 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-1
 spec:
   ports:
+  - name: {{ .Values.service.portName }}-1-port-{{ .Values.service.internalPort4 }}
+    port: {{ .Values.service.clusterPort2 }}
+    targetPort: {{ .Values.service.internalPort4 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort5 }}
   - name: {{ .Values.service.portName }}-1-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
-    {{ if not (include "common.ingressEnabled" .) }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort2 }}
-    {{ end }}
-  type: {{ if (include "common.ingressEnabled" .) }}ClusterIP{{ else }}NodePort{{ end }}
+  type: NodePort
   selector:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-1
 {{ end }}
@@ -150,13 +157,15 @@ metadata:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-2
 spec:
   ports:
+  - name: {{ .Values.service.portName }}-2-port-{{ .Values.service.internalPort4 }}
+    port: {{ .Values.service.clusterPort2 }}
+    targetPort: {{ .Values.service.internalPort4 }}
+    nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort6 }}
   - name: {{ .Values.service.portName }}-2-port-{{ .Values.service.internalPort }}
     port: {{ .Values.service.clusterPort3 }}
     targetPort: {{ .Values.service.internalPort }}
-    {{ if not (include "common.ingressEnabled" .) }}
     nodePort: {{ .Values.global.nodePortPrefixExt | default .Values.nodePortPrefixExt }}{{ .Values.service.geoNodePort3 }}
-    {{ end }}
-  type: {{ if (include "common.ingressEnabled" .) }}ClusterIP{{ else }}NodePort{{ end }}
+  type: NodePort
   selector:
     statefulset.kubernetes.io/pod-name: {{ include "common.fullname" . }}-2
 {{ end }}
@@ -174,14 +183,12 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
-  type: {{ if (include "common.ingressEnabled" .) }}ClusterIP{{ else }}NodePort{{ end }}
+  type: NodePort
   ports:
     - name: "{{ .Values.service.portName }}-callhome"
       port: {{ .Values.service.callHomePort }}
       targetPort: {{ .Values.service.callHomePort }}
-      {{ if not (include "common.ingressEnabled" .) }}
       nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.callHomeNodePort }}
-      {{ end }}
   selector:
     app.kubernetes.io/name: {{ include "common.name" . }}
     app.kubernetes.io/instance: {{ include "common.release" . }}

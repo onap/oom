@@ -18,6 +18,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
   replicas: {{ .Values.replicaCount }}
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
@@ -68,7 +71,8 @@ spec:
 
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports: {{ include "common.containerPorts" . | nindent 12  }}
+          ports:
+          - containerPort: {{ .Values.service.internalPort }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}

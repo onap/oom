@@ -54,5 +54,8 @@ module.exports={
     },
     "uiHost": "0.0.0.0",
     "version": "0.9.1",
+    {{ if .Values.global.aafEnabled }}
+    "enableHttps" : true,
+    {{ end }}
     "performGitPull": "N"
 }

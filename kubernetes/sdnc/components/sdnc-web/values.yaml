@@ -16,8 +16,9 @@
 # Global configuration defaults.
 #################################################################
 global:
+  aafEnabled: true
   nodePortPrefix: 322
-
+  k8scluster: svc.cluster.local
 #################################################################
 # Application configuration defaults.
 #################################################################
@@ -27,11 +28,19 @@ pullPolicy: Always
 
 config:
   sdncChartName: sdnc
-  webProtocol: HTTP
-  webPort: 8080
-  sdnrProtocol: http
+  webProtocol: HTTPS
+  webPlainProtocol: HTTP
+  webPort: 8443
+  webPlainPort: 8080
+  sdnrProtocol: https
+  sdnrPlainProtocol: http
   sdnrHost: "sdnc"
-  sdnrPort: "8080"
+  sdnrPlainHost: "sdnc"
+  sdnrPort: "8443"
+  sdnrPlainPort : "8080"
+  sslCertDir: "/opt/app/osaaf/local/certs"
+  sslCertiticate: "cert.pem"
+  sslCertKey: "key.pem"
   oauth:
     enabled: false
     odluxRbac:
@@ -43,6 +52,30 @@ config:
     enabled: false
     topologyserverUrl: http://toplogy-api-service.topology:3001
     tileserverUrl: https://tile.openstreetmap.org
+
+
+#################################################################
+# aaf configuration defaults.
+#################################################################
+certInitializer:
+  nameOverride: sdnc-web-cert-initializer
+  fqdn: "sdnc"
+  app_ns: "org.osaaf.aaf"
+  fqi: "sdnc@sdnc.onap.org"
+  fqi_namespace: "org.onap.sdnc"
+  public_fqdn: "sdnc.onap.org"
+  aafDeployFqi: "deployer@people.osaaf.org"
+  aafDeployPass: demo123456!
+  cadi_latitude: "38.0"
+  cadi_longitude: "-72.0"
+  credsPath: /opt/app/osaaf/local
+  aaf_add_config: |
+    cd /opt/app/osaaf/local
+    mkdir -p certs
+    keytool -exportcert -rfc -file certs/cacert.pem -keystore {{ .Values.fqi_namespace }}.trust.jks -alias ca_local_0 -storepass $cadi_truststore_password
+    openssl pkcs12 -in {{ .Values.fqi_namespace }}.p12 -out certs/cert.pem -passin pass:$cadi_keystore_password_p12 -passout pass:$cadi_keystore_password_p12
+    cp {{ .Values.fqi_namespace }}.key certs/key.pem
+    chmod -R 755 certs
 
 # default number of instances
 replicaCount: 1
@@ -65,21 +98,22 @@ readiness:
 
 service:
   name: sdnc-web
+  suffix: service
   type: NodePort
+  sessionAffinity: ClientIP
   # for liveness and readiness probe only
   # internalPort:
-  internalPort: 8080
+  internalPort: 8443
+  internalPlainPort: 8080
   ports:
-  - name: http
-    port: "8080"
+  - name: http-sdnc-web
+    port: "8443"
+    plain_port: "8080"
+    port_protocol: http
     nodePort: "05"
 
-ingress:
-  enabled: false
-  service:
-  - baseaddr: "sdnc-web-ui"
-    name: "sdnc-web"
-    port: 8080
+#ingress:
+#  enabled: false
 
 #Resource limit flavor -By default using small
 flavor: small

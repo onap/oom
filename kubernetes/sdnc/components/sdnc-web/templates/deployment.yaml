@@ -23,7 +23,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
+      initContainers: {{ include "common.certInitializer.initContainer" . | indent 6 }}
       - name: {{ include "common.name" . }}-readiness
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -49,26 +49,34 @@ spec:
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.service.internalPort }}
+              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: WEBPROTOCOL
-            value: {{ .Values.config.webProtocol }}
+            value: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.webProtocol .Values.config.webPlainProtocol }}
           - name: WEBPORT
-            value : {{ .Values.config.webPort | quote }}
+            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.webPort .Values.config.webPlainPort | quote }}
           - name: SDNRPROTOCOL
-            value : {{ .Values.config.sdnrProtocol }}
+            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrProtocol .Values.config.sdnrPlainProtocol }}
           - name: SDNRHOST
-            value : {{ .Values.config.sdnrHost }}.{{ include "common.namespace" . }}
+            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrHost .Values.config.sdnrPlainHost }}.{{ include "common.namespace" . }}
           - name: SDNRPORT
-            value : {{ .Values.config.sdnrPort | quote }}
+            value : {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.config.sdnrPort .Values.config.sdnrPlainPort | quote }}
+          {{ if (include "common.needTLS" .) }}
+          - name: SSL_CERT_DIR
+            value: {{ .Values.config.sslCertDir }}
+          - name: SSL_CERTIFICATE
+            value: {{ .Values.config.sslCertiticate }}
+          - name: SSL_CERTIFICATE_KEY
+            value: {{ .Values.config.sslCertKey }}
+          {{ end }}
           {{ if .Values.config.transportpce.enabled }}
           - name: TRPCEURL
             value: {{ .Values.config.transportpce.transportpceUrl }}
@@ -83,7 +91,7 @@ spec:
             value: "{{ .Values.config.oauth.enabled | default "false" }}"
           - name: ENABLE_ODLUX_RBAC
             value: "{{ .Values.config.oauth.odluxRbac.enabled | default "false" }}"
-          volumeMounts:
+          volumeMounts:  {{ include "common.certInitializer.volumeMount" . | nindent 10 }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -96,7 +104,7 @@ spec:
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
-      volumes:
+      volumes: {{ include "common.certInitializer.volumes" . | nindent 6 }}
       - name: localtime
         hostPath:
           path: /etc/localtime
