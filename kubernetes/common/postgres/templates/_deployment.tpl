@@ -159,6 +159,49 @@ spec:
           name: {{ include "common.fullname" $dot }}-backup
           readOnly: true
         resources: {{ include "common.resources" $dot | nindent 10 }}
+      {{- if (default false $dot.Values.metrics.enabled) }}
+      - name: {{ include "common.name" $dot }}-metrics
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ $dot.Values.metrics.image }}
+        imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.metrics.pullPolicy | quote}}
+        env:
+          - name: POSTGRES_METRICS_EXTRA_FLAGS
+            value: {{ default "" (join " " $dot.Values.metrics.extraFlags) | quote }}
+          - name: DATA_SOURCE_USER
+            value: "{{ $dot.Values.metrics.postgresUser }}"
+          - name: DATA_SOURCE_PASS
+            {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 12 }}
+        command:
+          - sh
+          - -c
+          - |
+            DATA_SOURCE_URI="127.0.0.1:5432/?sslmode=disable" ./bin/postgres_exporter $POSTGRES_METRICS_EXTRA_FLAGS
+        ports:
+          {{- range $index, $metricPort := $dot.Values.metrics.ports }}
+          - name: {{ $metricPort.name }}
+            containerPort: {{ $metricPort.port }}
+            protocol: TCP
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: tcp-metrics
+          initialDelaySeconds: {{ $dot.Values.metrics.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ $dot.Values.metrics.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ $dot.Values.metrics.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ $dot.Values.metrics.livenessProbe.successThreshold }}
+          failureThreshold: {{ $dot.Values.metrics.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: tcp-metrics
+          initialDelaySeconds: {{ $dot.Values.metrics.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ $dot.Values.metrics.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ $dot.Values.metrics.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ $dot.Values.metrics.readinessProbe.successThreshold }}
+          failureThreshold: {{ $dot.Values.metrics.readinessProbe.failureThreshold }}
+        {{ include "common.containerSecurityContext" $dot | indent 10 | trim }}
+        resources: {{- toYaml $dot.Values.metrics.resources | nindent 12 }}
+        {{ end }}
         {{- if $dot.Values.nodeSelector }}
         nodeSelector:
 {{ toYaml $dot.Values.nodeSelector | indent 10 }}
