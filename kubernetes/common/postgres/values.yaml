@@ -149,3 +149,98 @@ resources:
       cpu: 1
       memory: 2Gi
   unlimited: {}
+
+metrics:
+  enabled: false
+  ## Bitnami Postgres Prometheus exporter image
+  ## ref: https://hub.docker.com/r/bitnami/postgres-exporter/tags/
+  ##
+  image: bitnami/postgres-exporter:0.11.1
+  pullPolicy: Always
+  ## Postgres exporter additional command line flags
+  ## Can be used to specify command line flags
+  ## E.g.:
+  ## extraFlags:
+  ##   - --collect.binlog_size
+  ##
+  extraFlags: []
+  ## Postgres Prometheus exporter containers' resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 0.5
+      memory: 256Mi
+    requests:
+      cpu: 0.5
+      memory: 256Mi
+  ## Postgres metrics container's liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  postgresUser: "postgres"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 180
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 180
+    successThreshold: 1
+    failureThreshold: 3
+  ## Postgres Prometheus exporter service parameters
+  ##
+  service:
+    type2: ClusterIP
+    port2: 9187
+    type3: ClusterIP
+    port3: 9187
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+  serviceMonitor:
+    enabled: false
+    basicAuth:
+      enabled: false
+    ## Namespace in which Prometheus is running
+    ##
+    ## namespace: monitoring
+    ##
+    ## Interval at which metrics should be scraped.
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ##
+    ## interval: 10s
+    ##
+    ## Timeout after which the scrape is ended
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+    ##
+    ## scrapeTimeout: 10s
+    ## Add your label under which prometheus is discovering resources
+    ## labels:
+      ## release: kube-prometheus-stack
+    ##
+    ## ServiceMonitor selector labels
+    ## ref: https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#prometheus-configuration
+    ##
+    ## selector:
+      ## monitoring: enabled
+    ##
+    ## RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    relabelings: []
+    ##
+    ## MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    metricRelabelings: []
