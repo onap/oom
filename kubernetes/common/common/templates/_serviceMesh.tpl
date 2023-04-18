@@ -98,7 +98,7 @@ true
               app.kubernetes.io/name: <app-to-match>    ("app.kubernetes.io/name" corresponds to key defined in "common.labels", which is included in "common.service")
 
     If common.useAuthorizationPolicies returns false:
-      Will create an authorization policy without rules, i.e., an allow-all policy
+      Will not create an authorization policy
 */}}
 {{- define "common.authorizationPolicy" -}}
 {{-   $dot := default . .dot -}}
@@ -106,6 +106,7 @@ true
 {{-   $authorizedPrincipals := default list $dot.Values.serviceMesh.authorizationPolicy.authorizedPrincipals -}}
 {{-   $defaultOperationMethods := list "GET" "POST" "PUT" "PATCH" "DELETE" -}}
 {{-   $relName := include "common.release" . -}}
+{{-   if (include "common.useAuthorizationPolicies" .) }}
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
@@ -117,7 +118,6 @@ spec:
       app.kubernetes.io/name: {{ include "common.servicename" . }}
   action: ALLOW
   rules:
-{{-   if (include "common.useAuthorizationPolicies" .) }}
 {{-     if $authorizedPrincipals }}
 {{-       range $principal := $authorizedPrincipals }}
   - from:
@@ -143,7 +143,5 @@ spec:
 {{-         end }}
 {{-       end }}
 {{-     end }}
-{{-   else }}
-    - {}
 {{-   end }}
 {{- end -}}
