@@ -95,7 +95,7 @@ true
         spec:
           selector:
             matchLabels:
-              app.kubernetes.io/name: <app-to-match>    ("app.kubernetes.io/name" corresponds to key defined in "common.labels", which is included in "common.service")
+              app: <app-to-match>    ("app" corresponds to a key defined in "common.labels", which is included in "common.service")
 
     If common.useAuthorizationPolicies returns false:
       Will not create an authorization policy
@@ -115,7 +115,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "common.servicename" . }}
+      app: {{ include "common.servicename" . }}
   action: ALLOW
   rules:
 {{-     if $authorizedPrincipals }}
