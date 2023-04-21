@@ -10,7 +10,7 @@
 .. _oom_setup_ingress_controller:
 
 OOM Ingress controller setup
-############################
+============================
 
 .. warning::
     This guide should prob go in the Optional addons section
@@ -42,7 +42,8 @@ The result at the end of this tutorial will be:
    controller
 
 Customize cluster.yml file
-**************************
+--------------------------
+
 Before setup cluster for ingress purposes DNS cluster IP and ingress provider
 should be configured and following:
 
@@ -86,7 +87,8 @@ is internal node IP address if it is required.
 
 
 DNS server configuration and installation
-*****************************************
+-----------------------------------------
+
 DNS server deployed on the Kubernetes cluster makes it easy to use services
 exposed through ingress controller because it resolves all subdomain related to
 the ONAP cluster to the load balancer IP. Testing ONAP cluster requires a lot
@@ -120,7 +122,7 @@ Example output depends on the IP address and example output looks like bellow::
 
 
 MetalLB Load Balancer installation and configuration
-****************************************************
+----------------------------------------------------
 
 By default pure Kubernetes cluster requires external load balancer if we want
 to expose external port using LoadBalancer settings. For this purpose MetalLB
@@ -135,7 +137,7 @@ MetalLB Load balancer can be easily installed using automatic install script::
 
 
 Configuration of the Nginx ingress controller
-*********************************************
+---------------------------------------------
 
 After installation of the DNS server and ingress controller, we can install and
 configure ingress controller.
@@ -157,7 +159,8 @@ exposed as load balancer service with an external IP address::
 
 
 ONAP with ingress exposed services
-**********************************
+----------------------------------
+
 If you want to deploy onap with services exposed through ingress controller you
 can use full onap deploy yaml::
 
@@ -173,4 +176,3 @@ Ingress also can be enabled on any onap setup override using following code:
   <...>
     ingress:
       enabled: true
-
