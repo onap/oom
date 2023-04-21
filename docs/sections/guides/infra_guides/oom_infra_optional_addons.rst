@@ -13,12 +13,12 @@
 .. _oom_base_optional_addons:
 
 OOM Optional Addons
-###################
+===================
 
 The following optional applications can be added to your kubernetes environment.
 
 Install Prometheus Stack
-************************
+------------------------
 
 Prometheus is an open-source systems monitoring and alerting toolkit with
 an active ecosystem.
@@ -44,105 +44,9 @@ To install the prometheus stack, execute the following:
 
     > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --create-namespace --version=<recommended-pm-version>
 
-ONAP on Service Mesh
-********************
-
-.. warning::
-    "ONAP on Service Mesh" is not fully supported in "Kohn". Full support is
-    planned for London release to support the
-    `ONAP Next Generation Security & Logging Structure`_
-
-.. figure:: ../../resources/images/servicemesh/ServiceMesh.png
-   :align: center
-
-ONAP is currenty planned to support Istio as default ServiceMesh platform.
-Therefor the following instructions describe the setup of Istio and required tools.
-Used `Istio setup guide`_
-
-.. _oom_base_optional_addons_istio_installation:
-
-Istio Platform Installation
-===========================
-
-Install Istio Basic Platform
-----------------------------
-
-- Configure the Helm repository::
-
-    > helm repo add istio https://istio-release.storage.googleapis.com/charts
-
-    > helm repo update
-
-- Create a namespace for "mesh-level" configurations::
-
-    > kubectl create namespace istio-config
-
-- Create a namespace istio-system for Istio components::
-
-    > kubectl create namespace istio-system
-
-- Install the Istio Base chart which contains cluster-wide resources used by the
-  Istio control plane, replacing the <recommended-istio-version> with the version
-  defined in the :ref:`versions_table` table::
-
-    > helm upgrade -i istio-base istio/base -n istio-system --version <recommended-istio-version>
-
-- Install the Istio Base Istio Discovery chart which deploys the istiod service, replacing the
-  <recommended-istio-version> with the version defined in the :ref:`versions_table` table
-  (enable the variable to enforce the (sidecar) proxy startup before the container start)::
-
-    > helm upgrade -i istiod istio/istiod -n istio-system --version <recommended-istio-version>
-    --wait --set global.proxy.holdApplicationUntilProxyStarts=true --set meshConfig.rootNamespace=istio-config
-
-Add an EnvoyFilter for HTTP header case
----------------------------------------
-
-When handling HTTP/1.1, Envoy will normalize the header keys to be all lowercase.
-While this is compliant with the HTTP/1.1 spec, in practice this can result in issues
-when migrating existing systems that might rely on specific header casing.
-In our case a problem was detected in the SDC client implementation, which relies on
-uppercase header values. To solve this problem in general we add a EnvoyFilter to keep
-the uppercase header in the istio-config namespace to apply for all namespaces, but
-set the context to SIDECAR_INBOUND to avoid problems in the connection between Istio-Gateway and Services
-
-- Create a EnvoyFilter file (e.g. envoyfilter-case.yaml)
-
-    .. collapse:: envoyfilter-case.yaml
-
-      .. include:: ../../resources/yaml/envoyfilter-case.yaml
-         :code: yaml
-
-- Apply the change to Istio::
-
-    > kubectl apply -f envoyfilter-case.yaml
-
-Install Istio Gateway
----------------------
-
-- Create a namespace istio-ingress for the Istio Ingress gateway
-  and enable istio-injection::
-
-    > kubectl create namespace istio-ingress
-
-    > kubectl label namespace istio-ingress istio-injection=enabled
-
-- To expose additional ports besides HTTP/S (e.g. for external Kafka access, SDNC-callhome)
-  create an override file (e.g. istio-ingress.yaml)
-
-    .. collapse:: istio-ingress.yaml
-
-      .. include:: ../../resources/yaml/istio-ingress.yaml
-         :code: yaml
-
-- Install the Istio Gateway chart using the override file, replacing the
-  <recommended-istio-version> with the version defined in
-  the :ref:`versions_table` table::
-
-    > helm upgrade -i istio-ingress istio/gateway -n istio-ingress
-    --version <recommended-istio-version> -f ingress-istio.yaml --wait
 
 Kiali Installation
-==================
+------------------
 
 Kiali is used to visualize the Network traffic in a ServiceMesh enabled cluster
 For setup the kiali operator is used, see `Kiali setup guide`_
@@ -187,13 +91,13 @@ For setup the kiali operator is used, see `Kiali setup guide`_
 
 
 Jaeger Installation
-===================
+-------------------
 
 To be done...
 
 
 Kserve Installation
-********************
+-------------------
 
 KServe is a standard Model Inference Platform on Kubernetes. It supports RawDeployment mode to enable InferenceService deployment with Kubernetes resources. Comparing to serverless deployment it unlocks Knative limitations such as mounting multiple volumes, on the other hand Scale down and from Zero is not supported in RawDeployment mode.
 
