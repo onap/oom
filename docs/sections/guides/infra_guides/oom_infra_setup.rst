@@ -22,6 +22,38 @@ are many options including public clouds with pre-established environments.
 If creation of a Kubernetes cluster is required, the life-cycle of this
 cluster is independent of the life-cycle of the ONAP components themselves.
 
+ONAP Deployment Options
+=======================
+
+OOM supports 2 different deployment options of ONAP.
+
+- Development Setup
+- Production Setup
+
+In the following sections describe the different setups.
+
+Development setup
+-----------------
+
+The development setup deploys ONAP components exposing its external services
+via NodePorts and without TLS termination and internal traffic encryption.
+
+Production setup
+----------------
+
+The development setup deploys ONAP components exposing its external services
+via Ingress with TLS termination.
+Internal traffic encryption will be ensured by using Istio ServiceMesh.
+
+.. figure:: ../../resources/images/servicemesh/ServiceMesh.png
+   :align: center
+
+For external access we start to establish Authentication via Oauth2-proxy
+and Keycloak which will be completed in the coming release.
+
+ONAP Deployment Requirements
+============================
+
 .. rubric::  Minimum Hardware Configuration
 
 Some recommended hardware requirements are provided below. Note that this is for a
@@ -59,7 +91,16 @@ The versions of software that are supported by OOM are as follows:
   ==============     ===========  =======  ========  ========  ============  =======
   Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0         0.28.0
   Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0         0.32.0
+  London             1.23.8       3.8.2    1.23.x    20.10.x   1.11.1
   ==============     ===========  =======  ========  ========  ============  =======
+
+.. table:: OOM Software Requirements (production)
+
+  ==============     ======  ============ ==============
+  Release            Istio   Gateway-API  Keycloak
+  ==============     ======  ============ ==============
+  London             1.17.0  v0.6.2       19.0.3-legacy
+  ==============     ======  ============ ==============
 
 .. table:: OOM Software Requirements (optional)
 
@@ -68,6 +109,7 @@ The versions of software that are supported by OOM are as follows:
   ==============     =================  ======
   Jakarta            35.x               ---
   Kohn               35.x               1.15.1
+  London             45.x               1.17.0
   ==============     =================  ======
 
 
@@ -77,5 +119,3 @@ The versions of software that are supported by OOM are as follows:
   oom_base_config_setup.rst
   oom_base_optional_addons.rst
   oom_setup_ingress_controller.rst
-
-
