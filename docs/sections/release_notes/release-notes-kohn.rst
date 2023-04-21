@@ -2,7 +2,9 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes:
+.. _release_notes_kohn:
+
+:orphan:
 
 *************************************
 ONAP Operations Manager Release Notes
@@ -11,7 +13,6 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
-- :ref:`Kohn <release_notes_kohn>`
 - :ref:`Jakarta <release_notes_jakarta>`
 - :ref:`Istanbul <release_notes_istanbul>`
 - :ref:`Honolulu <release_notes_honolulu>`
@@ -26,7 +27,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the London release.
+This document provides the release notes for the Kohn release.
 
 Summary
 =======
@@ -43,39 +44,33 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | London                               |
+| **Release designation**              | Kohn                                 |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2023/06/xx                           |
+| **Release date**                     | 2022/12/05                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
-* Introduction of "Production" ONAP setup, including:
+* Kubernetes support for version up to 1.23.8
+* Helm support for version up to Helm: 3.8.2
+* Kubespray version used for automated deployment 2.19 (used for automated deployment)
+* Initial Setup for "ONAP on ServiceMesh" deployment
 
-  * Istio Service Mesh based deployment
-  * Ingress (Istio-Gateway) deployment and usage as standard external access method
-  * Internal Security provided by ServiceMesh and Component2Component AuthorizationPolicies
-  * External Security by introducing AuthN/Z using Keycloak and OAuth2Proxy for Ingress Access
-
-* Removal of unsupported components (AAF, Portal, Contrib,...)
-* Update of Helmcharts to use common templates and practices
-* Optional support for Cassandra 4.x using k8ssandra-operator
+  * using Istio 1.14.1 as SM platform
+  * including Istio Ingress Gateway for external access
+  * modify 90% of ONAP component charts to support SeviceMesh
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11500
+https://jira.onap.org/projects/OOM/versions/11499
+
 
 **Known Issues**
 
-* Components not working under ServiceMesh
-
-  * CDS UI 
-  * SO Monitor UI
-  * CLI
 
 Deliverables
 ------------
@@ -103,15 +98,18 @@ Known Vulnerabilities
 
 * Cassandra version needs to be updated to support new Python version
   see `OOM-2900 <https://jira.onap.org/browse/OOM-2900>`_
-  In London supported as option (using k8ssandra-operator), see :ref:`oom_base_optional_addons`
 
 Workarounds
 -----------
+
 
 Security Notes
 --------------
 
 **Fixed Security Issues**
+
+* Fixed vulnerabilities for oom-platform-cert-service
+  see `Fixes <https://wiki.onap.org/pages/viewpage.action?spaceKey=SV&title=Kohn+OOM>`_
 
 References
 ==========
