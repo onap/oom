@@ -1,0 +1,53 @@
+image:
+  # The Keycloak image repository
+  repository: quay.io/keycloak/keycloak
+  # Overrides the Keycloak image tag whose default is the chart appVersion
+  tag: "19.0.3-legacy"
+
+postgresql:
+  # If `true`, the Postgresql dependency is enabled
+  enabled: false
+
+extraEnv: |
+  - name: KEYCLOAK_USER
+    valueFrom:
+      secretKeyRef:
+        name: {{ include "keycloak.fullname" . }}-admin-creds
+        key: user
+  - name: KEYCLOAK_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: {{ include "keycloak.fullname" . }}-admin-creds
+        key: password
+  - name: DB_VENDOR
+    value: postgres
+  - name: DB_ADDR
+    value: keycloak-db-postgresql
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_DATABASE
+    value: keycloak
+  - name: DB_USER
+    value: dbusername
+  - name: DB_PASSWORD_FILE
+    value: /secrets/db-creds/password
+  - name: PROXY_ADDRESS_FORWARDING
+    value: "true"
+
+extraVolumeMounts: |
+  - name: db-creds
+    mountPath: /secrets/db-creds
+    readOnly: true
+
+extraVolumes: |
+  - name: db-creds
+    secret:
+      secretName: keycloak-db-postgresql
+
+secrets:
+  admin-creds:
+    annotations:
+      my-test-annotation: Test secret for {{ include "keycloak.fullname" . }}
+    stringData:
+      user: admin
+      password: secret

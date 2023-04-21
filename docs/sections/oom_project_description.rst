@@ -46,7 +46,7 @@ The OOM documentation is broken into four different areas each targeted at a
 different user:
 
 - :ref:`oom_dev_guide` - a guide for developers of OOM
-- :ref:`oom_infra_setup_guide` - a guide for those setting up the environments that OOM will use
+- :ref:`oom_infra_guide` - a guide for those setting up the environments that OOM will use
 - :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing cloud
 - :ref:`oom_user_guide` - a guide for operators of an OOM instance
 - :ref:`oom_access_info_guide` - a guide for operators who require access to OOM applications
