@@ -55,5 +55,7 @@ def setup(app):
 
 linkcheck_ignore = [
   "https://istio-release.storage.googleapis.com/charts",
+  "https://charts.bitnami.com/bitnami",
+  "https://codecentric.github.io/helm-charts",
   r'http://localhost:\d+/'
 ]
