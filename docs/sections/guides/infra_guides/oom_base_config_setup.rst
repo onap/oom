@@ -11,11 +11,15 @@
 .. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/kubernetes/
 .. _Cert-Manager kubectl plugin documentation: https://cert-manager.io/docs/usage/kubectl-plugin/
 .. _Strimzi Apache Kafka Operator helm Installation documentation: https://strimzi.io/docs/operators/in-development/deploying.html#deploying-cluster-operator-helm-chart-str
+.. _ONAP Next Generation Security & Logging Structure: https://wiki.onap.org/pages/viewpage.action?pageId=103417456
+.. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
+.. _Gateway-API: https://gateway-api.sigs.k8s.io/
+.. _Istio-Gateway: https://istio.io/latest/docs/reference/config/networking/gateway/
 
 .. _oom_base_setup_guide:
 
 OOM Base Platform
-#################
+=================
 
 As part of the initial base setup of the host Kubernetes cluster,
 the following mandatory installation and configuration steps must be completed.
@@ -29,7 +33,8 @@ the following mandatory installation and configuration steps must be completed.
 For additional platform add-ons, see the :ref:`oom_base_optional_addons` section.
 
 Install & configure kubectl
-***************************
+---------------------------
+
 The Kubernetes command line interface used to manage a Kubernetes cluster needs to be installed
 and configured to run as non root.
 
@@ -70,7 +75,8 @@ Validate the installation::
 
 
 Install & configure helm
-************************
+------------------------
+
 Helm is used for package and configuration management of the relevant helm charts.
 For additional information, see the `helm installation guide`_
 
@@ -109,8 +115,9 @@ Verify the plugins are installed::
     undeploy    1.0.0     delete parent chart and subcharts that were deployed as separate releases
 
 
-Install the strimzi kafka operator
-**********************************
+Install the Strimzi Kafka Operator
+----------------------------------
+
 Strimzi Apache Kafka provides a way to run an Apache Kafka cluster on Kubernetes
 in various deployment configurations by using kubernetes operators.
 Operators are a method of packaging, deploying, and managing Kubernetes applications.
@@ -150,7 +157,7 @@ Verify the installation::
 .. _oom_base_setup_cert_manager:
 
 Install Cert-Manager
-********************
+--------------------
 
 Cert-Manager is a native Kubernetes certificate management controller.
 It can help with issuing certificates from a variety of sources, such as
@@ -187,3 +194,176 @@ Verify the installation::
     cert-manager-cainjector-7d9668978d-hdxf7   1/1     Running   0             2m
     cert-manager-webhook-66c8f6c75-dxmtz       1/1     Running   0             2m
 
+Istio Service Mesh
+------------------
+
+.. note::
+    In London ONAP deployment supports the
+    `ONAP Next Generation Security & Logging Structure`_
+
+ONAP is currenty supporting Istio as default ServiceMesh platform.
+Therefor the following instructions describe the setup of Istio and required tools.
+Used `Istio setup guide`_
+
+.. _oom_base_optional_addons_istio_installation:
+
+Istio Platform Installation
+===========================
+
+Install Istio Basic Platform
+----------------------------
+
+- Configure the Helm repository::
+
+    > helm repo add istio https://istio-release.storage.googleapis.com/charts
+
+    > helm repo update
+
+- Create a namespace for "mesh-level" configurations::
+
+    > kubectl create namespace istio-config
+
+- Create a namespace istio-system for Istio components::
+
+    > kubectl create namespace istio-system
+
+- Install the Istio Base chart which contains cluster-wide resources used by the
+  Istio control plane, replacing the <recommended-istio-version> with the version
+  defined in the :ref:`versions_table` table::
+
+    > helm upgrade -i istio-base istio/base -n istio-system --version <recommended-istio-version>
+
+- Create an override for istiod (e.g. istiod.yaml) to add the oauth2-proxy as external
+  authentication provider and apply some specific config settings
+
+    .. collapse:: istiod.yaml
+
+      .. include:: ../../resources/yaml/istiod.yaml
+         :code: yaml
+
+- Install the Istio Base Istio Discovery chart which deploys the istiod service, replacing the
+  <recommended-istio-version> with the version defined in the :ref:`versions_table` table::
+
+    > helm upgrade -i istiod istio/istiod -n istio-system --version <recommended-istio-version>
+    --wait -f ./istiod.yaml
+
+Add an EnvoyFilter for HTTP header case
+---------------------------------------
+
+When handling HTTP/1.1, Envoy will normalize the header keys to be all lowercase.
+While this is compliant with the HTTP/1.1 spec, in practice this can result in issues
+when migrating existing systems that might rely on specific header casing.
+In our case a problem was detected in the SDC client implementation, which relies on
+uppercase header values. To solve this problem in general we add a EnvoyFilter to keep
+the uppercase header in the istio-config namespace to apply for all namespaces, but
+set the context to SIDECAR_INBOUND to avoid problems in the connection between Istio-Gateway and Services
+
+- Create a EnvoyFilter file (e.g. envoyfilter-case.yaml)
+
+    .. collapse:: envoyfilter-case.yaml
+
+      .. include:: ../../resources/yaml/envoyfilter-case.yaml
+         :code: yaml
+
+- Apply the change to Istio::
+
+    > kubectl apply -f envoyfilter-case.yaml
+
+
+Ingress Controller Installation
+===============================
+
+In the production setup 2 different Ingress setups are supported.
+
+- Istio Gateway `Istio-Gateway`_ (currently tested, but in the future deprecated)
+- Gateway API `Gateway-API`_ (in Alpha status, but will be standard in the future)
+
+Depending on the solution, the ONAP helm values.yaml has to be configured.
+See the :ref:`OOM customized deployment<oom_customize_overrides>` section for more details.
+
+Istio Gateway
+-------------
+
+- Create a namespace istio-ingress for the Istio Ingress gateway
+  and enable istio-injection::
+
+    > kubectl create namespace istio-ingress
+
+    > kubectl label namespace istio-ingress istio-injection=enabled
+
+- To expose additional ports besides HTTP/S (e.g. for external Kafka access, SDNC-callhome)
+  create an override file (e.g. istio-ingress.yaml)
+
+    .. collapse:: istio-ingress.yaml
+
+      .. include:: ../../resources/yaml/istio-ingress.yaml
+         :code: yaml
+
+- Install the Istio Gateway chart using the override file, replacing the
+  <recommended-istio-version> with the version defined in
+  the :ref:`versions_table` table::
+
+    > helm upgrade -i istio-ingress istio/gateway -n istio-ingress
+    --version <recommended-istio-version> -f ingress-istio.yaml --wait
+
+
+Gateway-API
+-----------
+
+- Install the Gateway-API CRDs replacing the
+  <recommended-gwapi-version> with the version defined in
+  the :ref:`versions_table` table::
+
+    > kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/<recommended-gwapi-version>/experimental-install.yaml
+
+- Create a common Gateway instance
+  TBD
+
+Install Keycloak
+----------------
+
+- Add helm repositories
+
+  > helm repo add bitnami https://charts.bitnami.com/bitnami
+
+  > helm repo add codecentric https://codecentric.github.io/helm-charts
+
+  > helm repo update
+
+- create keycloak namespace
+
+  > kubectl create namespace keycloak
+  > kubectl label namespace keycloak istio-injection=enabled
+
+Install Keycloak-Database
+=========================
+
+- To configure the Postgres DB
+  create an override file (e.g. keycloak-db-values.yaml)
+
+    .. collapse:: keycloak-db-values.yaml
+
+      .. include:: ../../resources/yaml/keycloak-db-values.yaml
+         :code: yaml
+
+- Install the Postgres DB
+
+  > helm -n keycloak upgrade -i keycloak-db bitnami/postgresql --values ./keycloak-db-values.yaml
+
+Install Keycloak
+================
+
+- To configure the Keycloak instance
+  create an override file (e.g. keycloak-server-values.yaml)
+
+    .. collapse:: keycloak-server-values.yaml
+
+      .. include:: ../../resources/yaml/keycloak-server-values.yaml
+         :code: yaml
+
+- Install keycloak
+
+  > helm -n keycloak upgrade -i keycloak codecentric/keycloak --values ./keycloak-server-values.yaml
+
+The required Ingress entry and REALM will be provided by the ONAP "Platform"
+component.

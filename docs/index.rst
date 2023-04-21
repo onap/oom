@@ -18,4 +18,3 @@ OOM Documentation Repository
   sections/guides/user_guides/oom_user_guide.rst
   sections/guides/access_guides/oom_access_info.rst
   sections/release_notes/release-notes.rst
-
