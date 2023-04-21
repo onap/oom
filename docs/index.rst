@@ -14,8 +14,10 @@ OOM Documentation Repository
   sections/oom_project_description.rst
   sections/guides/development_guides/oom_development.rst
   sections/guides/infra_guides/oom_infra_setup.rst
+  sections/guides/infra_guides/oom_base_config_setup.rst
+  sections/guides/infra_guides/oom_base_optional_addons.rst
+  sections/guides/infra_guides/oom_setup_ingress_controller.rst
   sections/guides/deployment_guides/oom_deployment.rst
   sections/guides/user_guides/oom_user_guide.rst
   sections/guides/access_guides/oom_access_info.rst
   sections/release_notes/release-notes.rst
-
