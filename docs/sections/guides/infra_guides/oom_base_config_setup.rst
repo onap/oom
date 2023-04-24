@@ -96,7 +96,9 @@ Install the additional OOM plugins required to un/deploy the OOM helm charts::
 
     > git clone http://gerrit.onap.org/r/oom
 
-    > cp -R ~/oom/kubernetes/helm/plugins/ /usr/local/bin/helm/plugins
+    > helm plugin install ~/oom/kubernetes/helm/plugins/deploy
+
+    > helm plugin install ~/oom/kubernetes/helm/plugins/undeploy
 
 Verify the plugins are installed::
 
