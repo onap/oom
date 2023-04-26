@@ -31,6 +31,7 @@ global:
     internalPort: 3306
     nameOverride: mariadb-galera
 
+
 #################################################################
 # Secrets metaconfig
 #################################################################
@@ -69,14 +70,6 @@ secrets:
     externalSecret: '{{ .Values.config.odlCredsExternalSecret }}'
     login: '{{ .Values.config.odlUser }}'
     password: '{{ .Values.config.odlPassword }}'
-    # For now this is left hardcoded but should be revisited in a future
-    passwordPolicy: required
-  - uid: dmaap-proxy-creds
-    name: &dmaapProxyCredsSecretName '{{ include "common.release" . }}-sdnc-dmaap-proxy-creds'
-    type: basicAuth
-    externalSecret: '{{ .Values.config.dmaapProxyCredsExternalSecret }}'
-    login: '{{ .Values.config.sdnr.dmaapProxy.user }}'
-    password: '{{ .Values.config.sdnr.dmaapProxy.password }}'
     # For now this is left hardcoded but should be revisited in a future
     passwordPolicy: required
   - uid: netbox-apikey
@@ -323,18 +316,47 @@ config:
     # sdnronly: true starts sdnc container with odl and sdnrwt features only
     sdnronly: false
     sdnrdbTrustAllCerts: true
-    mountpointRegistrarEnabled: false
+    ## mountpointRegistrar service uses kafka native interface starting with London release
+    kafka:
+    # If true, the following Strimzi KafkaTopics and users will be created
+      enabled: false
+
+      # Strimzi KafkaUser config see configuration be
+      kafkaUser: &kafkaUser
+        acls:
+        - name: unauthenticated.SEC_3GPP_PROVISIONING_OUTPUT
+          type: topic
+          patternType: literal
+          operations: [Read, DescribeConfigs]
+        - name: unauthenticated.SEC_3GPP_FAULTSUPERVISION_OUTPUT
+          type: topic
+          patternType: literal
+          operations: [Read, DescribeConfigs]
+        - name: unauthenticated.VES_PNFREG_OUTPUT
+          type: topic
+          patternType: literal
+          operations: [Read, DescribeConfigs]
+        - name: unauthenticated.SEC_FAULT_OUTPUT
+          type: topic
+          patternType: literal
+          operations: [Read, DescribeConfigs]
+        - name: unauthenticated
+          type: group
+          patternType: prefix
+          operations: [Read, Describe]
+      ## set if bootstrap server is not OOM standard
+      # bootstrapServers: []
+      ## set connection parameters if not default
+      # securityProtocol: PLAINTEXT
+      # saslMechanism: SCRAM-SHA-512
+      ## saslJassConfig: provided by secret
+
+
     mountpointStateProviderEnabled: false
     netconfCallHome:
       enabled: true
-    #
-    # enable and set dmaap-proxy for mountpointRegistrar
-    dmaapProxy:
-      enabled: false
-      usepwd: true
-      user: addUserHere
-      password: addPasswordHere
-      url: addProxyUrlHere
+
+
     oauth:
       enabled: false
       tokenIssuer: ONAP SDNC
@@ -369,6 +391,10 @@ config:
       version: v7
       reportingEntityName: ONAP SDN-R
       eventLogMsgDetail: SHORT
+
+# Strimzi KafkaUser/Topic config on top level
+kafkaUser: *kafkaUser
+
 
 # dependency / sub-chart configuration
 network-name-gen:
