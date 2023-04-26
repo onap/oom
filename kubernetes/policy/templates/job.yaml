@@ -16,6 +16,7 @@
 # limitations under the License.
 */}}
 
+{{ if not .Values.global.postgres.localCluster }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -83,6 +84,7 @@ spec:
             items:
               - key: db.sh
                 path: db.sh
+{{ end }}
 
 {{ if .Values.global.postgres.localCluster }}
 ---
@@ -122,13 +124,13 @@ spec:
              /docker-entrypoint-initdb.d/db-pg.sh
         env:
           - name: PG_ADMIN_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-root-pass" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
           - name: PG_HOST
             value: "{{ .Values.postgres.service.name2 }}"
           - name: PG_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
           - name: PG_USER_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           - name: PG_PORT
             value: "{{ .Values.postgres.service.internalPort }}"
         resources: {{ include "common.resources" . | nindent 10 }}
@@ -145,6 +147,7 @@ spec:
 {{ end }}
 
 ---
+{{ if not .Values.global.postgres.localCluster }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -217,7 +220,7 @@ spec:
             items:
               - key: db_migrator_policy_init.sh
                 path: db_migrator_policy_init.sh
-
+{{ end }}
 {{ if .Values.global.postgres.localCluster }}
 ---
 apiVersion: batch/v1
@@ -272,9 +275,9 @@ spec:
         - name: SQL_HOST
           value: "{{ .Values.postgres.service.name2 }}"
         - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
         - name: SQL_DB
           value: {{ .Values.dbmigrator.schema }}
         - name: POLICY_HOME
@@ -282,7 +285,7 @@ spec:
         - name: SCRIPT_DIRECTORY
           value: "postgres"
         - name: PGPASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
         resources: {{ include "common.resources" . | nindent 10 }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}

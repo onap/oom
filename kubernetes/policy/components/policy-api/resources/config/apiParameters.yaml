@@ -31,7 +31,8 @@ spring:
     password: "${RESTSERVER_PASSWORD}"
   mvc.converters.preferred-json-mapper: gson
   datasource:
-    url: jdbc:mariadb://{{ .Values.db.service.name }}/policyadmin
+{{ if not .Values.global.postgres.localCluster }}
+    url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort }}/policyadmin
     driverClassName: org.mariadb.jdbc.Driver
     username: "${SQL_USER}"
     password: "${SQL_PASSWORD}"
@@ -46,6 +47,27 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
+{{ else }}
+    url: jdbc:postgresql://{{ .Values.db.service.pgName }}:{{ .Values.db.service.internalPgPort}}/policyadmin
+    driverClassName: org.postgresql.Driver
+    username: "${SQL_USER}"
+    password: "${SQL_PASSWORD}"
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      maximumPoolSize: 10
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+{{ end }}
 
 policy-api:
   name: ApiGroup

@@ -25,6 +25,7 @@
 global:
   nodePortPrefix: 302
   persistence: {}
+  useStrimziKafkaPf: set-via-parent-chart-global-value
 
 #################################################################
 # Secrets metaconfig
@@ -47,7 +48,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-apex-pdp:2.9.1
+image: onap/policy-apex-pdp:2.9.2
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -139,11 +140,11 @@ metrics:
 # application configuration
 config:
 # Event consumption (kafka) properties
-  useStrimziKafka: true
+  useStrimziKafkaPf: true
   kafkaBootstrap: strimzi-kafka-bootstrap
   kafka:
     consumer:
-      groupId: policy-group
+      groupId: policy-apex
   app:
     listener:
       policyPdpPapTopic: policy-pdp-pap
@@ -158,3 +159,21 @@ config:
 #
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: policy-apex
+      type: group
+      operations: [Create, Describe, Read, Write]
+    - name: policy-pdp-pap
+      type: topic
+      patternType: prefix
+      operations: [Create, Describe, Read, Write]
+    - name: policy-heartbeat
+      type: topic
+      patternType: prefix
+      operations: [Create, Describe, Read, Write]
+
+readinessCheck:
+  wait_for:
+    - message-router
