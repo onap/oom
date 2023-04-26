@@ -8,7 +8,7 @@
       "https": "false",
       "prometheus": true
     },
-    "pdpStatusParameters":{
+    "pdpStatusParameters": {
         "pdpGroup": "defaultGroup",
         "timeIntervalMs": 120000,
         "pdpType":"apex",
@@ -25,18 +25,38 @@
         ]
     },
     "topicParameterGroup": {
-        "topicSources" : [{
-            "topic" : "POLICY-PDP-PAP",
-            "servers" : [ "message-router" ],
-            "useHttps" : "false",
-            "fetchTimeout": 15000,
-            "topicCommInfrastructure" : "dmaap"
+      "topicSources": [{
+          "topic": "${PAP_TOPIC}",
+          "useHttps": false,
+          "fetchTimeout": 15000,
+          "servers": [ "${KAFKA_URL}" ],
+{{ if .Values.global.useStrimziKafka }}
+          "topicCommInfrastructure": "kafka",
+          "additionalProps": {
+            "group.id" : "${GROUP_ID}",
+            "security.protocol": "SASL_PLAINTEXT",
+            "sasl.mechanism": "${SASL}",
+            "sasl.jaas.config": "${JAASLOGIN}"
+          }
+{{ else }}
+          "topicCommInfrastructure": "dmaap"
+{{ end }}
         }],
-        "topicSinks" : [{
-            "topic" : "POLICY-PDP-PAP",
-            "servers" : [ "message-router" ],
-            "useHttps" : "false",
-            "topicCommInfrastructure" : "dmaap"
-        }]
+      "topicSinks" : [{
+          "topic": "${PAP_TOPIC}",
+          "useHttps": false,
+          "servers": [ "${KAFKA_URL}" ],
+{{ if .Values.global.useStrimziKafka }}
+          "topicCommInfrastructure": "kafka",
+          "additionalProps": {
+            "group.id" : "${GROUP_ID}",
+            "security.protocol": "SASL_PLAINTEXT",
+            "sasl.mechanism": "${SASL}",
+            "sasl.jaas.config": "${JAASLOGIN}"
+          }
+{{ else }}
+          "topicCommInfrastructure": "dmaap"
+{{ end }}
+      }]
     }
 }

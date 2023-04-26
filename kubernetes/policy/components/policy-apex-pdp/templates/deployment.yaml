@@ -22,29 +22,53 @@
 */}}
 
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
-  serviceName: {{ include "common.servicename" . }}
   replicas: {{ .Values.replicaCount }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - sh
+{{- if not .Values.global.useStrimziKafka }}
+{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+{{- end }}
+      - command: ["/bin/sh", "-cx"]
+{{- if .Values.global.useStrimziKafka }}
         args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+          - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`;
+            cd /config-input && for PFILE in `ls -1`;
+            do envsubst <${PFILE} >/config/${PFILE}; done
+{{ else }}
+        args:
+          - cd /config-input && for PFILE in `ls -1`;
+            do envsubst <${PFILE} >/config/${PFILE}; done
+{{ end }}
         env:
         - name: RESTSERVER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
         - name: RESTSERVER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
-{{- if .Values.config.useStrimziKafka }}
+{{- if .Values.global.useStrimziKafka }}
         - name: JAASLOGIN
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-kafka-user" "key" "sasl.jaas.config") | indent 10 }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
+        - name: KAFKA_URL
+          value: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+        - name: SASL
+          value: {{ .Values.kafkaUser.authenticationType | upper }}
+        - name: GROUP_ID
+          value: {{ .Values.config.kafka.consumer.groupId }}
+        - name: PAP_TOPIC
+          value: {{ .Values.config.app.listener.policyPdpPapTopic }}
+{{ else }}
+        - name: KAFKA_URL
+          value: message-router
+        - name: PAP_TOPIC
+          value: {{ .Values.config.app.listener.policyPdpPapTopic | upper }}
 {{- end }}
         volumeMounts:
         - mountPath: /config-input
@@ -58,8 +82,11 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ["sh","-c"]
-          args: ["/opt/app/policy/apex-pdp/bin/apexOnapPf.sh -c /home/apexuser/config/OnapPfConfig.json"]
+          command: [ "/bin/sh", "-cx" ]
+          args:
+            - id apexuser;
+              cat /home/apexuser/config/OnapPfConfig.json;
+              /opt/app/policy/apex-pdp/bin/apexOnapPf.sh -c /home/apexuser/config/OnapPfConfig.json
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -85,12 +112,12 @@ spec:
           - mountPath: /home/apexuser/config
             name: apexconfig
           resources: {{ include "common.resources" . | nindent 12 }}
-        {{- if .Values.nodeSelector }}
-        nodeSelector:
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
         {{- end -}}
-        {{- if .Values.affinity }}
-        affinity:
+      {{- if .Values.affinity }}
+      affinity:
 {{ toYaml .Values.affinity | indent 10 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}

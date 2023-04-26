@@ -19,6 +19,7 @@
 #################################################################
 global:
   mariadb:
+    localCluster: true
     # '&mariadbConfig' means we "store" the values for  later use in the file
     # with '*mariadbConfig' pointer.
     config: &mariadbConfig
@@ -81,19 +82,6 @@ secrets:
     login: '{{ .Values.restServer.policyApiUserName }}'
     password: '{{ .Values.restServer.policyApiUserPassword }}'
     passwordPolicy: required
-  - uid: pg-root-pass
-    name: &pgRootPassSecretName '{{ include "common.release" . }}-policy-pg-root-pass'
-    type: password
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "policy-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
-    password: '{{ .Values.postgres.config.pgRootpassword }}'
-    policy: generate
-  - uid: pg-user-creds
-    name: &pgUserCredsSecretName '{{ include "common.release" . }}-policy-pg-user-creds'
-    type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "policy-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
-    login: '{{ .Values.postgres.config.pgUserName }}'
-    password: '{{ .Values.postgres.config.pgUserPassword }}'
-    passwordPolicy: generate
 
 db: &dbSecretsHook
   credsExternalSecret: *dbSecretName
@@ -163,7 +151,7 @@ policy-gui:
 #################################################################
 
 dbmigrator:
-  image: onap/policy-db-migrator:2.6.1
+  image: onap/policy-db-migrator:2.6.2
   schema: policyadmin
   policy_home: "/opt/app/policy"
 
@@ -256,8 +244,8 @@ postgres:
   config:
     pgUserName: policy_user
     pgDatabase: policyadmin
-    pgUserExternalSecret: *pgUserCredsSecretName
-    pgRootPasswordExternalSecret: *pgRootPassSecretName
+    pgUserExternalSecret: *dbSecretName
+    pgRootPasswordExternalSecret: *dbRootPassSecretName
 
 readinessCheck:
   wait_for:
