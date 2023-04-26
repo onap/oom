@@ -102,12 +102,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
         - name: ODL_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
-        {{ if and .Values.config.sdnr.dmaapProxy.enabled  .Values.config.sdnr.dmaapProxy.usepwd }}
-        - name: DMAAP_HTTP_PROXY_USERNAME
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-proxy-creds" "key" "login") | indent 10 }}
-        - name: DMAAP_HTTP_PROXY_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmaap-proxy-creds" "key" "password") | indent 10 }}
-        {{- end }}
         {{ if .Values.config.sdnr.oauth.enabled }}
         - name: OAUTH_TOKEN_SECRET
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "oauth-token-secret" "key" "password") | indent 10 }}
@@ -116,7 +110,21 @@ spec:
         - name: ENABLE_ODLUX_RBAC
           value: "{{ .Values.config.sdnr.oauth.odluxRbac.enabled | default "true" }}"
         {{ end }}
-
+        - name: SDNR_KAFKA_ENABLED
+          value: "{{ .Values.config.sdnr.kafka.enabled | default "false" }}"
+        {{ if .Values.config.sdnr.kafka.enabled }}
+        - name: SDNR_KAFKA_BOOTSTRAP_SERVERS
+          value: "{{ .Values.config.sdnr.kafka.bootstrapServers | default (include "common.release" .) }}-strimzi-kafka-bootstrap.{{.Release.Namespace}}:9092"
+        - name: SDNR_KAFKA_SECURITY_PROTOCOL
+          value: "{{ .Values.config.sdnr.kafka.securityProtocol | default "SASL_PLAINTEXT" }}"
+        - name: SDNR_KAFKA_SASL_MECHANISM
+          value: "{{ .Values.config.sdnr.kafka.saslMechanism | default "SCRAM-SHA-512" }}"
+        - name: SDNR_KAFKA_SASL_JASS_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
+        {{ end }}
         volumeMounts:
         - mountPath: /config-input
           name: config-input
@@ -324,6 +332,19 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ves-collector-secret" "key" "password") | indent 12 }}
           - name: SDNR_WEBSOCKET_PORT
             value: "{{ .Values.sdnrWebsocketPort | default "8182"}}"
+          - name: SDNR_KAFKA_ENABLED
+            value: "{{ .Values.config.sdnr.kafka.enabled | default "false" }}"
+          {{ if .Values.config.sdnr.kafka.enabled }}
+          - name: SDNR_KAFKA_BOOTSTRAP_SERVERS
+            value: "{{ .Values.config.sdnr.kafka.bootstrapServers | default (include "common.release" .) }}-strimzi-kafka-bootstrap.{{.Release.Namespace}}:9092"
+          - name: SDNR_KAFKA_SECURITY_PROTOCOL
+            value: "{{ .Values.config.sdnr.kafka.securityProtocol | default "PLAINTEXT" }}"
+          - name: SDNR_KAFKA_SASL_MECHANISM
+            value: "{{ .Values.config.sdnr.kafka.saslMechanism | default "PLAIN" }}"
+          - name: SDNR_KAFKA_SASL_JASS_CONFIG
+            value: "{{ .Values.config.sdnr.kafka.saslJassConfig | default "PLAIN" }}"
+          {{ end }}
+
 
           volumeMounts:
 {{- if .Values.global.cmpv2Enabled }}
