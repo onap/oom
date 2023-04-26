@@ -71,14 +71,6 @@ secrets:
     password: '{{ .Values.config.odlPassword }}'
     # For now this is left hardcoded but should be revisited in a future
     passwordPolicy: required
-  - uid: dmaap-proxy-creds
-    name: &dmaapProxyCredsSecretName '{{ include "common.release" . }}-sdnc-dmaap-proxy-creds'
-    type: basicAuth
-    externalSecret: '{{ .Values.config.dmaapProxyCredsExternalSecret }}'
-    login: '{{ .Values.config.sdnr.dmaapProxy.user }}'
-    password: '{{ .Values.config.sdnr.dmaapProxy.password }}'
-    # For now this is left hardcoded but should be revisited in a future
-    passwordPolicy: required
   - uid: netbox-apikey
     type: password
     externalSecret: '{{ .Values.config.netboxApikeyExternalSecret }}'
@@ -323,18 +315,29 @@ config:
     # sdnronly: true starts sdnc container with odl and sdnrwt features only
     sdnronly: false
     sdnrdbTrustAllCerts: true
-    mountpointRegistrarEnabled: false
+    ## mountpointRegistrar service uses kafka native interface starting with London release
+    kafka:
+      enabled: false
+      ## set if bootstrap server is not OOM standard
+      # bootstrapServers: []
+      ## set connection parameters if not default 
+      # securityProtocol: PLAINTEXT
+      # saslMechanism: PLAIN
+      # saslJassConfig: PLAIN
+      # enable all topics relevant for your use case
+      topics:
+        secFaultOutput: false
+        sec3gppProvisioningOutput: false
+        vesPnfregOutput: false
+        sec3GPPFaultsupervisonOutput: false
+        
+
+
     mountpointStateProviderEnabled: false
     netconfCallHome:
       enabled: true
-    #
-    # enable and set dmaap-proxy for mountpointRegistrar
-    dmaapProxy:
-      enabled: false
-      usepwd: true
-      user: addUserHere
-      password: addPasswordHere
-      url: addProxyUrlHere
+    
+    
     oauth:
       enabled: false
       tokenIssuer: ONAP SDNC
