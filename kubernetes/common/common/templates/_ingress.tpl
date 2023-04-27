@@ -356,7 +356,7 @@ spec:
 {{ toYaml $dot.Values.ingress.tls | indent 4 }}
 {{- end -}}
 {{- if $dot.Values.ingress.config -}}
-{{-   if $dot.Values.ingress.config.tls -}}
+{{-   if $dot.Values.ingress.config.tls }}
   tls:
   - hosts:
   {{-   range $dot.Values.ingress.service }}{{ $baseaddr := required "baseaddr" .baseaddr }}
