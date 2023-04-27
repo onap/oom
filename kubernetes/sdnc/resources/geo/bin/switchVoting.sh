@@ -33,11 +33,11 @@ PASSWORD=`awk '/odlPassword/ {print $2}' $dir/../../../values.yaml | head -1`
 case "$1" in
 
 primary)
-   status=$(curl -u $USERNAME:$PASSWORD -o /dev/null -H "Content-Type: application/json" -H "Accept: application/json" -X POST http://localhost:30202/restconf/operations/cluster-admin:change-member-voting-states-for-all-shards -d '{ "input" : { "member-voting-state" : [ { "member-name" : "member-1", "voting":true}, { "member-name" : "member-2", "voting":true}, { "member-name" : "member-3", "voting":true},{ "member-name" : "member-4", "voting":false},{ "member-name" : "member-5", "voting":false},{ "member-name" : "member-6", "voting":false}] } }' -w "%{http_code}\n" $url 2> /dev/null)
+   status=$(curl -u $USERNAME:$PASSWORD -o /dev/null -H "Content-Type: application/json" -H "Accept: application/json" -X POST http://localhost:30202/rests/operations/cluster-admin:change-member-voting-states-for-all-shards -d '{ "input" : { "member-voting-state" : [ { "member-name" : "member-1", "voting":true}, { "member-name" : "member-2", "voting":true}, { "member-name" : "member-3", "voting":true},{ "member-name" : "member-4", "voting":false},{ "member-name" : "member-5", "voting":false},{ "member-name" : "member-6", "voting":false}] } }' -w "%{http_code}\n" $url 2> /dev/null)
 ;;
 
 secondary)
-   status=$(curl -u $USERNAME:$PASSWORD -o /dev/null -H "Content-Type: application/json" -H "Accept: application/json" -X POST http://localhost:30202/restconf/operations/cluster-admin:change-member-voting-states-for-all-shards -d '{ "input" : { "member-voting-state" : [ { "member-name" : "member-1", "voting":false}, { "member-name" : "member-2", "voting":false}, { "member-name" : "member-3", "voting":false},{ "member-name" : "member-4", "voting":true},{ "member-name" : "member-5", "voting":true},{ "member-name" : "member-6", "voting":true}] } }' -w "%{http_code}\n" $url 2> /dev/null)
+   status=$(curl -u $USERNAME:$PASSWORD -o /dev/null -H "Content-Type: application/json" -H "Accept: application/json" -X POST http://localhost:30202/rests/operations/cluster-admin:change-member-voting-states-for-all-shards -d '{ "input" : { "member-voting-state" : [ { "member-name" : "member-1", "voting":false}, { "member-name" : "member-2", "voting":false}, { "member-name" : "member-3", "voting":false},{ "member-name" : "member-4", "voting":true},{ "member-name" : "member-5", "voting":true},{ "member-name" : "member-6", "voting":true}] } }' -w "%{http_code}\n" $url 2> /dev/null)
 ;;
 
 *)
