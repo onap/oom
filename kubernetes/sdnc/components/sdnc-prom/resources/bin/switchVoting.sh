@@ -19,7 +19,7 @@
 set -e
 primary=${SDNC_IS_PRIMARY_CLUSTER:-true}
 
-url=http://sdnc:8282/restconf/operations/cluster-admin:change-member-voting-states-for-all-shards
+url=http://sdnc:8282/rests/operations/cluster-admin:change-member-voting-states-for-all-shards
 username="${ODL_USERNAME:-{{.Values.odl.restconf.username}}}"
 password="${ODL_PASSWORD:-{{.Values.odl.restconf.password}}}"
 LOGFILE="/app/geo.log"
