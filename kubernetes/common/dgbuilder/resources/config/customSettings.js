@@ -35,7 +35,7 @@ module.exports={
     "dbUser": "${DB_USER}",
     "dbPassword": "${DB_PASSWORD}",
     "gitLocalRepository": "",
-    "restConfUrl": "http://localhost:8181/restconf/operations/SLI-API:execute-graph",
+    "restConfUrl": "http://localhost:8181/rests/operations/SLI-API:execute-graph",
     "restConfUser": "${REST_CONF_USER}",
     "restConfPassword": "${REST_CONF_PASSWORD}",
     "formatXML": "Y",
