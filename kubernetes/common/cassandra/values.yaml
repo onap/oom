@@ -22,6 +22,50 @@ global: # global defaults
     backup:
       mountPath: /dockerdata-nfs/backup
 
+k8ssandraOperator:
+  enabled: true
+  cassandraVersion: 4.0.1
+  persistence:
+    storageClassName: default
+    size: 10Gi
+  config:
+    secretName: &secretName cassandra-default-user
+    superuserName: &superusername cassandra
+    superuserPassword: &superuserpassword cassandra
+    jvmOptions:
+      heapSize: 512M
+    hostNetwork: false
+  datacenters:
+    - name: dc1
+      size: 3
+  stargate:
+    tag: v1.0.76
+    size: 1
+    jvmOptions:
+      heapSize: 384Mi
+
+#################################################################
+# Secrets metaconfig
+# used to store the default superuser for k8ssandra-operator
+#################################################################
+secrets:
+  - uid: *secretName
+    type: genericKV
+    externalSecret: '{{ tpl (default "" .Values.k8ssandraOperator.config.userCredentialsExternalSecret) . }}'
+    envs:
+      - name: username
+        value: *superusername
+      - name: password
+        value: *superuserpassword
+
+ingress:
+  enabled: false
+  service:
+    - baseaddr: "reaper-dc1"
+      path: "/webui"
+      name: "cassandra-dc1-reaper-service"
+      port: 8080
+
 # application image
 image: cassandra:3.11.4
 pullPolicy: Always
@@ -107,9 +151,6 @@ podAnnotations:
 podManagementPolicy: OrderedReady
 updateStrategy:
   type: RollingUpdate
-
-ingress:
-  enabled: false
 
 persistence:
   enabled: true
