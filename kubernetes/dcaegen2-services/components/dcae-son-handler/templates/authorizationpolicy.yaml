@@ -1,0 +1,136 @@
+{{/*
+# Copyright © 2023 Nordix Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+{{ include "common.authorizationPolicy" . }}
+---
+{{- $dot := default . .dot -}}
+{{- $trustedDomain := default "cluster.local" $dot.Values.serviceMesh.authorizationPolicy.trustedDomain -}}
+{{- $authorizedPrincipalsPostgres := default list $dot.Values.serviceMesh.authorizationPolicy.authorizedPrincipalsPostgres -}}
+{{- $defaultOperationPorts := list "5432" -}}
+{{- $relName := include "common.release" . -}}
+{{- $postgresName := $dot.Values.postgres.service.name -}}
+{{- if (include "common.useAuthorizationPolicies" .) }}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $relName }}-{{ $postgresName }}-authz
+  namespace: {{ include "common.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $postgresName }}
+  action: ALLOW
+  rules:
+{{-   if $authorizedPrincipalsPostgres }}
+{{-     range $principal := $authorizedPrincipalsPostgres }}
+  - from:
+    - source:
+        principals:
+{{-       $namespace := default "onap" $principal.namespace -}}
+{{-       if eq "onap" $namespace }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $relName }}-{{ $principal.serviceAccount }}"
+{{-       else }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $principal.serviceAccount }}"
+{{-       end }}
+    to:
+    - operation:
+        ports:
+{{-       range $port := $defaultOperationPorts }}
+        - "{{ $port }}"
+{{-       end }}
+{{-     end }}
+{{-   end }}
+{{- end }}
+---
+{{- $dot := default . .dot -}}
+{{- $trustedDomain := default "cluster.local" $dot.Values.serviceMesh.authorizationPolicy.trustedDomain -}}
+{{- $authorizedPrincipalsPostgres := default list $dot.Values.serviceMesh.authorizationPolicy.authorizedPrincipalsPostgres -}}
+{{- $defaultOperationPorts := list "5432" -}}
+{{- $relName := include "common.release" . -}}
+{{- $postgresName := $dot.Values.postgres.service.name -}}
+{{- $pgHost := "primary" -}}
+{{- if (include "common.useAuthorizationPolicies" .) }}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $relName }}-{{ $postgresName }}-{{ $pgHost }}-authz
+  namespace: {{ include "common.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $postgresName }}-{{ $pgHost }}
+  action: ALLOW
+  rules:
+{{-   if $authorizedPrincipalsPostgres }}
+{{-     range $principal := $authorizedPrincipalsPostgres }}
+  - from:
+    - source:
+        principals:
+{{-       $namespace := default "onap" $principal.namespace -}}
+{{-       if eq "onap" $namespace }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $relName }}-{{ $principal.serviceAccount }}"
+{{-       else }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $principal.serviceAccount }}"
+{{-       end }}
+    to:
+    - operation:
+        ports:
+{{-       range $port := $defaultOperationPorts }}
+        - "{{ $port }}"
+{{-       end }}
+{{-     end }}
+{{-   end }}
+{{- end }}
+---
+{{- $dot := default . .dot -}}
+{{- $trustedDomain := default "cluster.local" $dot.Values.serviceMesh.authorizationPolicy.trustedDomain -}}
+{{- $authorizedPrincipalsPostgres := default list $dot.Values.serviceMesh.authorizationPolicy.authorizedPrincipalsPostgres -}}
+{{- $defaultOperationPorts := list "5432" -}}
+{{- $relName := include "common.release" . -}}
+{{- $postgresName := $dot.Values.postgres.service.name -}}
+{{- $pgHost := "replica" -}}
+{{- if (include "common.useAuthorizationPolicies" .) }}
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $relName }}-{{ $postgresName }}-{{ $pgHost }}-authz
+  namespace: {{ include "common.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $postgresName }}-{{ $pgHost }}
+  action: ALLOW
+  rules:
+{{-   if $authorizedPrincipalsPostgres }}
+{{-     range $principal := $authorizedPrincipalsPostgres }}
+  - from:
+    - source:
+        principals:
+{{-       $namespace := default "onap" $principal.namespace -}}
+{{-       if eq "onap" $namespace }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $relName }}-{{ $principal.serviceAccount }}"
+{{-       else }}
+        - "{{ $trustedDomain }}/ns/{{ $namespace }}/sa/{{ $principal.serviceAccount }}"
+{{-       end }}
+    to:
+    - operation:
+        ports:
+{{-       range $port := $defaultOperationPorts }}
+        - "{{ $port }}"
+{{-       end }}
+{{-     end }}
+{{-   end }}
+{{- end }}
