@@ -25,6 +25,9 @@
 global:
   nodePortPrefixExt: 304
   persistence: {}
+  useStrimziKafkaPf: set-via-parent-chart-global-value
+  postgres:
+    localCluster: false
 
 #################################################################
 # Secrets metaconfig
@@ -66,7 +69,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-pap:2.8.1
+image: onap/policy-pap:2.8.2
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -79,7 +82,9 @@ db:
   password: policy_user
   service:
     name: policy-mariadb
+    pgName: policy-pg-primary
     internalPort: 3306
+    internalPgPort: 5432
 
 restServer:
   user: policyadmin
@@ -124,6 +129,9 @@ service:
   ports:
   - name: http-api
     port: 6969
+  - name: debug-port
+    port: 5005
+    protocol: TCP
 
 ingress:
   enabled: false
@@ -138,18 +146,18 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: 1
-      memory: 4Gi
-    requests:
-      cpu: 100m
-      memory: 1Gi
-  large:
-    limits:
       cpu: 2
-      memory: 8Gi
+      memory: 6Gi
     requests:
       cpu: 200m
       memory: 2Gi
+  large:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 400m
+      memory: 4Gi
   unlimited: {}
 
 #Pods Service Account
@@ -177,14 +185,24 @@ metrics:
 # application configuration
 config:
 # Event consumption (kafka) properties
-  useStrimziKafka: true
+  useStrimziKafkaPf: true
   kafkaBootstrap: strimzi-kafka-bootstrap
   kafka:
+    topics:
+      policyHeartbeat: policy-heartbeat
+      policyNotification: policy-notification
+      policyPdpPap: policy-pdp-pap
     consumer:
-      groupId: policy-group
+      groupId: policy-pap
   app:
     listener:
       policyPdpPapTopic: policy-pdp-pap
+
+dmaap:
+  topics:
+    policyHeartbeat: POLICY-HEARTBEAT
+    policyNotification: POLICY-NOTIFICATION
+    policyPdpPap: POLICY-PDP-PAP
 # If targeting a custom kafka cluster, ie useStrimziKakfa: false
 # uncomment below config and target your kafka bootstrap servers,
 # along with any other security config.
@@ -196,3 +214,25 @@ config:
 #
 # Any new property can be added in the env by setting in overrides in the format mentioned below
 # All the added properties must be in "key: value" format instead of yaml.
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: policy-pap
+      type: group
+      operations: [Create, Describe, Read, Write]
+    - name: policy-pdp-pap
+      type: topic
+      patternType: prefix
+      operations: [Create, Describe, Read, Write]
+    - name: policy-heartbeat
+      type: topic
+      patternType: prefix
+      operations: [Create, Describe, Read, Write]
+    - name: policy-notification
+      type: topic
+      patternType: prefix
+      operations: [Create, Describe, Read, Write]
+
+readinessCheck:
+  wait_for:
+    - message-router

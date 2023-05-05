@@ -26,7 +26,8 @@ spring:
     converters:
       preferred-json-mapper: gson
   datasource:
-    url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort}}/policyadmin
+{{ if not .Values.global.postgres.localCluster }}
+    url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort }}/policyadmin
     driverClassName: org.mariadb.jdbc.Driver
     username: "${SQL_USER}"
     password: "${SQL_PASSWORD}"
@@ -41,18 +42,27 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
-  kafka:
-    consumer:
-      group-id: {{ .Values.config.kafka.consumer.groupId }}
-{{- if .Values.config.useStrimziKafka }}
-    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
-    security.protocol: SASL_PLAINTEXT
-    properties.sasl:
-      mechanism: SCRAM-SHA-512
-      jaas.config: ${JAASLOGIN}
-{{ else }}
-{{ toYaml .Values.config.eventConsumption | nindent 2 }}
-{{- end }}
+{{- else }}
+    url: jdbc:postgresql://{{ .Values.db.service.pgName }}:{{ .Values.db.service.internalPgPort }}/policyadmin
+    driverClassName: org.postgresql.Driver
+    username: "${SQL_USER}"
+    password: "${SQL_PASSWORD}"
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      maximumPoolSize: 10
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+{{ end }}
 
 server:
   port: 6969
@@ -65,9 +75,15 @@ pap:
   name: PapGroup
   aaf: false
   topic:
-    pdp-pap.name: POLICY-PDP-PAP
-    notification.name: POLICY-NOTIFICATION
-    heartbeat.name: POLICY-HEARTBEAT
+  {{ if .Values.global.useStrimziKafkaPf }}
+    pdp-pap.name: {{ .Values.config.kafka.topics.policyPdpPap }}
+    notification.name: {{ .Values.config.kafka.topics.policyNotification }}
+    heartbeat.name: {{ .Values.config.kafka.topics.policyHeartbeat }}
+  {{ else }}
+    pdp-pap.name: {{ .Values.dmaap.topics.policyPdpPap }}
+    notification.name: {{ .Values.dmaap.topics.policyNotification }}
+    heartbeat.name: {{ .Values.dmaap.topics.policyHeartbeat }}
+  {{ end }}
   pdpParameters:
     heartBeatMs: 120000
     updateParameters:
@@ -76,34 +92,82 @@ pap:
     stateChangeParameters:
       maxRetryCount: 1
       maxWaitMs: 30000
-  savePdpStatisticsInDb: false
+  savePdpStatisticsInDb: true
   topicParameterGroup:
     topicSources:
-    - topic: POLICY-PDP-PAP
-      servers:
-      - message-router
-      useHttps: false
-      fetchTimeout: 15000
-      topicCommInfrastructure: dmaap
-    - topic: POLICY-HEARTBEAT
-      effectiveTopic: POLICY-PDP-PAP
-      consumerGroup: policy-pap
-      servers:
-      - message-router
-      useHttps: false
-      fetchTimeout: 15000
-      topicCommInfrastructure: dmaap
+      - useHttps: false
+        fetchTimeout: 15000
+        {{ if .Values.global.useStrimziKafkaPf }}
+        topic: {{ .Values.config.kafka.topics.policyPdpPap }}
+        servers:
+          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+        topicCommInfrastructure: kafka
+        additionalProps:
+          group.id : {{ .Values.config.kafka.consumer.groupId }}
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+          sasl.jaas.config: ${JAASLOGIN}
+        {{ else }}
+        topic: {{ .Values.dmaap.topics.policyPdpPap }}
+        servers:
+          - ${topicServer:message-router}
+        topicCommInfrastructure: dmaap
+        {{ end }}
+      - useHttps: false
+        fetchTimeout: 15000
+        {{ if .Values.global.useStrimziKafkaPf }}
+        topic: {{ .Values.config.kafka.topics.policyHeartbeat }}
+        effectiveTopic: {{ .Values.config.kafka.topics.policyPdpPap }}
+        servers:
+          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+        topicCommInfrastructure: kafka
+        additionalProps:
+          group.id : {{ .Values.config.kafka.consumer.groupId }}
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+          sasl.jaas.config: ${JAASLOGIN}
+        {{ else }}
+        topic: {{ .Values.dmaap.topics.policyHeartbeat }}
+        effectiveTopic: {{ .Values.dmaap.topics.policyPdpPap }}
+        servers:
+          - ${topicServer:message-router}
+        topicCommInfrastructure: dmaap
+        {{ end }}
     topicSinks:
-    - topic: POLICY-PDP-PAP
-      servers:
-      - message-router
-      useHttps: false
-      topicCommInfrastructure: dmaap
-    - topic: POLICY-NOTIFICATION
-      servers:
-      - message-router
-      useHttps: false
-      topicCommInfrastructure: dmaap
+      - useHttps: false
+        {{ if .Values.global.useStrimziKafkaPf }}
+        topic: {{ .Values.config.kafka.topics.policyPdpPap }}
+        servers:
+          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+        topicCommInfrastructure: kafka
+        additionalProps:
+          group.id : {{ .Values.config.kafka.consumer.groupId }}
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+          sasl.jaas.config: ${JAASLOGIN}
+        {{ else }}
+        topic: {{ .Values.dmaap.topics.policyPdpPap }}
+        servers:
+          - ${topicServer:message-router}
+        topicCommInfrastructure: dmaap
+        {{ end }}
+      - useHttps: false
+        {{ if .Values.global.useStrimziKafkaPf }}
+        topic: {{ .Values.config.kafka.topics.policyNotification }}
+        servers:
+          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+        topicCommInfrastructure: kafka
+        additionalProps:
+          group.id : {{ .Values.config.kafka.consumer.groupId }}
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+          sasl.jaas.config: ${JAASLOGIN}
+        {{ else }}
+        topic: {{ .Values.dmaap.topics.policyNotification }}
+        servers:
+          - ${topicServer:message-router}
+        topicCommInfrastructure: dmaap
+        {{ end }}
 # If Strimzi Kafka to be used for communication, replace following configuration for topicSources and topicSinks
 #          servers:
 #            - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
@@ -128,11 +192,6 @@ pap:
     password: "${DISTRIBUTION_PASSWORD}"
     useHttps: false
     basePath: healthcheck
-  - clientName: dmaap
-    hostname: message-router
-    port: 3904
-    useHttps: false
-    basePath: topics
 
 management:
   endpoints:

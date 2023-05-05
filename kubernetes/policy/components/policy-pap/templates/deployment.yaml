@@ -29,12 +29,18 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
+{{- if not .Values.global.useStrimziKafkaPf }}
+{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+{{- end }}
       - command:
         - /app/ready.py
         args:
         - --job-name
+{{ if not .Values.global.postgres.localCluster }}
         - {{ include "common.release" . }}-policy-galera-config
-        env:
+{{ else }}
+        - {{ include "common.release" . }}-policy-pg-config
+{{ end }}        env:
         - name: NAMESPACE
           valueFrom:
             fieldRef:
@@ -42,7 +48,7 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        name: {{ include "common.name" . }}-db-readiness
       - command:
         - sh
         args:
@@ -65,9 +71,12 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "login") | indent 10 }}
         - name: DISTRIBUTION_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "password") | indent 10 }}
-{{- if .Values.config.useStrimziKafka }}
+{{- if .Values.global.useStrimziKafkaPf }}
         - name: JAASLOGIN
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "policy-kafka-user" "key" "sasl.jaas.config") | indent 10 }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
 {{- end }}
         volumeMounts:
         - mountPath: /config-input
@@ -81,8 +90,11 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ["/opt/app/policy/pap/bin/policy-pap.sh"]
-          args: ["/opt/app/policy/pap/etc/mounted/papParameters.yaml"]
+
+          command: [ "/bin/sh", "-cx" ]
+          args:
+            - cat /opt/app/policy/pap/etc/mounted/papParameters.yaml;
+              /opt/app/policy/pap/bin/policy-pap.sh /opt/app/policy/pap/etc/mounted/papParameters.yaml
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
