@@ -178,19 +178,36 @@ updateStrategy:
   maxUnavailable: 0
   maxSurge: 1
 
-# Strimzi KafkaUser config
+# Strimzi KafkaUser and Topic config
+kafkaTopic:
+  - name: &ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic ncmp-dmi-cm-avc-subscription-ncmp-dmi-plugin
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+  - name: &dmiNcmpCmAvcSubscriptionTopic dmi-ncmp-cm-avc-subscription
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+  - name: &ncmpAsyncM2MTopic ncmp-async-m2m
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+
 kafkaUser:
   authenticationType: scram-sha-512
   acls:
     - name: ncmp-dmi-plugin-group
       type: group
       operations: [Read]
-    - name: ncmp-dmi-cm-avc-subscription-ncmp-dmi-plugin
+    - name: *ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic
       type: topic
       operations: [Read]
-    - name: dmi-ncmp-cm-avc-subscription
+    - name: *dmiNcmpCmAvcSubscriptionTopic
       type: topic
       operations: [Write]
-    - name: ncmp-async-m2m
+    - name: *ncmpAsyncM2MTopic
       type: topic
       operations: [Write]
+
+topics:
+  config:
+    app.ncmp.async.topic: *ncmpAsyncM2MTopic
+    app.dmi.avc.subscription-topic: *ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic
+    app.dmi.avc.subscription-response-topic: *dmiNcmpCmAvcSubscriptionTopic
