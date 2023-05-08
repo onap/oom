@@ -30,4 +30,4 @@ spec:
           size: {{ .Values.K8SCluster.datacenters.stargate.size }} #Component 1
           heapSize:
            {{ .Values.K8SCluster.datacenters.stargate.heapSize }} #Component 1
-{{ end }}          
+{{ end }} 
