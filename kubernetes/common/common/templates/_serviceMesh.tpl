@@ -115,7 +115,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: {{ include "common.servicename" . }}
+      app: {{ include "common.name" . }}
   action: ALLOW
   rules:
 {{-     if $authorizedPrincipals }}
