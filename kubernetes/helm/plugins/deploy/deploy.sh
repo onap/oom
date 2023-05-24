@@ -51,8 +51,8 @@ generate_overrides() {
     END=${SUBCHART_NAMES[index+1]}
     if [ "$START" = "global:" ]; then
       echo "global:" > $GLOBAL_OVERRIDES
-      cat $COMPUTED_OVERRIDES | sed '/common:/,/consul:/d' \
-        | sed -n '/^'"$START"'/,/'log:'/p' | sed '1d;$d' >> $GLOBAL_OVERRIDES
+      cat $COMPUTED_OVERRIDES | sed -n '/^'"$START"'/,/'"$END"'/p' \
+        | sed '1d;$d' >> $GLOBAL_OVERRIDES
     else
       SUBCHART_DIR="$CACHE_SUBCHART_DIR/$(echo "$START" |cut -d':' -f1)"
       if [ -d "$SUBCHART_DIR" ]; then
