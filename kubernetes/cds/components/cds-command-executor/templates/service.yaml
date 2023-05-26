@@ -1,5 +1,5 @@
 {{/*
-# Copyright (c) 2019 Bell Canada
+#  Copyright (C) 2023 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,34 +14,4 @@
 # limitations under the License.
 */}}
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.servicename" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-  annotations:
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.grpc.externalPort }}
-      targetPort: {{ .Values.service.grpc.internalPort }}
-      {{- if eq .Values.service.type "NodePort"}}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      {{- end}}
-      name: {{ .Values.service.grpc.portName | default "grpc" }}
-    {{- if .Values.metrics.serviceMonitor.enabled }}
-    - port: {{ .Values.service.metrics.externalPort }}
-      targetPort: {{ .Values.service.metrics.internalPort }}
-      {{- if eq .Values.service.type "NodePort"}}
-      nodePort: {{ .Values.global.nodePortPrefix | default .Values.nodePortPrefix }}{{ .Values.service.nodePort }}
-      {{- end}}
-      name: {{ .Values.service.metrics.portName | default "metrics" }}
-    {{- end}}
-  selector:
-    app: {{ include "common.name" . }}
-    release: {{ include "common.release" . }}
+{{ include "common.service" . }}

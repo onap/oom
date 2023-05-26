@@ -62,14 +62,13 @@ readiness:
 
 service:
   type: ClusterIP
-  grpc:
-    portName: grpc
-    internalPort: 50051
-    externalPort: 50051
-  metrics:
-    portName: tcp-metrics
-    internalPort: 10005
-    externalPort: 10005
+  name: cds-command-executor
+  internalPort: 50051
+  ports:
+    - name: grpc
+      port: 50051
+    - name: &metricsPortname tcp-metrics
+      port: &metricsPort 10005
 
 persistence:
   enabled: false
@@ -105,7 +104,8 @@ serviceAccount:
 metrics:
   serviceMonitor:
     enabled: false
-    port: tcp-metrics
+    port: *metricsPortname
+    internalPort: *metricsPort
     path: /actuator/prometheus
     basicAuth:
       enabled: false
