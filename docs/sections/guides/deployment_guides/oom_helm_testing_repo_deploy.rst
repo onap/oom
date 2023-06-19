@@ -17,7 +17,7 @@ ONAP hosts the OOM `testing` helm charts in it's `ONAP helm testing repository`_
 This is helm repo contains:
 
     * The `latest` charts built from the head of the `OOM`_ project's master
-      branch, tagged with the version number of the current development cycle (ie. 11.0.0).
+      branch, tagged with the version number of the current development cycle (ie. 12.0.0).
 
 
 Add the OOM testing repo & Deploy
