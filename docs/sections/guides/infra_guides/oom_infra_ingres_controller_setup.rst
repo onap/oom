@@ -13,7 +13,10 @@ OOM Ingress controller setup
 ============================
 
 .. warning::
-    This guide should prob go in the Optional addons section
+    This guide does not describe the Istio Ingress Gateway configuration
+    required for the ONAP Production Setup in London
+    The installation of Istio Ingress (and Gateway-API) is described in
+    :ref:`OOM Base Platform<oom_base_setup_guide>`
 
 This optional guide provides instruction how to setup experimental ingress controller
 feature. For this, we are hosting our cluster on OpenStack VMs and using the
