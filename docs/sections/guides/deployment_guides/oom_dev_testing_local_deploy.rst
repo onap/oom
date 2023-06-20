@@ -33,11 +33,7 @@ tools to host the updated helm charts.
 
 Chart museum is required to host the helm charts locally when deploying in a development environment::
 
-  > curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
-
-  > chmod +x ./chartmuseum
-
-  > mv ./chartmuseum /usr/local/bin
+  > curl https://raw.githubusercontent.com/helm/chartmuseum/main/scripts/get-chartmuseum | bash
 
 **Step 4.** To setup a local Helm server to store the ONAP charts::
 

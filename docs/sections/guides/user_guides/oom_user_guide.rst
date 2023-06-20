@@ -23,7 +23,7 @@ OOM User Guide
 
 .. warning::
 
-    **THIS PAGE NEEDS TO BE EITHER REWRITTEN OR SOMETING AS SOME INFO IS NO LONGER RELEVANT**
+    **THIS PAGE NEEDS TO BE EITHER REWRITTEN OR SOMETHING AS SOME INFO IS NO LONGER RELEVANT**
 
 The ONAP Operations Manager (OOM) provide the ability to manage the entire
 life-cycle of an ONAP installation, from the initial deployment to final
@@ -186,7 +186,7 @@ Here is an excerpt of this file:
   dependencies:
   <...>
     - name: so
-      version: ~11.0.0
+      version: ~12.0.0
       repository: '@local'
       condition: so.enabled
   <...>
@@ -334,10 +334,10 @@ Below is the example for the same::
 
   > helm list
     NAME                    REVISION        UPDATED                         STATUS          CHART                   APP VERSION     NAMESPACE
-    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-11.0.0             Kohn          onap
-    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-11.0.0                         onap
-    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-11.0.0                           onap
-    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-11.0.0                    onap
+    dev                     1               Wed Oct 14 13:49:52 2020        DEPLOYED        onap-12.0.0             london          onap
+    dev-cassandra           5               Thu Oct 15 14:45:34 2020        DEPLOYED        cassandra-12.0.0                         onap
+    dev-contrib             1               Wed Oct 14 13:52:53 2020        DEPLOYED        contrib-12.0.0                           onap
+    dev-mariadb-galera      1               Wed Oct 14 13:55:56 2020        DEPLOYED        mariadb-galera-12.0.0                    onap
 
 Here the Name column shows the RELEASE NAME, In our case we want to try the
 scale operation on cassandra, thus the RELEASE NAME would be dev-cassandra.
@@ -351,10 +351,10 @@ Below is the example for the same::
 
   > helm search cassandra
     NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-    local/cassandra         11.0.0                          ONAP cassandra
-    local/portal-cassandra  11.0.0                          Portal cassandra
-    local/aaf-cass          11.0.0                          ONAP AAF cassandra
-    local/sdc-cs            11.0.0                          ONAP Service Design and Creation Cassandra
+    local/cassandra         12.0.0                          ONAP cassandra
+    local/portal-cassandra  12.0.0                          Portal cassandra
+    local/aaf-cass          12.0.0                          ONAP AAF cassandra
+    local/sdc-cs            12.0.0                          ONAP Service Design and Creation Cassandra
 
 Here the Name column shows the chart name. As we want to try the scale
 operation for cassandra, thus the corresponding chart name is local/cassandra
@@ -416,7 +416,7 @@ Prior to doing an upgrade, determine of the status of the deployed charts::
 
   > helm list
   NAME REVISION UPDATED                  STATUS    CHART     NAMESPACE
-  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-11.0.0 onap
+  so   1        Mon Feb 5 10:05:22 2020  DEPLOYED  so-12.0.0 onap
 
 When upgrading a cluster a parameter controls the minimum size of the cluster
 during the upgrade while another parameter controls the maximum number of nodes
@@ -439,21 +439,21 @@ sequence of events described in the previous paragraph would be initiated.
 For example, to upgrade a container by changing configuration, specifically an
 environment value::
 
-  > helm upgrade so onap/so --version 11.0.1 --set enableDebug=true
+  > helm upgrade so onap/so --version 12.0.1 --set enableDebug=true
 
 Issuing this command will result in the appropriate container being stopped by
 Kubernetes and replaced with a new container with the new environment value.
 
 To upgrade a component to a new version with a new configuration file enter::
 
-  > helm upgrade so onap/so --version 11.0.1 -f environments/demo.yaml
+  > helm upgrade so onap/so --version 12.0.1 -f environments/demo.yaml
 
 To fetch release history enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Jul 5 10:05:22 2022  SUPERSEDED so-11.0.0 Install complete
-  2        Mon Jul 5 10:10:55 2022  DEPLOYED   so-11.0.1 Upgrade complete
+  1        Mon Jul 5 10:05:22 2022  SUPERSEDED so-12.0.0 Install complete
+  2        Mon Jul 5 10:10:55 2022  DEPLOYED   so-12.0.1 Upgrade complete
 
 Unfortunately, not all upgrades are successful.  In recognition of this the
 lineup of pods within an ONAP deployment is tagged such that an administrator
@@ -475,9 +475,9 @@ For example, to roll-back back to previous system revision enter::
 
   > helm history so
   REVISION UPDATED                  STATUS     CHART     DESCRIPTION
-  1        Mon Jul 5 10:05:22 2022  SUPERSEDED so-11.0.0 Install complete
-  2        Mon Jul 5 10:10:55 2022  SUPERSEDED so-11.0.1 Upgrade complete
-  3        Mon Jul 5 10:14:32 2022  DEPLOYED   so-11.0.0 Rollback to 1
+  1        Mon Jul 5 10:05:22 2022  SUPERSEDED so-12.0.0 Install complete
+  2        Mon Jul 5 10:10:55 2022  SUPERSEDED so-12.0.1 Upgrade complete
+  3        Mon Jul 5 10:14:32 2022  DEPLOYED   so-12.0.0 Rollback to 1
 
 .. note::
 

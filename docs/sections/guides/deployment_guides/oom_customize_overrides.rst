@@ -32,7 +32,8 @@ Users can customize the override files to suit their required deployment.
 
 
 Enabling/Disabling Components
-*****************************
+=============================
+
 Here is an example of the nominal entries that need to be provided.
 Different values files are available for different contexts.
 
@@ -43,20 +44,30 @@ Different values files are available for different contexts.
 
 |
 
-(Optional) "ONAP on Service Mesh"
-*********************************
+ONAP "Production" Setup
+=======================
 
-To enable "ONAP on Service Mesh" both "ServiceMesh" and "Ingress"
-configuration entries need to be configured before deployment.
+The production setup deploys ONAP components exposing its external services
+via Ingress with TLS termination.
+Internal traffic encryption will be ensured by using Istio ServiceMesh.
 
-Global settings relevant for ServiceMesh:
+For external access we start to establish Authentication via Oauth2-proxy
+and Keycloak, which will be completed in the coming release.
+
+To enable both "ServiceMesh" and "Ingress" configuration entries need
+to be set before deployment.
+
+Service Mesh and Ingress configuration
+--------------------------------------
+
+Global settings relevant for ServiceMesh and Ingress:
 
 .. code-block:: yaml
 
   global:
     ingress:
       # generally enable ingress for ONAP components
-      enabled: false
+      enabled: true
       # enable all component's Ingress interfaces
       enable_all: false
       # default Ingress base URL
@@ -88,6 +99,7 @@ Global settings relevant for ServiceMesh:
       tls: true
       # be aware that linkerd is not well tested
       engine: "istio" # valid value: istio or linkerd
+  ...
     aafEnabled: false
     cmpv2Enabled: false
     tlsEnabled: false
@@ -118,5 +130,24 @@ Ingress settings:
 - namespace: istio-ingress → (optional) overrides the namespace of the ingress gateway which is used for the created SSL certificate
 
 .. note::
-  For "ONAP on Istio" an example override file (`onap-all-ingress-istio.yaml`)
+  For the Ingress setup an example override file (`onap-all-ingress-istio.yaml`)
   can be found in the `oom/kubernetes/onap/resources/overrides/` directory.
+
+External Authentication configuration
+-------------------------------------
+
+For enabling of external authentication via Oauth2-Proxy and Keycloak
+the following settings have to be done in the ONAP values override.
+It will enable the deployment of the ONAP Realm to Keycloak and
+installation and integration of the Oauth2-Proxy as external Auth-Provider.
+
+.. code-block:: yaml
+
+  platform:
+    enabled: true
+    cmpv2-cert-service:
+      enabled: false
+    keycloak-init:
+      enabled: true
+    oauth2-proxy:
+      enabled: true

@@ -11,7 +11,7 @@ ONAP Operations Manager Project
 
 .. warning::
 
-    THIS PAGE PROB NEEDS A REWRITE ALSO
+    THIS PAGE PROB NEEDS A REWRITE AS IT IS OUTDATED
 
 The ONAP Operations Manager (OOM) is responsible for life-cycle management of
 the ONAP platform itself; components such as SO, SDNC, etc. It is not
