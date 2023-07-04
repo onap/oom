@@ -296,11 +296,30 @@ spec:
           {{- end }}
           - name: SDNRONLY
             value: "{{ .Values.config.sdnr.sdnronly | default "false" }}"
+          {{- if .Values.config.sdnr.mariadb.enabled }}
+          - name: SDNRCONTROLLERID
+            value: {{ uuidv4 }}
+          - name: SDNRDBTYPE
+            value: MARIADB
+          - name: SDNRDBURL
+            value: "jdbc:mysql://{{ include "common.mariadbService" . }}:3306/{{ .Values.config.sdnr.mariadb.databaseName}}"
+          - name: SDNR_DB_DATABASE
+            value: {{ .Values.config.sdnr.mariadb.databaseName }}
+          - name: SDNRDBUSERNAME
+            value: sdnrdb
+          - name: SDNRDBPASSWORD
+            value: sdnrdb
+          - name: SDNR_ASYNC_HANDLING
+            value: {{ .Values.config.sdnr.mariadb.asyncHandling | default "false" | quote }}
+          - name: SDNR_ASYNC_POOLSIZE
+            value: {{ .Values.config.sdnr.mariadb.asyncPoolSize | default 200 | quote }}
+          {{- else -}}
           - name: SDNRDBURL
             value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
           {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
           - name: SDNRDBTRUSTALLCERTS
             value: "true"
+          {{- end }}
           {{- end }}
           {{- if .Values.global.cmpv2Enabled }}
           - name: ODL_CERT_DIR
