@@ -177,6 +177,11 @@ secrets:
     type: basicAuth
     login: '{{ .Values.config.sdnr.vesCollector.username }}'
     password: '{{ .Values.config.sdnr.vesCollector.password }}'
+  - uid: sdnrdb-secret
+    name: &sdnrdbSecretName '{{ include "common.release" . }}-sdnc-sdnrdb-secret'
+    type: basicAuth
+    login: '{{ index .Values "config" "sdnr" "mariadb" "user" }}'
+    password: '{{ index .Values "config" "sdnr" "mariadb" "password" }}'
 #################################################################
 # Certificates
 #################################################################
@@ -316,6 +321,19 @@ config:
     # sdnronly: true starts sdnc container with odl and sdnrwt features only
     sdnronly: false
     sdnrdbTrustAllCerts: true
+    elasticsearch:
+    ## for legacy eleasticsearch database
+    # enabled: &esdbenabled true
+      enabled: &esdbenabled false
+    mariadb:
+      ## for legacy eleasticsearch database
+      # enabled: false
+      enabled: true
+      databaseName: sdnrdb
+      user: sdnrdb
+      externalSecret: *sdnrdbSecretName
+      asyncHandling: true
+      asyncPoolSize: 200
     kafka:
       enabled: false
       consumerGroupPrefix: &consumerGroupPrefix sdnr
@@ -401,7 +419,7 @@ mariadb-galera: &mariadbGalera
     user: *dbUser
     externalSecret: *dbSecretName
   service:
-    name: sdnc-dbhost
+    name: sdnc-db
   sdnctlPrefix: sdnc
   persistence:
     mountSubPath: sdnc/mariadb-galera
@@ -495,6 +513,7 @@ dgbuilder:
 # local elasticsearch cluster
 localElasticCluster: true
 elasticsearch:
+  enabled: *esdbenabled
   nameOverride: &elasticSearchName sdnrdb
   name: sdnrdb-cluster
   service:
