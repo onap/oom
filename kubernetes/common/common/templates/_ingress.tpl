@@ -305,7 +305,7 @@ true
 */}}
 {{- define "ingress.config.port" -}}
 {{-   $dot := default . .dot -}}
-{{ range .Values.ingress.service }}
+{{ range $dot.Values.ingress.service }}
 {{-   $baseaddr := (required "'baseaddr' param, set to the specific part of the fqdn, is required." .baseaddr) }}
   - host: {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
     http:
@@ -719,7 +719,7 @@ spec:
 {{- define "common.nginxIngress" -}}
 {{- $dot := default . .dot -}}
 {{  range $dot.Values.ingress.service }}
-{{    if eq (include "common.ingress._protocol" (dict "dot" .)) "http" }}
+{{    if eq (include "common.ingress._protocol" (dict "dot" $dot)) "http" }}
 {{      $baseaddr := required "baseaddr" .baseaddr }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -734,7 +734,7 @@ metadata:
     heritage: {{ $dot.Release.Service }}
 spec:
   rules:
-  {{ include "ingress.config.port" . | trim }}
+  {{ include "ingress.config.port" $dot | trim }}
 {{-     if $dot.Values.ingress.tls }}
   tls:
 {{ toYaml $dot.Values.ingress.tls | indent 4 }}
@@ -743,7 +743,7 @@ spec:
 {{-       if $dot.Values.ingress.config.tls }}
   tls:
   - hosts:
-    - {{ include "ingress.config.host" (dict "dot" . "baseaddr" $baseaddr) }}
+    - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
     secretName: {{ required "secret" (tpl (default "" $dot.Values.ingress.config.tls.secret) $dot) }}
 {{-       end }}
 {{-     end }}
