@@ -27,12 +27,17 @@ spec:
         command:
         - /app/ready.py
         args:
+        {{- if .Values.config.sdnr.mariadb.enabled }}
+        - --container-name
+        - {{ include "common.mariadbService" . }}
+        {{- else -}}
         - --container-name
         - {{.Values.elasticsearch.nameOverride}}-elasticsearch
         - --container-name
         - {{.Values.elasticsearch.nameOverride}}-nginx
         - --container-name
         - {{.Values.elasticsearch.nameOverride}}-master
+        {{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -49,6 +54,9 @@ spec:
         args:
           - -c
           - |
+            {{- if .Values.config.sdnr.mariadb.enabled }}
+            "{{ .Values.config.binDir }}/createSdnrDb.sh";
+            {{- end -}}
             sleep 90; "{{ .Values.config.binDir }}/startODL.sh"
         env:
           - name: SDNC_AAF_ENABLED
@@ -62,10 +70,33 @@ spec:
           ## start sdnrdb parameter
           - name: SDNRINIT
             value: "true"
+          {{- if .Values.config.sdnr.mariadb.enabled }}
+          - name: SDNRDBTYPE
+            value: MARIADB
+          - name: MYSQL_HOST
+            value: {{ include "common.mariadbService" . }}
+          - name: MYSQL_ROOT_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-root-password" "key" "password") | indent 12 }}
+          - name: SDNRDBURL
+            value: "jdbc:mysql://{{ include "common.mariadbService" . }}:3306/{{ .Values.config.sdnr.mariadb.databaseName }}"
+          - name: SDNRDBDATABASE
+            value: "{{ .Values.config.sdnr.mariadb.databaseName }}"
+          - name: SDNRDBUSERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnrdb-secret" "key" "login") | indent 12 }}
+          - name: SDNRDBPASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnrdb-secret" "key" "password") | indent 12 }}
+        {{- else -}}
           - name: SDNRDBURL
             value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
           - name: SDNRDBPARAMETER
             value: "-k"
+        {{- end }}
+        {{- if .Values.config.sdnr.mariadb.enabled }}
+        volumeMounts:
+          - mountPath: {{ .Values.config.binDir }}/createSdnrDb.sh
+            name: bin
+            subPath: createSdnrDb.sh
+        {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if include "common.onServiceMesh" . }}
       - name: sdnrdb-service-mesh-wait-for-job-container
