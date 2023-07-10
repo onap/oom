@@ -4,7 +4,7 @@
 .. Copyright (C) 2022 Nordix Foundation
 
 .. Links
-.. _Prometheus stack README: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#readme
+.. _Prometheus stack README: https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md
 .. _ONAP Next Generation Security & Logging Structure: https://wiki.onap.org/pages/viewpage.action?pageId=103417456
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Kiali setup guide: https://kiali.io/docs/installation/installation-guide/example-install/
