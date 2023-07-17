@@ -28,6 +28,12 @@ metadata:
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    {{- if .Chart.AppVersion }}
+    version: {{ .Chart.AppVersion | replace "+" "_" }}
+    {{- else }}
+    version: {{ .Chart.Version | replace "+" "_" }}
+    {{- end }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
@@ -132,8 +138,11 @@ spec:
           subPath: application.properties
         ports:
         - containerPort: {{ .Values.service.internalPort }}
+          name: {{ .Values.service.portName }}
         - containerPort: {{ .Values.service.internalPort2 }}
+          name: {{ .Values.service.portName2 }}
         - containerPort: {{ .Values.service.internalPort3 }}
+          name: {{ .Values.service.portName3 }}
         lifecycle:
           # wait for active requests (long-running tasks) to be finished
           # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
