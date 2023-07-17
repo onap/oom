@@ -15,6 +15,7 @@
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Gateway-API: https://gateway-api.sigs.k8s.io/
 .. _Istio-Gateway: https://istio.io/latest/docs/reference/config/networking/gateway/
+.. _DefaultStorageClass: https://kubernetes.io/docs/tasks/administer-cluster/change-default-storage-class/
 
 .. _oom_base_setup_guide:
 
@@ -116,6 +117,17 @@ Verify the plugins are installed::
     deploy      1.0.0     install (upgrade if release exists) parent chart and all subcharts as separate but related releases
     undeploy    1.0.0     delete parent chart and subcharts that were deployed as separate releases
 
+Set the default StorageClass
+----------------------------
+
+In some ONAP components it is important to have a default storageClass defined (e.g. cassandra),
+if you don't want to explicitly set it during the deployment via helm overrides.
+
+Therefor you should set the default storageClass (if not done during the K8S cluster setup) via the command:
+
+    > kubectl patch storageclass <storageclass> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+see `DefaultStorageClass`_
 
 Install the Strimzi Kafka Operator
 ----------------------------------
