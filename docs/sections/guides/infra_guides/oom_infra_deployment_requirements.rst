@@ -48,9 +48,9 @@ The versions of software that are supported by OOM are as follows:
   ==============     ===========  =======  ========  ========  =============  ========
   Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager   Strimzi
   ==============     ===========  =======  ========  ========  =============  ========
-  Jakarta            1.22.4       3.6.3    1.22.4    20.10.x   1.8.0          0.28.0
   Kohn               1.23.8       3.8.2    1.23.8    20.10.x   1.8.0          0.32.0
   London             1.23.8       3.8.2    1.23.x    20.10.x   1.12.2         0.35.0
+  Montreal           1.23.8       3.10.2   1.23.x    20.10.x   1.12.2         0.35.0
   ==============     ===========  =======  ========  ========  =============  ========
 
 .. table:: OOM Software Requirements (production)
@@ -59,6 +59,7 @@ The versions of software that are supported by OOM are as follows:
   Release            Istio   Gateway-API  Keycloak
   ==============     ======  ============ ==============
   London             1.17.2  v0.6.2       19.0.3-legacy
+  Montreal           1.17.2  v0.6.2       19.0.3-legacy
   ==============     ======  ============ ==============
 
 .. table:: OOM Software Requirements (optional)
@@ -66,7 +67,7 @@ The versions of software that are supported by OOM are as follows:
   ==============     ================= ==========
   Release            Prometheus Stack  K8ssandra
   ==============     ================= ==========
-  Jakarta            35.x
   Kohn               35.x
   London             45.x              1.6.1
+  Montreal           45.x              1.8.0
   ==============     ================= ==========
