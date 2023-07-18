@@ -27,6 +27,11 @@ The function takes several arguments (inside a dictionary):
 {{- $dot := default . .dot -}}
 app.kubernetes.io/name: {{ include "common.name" $dot }}
 app: {{ include "common.name" $dot }}
+{{- if .Chart.AppVersion }}
+version: {{ .Chart.AppVersion | replace "+" "_" }}
+{{- else }}
+version: {{ .Chart.Version | replace "+" "_" }}
+{{- end }}
 {{ if not .ignoreHelmChart }}
 helm.sh/chart: {{ include "common.chart" $dot }}
 {{- end }}
