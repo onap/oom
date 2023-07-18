@@ -23,6 +23,12 @@ metadata:
   namespace: {{ include "common.namespace" . }}
   labels:
     app: {{ include "common.name" . }}
+    app.kubernetes.io/name: {{ include "common.name" . }}
+    {{- if .Chart.AppVersion }}
+    version: {{ .Chart.AppVersion | replace "+" "_" }}
+    {{- else }}
+    version: {{ .Chart.Version | replace "+" "_" }}
+    {{- end }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
@@ -43,6 +49,12 @@ spec:
       labels:
         app: {{ include "common.name" . }}
         release: {{ include "common.release" . }}
+        app.kubernetes.io/name: {{ include "common.name" . }}
+        {{- if .Chart.AppVersion }}
+        version: {{ .Chart.AppVersion | replace "+" "_" }}
+        {{- else }}
+        version: {{ .Chart.Version | replace "+" "_" }}
+        {{- end }}
       name: {{ include "common.release" . }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
@@ -93,7 +105,9 @@ spec:
           name: haproxy-cfg
         ports:
         - containerPort: {{ .Values.service.internalPort }}
+          name: {{ .Values.service.portName }}
         - containerPort: {{ .Values.metricsService.internalPort }}
+          name: {{ .Values.metricsService.portName }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
         {{- if eq .Values.liveness.enabled true }}
