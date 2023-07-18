@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2019 AT&T
-# Copyright (c) 2021-2022 J. F. Lucas.  All rights reserved.
+# Copyright (c) 2021-2023 J. F. Lucas.  All rights reserved.
 # Copyright (c) 2021 Nordix Foundation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,13 +33,9 @@ The template always produces a configMap containing the microservice's
 initial configuration data.  (See the documentation for
 dcaegen2-services-common.microserviceDeployment for more details.)
 
-If the microservice is using one or more Data Router (DR) feeds, the
+If the microservice is publishing to one or more Data Router (DR) feeds, the
 template produces a configMap containing the information needed to
 provision the feed(s).  An init container performs the provisioning.
-
-If the microservice acts as a DR publisher for one or more feeds, the
-template produces a configMap containing the information needed to
-provision the publisher(s).  An init container performs the provisioning.
 
 If the microservice acts as a DR subscriber for one or more feeds, the
 template produces a configMap containing the information needed to
@@ -70,22 +66,22 @@ metadata:
 data:
   {{- range $i, $feed := .Values.drFeedConfig }}
   feedConfig-{{$i}}.json: |-
-  {{ $feed | toJson | indent 2 }}
-  {{- end }}
-{{- end }}
-
-{{- if .Values.drPubConfig }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "common.fullname" . }}-drpub-config
-  namespace: {{ include "common.namespace" . }}
-  labels: {{ include "common.labels" . | nindent 6 }}
-data:
-  {{- range $i, $drpub := .Values.drPubConfig }}
-  drpubConfig-{{$i}}.json: |-
-  {{ $drpub | toJson | indent 2 }}
+    {
+      "name": {{ $feed.feedName | quote }},
+      "version": {{ $feed.feedVersion | quote }},
+      "description": {{ $feed.feedDescription | default "None" | quote }},
+      "authorization": {
+        "classification": {{ $feed.classification | quote }},
+        "endpoint_addrs": [
+        ],
+        "endpoint_ids": [
+          {
+            "id": {{ $feed.publisher.username | quote }},
+            "password": {{ $feed.publisher.password | quote }}
+          }
+        ]
+      }
+    }
   {{- end }}
 {{- end }}
 
@@ -100,7 +96,23 @@ metadata:
 data:
   {{- range $i, $drsub := .Values.drSubConfig }}
   drsubConfig-{{$i}}.json: |-
-  {{ $drsub | toJson | indent 2 }}
+    {
+      "feed": {
+        "name": {{ $drsub.feedName | quote }},
+        "version": {{ $drsub.feedVersion | quote }}
+      },
+      "delivery": {
+        "url": {{ $drsub.deliveryURL | quote }},
+        "user": {{ $drsub.username | quote }},
+        "password": {{ $drsub.userpwd | quote }},
+        "use100": {{ $drsub.use100 | default false }}
+      },
+      "metadataOnly": {{ $drsub.metadataOnly | default false }},
+      "groupid": {{ $drsub.groupId | default 0 }},
+      "follow_redirect": {{ $drsub.followRedirect | default true }},
+      "privileged_subscriber": {{ $drsub.privilegedSubscriber | default false }},
+      "decompress": {{ $drsub.decompress | default false }}
+    }
   {{- end }}
 {{- end }}
 {{- end }}

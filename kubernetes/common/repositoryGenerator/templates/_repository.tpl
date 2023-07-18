@@ -147,8 +147,8 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "readinessImage") .) }}
 {{- end -}}
 
-{{- define "repositoryGenerator.image.dbcClient" -}}
-  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "dbcClientImage") .) }}
+{{- define "repositoryGenerator.image.drProvClient" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "drProvClientImage") .) }}
 {{- end -}}
 
 {{- define "repositoryGenerator.image.quitQuit" -}}

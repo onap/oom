@@ -1,7 +1,7 @@
 {{/*
 ################################################################################
 #   Copyright (C) 2021 Nordix Foundation.                                      #
-#   Copyright (c) 2022 J. F. Lucas.  All rights reserved.                      #
+#   Copyright (c) 2022-2023 J. F. Lucas.  All rights reserved.                      #
 #                                                                              #
 #   Licensed under the Apache License, Version 2.0 (the "License");            #
 #   you may not use this file except in compliance with the License.           #
@@ -19,51 +19,54 @@
 
 {{/*
   This template generates a Kubernetes init containers common template to enable applications to provision
-  DMaaP feeds (on Data Router), with associated authorization.
-  DMaap Bus Controller endpoints are used to provision:
-
-  - Feed on DR, with associated user authentication.
+  DMaaP feeds (on Data Router) for DCAE microservices, with associated authorization.
+  DMaap Data Router (DR) endpoints are used to provision:
+  - Feeds on DR, with associated user authentication.
+  - Subscribers to feeds on DR, to provide DR with username, password, and URL needed to deliver
+    files to subscribers.
 
   common.dmaap.provisioning.initContainer:
-  This template make use of Dmaap Bus Controller docker image to create resources on Dmaap Data Router
-  microservice, with the help of dbc-client.sh script it makes use of Bus Controller API to create Feeds.
-  If the resource creation is successful via script response is logged back at particular location with
-  appropriate naming convention.
-
-  More details can be found at :
-  (https://wiki.onap.org/pages/viewpage.action?pageId=103417564)
+  This template creates an initContainer with some associated volumes.  The initContainer
+  (oom/kubernetes/dmaap-datarouter/drprov-client) runs a script (drprov-client.sh) that uses the
+  DR provisioning API to create the feeds and subscribers needed by a microservice.  The script
+  updates the microservice's configuration to supply information needed to access the feeds. The
+  configuration information comes from two volumes that are created by the dcaegen2-services-common
+  templates.
+  - app-config-input: comes from a configMap generated from the microservice's values.yaml file.
+    It may contain references to environment variables as placeholders for feed information that
+    will become available after feeds are provisioned.
+  - app-config: this template will copy the configuration file from the app-config-input volume,
+    replaced the environment variable references with the actual values for feed information, based
+    on data returned by the DR provisioning API.
 
   The template directly references data in .Values, and indirectly (through its
   use of templates from the ONAP "common" collection) references data in .Release.
 
-  Parameter for _dmaapProvisioning to be defined in values.yaml
+  Parameters for _dmaapProvisioning to be defined in values.yaml:
+
   # DataRouter Feed Configuration
+  # (Note that DR configures publishers as part of the feed.)
   drFeedConfig:
     - feedName: bulk_pm_feed
-      owner: dcaecm
       feedVersion: 0.0
-      asprClassification: unclassified
+      classification: unclassified
       feedDescription: DFC Feed Creation
-
-  # DataRouter Publisher Configuration
-  drPubConfig:
-    - feedName: bulk_pm_feed
-      dcaeLocationName: loc00
+      publisher:
+        username: xyz
+        password: xyz
 
   # DataRouter Subscriber Configuration
   drSubConfig:
     - feedName: bulk_pm_feed
+      feedVersion: 0.0
       decompress: True
-      dcaeLocationName: loc00
       privilegedSubscriber: True
       deliveryURL: https://dcae-pm-mapper:8443/delivery
 
-  # ConfigMap Configuration for DR Feed, Dr_Publisher, Dr_Subscriber
+  # ConfigMap Configuration for DR Feed, Dr_Subscriber
   volumes:
     - name: feeds-config
       path: /opt/app/config/feeds
-    - name: drpub-config
-      path: /opt/app/config/dr_pubs
     - name: drsub-config
       path: /opt/app/config/dr_subs
 
@@ -76,8 +79,10 @@
 
 {{- define "common.dmaap.provisioning._volumeMounts" -}}
 {{- $dot := default . .dot -}}
-- mountPath: /opt/app/config/cache
-  name: dbc-response-cache
+- mountPath: /config-input
+  name: app-config-input
+- mountPath: /config
+  name: app-config
 {{- range $name, $volume := $dot.Values.volumes }}
 - name: {{ $volume.name }}
   mountPath: {{ $volume.path }}
@@ -86,8 +91,6 @@
 
 {{- define "common.dmaap.provisioning._volumes" -}}
 {{- $dot := default . .dot -}}
-- name: dbc-response-cache
-  emptyDir: {}
 {{- range $name, $volume := $dot.Values.volumes }}
 - name: {{ $volume.name }}
   configMap:
@@ -98,20 +101,14 @@
 
 {{- define "common.dmaap.provisioning.initContainer" -}}
 {{- $dot := default . .dot -}}
-{{- $drFeedConfig := default $dot.Values.drFeedConfig .drFeedConfig -}}
-{{- if $drFeedConfig -}}
+{{- $drNeedProvisioning := or $dot.Values.drFeedConfig $dot.Values.drSubConfig -}}
+{{- if $drNeedProvisioning -}}
 - name: {{ include "common.name" $dot }}-init-dmaap-provisioning
-  image: {{ include "repositoryGenerator.image.dbcClient" $dot }}
+  image: {{ include "repositoryGenerator.image.drProvClient" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
   env:
-  - name: PROTO
-    value: "http"
-  - name: PORT
-    value: "8080"
-  - name: RESP_CACHE
-    value: /opt/app/config/cache
-  - name: REQUESTID
-    value: "{{ include "common.name" $dot }}-dmaap-provisioning"
+  - name: ONBEHALFHDR
+    value: "X-DMAAP-DR-ON-BEHALF-OF: drprovcl"
   {{- range $cred := $dot.Values.credentials }}
   - name: {{ $cred.name }}
     {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" $cred.uid "key" $cred.key) | nindent 4 }}
@@ -119,56 +116,5 @@
   volumeMounts:
   {{- include "common.dmaap.provisioning._volumeMounts" $dot | trim | nindent 2 }}
   resources: {{ include "common.resources" $dot | nindent 4 }}
-- name: {{ include "common.name" $dot }}-init-merge-config
-  image: {{ include "repositoryGenerator.image.envsubst" $dot }}
-  imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
-  command:
-  - /bin/sh
-  args:
-  - -c
-  - |
-    set -uex -o pipefail
-    if [ -d /opt/app/config/cache ]; then
-      cd /opt/app/config/cache
-      for file in $(ls feed*); do
-        NUM=$(echo "$file" | sed 's/feedConfig-\([0-9]\+\)-resp.json/\1/')
-        export DR_LOG_URL_"$NUM"="$(grep -o '"logURL":"[^"]*' "$file" | grep -w "feedlog" | cut -d '"' -f4)"
-        export DR_FILES_PUBLISHER_URL_"$NUM"="$(grep -o '"publishURL":"[^"]*' "$file" | cut -d '"' -f4)"
-      done
-      for file in $(ls drpub*); do
-        NUM=$(echo "$file" | sed 's/drpubConfig-\([0-9]\+\)-resp.json/\1/')
-        export DR_FILES_PUBLISHER_ID_"$NUM"="$(grep -o '"pubId":"[^"]*' "$file" | cut -d '"' -f4)"
-      done
-      for file in $(ls drsub*); do
-        NUM=$(echo "$file" | sed 's/drsubConfig-\([0-9]\+\)-resp.json/\1/')
-        export DR_FILES_SUBSCRIBER_ID_"$NUM"="$(grep -o '"subId":"[^"]*' "$file" | cut -d '"' -f4)"
-      done
-      for file in $(ls topics*); do
-        NUM=$(echo "$file" | sed 's/topicsConfig-\([0-9]\+\)-resp.json/\1/')
-        export MR_FILES_PUBLISHER_CLIENT_ID_"$NUM"="$(grep -o '"mrClientId":"[^"]*' "$file" | cut -d '"' -f4)"
-      done
-    else
-      echo "No Response logged for Dmaap BusController Http POST Request..!"
-    fi
-    cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
-  env:
-  {{- range $cred := $dot.Values.credentials }}
-  - name: {{ $cred.name }}
-    {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" $cred.uid "key" $cred.key) | nindent 4 }}
-  {{- end }}
-  volumeMounts:
-  - mountPath: /opt/app/config/cache
-    name: dbc-response-cache
-  - mountPath: /config-input
-    name: app-config-input
-  - mountPath: /config
-    name: app-config
-  resources:
-    limits:
-      cpu: 200m
-      memory: 250Mi
-    requests:
-      cpu: 100m
-      memory: 200Mi
 {{- end -}}
 {{- end -}}
