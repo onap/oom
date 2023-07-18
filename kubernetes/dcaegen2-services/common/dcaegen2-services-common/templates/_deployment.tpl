@@ -240,7 +240,7 @@ post-processing.
 {{- $commonRelease :=  print (include "common.release" .) -}}
 {{- $policy := default dict .Values.policies -}}
 {{- $policyRls := default $commonRelease $policy.policyRelease -}}
-{{- $drFeedConfig := default "" .Values.drFeedConfig -}}
+{{- $drNeedProvisioning := or .Values.drFeedConfig .Values.drSubConfig -}}
 {{- $dcaeName := print (include "common.fullname" .) }}
 {{- $dcaeLabel := (dict "dcaeMicroserviceName" $dcaeName) -}}
 {{- $dot := . -}}
@@ -310,7 +310,7 @@ spec:
         resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /app-config
-          name: {{ ternary "app-config-input" "app-config" (not $drFeedConfig) }}
+          name: {{ ternary "app-config-input" "app-config" (not $drNeedProvisioning) }}
         - mountPath: /app-config-input
           name: app-config-input
         {{- if $logDir }}
