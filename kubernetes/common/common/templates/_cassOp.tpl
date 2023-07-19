@@ -35,7 +35,9 @@ spec:
     serverVersion: {{ .Values.k8ssandraOperator.cassandraVersion }}
     storageConfig:
       cassandraDataVolumeClaimSpec:
+        {{ if .Values.k8ssandraOperator.persistence.storageClassName -}}
         storageClassName: {{ .Values.k8ssandraOperator.persistence.storageClassName }}
+        {{- end }}
         accessModes:
           - ReadWriteOnce
         resources:
