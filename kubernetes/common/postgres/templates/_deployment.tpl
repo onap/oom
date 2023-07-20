@@ -27,6 +27,12 @@ metadata:
   namespace: {{ include "common.namespace" $dot }}
   labels:
     app: {{ include "common.name" $dot }}-{{ $pgMode }}
+    app.kubernetes.io/name: {{ include "common.name" $dot }}-{{ $pgMode }}
+    {{- if $dot.Chart.AppVersion }}
+    version: "{{ $dot.Chart.AppVersion | replace "+" "_" }}"
+    {{- else }}
+    version: "{{ $dot.Chart.Version | replace "+" "_" }}"
+    {{- end }}
     chart: {{ $dot.Chart.Name }}-{{ $dot.Chart.Version | replace "+" "_" }}
     release: {{ include "common.release" $dot }}
     heritage: {{ $dot.Release.Service }}
@@ -42,6 +48,12 @@ spec:
     metadata:
       labels:
         app: {{ include "common.name" $dot }}-{{ $pgMode }}
+        app.kubernetes.io/name: {{ include "common.name" $dot }}-{{ $pgMode }}
+        {{- if $dot.Chart.AppVersion }}
+        version: "{{ $dot.Chart.AppVersion | replace "+" "_" }}"
+        {{- else }}
+        version: "{{ $dot.Chart.Version | replace "+" "_" }}"
+        {{- end }}
         release: {{ include "common.release" $dot }}
         name: "{{ index $dot.Values "container" "name" $pgMode }}"
     spec:
