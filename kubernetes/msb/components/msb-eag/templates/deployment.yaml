@@ -24,7 +24,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{ include "common.certInitializer.initContainer" . | indent 6 | trim }}
       - command:
         - /app/ready.py
         args:
@@ -49,13 +48,13 @@ spec:
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
           readinessProbe:
             tcpSocket:
-              port: {{ (eq "true" (include "common.needTLS" .)) | ternary .Values.service.internalPort .Values.service.internalPlainPort }}
+              port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
@@ -66,17 +65,11 @@ spec:
           - name: ROUTE_LABELS
             value: {{ .Values.config.routeLabels }}
           volumeMounts:
-          {{ include "common.certInitializer.volumeMount" . | indent 10 | trim }}
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
           - mountPath: /usr/local/apiroute-works/logs
             name: {{ include "common.fullname" . }}-logs
-          {{- if (include "common.needTLS" .) }}
-          - mountPath: /usr/local/openresty/nginx/msb-enabled/msbhttps.conf
-            name: {{ include "common.fullname" . }}-nginx-conf
-            subPath: msbhttps.conf
-          {{- end }}
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -90,15 +83,9 @@ spec:
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-        {{ include "common.certInitializer.volumes" . | indent 8 | trim }}
         - name: {{ include "common.fullname" . }}-log-conf
           configMap:
             name: {{ include "common.fullname" . }}-log
-        {{- if (include "common.needTLS" .) }}
-        - name: {{ include "common.fullname" . }}-nginx-conf
-          configMap:
-            name: {{ include "common.fullname" . }}-nginx
-        {{- end }}
         {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 8 }}
         - name:  {{ include "common.fullname" . }}-logs
           emptyDir: {}
