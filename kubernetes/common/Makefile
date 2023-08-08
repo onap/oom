@@ -20,8 +20,8 @@ SECRET_DIR := $(OUTPUT_DIR)/secrets
 COMMON_CHARTS_DIR := common
 
 EXCLUDES :=
-PROCESSED_LAST := cert-wrapper repository-wrapper
-PROCESSED_FIRST := repositoryGenerator readinessCheck serviceAccount certInitializer cmpv2Config
+PROCESSED_LAST := repository-wrapper
+PROCESSED_FIRST := repositoryGenerator readinessCheck serviceAccount cmpv2Config
 TO_FILTER := $(COMMON_CHARTS_DIR) $(PROCESSED_FIRST) $(EXCLUDES) $(PROCESSED_LAST)
 
 HELM_BIN := helm
