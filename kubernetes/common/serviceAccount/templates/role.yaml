@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2020 Orange
+# Modifications Copyright © 2023 Deutsche Telekom AG
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +37,112 @@ rules:
   - selfsubjectrulesreviews
   verbs:
   - create
+{{-     end }}
+{{-   else if or ($dot.Values.global.createDefaultRoles) ($dot.Values.createDefaultRoles) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "common.fullname" (dict "suffix" $role_type "dot" $dot ) }}
+  namespace: {{ include "common.namespace" $dot }}
+rules:
+{{-     if eq $role_type "read" }}
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  - batch
+  - extensions
+  resources:
+  - pods
+  - deployments
+  - deployments/status
+  - jobs
+  - jobs/status
+  - statefulsets
+  - replicasets
+  - replicasets/status
+  - daemonsets
+  verbs:
+  - get
+  - watch
+  - list
+{{-     else  }}
+{{-       if eq $role_type "create" }}
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  - batch
+  - extensions
+  resources:
+  - pods
+  - deployments
+  - deployments/status
+  - jobs
+  - jobs/status
+  - statefulsets
+  - replicasets
+  - replicasets/status
+  - daemonsets
+  - secrets
+  - services
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  resources:
+  - statefulsets
+  - configmaps
+  verbs:
+  - patch
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  resources:
+  - deployments
+  - secrets
+  - services
+  - pods
+  verbs:
+  - create
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  resources:
+  - pods
+  - persistentvolumeclaims
+  - secrets
+  - deployments
+  - services
+  verbs:
+  - delete
+- apiGroups:
+  - "" # "" indicates the core API group
+  - apps
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - certificates
+  verbs:
+  - create
+  - delete
+{{-       else }}
+# if you don't match read or create, then you're not allowed to use API
+# except to see basic information about yourself
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - selfsubjectaccessreviews
+  - selfsubjectrulesreviews
+  verbs:
+  - create
+{{-       end }}
 {{-     end }}
 {{-   end }}
 {{- end }}
