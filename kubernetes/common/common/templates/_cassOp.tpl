@@ -62,4 +62,10 @@ spec:
           name: {{ $datacenter.name }}
         size: {{ $datacenter.size }}
       {{- end }}
+    {{ if .Values.podAnnotations -}}
+    metadata:
+      pods:
+        annotations:
+          {{ toYaml .Values.podAnnotations | nindent 10 }}
+    {{- end }}
 {{ end }}
