@@ -15,7 +15,20 @@
 # limitations under the License.
 */}}
 
-{{ if .Values.mariadbConfiguration }}
+{{- if .Values.global.mariadbGalera.useOperator }}
+{{    if .Values.mariadbOpConfiguration }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-configuration" (include "common.fullname" .) }}
+  namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+data:
+  my.cnf: |
+{{ .Values.mariadbOpConfiguration | indent 4 }}
+{{-   end }}
+{{- else }}
+{{    if .Values.mariadbConfiguration }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,4 +38,5 @@ metadata:
 data:
   my.cnf: |
 {{ .Values.mariadbConfiguration | indent 4 }}
+{{-   end }}
 {{- end }}

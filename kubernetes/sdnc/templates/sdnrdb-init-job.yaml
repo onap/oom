@@ -28,9 +28,9 @@ spec:
         - /app/ready.py
         args:
         {{- if .Values.config.sdnr.mariadb.enabled }}
-        - --container-name
-        - {{ include "common.mariadbService" . }}
-        {{- else -}}
+        - --app-name
+        - {{ include "common.mariadbAppName" . }}
+        {{- else }}
         - --container-name
         - {{.Values.elasticsearch.nameOverride}}-elasticsearch
         - --container-name
@@ -56,7 +56,7 @@ spec:
           - |
             {{- if .Values.config.sdnr.mariadb.enabled }}
             "{{ .Values.config.binDir }}/createSdnrDb.sh";
-            {{- end -}}
+            {{- end }}
             sleep 90; "{{ .Values.config.binDir }}/startODL.sh"
         env:
           - name: SDNC_AAF_ENABLED
@@ -85,12 +85,12 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnrdb-secret" "key" "login") | indent 12 }}
           - name: SDNRDBPASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnrdb-secret" "key" "password") | indent 12 }}
-        {{- else -}}
+          {{- else }}
           - name: SDNRDBURL
             value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
           - name: SDNRDBPARAMETER
             value: "-k"
-        {{- end }}
+          {{- end }}
         {{- if .Values.config.sdnr.mariadb.enabled }}
         volumeMounts:
           - mountPath: {{ .Values.config.binDir }}/createSdnrDb.sh
@@ -140,5 +140,4 @@ spec:
       restartPolicy: Never
       imagePullSecrets:
       - name: "{{ include "common.namespace" . }}-docker-registry-key"
-
 {{ end -}}
