@@ -9,6 +9,8 @@
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Kiali setup guide: https://kiali.io/docs/installation/installation-guide/example-install/
 .. _Kserve setup guide: https://kserve.github.io/website/0.10/admin/kubernetes_deployment/
+.. _K8ssandra setup guide: https://docs.k8ssandra.io/install/
+.. _Mariadb-Operator setup guide: https://github.com/mariadb-operator/mariadb-operator
 
 .. _oom_base_optional_addons:
 
@@ -99,7 +101,49 @@ To be done...
 K8ssandra-Operator Installation
 -------------------------------
 
-To be done...
+K8ssandra-Operator is used to ease the installation and lifecycle management
+Cassandra clusters, including monitoring and backup
+
+For setup the K8ssandra operator is used, see `K8ssandra setup guide`_
+
+- Install k8ssandra-operator namespace::
+
+    > kubectl create namespace k8ssandra-operator
+
+    > kubectl label namespace k8ssandra-operator istio-injection=enabled
+
+- Install the k8ssandra-operator::
+
+    > helm repo add k8ssandra https://helm.k8ssandra.io/stable
+
+    > helm repo update k8ssandra
+
+    > helm install k8ssandra-operator --namespace k8ssandra-operator
+      k8ssandra/k8ssandra-operator --set global.clusterScoped=true
+
+Mariadb-Operator Installation
+-----------------------------
+
+Mariadb-Operator is used to ease the installation and lifecycle management
+MariaDB Galera and Replication clusters, including monitoring and backup
+
+For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
+
+- Install mariadb-operator namespace::
+
+    > kubectl create namespace mariadb-operator
+
+    > kubectl label namespace mariadb-operator istio-injection=enabled
+
+- Install the mariadb-operator::
+
+    > helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator
+
+    > helm repo update mariadb-operator
+
+    > helm install mariadb-operator --namespace mariadb-operator
+      mariadb-operator/mariadb-operator --set ha.enabled=true
+      
 
 Kserve Installation
 -------------------
