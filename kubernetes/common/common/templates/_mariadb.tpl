@@ -97,3 +97,179 @@
 {{- define "common.mariadbSecretParam" -}}
   {{ printf "password" -}}
 {{- end -}}
+
+{{- define "common.mariadbOpDatabase" -}}
+{{- $global := .Values.global }}
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: Database
+metadata:
+  name: {{ .Values.db.name }}
+spec:
+  mariaDbRef:
+    name: {{ include "common.mariadbService" . }}
+  characterSet: utf8
+  collate: utf8_general_ci
+{{ end }}
+
+{{- define "common.mariadbOpUser" -}}
+{{- $global := .Values.global }}
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: User
+metadata:
+  name: {{ .Values.db.user }}
+spec:
+  # If you want the user to be created with a different name than the resource name
+  # name: user-custom
+  mariaDbRef:
+    name: {{ include "common.mariadbService" . }}
+  passwordSecretKeyRef:
+    name: {{ include "common.mariadb.secret.userCredentialsSecretName"
+        (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride) }}
+    key: password
+  # This field is immutable and defaults to 10
+  maxUserConnections: 20
+{{ end }}
+
+{{/* MariaDB instance */}}
+{{- define "common.mariadbOpInstance" -}}
+{{- $global := .Values.global }}
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: MariaDB
+metadata:
+  name: {{ include "common.mariadbService" . }}
+spec:
+  podSecurityContext:
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+  inheritMetadata:
+    {{ if .Values.podAnnotations -}}
+    annotations: {{ toYaml .Values.podAnnotations | nindent 6 }}
+    {{- end }}
+    labels:
+      app: {{ include "common.mariadbService" . }}
+      version: {{ .Values.mariadbOperator.appVersion }}
+  rootPasswordSecretKeyRef:
+    name: {{ include "common.mariadb.secret.rootPassSecretName"
+        (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride) }}
+    key: password
+#  database: sdnctl
+#  username: sdnctl
+#  passwordSecretKeyRef:
+#    name: cds-mariadb-user-credentials
+#    key: password
+#  connection:
+#    secretName: mariadb-conn
+#    secretTemplate:
+#      key: dsn
+  image:
+    repository: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadbOperator.image }}
+    tag: {{ .Values.mariadbOperator.appVersion }}
+    pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: {{ include "common.namespace" . }}-docker-registry-key
+  port: 3306
+  replicas: {{ .Values.replicaCount }}
+  galera:
+    enabled: {{ .Values.mariadbOperator.galera.enabled }}
+    sst: mariabackup
+    replicaThreads: 1
+    agent:
+      image:
+        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.agentImage }}
+        tag: {{ .Values.mariadbOperator.galera.agentVersion }}
+        pullPolicy: IfNotPresent
+      port: 5555
+      kubernetesAuth:
+        enabled: true
+        authDelegatorRoleName: {{ include "common.mariadbService" . }}-auth
+      gracefulShutdownTimeout: 5s
+    recovery:
+      enabled: true
+      clusterHealthyTimeout: 1m
+      clusterBootstrapTimeout: 10m
+      podRecoveryTimeout: 3m
+      podSyncTimeout: 3m
+    initContainer:
+      image:
+        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.initImage }}
+        tag: {{ .Values.mariadbOperator.galera.initVersion }}
+        pullPolicy: IfNotPresent
+    volumeClaimTemplate:
+      resources:
+        requests:
+          storage: 50Mi
+      accessModes:
+        - ReadWriteOnce
+  livenessProbe:
+    exec:
+      command:
+        - bash
+        - '-c'
+        {{- if .Values.mariadbOperator.galera.enabled }}
+        - >-
+          mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SHOW STATUS LIKE
+          'wsrep_ready'" | grep -c ON
+        {{- else -}}
+        - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+        {{- end -}}
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    exec:
+      command:
+        - bash
+        - '-c'
+        {{- if .Values.mariadbOperator.galera.enabled }}
+        - >-
+          mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SHOW STATUS LIKE
+          'wsrep_ready'" | grep -c ON
+        {{- else -}}
+        - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+        {{- end -}}
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: kubernetes.io/hostname
+  tolerations:
+    - key: mariadb.mmontes.io/ha
+      operator: Exists
+      effect: NoSchedule
+  podDisruptionBudget:
+    maxUnavailable: 50%
+  updateStrategy:
+    type: RollingUpdate
+  myCnf: |
+    [mysqld]
+    bind-address=0.0.0.0
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_autoinc_lock_mode=2
+    max_allowed_packet=256M
+  #myCnfConfigMapKeyRef:
+  #  key: my.cnf
+  #  name: cds-mariadb
+  resources: {{ toYaml .Values.resources | nindent 4 }}
+  volumeClaimTemplate:
+    {{- if .Values.mariadbOperator.storageClassName }}
+    storageClassName: {{ .Values.k8ssandraOperator.persistence.storageClassName }}
+    {{- end }}
+    resources:
+      requests:
+        storage: {{ .Values.persistence.size | quote }}
+    accessModes:
+      - ReadWriteOnce
+{{-  if .Values.db.name }}
+{{ include "common.mariadbOpDatabase" . }}
+{{-  end }}
+{{-  if .Values.db.user }}
+{{ include "common.mariadbOpUser" . }}
+{{-  end }}
+{{ end }}
