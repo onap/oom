@@ -15,6 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#################################################################
+# Global configuration defaults.
+#################################################################
+global:
+  nodePortPrefix: 302
+  persistence:
+    mountPath: /dockerdata-nfs
+    backup:
+      mountPath: /dockerdata-nfs/backup
+  clusterDomain: cluster.local
+  metrics: {}
+  mariadbGalera:
+    # flag to enable the DB creation via mariadb-operator
+    useOperator: true
+    # if useOperator set to "true", set "enableServiceAccount to "false"
+    # as the SA is created by the Operator
+    enableServiceAccount: false
+    nameOverride: mariadb-galera
+    service: mariadb-galera
 
 #################################################################
 # Secrets metaconfig
@@ -35,20 +54,82 @@ secrets:
     login: '{{ .Values.galera.mariabackup.user }}'
     password: '{{ .Values.galera.mariabackup.password }}'
 
+mariadbOperator:
+  image: mariadb
+  appVersion: 11.1.2
+  galera:
+    enabled: true
+    agentImage: mariadb-operator/agent
+    agentVersion: v0.0.2
+    initImage: mariadb-operator/init
+    initVersion: v0.0.5
+
+## String to partially override common.names.fullname template (will maintain the release name)
+##
+nameOverride: mariadb-galera
+
+## Custom db configuration
+##
+db:
+  ## MariaDB username and password
+  ## Password is ignored if externalSecret is specified.
+  ## If not set, password will be "randomly" generated
+  ## ref: https://github.com/bitnami/bitnami-docker-mariadb-galera#creating-a-database-user-on-first-run
+  ##
+  user: my-user
+  # password:
+  # externalSecret:
+  ## Database to create
+  ## ref: https://github.com/bitnami/bitnami-docker-mariadb-galera#creating-a-database-on-first-run
+  ##
+  # name: my_database
+
+## Desired number of cluster nodes
+##
+replicaCount: 3
+
+## Additional pod annotations for MariaDB Galera pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+## -> here required to enable mariadb-galera in istio
+##
+podAnnotations:
+  #  sidecar.istio.io/inject: "false"
+  traffic.sidecar.istio.io/excludeInboundPorts: "4444,4567,4568"
+  traffic.sidecar.istio.io/includeInboundPorts: '*'
+  traffic.sidecar.istio.io/excludeOutboundPorts: "4444,4567,4568"
+
+mariadbOpConfiguration: |-
+  [mysqld]
+  bind-address=0.0.0.0
+  default_storage_engine=InnoDB
+  binlog_format=row
+  innodb_autoinc_lock_mode=2
+  max_allowed_packet=256M
+  lower_case_table_names = 1
+
+  ## Character set
+  collation_server=utf8_unicode_ci
+  init_connect='SET NAMES utf8'
+  character_set_server=utf8
+
+  ## Caches and Limits
+  tmp_table_size=32M
+  max_heap_table_size=32M
+  # Re-enabling as now works with Maria 10.1.2
+  query_cache_type=1
+  query_cache_limit=4M
+  query_cache_size=256M
+  max_connections=500
+  thread_cache_size=50
+  open_files_limit=65535
+  table_definition_cache=4096
+  table_open_cache=4096
+
+##########################################################################################
+# !!! the following configuration entries are ignored, when mariadbOperator is enabled !!!
+##########################################################################################
 # bitnami image doesn't support well single quote in password
 passwordStrengthOverride: basic
-
-#################################################################
-# Global configuration defaults.
-#################################################################
-global:
-  nodePortPrefix: 302
-  persistence:
-    mountPath: /dockerdata-nfs
-    backup:
-      mountPath: /dockerdata-nfs/backup
-  clusterDomain: cluster.local
-  metrics: {}
 
 image: bitnami/mariadb-galera:10.5.8
 ## Specify a imagePullPolicy
@@ -65,10 +146,6 @@ debug: true
 ## Sometimes, especially when a lot of pods are created at the same time,
 ## actions performed on the databases are tried to be done before actual start.
 init_sleep_time: 5
-
-## String to partially override common.names.fullname template (will maintain the release name)
-##
-nameOverride: mariadb-galera
 
 ## Use an alternate scheduler, e.g. "stork".
 ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
@@ -128,22 +205,6 @@ rootUser:
   ##
   # password:
   # externalSecret:
-
-## Custom db configuration
-##
-db:
-  ## MariaDB username and password
-  ## Password is ignored if externalSecret is specified.
-  ## If not set, password will be "randomly" generated
-  ## ref: https://github.com/bitnami/bitnami-docker-mariadb-galera#creating-a-database-user-on-first-run
-  ##
-  user: my-user
-  # password:
-  # externalSecret:
-  ## Database to create
-  ## ref: https://github.com/bitnami/bitnami-docker-mariadb-galera#creating-a-database-on-first-run
-  ##
-  # name: my_database
 
 ## Galera configuration
 ##
@@ -212,7 +273,8 @@ backup:
 
 readinessCheck:
   wait_for:
-    - '{{ include "common.name" . }}'
+    apps:
+      - '{{ include "common.name" . }}'
 
 ## TLS configuration
 ##
@@ -368,25 +430,11 @@ mariadbConfiguration: |-
 ##
 ## extraFlags: "--max-connect-errors=1000 --max_connections=155"
 
-## Desired number of cluster nodes
-##
-replicaCount: 3
-
 ## updateStrategy for MariaDB Master StatefulSet
 ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
 ##
 updateStrategy:
   type: RollingUpdate
-
-## Additional pod annotations for MariaDB Galera pods
-## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-## -> here required to enable mariadb-galera in istio
-##
-podAnnotations:
-  #  sidecar.istio.io/inject: "false"
-  traffic.sidecar.istio.io/excludeInboundPorts: "4444,4567,4568"
-  traffic.sidecar.istio.io/includeInboundPorts: '*'
-  traffic.sidecar.istio.io/excludeOutboundPorts: "4444,4567,4568"
 
 ## Pod affinity preset
 ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
