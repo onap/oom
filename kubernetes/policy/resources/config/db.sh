@@ -17,7 +17,7 @@
 # limitations under the License.
 */}}
 
-mysqlcmd() { mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
+mysqlcmd() { mysql  -h ${MYSQL_HOST} -P ${MYSQL_PORT} "$@"; };
 
 for db in migration pooling policyadmin policyclamp operationshistory clampacm
 do
@@ -25,4 +25,4 @@ do
     mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
 done
 
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
+mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
