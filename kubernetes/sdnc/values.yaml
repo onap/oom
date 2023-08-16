@@ -27,9 +27,9 @@ global:
     #This flag allows SO to instantiate its own mariadb-galera cluster
     #If shared instance is used, this chart assumes that DB already exists
     localCluster: false
-    service: mariadb-galera
+    service: &mariadbService mariadb-galera-primary
     internalPort: 3306
-    nameOverride: mariadb-galera
+    nameOverride: &mariadbName mariadb-galera
 
 
 #################################################################
@@ -323,12 +323,12 @@ config:
     sdnrdbTrustAllCerts: true
     elasticsearch:
     ## for legacy eleasticsearch database
-    # enabled: &esdbenabled true
-      enabled: &esdbenabled false
+      enabled: &esdbenabled true
+      # enabled: &esdbenabled false
     mariadb:
       ## for legacy eleasticsearch database
-      # enabled: false
-      enabled: true
+      enabled: false
+      # enabled: true
       databaseName: sdnrdb
       user: sdnrdb
       externalSecret: *sdnrdbSecretName
@@ -425,6 +425,9 @@ mariadb-galera: &mariadbGalera
     mountSubPath: sdnc/mariadb-galera
     enabled: true
   replicaCount: 1
+  mariadbOperator:
+    galera:
+      enabled: false
   serviceAccount:
     nameOverride: *sdnc-db
 
@@ -485,8 +488,8 @@ dgbuilder:
           (include "common.mariadb.secret.rootPassSecretName"
             (dict "dot" . "chartName" "mariadb-galera")) }}'
       userCredentialsExternalSecret: *dbSecretName
-    dbPodName: mariadb-galera
-    dbServiceName: mariadb-galera
+    dbPodName: *mariadbName
+    dbServiceName: *mariadbService
     # This should be revisited and changed to plain text
     dgUserPassword: cc03e747a6afbbcbf8be7668acfebee5
   serviceAccount:
