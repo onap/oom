@@ -35,6 +35,20 @@
       - aaf-cm
       - aaf-service
 
+  the powerful one allows also to wait for pod names with this
+  (has to start with the given pod name):
+  wait_for:
+    name: myname
+    pods:
+      - test-pod
+
+  the powerful one allows also to wait for pods with the
+  given "app" label:
+  wait_for:
+    name: myname
+    apps:
+      - mariadb-galera
+
   the powerful one allows also to wait for jobs with this:
   wait_for:
     name: myname
@@ -48,7 +62,7 @@
      - .dot : environment (.)
      - .initRoot : the root dictionary of readinessCheck submodule
                    (default to .Values.readinessCheck)
-     - .wait_for : list of containers / jobs to wait for (default to
+     - .wait_for : list of containers / pods /apps / jobs to wait for (default to
                    .Values.wait_for)
 
   Example calls:
@@ -62,6 +76,8 @@
 {{-   $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
 {{-   $wait_for := default $initRoot.wait_for .wait_for -}}
 {{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
+{{-   $pods := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "pods" -}}
+{{-   $apps := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "apps" -}}
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
 {{-   $jobs := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "jobs" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
@@ -76,6 +92,14 @@
   {{- range $container := default (list) $containers }}
   - --container-name
   - {{ tpl $container $dot }}
+  {{- end }}
+  {{- range $pod := default (list) $pods }}
+  - --pod-name
+  - {{ tpl $pod $dot }}
+  {{- end }}
+  {{- range $app := default (list) $apps }}
+  - -a
+  - {{ tpl $app $dot }}
   {{- end }}
   {{- range $job := $jobs }}
   - --job-name
