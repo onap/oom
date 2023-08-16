@@ -17,12 +17,31 @@
 # limitations under the License.
 */}}
 
-mysqlcmd() { mysql  -h ${MYSQL_HOST} -P ${MYSQL_USER} "$@"; };
+mysqlcmd() { mysql  -h ${MYSQL_HOST} -P ${MYSQL_PORT} "$@"; };
 
+i=5
+RESULT_VARIABLE=0
+echo "Check if user ${MYSQL_USER} is created in DB ${MYSQL_HOST}"
+while [ $i -gt 0 ] && [ "$RESULT_VARIABLE" != 1 ]
+do
+  i=$(( i-1 ))
+  RESULT_VARIABLE="$(mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" -se "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '${MYSQL_USER}')")"
+  if [ "$RESULT_VARIABLE" = 1 ]; then
+    echo "User ${MYSQL_USER} exists"
+  else
+    echo "User ${MYSQL_USER} does not exist"
+    sleep 10
+  fi
+done
+if [ "$RESULT_VARIABLE" != 1 ]; then
+  exit 1
+fi
 for db in migration pooling policyadmin policyclamp operationshistory clampacm
 do
+    echo "Create DB ${db}"
     mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "CREATE DATABASE IF NOT EXISTS ${db};"
+    echo "Grand access for user ${MYSQL_USER}"
     mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "GRANT ALL PRIVILEGES ON \`${db}\`.* TO '${MYSQL_USER}'@'%' ;"
 done
-
-mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
+echo "Flush privileges"
+mysqlcmd -uroot -p"${MYSQL_ROOT_PASSWORD}" --execute "FLUSH PRIVILEGES;"
