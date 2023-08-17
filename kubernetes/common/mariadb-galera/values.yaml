@@ -50,6 +50,52 @@ global:
   clusterDomain: cluster.local
   metrics: {}
 
+#######db Creds added################
+dbCreds:
+  userName: mariadb
+  userPassword: password
+
+#####################Operator section#################
+
+mariadbOperator:
+  enabled: true
+  galera:
+    enabled: true
+    sst: mariabackup
+    replicaThreads: 1
+    imageOpInit: mariadb-operator/init
+    imageOpAgent: mariadb-operator/agent
+    agent:
+      image:
+        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}// {{ .Values.galera.imageOpAgent }} ##ghcr.io/mariadb-operator/agent
+        tag: "v0.0.2"
+        pullPolicy: IfNotPresent
+      port: 5555
+      kubernetesAuth:
+        enabled: true
+        authDelegatorRoleName: mariadb-galera-auth
+      gracefulShutdownTimeout: 5s
+    recovery:
+      enabled: true
+      clusterHealthyTimeout: 1m
+      clusterBootstrapTimeout: 5m
+      podRecoveryTimeout: 3m
+      podSyncTimeout: 3m
+    initContainer:
+      image:
+        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}/ {{ .Values.galera.imageOpInit }} ##ghcr.io/mariadb-operator/init
+        tag: "v0.0.3"
+        pullPolicy: IfNotPresent
+    volumeClaimTemplate:
+      storage: 50Mi
+      accessModes:
+        - ReadWriteOnce        
+    passwordSecretKeyRef:
+      name: '{{ .Values.dbCreds.userName }}'
+      key: '{{ .Values.dbCreds.userPassword }}'
+      
+############################Operator Section Ends#########################
+
 image: bitnami/mariadb-galera:10.5.8
 ## Specify a imagePullPolicy
 ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
