@@ -107,8 +107,6 @@
   image: {{ include "repositoryGenerator.image.drProvClient" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
   env:
-  - name: ONBEHALFHDR
-    value: "X-DMAAP-DR-ON-BEHALF-OF: drprovcl"
   {{- range $cred := $dot.Values.credentials }}
   - name: {{ $cred.name }}
     {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" $cred.uid "key" $cred.key) | nindent 4 }}
