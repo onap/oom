@@ -1,5 +1,6 @@
 # Copyright © 2018  AT&T Intellectual Property.  All rights reserved.
 # Modifications Copyright © 2018 Amdocs,Bell Canada
+# Copyright (c) 2023 J. F.Lucas.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +19,4 @@
 ONAP DMaaP includes the following Kubernetes services:
 
 1) message-router - a message bus for applications
-2) dbc-api - an API to provision DMaaP resources
-3) dmaap-data-router  -  an API to provision data feeds for consumers
-
-# Service Dependencies
-
-message-router depends on AAF
-dmaap-data-router depends on AAF
-dbc-api depends on AAF and Postgresql.
+2) dmaap-data-router  -  an API to provision data feeds for consumers
