@@ -66,6 +66,13 @@ spec:
       affinity: {{ toYaml .Values.affinity | nindent 10 }}
       {{- end }}
       volumes:
+      - name: aaf-agent-certs
+        configMap:
+          name: {{ include "common.release" . }}-cert-wrapper-certs
+          defaultMode: 448
+      - name: ca-certs
+        secret:
+          secretName: {{ include "common.release" . }}-aaf-sms-int-certs
       - name: localtime
         hostPath:
           path: /etc/localtime

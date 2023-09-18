@@ -59,6 +59,23 @@
   volumeMounts:
   - mountPath: "/opt/app/osaaf"
     name: aaf-config-vol
+  - name: aaf-agent-certs
+    mountPath: /opt/app/aaf_config/cert/truststoreONAPall.jks.b64
+    subPath: truststoreONAPall.jks.b64
+  - name: aaf-agent-certs
+    mountPath: /opt/app/aaf_config/cert/truststoreONAP.p12.b64
+    subPath: truststoreONAP.p12.b64
+  - name: aaf-agent-certs
+    mountPath: /opt/app/aaf_config/cert/demoONAPsigner.p12.b64
+    subPath: demoONAPsigner.p12.b64
+  - name: ca-certs
+    mountPath: /opt/app/aaf_config/cert/intermediate_root_ca.pem
+    subPath: intermediate_root_ca.pem
+    readOnly: true
+  - name: ca-certs
+    mountPath: /opt/app/aaf_config/cert/AAF_RootCA.cer
+    subPath: AAF_RootCA.cer
+    readOnly: true
   env:
   - name: aaf_env
     value: "{{ .Values.global.aaf.aaf_env }}"
