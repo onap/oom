@@ -298,6 +298,16 @@ spec:
         volumeMounts:
         - mountPath: /opt/app/osaaf
           name: tls-info
+        - name: aaf-agent-certs
+          mountPath: /opt/app/aaf_config/cert/truststoreONAPall.jks.b64
+          subPath: truststoreONAPall.jks.b64
+        - name: aaf-agent-certs
+          mountPath: /opt/app/aaf_config/cert/truststoreONAP.p12.b64
+          subPath: truststoreONAP.p12.b64
+        - name: ca-certs
+          mountPath: /opt/app/aaf_config/cert/intermediate_root_ca.pem
+          subPath: intermediate_root_ca.pem
+          readOnly: true
       {{- end }}
       {{ include "dcaegen2-services-common._certPostProcessor" .  | nindent 4 }}
       containers:
@@ -423,6 +433,13 @@ spec:
       hostname: {{ include "common.name" . }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+      - name: aaf-agent-certs
+        configMap:
+          name: {{ include "common.release" . }}-cert-wrapper-certs
+          defaultMode: 448
+      - name: ca-certs
+        secret:
+          secretName: {{ include "common.release" . }}-aaf-sms-int-certs
       - configMap:
           defaultMode: 420
           name: {{ include "common.fullname" . }}-application-config-configmap
