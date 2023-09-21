@@ -2,6 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
 # Modifications Copyright © 2021-2022 Nordix Foundation
+# Modifications Copyright © 2023 DTAG
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,13 +34,15 @@ spec:
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /events/__strimzi-topic-operator-kstreams-topic-store-changelog/CG1/C1
               port: {{ .Values.liveness.port }}
+              scheme: HTTP
+            failureThreshold: {{ .Values.liveness.failureThreshold }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
             successThreshold: {{ .Values.liveness.successThreshold }}
-            failureThreshold: {{ .Values.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
@@ -50,13 +53,15 @@ spec:
             successThreshold: {{ .Values.readiness.successThreshold }}
             failureThreshold: {{ .Values.readiness.failureThreshold }}
           startupProbe:
-            tcpSocket:
-                port: {{ .Values.startup.port }}
+            httpGet:
+              path: /events/__strimzi-topic-operator-kstreams-topic-store-changelog/CG1/C1
+              port: {{ .Values.startup.port }}
+              scheme: HTTP
+            failureThreshold: {{ .Values.startup.failureThreshold }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
-            timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
             successThreshold: {{ .Values.startup.successThreshold }}
-            failureThreshold: {{ .Values.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
           env:
           - name: JAASLOGIN
             valueFrom:
