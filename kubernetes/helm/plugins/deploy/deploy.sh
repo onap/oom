@@ -271,7 +271,7 @@ deploy() {
   #So cache the results to prevent repeated execution.
   ALL_HELM_RELEASES=$(helm ls -q)
 
-    for subchart in strimzi cassandra mariadb-galera postgres ; do
+    for subchart in strimzi roles-wrapper repository-wrapper cassandra mariadb-galera postgres ; do
       SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
       SUBCHART_ENABLED=0
