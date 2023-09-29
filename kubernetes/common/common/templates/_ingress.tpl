@@ -570,17 +570,22 @@ metadata:
   name: {{ $baseaddr }}-{{ $service.exposedPort }}-route
 spec:
   parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
 {{-     if eq $gateway "-" }}
-    - name: {{ $baseaddr }}-gateway
+      name: {{ $baseaddr }}-gateway
 {{-     else }}
-    - name: {{ $gateway }}
+      name: {{ $gateway }}
 {{-     end }}
       namespace: {{ $namespace }}
       sectionName: udp-{{ $service.exposedPort }}
   rules:
     - backendRefs:
-      - name: {{ $service.name }}
+      - group: ''
+        kind: Service
+        name: {{ $service.name }}
         port: {{ $service.port }}
+        weight: 1
 {{-   else if eq $protocol "tcp" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1alpha2
@@ -589,17 +594,22 @@ metadata:
   name: {{ $baseaddr }}-{{ $service.exposedPort }}-route
 spec:
   parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
 {{-     if eq $gateway "-" }}
-    - name: {{ $baseaddr }}-gateway
+      name: {{ $baseaddr }}-gateway
 {{-     else }}
-    - name: {{ $gateway }}
+      name: {{ $gateway }}
 {{-     end }}
       namespace: {{ $namespace }}
       sectionName: tcp-{{ $service.exposedPort }}
   rules:
     - backendRefs:
-      - name: {{ $service.name }}
+      - group: ''
+        kind: Service
+        name: {{ $service.name }}
         port: {{ $service.port }}
+        weight: 1
 {{-   else if eq $protocol "http" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -608,10 +618,12 @@ metadata:
   name: {{ $baseaddr }}-http-route
 spec:
   parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
 {{-     if eq $gateway "-" }}
-    - name: {{ $baseaddr }}-gateway
+      name: {{ $baseaddr }}-gateway
 {{-     else }}
-    - name: {{ $gateway }}
+      name: {{ $gateway }}
 {{-     end }}
       namespace: {{ $namespace }}
 {{-     if (include "common.ingress._tlsRedirect" (dict "dot" $dot)) }}
@@ -623,8 +635,11 @@ spec:
     - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $baseaddr) }}
   rules:
     - backendRefs:
-      - name: {{ $service.name }}
+      - group: ''
+        kind: Service
+        name: {{ $service.name }}
         port: {{ $service.port }}
+        weight: 1
       matches:
         - path:
             type: PathPrefix
@@ -637,10 +652,12 @@ metadata:
   name: {{ $baseaddr }}-redirect-route
 spec:
   parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
 {{-       if eq $gateway "-" }}
-    - name: {{ $baseaddr }}-gateway
+      name: {{ $baseaddr }}-gateway
 {{-       else }}
-    - name: {{ $gateway }}
+      name: {{ $gateway }}
 {{-       end }}
       namespace: {{ $namespace }}
       sectionName: {{ include "common.ingress._gatewayHTTPListener" (dict "dot" $dot) }}
