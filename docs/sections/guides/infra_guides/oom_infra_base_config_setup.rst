@@ -123,7 +123,7 @@ Set the default StorageClass
 In some ONAP components it is important to have a default storageClass defined (e.g. cassandra),
 if you don't want to explicitly set it during the deployment via helm overrides.
 
-Therefor you should set the default storageClass (if not done during the K8S cluster setup) via the command:
+Therefor you should set the default storageClass (if not done during the K8S cluster setup) via the command::
 
     > kubectl patch storageclass <storageclass> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
@@ -338,7 +338,7 @@ Gateway-API
 Keycloak Installation
 ---------------------
 
-- Add helm repositories
+- Add helm repositories::
 
   > helm repo add bitnami https://charts.bitnami.com/bitnami
 
@@ -346,7 +346,7 @@ Keycloak Installation
 
   > helm repo update
 
-- create keycloak namespace
+- create keycloak namespace::
 
   > kubectl create namespace keycloak
   > kubectl label namespace keycloak istio-injection=enabled
@@ -362,7 +362,7 @@ Install Keycloak-Database
       .. include:: ../../resources/yaml/keycloak-db-values.yaml
          :code: yaml
 
-- Install the Postgres DB
+- Install the Postgres DB::
 
   > helm -n keycloak upgrade -i keycloak-db bitnami/postgresql --values ./keycloak-db-values.yaml
 
@@ -377,7 +377,7 @@ Configure Keycloak
       .. include:: ../../resources/yaml/keycloak-server-values.yaml
          :code: yaml
 
-- Install keycloak
+- Install keycloak::
 
   > helm -n keycloak upgrade -i keycloak codecentric/keycloak --values ./keycloak-server-values.yaml
 
