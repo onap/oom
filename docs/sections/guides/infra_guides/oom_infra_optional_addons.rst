@@ -112,7 +112,7 @@ For setup the K8ssandra operator is used, see `K8ssandra setup guide`_
 
     > kubectl label namespace k8ssandra-operator istio-injection=enabled
 
-- Install the k8ssandra-operator::
+- Install the k8ssandra-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::
 
     > helm repo add k8ssandra https://helm.k8ssandra.io/stable
 
@@ -120,6 +120,7 @@ For setup the K8ssandra operator is used, see `K8ssandra setup guide`_
 
     > helm install k8ssandra-operator --namespace k8ssandra-operator
       k8ssandra/k8ssandra-operator --set global.clusterScoped=true
+      --version=<recommended-version>
 
 Mariadb-Operator Installation
 -----------------------------
@@ -135,7 +136,7 @@ For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
 
     > kubectl label namespace mariadb-operator istio-injection=enabled
 
-- Install the mariadb-operator::
+- Install the mariadb-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::::
 
     > helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator
 
@@ -143,6 +144,8 @@ For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
 
     > helm install mariadb-operator --namespace mariadb-operator
       mariadb-operator/mariadb-operator --set ha.enabled=true
+      --set metrics.enabled=true --set webhook.certificate.certManager=true
+      --version=<recommended-version>
 
 
 Kserve Installation

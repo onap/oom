@@ -64,10 +64,10 @@ The versions of software that are supported by OOM are as follows:
 
 .. table:: OOM Software Requirements (optional)
 
-  ==============     ================= ==========
-  Release            Prometheus Stack  K8ssandra
-  ==============     ================= ==========
+  ==============     ================= ========== =================
+  Release            Prometheus Stack  K8ssandra  MariaDB-Operator
+  ==============     ================= ========== =================
   Kohn               35.x
   London             45.x              1.6.1
-  Montreal           45.x              1.8.0
-  ==============     ================= ==========
+  Montreal           45.x              1.9.1      0.21.0
+  ==============     ================= ========== =================

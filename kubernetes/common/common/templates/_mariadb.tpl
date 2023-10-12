@@ -126,6 +126,7 @@ spec:
     name: {{ $dbinst }}
   characterSet: utf8
   collate: utf8_general_ci
+  retryInterval: 5s
 {{- end -}}
 
 {{/*
@@ -151,6 +152,7 @@ spec:
     key: password
   # This field is immutable and defaults to 10
   maxUserConnections: 100
+  retryInterval: 5s
 {{- end -}}
 
 {{/*
@@ -174,6 +176,7 @@ spec:
   database: {{ $dbname }}
   table: "*"
   username: {{ $dbuser }}
+  retryInterval: 5s
   grantOption: true
 {{- end -}}
 
@@ -241,27 +244,20 @@ spec:
   rootPasswordSecretKeyRef:
     name: {{ $dbrootsecret }}
     key: password
-  image:
-    repository: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadbOperator.image }}
-    tag: {{ $dot.Values.mariadbOperator.appVersion }}
-    pullPolicy: IfNotPresent
+  image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadbOperator.image }}:{{ $dot.Values.mariadbOperator.appVersion }}
+  imagePullPolicy: IfNotPresent
   imagePullSecrets:
     - name: {{ include "common.namespace" . }}-docker-registry-key
   port: 3306
   replicas: {{ $dot.Values.replicaCount }}
+  {{- if $dot.Values.mariadbOperator.galera.enabled }}
   galera:
-    {{- if eq (int $dot.Values.replicaCount) 1 }}
-    enabled: false
-    {{- else }}
-    enabled: {{ $dot.Values.mariadbOperator.galera.enabled }}
-    {{- end }}
+    enabled: true
     sst: mariabackup
     replicaThreads: 1
     agent:
-      image:
-        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.agentImage }}
-        tag: {{ $dot.Values.mariadbOperator.galera.agentVersion }}
-        pullPolicy: IfNotPresent
+      image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.agentImage }}:{{ $dot.Values.mariadbOperator.galera.agentVersion }}
+      imagePullPolicy: IfNotPresent
       port: 5555
       kubernetesAuth:
         enabled: true
@@ -274,16 +270,15 @@ spec:
       podRecoveryTimeout: 5m
       podSyncTimeout: 10m
     initContainer:
-      image:
-        repository: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}
-        tag: {{ $dot.Values.mariadbOperator.galera.initVersion }}
-        pullPolicy: IfNotPresent
+      image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}:{{ $dot.Values.mariadbOperator.galera.initVersion }}
+      imagePullPolicy: IfNotPresent
     volumeClaimTemplate:
       resources:
         requests:
           storage: 50Mi
       accessModes:
         - ReadWriteOnce
+  {{- end }}
   livenessProbe:
     exec:
       command:
@@ -334,11 +329,11 @@ spec:
   resources: {{ include "common.resources" . | nindent 4 }}
   volumeClaimTemplate:
     {{- if $dot.Values.mariadbOperator.storageClassName }}
-    storageClassName: {{ $dot.Values.k8ssandraOperator.persistence.storageClassName }}
+    storageClassName: {{ $dot.Values.mariadbOperator.storageClassName }}
     {{- end }}
     resources:
       requests:
-        storage: {{ $dot.Values.persistence.size | quote }}
+        storage: {{ $dot.Values.mariadbOperator.persistence.size | quote }}
     accessModes:
       - ReadWriteOnce
 {{-  if $dot.Values.db.user }}
