@@ -28,12 +28,20 @@ spec:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
     autoScheduling:
       enabled: true
+    metadata:
+      commonLabels:
+        app: {{ .Values.k8ssandraOperator.config.clusterName }}-reaper
+        version: {{ .Values.k8ssandraOperator.cassandraVersion }}
   stargate:
     containerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
       tag: {{ .Values.k8ssandraOperator.stargate.tag }}
     size: {{ .Values.k8ssandraOperator.stargate.size }}
     heapSize: {{ .Values.k8ssandraOperator.stargate.jvmOptions.heapSize }}
+    metadata:
+      commonLabels:
+        app: {{ .Values.k8ssandraOperator.config.clusterName }}-stargate
+        version: {{ .Values.k8ssandraOperator.cassandraVersion }}
     livenessProbe:
       initialDelaySeconds: 200
       periodSeconds: 10
