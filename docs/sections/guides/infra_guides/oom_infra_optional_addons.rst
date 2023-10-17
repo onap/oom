@@ -11,6 +11,7 @@
 .. _Kserve setup guide: https://kserve.github.io/website/0.10/admin/kubernetes_deployment/
 .. _K8ssandra setup guide: https://docs.k8ssandra.io/install/
 .. _Mariadb-Operator setup guide: https://github.com/mariadb-operator/mariadb-operator
+.. _Postgres-Operator setup guide: https://github.com/CrunchyData/postgres-operator
 
 .. _oom_base_optional_addons:
 
@@ -125,7 +126,7 @@ For setup the K8ssandra operator is used, see `K8ssandra setup guide`_
 Mariadb-Operator Installation
 -----------------------------
 
-Mariadb-Operator is used to ease the installation and lifecycle management
+Mariadb-Operator is used to ease the installation and lifecycle management of
 MariaDB Galera and Replication clusters, including monitoring and backup
 
 For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
@@ -147,6 +148,13 @@ For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
       --set metrics.enabled=true --set webhook.certificate.certManager=true
       --version=<recommended-version>
 
+Postgres-Operator Installation
+------------------------------
+
+Postgres-Operator is used to ease the installation and lifecycle management of
+Postgres DB clusters, including monitoring and backup
+
+For setup the Postgres-Operator is used, see `Postgres-Operator setup guide`_
 
 Kserve Installation
 -------------------
