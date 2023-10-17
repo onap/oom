@@ -63,3 +63,53 @@
 {{- define "common.postgres.secret.primaryPasswordSecretName" -}}
   {{- include "common.postgres.secret._secretName" (set . "uidTemplate" "common.postgres.secret.primaryPasswordUID") }}
 {{- end -}}
+{{/*
+  Create postgres Database via postgres crunchydata-operator
+*/}}
+{{- define "common.postgresOpDatabase" -}}
+{{- $dot := default . .dot -}}
+{{- $dbname := (required "'dbame' param, is required." .dbname) -}}
+{{- $dbinst := (required "'dbinst' param, is required." .dbinst) -}}
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: {{ $dbname }}
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-0
+  postgresVersion: 15
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 2Gi
+  backups:
+    pgbackrest:
+      restore:
+        enabled: true
+        repoName: repo1
+      manual:
+        repoName: repo1
+        options:
+          - --type=full
+      global:
+        repo1-path: /pgbackrest/repo1
+        repo1-retention-full: "3"
+        repo1-retention-full-type: time
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-0
+      repos:
+      - name: repo1
+        schedules:
+          full: "0 1 * * *"
+          incremental: "0 */2 * * *"
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 2Gi
+{{- end -}}
