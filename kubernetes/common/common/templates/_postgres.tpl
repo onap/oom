@@ -63,3 +63,90 @@
 {{- define "common.postgres.secret.primaryPasswordSecretName" -}}
   {{- include "common.postgres.secret._secretName" (set . "uidTemplate" "common.postgres.secret.primaryPasswordUID") }}
 {{- end -}}
+
+{{/*
+  Create postgres cluster via postgres crunchydata-operator
+*/}}
+{{- define "common.postgresOpInstance" -}}
+{{- $dot := default . .dot -}}
+{{- $global := $dot.Values.global -}}
+{{- $dbinst := include "common.name" $dot -}}
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: {{ $dbinst }}
+  labels:
+    app: {{ $dbinst }}
+    version: "5.5"
+spec:
+  metadata:
+    labels:
+      app: {{ $dbinst }}
+      version: "5.5"
+  {{- if .Values.postgresOperator.imagePostgres }}
+  image: {{ .Values.postgresOperator.imagePostgres | quote }}
+  {{- end }}
+  imagePullSecrets:
+    - name: {{ include "common.namespace" . }}-docker-registry-key
+  postgresVersion: {{ $dot.Values.postgresOperator.postgresVersion }}
+  instances:
+    - name: {{ default "instance1" .Values.postgresOperator.instanceName | quote }}
+      replicas: {{ default 2 .Values.postgresOperator.instanceReplicas }}
+      dataVolumeClaimSpec:
+        {{- if .Values.instanceStorageClassName }}
+        storageClassName: {{ .Values.postgresOperator.instanceStorageClassName | quote }}
+        {{- end }}
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ default "1Gi" .Values.postgresOperator.instanceSize | quote }}
+      {{- if or .Values.instanceMemory .Values.postgresOperator.instanceCPU }}
+      resources:
+        limits:
+          cpu: {{ default "" .Values.postgresOperator.instanceCPU | quote }}
+          memory: {{ default "" .Values.postgresOperator.instanceMemory | quote }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  postgres-operator.crunchydata.com/cluster: {{ $dbinst }}
+                  postgres-operator.crunchydata.com/instance-set: {{ default "instance1" .Values.postgresOperator.instanceName | quote }}
+  proxy:
+    pgBouncer:
+      metadata:
+        labels:
+          app: {{ $dbinst }}
+          version: "5.5"
+      {{- if .Values.postgresOperator.imagePgBouncer }}
+      image: {{ .Values.postgresOperator.imagePgBouncer | quote }}
+      {{- end }}
+      replicas: {{ default 2 .Values.postgresOperator.bouncerReplicas }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  postgres-operator.crunchydata.com/cluster: {{ $dbinst }}
+                  postgres-operator.crunchydata.com/role: pgbouncer
+  {{- if .Values.postgresOperator.monitoring }}
+  monitoring:
+    pgmonitor:
+      exporter:
+        image: {{ default "" .Values.postgresOperator.imageExporter | quote }}
+        {{- if .Values.postgresOperator.monitoringConfig }}
+{{ toYaml .Values.monitoringConfig | indent 8 }}
+        {{- end }}
+  {{- end }}
+  users:
+    - name: postgres
+{{- end -}}
