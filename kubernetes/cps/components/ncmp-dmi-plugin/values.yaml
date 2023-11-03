@@ -47,9 +47,8 @@ global:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/ncmp-dmi-plugin:1.3.0
+image: onap/ncmp-dmi-plugin:1.4.0
 containerPort: &svc_port 8080
-managementPort: &mgt_port 8081
 
 prometheus:
   enabled: false
@@ -60,17 +59,14 @@ service:
   ports:
     - name: &port http
       port: *svc_port
-    - name: http-management
-      port: *mgt_port
-      targetPort: *mgt_port
 
 metrics:
   serviceMonitor:
-    port: http-management
+    port: http
       ## specify target port if name is not given to the port in the service definition
       ##
     # targetPort: 8080
-    path: /manage/prometheus
+    path: /actuator/prometheus
     interval: 60s
     basicAuth:
       enabled: false
@@ -108,14 +104,14 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
-  path: /manage/health
-  port: *mgt_port
+  path: /actuator/health
+  port: *svc_port
 
 readiness:
   initialDelaySeconds: 15
   periodSeconds: 15
-  path: /manage/health
-  port: *mgt_port
+  path: /actuator/health
+  port: *svc_port
 
 ingress:
   enabled: true
