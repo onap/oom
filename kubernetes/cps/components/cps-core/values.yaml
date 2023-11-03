@@ -68,30 +68,29 @@ global:
     container:
       name: postgres
 
-image: onap/cps-and-ncmp:3.2.6
-containerPort: &svc_port 8080
-managementPort: &mgt_port 8081
+image: onap/cps-and-ncmp:3.3.11
 
 service:
   type: ClusterIP
+  headless: {}
   name: cps-core
+  internalPort: &svc_port 8080
   ports:
     - name: &port http
       port: *svc_port
-    - name: http-management
-      port: *mgt_port
-      targetPort: *mgt_port
+    - name: tcp-hazelcast
+      port: 5701
 
 prometheus:
   enabled: false
 
 metrics:
   serviceMonitor:
-    port: http-management
+    port: http
       ## specify target port if name is not given to the port in the service definition
       ##
     # targetPort: 8080
-    path: /manage/prometheus
+    path: /actuator/prometheus
     interval: 60s
     basicAuth:
       enabled: false
@@ -129,20 +128,20 @@ liveness:
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   enabled: true
-  path: /manage/health
-  port: *mgt_port
+  path: /actuator/health
+  port: *svc_port
 
 readiness:
   initialDelaySeconds: 15
   periodSeconds: 15
-  path: /manage/health
-  port: *mgt_port
+  path: /actuator/health
+  port: *svc_port
 
 startup:
   failureThreshold: 5
   periodSeconds: 60
-  path: /manage/health
-  port: *mgt_port
+  path: /actuator/health
+  port: *svc_port
 
 ingress:
   enabled: true
@@ -276,3 +275,11 @@ updateStrategy:
   type: RollingUpdate
   maxUnavailable: 0
   maxSurge: 1
+
+# Hazlecast custom configurations.
+hazelcast:
+  config:
+    kubernetes-discovery: true
+    kubernetes-service-name: cps-core-headless
+
+
