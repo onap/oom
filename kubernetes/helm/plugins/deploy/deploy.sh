@@ -296,8 +296,8 @@ deploy() {
         done
       fi
     done
-
-
+    # Disable delay
+    DELAY="false"
     for subchart in * ; do
       SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
