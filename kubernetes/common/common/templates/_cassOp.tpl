@@ -23,39 +23,39 @@ kind: K8ssandraCluster
 metadata:
   name: {{ .Values.k8ssandraOperator.config.clusterName }}
 spec:
-  reaper:
-    initContainerImage:
-      registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
-    containerImage:
-      registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
-    autoScheduling:
-      enabled: true
-    metadata:
-      commonLabels:
-        app: {{ .Values.k8ssandraOperator.config.clusterName }}-reaper
-        version: {{ .Values.k8ssandraOperator.cassandraVersion }}
-  stargate:
-    containerImage:
-      registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
-      tag: {{ .Values.k8ssandraOperator.stargate.tag }}
-    size: {{ .Values.k8ssandraOperator.stargate.size }}
-    heapSize: {{ .Values.k8ssandraOperator.stargate.jvmOptions.heapSize }}
-    metadata:
-      commonLabels:
-        app: {{ .Values.k8ssandraOperator.config.clusterName }}-stargate
-        version: {{ .Values.k8ssandraOperator.cassandraVersion }}
-    livenessProbe:
-      initialDelaySeconds: 200
-      periodSeconds: 10
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 20
-    readinessProbe:
-      initialDelaySeconds: 200
-      periodSeconds: 10
-      failureThreshold: 20
-      successThreshold: 1
-      timeoutSeconds: 20
+  #reaper:
+  #  initContainerImage:
+  #    registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
+  #  containerImage:
+  #    registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
+  #  autoScheduling:
+  #    enabled: true
+  #  metadata:
+  #    commonLabels:
+  #      app: {{ .Values.k8ssandraOperator.config.clusterName }}-reaper
+  #      version: {{ .Values.k8ssandraOperator.cassandraVersion }}
+  #stargate:
+  #  containerImage:
+  #    registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
+  #    tag: {{ .Values.k8ssandraOperator.stargate.tag }}
+  #  size: {{ .Values.k8ssandraOperator.stargate.size }}
+  #  heapSize: {{ .Values.k8ssandraOperator.stargate.jvmOptions.heapSize }}
+  #  metadata:
+  #    commonLabels:
+  #      app: {{ .Values.k8ssandraOperator.config.clusterName }}-stargate
+  #      version: {{ .Values.k8ssandraOperator.cassandraVersion }}
+  #  livenessProbe:
+  #    initialDelaySeconds: 200
+  #    periodSeconds: 10
+  #    failureThreshold: 20
+  #    successThreshold: 1
+  #    timeoutSeconds: 20
+  #  readinessProbe:
+  #    initialDelaySeconds: 200
+  #    periodSeconds: 10
+  #    failureThreshold: 20
+  #    successThreshold: 1
+  #    timeoutSeconds: 20
   cassandra:
     serverVersion: {{ .Values.k8ssandraOperator.cassandraVersion }}
     storageConfig:
