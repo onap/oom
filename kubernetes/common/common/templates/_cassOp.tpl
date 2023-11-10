@@ -23,6 +23,7 @@ kind: K8ssandraCluster
 metadata:
   name: {{ .Values.k8ssandraOperator.config.clusterName }}
 spec:
+  {{ if .Values.k8ssandraOperator.reaper.enabled -}}
   reaper:
     initContainerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
@@ -34,6 +35,8 @@ spec:
       commonLabels:
         app: {{ .Values.k8ssandraOperator.config.clusterName }}-reaper
         version: {{ .Values.k8ssandraOperator.cassandraVersion }}
+  {{- end }}
+  {{ if .Values.k8ssandraOperator.stargate.enabled -}}
   stargate:
     containerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
@@ -56,6 +59,7 @@ spec:
       failureThreshold: 20
       successThreshold: 1
       timeoutSeconds: 20
+  {{- end }}
   cassandra:
     serverVersion: {{ .Values.k8ssandraOperator.cassandraVersion }}
     storageConfig:
