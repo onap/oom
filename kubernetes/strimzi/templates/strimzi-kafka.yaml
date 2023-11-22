@@ -72,6 +72,18 @@ spec:
         securityContext:
           runAsUser: 0
           fsGroup: 0
+        {{- if .Values.affinity.podAntiAffinity.enabled }}
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: strimzi.io/name
+                      operator: In
+                      values:
+                        - {{ include "common.fullname" . }}-kafka
+                topologyKey: "kubernetes.io/hostname"
+        {{- end }}
     config:
       default.replication.factor: {{ .Values.replicaCount }}
       min.insync.replicas: {{ (eq 1.0 (.Values.replicaCount)) | ternary 1 (sub .Values.replicaCount 1) }}
@@ -104,6 +116,18 @@ spec:
         securityContext:
           runAsUser: 0
           fsGroup: 0
+        {{- if .Values.affinity.podAntiAffinity.enabled }}
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: strimzi.io/name
+                      operator: In
+                      values:
+                        - {{ include "common.fullname" . }}-zookeeper
+                topologyKey: "kubernetes.io/hostname"
+        {{- end }}
     replicas: {{ .Values.replicaCount }}
     config:
       ssl.hostnameVerification: false
