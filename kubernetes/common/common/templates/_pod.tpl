@@ -45,6 +45,9 @@
 - containerPort: {{ default $port.plain_port $port.internal_plain_port }}
   name: {{ $port.name }}-plain
 {{-     end }}
+{{-     if $port.l4_protocol }}
+  protocol: {{ $port.l4_protocol }}
+{{-     end }}
 {{-   end }}
 {{- end -}}
 
