@@ -1,0 +1,112 @@
+# Copyright © 2022, Deutsche Telekom
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+global:
+  ingress:
+    virtualhost:
+      # Default Ingress base URL
+      # can be overwritten in component by setting ingress.baseurlOverride
+      baseurl: "simpledemo.onap.org"
+      # prefix for baseaddr
+      # can be overwritten in component by setting ingress.preaddrOverride
+      preaddr: ""
+      # postfix for baseaddr
+      # can be overwritten in component by setting ingress.postaddrOverride
+      postaddr: ""
+
+# Default values for ui.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+image:
+  imageName: onap/portal-ng/ui
+  pullPolicy: Always
+  # Overrides the image tag whose default value is the chart appVersion.
+  # tag: 0.1.0
+
+replicaCount: 1
+
+# Specifies how many old replicas will be retained in a deployment
+revisionHistoryLimit: 2
+
+nameOverride: ""
+fullnameOverride: ""
+# This is the overall name on which this component is ar part of.
+partOf: portal
+
+service:
+  type: ClusterIP
+  port: 80
+  ports:
+    - name: http
+      port: 80
+
+ingress:
+  enabled: true
+  service:
+    - baseaddr: "portal-ng-ui"
+      name: "portal-ng-ui"
+      port: 80
+  config:
+    ssl: "redirect"
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+probes:
+  readiness:
+    initialDelaySeconds: 20
+    failureThreshold: 4
+  liveness:
+    initialDelaySeconds: 20
+    failureThreshold: 4
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env:
+  BFF_URL: http://portal-ng-bff.onap.svc.cluster.local:9080
+  NGINX_PORT: 80
+  KEYCLOAK_REALM: ONAP
+  KEYCLOAK_INTERNAL_URL: http://keycloak-http.keycloak.svc.cluster.local
+# CLUSTER_NAMESERVER_IP address is needed in the openresty lua part of the nginx, because Lua don't find the nameserver without this setting.
+# The IP will be used in the nginx / Lua setting for the resolver. You can get this value from /etc/resolver
+  CLUSTER_NAMESERVER_IP: 169.254.25.10
+
+#Pods Service Account
+serviceAccount:
+  nameOverride: portal-ng-ui
+  roles:
+    - read
+
+nginx:
+  tilesPath: /usr/share/nginx/html/assets/tiles/tiles.json
+  tilesIconsPath: /usr/share/nginx/html/assets/images/tiles
+
+tiles:
+  SDC_URL: "sdc-fe-ui"
+  POLICY_URL: "policy-ui"
+  SO_URL: "so-admin-cockpit-ui"
+  CDS_URL: "cds-ui"
+  HOLMES_URL: "holmes-rule-mgmt-ui"
+  AAI_URL: "aai-sparkybe-api"
+  SDNCDG_URL: "sdnc-dgbuilder-ui"
+  SDNCODL_URL: "sdnc-web-ui"
