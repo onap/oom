@@ -19,35 +19,40 @@ limitations under the License.
 Thanks for taking the time to contribute to OOM!
 Please see some information on how to do it.
 
-## How to become a contributor and submit your own code
+## Local setup
 
-### Environment setup
-In order to be able to check on your side before submitting, you'll need to install some binaries:
+### Install helm-push plugin
 
-* helm (satisfying the targeted version as seen in [setup guide](
-docs/oom_cloud_setup_guide.rst#software-requirements)).
-* chartmuseum (in order to push dependency charts)
-* helm push (version 0.10.1 as of today)
-* make
+In order to push locally built charts to chartmuseum, the `helm-push` plugin must be installed. You can do that with:
 
-### Linting and testing
-OOM uses helm linting in order to check that the template rendering is correct with default values.
+```sh
+$ helm plugin install https://github.com/chartmuseum/helm-push
+Downloading and installing helm-push v0.10.4 ...
+https://github.com/chartmuseum/helm-push/releases/download/v0.10.3/helm-push_0.10.4_linux_amd64.tar.gz
+Installed plugin: cm-push
+```
 
-The first step is to start chartmuseum:
+### Run chartmuseum
 
+``` shell
+mkdir -p charts && docker-compose up
+```
+or
 ``` shell
 nohup chartmuseum --storage="local" --storage-local-rootdir="/tmp/chartstorage" \
   --port 6464 &
 ```
-or
-``` shell
-docker-compose up
+
+### Add a `local` chart repository
+
+OOM contains `make` files that build the charts and push them to the local chartmuseum.
+For that to work, helm needs to know about the `local` helm repository.
+```shell
+helm repo remove local; helm repo add local http://localhost:6464
 ```
 
-then you add a `local` repository to helm:
-```shell
-helm repo remove local || helm repo add local http://localhost:6464
-```
+### Linting and testing
+OOM uses helm linting in order to check that the template rendering is correct with default values.
 
 As full rendering may be extremely long (~9h), you may only want to lint the common part and the component you're working on.
 Here's an example with AAI:
