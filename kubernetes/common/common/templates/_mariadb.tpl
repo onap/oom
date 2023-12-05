@@ -281,6 +281,9 @@ spec:
       image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}:{{ $dot.Values.mariadbOperator.galera.initVersion }}
       imagePullPolicy: IfNotPresent
     volumeClaimTemplate:
+      {{- if .Values.mariadbOperator.storageClassName }}
+      storageClassName: {{ .Values.mariadbOperator.storageClassName }}
+      {{- end }}
       resources:
         requests:
           storage: 50Mi
