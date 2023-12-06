@@ -38,8 +38,8 @@ In summary OOM provides the following capabilities:
   service impact
 - **Delete** - cleanup individual containers or entire deployments
 
-OOM supports a wide variety of Kubernetes private clouds - built with Rancher,
-Kubeadm or Cloudify - and public cloud infrastructures such as: Microsoft
+OOM supports a wide variety of Kubernetes private clouds - built with ClusterAPI,
+Kubespray - and public cloud infrastructures such as: Microsoft
 Azure, Amazon AWS, Google GCD, VMware VIO, and OpenStack.
 
 The OOM documentation is broken into four different areas each targeted at a
@@ -50,8 +50,6 @@ different user:
 - :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing cloud
 - :ref:`oom_user_guide` - a guide for operators of an OOM instance
 - :ref:`oom_access_info_guide` - a guide for operators who require access to OOM applications
-
-
 
 The :ref:`release_notes` for OOM describe the incremental features per release.
 
@@ -104,3 +102,4 @@ to examples and templates for describing new ones.
       subcomponent -> sCharts
       blueprint -> component
    }
+   
