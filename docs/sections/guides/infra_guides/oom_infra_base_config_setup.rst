@@ -65,14 +65,14 @@ Validate the installation::
 ::
 
   NAME             STATUS   ROLES               AGE     VERSION
-  onap-control-1   Ready    controlplane,etcd   3h53m   v1.23.8
-  onap-control-2   Ready    controlplane,etcd   3h53m   v1.23.8
-  onap-k8s-1       Ready    worker              3h53m   v1.23.8
-  onap-k8s-2       Ready    worker              3h53m   v1.23.8
-  onap-k8s-3       Ready    worker              3h53m   v1.23.8
-  onap-k8s-4       Ready    worker              3h53m   v1.23.8
-  onap-k8s-5       Ready    worker              3h53m   v1.23.8
-  onap-k8s-6       Ready    worker              3h53m   v1.23.8
+  onap-control-1   Ready    controlplane,etcd   3h53m   v1.27.5
+  onap-control-2   Ready    controlplane,etcd   3h53m   v1.27.5
+  onap-k8s-1       Ready    worker              3h53m   v1.27.5
+  onap-k8s-2       Ready    worker              3h53m   v1.27.5
+  onap-k8s-3       Ready    worker              3h53m   v1.27.5
+  onap-k8s-4       Ready    worker              3h53m   v1.27.5
+  onap-k8s-5       Ready    worker              3h53m   v1.27.5
+  onap-k8s-6       Ready    worker              3h53m   v1.27.5
 
 
 Install & configure helm
@@ -212,7 +212,7 @@ Istio Service Mesh
 ------------------
 
 .. note::
-    In London ONAP deployment supports the
+    The ONAP deployment supports the
     `ONAP Next Generation Security & Logging Structure`_
 
 ONAP is currenty supporting Istio as default ServiceMesh platform.
@@ -291,14 +291,35 @@ Ingress Controller Installation
 
 In the production setup 2 different Ingress setups are supported.
 
-- Istio Gateway `Istio-Gateway`_ (currently tested, but in the future deprecated)
-- Gateway API `Gateway-API`_ (in Alpha status, but will be standard in the future)
+- Gateway API `Gateway-API`_ (recommended)
+- Istio Gateway `Istio-Gateway`_ (alternative, but in the future deprecated)
 
 Depending on the solution, the ONAP helm values.yaml has to be configured.
 See the :ref:`OOM customized deployment<oom_customize_overrides>` section for more details.
 
-Istio Gateway
-^^^^^^^^^^^^^
+Gateway-API (recommended)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Install the Gateway-API CRDs replacing the
+  <recommended-gwapi-version> with the version defined in
+  the :ref:`versions_table` table::
+
+    > kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/<recommended-gwapi-version>/experimental-install.yaml
+
+- Create a common Gateway instance named "common-gateway"
+  The following example uses provides listeners for HTTP(s), UDP and TCP
+
+    .. collapse:: common-gateway.yaml
+
+      .. include:: ../../resources/yaml/common-gateway.yaml
+         :code: yaml
+ 
+- Apply the change::
+
+    > kubectl apply -f common-gateway.yaml
+
+Istio Gateway (alternative)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Create a namespace istio-ingress for the Istio Ingress gateway
   and enable istio-injection::
@@ -322,18 +343,6 @@ Istio Gateway
     > helm upgrade -i istio-ingress istio/gateway -n istio-ingress
     --version <recommended-istio-version> -f ingress-istio.yaml --wait
 
-
-Gateway-API
-^^^^^^^^^^^
-
-- Install the Gateway-API CRDs replacing the
-  <recommended-gwapi-version> with the version defined in
-  the :ref:`versions_table` table::
-
-    > kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/<recommended-gwapi-version>/experimental-install.yaml
-
-- Create a common Gateway instance
-  TBD
 
 Keycloak Installation
 ---------------------
