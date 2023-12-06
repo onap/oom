@@ -31,4 +31,3 @@ following documents:
   oom_infra_deployment_requirements.rst
   oom_infra_base_config_setup.rst
   oom_infra_optional_addons.rst
-  oom_infra_ingres_controller_setup.rst
