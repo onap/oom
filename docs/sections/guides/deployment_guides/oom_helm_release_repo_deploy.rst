@@ -32,7 +32,7 @@ Add the repository:
 
     To customize what applications are deployed, see the :ref:`oom_customize_overrides` section for more details, to provide your own custom overrides yaml file.
 
-- To deploy a release, execute the following, substituting the <version> tag with your preferred release (ie. 11.0.0)::
+- To deploy a release, execute the following, substituting the <version> tag with your preferred release (ie. 13.0.0)::
 
     >  helm deploy dev onap-release/onap --namespace onap --create-namespace --set global.masterPassword=myAwesomePasswordThatINeedToChange --version <version> -f oom/kubernetes/onap/resources/overrides/onap-all.yaml
 

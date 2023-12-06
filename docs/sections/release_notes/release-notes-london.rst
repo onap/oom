@@ -2,7 +2,9 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes:
+.. _release_notes_london:
+
+:orphan:
 
 *************************************
 ONAP Operations Manager Release Notes
@@ -11,7 +13,6 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
-- :ref:`London <release_notes_london>`
 - :ref:`Kohn <release_notes_kohn>`
 - :ref:`Jakarta <release_notes_jakarta>`
 - :ref:`Istanbul <release_notes_istanbul>`
@@ -27,7 +28,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Montreal release.
+This document provides the release notes for the London release.
 
 Summary
 =======
@@ -44,10 +45,10 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Montreal                             |
+| **Release designation**              | London                               |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2023/12/xx                           |
+| **Release date**                     | 2023/06/xx                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
@@ -56,27 +57,39 @@ New features
 
 * Introduction of "Production" ONAP setup, including:
 
-  * Besides the Istio Ingress APIs now the support for `Gateway-API`_
-    is added to the templates, which includes:
+  * Istio Service Mesh based deployment
+  * Ingress (Istio-Gateway) deployment and usage as standard external access method
+  * Internal Security provided by ServiceMesh and Component2Component AuthorizationPolicies
+  * External Security by introducing AuthN/Z using Keycloak and OAuth2Proxy for Ingress Access
 
-    * TCP Routes
-    * UDP Routes
-
+* Removal of unsupported components (AAF, Portal, Contrib,...)
 * Update of Helmcharts to use common templates and practices
-* Default support for Cassandra 4.x using k8ssandra-operator
-* Default support for MariaDB 11.x using mariadb-operator
+* Optional support for Cassandra 4.x using k8ssandra-operator
+
+* `REQ-1349 <https://jira.onap.org/browse/REQ-1349>`_ Removal of AAF.
+  Internal communication encryption and authorization is offered by ServiceMesh
+
+* `REQ-1350 <https://jira.onap.org/browse/REQ-1350>`_ All component must be
+  able to run without MSB. Component helm charts modified to use MSB optionally
+  and test the components during Daily and Gating with and without MSB
+
+* `REQ-1351 <https://jira.onap.org/browse/REQ-1351>`_ External secure
+  communication only via Ingress.
+  Ingress resources created by templates and Ingress installation is described
+  in the OOM documents
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11501
+https://jira.onap.org/projects/OOM/versions/11500
 
 **Known Issues**
 
 * Components not working under ServiceMesh
 
+  * CDS UI
   * SO Monitor UI
-  * Policy UI
+  * CLI
 
 Deliverables
 ------------
@@ -102,6 +115,9 @@ Known Limitations, Issues and Workarounds
 Known Vulnerabilities
 ---------------------
 
+* Cassandra version needs to be updated to support new Python version
+  see `OOM-2900 <https://jira.onap.org/browse/OOM-2900>`_
+  In London supported as option (using k8ssandra-operator), see :ref:`oom_base_optional_addons`
 
 Workarounds
 -----------
@@ -126,4 +142,3 @@ For more information on the ONAP Istanbul release, please see:
 .. _`ONAP Wiki Page`: https://wiki.onap.org
 .. _`ONAP Documentation`: https://docs.onap.org
 .. _`ONAP Release Downloads`: https://git.onap.org
-.. _`Gateway-API`: https://istio.io/latest/docs/tasks/traffic-management/ingress/gateway-api/

@@ -23,7 +23,7 @@ See the `helm deploy`_ plugin usage section for more detail, or it the plugin ha
 Users can customize the override files to suit their required deployment.
 
 .. note::
-  Standard and example override files (e.g. `onap-all.yaml`, `onap-all-ingress-istio.yaml`)
+  Standard and example override files (e.g. `onap-all.yaml`, `onap-all-ingress-gatewayapi.yaml`)
   can be found in the `oom/kubernetes/onap/resources/overrides/` directory.
 
  * Users can selectively enable or disable ONAP components by changing the ``enabled: true/false`` flags.
@@ -70,6 +70,20 @@ Global settings relevant for ServiceMesh and Ingress:
       enabled: true
       # enable all component's Ingress interfaces
       enable_all: false
+
+      # Provider: ingress, istio, gw-api
+      provider: gw-api
+      # Ingress class (only for provider "ingress"): e.g. nginx, traefik
+      ingressClass:
+      # Ingress Selector (only for provider "istio") to match with the
+      # ingress pod label "istio=ingress"
+      ingressSelector: ingress
+      # optional: common used Gateway (for Istio, GW-API) and listener names
+      commonGateway:
+        name: ""
+        httpListener: ""
+        httpsListener: ""
+
       # default Ingress base URL
       # All http requests via ingress will be redirected
       virtualhost:
@@ -119,6 +133,10 @@ Ingress settings:
 
 - enabled: true → enables Ingress using: Nginx (when SM disabled), Istio IngressGateway (when SM enabled)
 - enable_all: true → enables Ingress configuration in each component
+- provider: "..." → sets the Ingress provider (ingress, istio, gw-api)
+- ingressClass: "" → Ingress class (only for provider "ingress"): e.g. nginx, traefik
+- ingressSelector: "" → Selector (only for provider "istio") to match with the ingress pod label "istio=ingress"
+- commonGateway: "" → optional: common used Gateway (for Istio, GW-API) and http(s) listener names
 - virtualhost.baseurl: "simpledemo.onap.org" → sets globally the URL for all Interfaces set by the components,
     resulting in e.g. "aai-api.simpledemo.onap.org", can be overwritten in the component via: ingress.baseurlOverride
 - virtualhost.preaddr: "pre-" → sets globally a prefix for the Application name for all Interfaces set by the components,
@@ -130,7 +148,7 @@ Ingress settings:
 - namespace: istio-ingress → (optional) overrides the namespace of the ingress gateway which is used for the created SSL certificate
 
 .. note::
-  For the Ingress setup an example override file (`onap-all-ingress-istio.yaml`)
+  For the Ingress setup example override files (`onap-all-ingress-istio.yaml`, `onap-all-ingress-gatewayapi.yaml`)
   can be found in the `oom/kubernetes/onap/resources/overrides/` directory.
 
 External Authentication configuration
