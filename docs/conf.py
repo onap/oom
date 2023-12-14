@@ -1,6 +1,6 @@
 project = "onap"
-release = "master"
-version = "master"
+release = "montreal"
+version = "montreal"
 
 author = "Open Network Automation Platform"
 # yamllint disable-line rule:line-length
@@ -32,7 +32,7 @@ exclude_patterns = ['archived/*.rst', '.tox']
 # Change to {releasename} after you have created the new 'doc' branch.
 #
 
-branch = 'master'
+branch = 'montreal'
 
 intersphinx_mapping = {}
 doc_url = 'https://docs.onap.org/projects'
