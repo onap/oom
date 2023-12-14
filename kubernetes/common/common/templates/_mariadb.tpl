@@ -128,8 +128,9 @@
 apiVersion: mariadb.mmontes.io/v1alpha1
 kind: Database
 metadata:
-  name: {{ $dbname }}
+  name: {{ $dbinst }}-{{ $dbname }}
 spec:
+  name: {{ $dbname }}
   mariaDbRef:
     name: {{ $dbinst }}
   characterSet: utf8
@@ -149,10 +150,9 @@ spec:
 apiVersion: mariadb.mmontes.io/v1alpha1
 kind: User
 metadata:
-  name: {{ $dbuser }}
+  name: {{ $dbinst }}-{{ $dbuser }}
 spec:
-  # If you want the user to be created with a different name than the resource name
-  # name: user-custom
+  name: {{ $dbuser }}
   mariaDbRef:
     name: {{ $dbinst }}
   passwordSecretKeyRef:
