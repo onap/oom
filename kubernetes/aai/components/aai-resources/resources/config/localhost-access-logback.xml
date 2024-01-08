@@ -27,14 +27,17 @@
 <configuration>
   <property name="AJSC_HOME" value="${AJSC_HOME:-.}" />
 
-  <property name="logToFileEnabled" value='{{.Values.accessLogback.logToFileEnabled}}'/>
+  <property name="logToFileEnabled" value='{{.Values.accessLogback.logToFileEnabled}}' />
   <property name="maxHistory" value='{{.Values.accessLogback.maxHistory}}' />
   <property name="totalSizeCap" value='{{.Values.accessLogback.totalSizeCap}}' />
+  <property name="livenessAccessLogEnabled"
+    value='{{.Values.accessLogback.livenessAccessLogEnabled}}' />
+
 
   <if condition='property("logToFileEnabled").contains("true")'>
     <then>
       <appender name="ACCESS"
-                class="ch.qos.logback.core.rolling.RollingFileAppender">
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${AJSC_HOME}/logs/ajsc-jetty/localhost_access.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
           <fileNamePattern>${AJSC_HOME}/logs/ajsc-jetty/localhost_access.log.%d{yyyy-MM-dd}.zip
@@ -43,17 +46,36 @@
           <totalSizeCap>${totalSizeCap}</totalSizeCap>
         </rollingPolicy>
         <encoder class="org.onap.aai.logging.CustomLogPatternLayoutEncoder">
-          <Pattern>%a %u %z [%t] "%m %U%q" %s %b %y %i{X-TransactionId} %i{X-FromAppId} %i{X-Forwarded-For} %i{X-AAI-SSL-Client-CN} %i{X-AAI-SSL-Client-OU} %i{X-AAI-SSL-Client-O} %i{X-AAI-SSL-Client-L} %i{X-AAI-SSL-Client-ST} %i{X-AAI-SSL-Client-C} %i{X-AAI-SSL-Client-NotBefore} %i{X-AAI-SSL-Client-NotAfter} %i{X-AAI-SSL-Client-DN} %D</Pattern>
+          <Pattern>%a %u %z [%t] "%m %U%q" %s %b %y %i{X-TransactionId} %i{X-FromAppId}
+            %i{X-Forwarded-For} %i{X-AAI-SSL-Client-CN} %i{X-AAI-SSL-Client-OU}
+            %i{X-AAI-SSL-Client-O} %i{X-AAI-SSL-Client-L} %i{X-AAI-SSL-Client-ST}
+            %i{X-AAI-SSL-Client-C} %i{X-AAI-SSL-Client-NotBefore} %i{X-AAI-SSL-Client-NotAfter}
+            %i{X-AAI-SSL-Client-DN} %D</Pattern>
         </encoder>
       </appender>
-      <appender-ref ref="ACCESS"/>
+      <appender-ref ref="ACCESS" />
     </then>
   </if>
 
   <appender name="STDOUTACCESS" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="org.onap.aai.logging.CustomLogPatternLayoutEncoder">
-      <Pattern>%a %u %z [%t] "%m %U%q" %s %b %y %i{X-TransactionId} %i{X-FromAppId} %i{X-Forwarded-For} %i{X-AAI-SSL-Client-CN} %i{X-AAI-SSL-Client-OU} %i{X-AAI-SSL-Client-O} %i{X-AAI-SSL-Client-L} %i{X-AAI-SSL-Client-ST} %i{X-AAI-SSL-Client-C} %i{X-AAI-SSL-Client-NotBefore} %i{X-AAI-SSL-Client-NotAfter} %i{X-AAI-SSL-Client-DN} %D - "logType": "access"</Pattern>
+      <Pattern>%a %u %z [%t] "%m %U%q" %s %b %y %i{X-TransactionId} %i{X-FromAppId}
+        %i{X-Forwarded-For} %i{X-AAI-SSL-Client-CN} %i{X-AAI-SSL-Client-OU} %i{X-AAI-SSL-Client-O}
+        %i{X-AAI-SSL-Client-L} %i{X-AAI-SSL-Client-ST} %i{X-AAI-SSL-Client-C}
+        %i{X-AAI-SSL-Client-NotBefore} %i{X-AAI-SSL-Client-NotAfter} %i{X-AAI-SSL-Client-DN} %D -
+        "logType": "access"</Pattern>
     </encoder>
+    <if condition='property("livenessAccessLogEnabled").contains("false")'>
+      <then>
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+          <evaluator class="ch.qos.logback.access.net.URLEvaluator">
+            <URL>/aai/util/echo</URL>
+          </evaluator>
+          <OnMismatch>NEUTRAL</OnMismatch>
+          <OnMatch>DENY</OnMatch>
+        </filter>
+      </then>
+    </if>
   </appender>
 
   <appender-ref ref="STDOUTACCESS" />
@@ -84,4 +106,3 @@
 %y - Custom pattern determines rest or dme2
 -->
 */}}
-
