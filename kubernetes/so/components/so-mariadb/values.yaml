@@ -25,7 +25,9 @@ global:
   readinessImage: onap/oom/readiness:5.0.1
   ubuntuInitRepository: docker.io
   mariadbGalera:
-    nameOverride: &mariadbName mariadb-galera
+    # flag to enable the DB creation via mariadb-operator
+    useOperator: true
+    nameOverride: mariadb-galera
     service: mariadb-galera
     servicePort: "3306"
   migration:
@@ -34,11 +36,6 @@ global:
     dbPort: 3306
     dbUser: root
     dbPassword: secretpassword
-
-readinessCheck:
-  wait_for:
-    apps:
-      - *mariadbName
 
 #################################################################
 # Secrets metaconfig
@@ -105,6 +102,15 @@ repository: nexus3.onap.org:10001
 image: mariadb:10.1.38
 pullPolicy: Always
 ubuntuInitImage: oomk8s/ubuntu-init:2.0.0
+
+# Local mariadb galera instance default name
+mariadb-galera:
+  nameOverride: so-mariadb-galera
+  service:
+    internalPort: 3306
+  mariadbOperator:
+    galera:
+      enabled: false
 
 # db config
 db:
