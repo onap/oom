@@ -101,7 +101,21 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      initContainers:
+      - name: {{ include "common.name" . }}-readiness
+        command:
+        - /app/ready.py
+        args:
+        - --app-name
+        - {{ include "common.mariadbAppName" . }}
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
       containers:
       - name: {{ include "common.name" . }}-config
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}

@@ -21,12 +21,12 @@ global:
   nodePortPrefixExt: 304
   centralizedLoggingEnabled: true
   mariadbGalera:
+    # flag to enable the DB creation via mariadb-operator
+    useOperator: true
     nameOverride: mariadb-galera
     servicePort: '3306'
     service: mariadb-galera
     internalPort: '3306'
-    # mariadbRootPassword: secretpassword
-    # rootPasswordExternalSecret: some secret
     #This flag allows SO to instantiate its own mariadb-galera cluster,
     #serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
     localCluster: false
@@ -62,11 +62,19 @@ secrets:
   - uid: db-root-pass
     name: &dbRootPassSecretName '{{ include "common.release" . }}-so-db-root-pass'
     type: password
-    externalSecret: '{{ .Values.global.mariadbGalera.localCluster | ternary
-      .Values.global.mariadbGalera.rootPasswordExternalSecret
-      (default (include "common.mariadb.secret.rootPassSecretName"
-        (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride))
-        .Values.global.mariadbGalera.rootPasswordExternalSecret)  }}'
+    # If we're using shared mariadb, we need to use the secret name (second
+    # part).
+    # If not, we do the same trick than for user db secret hat allows you
+    # override this secret using external one with the same field that is used
+    # to pass this to subchart.
+    externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
+      ternary ((hasSuffix "so-db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+                  ternary
+                    ""
+                    (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .))
+              (include "common.mariadb.secret.rootPassSecretName"
+                (dict "dot" .
+                      "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
     password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
   - uid: db-backup-creds
     name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
@@ -578,11 +586,15 @@ config:
 #                                                       --set so.global.mariadbGalera.localCluster=true \
 #                                                       --set so.global.mariadbGalera.nameOverride=so-mariadb-galera \
 #                                                       --set so.global.mariadbGalera.serviceName=so-mariadb-galera
-mariadb-galera:
+mariadb-galera: &mariadbGalera
   rootUser:
     externalSecret: *dbRootPassSecretName
   nameOverride: &so-mariadb so-mariadb-galera
   replicaCount: 1
+  service:
+    name: *so-mariadb
+    portName: *so-mariadb
+    internalPort: 3306
   mariadbOperator:
     galera:
       enabled: false
@@ -633,17 +645,23 @@ mso:
     auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
 
 so-bpmn-infra:
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   logConfigMapNamePrefix: '{{ include "common.release" . }}-so'
 
 so-catalog-db-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
 so-cnf-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   server:
@@ -654,24 +672,33 @@ so-cnf-adapter:
 
 so-cnfm-lcm:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
 so-etsi-nfvo-ns-lcm:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
 so-mariadb:
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary .Values.db.rootPasswordExternalSecretLocalDb (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    #rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
+    rootPasswordExternalSecret: '{{ ternary (tpl .Values.db.rootPasswordExternalSecretLocalDb .) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
     backupCredsExternalSecret: *dbBackupCredsSecretName
     userCredsExternalSecret: *dbUserCredsSecretName
     adminCredsExternalSecret: *dbAdminCredsSecretName
 
 so-admin-cockpit:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
@@ -680,11 +707,15 @@ so-nssmf-adapter:
   server:
     actuatorCredsExternalSecret: *actuator-secrets
     bpelCredsExternalSecret: *bpel-secrets
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
 so-oof-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   mso:
@@ -696,21 +727,29 @@ so-oof-adapter:
 
 so-openstack-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   logConfigMapNamePrefix: '{{ include "common.release" . }}-so'
 
 so-request-db-adapter:
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
 so-sdc-controller:
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   logConfigMapNamePrefix: '{{ include "common.release" . }}-so'
 
 so-sdnc-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
   mso:
@@ -722,6 +761,8 @@ so-ve-vnfm-adapter:
 
 so-etsi-sol005-adapter:
   enabled: true
+  mariadb-galera:
+    <<: *mariadbGalera
   db:
     <<: *dbSecrets
 
