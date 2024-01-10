@@ -74,14 +74,14 @@
 */}}
 {{- define "common.mariadbService" -}}
   {{- if .Values.global.mariadbGalera.localCluster -}}
-  {{-   if .Values.global.mariadbGalera.useOperator }}
+  {{-   if and .Values.global.mariadbGalera.useOperator  (index .Values "mariadb-galera" "mariadbOperator" "galera" "enabled") }}
     {{- printf "%s-primary" (index .Values "mariadb-galera" "nameOverride") -}}
   {{-   else }}
     {{- index .Values "mariadb-galera" "nameOverride" -}}
   {{-   end }}
   {{- else -}}
-  {{-   if .Values.global.mariadbGalera.useOperator }}
-    {{- printf "%s-primary" (.Values.global.mariadbGalera.service) -}}
+  {{-   if and .Values.global.mariadbGalera.useOperator }}
+    {{- printf "%s-primary" (.Values.global.mariadbGalera.service) }}
   {{-   else }}
     {{- .Values.global.mariadbGalera.service -}}
   {{-   end }}
