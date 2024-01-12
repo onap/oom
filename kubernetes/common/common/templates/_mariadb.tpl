@@ -194,26 +194,37 @@ spec:
 {{- define "common.mariadbOpBackup" -}}
 {{- $dot := default . .dot -}}
 {{- $dbinst := include "common.name" $dot -}}
+{{- $name := default $dbinst $dot.Values.backup.nameOverride -}}
+---
+apiVersion: mariadb.mmontes.io/v1alpha1
 kind: Backup
 metadata:
-  name: backup-scheduled
+  name: {{ $name }}
 spec:
   mariaDbRef:
     name: {{ $dbinst }}
   schedule:
-    cron: "*/1 * * * *"
+    cron: {{ $dot.Values.backup.cron }}
     suspend: false
-  maxRetentionDays: 30
+  maxRetention: {{ $dot.Values.backup.maxRetention }}
   storage:
+    {{- if eq $dot.Values.backup.storageType "PVC" }}
     persistentVolumeClaim:
       resources:
         requests:
-          storage: 100Mi
-      {{- if .Values.mariadbOperator.storageClassName }}
-      storageClassName: {{ .Values.mariadbOperator.storageClassName }}
+          storage: {{ $dot.Values.backup.persistence.size }}
+      {{- if $dot.Values.mariadbOperator.storageClassName }}
+      storageClassName: {{ $dot.Values.mariadbOperator.storageClassName }}
       {{- end }}
       accessModes:
-        - ReadWriteOnce
+        - {{ $dot.Values.backup.persistence.accessMode }}
+    {{- end }}
+    {{- if eq $dot.Values.backup.storageType "S3" }}
+    s3: {{- include "common.tplValue" ( dict "value" .Values.backup.s3 "context" $) | nindent 6 }}
+    {{- end }}
+    {{- if eq $dot.Values.backup.storageType "volume" }}
+    volume: {{- include "common.tplValue" ( dict "value" .Values.backup.volume "context" $) | nindent 6 }}
+    {{- end }}
   resources:
     requests:
       cpu: 100m
@@ -308,6 +319,10 @@ spec:
     initialDelaySeconds: 20
     periodSeconds: 10
     timeoutSeconds: 5
+  {{- if default false .Values.global.metrics.enabled }}
+  metrics:
+    enabled: true
+  {{- end }}
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -320,19 +335,6 @@ spec:
     maxUnavailable: 50%
   updateStrategy:
     type: RollingUpdate
-  #myCnf: |
-  #  [mysqld]
-  #  bind-address=0.0.0.0
-  #  default_storage_engine=InnoDB
-  #  binlog_format=row
-  #  innodb_autoinc_lock_mode=2
-  #  max_allowed_packet=256M
-  #  lower_case_table_names = 1
-
-  #  ## Character set
-  #  collation_server=utf8_unicode_ci
-  #  init_connect='SET NAMES utf8'
-  #  character_set_server=utf8
 
   myCnfConfigMapKeyRef:
     key: my.cnf
