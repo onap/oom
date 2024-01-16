@@ -160,6 +160,14 @@ spec:
           value: {{ $value | quote}}
         {{- end }}
         {{- end }}
+        {{- if .Values.config.profiling.enabled }}
+        - name: PRE_JVM_ARGS
+          value: '{{ join " " .Values.config.profiling.args }}'
+        {{- end }}
+        {{- if .Values.config.debug.enabled }}
+        - name: POST_JVM_ARGS
+          value: {{ .Values.config.debug.args | quote }}
+        {{- end }}
         - name: DISABLE_UPDATE_QUERY
           value: {{ .Values.config.disableUpdateQuery | quote }}
         - name: LOCAL_USER_ID
@@ -207,10 +215,18 @@ spec:
         ports:
         - containerPort: {{ .Values.service.internalPort }}
           name: {{ .Values.service.portName }}
+
+        {{- if .Values.config.debug.enabled }}
         - containerPort: {{ .Values.service.internalPort2 }}
           name: {{ .Values.service.portName2 }}
+        {{- end }}
         - containerPort: {{ .Values.service.internalPort3 }}
           name: {{ .Values.service.portName3 }}
+        {{- if .Values.config.profiling.enabled }}
+        - containerPort: {{ .Values.service.internalPort4 }}
+          name: {{ .Values.service.portName4 }}
+        {{- end }}
+
         lifecycle:
           # wait for active requests (long-running tasks) to be finished
           # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
