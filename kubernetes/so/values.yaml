@@ -27,9 +27,11 @@ global:
     servicePort: '3306'
     service: mariadb-galera
     internalPort: '3306'
-    #This flag allows SO to instantiate its own mariadb-galera cluster,
-    #serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
+    # This flag allows SO to instantiate its own mariadb-galera cluster,
+    # serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
     localCluster: false
+    # (optional) if localCluster=false and an external secret is used set this variable
+    #userRootSecret: <secretName>
   persistence:
     mountPath: /dockerdata-nfs
   #This configuration specifies Service and port for SDNC OAM interface
@@ -68,13 +70,18 @@ secrets:
     # override this secret using external one with the same field that is used
     # to pass this to subchart.
     externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
-      ternary ((hasSuffix "so-db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
-                  ternary
-                    ""
-                    (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .))
-              (include "common.mariadb.secret.rootPassSecretName"
-                (dict "dot" .
-                      "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+      ternary (( hasSuffix "so-db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+               ternary
+                  ""
+                  (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
+               )
+               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
+                 ternary
+                   .Values.global.mariadbGalera.userRootSecret
+                   (include "common.mariadb.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
+                   )
+               ) }}'
     password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
   - uid: db-backup-creds
     name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
@@ -690,7 +697,15 @@ so-mariadb:
   db:
     rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
     #rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary (tpl .Values.db.rootPasswordExternalSecretLocalDb .) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    rootPasswordExternalSecret: '{{ .Values.global.mariadbGalera.localCluster |
+      ternary (tpl .Values.db.rootPasswordExternalSecretLocalDb .)
+               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
+                 ternary
+                   .Values.global.mariadbGalera.userRootSecret
+                   (include "common.mariadb.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
+                   )
+               ) }}'
     backupCredsExternalSecret: *dbBackupCredsSecretName
     userCredsExternalSecret: *dbUserCredsSecretName
     adminCredsExternalSecret: *dbAdminCredsSecretName
