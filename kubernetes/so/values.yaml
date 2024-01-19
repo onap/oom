@@ -68,13 +68,18 @@ secrets:
     # override this secret using external one with the same field that is used
     # to pass this to subchart.
     externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
-      ternary ((hasSuffix "so-db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
-                  ternary
-                    ""
-                    (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .))
-              (include "common.mariadb.secret.rootPassSecretName"
-                (dict "dot" .
-                      "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+      ternary (( hasSuffix "so-db-root-pass" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+               ternary
+                  ""
+                  (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
+               )
+               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
+                 ternary
+                   .Values.global.mariadbGalera.userRootSecret
+                   (include "common.mariadb.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
+                   )
+               ) }}'
     password: '{{ .Values.global.mariadbGalera.mariadbRootpassword }}'
   - uid: db-backup-creds
     name: &dbBackupCredsSecretName '{{ include "common.release" . }}-so-db-backup-creds'
@@ -690,7 +695,15 @@ so-mariadb:
   db:
     rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
     #rootPasswordExternalSecretLocalDb: *dbRootPassSecretName
-    rootPasswordExternalSecret: '{{ ternary (tpl .Values.db.rootPasswordExternalSecretLocalDb .) (include "common.mariadb.secret.rootPassSecretName" (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)) .Values.global.mariadbGalera.localCluster }}'
+    rootPasswordExternalSecret: '{{ .Values.global.mariadbGalera.localCluster |
+      ternary (tpl .Values.db.rootPasswordExternalSecretLocalDb .)
+               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
+                 ternary
+                   .Values.global.mariadbGalera.userRootSecret
+                   (include "common.mariadb.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
+                   )
+               ) }}'
     backupCredsExternalSecret: *dbBackupCredsSecretName
     userCredsExternalSecret: *dbUserCredsSecretName
     adminCredsExternalSecret: *dbAdminCredsSecretName
