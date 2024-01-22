@@ -32,6 +32,8 @@ global:
     service: &mariadbService mariadb-galera
     internalPort: 3306
     nameOverride: &mariadbName mariadb-galera
+    # (optional) if localCluster=false and an external secret is used set this variable
+    #userRootSecret: <secretName>
 
 
 #################################################################
@@ -47,13 +49,18 @@ secrets:
     # override this secret using external one with the same field that is used
     # to pass this to subchart.
     externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
-      ternary ((hasSuffix "sdnc-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
-                  ternary
-                    ""
-                    (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .))
-              (include "common.mariadb.secret.rootPassSecretName"
-                (dict "dot" .
-                      "chartName" .Values.global.mariadbGalera.nameOverride)) }}'
+      ternary (( hasSuffix "sdnc-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+               ternary
+                  ""
+                  (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
+               )
+               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
+                 ternary
+                   .Values.global.mariadbGalera.userRootSecret
+                   (include "common.mariadb.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
+                   )
+               ) }}'
     password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
   - uid: db-secret
     name: &dbSecretName '{{ include "common.release" . }}-sdnc-db-secret'
