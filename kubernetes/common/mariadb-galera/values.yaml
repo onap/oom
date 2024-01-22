@@ -267,8 +267,16 @@ galera:
 ## For this reason the db data pvc needs to have accessMode: ReadWriteMany.
 backup:
   enabled: false
+  # used in the mariadb-operator to override the backup name (default is DBName)
+  # nameOverride:
+  # defines the backup job execution period
   cron: "00 00 * * *"
+  # used by mariadb-operator to set the max retention time
+  maxRetention: 720h
   retentionPeriod: 3
+  # used by mariadb-operator to set the backup storage type (PVC, S3, volume)
+  storageType: PVC
+  # configuration used for PVC backup storage
   persistence:
     ## If true, use a Persistent Volume Claim, If false, use emptyDir
     ##
@@ -297,7 +305,27 @@ backup:
     ## Persistent Volume size
     ##
     size: 2Gi
-
+  # requires mariadb-operator v0.24.0
+  # configuration used for S3 backup storage
+  # see: https://github.com/mariadb-operator/mariadb-operator/blob/main/docs/BACKUP.md
+  s3:
+    bucket: backups
+    endpoint: minio.minio.svc.cluster.local:9000
+    #region:  us-east-1
+    accessKeyIdSecretKeyRef:
+      name: minio
+      key: access-key-id
+    secretAccessKeySecretKeyRef:
+      name: minio
+      key: secret-access-key
+    tls:
+      enabled: false
+      caSecretKeyRef:
+        name: minio-ca
+        key: ca.crt
+  # configuration used for kubernetes volumes as backup storage
+  # see: https://github.com/mariadb-operator/mariadb-operator/blob/main/docs/BACKUP.md
+  volume: {}
 
 readinessCheck:
   wait_for:
