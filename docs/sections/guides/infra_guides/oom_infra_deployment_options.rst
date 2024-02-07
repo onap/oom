@@ -36,5 +36,5 @@ Internal traffic encryption will be ensured by using Istio ServiceMesh.
 .. figure:: ../../resources/images/servicemesh/ServiceMesh.png
    :align: center
 
-For external access we start to establish Authentication via Oauth2-proxy
-and Keycloak which will be completed in the coming release.
+For external access we propose to establish Authentication via Oauth2-proxy
+and Keycloak which is described in this document.
