@@ -1,53 +1,48 @@
-image:
-  # The Keycloak image repository
-  repository: quay.io/keycloak/keycloak
-  # Overrides the Keycloak image tag whose default is the chart appVersion
-  tag: "19.0.3-legacy"
-
-postgresql:
-  # If `true`, the Postgresql dependency is enabled
-  enabled: false
+---
+command:
+  - "/opt/keycloak/bin/kc.sh"
+  - "--verbose"
+  - "start"
+  - "--http-enabled=true"
+  - "--http-port=8080"
+  - "--hostname-strict=false"
+  - "--hostname-strict-https=false"
+  - "--spi-events-listener-jboss-logging-success-level=info"
+  - "--spi-events-listener-jboss-logging-error-level=warn"
 
 extraEnv: |
-  - name: KEYCLOAK_USER
+  - name: KEYCLOAK_ADMIN
     valueFrom:
       secretKeyRef:
         name: {{ include "keycloak.fullname" . }}-admin-creds
         key: user
-  - name: KEYCLOAK_PASSWORD
+  - name: KEYCLOAK_ADMIN_PASSWORD
     valueFrom:
       secretKeyRef:
         name: {{ include "keycloak.fullname" . }}-admin-creds
         key: password
-  - name: DB_VENDOR
-    value: postgres
-  - name: DB_ADDR
-    value: keycloak-db-postgresql
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_DATABASE
-    value: keycloak
-  - name: DB_USER
-    value: dbusername
-  - name: DB_PASSWORD_FILE
-    value: /secrets/db-creds/password
+  - name: JAVA_OPTS_APPEND
+    value: >-
+      -XX:+UseContainerSupport
+      -XX:MaxRAMPercentage=50.0
+      -Djava.awt.headless=true
+      -Djgroups.dns.query={{ include "keycloak.fullname" . }}-headless
   - name: PROXY_ADDRESS_FORWARDING
     value: "true"
 
-extraVolumeMounts: |
-  - name: db-creds
-    mountPath: /secrets/db-creds
-    readOnly: true
+dbchecker:
+  enabled: true
 
-extraVolumes: |
-  - name: db-creds
-    secret:
-      secretName: keycloak-db-postgresql
+database:
+  vendor: postgres
+  hostname: keycloak-db-postgresql
+  port: 5432
+  username: dbusername
+  password: dbpassword
+  database: keycloak
 
 secrets:
   admin-creds:
-    annotations:
-      my-test-annotation: Test secret for {{ include "keycloak.fullname" . }}
     stringData:
       user: admin
       password: secret
