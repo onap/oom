@@ -358,7 +358,7 @@ Keycloak Installation
 - create keycloak namespace::
 
   > kubectl create namespace keycloak
-  > kubectl label namespace keycloak istio-injection=enabled
+  > kubectl label namespace keycloak istio-injection=disabled
 
 Install Keycloak-Database
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -388,7 +388,7 @@ Configure Keycloak
 
 - Install keycloak::
 
-  > helm -n keycloak upgrade -i keycloak codecentric/keycloak --values ./keycloak-server-values.yaml
+  > helm -n keycloak upgrade -i keycloak codecentric/keycloakx --values ./keycloak-server-values.yaml
 
 The required Ingress entry and REALM will be provided by the ONAP "Platform"
 component.
