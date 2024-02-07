@@ -2,6 +2,7 @@
 # ================================================================================
 # Copyright (c) 2021-2023 J. F. Lucas. All rights reserved.
 # Copyright (c) 2022 Nokia.  All rights reserved.
+# Copyright (c) 2024 Deutsche Telekom Intellectual Property. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@ filebeatConfig:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/org.onap.dcaegen2.services.prh.prh-app-server:1.9.0
+image: onap/org.onap.dcaegen2.services.prh.prh-app-server:1.10.1
 pullPolicy: Always
 
 # log directory where logging sidecar should look for log files
@@ -139,6 +140,33 @@ applicationConfig:
 applicationEnv:
   CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
   AUTH_HDR: '{{ printf "Basic %s" (print .Values.aaiCreds.user ":" .Values.aaiCreds.password | b64enc) }}'
+  BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
+  JAAS_CONFIG:
+    externalSecret: true
+    externalSecretUid: '{{ include "common.name" . }}-ku'
+    key: sasl.jaas.config
+
+# Strimzi Kafka config
+kafkaUser:
+  acls:
+    - name: unauthenticated.VES_PNFREG_OUTPUT
+      type: topic
+      patternType: literal
+      operations: [Read, DescribeConfigs]
+    - name: unauthenticated.PNF_READY
+      type: topic
+      patternType: literal
+      operations: [Write, DescribeConfigs]
+    - name: unauthenticated.PNF_UPDATE
+      type: topic
+      patternType: literal
+      operations: [Write, DescribeConfigs]
+
+kafkaTopic:
+  - name: unauthenticated.PNF_READY
+    strimziTopicName: unauthenticated.pnf-ready
+  - name: unauthenticated.PNF_UPDATE
+    strimziTopicName: unauthenticated.pnf-update
 
 # Resource Limit flavor -By Default using small
 flavor: small
