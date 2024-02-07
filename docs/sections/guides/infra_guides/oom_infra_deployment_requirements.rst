@@ -60,7 +60,7 @@ The versions of software that are supported and tested by OOM are as follows:
   ==============     ======  ============ ==============
   London             1.17.2  v0.6.2       19.0.3-legacy
   Montreal           1.19.3  v1.0.0       19.0.3-legacy
-  New Delhi          1.19.3  v1.0.0       19.0.3-legacy
+  New Delhi          1.19.3  v1.0.0       22.0.4
   ==============     ======  ============ ==============
 
 .. table:: OOM Software Requirements (optional)
