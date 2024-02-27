@@ -39,18 +39,18 @@
   e.g:  resources:
           small:
             limits:
-              cpu: 200m
-              memory: 4Gi
+              cpu: "200m"
+              memory: "4Gi"
             requests:
-              cpu: 100m
-              memory: 1Gi
+              cpu: "100m"
+              memory: "1Gi"
           large:
             limits:
-              cpu: 400m
-              memory: 8Gi
+              cpu: "400m"
+              memory: "8Gi"
             requests:
-              cpu: 200m
-              memory: 2Gi
+              cpu: "200m"
+              memory: "2Gi"
           unlimited: {}
 */ -}}
 {{- define "common.resources" -}}
