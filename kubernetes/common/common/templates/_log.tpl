@@ -29,11 +29,11 @@
     mountPath: /usr/share/filebeat/data
   resources:
     requests:
-      memory: "5Mi"
       cpu: "10m"
+      memory: "0.005Gi"
     limits:
-      memory: "20Mi"
       cpu: "100m"
+      memory: "0.02Gi"
 {{- end -}}
 {{- end -}}
 
