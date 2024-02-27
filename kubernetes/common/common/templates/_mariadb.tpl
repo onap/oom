@@ -227,11 +227,11 @@ spec:
     {{- end }}
   resources:
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: "100m"
+      memory: "0.1Gi"
     limits:
-      cpu: 300m
-      memory: 512Mi
+      cpu: "300m"
+      memory: "0.5Gi"
 {{- end -}}
 
 {{/*
