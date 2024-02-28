@@ -24,6 +24,15 @@ global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
   centralizedLoggingEnabled: true
+  # Docker Repository used by RepositoryGenerator
+  dockerHubRepository: docker.io
+  # Additions for MongoDB****************************
+  # If dockerHubRepository is changes the following entry needs
+  # to be changed as well
+  imageRegistry: docker.io
+  imagePullSecrets:
+    - '{{ include "common.names.namespace" . }}-docker-registry-key'
+  # *************************************************
 
 #################################################################
 # Filebeat configuration defaults.
@@ -80,12 +89,18 @@ serviceMesh:
       - serviceAccount: message-router-read
 
 # mongoDB overrides
-mongo:
+mongodb:
   nameOverride: dcae-mongo
-  config:
-    dbName: dcaecommondb
+  #config:
+  #  dbName: dcaecommondb
+  auth:
+    enabled: false
+    databases:
+      - "dcaecommondb"
+    usernames:
+      - "dcae"
   service:
-    name: dcae-mongohost
+    nameOverride: dcae-mongohost
     internalPort: 27017
   nfsprovisionerPrefix: dcaemongo
   sdnctlPrefix: tcagen2
