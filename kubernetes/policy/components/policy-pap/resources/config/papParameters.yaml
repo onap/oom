@@ -1,6 +1,6 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2022 Bell Canada. All rights reserved.
-#   Modifications Copyright © 2022 Nordix Foundation
+#   Modifications Copyright © 2022-2024 Nordix Foundation
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ spring:
     converters:
       preferred-json-mapper: gson
   datasource:
-{{ if not .Values.global.postgres.localCluster }}
+{{ if .Values.global.mariadbGalera.useInPolicy }}
     url: jdbc:mariadb://{{ .Values.db.service.name }}:{{ .Values.db.service.internalPort }}/policyadmin
     driverClassName: org.mariadb.jdbc.Driver
     username: "${SQL_USER}"
@@ -34,9 +34,6 @@ spring:
     hikari:
       maximumPoolSize: 20
   jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MariaDB103Dialect
     hibernate:
       ddl-auto: none
       naming:
@@ -58,10 +55,6 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
 {{ end }}
 
 server:
@@ -73,7 +66,6 @@ server:
 
 pap:
   name: PapGroup
-  aaf: false
   topic:
     pdp-pap.name: {{ .Values.config.kafka.topics.policyPdpPap }}
     notification.name: {{ .Values.config.kafka.topics.policyNotification }}
@@ -151,13 +143,6 @@ pap:
     password: "${API_PASSWORD}"
     useHttps: false
     basePath: policy/api/v1/healthcheck
-  - clientName: distribution
-    hostname: policy-distribution
-    port: 6969
-    userName: "${DISTRIBUTION_USER}"
-    password: "${DISTRIBUTION_PASSWORD}"
-    useHttps: false
-    basePath: healthcheck
 
 management:
   endpoints:
