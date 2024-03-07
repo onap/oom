@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2020, 2022 AT&T Intellectual Property
+# Modifications Copyright (C) 2024 Nordix Foundation.
 # Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +33,11 @@ spec:
         - /app/ready.py
         args:
         - --job-name
+{{ if .Values.global.mariadbGalera.useInPolicy }}
         - {{ include "common.release" . }}-policy-galera-config
+{{ else }}
+        - {{ include "common.release" . }}-policy-pg-config
+{{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -88,7 +93,8 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["sh","-c"]
-          args: ["/opt/app/policy/bin/pdpd-cl-entrypoint.sh boot"]
+          args:
+            - /opt/app/policy/bin/pdpd-cl-entrypoint.sh boot
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -112,6 +118,9 @@ spec:
           - name: SQL_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
           - name: logs
             mountPath: /var/log/onap
           - name: empty-dir
@@ -132,15 +141,18 @@ spec:
           {{- end }}
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
         - name: empty-dir
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
