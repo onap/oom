@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2018 Amdocs, Bell Canada
 # Modifications Copyright © 2020 AT&T Intellectual Property
-# Modifications Copyright (C) 2022 Nordix Foundation.
+# Modifications Copyright (C) 2022-2024 Nordix Foundation.
 # Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 # limitations under the License.
 */}}
 
-{{ if not .Values.global.postgres.localCluster }}
+{{ if .Values.global.mariadbGalera.useInPolicy }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -101,7 +101,7 @@ spec:
                 path: db.sh
 {{ end }}
 
-{{ if .Values.global.postgres.localCluster }}
+{{ if .Values.global.postgres.useInPolicy }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -187,106 +187,92 @@ spec:
               - key: db-pg.sh
                 path: db-pg.sh
 {{ end }}
-
 ---
-{{ if not .Values.global.postgres.localCluster }}
+{{ if .Values.global.mariadbGalera.useInPolicy }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-galera-config
+  name: {{ include "common.fullname" . }}-galera-migrator-config
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}-galera-config
+    app: {{ include "common.name" . }}-galera-migrator-config
     release: {{ include "common.release" . }}
 spec:
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}-galera-config
+        app: {{ include "common.name" . }}-galera-migrator-config
         release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}-galera-config
+      name: {{ include "common.name" . }}-galera-migrator-config
     spec:
-      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
-      - name: {{ include "common.name" . }}-init-readiness
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.fullname" . }}-galera-init
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        - name: {{ include "common.name" . }}-init-readiness
+          image: {{ include "repositoryGenerator.image.readiness" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+            - /app/ready.py
+          args:
+            - --job-name
+            - {{ include "common.fullname" . }}-galera-init
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "500Mi"
+            requests:
+              cpu: "3m"
+              memory: "20Mi"
       containers:
-      - name: {{ include "common.name" . }}-galera-db-migrator
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-        - mountPath: /dbcmd-config/db_migrator_policy_init.sh
-          name: {{ include "common.fullname" . }}-config
-          subPath: db_migrator_policy_init.sh
-        - mountPath: /opt/app/policy/etc/db
-          name: db-conf
-        command:
-        - /bin/sh
-        - -cx
-        - |
-           {{- if include "common.requireSidecarKiller" . }}
-           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
-           /dbcmd-config/db_migrator_policy_init.sh
-        env:
-        - name: SQL_HOST
-          value: "{{ index .Values "mariadb-galera" "service" "name" }}"
-        - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: SQL_DB
-          value: {{ .Values.dbmigrator.schema }}
-        - name: POLICY_HOME
-          value: {{ .Values.dbmigrator.policy_home }}
-        - name: SCRIPT_DIRECTORY
-          value: "sql"
-        resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.requireSidecarKiller" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-galera-db-migrator -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        resources:
-          limits:
-            cpu: 100m
-            memory: 500Mi
-          requests:
-            cpu: 10m
-            memory: 10Mi
+        - name: {{ include "common.name" . }}-galera-db-migrator
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /dbcmd-config/db_migrator_policy_init.sh
+              name: {{ include "common.fullname" . }}-config
+              subPath: db_migrator_policy_init.sh
+          command:
+            - /bin/sh
+            - -cx
+            - |
+           {{- if include "common.onServiceMesh" . }}
+              echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+              /dbcmd-config/db_migrator_policy_init.sh
+          env:
+          - name: SQL_HOST
+            value: "{{ index .Values "mariadb-galera" "service" "name" }}"
+          - name: SQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SQL_DB
+            value: {{ .Values.dbmigrator.schemas }}
+          - name: POLICY_HOME
+            value: {{ .Values.dbmigrator.policy_home }}
+          - name: SCRIPT_DIRECTORY
+            value: "sql"
+          resources: {{ include "common.resources" . | nindent 12 }}
+      {{- if (include "common.onServiceMesh" .) }}
+        - name: policy-service-mesh-wait-for-job-container
+          image: {{ include "repositoryGenerator.image.quitQuit" . }}
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - "-c"
+          args:
+            - echo "waiting 10s for istio side cars to be up"; sleep 10s;
+              /app/ready.py --service-mesh-check {{ include "common.name" . }}-galera-db-migrator -t 45;
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -298,112 +284,95 @@ spec:
             items:
               - key: db_migrator_policy_init.sh
                 path: db_migrator_policy_init.sh
-        - name: db-conf
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
 {{ end }}
-{{ if .Values.global.postgres.localCluster }}
+{{ if .Values.global.postgres.useInPolicy }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "common.fullname" . }}-pg-config
+  name: {{ include "common.fullname" . }}-pg-migrator-config
   namespace: {{ include "common.namespace" . }}
   labels:
-    app: {{ include "common.name" . }}-pg-config
+    app: {{ include "common.name" . }}-pg-migrator-config
     release: {{ include "common.release" . }}
 spec:
   template:
     metadata:
       labels:
-        app: {{ include "common.name" . }}-pg-config
+        app: {{ include "common.name" . }}-pg-migrator-config
         release: {{ include "common.release" . }}
-      name: {{ include "common.name" . }}-pg-config
+      name: {{ include "common.name" . }}-pg-migrator-config
     spec:
-      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
-      - name: {{ include "common.name" . }}-init-readiness
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.fullname" . }}-pg-init
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        - name: {{ include "common.name" . }}-init-readiness
+          image: {{ include "repositoryGenerator.image.readiness" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+            - /app/ready.py
+          args:
+            - --job-name
+            - {{ include "common.fullname" . }}-pg-init
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "500Mi"
+            requests:
+              cpu: "3m"
+              memory: "20Mi"
       containers:
-      - name: {{ include "common.name" . }}-pg-db-migrator
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        volumeMounts:
-          - mountPath: /dbcmd-config/db_migrator_pg_policy_init.sh
-            name: {{ include "common.fullname" . }}-config
-            subPath: db_migrator_pg_policy_init.sh
-          - mountPath: /opt/app/policy/etc/db
-            name: db-conf
-        command:
-          - /bin/sh
-          - -cx
-          - |
-             {{- if include "common.requireSidecarKiller" . }}
-             echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
-             /dbcmd-config/db_migrator_pg_policy_init.sh
-        env:
-        - name: SQL_HOST
-          value: "{{ .Values.postgres.service.name2 }}"
-        - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: SQL_DB
-          value: {{ .Values.dbmigrator.schema }}
-        - name: POLICY_HOME
-          value: {{ .Values.dbmigrator.policy_home }}
-        - name: SCRIPT_DIRECTORY
-          value: "postgres"
-        - name: PGPASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.requireSidecarKiller" .) }}
-      - name: policy-service-mesh-wait-for-job-container
-        image: {{ include "repositoryGenerator.image.quitQuit" . }}
-        imagePullPolicy: Always
-        command:
-        - /bin/sh
-        - "-c"
-        args:
-        - echo "waiting 10s for istio side cars to be up"; sleep 10s;
-          /app/ready.py --service-mesh-check {{ include "common.name" . }}-pg-db-migrator -t 45;
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        resources:
-          limits:
-            cpu: 100m
-            memory: 500Mi
-          requests:
-            cpu: 10m
-            memory: 10Mi
+        - name: {{ include "common.name" . }}-pg-db-migrator
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          volumeMounts:
+            - mountPath: /dbcmd-config/db_migrator_pg_policy_init.sh
+              name: {{ include "common.fullname" . }}-config
+              subPath: db_migrator_pg_policy_init.sh
+          command:
+            - /bin/sh
+            - -cx
+            - |
+             {{- if include "common.onServiceMesh" . }}
+              echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+              /dbcmd-config/db_migrator_pg_policy_init.sh
+          env:
+          - name: SQL_HOST
+            value: "{{ .Values.postgres.service.name2 }}"
+          - name: SQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SQL_DB
+            value: {{ .Values.dbmigrator.schemas }}
+          - name: POLICY_HOME
+            value: {{ .Values.dbmigrator.policy_home }}
+          - name: SCRIPT_DIRECTORY
+            value: "postgres"
+          - name: PGPASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          resources: {{ include "common.resources" . | nindent 12 }}
+      {{- if (include "common.onServiceMesh" .) }}
+        - name: policy-service-mesh-wait-for-job-container
+          image: {{ include "repositoryGenerator.image.quitQuit" . }}
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - "-c"
+          args:
+            - echo "waiting 10s for istio side cars to be up"; sleep 10s;
+              /app/ready.py --service-mesh-check {{ include "common.name" . }}-pg-db-migrator -t 45;
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -415,8 +384,4 @@ spec:
             items:
               - key: db_migrator_pg_policy_init.sh
                 path: db_migrator_pg_policy_init.sh
-        - name: db-conf
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
 {{ end }}
