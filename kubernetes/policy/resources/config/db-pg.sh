@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # ============LICENSE_START=======================================================
-# Copyright (C) 2021-2022 Nordix Foundation.
+# Copyright (C) 2021-2024 Nordix Foundation.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@
 
 export PGPASSWORD=${PG_ADMIN_PASSWORD};
 
-psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE USER ${PG_USER} WITH PASSWORD '${PG_USER_PASSWORD}'"
+psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE USER \"${PG_USER}\" WITH PASSWORD '${PG_USER_PASSWORD}'"
 
 for db in migration pooling policyadmin policyclamp operationshistory clampacm
 do
     psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE DATABASE ${db};"
-    psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${PG_USER};"
+    psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "GRANT ALL PRIVILEGES ON DATABASE ${db} TO \"${PG_USER}\";"
 done
