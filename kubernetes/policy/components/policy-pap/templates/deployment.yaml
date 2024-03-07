@@ -2,6 +2,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2020 AT&T Intellectual Property.
 #   Modifications Copyright (C) 2022 Bell Canada. All rights reserved.
+#   Modifications Copyright (C) 2024 Nordix Foundation.
 #   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,19 +33,20 @@ spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       - command:
-        - /app/ready.py
+          - /app/ready.py
         args:
-        - --job-name
-{{ if not .Values.global.postgres.localCluster }}
-        - {{ include "common.release" . }}-policy-galera-config
+          - --job-name
+{{ if .Values.global.mariadbGalera.useInPolicy }}
+          - {{ include "common.release" . }}-policy-galera-migrator-config
 {{ else }}
-        - {{ include "common.release" . }}-policy-pg-config
-{{ end }}        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+          - {{ include "common.release" . }}-policy-pg-migrator-config
+{{ end }}
+        env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         {{ include "common.containerSecurityContext" . | indent 8 | trim }}
@@ -78,11 +80,13 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "login") | indent 10 }}
         - name: DISTRIBUTION_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "password") | indent 10 }}
+{{- if .Values.global.useStrimziKafka }}
         - name: JAASLOGIN
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
+{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: papconfig
@@ -126,27 +130,33 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeout }}
           volumeMounts:
-          - name: logs
-            mountPath: /var/log/onap
-          - name: empty-dir
-            mountPath: /tmp
-            subPath: tmp-dir
-          - mountPath: /opt/app/policy/pap/etc/logback.xml
-            subPath: logback.xml
-            name: papconfig-processed
-          - name: papconfig-processed
-            mountPath: /opt/app/policy/pap/etc/mounted
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+            - name: logs
+              mountPath: /var/log/onap
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - mountPath: /opt/app/policy/pap/etc/logback.xml
+              subPath: logback.xml
+              name: papconfig-processed
+            - name: papconfig-processed
+              mountPath: /opt/app/policy/pap/etc/mounted
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
         - name: empty-dir
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
