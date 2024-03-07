@@ -1,6 +1,6 @@
 {{/*
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2021-2023 Nordix Foundation.
+#   Copyright (C) 2021-2024 Nordix Foundation.
 #   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,11 +30,18 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
+{{- if not .Values.global.useStrimziKafka }}
+{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+{{- end }}
       - command:
-        - /app/ready.py
+          - /app/ready.py
         args:
-        - --job-name
-        - {{ include "common.release" . }}-policy-galera-config
+          - --job-name
+{{ if .Values.global.mariadbGalera.useInPolicy }}
+          - {{ include "common.release" . }}-policy-galera-config
+{{ else }}
+          - {{ include "common.release" . }}-policy-pg-config
+{{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -44,7 +51,7 @@ spec:
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        name: {{ include "common.name" . }}-galera-config-readiness
+        name: {{ include "common.name" . }}-db-config-readiness
         resources:
           limits:
             cpu: "100m"
@@ -63,14 +70,16 @@ spec:
         - name: SQL_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
         - name: RUNTIME_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "login") | indent 10 }}
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "login") | indent 10 }}
         - name: RUNTIME_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "password") | indent 10 }}
+{{- if .Values.global.useStrimziKafka }}
         - name: SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
+{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: ac-runtime-config
@@ -103,27 +112,33 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
-          - name: logs
-            mountPath: /var/log/onap
-          - name: empty-dir
-            mountPath: /tmp
-            subPath: tmp-dir
-          - mountPath: /opt/app/policy/clamp/etc/logback.xml
-            subPath: logback.xml
-            name: ac-runtime-config-processed
-          - mountPath: /opt/app/policy/clamp/etc/mounted
-            name: ac-runtime-config-processed
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+            - name: logs
+              mountPath: /var/log/onap
+            - name: empty-dir
+              mountPath: /tmp
+              subPath: tmp-dir
+            - mountPath: /opt/app/policy/clamp/etc/logback.xml
+              subPath: logback.xml
+              name: ac-runtime-config-processed
+            - mountPath: /opt/app/policy/clamp/etc/mounted
+              name: ac-runtime-config-processed
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
         - name: empty-dir
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
