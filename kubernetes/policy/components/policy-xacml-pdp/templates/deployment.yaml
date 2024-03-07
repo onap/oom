@@ -1,6 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2020 AT&T Intellectual Property.
+#   Modifications Copyright (C) 2024 Nordix Foundation.
 #   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +35,11 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-policy-galera-config
+{{ if .Values.global.mariadbGalera.useInPolicy }}
+        - {{ include "common.release" . }}-policy-galera-migrator-config
+{{ else }}
+        - {{ include "common.release" . }}-policy-pg-migrator-config
+{{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -155,14 +160,17 @@ spec:
             name: pdpxconfig-processed
           - mountPath: /opt/app/policy/pdpx/etc/mounted
             name: pdpxconfig-processed
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -190,6 +198,9 @@ spec:
         - name: logs
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
         - name: pdpxconfig
           configMap:
             name: {{ include "common.fullname" . }}-configmap

@@ -35,6 +35,7 @@ global:
     nameOverride: *mariadbService
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
+    useInPolicy: true
   prometheusEnabled: false
   postgres:
     localCluster: false
@@ -44,8 +45,10 @@ global:
       name3: tcp-pgset-replica
     container:
       name: postgres
+    useInPolicy: false
   kafkaBootstrap: strimzi-kafka-bootstrap:9092
   policyKafkaUser: policy-kafka-user
+  useStrimziKafka: true
   kafkaTopics:
     acRuntimeTopic:
       name: policy.clamp-runtime-acm
@@ -56,8 +59,8 @@ secrets:
   - uid: db-root-password
     name: &dbRootPassSecretName '{{ include "common.release" . }}-policy-db-root-password'
     type: password
-    externalSecret: '{{ .Values.global.mariadbGalera.localCluster |
-      ternary (( hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
+    externalSecret: '{{ or .Values.global.postgres.useInPolicy .Values.global.mariadbGalera.useInPolicy | ternary (
+               ( hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
                ternary
                   ""
                   (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
@@ -164,8 +167,12 @@ policy-nexus:
 #################################################################
 
 dbmigrator:
+  # New released image required for drools pdp to work with SASL and Postgres. Tested with below snapshot. Release to come later
+  # image: onap/policy-db-migrator:4.0.1-SNAPSHOT
   image: onap/policy-db-migrator:3.1.3
-  schema: policyadmin
+  # These schemas will be required with the new version of db-migrator
+  # schemas: "policyadmin clampacm pooling operationshistory"
+  schemas: "policyadmin"
   policy_home: "/opt/app/policy"
 
 subChartsOnly:
