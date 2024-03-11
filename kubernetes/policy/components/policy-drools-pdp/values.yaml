@@ -41,7 +41,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-pdpd-cl:2.1.0
+image: onap/policy-pdpd-cl:2.1.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -83,7 +83,7 @@ ingress:
 serviceMesh:
   authorizationPolicy:
     authorizedPrincipals:
-      - serviceAccount: message-router-read
+      - serviceAccount: strimzi-kafka-read
 
 server:
   jvmOpts: -server -XshowSettings:vm
@@ -197,3 +197,24 @@ metrics:
       chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
       release: '{{ include "common.release" . }}'
       heritage: '{{ .Release.Service }}'
+
+config:
+  # Event consumption (kafka) properties
+  kafka:
+    consumer:
+      groupId: policy-drools-pdp
+  app:
+    listener:
+      policyPdpPapTopic: policy-pdp-pap
+
+# Strimzi Kafka config
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: policy-drools-pdp
+      type: group
+      operations: [ Create, Describe, Read, Write ]
+    - name: policy-pdp-pap
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
