@@ -37,7 +37,19 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      {{- if .Values.global.mariadbGalera.localCluster }}
+      {{-   if .Values.global.mariadbGalera.useOperator }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local_operator ) | indent 6 | trim }}
+      {{    else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local ) | indent 6 | trim }}
+      {{-   end }}
+      {{ else }}
+      {{-   if .Values.global.mariadbGalera.useOperator }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global_operator ) | indent 6 | trim }}
+      {{   else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global ) | indent 6 | trim }}
+      {{-   end }}
+      {{- end }}
       - command:
         - sh
         args:

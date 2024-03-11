@@ -102,27 +102,19 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        command:
-        - /app/ready.py
-        args:
-        - --app-name
-        - {{ include "common.mariadbAppName" . }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "0.5Gi"
-          requests:
-            cpu: "3m"
-            memory: "0.02Gi"
+      {{- if .Values.global.mariadbGalera.localCluster }}
+      {{-   if .Values.global.mariadbGalera.useOperator }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local_operator ) | indent 6 | trim }}
+      {{    else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local ) | indent 6 | trim }}
+      {{-   end }}
+      {{ else }}
+      {{-   if .Values.global.mariadbGalera.useOperator }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global_operator ) | indent 6 | trim }}
+      {{   else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global ) | indent 6 | trim }}
+      {{-   end }}
+      {{- end }}
       containers:
       - name: {{ include "common.name" . }}-config
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
