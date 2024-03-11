@@ -31,45 +31,29 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-{{- if not .Values.global.useStrimziKafkaPf }}
-{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-{{- end }}
       - command: ["/bin/sh", "-cx"]
-{{- if .Values.global.useStrimziKafkaPf }}
         args:
           - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`;
             cd /config-input && for PFILE in `ls -1`;
             do envsubst <${PFILE} >/config/${PFILE}; done
-{{ else }}
-        args:
-          - cd /config-input && for PFILE in `ls -1`;
-            do envsubst <${PFILE} >/config/${PFILE}; done
-{{ end }}
         env:
         - name: RESTSERVER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
         - name: RESTSERVER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
-{{- if .Values.global.useStrimziKafkaPf }}
         - name: JAASLOGIN
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
         - name: KAFKA_URL
-          value: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         - name: SASL
           value: {{ .Values.kafkaUser.authenticationType | upper }}
         - name: GROUP_ID
           value: {{ .Values.config.kafka.consumer.groupId }}
         - name: PAP_TOPIC
           value: {{ .Values.config.app.listener.policyPdpPapTopic }}
-{{ else }}
-        - name: KAFKA_URL
-          value: message-router
-        - name: PAP_TOPIC
-          value: {{ .Values.config.app.listener.policyPdpPapTopic | upper }}
-{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: apexconfig-input
