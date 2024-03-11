@@ -75,40 +75,28 @@ runtime:
         useHttps: false
         fetchTimeout: 15000
         topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
-        {{ if .Values.global.useStrimziKafka }}
         topicCommInfrastructure: kafka
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         additionalProps:
           group.id: {{ (first .Values.kafkaUser.acls).name }}
           allow.auto.create.topics: false
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${SASL_JAAS_CONFIG}
-        {{ else }}
-        topicCommInfrastructure: dmaap
-        servers:
-          - ${topicServer:message-router}
-        {{ end }}
     topicSinks:
       -
         useHttps: false
         fetchTimeout: 15000
         topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
-        {{ if .Values.global.useStrimziKafka }}
         topicCommInfrastructure: kafka
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         additionalProps:
           client.id: {{ (first .Values.kafkaUser.acls).name }}-client-id
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${SASL_JAAS_CONFIG}
-        {{ else }}
-        topicCommInfrastructure: dmaap
-        servers:
-          - ${topicServer:message-router}
-        {{ end }}
   acmParameters:
     toscaElementName: {{ .Values.customNaming.toscaElementName }}
     toscaCompositionName: {{ .Values.customNaming.toscaCompositionName }}
