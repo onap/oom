@@ -75,15 +75,9 @@ pap:
   name: PapGroup
   aaf: false
   topic:
-  {{ if .Values.global.useStrimziKafkaPf }}
     pdp-pap.name: {{ .Values.config.kafka.topics.policyPdpPap }}
     notification.name: {{ .Values.config.kafka.topics.policyNotification }}
     heartbeat.name: {{ .Values.config.kafka.topics.policyHeartbeat }}
-  {{ else }}
-    pdp-pap.name: {{ .Values.dmaap.topics.policyPdpPap }}
-    notification.name: {{ .Values.dmaap.topics.policyNotification }}
-    heartbeat.name: {{ .Values.dmaap.topics.policyHeartbeat }}
-  {{ end }}
   pdpParameters:
     heartBeatMs: 120000
     updateParameters:
@@ -97,77 +91,49 @@ pap:
     topicSources:
       - useHttps: false
         fetchTimeout: 15000
-        {{ if .Values.global.useStrimziKafkaPf }}
         topic: {{ .Values.config.kafka.topics.policyPdpPap }}
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         topicCommInfrastructure: kafka
         additionalProps:
           group.id : {{ .Values.config.kafka.consumer.groupId }}
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${JAASLOGIN}
-        {{ else }}
-        topic: {{ .Values.dmaap.topics.policyPdpPap }}
-        servers:
-          - ${topicServer:message-router}
-        topicCommInfrastructure: dmaap
-        {{ end }}
       - useHttps: false
         fetchTimeout: 15000
-        {{ if .Values.global.useStrimziKafkaPf }}
         topic: {{ .Values.config.kafka.topics.policyHeartbeat }}
         effectiveTopic: {{ .Values.config.kafka.topics.policyPdpPap }}
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         topicCommInfrastructure: kafka
         additionalProps:
           group.id : {{ .Values.config.kafka.consumer.groupId }}
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${JAASLOGIN}
-        {{ else }}
-        topic: {{ .Values.dmaap.topics.policyHeartbeat }}
-        effectiveTopic: {{ .Values.dmaap.topics.policyPdpPap }}
-        servers:
-          - ${topicServer:message-router}
-        topicCommInfrastructure: dmaap
-        {{ end }}
     topicSinks:
       - useHttps: false
-        {{ if .Values.global.useStrimziKafkaPf }}
         topic: {{ .Values.config.kafka.topics.policyPdpPap }}
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         topicCommInfrastructure: kafka
         additionalProps:
           group.id : {{ .Values.config.kafka.consumer.groupId }}
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${JAASLOGIN}
-        {{ else }}
-        topic: {{ .Values.dmaap.topics.policyPdpPap }}
-        servers:
-          - ${topicServer:message-router}
-        topicCommInfrastructure: dmaap
-        {{ end }}
       - useHttps: false
-        {{ if .Values.global.useStrimziKafkaPf }}
         topic: {{ .Values.config.kafka.topics.policyNotification }}
         servers:
-          - {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         topicCommInfrastructure: kafka
         additionalProps:
           group.id : {{ .Values.config.kafka.consumer.groupId }}
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${JAASLOGIN}
-        {{ else }}
-        topic: {{ .Values.dmaap.topics.policyNotification }}
-        servers:
-          - ${topicServer:message-router}
-        topicCommInfrastructure: dmaap
-        {{ end }}
+
 # If Strimzi Kafka to be used for communication, replace following configuration for topicSources and topicSinks
 #          servers:
 #            - {{ include "common.release" . }}-{{ .Values.config.kafkaBootstrap }}:9092
