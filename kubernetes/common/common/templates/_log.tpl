@@ -30,10 +30,10 @@
   resources:
     requests:
       cpu: "10m"
-      memory: "0.005Gi"
+      memory: "5Mi"
     limits:
       cpu: "100m"
-      memory: "0.02Gi"
+      memory: "20Mi"
 {{- end -}}
 {{- end -}}
 

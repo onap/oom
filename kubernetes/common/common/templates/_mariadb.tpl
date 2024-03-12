@@ -228,10 +228,10 @@ spec:
   resources:
     requests:
       cpu: "100m"
-      memory: "0.1Gi"
+      memory: "100Mi""
     limits:
       cpu: "300m"
-      memory: "0.5Gi"
+      memory: "500Mi""
 {{- end -}}
 
 {{/*
