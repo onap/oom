@@ -18,6 +18,17 @@
 # Global configuration defaults.
 #################################################################
 global:
+  mariadbGalera: &mariadbGalera
+    # flag to enable the DB creation via mariadb-operator
+    useOperator: true
+    #This flag allows NBI to instantiate its own mariadb-galera cluster
+    #When changing it to "true", also set "globalCluster: false"
+    #as the dependency check will not work otherwise (Chart.yaml)
+    localCluster: true
+    globalCluster: false
+    service: mariadb-galera
+    internalPort: 3306
+    nameOverride: mariadb-galera
   # image pull policy
   pullPolicy: Always
   persistence:
@@ -218,9 +229,18 @@ resources:
   unlimited: {}
 
 readinessCheck:
-  wait_for:
+  wait_for_global_operator:
+    pods:
+      - '{{ .Values.global.mariadbGalera.nameOverride }}-0'
+  wait_for_local_operator:
+    pods:
+      - '{{ .Values.config.cdsDB.dbServer }}-0'
+  wait_for_global:
     apps:
-      - cds-db
+      - '{{ .Values.global.mariadbGalera.nameOverride }}'
+  wait_for_local:
+    apps:
+      - '{{ .Values.config.cdsDB.dbServer }}'
 
 #Pods Service Account
 serviceAccount:
