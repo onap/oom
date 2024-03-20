@@ -87,8 +87,7 @@ spec:
   {{- if .Values.postgresOperator.imagePostgres }}
   image: {{ .Values.postgresOperator.imagePostgres | quote }}
   {{- end }}
-  imagePullSecrets:
-    - name: {{ include "common.namespace" . }}-docker-registry-key
+  {{- include "common.imagePullSecrets" . | nindent 2 }}
   postgresVersion: {{ $dot.Values.postgresOperator.postgresVersion }}
   instances:
     - name: {{ default "instance1" .Values.postgresOperator.instanceName | quote }}
