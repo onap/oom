@@ -403,8 +403,7 @@ spec:
       {{- end }}
       {{- include "common.dmaap.provisioning._volumes" . | nindent 6 -}}
       {{- include "dcaegen2-services-common._externalVolumes" . | nindent 6 }}
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" . }}-docker-registry-key"
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
 {{ end -}}
 
 {{/*
