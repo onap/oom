@@ -57,8 +57,7 @@ spec:
         release: {{ include "common.release" $dot }}
         name: "{{ index $dot.Values "container" "name" $pgMode }}"
     spec:
-      imagePullSecrets:
-      - name: "{{ include "common.namespace" $dot }}-docker-registry-key"
+      {{- include "common.imagePullSecrets" $dot | nindent 6 }}
       initContainers:
       - command:
         - sh

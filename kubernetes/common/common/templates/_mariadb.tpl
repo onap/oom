@@ -265,8 +265,7 @@ spec:
     key: password
   image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.mariadbOperator.image }}:{{ $dot.Values.mariadbOperator.appVersion }}
   imagePullPolicy: IfNotPresent
-  imagePullSecrets:
-    - name: {{ include "common.namespace" . }}-docker-registry-key
+  {{- include "common.imagePullSecrets" . | nindent 2 }}
   port: 3306
   replicas: {{ $dot.Values.replicaCount }}
   {{- if $dot.Values.mariadbOperator.galera.enabled }}
