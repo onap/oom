@@ -1,0 +1,82 @@
+global: {}
+
+image:
+  imageName: onap/portal-ng/history
+  pullPolicy: Always
+  # Overrides the image tag whose default value is the chart appVersion.
+  # tag: 0.1.0
+
+replicaCount: 1
+
+# Specifies how many old replicas will be retained in a deployment
+revisionHistoryLimit: 2
+
+imagePullSecrets:
+  - name: onap-docker-registry-key
+nameOverride: ""
+fullnameOverride: ""
+
+# Custom selector label (for bigger namespaces with other components)
+partOf: portal
+
+service:
+  type: ClusterIP
+  port: 9002
+  ports:
+    - name: http
+      port: 9002
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+probes:
+  readiness:
+    initialDelaySeconds: 20
+    failureThreshold: 4
+  liveness:
+    initialDelaySeconds: 20
+    failureThreshold: 4
+
+secretEnv:
+  MONGO_USERNAME: dbuser
+  MONGO_PASSWORD: dbpassword
+  MONGO_DATABASE: history
+
+env:
+  KEYCLOAK_URL: http://keycloak-http.keycloak
+  KEYCLOAK_REALM: ONAP
+  MONGO_HOST: history-mongodb
+  MONGO_PORT: 27017
+  COLLECTOR_HOST: jaeger-collector.istio-system
+  COLLECTOR_PORT: 9411
+
+mongodb:
+  fullnameOverride: history-mongodb
+  service:
+    portName: tcp-mongodb
+  config:
+    dbName: &mongoDBName history
+  auth:
+    rootPassword: TrWAweN9y9eW
+    usernames:
+    - dbuser
+    passwords:
+    - dbpassword
+    databases:
+    - *mongoDBName
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "250m"
+      memory: "500Mi"
+
+#Pods Service Account
+serviceAccount:
+  nameOverride: portal-ng-history
+  roles:
+    - read
