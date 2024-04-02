@@ -125,7 +125,7 @@
 {{- $dbname := (required "'dbame' param, is required." .dbname) -}}
 {{- $dbinst := (required "'dbinst' param, is required." .dbinst) -}}
 ---
-apiVersion: mariadb.mmontes.io/v1alpha1
+apiVersion: k8s.mariadb.com/v1alpha1
 kind: Database
 metadata:
   name: {{ $dbinst }}-{{ $dbname }}
@@ -147,7 +147,7 @@ spec:
 {{- $dbinst := (required "'dbinst' param, is required." .dbinst) -}}
 {{- $dbsecret := (required "'dbsecret' param, is required." .dbsecret) -}}
 ---
-apiVersion: mariadb.mmontes.io/v1alpha1
+apiVersion: k8s.mariadb.com/v1alpha1
 kind: User
 metadata:
   name: {{ $dbinst }}-{{ $dbuser }}
@@ -155,6 +155,7 @@ spec:
   name: {{ $dbuser }}
   mariaDbRef:
     name: {{ $dbinst }}
+    waitForIt: true
   passwordSecretKeyRef:
     name: {{ $dbsecret }}
     key: password
@@ -172,13 +173,14 @@ spec:
 {{- $dbname := (required "'dbame' param, is required." .dbname) -}}
 {{- $dbinst := (required "'dbinst' param, is required." .dbinst) -}}
 ---
-apiVersion: mariadb.mmontes.io/v1alpha1
+apiVersion: k8s.mariadb.com/v1alpha1
 kind: Grant
 metadata:
   name: {{ $dbuser }}-{{ $dbname }}-{{ $dbinst }}
 spec:
   mariaDbRef:
     name: {{ $dbinst }}
+    waitForIt: true
   privileges:
     - "ALL"
   database: {{ $dbname }}
@@ -196,13 +198,19 @@ spec:
 {{- $dbinst := include "common.name" $dot -}}
 {{- $name := default $dbinst $dot.Values.backup.nameOverride -}}
 ---
-apiVersion: mariadb.mmontes.io/v1alpha1
+apiVersion: k8s.mariadb.com/v1alpha1
 kind: Backup
 metadata:
   name: {{ $name }}
 spec:
+  inheritMetadata:
+    labels:
+      sidecar.istio.io/inject: 'false'
+  backoffLimit: 5
+  logLevel: info
   mariaDbRef:
     name: {{ $dbinst }}
+    waitForIt: true
   schedule:
     cron: {{ $dot.Values.backup.cron }}
     suspend: false
@@ -244,7 +252,7 @@ spec:
 {{- $dbrootsecret := tpl (default (include "common.mariadb.secret.rootPassSecretName" (dict "dot" $dot "chartName" "")) $dot.Values.rootUser.externalSecret) $dot -}}
 {{- $dbusersecret := tpl (default (include "common.mariadb.secret.userCredentialsSecretName" (dict "dot" $dot "chartName" "")) $dot.Values.db.externalSecret) $dot -}}
 ---
-apiVersion: mariadb.mmontes.io/v1alpha1
+apiVersion: k8s.mariadb.com/v1alpha1
 kind: MariaDB
 metadata:
   name: {{ $dbinst }}
@@ -327,7 +335,7 @@ spec:
       requiredDuringSchedulingIgnoredDuringExecution:
         - topologyKey: kubernetes.io/hostname
   tolerations:
-    - key: mariadb.mmontes.io/ha
+    - key: k8s.mariadb.com/ha
       operator: Exists
       effect: NoSchedule
   podDisruptionBudget:
