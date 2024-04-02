@@ -65,14 +65,14 @@ Validate the installation::
 ::
 
   NAME             STATUS   ROLES               AGE     VERSION
-  onap-control-1   Ready    controlplane,etcd   3h53m   v1.27.5
-  onap-control-2   Ready    controlplane,etcd   3h53m   v1.27.5
-  onap-k8s-1       Ready    worker              3h53m   v1.27.5
-  onap-k8s-2       Ready    worker              3h53m   v1.27.5
-  onap-k8s-3       Ready    worker              3h53m   v1.27.5
-  onap-k8s-4       Ready    worker              3h53m   v1.27.5
-  onap-k8s-5       Ready    worker              3h53m   v1.27.5
-  onap-k8s-6       Ready    worker              3h53m   v1.27.5
+  onap-control-1   Ready    controlplane,etcd   3h53m   v1.28.6
+  onap-control-2   Ready    controlplane,etcd   3h53m   v1.28.6
+  onap-k8s-1       Ready    worker              3h53m   v1.28.6
+  onap-k8s-2       Ready    worker              3h53m   v1.28.6
+  onap-k8s-3       Ready    worker              3h53m   v1.28.6
+  onap-k8s-4       Ready    worker              3h53m   v1.28.6
+  onap-k8s-5       Ready    worker              3h53m   v1.28.6
+  onap-k8s-6       Ready    worker              3h53m   v1.28.6
 
 
 Install & configure helm
@@ -249,8 +249,16 @@ Install Istio Basic Platform
 
 - Create an override for istiod (e.g. istiod.yaml) to add the oauth2-proxy as external
   authentication provider and apply some specific config settings
+  Be aware, that from Istio version 1.21.0 the format of the values.yaml changes.
+  Additionally a new feature (Native Sidecars) can be enabled, if it is enabled in
+  Kubernetes (version > 1.28)
 
-    .. collapse:: istiod.yaml
+    .. collapse:: istiod.yaml (version => 1.21)
+
+      .. include:: ../../resources/yaml/istiod-1_21.yaml
+         :code: yaml
+
+    .. collapse:: istiod.yaml (version < 1.21)
 
       .. include:: ../../resources/yaml/istiod.yaml
          :code: yaml
