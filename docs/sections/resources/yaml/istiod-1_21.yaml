@@ -1,0 +1,21 @@
+defaults:
+  #global:
+    #logging:
+    #  level: "default:debug"
+  meshConfig:
+    rootNamespace: istio-config
+    # Controls if sidecar is injected at the front of the container list and blocks the start of the other containers until the proxy is ready
+    holdApplicationUntilProxyStarts: true
+    extensionProviders:
+    - name: oauth2-proxy
+      envoyExtAuthzHttp:
+        service: oauth2-proxy.default.svc.cluster.local
+        port: 80
+        timeout: 1.5s
+        includeHeadersInCheck: ["authorization", "cookie"]
+        headersToUpstreamOnAllow: ["x-forwarded-access-token", "authorization", "path", "x-auth-request-user", "x-auth-request-email", "x-auth-request-access-token"]
+        headersToDownstreamOnDeny: ["content-type", "set-cookie"]
+  pilot:
+    env:
+      PILOT_HTTP10: true
+      ENABLE_NATIVE_SIDECARS: true

@@ -2,7 +2,7 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes:
+.. _release_notes_montreal:
 
 *************************************
 ONAP Operations Manager Release Notes
@@ -11,7 +11,6 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
-- :ref:`Montreal <release_notes_montreal>`
 - :ref:`London <release_notes_london>`
 - :ref:`Kohn <release_notes_kohn>`
 - :ref:`Jakarta <release_notes_jakarta>`
@@ -28,7 +27,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the New Delhi release.
+This document provides the release notes for the Montreal release.
 
 Summary
 =======
@@ -45,41 +44,39 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | New Delhi                            |
+| **Release designation**              | Montreal                             |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2024/06/13                           |
+| **Release date**                     | 2023/12/14                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
-* authentication (14.0.0) - add configurable Keycloak Realm and enable Ingress
-  Interface Authentication and Authorization
-* Update the helm common templates (13.2.0) to:
+* Introduction of "Production" ONAP setup, including:
 
-  * Support the latest Database Operators:
+  * Besides the Istio Ingress APIs now the support for `Gateway-API`_
+    is added to the templates, which includes:
 
-    * MariaDB-Operator (0.28.1)
-    * K8ssandra-Operator (v0.16.0)
-    * Postgres-Operator (CrunchyData) (5.5.0)
+    * TCP Routes
+    * UDP Routes
 
-* cassandra (13.1.0) - support for new K8ssandra-Operator
-* mariadb-galera (13.1.0) - support for new MariaDB-Operator
-* mongodb (14.12.3) - update to latest bitnami chart version
-* postgres (13.1.0) - support for new Postgres-Operator
-* postgres-init (13.0.1) - support for new Postgres-Operator
-* readinessCheck (13.1.0) - added check for "Service" readiness
-* serviceAccount (13.0.1) - add default role creation
+* Update of Helmcharts to use common templates and practices
+* Default support for Cassandra 4.x using k8ssandra-operator
+* Default support for MariaDB 11.x using mariadb-operator
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11502
+https://jira.onap.org/projects/OOM/versions/11501
 
 **Known Issues**
 
+* Components not working under ServiceMesh
+
+  * SO Monitor UI
+  * Policy UI
 
 Deliverables
 ------------
