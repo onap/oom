@@ -1,33 +1,35 @@
 global: {}
 
-# Default values for bff.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 image:
-  imageName: onap/portal-ng/bff
+  imageName: onap/portal-ng/history
   pullPolicy: Always
   # Overrides the image tag whose default value is the chart appVersion.
   # tag: 0.1.0
 
-replicaCount: 2
+replicaCount: 1
 
 # Specifies how many old replicas will be retained in a deployment
 revisionHistoryLimit: 2
+
+imagePullSecrets:
+  - name: onap-docker-registry-key
+nameOverride: ""
+fullnameOverride: ""
 
 # Custom selector label (for bigger namespaces with other components)
 partOf: portal
 
 service:
   type: ClusterIP
-  port: 9080
+  port: 9002
   ports:
     - name: http
-      port: 9080
+      port: 9002
 
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 
 probes:
@@ -38,22 +40,42 @@ probes:
     initialDelaySeconds: 20
     failureThreshold: 4
 
+secretEnv:
+  MONGO_USERNAME: dbuser
+  MONGO_PASSWORD: dbpassword
+  MONGO_DATABASE: history
+
 env:
   KEYCLOAK_URL: http://keycloak-http.keycloak
   KEYCLOAK_REALM: ONAP
-  HISTORY_URL: http://portal-ng-history:9002
-  PREFERENCES_URL: http://portal-ng-preferences:9001
+  MONGO_HOST: history-mongodb
+  MONGO_PORT: 27017
   TRACING_ENABLED: true
   COLLECTOR_HOST: jaeger-collector.istio-system
   COLLECTOR_PORT: 9411
 
-secretEnv:
-  KEYCLOAK_CLIENT_ID: portal-bff
-  KEYCLOAK_CLIENT_SECRET: pKOuVH1bwRZoNzp5P5t4GV8CqcCJYVtr
+mongodb:
+  nameOverride: history-mongodb
+  service:
+    portName: tcp-mongodb
+  auth:
+    rootPassword: TrWAweN9y9eW
+    usernames:
+    - dbuser
+    passwords:
+    - dbpassword
+    databases:
+    - history
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "250m"
+      memory: "500Mi"
 
 #Pods Service Account
 serviceAccount:
-  nameOverride: portal-ng-bff
+  nameOverride: portal-ng-history
   roles:
     - read
-
