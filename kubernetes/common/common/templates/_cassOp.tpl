@@ -35,6 +35,16 @@ spec:
       commonLabels:
         app: {{ .Values.k8ssandraOperator.config.clusterName }}-reaper
         version: {{ .Values.k8ssandraOperator.cassandraVersion }}
+    {{- if .Values.metrics.enabled }}
+    telemetry:
+      prometheus:
+        enabled: true
+      mcac:
+        enabled: false
+      cassandra:
+        endpoint:
+          address: 0.0.0.0
+    {{- end }}
   {{- end }}
   {{ if .Values.k8ssandraOperator.stargate.enabled -}}
   stargate:
@@ -74,6 +84,16 @@ spec:
             storage: {{ .Values.k8ssandraOperator.persistence.size }}
     superuserSecretRef:
       name: {{ include "common.fullname" . }}-{{ .Values.k8ssandraOperator.config.secretName }}
+    {{- if .Values.metrics.enabled }}
+    telemetry:
+      prometheus:
+        enabled: true
+      mcac:
+        enabled: false
+      cassandra:
+        endpoint:
+          address: 0.0.0.0
+    {{- end }}
     config:
       {{ if .Values.k8ssandraOperator.config.casOptions -}}
       cassandraYaml:
