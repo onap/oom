@@ -53,7 +53,7 @@ spec:
         - sh
         args:
         - -c
-        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+        - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`; cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
         env:
         - name: RESTSERVER_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
@@ -67,6 +67,19 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
         - name: SQL_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: JAASLOGIN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
+        - name: KAFKA_URL
+          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
+        - name: SASL
+          value: {{ .Values.kafkaUser.authenticationType | upper }}
+        - name: GROUP_ID
+          value: {{ .Values.config.kafka.consumer.groupId }}
+        - name: PAP_TOPIC
+          value: {{ .Values.config.app.listener.policyPdpPapTopic }}
         volumeMounts:
         - mountPath: /config-input
           name: pdpxconfig

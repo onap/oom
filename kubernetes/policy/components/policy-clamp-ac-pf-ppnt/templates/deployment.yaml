@@ -28,9 +28,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-{{- if not .Values.global.useStrimziKafka }}
-{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-{{- end }}
       - command:
         - sh
         args:
@@ -49,13 +46,11 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "login") | indent 10 }}
         - name: RESTSERVER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "password") | indent 10 }}
-{{- if .Values.global.useStrimziKafka }}
         - name: SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
-{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: ac-pf-ppnt-config

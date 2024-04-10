@@ -29,9 +29,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-{{- if not .Values.global.useStrimziKafkaPf }}
-{{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-{{- end }}
       - command:
         - /app/ready.py
         args:
@@ -78,13 +75,11 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "login") | indent 10 }}
         - name: DISTRIBUTION_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "distribution-secret" "key" "password") | indent 10 }}
-{{- if .Values.global.useStrimziKafkaPf }}
         - name: JAASLOGIN
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
-{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: papconfig
