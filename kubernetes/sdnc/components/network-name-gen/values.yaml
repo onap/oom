@@ -27,13 +27,9 @@ global:
   mariadbGalera: &mariadbGalera
     # flag to enable the DB creation via mariadb-operator
     useOperator: true
-    #This flag allows SO to instantiate its own mariadb-galera cluster
-    #When changing it to "true", also set "globalCluster: false"
-    #as the dependency check will not work otherwise (Chart.yaml)
     localCluster: false
-    globalCluster: true
-    service: mariadb-galera
-    internalPort: 3306
+    service: &dbService mariadb-galera
+    internalPort: &dbPort 3306
     nameOverride: mariadb-galera
 
 #################################################################
@@ -53,31 +49,15 @@ secrets:
     login: '{{ .Values.config.polBasicAuthUser }}'
     password: '{{ .Values.config.polBasicAuthPassword }}'
 
-# sub-chart config
-mariadb-galera:
-  db:
-    user: sdnctl
-    # password:
-    externalSecret: *dbUserSecretName
-    name: &mysqlDbName nengdb
-  nameOverride: nengdb
-  service:
-    name: nengdb
-    portName: nengdbport
-  replicaCount: 1
-  mariadbOperator:
-    galera:
-      enabled: false
-
-  persistence:
-    enabled: true
-    mountSubPath: network-name-gen/data
-
 mariadb-init:
   config:
     userCredentialsExternalSecret: *dbUserSecretName
-    mysqlDatabase: *mysqlDbName
+    mysqlDatabase: nengdb
   nameOverride: nengdb-init
+  mariadb-galera:
+    nameOverride: *dbService
+    service:
+      internalPort: *dbPort
   serviceAccount:
     nameOverride: nengdb-init
 
