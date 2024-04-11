@@ -57,12 +57,6 @@ log:
   path: /var/log/ONAP/dcaegen2/services/pmsh
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
-# Dependencies
-readinessCheck:
-  wait_for:
-    - &postgresName dcae-pmsh-postgres
-    - message-router
-
 # Probe Configuration
 readiness:
   initialDelaySeconds: 10
@@ -157,7 +151,7 @@ resources:
 # Application configuration Overriding Defaults in the Postgres.
 #################################################################
 postgres:
-  nameOverride: *postgresName
+  nameOverride: &postgresName dcae-pmsh-postgres
   service:
     name: *postgresName
     name2: *dcaePmshPgPrimary
@@ -173,6 +167,13 @@ postgres:
     pgUserName: pmsh
     pgDatabase: pmsh
     pgUserExternalSecret: *pgUserCredsSecretName
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    services:
+    - '{{ .Values.postgres.service.name2 }}'
+    - message-router
 
 #Pods Service Account
 serviceAccount:
