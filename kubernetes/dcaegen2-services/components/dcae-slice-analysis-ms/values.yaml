@@ -76,12 +76,6 @@ log:
   path: /var/log/ONAP/dcaegen2/services/sliceanalysisms
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
-# Dependencies
-readinessCheck:
-  wait_for:
-    - &postgresName dcae-sliceanalysisms-postgres
-    - message-router
-
 # Probe Configuration
 readiness:
   initialDelaySeconds: 60
@@ -216,7 +210,7 @@ resources:
 # Application configuration Overriding Defaults in the Postgres.
 #################################################################
 postgres:
-  nameOverride: *postgresName
+  nameOverride: &postgresName dcae-sliceanalysisms-postgres
   service:
     name: *postgresName
     name2: dcae-sliceanalysisms-pg-primary
@@ -232,6 +226,13 @@ postgres:
     pgUserName: sliceanalysisms
     pgDatabase: sliceanalysisms
     pgUserExternalSecret: *pgUserCredsSecretName
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    services:
+      - '{{ .Values.postgres.service.name2 }}'
+      - message-router
 
 #Pods Service Account
 serviceAccount:
