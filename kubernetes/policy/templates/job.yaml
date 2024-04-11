@@ -35,19 +35,7 @@ spec:
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
-      {{- if .Values.global.mariadbGalera.localCluster }}
-      {{-   if .Values.global.mariadbGalera.useOperator }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local_operator ) | indent 6 | trim }}
-      {{    else }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_local ) | indent 6 | trim }}
-      {{-   end }}
-      {{ else }}
-      {{-   if .Values.global.mariadbGalera.useOperator }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global_operator ) | indent 6 | trim }}
-      {{   else }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_global ) | indent 6 | trim }}
-      {{-   end }}
-      {{- end }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_mariadb ) | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}-galera-config
         image: {{ include "repositoryGenerator.image.mariadb" . }}
@@ -121,7 +109,8 @@ spec:
       name: {{ include "common.name" . }}-pg-init
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
-      initContainers: {{ if .Values.global.postgres.localCluster }}{{ include "common.readinessCheck.waitFor" . | nindent 6 }}{{ end }}
+      initContainers:
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_postgres ) | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}-pg-config
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.postgresImage }}

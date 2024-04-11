@@ -57,12 +57,6 @@ log:
   path: /var/log/ONAP/dcaegen2/services/heartbeat
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
-# Dependencies
-readinessCheck:
-  wait_for:
-    - &postgresName dcae-heartbeat-postgres
-    - message-router
-
 # Probe Configuration
 readiness:
   initialDelaySeconds: 10
@@ -154,7 +148,7 @@ resources:
 # Application configuration Overriding Defaults in the Postgres.
 #################################################################
 postgres:
-  nameOverride: *postgresName
+  nameOverride: &postgresName dcae-heartbeat-postgres
   service:
     name: *postgresName
     name2: dcae-heartbeat-pg-primary
@@ -170,6 +164,13 @@ postgres:
     pgUserName: heartbeat
     pgDatabase: heartbeat
     pgUserExternalSecret: *pgUserCredsSecretName
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    services:
+      - '{{ .Values.postgres.service.name2 }}'
+      - message-router
 
 #Pods Service Account
 serviceAccount:
