@@ -70,12 +70,6 @@ logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 #  policyID: |
 #    '["com.Config_PCIMS_CONFIG_POLICY"]'
 
-# Dependencies
-readinessCheck:
-  wait_for:
-    - &postgresName dcae-sonhms-postgres
-    - message-router
-
 # Probe Configuration
 readiness:
   initialDelaySeconds: 10
@@ -225,7 +219,7 @@ resources:
 # Application configuration Overriding Defaults in the Postgres.
 #################################################################
 postgres:
-  nameOverride: *postgresName
+  nameOverride: &postgresName dcae-sonhms-postgres
   service:
     name: *postgresName
     name2: *dcaeSonhmsPgPrimary
@@ -241,6 +235,13 @@ postgres:
     pgUserName: sonhms
     pgDatabase: sonhms
     pgUserExternalSecret: *pgUserCredsSecretName
+
+# Dependencies
+readinessCheck:
+  wait_for:
+    services:
+      - '{{ .Values.postgres.service.name2 }}'
+      - message-router
 
 #Pods Service Account
 serviceAccount:
