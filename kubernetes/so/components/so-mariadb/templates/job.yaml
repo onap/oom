@@ -59,17 +59,11 @@ spec:
           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
           mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb nfvo cnfm > /var/data/mariadb/backup-`date +%s`.sql
         volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
         - name: backup-storage
           mountPath: /var/data/mariadb
       {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
       - name: backup-storage
         persistentVolumeClaim:
           claimName: {{ include "common.fullname" . }}-migration
@@ -154,9 +148,6 @@ spec:
         - name: CNFM_DB_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cnfm-db-creds" "key" "password") | indent 10 }}
         volumeMounts:
-        - mountPath: /etc/localtime
-          name: localtime
-          readOnly: true
         - name: docker-entrypoint-initdb-d-sh
           mountPath: "/docker-entrypoint-initdb.d"
         - name: docker-entrypoint-initdb-d-sql
@@ -177,9 +168,6 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-      - name: localtime
-        hostPath:
-          path: /etc/localtime
       - name: docker-entrypoint-initdb-d-sh
         configMap:
           name: {{ include "common.fullname" . }}-mariadb-sh
