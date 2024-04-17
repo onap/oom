@@ -29,10 +29,9 @@ global:
     # with '*mariadbConfig' pointer.
     config: &mariadbConfig
       mysqlDatabase: policyadmin
-    service: &mariadbService
-      name: &policy-mariadb policy-mariadb
-      internalPort: 3306
-    nameOverride: *policy-mariadb
+    service: &mariadbService policy-mariadb
+    internalPort: 3306
+    nameOverride: *mariadbService
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
   prometheusEnabled: false
@@ -232,9 +231,10 @@ mariadb-galera:
     name: &mysqlDbName policyadmin
   rootUser:
     externalSecret: *dbRootPassSecretName
-  nameOverride: *policy-mariadb
+  nameOverride: *mariadbService
   # mariadb-galera.service and global.mariadbGalera.service must be equals
-  service: *mariadbService
+  service:
+    name: *mariadbService
   replicaCount: 1
   mariadbOperator:
     galera:
@@ -243,7 +243,7 @@ mariadb-galera:
     enabled: true
     mountSubPath: policy/maria/data
   serviceAccount:
-    nameOverride: *policy-mariadb
+    nameOverride: *mariadbService
 
 postgresImage: library/postgres:latest
 # application configuration override for postgres
