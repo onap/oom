@@ -1,0 +1,21 @@
+{{- if .Values.ingressAuthentication.enabled }}
+---
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: {{ .Release.Name }}-request-auth
+  namespace: istio-ingress
+spec:
+  selector:
+    matchLabels:
+      istio: ingress
+  jwtRules:
+  {{- $dot := . }}
+  {{- range $index, $realm := .Values.realmSettings }}
+  - issuer: "https://{{ include "ingress.config.host" (dict "dot" $dot "baseaddr" "keycloak-ui") }}/{{ $dot.Values.keycloak.relativePath }}realms/{{ $realm.name }}"
+    jwksUri: {{ $dot.Values.keycloak.intURL }}realms/{{ $realm.name }}/protocol/openid-connect/certs
+  {{- end }}
+  - issuer: "https://{{ include "ingress.config.host" (dict "dot" $dot "baseaddr" "keycloak-ui") }}/{{ .Values.keycloak.relativePath }}realms/master"
+    jwksUri: {{ .Values.keycloak.intURL }}realms/master/protocol/openid-connect/certs
+    forwardOriginalToken: true
+{{- end }}

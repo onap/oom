@@ -1,0 +1,75 @@
+{{- if .Values.ingressAuthentication.enabled }}
+---
+{{- $dot := . }}
+{{- range $index, $realm := .Values.realmSettings }}
+{{-   range $key, $accessRole := $realm.accessControl.accessRoles }}
+{{-     range $index, $role := get $realm.accessControl.accessRoles $key }}
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $key }}-{{ $role.name }}-jwt
+  namespace: istio-ingress
+spec:
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        hosts:
+        - {{ include "ingress.config.host" (dict "dot" $dot "baseaddr" $role.servicePrefix) }}
+        methods:
+        {{- range $role.methodsAllowed }}
+        - {{ . }}
+        {{- end }}
+    when:
+    - key: request.auth.claims[onap_roles]
+      values:
+      - {{ $role.name }}
+  selector:
+    matchLabels:
+      istio: ingress
+---
+{{-     end }}
+{{-   end }}
+{{- end }}
+apiVersion: security.istio.io/v1 
+kind: AuthorizationPolicy 
+metadata:
+  name: {{ .Release.Name }}-custom-action 
+  namespace: istio-ingress
+spec: 
+  action: CUSTOM 
+  provider: 
+    name: oauth2-proxy 
+  rules: 
+  - to: 
+    - operation: 
+        notHosts:
+          {{- if .Values.ingressAuthentication.exceptions }}
+          {{- range $index, $url := .Values.ingressAuthentication.exceptions }}
+          - {{ tpl $url $dot }}
+          {{- end }}
+          {{- end }}
+  selector:
+    matchLabels:
+      istio: ingress
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ .Release.Name }}-allowed-exceptions
+  namespace: istio-ingress
+spec:
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        hosts:
+          {{- if .Values.ingressAuthentication.exceptions }}
+          {{- range $index, $url := .Values.ingressAuthentication.exceptions }}
+          - {{ tpl $url $dot }}
+          {{- end }}
+          {{- end }}
+  selector:
+    matchLabels:
+      istio: ingress
+{{- end }}
