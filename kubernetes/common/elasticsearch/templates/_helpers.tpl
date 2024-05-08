@@ -69,5 +69,3 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
-
-

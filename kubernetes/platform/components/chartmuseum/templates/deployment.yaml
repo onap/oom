@@ -27,21 +27,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 7 | trim}}
-      initContainers:
-      - name: volume-permissions
-        image: {{ include "repositoryGenerator.image.busybox" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-          - sh
-        args:
-          - "-c"
-          - |
-            chown -R {{ .Values.securityContext.user_id }}:{{ .Values.securityContext.group_id }} //chartmuseum-persist
-        securityContext:
-          runAsUser: 0
-        volumeMounts:
-          - name: chart-persistent
-            mountPath: "/chartmuseum-persist"
       containers:
         - name: {{ include "common.name" . }}
           image:  {{  include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.image }}

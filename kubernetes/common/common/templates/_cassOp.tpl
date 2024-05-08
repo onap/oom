@@ -111,13 +111,18 @@ spec:
           name: {{ $datacenter.name }}
         size: {{ $datacenter.size }}
       {{- end }}
-    {{ if .Values.podAnnotations -}}
+    podSecurityContext:
+      fsGroup: 999
+      runAsGroup: 999
+      runAsUser: 999
+      runAsNonRoot: true
     metadata:
+      {{ if .Values.podAnnotations -}}
       pods:
         annotations:
           {{ toYaml .Values.podAnnotations | nindent 10 }}
+      {{- end }}
       commonLabels:
         app: {{ .Values.k8ssandraOperator.config.clusterName }}
         version: {{ .Values.k8ssandraOperator.cassandraVersion }}
-    {{- end }}
 {{ end }}
