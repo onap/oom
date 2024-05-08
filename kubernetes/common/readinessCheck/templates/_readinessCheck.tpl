@@ -95,6 +95,13 @@
   securityContext:
     runAsUser: {{ $subchartDot.Values.user }}
     runAsGroup: {{ $subchartDot.Values.group }}
+    readOnlyRootFilesystem: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+        - CAP_NET_RAW
   command:
   - /app/ready.py
   args:

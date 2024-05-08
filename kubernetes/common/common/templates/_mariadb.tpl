@@ -257,6 +257,29 @@ spec:
     runAsUser: 10001
     runAsGroup: 10001
     fsGroup: 10001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    readOnlyRootFilesystem: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+        - CAP_NET_RAW
+  volumes:
+  - name: run
+    emptyDir:
+      sizeLimit: 64Mi
+  - name: tmp
+    emptyDir:
+      sizeLimit: 64Mi
+  volumeMounts:
+  - name: run
+    mountPath: /run/mysqld
+  - name: tmp
+    mountPath: /tmp
   inheritMetadata:
     {{ if .Values.podAnnotations -}}
     annotations: {{ toYaml .Values.podAnnotations | nindent 6 }}
@@ -288,6 +311,17 @@ spec:
         enabled: true
         authDelegatorRoleName: {{ $dbinst }}-auth
       gracefulShutdownTimeout: 5s
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+        privileged: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
     primary:
       automaticFailover: true
       podIndex: 0
@@ -301,6 +335,17 @@ spec:
     initContainer:
       image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}:{{ $dot.Values.mariadbOperator.galera.initVersion }}
       imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+        privileged: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
     config:
       reuseStorageVolume: false
       volumeClaimTemplate:
@@ -334,6 +379,31 @@ spec:
   {{- if default false $dot.Values.global.metrics.enabled }}
   metrics:
     enabled: true
+    exporter:
+      image: {{ include "repositoryGenerator.dockerHubRepository" . }}/prom/mysqld-exporter:v0.15.1
+      port: 9104
+      podSecurityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsUser: 10001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext:
+        readOnlyRootFilesystem: true
+        privileged: false
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
   {{- end }}
   affinity:
     podAntiAffinity:
