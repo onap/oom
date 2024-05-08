@@ -112,6 +112,11 @@ spec:
         size: {{ $datacenter.size }}
       {{- end }}
     {{ if .Values.podAnnotations -}}
+    podSecurityContext:
+      fsGroup: 999
+      runAsGroup: 999
+      runAsUser: 999
+      runAsNonRoot: true
     metadata:
       pods:
         annotations:
