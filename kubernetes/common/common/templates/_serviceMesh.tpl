@@ -65,6 +65,14 @@ exit "$RCODE"
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
+  {{ include "common.containerSecurityContext" . | indent 2 | trim }}
+  resources:
+    limits:
+      cpu: 100m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 10Mi
 {{- end }}
 {{- end }}
 
