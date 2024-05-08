@@ -59,4 +59,3 @@ data:
 {{ tpl (.Files.Glob "resources/config/log/filebeat/*").AsConfig . | indent 2 }}
 {{- end }}
 {{- end -}}
-

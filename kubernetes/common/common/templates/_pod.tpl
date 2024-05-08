@@ -59,6 +59,9 @@ securityContext:
   runAsUser: {{ .Values.securityContext.user_id }}
   runAsGroup: {{ .Values.securityContext.group_id }}
   fsGroup: {{ .Values.securityContext.group_id }}
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
 {{- end }}
 
 {{/*
@@ -69,4 +72,8 @@ securityContext:
   readOnlyRootFilesystem: true
   privileged: false
   allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+      - CAP_NET_RAW
 {{- end }}
