@@ -20,7 +20,8 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
-
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  aaiTravKafkaUser: aai-trav-kafka-user
   cassandra:
     #Service Name of the cassandra cluster to connect to.
     #Override it to aai-cassandra if localCluster is enabled.
@@ -59,7 +60,7 @@ global: # global defaults
 
     # Active spring profiles for the resources microservice
     profiles:
-      active: production,dmaap
+      active: production,kafka
 
     # Notification event specific properties
     notification:
@@ -105,6 +106,10 @@ global: # global defaults
     # Specifies which clients should always default to realtime graph connection
     realtime:
       clients: SDNC,MSO,SO,robot-ete
+    kafkaBootstrap: strimzi-kafka-bootstrap
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.aaiTravKafkaUser }}'
+    someConfig: random
+    aaiTopic: AAI-EVENT
 
 # application image
 image: onap/aai-traversal:1.12.3
@@ -369,3 +374,20 @@ serviceAccount:
 log:
   path: /var/log/onap
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: aai-trav-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: AAI-EVENT
+      type: topic
+      operations: [Read, Write]
