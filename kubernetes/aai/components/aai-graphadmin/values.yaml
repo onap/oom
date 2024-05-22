@@ -25,6 +25,8 @@
 # Declare variables to be passed into your templates.
 global: # global defaults
   nodePortPrefix: 302
+  kafkaBootstrap: strimzi-kafka-bootstrap
+  aaiGraphKafkaUser: aai-graph-kafka-user
   cassandra:
     #This will instantiate AAI cassandra cluster, default:shared cassandra.
     localCluster: false
@@ -123,9 +125,11 @@ config:
 
   # Specify the profiles for the graphadmin microservice
   profiles:
-
-    active: dmaap
-
+    active: kafka
+    kafkaBootstrap: strimzi-kafka-bootstrap
+    jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}'
+    someConfig: graphrandom
+    aaiTopic: AAI-EVENT
   # Specifies the timeout limit for the REST API requests
   timeout:
     enabled: true
@@ -295,3 +299,20 @@ log:
     root: DEBUG
     base: DEBUG
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+#################################################################
+# Secrets metaconfig
+#################################################################
+secrets:
+  - uid: aai-graph-kafka-user
+    externalSecret: '{{ tpl (default "" .Values.config.jaasConfExternalSecret) . }}'
+    type: genericKV
+    envs:
+      - name: sasl.jaas.config
+        value: '{{ .Values.config.someConfig }}'
+        policy: generate
+kafkaUser:
+  authenticationType: scram-sha-512
+  acls:
+    - name: AAI-EVENT
+      type: topic
+      operations: [Read, Write]
