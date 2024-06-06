@@ -1,0 +1,585 @@
+# Copyright © 2024, Deutsche Telekom
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+global:
+  # Global ingress configuration
+  ingress:
+    enabled: false
+    virtualhost:
+      baseurl: "simpledemo.onap.org"
+      # prefix for baseaddr
+      # can be overwritten in component by setting ingress.preaddrOverride
+      preaddr: ""
+      # postfix for baseaddr
+      # can be overwritten in component by setting ingress.postaddrOverride
+      postaddr: ""
+
+keycloak:
+  intURL: "http://keycloak-keycloakx-http.keycloak.svc.cluster.local/"
+  relativePath: "auth/"
+ingressAuthentication:
+  enabled: false
+  exceptions:
+    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "keycloak-ui") }}'
+    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "portal-ui") }}'
+    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "minio-console") }}'
+    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "uui-server") }}'
+
+onap-keycloak-config-cli:
+  image:
+    pullSecrets:
+      - name: onap-docker-registry-key
+  #existingSecret: "keycloak-keycloakx-admin-creds"
+  env:
+    # internal KC URL plus relative path
+    KEYCLOAK_URL: "http://keycloak-keycloakx-http.keycloak.svc.cluster.local/auth/"
+    KEYCLOAK_SSLVERIFY: "false"
+    KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+  secrets:
+    KEYCLOAK_PASSWORD: secret
+  existingConfigSecret: "keycloak-config-cli-config-realms"
+
+onap-oauth2-proxy:
+  # Oauth client configuration specifics
+  config:
+    # Create a new secret with the following command
+    # openssl rand -base64 32 | head -c 32 | base64
+    cookieSecret: "CbgXFXDJ16laaCfChtFBpKy1trNEmJZDIjaiaIMLyRA="
+    clientID: &clientID "oauth2-proxy-onap"
+    # To be set in helmfile
+    clientSecret: &clientSecret "5YSOkJz99WHv8enDZPknzJuGqVSerELp"
+    # To be set in helmfile
+    cookieName: "onap-cookie"
+    # settings see https://github.com/oauth2-proxy/oauth2-proxy/blob/master/docs/docs/configuration/overview.md
+    existingConfig: "oauth2-onap-config"
+
+  # Configure the session storage type, between cookie and redis
+  sessionStorage:
+    # Can be one of the supported session storage cookie|redis
+    type: redis
+    redis:
+      # Name of the Kubernetes secret containing the redis & redis sentinel password values (see also `sessionStorage.redis.passwordKey`)
+      existingSecret: "onap-authentication-redis"
+      # Redis password value. Applicable for all Redis configurations. Taken from redis subchart secret if not set. `sessionStorage.redis.existingSecret` takes precedence
+      password: ""
+      # Key of the Kubernetes secret data containing the redis password value
+      passwordKey: "redis-password"
+      # Can be one of standalone|cluster|sentinel
+      clientType: "sentinel"
+      standalone:
+        # URL of redis standalone server for redis session storage (e.g. `redis://HOST[:PORT]`). Automatically generated if not set
+        connectionUrl: ""
+      cluster:
+        # List of Redis cluster connection URLs (e.g. `["redis://127.0.0.1:8000", "redis://127.0.0.1:8000"]`)
+        connectionUrls: []
+      sentinel:
+        # Name of the Kubernetes secret containing the redis sentinel password value (see also `sessionStorage.redis.sentinel.passwordKey`). Default: `sessionStorage.redis.existingSecret`
+        existingSecret: ""
+        # Redis sentinel password. Used only for sentinel connection; any redis node passwords need to use `sessionStorage.redis.password`
+        password: ""
+        # Key of the Kubernetes secret data containing the redis sentinel password value
+        passwordKey: "redis-password"
+        # Redis sentinel master name
+        masterName: "mymaster"
+        # List of Redis sentinel connection URLs (e.g. `["redis://127.0.0.1:8000", "redis://127.0.0.1:8000"]`)
+        connectionUrls: "redis://onap-authentication-redis-node-0.onap-authentication-redis-headless.onap:26379,redis://onap-authentication-redis-node-1.onap-authentication-redis-headless.onap:26379,redis://onap-authentication-redis-node-2.onap-authentication-redis-headless.onap:26379"
+
+  # Enables and configure the automatic deployment of the redis subchart
+  redis:
+    # provision an instance of the redis sub-chart
+    enabled: true
+    sentinel:
+      enabled: true
+
+serviceAccount:
+  nameOverride: keycloak-init
+  roles:
+    - read
+
+realmSettings:
+  - name: onap
+    displayName: "ONAP Realm"
+    attributes:
+      frontendUrl: 'https://{{ include "ingress.config.host" (dict "dot" . "baseaddr" "keycloak-ui") }}/{{ .Values.keycloak.relativePath }}'
+    themes:
+      login: "base"
+      admin: "base"
+      account: "base"
+      email: "base"
+    groups:
+      - name: admins
+        path: /admins
+        roles: [ "platform-all-full" ]
+      - name: contributors
+        path: /contributors
+        roles: [ "platform-all-write" ]
+      - name: readers
+        path: /readers
+        roles: [ "platform-all-read" ]
+    initialUsers:
+      - username: "onap-admin"
+        credentials:
+          - type: password
+            secretData: "{\"value\":\"nD4K4x8HEgk6xlWIAgzZOE+EOjdbovJfEa7N3WXwIMCWCfdXpn7Riys7hZhI1NbKcc9QPI9j8LQB/JSuZVcXKA==\",\"salt\":\"T8X9A9tT2cyLvEjHFo+zuQ==\",\"additionalParameters\":{}}"
+            credentialData : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        attributes:
+          sdc_user:
+            - "cs0008"
+        realmRoles:
+          - default-roles-onap
+          - portal_admin
+        groups: []
+      - username: "onap-designer"
+        credentials: []
+        attributes:
+          sdc_user:
+            - "cs0008"
+        realmRoles:
+          - default-roles-onap
+          - portal_designer
+        groups: []
+      - username: "onap-operator"
+        credentials: []
+        attributes:
+          sdc_user:
+            - "cs0008"
+        realmRoles:
+          - default-roles-onap
+          - portal_operator
+        groups: []
+      - username: "service-account-portal-bff"
+        serviceAccountClientId: "portal-bff"
+        credentials: []
+        clientRoles:
+          realm-management:
+            - manage-realm
+            - manage-users
+        groups: []
+      - username: adminek
+        password: Adminek
+        email: "onap-admin@amartus.com"
+        groups:
+          - admins
+      - username: onapadmin
+        password: ONAPAdmin
+        email: "onap-admin1@amartus.com"
+        groups:
+          - admins
+      - username: contributor
+        password: Contributor
+        email: "onap-contributor@amartus.com"
+        groups:
+          - contributors
+      - username: reader
+        password: Reader
+        email: "onap-reader@amartus.com"
+        groups:
+          - readers
+    clients:
+      oauth2_proxy:
+        clientId: *clientID
+        name: "Oauth2 Proxy"
+        secret: *clientSecret
+        protocol: openid-connect
+        protocolMappers:
+          - name: "Audience for Oauth2Proxy"
+            protocolMapper: "oidc-audience-mapper"
+            config:
+              included.client.audience: "oauth2-proxy-onap"
+              id.token.claim: "false"
+              access.token.claim: "true"
+              included.custom.audience: "oauth2-proxy-onap"
+          - name: "SDC-User"
+            protocolMapper: "oidc-usermodel-attribute-mapper"
+            config:
+              multivalued: "false"
+              userinfo.token.claim: "true"
+              user.attribute: "sdc_user"
+              id.token.claim: "true"
+              access.token.claim: "true"
+              claim.name: "sdc_user"
+              jsonType.label: "String"
+        additionalDefaultScopes:
+          - "onap_roles"
+      portal_app:
+        clientId: "portal-app"
+        redirectUris:
+          - 'https://{{ include "ingress.config.host" (dict "dot" . "baseaddr" "portal-ng-ui") }}/*'
+          - 'http://localhost/*'
+        protocol: openid-connect
+        additionalAttributes:
+          post.logout.redirect.uris: 'https://{{ include "ingress.config.host" (dict "dot" . "baseaddr" "portal-ng-ui") }}/*'
+        protocolMappers:
+          - name: "User-Roles"
+            protocolMapper: "oidc-usermodel-attribute-mapper"
+            config:
+              userinfo.token.claim: "true"
+              id.token.claim: "true"
+              access.token.claim: "true"
+              claim.name: "roles"
+              multivalued: "true"
+          - name: "SDC-User"
+            protocolMapper: "oidc-usermodel-attribute-mapper"
+            config:
+              userinfo.token.claim: "true"
+              user.attribute: "sdc_user"
+              id.token.claim: "true"
+              access.token.claim: "true"
+              claim.name: "sdc_user"
+              jsonType.label: "String"
+      portal_bff:
+        clientId: "portal-bff"
+        protocol: openid-connect
+        secret : pKOuVH1bwRZoNzp5P5t4GV8CqcCJYVtr
+        protocolMappers:
+          - name: "Client Host"
+            protocolMapper: "oidc-usersessionmodel-note-mapper"
+            config:
+              user.session.note : "clientHost"
+              id.token.claim : "true"
+              access.token.claim : "true"
+              claim.name : "clientHost"
+              jsonType.label : "String"
+          - name: "Client IP Address"
+            protocolMapper: "oidc-usersessionmodel-note-mapper"
+            config:
+              user.session.note : "clientAddress"
+              id.token.claim : "true"
+              access.token.claim : "true"
+              claim.name : "clientAddress"
+              jsonType.label : "String"
+    defaultClientScopes:
+      - "onap_roles"
+    additionalClientScopes:
+      - name: onap_roles
+        description: OpenID Connect scope for add user onap roles to the access token
+        protocolMappers:
+        - name: aud
+          protocol: openid-connect
+          protocolMapper: oidc-audience-mapper
+          consentRequired: false
+          config:
+            included.client.audience: oauth2-proxy
+            id.token.claim: 'false'
+            access.token.claim: 'true'
+        - name: client roles
+          protocol: openid-connect
+          protocolMapper: oidc-usermodel-client-role-mapper
+          consentRequired: false
+          config:
+            multivalued: 'true'
+            userinfo.token.claim: 'false'
+            id.token.claim: 'true'
+            access.token.claim: 'true'
+            claim.name: onap_roles
+            jsonType.label: String
+            usermodel.clientRoleMapping.clientId: oauth2-proxy
+    accessControl:
+      assignableRoles:
+        - name: portal_admin
+          description: "User role for administration tasks in the portal."
+        - name: portal_designer
+          description: "User role for designer tasks in the portal."
+        - name: portal_operator
+          description: "User role for operator tasks in the portal."
+        - name: onap-operator-read
+          description: "Allows to perform GET operations for all ONAP components"
+          associatedAccessRoles: [ "dmaap-bc-api-read", "dmaap-dr-node-api-read", "dmaap-dr-prov-api-read", "dmaap-mr-api-read", "msb-consul-api-read", "msb-discovery-api-read", "msb-eag-ui-read", "msb-iag-ui-read", "nbi-api-read", "aai-api-read", "aai-babel-api-read", "aai-sparkybe-api-read", "cds-blueprintsprocessor-api-read", "cds-ui-read", "cps-core-api-read", "cps-ncmp-dmi-plugin-api-read", "cps-temporal-api-read", "reaper-dc1-read", "sdc-be-api-read", "sdc-fe-ui-read", "sdc-wfd-be-api-read", "sdc-wfd-fe-ui-read", "so-admin-cockpit-ui-read", "so-api-read", "usecase-ui-read", "uui-server-read" ]
+        - name: onap-operator-write
+          description: "Allows to perform GET, POST, PUT, PATCH operations for all ONAP components"
+          associatedAccessRoles: [ "dmaap-bc-api-write", "dmaap-dr-node-api-write", "dmaap-dr-prov-api-write", "dmaap-mr-api-write", "msb-consul-api-write", "msb-discovery-api-write", "msb-eag-ui-write", "msb-iag-ui-write", "nbi-api-write", "aai-api-write", "aai-babel-api-write", "aai-sparkybe-api-write", "cds-blueprintsprocessor-api-write", "cds-ui-write", "cps-core-api-write", "cps-ncmp-dmi-plugin-api-write", "cps-temporal-api-write", "reaper-dc1-write", "sdc-be-api-write", "sdc-fe-ui-write", "sdc-wfd-be-api-write", "sdc-wfd-fe-ui-write", "so-admin-cockpit-ui-write", "so-api-write", "usecase-ui-write",  "uui-server-write" ]
+        - name: onap-operator-full
+          description: "Allows to perform GET, POST, PUT, PATCH, DELETE operations for all ONAP components"
+          associatedAccessRoles: [ "dmaap-bc-api-full", "dmaap-dr-node-api-full", "dmaap-dr-prov-api-full", "dmaap-mr-api-full", "msb-consul-api-full", "msb-discovery-api-full", "msb-eag-ui-full", "msb-iag-ui-full", "nbi-api-full", "aai-api-full", "aai-babel-api-full", "aai-sparkybe-api-full", "cds-blueprintsprocessor-api-full", "cds-ui-full", "cps-core-api-full", "cps-ncmp-dmi-plugin-api-full", "cps-temporal-api-full", "reaper-dc1-full", "sdc-be-api-full", "sdc-fe-ui-full", "sdc-wfd-be-api-full", "sdc-wfd-fe-ui-full", "so-admin-cockpit-ui-full", "so-api-full", "usecase-ui-full", "uui-server-full" ]
+        - name: platform-operator-read
+          description: "Allows to perform GET operations for all ONAP components"
+          associatedAccessRoles: [ "grafana-read", "kibana-read" ]
+        - name: platform-operator-write
+          description: "Allows to perform GET, POST, PUT, PATCH operations for all ONAP components"
+          associatedAccessRoles: [ "grafana-write", "kibana-write" ]
+        - name: platform-operator-full
+          description: "Allows to perform GET, POST, PUT, PATCH, DELETE operations for all ONAP components"
+          associatedAccessRoles: [ "grafana-full", "kibana-full" ]
+        - name: platform-all-read
+          description: "Allows to perform GET operations for all PLATFORM components"
+          associatedAccessRoles: [ "dmaap-bc-api-read", "dmaap-dr-node-api-read", "dmaap-dr-prov-api-read", "dmaap-mr-api-read", "msb-consul-api-read", "msb-discovery-api-read", "msb-eag-ui-read", "msb-iag-ui-read", "nbi-api-read", "aai-api-read", "aai-babel-api-read", "aai-sparkybe-api-read", "cds-blueprintsprocessor-api-read", "cds-ui-read", "cps-core-api-read", "cps-ncmp-dmi-plugin-api-read", "cps-temporal-api-read", "grafana-read", "kibana-read", "reaper-dc1-read", "sdc-be-api-read", "sdc-fe-ui-read", "sdc-wfd-be-api-read", "sdc-wfd-fe-ui-read", "so-admin-cockpit-ui-read", "so-api-read", "usecase-ui-read", "uui-server-read" ]
+        - name: platform-all-write
+          description: "Allows to perform GET, POST, PUT, PATCH operations for all PLATFORM components"
+          associatedAccessRoles: [ "dmaap-bc-api-write", "dmaap-dr-node-api-write", "dmaap-dr-prov-api-write", "dmaap-mr-api-write", "msb-consul-api-write", "msb-discovery-api-write", "msb-eag-ui-write", "msb-iag-ui-write", "nbi-api-write", "aai-api-write", "aai-babel-api-write", "aai-sparkybe-api-write", "cds-blueprintsprocessor-api-write", "cds-ui-write", "cps-core-api-write", "cps-ncmp-dmi-plugin-api-write", "cps-temporal-api-write", "grafana-write", "kibana-write", "reaper-dc1-write", "sdc-be-api-write", "sdc-fe-ui-write", "sdc-wfd-be-api-write", "sdc-wfd-fe-ui-write", "so-admin-cockpit-ui-write", "so-api-write", "usecase-ui-write",  "uui-server-write" ]
+        - name: platform-all-full
+          description: "Allows to perform GET, POST, PUT, PATCH, DELETE operations for all PLATFORM components"
+          associatedAccessRoles: [ "dmaap-bc-api-full", "dmaap-dr-node-api-full", "dmaap-dr-prov-api-full", "dmaap-mr-api-full", "msb-consul-api-full", "msb-discovery-api-full", "msb-eag-ui-full", "msb-iag-ui-full", "nbi-api-full", "aai-api-full", "aai-babel-api-full", "aai-sparkybe-api-full", "cds-blueprintsprocessor-api-full", "cds-ui-full", "cps-core-api-full", "cps-ncmp-dmi-plugin-api-full", "cps-temporal-api-full", "grafana-full", "kibana-full", "reaper-dc1-full", "sdc-be-api-full", "sdc-fe-ui-full", "sdc-wfd-be-api-full", "sdc-wfd-fe-ui-full", "so-admin-cockpit-ui-full", "so-api-full", "usecase-ui-full", "uui-server-full" ]
+      accessRoles:
+        "oauth2_proxy":
+        - name: dmaap-bc-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: dmaap-bc-api
+        - name: dmaap-bc-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: dmaap-bc-api
+        - name: dmaap-bc-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: dmaap-bc-api
+        - name: dmaap-dr-node-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: dmaap-dr-node-api
+        - name: dmaap-dr-node-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: dmaap-dr-node-api
+        - name: dmaap-dr-node-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: dmaap-dr-node-api
+        - name: dmaap-dr-prov-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: dmaap-dr-prov-api
+        - name: dmaap-dr-prov-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: dmaap-dr-prov-api
+        - name: dmaap-dr-prov-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: dmaap-dr-prov-api
+        - name: dmaap-mr-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: dmaap-mr-api
+        - name: dmaap-mr-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: dmaap-mr-api
+        - name: dmaap-mr-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: dmaap-mr-api
+        - name: msb-consul-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: msb-consul-api
+        - name: msb-consul-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: msb-consul-api
+        - name: msb-consul-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: msb-consul-api
+        - name: msb-discovery-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: msb-discovery-api
+        - name: msb-discovery-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: msb-discovery-api
+        - name: msb-discovery-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: msb-discovery-api
+        - name: msb-eag-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: msb-eag-ui
+        - name: msb-eag-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: msb-eag-ui
+        - name: msb-eag-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: msb-eag-ui
+        - name: msb-iag-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: msb-iag-ui
+        - name: msb-iag-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: msb-iag-ui
+        - name: msb-iag-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: msb-iag-ui
+        - name: nbi-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: nbi-api
+        - name: nbi-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: nbi-api
+        - name: nbi-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: nbi-api
+        - name: aai-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: aai-api
+        - name: aai-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: aai-api
+        - name: aai-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: aai-api
+        - name: aai-babel-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: aai-babel-api
+        - name: aai-babel-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: aai-babel-api
+        - name: aai-babel-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: aai-babel-api
+        - name: aai-sparkybe-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: aai-sparkybe-api
+        - name: aai-sparkybe-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: aai-sparkybe-api
+        - name: aai-sparkybe-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: aai-sparkybe-api
+        - name: cds-blueprintsprocessor-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: cds-blueprintsprocessor-api
+        - name: cds-blueprintsprocessor-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: cds-blueprintsprocessor-api
+        - name: cds-blueprintsprocessor-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: cds-blueprintsprocessor-api
+        - name: cds-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: cds-ui
+        - name: cds-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: cds-ui
+        - name: cds-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: cds-ui
+        - name: cps-core-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: cps-core-api
+        - name: cps-core-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: cps-core-api
+        - name: cps-core-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: cps-core-api
+        - name: cps-ncmp-dmi-plugin-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: cps-ncmp-dmi-plugin-api
+        - name: cps-ncmp-dmi-plugin-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: cps-ncmp-dmi-plugin-api
+        - name: cps-ncmp-dmi-plugin-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: cps-ncmp-dmi-plugin-api
+        - name: cps-temporal-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: cps-temporal-api
+        - name: cps-temporal-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: cps-temporal-api
+        - name: cps-temporal-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: cps-temporal-api
+        - name: grafana-read
+          methodsAllowed: ["GET"]
+          servicePrefix: grafana
+        - name: grafana-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: grafana
+        - name: grafana-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: grafana
+        - name: kibana-read
+          methodsAllowed: ["GET"]
+          servicePrefix: kibana
+        - name: kibana-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: kibana
+        - name: kibana-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: kibana
+        - name: minio-read
+          methodsAllowed: ["GET"]
+          servicePrefix: minio-console
+        - name: minio-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: minio-console
+        - name: minio-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: minio-console
+        - name: reaper-dc1-read
+          methodsAllowed: ["GET"]
+          servicePrefix: reaper-dc1
+        - name: reaper-dc1-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: reaper-dc1
+        - name: reaper-dc1-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: reaper-dc1
+        - name: sdc-be-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: sdc-be-api
+        - name: sdc-be-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: sdc-be-api
+        - name: sdc-be-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: sdc-be-api
+        - name: sdc-fe-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: sdc-fe-ui
+        - name: sdc-fe-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: sdc-fe-ui
+        - name: sdc-fe-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: sdc-fe-ui
+        - name: sdc-wfd-be-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: sdc-wfd-be-api
+        - name: sdc-wfd-be-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: sdc-wfd-be-api
+        - name: sdc-wfd-be-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: sdc-wfd-be-api
+        - name: sdc-wfd-fe-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: sdc-wfd-fe-ui
+        - name: sdc-wfd-fe-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: sdc-wfd-fe-ui
+        - name: sdc-wfd-fe-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: sdc-wfd-fe-ui
+        - name: so-admin-cockpit-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: so-admin-cockpit-ui
+        - name: so-admin-cockpit-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: so-admin-cockpit-ui
+        - name: so-admin-cockpit-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: so-admin-cockpit-ui
+        - name: so-api-read
+          methodsAllowed: ["GET"]
+          servicePrefix: so-api
+        - name: so-api-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: so-api
+        - name: so-api-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: so-api
+        - name: usecase-ui-read
+          methodsAllowed: ["GET"]
+          servicePrefix: usecase-ui
+        - name: usecase-ui-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: usecase-ui
+        - name: usecase-ui-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: usecase-ui
+        - name: uui-server-read
+          methodsAllowed: ["GET"]
+          servicePrefix: uui-server
+        - name: uui-server-write
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH"]
+          servicePrefix: uui-server
+        - name: uui-server-full
+          methodsAllowed: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+          servicePrefix: uui-server
