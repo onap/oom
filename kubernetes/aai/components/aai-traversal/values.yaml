@@ -22,6 +22,7 @@ global: # global defaults
   nodePortPrefix: 302
   kafkaBootstrap: strimzi-kafka-bootstrap
   aaiTravKafkaUser: aai-trav-kafka-user
+
   cassandra:
     #Service Name of the cassandra cluster to connect to.
     #Override it to aai-cassandra if localCluster is enabled.
@@ -112,7 +113,7 @@ global: # global defaults
     aaiTopic: AAI-EVENT
 
 # application image
-image: onap/aai-traversal:1.13.5
+image: onap/aai-traversal:1.14.0
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -136,6 +137,16 @@ api_list:
   - 17
   - 18
   - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
 
 aai_enpoints:
   - name: aai-generic-query
@@ -147,6 +158,7 @@ aai_enpoints:
 
 # application configuration
 config:
+
   # configure keycloak according to your environment.
   # don't forget to add keycloak in active profiles above (global.config.profiles)
   keycloak:
@@ -164,14 +176,16 @@ config:
     caching:
       # enable when running read-heavy workloads
       # modifications to graph done by this service/janusgraph instance will immediately invalidate the cache
-      # modifications to graph done by other services (resources) will only be visible
+      # modifications to graph done by other services (traversal) will only be visible
       # after time specified in db-cache-time
-      enabled: false
+      enabled: true
       # Documentation: https://docs.janusgraph.org/operations/cache/#database-level-caching
       dbCacheTime: 180000 # in milliseconds
       dbCacheSize: 0.1 # percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running
       dbCacheCleanWait: 20 # in milliseconds
-
+    # temporarily enable this to update the graph storage version
+    # see: https://docs.janusgraph.org/changelog/#upgrade-instructions_9
+    allowUpgrade: true
 
   # Specifies timeout information such as application specific and limits
   timeout:
@@ -185,8 +199,9 @@ config:
   # environment variables added to the launch of the image in deployment
   env:
     MIN_HEAP_SIZE: "512m"
-    MAX_HEAP_SIZE: "1024m"
+    MAX_HEAP_SIZE: "2g"
     MAX_METASPACE_SIZE: "512m"
+    # POST_JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 
   # adds jvm args for remote debugging the application
   debug:
@@ -237,6 +252,9 @@ persistence:
 # default number of instances
 replicaCount: 1
 
+# number of ReplicaSets that should be retained for the Deployment
+revisionHistoryLimit: 2
+
 nodeSelector: {}
 
 affinity: {}
@@ -245,9 +263,7 @@ affinity: {}
 liveness:
   initialDelaySeconds: 60
   periodSeconds: 60
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: false
+  enabled: true
 
 readiness:
   initialDelaySeconds: 10
@@ -255,13 +271,15 @@ readiness:
 
 service:
   type: ClusterIP
-  portName: http
-  internalPort: 8446
-  portName2: tcp-5005
-  internalPort2: 5005
-  portName3: http-traversal
-  internalPort3: 8448
-  terminationGracePeriodSeconds: 120
+  traversalPortName: http
+  traversalPort: 8446
+  debugPortName: tcp-5005
+  debugPort: 5005
+  metricsPortName: metrics
+  metricsPort: 8448
+  profilingPortName: jmx-9999
+  profilingPort: 9999
+  terminationGracePeriodSeconds: 60
   sessionAffinity: None
 
 ingress:
@@ -281,8 +299,8 @@ logback:
   queueSize: 1000
 
 accessLogback:
-  livenessAccessLogEnabled: false # false: do not log kubernetes liveness probes
   logToFileEnabled: false
+  livenessAccessLogEnabled: false # false: do not log kubernetes liveness probes
   maxHistory: 7
   totalSizeCap: 6GB
 
@@ -304,6 +322,14 @@ resources:
       cpu: "2"
       memory: "4Gi"
   unlimited: {}
+
+tracing:
+  collector:
+    baseUrl: http://jaeger-collector.istio-system:9411
+  sampling:
+    probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
+  ignorePatterns:
+    - /aai/util.*
 
 endpoints:
   enabled: true

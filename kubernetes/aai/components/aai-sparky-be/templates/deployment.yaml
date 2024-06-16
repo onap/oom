@@ -23,6 +23,7 @@ metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
     {{- if (eq "RollingUpdate" .Values.updateStrategy.type) }}
@@ -96,10 +97,34 @@ spec:
         - mountPath:  /opt/app/sparky/config/logging/logback.xml
           name: config
           subPath: logback.xml
-        ports: {{ include "common.containerPorts" . | nindent 10  }}
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
-        {{- if eq .Values.liveness.enabled true }}
+        ports:
+          {{- if .Values.debug.enabled }}
+          - containerPort: {{ .Values.debug.port }}
+            name: {{ .Values.debug.portName }}
+          {{- end }}
+          {{- if .Values.profiling.enabled }}
+          - containerPort: {{ .Values.profiling.port }}
+            name: {{ .Values.profiling.portName }}
+          {{- end }}
+          {{ include "common.containerPorts" . | nindent 10  }}
+        env:
+        {{- if .Values.config.env }}
+        {{- range $key,$value := .Values.config.env }}
+        - name: {{ $key | upper | quote}}
+          value: {{ $value | quote}}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.profiling.enabled }}
+        - name: JVM_ARGS
+          value: '{{ join " " .Values.profiling.args }}'
+        {{- end }}
+        {{- if .Values.debug.enabled }}
+        - name: JVM_ARGS
+          value: {{ .Values.debug.args | quote }}
+        {{- end }}
+        # disable liveness probe when
+        # debugging.enabled=true or profiling.enabled=true
+        {{- if and .Values.liveness.enabled (not (or .Values.debug.enabled .Values.profiling.enabled)) }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
