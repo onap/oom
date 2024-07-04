@@ -36,6 +36,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -157,11 +158,11 @@ spec:
         - name: LOCAL_GROUP_ID
           value: {{ .Values.global.config.groupId | quote }}
         - name: INTERNAL_PORT_1
-          value: {{ .Values.service.internalPort | quote }}
+          value: {{ .Values.service.resourcesPort | quote }}
         - name: INTERNAL_PORT_2
-          value: {{ .Values.service.internalPort2 | quote }}
+          value: {{ .Values.service.debugPort | quote }}
         - name: INTERNAL_PORT_3
-          value: {{ .Values.service.internalPort3 | quote }}
+          value: {{ .Values.service.metricsPort | quote }}
         - name: BOOTSTRAP_SERVERS
           value: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
         - name: JAAS_CONFIG
@@ -197,19 +198,18 @@ spec:
           name: {{ include "common.fullname" . }}-config
           subPath: application-keycloak.properties
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
-          name: {{ .Values.service.portName }}
+        - containerPort: {{ .Values.service.resourcesPort }}
+          name: {{ .Values.service.resourcesPortName }}
         {{- if .Values.config.debug.enabled }}
-        - containerPort: {{ .Values.service.internalPort2 }}
-          name: {{ .Values.service.portName2 }}
+        - containerPort: {{ .Values.service.debugPort }}
+          name: {{ .Values.service.debugPortName }}
         {{- end }}
-        - containerPort: {{ .Values.service.internalPort3 }}
-          name: {{ .Values.service.portName3 }}
+        - containerPort: {{ .Values.service.metricsPort }}
+          name: {{ .Values.service.metricsPortName }}
         {{- if .Values.config.profiling.enabled }}
-        - containerPort: {{ .Values.service.internalPort4 }}
-          name: {{ .Values.service.portName4 }}
+        - containerPort: {{ .Values.service.profilingPort }}
+          name: {{ .Values.service.profilingPortName }}
         {{- end }}
-
         lifecycle:
           # wait for active requests (long-running tasks) to be finished
           # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
@@ -219,16 +219,16 @@ spec:
                 - sh
                 - -c
                 - |
-                  while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1 -e $INTERNAL_PORT_2)
+                  while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1)
                   do sleep 10
                   done
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
-        {{- if .Values.liveness.enabled }}
+        # disable liveness probe when
+        # debugging.enable=true or profiling.enabled=true
+        {{- if and .Values.liveness.enabled (not (or .Values.config.debug.enabled .Values.config.profiling.enabled)) }}
         livenessProbe:
           httpGet:
             path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.service.resourcesPort }}
             scheme: HTTP
             httpHeaders:
             - name: X-FromAppId
@@ -243,7 +243,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.service.resourcesPort }}
             scheme: HTTP
             httpHeaders:
             - name: X-FromAppId

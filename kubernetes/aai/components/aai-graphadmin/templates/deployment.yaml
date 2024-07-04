@@ -39,6 +39,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -113,9 +114,9 @@ spec:
         - name: LOCAL_GROUP_ID
           value: {{ .Values.securityContext.group_id | quote }}
         - name: INTERNAL_PORT_1
-          value: {{ .Values.service.internalPort | quote }}
+          value: {{ .Values.service.appPort | quote }}
         - name: INTERNAL_PORT_2
-          value: {{ .Values.service.internalPort2 | quote }}
+          value: {{ .Values.service.debugPort | quote }}
         - name: INTERNAL_PORT_3
           value: {{ .Values.service.internalPort3 | quote }}
         - name: BOOTSTRAP_SERVERS
@@ -125,6 +126,14 @@ spec:
             secretKeyRef:
               name: {{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}
               key: sasl.jaas.config
+        {{- if .Values.config.profiling.enabled }}
+        - name: PRE_JVM_ARGS
+          value: '{{ join " " .Values.config.profiling.args }}'
+        {{- end }}
+        {{- if .Values.config.debug.enabled }}
+        - name: POST_JVM_ARGS
+          value: {{ .Values.config.debug.args | quote }}
+        {{- end }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
@@ -150,10 +159,16 @@ spec:
           name: properties
           subPath: application.properties
         ports:
-        - containerPort: {{ .Values.service.internalPort }}
-          name: {{ .Values.service.portName }}
-        - containerPort: {{ .Values.service.internalPort2 }}
-          name: {{ .Values.service.portName2 }}
+        - containerPort: {{ .Values.service.appPort }}
+          name: {{ .Values.service.appPortName }}
+        {{- if .Values.config.debug.enabled }}
+        - containerPort: {{ .Values.service.debugPort }}
+          name: {{ .Values.service.debugPortName }}
+        {{- end }}
+        {{- if .Values.config.profiling.enabled }}
+        - containerPort: {{ .Values.service.profilingPort }}
+          name: {{ .Values.service.profilingPortName }}
+        {{- end }}
         - containerPort: {{ .Values.service.internalPort3 }}
           name: {{ .Values.service.portName3 }}
         lifecycle:
@@ -168,18 +183,18 @@ spec:
                   while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1 -e $INTERNAL_PORT_2)
                   do sleep 10
                   done
-        # disable liveness probe when breakpoints set in debugger
-        # so K8s doesn't restart unresponsive container
-        {{ if .Values.liveness.enabled }}
+        # disable liveness probe when
+        # debugging.enabled=true or profiling.enabled=true
+        {{- if and .Values.liveness.enabled (not (or .Values.config.debug.enabled .Values.config.profiling.enabled)) }}
         livenessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.service.appPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end }}
         readinessProbe:
           tcpSocket:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.service.appPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
