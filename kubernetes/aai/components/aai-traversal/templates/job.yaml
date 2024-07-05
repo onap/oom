@@ -44,7 +44,10 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      - command:
+      - name: {{ include "common.name" . }}-readiness
+        image: {{ include "repositoryGenerator.image.readiness" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
         - /app/ready.py
         args:
         - --service-name
@@ -55,9 +58,24 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "500Mi"
+          requests:
+            cpu: "3m"
+            memory: "20Mi"
+      - name: {{ include "common.name" . }}-wait-for-aai-haproxy
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        command:
+        - sh
+        - "-c"
+        - |
+           until nc -w10 -z -v aai.{{.Release.Namespace}} 80; do
+            echo "Retrying to reach aai on port 80";
+            sleep 1;
+           done;
         resources:
           limits:
             cpu: "100m"
@@ -73,10 +91,13 @@ spec:
         - bash
         - "-c"
         - |
-           set -x
-           if [ ! -d /opt/aai/logroot/AAI-GQ/misc ]; then mkdir -p /opt/aai/logroot/AAI-GQ/misc; fi
-           until nc -w10 -z -v aai.{{.Release.Namespace}} 80; do echo "Retrying to reach aai on port 80"; done;
-           bash -x /opt/app/aai-traversal/docker-entrypoint.sh install/updateQueryData.sh ;
+           set -x;
+           if [ ! -d /opt/aai/logroot/AAI-GQ/misc ];
+            then mkdir -p /opt/aai/logroot/AAI-GQ/misc;
+           fi
+
+           sh -x /opt/app/aai-traversal/bin/install/updateQueryData.sh ;
+
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
 
         env:
