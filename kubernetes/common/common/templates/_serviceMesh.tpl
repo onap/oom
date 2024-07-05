@@ -34,7 +34,7 @@ true
 RCODE="$?";
 echo "*** script finished with exit code $RCODE" ;
 echo "*** killing service mesh sidecar" ;
-curl -sf -X POST http://127.0.0.1:15020/quitquitquit ;
+wget --quiet --post-data '' --output-document=- http://127.0.0.1:15020/quitquitquit || exit $? ;
 echo "" ;
 echo "*** exiting with script exit code" ;
 exit "$RCODE"
