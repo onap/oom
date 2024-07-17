@@ -2,6 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Copyright © 2021 AT&T
 # Modifications Copyright (C) 2021 Nordix Foundation.
+# Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -137,6 +138,10 @@
 
 {{- define "repositoryGenerator.image.nginx" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "nginxImage") .) }}
+{{- end -}}
+
+{{- define "repositoryGenerator.image.mongodbImage" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "mongodbImage") .) }}
 {{- end -}}
 
 {{- define "repositoryGenerator.image.postgres" -}}
