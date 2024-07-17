@@ -49,8 +49,60 @@ onap-keycloak-config-cli:
   secrets:
     KEYCLOAK_PASSWORD: secret
   existingConfigSecret: "keycloak-config-cli-config-realms"
+  securityContext:
+    runAsGroup: 65534
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: "1"
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 10Mi
 
 onap-oauth2-proxy:
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
+  initContainers:
+    waitForRedis:
+      #image:
+      #  repository: "dockerhub.devops.telekom.de/alpine"
+      #  tag: "3.20"
+      securityContext:
+        capabilities:
+          drop:
+          - ALL
+          - CAP_NET_RAW
+      resources:
+        limits:
+          cpu: 100m
+          memory: 300Mi
+        requests:
+          cpu: 100m
+          memory: 300Mi
+
   # Oauth client configuration specifics
   config:
     # Create a new secret with the following command
@@ -99,8 +151,19 @@ onap-oauth2-proxy:
   redis:
     # provision an instance of the redis sub-chart
     enabled: true
+    master:
+      containerSecurityContext:
+        capabilities:
+          drop: ["ALL", "CAP_NET_RAW"]
+    replica:
+      containerSecurityContext:
+        capabilities:
+          drop: ["ALL", "CAP_NET_RAW"]
     sentinel:
       enabled: true
+      containerSecurityContext:
+        capabilities:
+          drop: ["ALL", "CAP_NET_RAW"]
 
 serviceAccount:
   nameOverride: keycloak-init
