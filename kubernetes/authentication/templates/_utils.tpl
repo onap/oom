@@ -45,6 +45,7 @@ enabled: true
 {{ include "auth._users" $realm }}
 {{ include "auth._identity" $realm }}
 {{ include "auth._identityMapper" $realm }}
+{{ include "auth._smtpServer" $realm }}
 {{ include "auth._attributes" (dict "dot" $dot "realm" $realm) }}
 {{- end -}}
 
@@ -142,84 +143,60 @@ Usage:
 clients:
   {{- range $index, $client := $realm.clients }}
   - clientId: "{{ $client.clientId }}"
+    {{- if $client.name }}
     name: "{{ $client.name }}"
-    description: "{{ default "" $client.description }}"
+    {{- end }}
+    {{- if $client.description }}
+    description: "{{ $client.description }}"
+    {{- end }}
     {{- if $client.rootUrl }}
     rootUrl: {{ tpl $client.rootUrl $dot }}
-    {{- else }}
-    rootUrl: ""
     {{- end }}
     {{- if $client.adminUrl }}
     adminUrl: {{ tpl $client.adminUrl $dot }}
-    {{- else }}
-    adminUrl: ""
     {{- end }}
     {{- if $client.baseUrl }}
     baseUrl: {{ tpl $client.baseUrl $dot }}
-    {{- else }}
-    baseUrl: ""
     {{- end }}
-    surrogateAuthRequired: false
+    surrogateAuthRequired: {{ default false $client.surrogateAuthRequired }}
     enabled: true
     alwaysDisplayInConsole: false
-    clientAuthenticatorType: "client-secret"
-    secret: "{{ default "" $client.secret }}"
+    clientAuthenticatorType: {{ default "client-secret" $client.clientAuthenticatorType }}
+    {{- if $client.secret }}
+    secret: "{{ $client.secret }}"
+    {{- end }}
+    {{- if $client.redirectUris }}
     redirectUris:
-      {{- if $client.redirectUris }}
       {{- range $index2, $url := $client.redirectUris }}
       - {{ tpl $url $dot }}
       {{- end }}
-      {{- else }}
-      - "*"
-      {{- end }}
-      {{- if $client.webOrigins }}
+    {{- else }}
+    redirectUris: []
+    {{- end }}
+    {{- if $client.webOrigins }}
     webOrigins:
       {{- range $index3, $web := $client.webOrigins }}
-      - {{ $web }}
+      - {{ $web | quote }}
       {{- end }}
-      {{- else }}
+    {{- else }}
     webOrigins: []
-      {{- end }}
+    {{- end }}
     notBefore: 0
-    bearerOnly: false
-    consentRequired: false
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: true
-    serviceAccountsEnabled: false
-    publicClient: false
-    frontchannelLogout: true
-    protocol: "{{ $client.protocol }}"
+    bearerOnly: {{ default false $client.bearerOnly }}
+    consentRequired: {{ default false $client.consentRequired }}
+    standardFlowEnabled: {{ default true $client.standardFlowEnabled }}
+    implicitFlowEnabled: {{ default false $client.implicitFlowEnabled }}
+    directAccessGrantsEnabled: {{ default true $client.directAccessGrantsEnabled }}
+    serviceAccountsEnabled: {{ default false $client.serviceAccountsEnabled }}
+    publicClient: {{ default false $client.publicClient }}
+    frontchannelLogout: {{ default false $client.frontchannelLogout }}
+    protocol: "{{ default "openid-connect" $client.protocol }}"
+    {{- if $client.attributes }}
     attributes:
-      id.token.as.detached.signature: "false"
-      saml.assertion.signature: "false"
-      saml.force.post.binding: "false"
-      saml.multivalued.roles: "false"
-      saml.encrypt: "false"
-      saml.server.signature: "false"
-      saml.server.signature.keyinfo.ext: "false"
-      exclude.session.state.from.auth.response: "false"
-      saml.artifact.binding: "false"
-      saml_force_name_id_format: "false"
-      saml.client.signature: "false"
-      saml.authnstatement: "false"
-      saml.onetimeuse.condition: "false"
-      tls-client-certificate-bound-access-tokens: "false"
-      oidc.ciba.grant.enabled: "false"
-      backchannel.logout.session.required: "true"
-      client_credentials.use_refresh_token: "false"
-      acr.loa.map: "{}"
-      require.pushed.authorization.requests: "false"
-      oauth2.device.authorization.grant.enabled: "false"
-      display.on.consent.screen: "false"
-      backchannel.logout.revoke.offline.tokens: "false"
-      token.response.type.bearer.lower-case: "false"
-      use.refresh.tokens: "true"
-      {{- if $client.additionalAttributes }}
-      {{-   range $key,$value := $client.additionalAttributes }}
+      {{-   range $key,$value := $client.attributes }}
       {{ $key }}: {{ tpl $value $dot }}
       {{-   end }}
-      {{- end }}
+    {{- end }}
     authenticationFlowBindingOverrides: {}
     fullScopeAllowed: true
     nodeReRegistrationTimeout: -1
@@ -235,21 +212,27 @@ clients:
       {{- end }}
       {{- end }}
     defaultClientScopes:
-      - web-origins
-      - acr
-      - profile
-      - email
-      {{- if $client.additionalDefaultScopes }}
-      {{-   range $index2, $scope := $client.additionalDefaultScopes }}
+      {{- if $client.defaultClientScopes }}
+      {{-   range $index2, $scope := $client.defaultClientScopes }}
       - {{ $scope }}
       {{-   end }}
+      {{- else }}
+      - web-origins
+      - profile
+      - acr
+      - email
       {{- end }}
     optionalClientScopes:
+      {{- if $client.optionalClientScopes }}
+      {{-   range $index2, $scope := $client.optionalClientScopes }}
+      - {{ $scope }}
+      {{-   end }}
+      {{- else }}
       - address
       - phone
       - offline_access
-      - groups
       - microprofile-jwt
+      {{- end }}
   {{- end }}
 {{- end }}
 
@@ -716,7 +699,9 @@ users:
     enabled: true
     totp: false
     email: "{{ default "" $user.email }}"
-    emailVerified: true
+    emailVerified: "{{ default true $user.emailVerified }}"
+    firstName: "{{ default "" $user.firstName }}"
+    lastName: "{{ default "" $user.lastName }}"
     {{- if $user.attributes }}
     attributes:
       {{ toYaml $user.attributes | nindent 6 }}
@@ -796,6 +781,19 @@ identityProviderMappers:
     config:
       {{ toYaml $mapper.config | nindent 6 }}
 {{-   end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Renders the smtpServer section in a realm.
+Usage:
+{{ include "auth._smtpServer" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._smtpServer" -}}
+{{- $dot := default . .dot -}}
+{{- if $dot.smtpServer }}
+smtpServer:
+  {{ toYaml $dot.smtpServer | nindent 2 }}
 {{- end }}
 {{- end }}
 
