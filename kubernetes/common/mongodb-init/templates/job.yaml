@@ -1,0 +1,129 @@
+{{/*
+# Copyright © 2024 Deutsche Telekom
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-config-job
+  namespace: {{ include "common.namespace" . }}
+  labels:
+    app: {{ include "common.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ include "common.release" . }}
+    heritage: {{ .Release.Service }}
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.name" . }}
+        release: {{ include "common.release" . }}
+      name: {{ include "common.name" . }}
+    spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      - name: {{ include "common.name" . }}-update-config
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          function prepare_password {
+            echo -n $1 | sed -e "s/'/''/g"
+          }
+          export MONGODB_PASSWORD=`prepare_password $MONGODB_PASSWORD_INPUT`;
+          export MONGODB_ROOT_PASSWORD=`prepare_password $MONGODB_ROOT_PASSWORD_INPUT`;
+          export MONGODB_USER=`prepare_password $MONGODB_USER_INPUT`;
+          export MONGODB_ROOT_USER=`prepare_password $MONGODB_ROOT_USER_INPUT`;
+          {{- if include "common.onServiceMesh" . }}
+          echo "waiting 15s for istio side cars to be up"; sleep 15s;
+          {{- end }}
+          cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done;
+        env:
+        - name: MONGODB_HOST
+          value: "{{ .Values.global.mongodb.service.name }}"
+        - name: MONGODB_USER_INPUT
+          #value: "{{ .Values.config.mgUserName }}"
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" .Values.config.mgDatabase "key" "login") | indent 10 }}
+        - name: MONGODB_PASSWORD_INPUT
+          #value: "{{ .Values.config.mgUserPassword }}"
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" .Values.config.mgDatabase "key" "password") | indent 10 }}
+        - name: MONGO_DATABASE
+          value: "{{ .Values.config.mgDatabase }}"
+        - name: MONGODB_ROOT_USER_INPUT
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mongodb.secret.rootPassUID" .) "key" .Values.config.mgRootUserKey) | indent 10 }}
+        - name: MONGODB_ROOT_PASSWORD_INPUT
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mongodb.secret.rootPassUID" .) "key" .Values.config.mgRootPasswordKey) | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input/setup.sql
+          name: config
+          subPath: setup.sql
+        - mountPath: /config
+          name: mgconf
+      containers:
+      - name: {{ include "common.name" . }}-setup-db
+        image: {{ include "repositoryGenerator.image.mongodbImage" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        command:
+        - sh
+        args:
+        - -c
+        - |
+          function prepare_password {
+            echo -n $1 | sed -e "s/'/''/g"
+          }
+          export MONGODB_ROOT_USER=`prepare_password $MONGODB_ROOT_USER_INPUT`;
+          export MONGODB_ROOT_PASSWORD=`prepare_password $MONGODB_ROOT_PASSWORD_INPUT`;
+          mongosh "mongodb://${MONGODB_ROOT_USER}:${MONGODB_ROOT_PASSWORD}@$MONGODB_HOST" < /config/setup.sql
+        env:
+        - name: MONGODB_HOST
+          value: "{{ .Values.global.mongodb.service.name }}"
+        - name: MONGODB_ROOT_USER_INPUT
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mongodb.secret.rootPassUID" .) "key" "MONGODB_DATABASE_ADMIN_USER") | indent 10 }}
+        - name: MONGODB_ROOT_PASSWORD_INPUT
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.mongodb.secret.rootPassUID" .) "key" "MONGODB_DATABASE_ADMIN_PASSWORD") | indent 10 }}
+        volumeMounts:
+        - mountPath: /config-input/setup.sql
+          name: config
+          subPath: setup.sql
+        - mountPath: /config
+          name: mgconf
+        resources: {{ include "common.resources" . | nindent 10 }}
+      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 10 }}
+      {{- end -}}
+      {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 10 }}
+      {{- end }}
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "common.fullname" . }}
+      - name: mgconf
+        emptyDir:
+          medium: Memory
+          sizeLimit: 64Mi
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: "{{ include "common.namespace" . }}-docker-registry-key"

@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2022 Deutsche Telekom AG
+# Copyright © 2022-2024 Deutsche Telekom AG
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,6 +45,29 @@ spec:
         endpoint:
           address: 0.0.0.0
     {{- end }}
+    podSecurityContext:
+      fsGroup: 1001
+      runAsGroup: 1001
+      runAsUser: 1001
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    initContainerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+        - CAP_NET_RAW
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      privileged: false
+      capabilities:
+        drop:
+        - ALL
+        - CAP_NET_RAW
   {{- end }}
   {{ if .Values.k8ssandraOperator.stargate.enabled -}}
   stargate:
@@ -111,6 +134,44 @@ spec:
           name: {{ $datacenter.name }}
         size: {{ $datacenter.size }}
       {{- end }}
+    initContainers:
+      - name: server-config-init-base
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+            - CAP_NET_RAW
+      - name: server-config-init
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+            - CAP_NET_RAW
+    containers:
+      - name: cassandra
+        securityContext:
+          allowPrivilegeEscalation: false
+          #readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+            - CAP_NET_RAW
+      - name: server-system-logger
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+            - CAP_NET_RAW
     podSecurityContext:
       fsGroup: 999
       runAsGroup: 999
