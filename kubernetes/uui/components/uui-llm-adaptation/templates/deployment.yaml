@@ -1,0 +1,74 @@
+{{/*
+# Copyright © 2022 Huawei Technologies Co., Ltd. All rights reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+spec:
+  selector: {{- include "common.selectors" . | nindent 4 }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    spec:
+      initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        command: ["sh", "-c"]
+        args:
+        - ". /uui/run.sh"
+        ports: {{ include "common.containerPorts" . | nindent 10 }}
+        env:
+        - name: POSTGRES_IP
+          value: {{ .Values.postgres.service.name2 }}
+        - name: POSTGRES_PORT
+          value: "{{ .Values.postgres.service.externalPort }}"
+        - name: POSTGRES_DB_NAME
+          value: {{ .Values.postgres.config.pgDatabase }}
+        - name: POSTGRES_USERNAME
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
+        - name: POSTGRES_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
+{{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.liveness.port }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+{{- end }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.readiness.port }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        resources: {{ include "common.resources" . | nindent 10 }}
+{{- if .Values.nodeSelector }}
+        nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
+{{- end }}
+{{- if .Values.affinity }}
+        affinity: {{ toYaml .Values.affinity | nindent 10 }}
+{{- end }}
+        volumeMounts:
+        - mountPath: /uui/run.sh
+          name: entrypoint
+          subPath: run.sh
+      serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+      - name: entrypoint
+        configMap:
+          name: {{ include "common.fullname" . }}-entrypoint
+          defaultMode: 0755
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
