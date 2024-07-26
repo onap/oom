@@ -27,10 +27,23 @@ true
 {{- end -}}
 
 {{/*
+  Calculate if we require a sidecar killer.
+*/}}
+{{- define "common.requireSidecarKiller" -}}
+{{-   if (include "common.onServiceMesh" .) }}
+{{-     if eq .Values.global.serviceMesh.engine "istio" }}
+{{-       if not (default false .Values.global.serviceMesh.nativeSidecars) -}}
+true
+{{-       end -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+
+{{/*
   Kills the sidecar proxy associated with a pod.
 */}}
 {{- define "common.serviceMesh.killSidecar" -}}
-{{-   if (include "common.onServiceMesh" .) }}
+{{-   if (include "common.requireSidecarKiller" .) }}
 RCODE="$?";
 echo "*** script finished with exit code $RCODE" ;
 echo "*** killing service mesh sidecar" ;
@@ -47,7 +60,7 @@ exit "$RCODE"
 {{- define "common.waitForJobContainer" -}}
 {{-   $dot := default . .dot -}}
 {{-   $wait_for_job_container := default $dot.Values.wait_for_job_container .wait_for_job_container -}}
-{{- if (include "common.onServiceMesh" .) }}
+{{- if (include "common.requireSidecarKiller" .) }}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $wait_for_job_container.name) (empty $wait_for_job_container.name) }}-service-mesh-wait-for-job-container
   image: {{ include "repositoryGenerator.image.quitQuit" $dot }}
   imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
