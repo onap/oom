@@ -2,6 +2,7 @@
 # Copyright © 2018 Amdocs, Bell Canada
 # Modifications Copyright © 2020 AT&T Intellectual Property
 # Modifications Copyright (C) 2022 Nordix Foundation.
+# Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +34,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-galera-init
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_mariadb ) | indent 6 | trim }}
@@ -40,6 +42,7 @@ spec:
       - name: {{ include "common.name" . }}-galera-config
         image: {{ include "repositoryGenerator.image.mariadb" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         volumeMounts:
         - mountPath: /dbcmd-config/db.sh
           name: {{ include "common.fullname" . }}-config
@@ -48,7 +51,7 @@ spec:
         - /bin/sh
         - -cx
         - |
-           {{- if include "common.onServiceMesh" . }}
+           {{- if include "common.requireSidecarKiller" . }}
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            /dbcmd-config/db.sh
         env:
@@ -61,7 +64,7 @@ spec:
         - name: MYSQL_PORT
           value: "{{ index .Values "mariadb-galera" "service" "internalPort" }}"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
+      {{- if (include "common.requireSidecarKiller" .) }}
       - name: policy-service-mesh-wait-for-job-container
         image: {{ include "repositoryGenerator.image.quitQuit" . }}
         imagePullPolicy: Always
@@ -77,6 +80,14 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -108,6 +119,7 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-pg-init
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_postgres ) | indent 6 | trim }}
@@ -115,6 +127,7 @@ spec:
       - name: {{ include "common.name" . }}-pg-config
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.postgresImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         volumeMounts:
           - mountPath: /docker-entrypoint-initdb.d/db-pg.sh
             name: {{ include "common.fullname" . }}-config
@@ -123,7 +136,7 @@ spec:
           - /bin/sh
           - -cx
           - |
-             {{- if include "common.onServiceMesh" . }}
+             {{- if include "common.requireSidecarKiller" . }}
              echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
              /docker-entrypoint-initdb.d/db-pg.sh
         env:
@@ -138,7 +151,7 @@ spec:
           - name: PG_PORT
             value: "{{ .Values.postgres.service.internalPort }}"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
+      {{- if (include "common.requireSidecarKiller" .) }}
       - name: policy-service-mesh-wait-for-job-container
         image: {{ include "repositoryGenerator.image.quitQuit" . }}
         imagePullPolicy: Always
@@ -154,6 +167,14 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -185,9 +206,11 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-galera-config
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
       - name: {{ include "common.name" . }}-init-readiness
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
@@ -210,17 +233,20 @@ spec:
             memory: "20Mi"
       containers:
       - name: {{ include "common.name" . }}-galera-db-migrator
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
         - mountPath: /dbcmd-config/db_migrator_policy_init.sh
           name: {{ include "common.fullname" . }}-config
           subPath: db_migrator_policy_init.sh
+        - mountPath: /opt/app/policy/etc/db
+          name: db-conf
         command:
         - /bin/sh
         - -cx
         - |
-           {{- if include "common.onServiceMesh" . }}
+           {{- if include "common.requireSidecarKiller" . }}
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            /dbcmd-config/db_migrator_policy_init.sh
         env:
@@ -237,7 +263,7 @@ spec:
         - name: SCRIPT_DIRECTORY
           value: "sql"
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
+      {{- if (include "common.requireSidecarKiller" .) }}
       - name: policy-service-mesh-wait-for-job-container
         image: {{ include "repositoryGenerator.image.quitQuit" . }}
         imagePullPolicy: Always
@@ -253,6 +279,14 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -264,6 +298,10 @@ spec:
             items:
               - key: db_migrator_policy_init.sh
                 path: db_migrator_policy_init.sh
+        - name: db-conf
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
 {{ end }}
 {{ if .Values.global.postgres.localCluster }}
 ---
@@ -283,9 +321,11 @@ spec:
         release: {{ include "common.release" . }}
       name: {{ include "common.name" . }}-pg-config
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
       - name: {{ include "common.name" . }}-init-readiness
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
@@ -308,17 +348,20 @@ spec:
             memory: "20Mi"
       containers:
       - name: {{ include "common.name" . }}-pg-db-migrator
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
           - mountPath: /dbcmd-config/db_migrator_pg_policy_init.sh
             name: {{ include "common.fullname" . }}-config
             subPath: db_migrator_pg_policy_init.sh
+          - mountPath: /opt/app/policy/etc/db
+            name: db-conf
         command:
           - /bin/sh
           - -cx
           - |
-             {{- if include "common.onServiceMesh" . }}
+             {{- if include "common.requireSidecarKiller" . }}
              echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
              /dbcmd-config/db_migrator_pg_policy_init.sh
         env:
@@ -337,7 +380,7 @@ spec:
         - name: PGPASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{- if (include "common.onServiceMesh" .) }}
+      {{- if (include "common.requireSidecarKiller" .) }}
       - name: policy-service-mesh-wait-for-job-container
         image: {{ include "repositoryGenerator.image.quitQuit" . }}
         imagePullPolicy: Always
@@ -353,6 +396,14 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 500Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
       {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -364,4 +415,8 @@ spec:
             items:
               - key: db_migrator_pg_policy_init.sh
                 path: db_migrator_pg_policy_init.sh
+        - name: db-conf
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
 {{ end }}
