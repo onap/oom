@@ -1,6 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2020 AT&T Intellectual Property.
+#   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       - command:
         - sh
@@ -57,9 +59,11 @@ spec:
           name: distributionconfig
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
@@ -86,6 +90,14 @@ spec:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
+          - name: logs
+            mountPath: /var/log/onap
+          - name: empty-dir
+            mountPath: /tmp
+            subPath: tmp-dir
+          - mountPath: /opt/app/policy/distribution/etc/logback.xml
+            subPath: logback.xml
+            name: distributionconfig
           - mountPath: /opt/app/policy/distribution/etc/mounted
             name: distributionconfig
           resources: {{ include "common.resources" . | nindent 12 }}
@@ -106,4 +118,11 @@ spec:
         - name: distributionconfig
           emptyDir:
             medium: Memory
+            sizeLimit: 64Mi
+        - name: empty-dir
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
+        - name: logs
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

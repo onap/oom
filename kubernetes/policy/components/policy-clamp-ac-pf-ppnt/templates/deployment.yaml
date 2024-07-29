@@ -1,6 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2021-2023 Nordix Foundation.
+#   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       - command:
         - sh
@@ -58,9 +60,11 @@ spec:
           name: ac-pf-ppnt-config-processed
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/opt/app/policy/clamp/bin/policy-participant.sh"]
@@ -83,6 +87,14 @@ spec:
           volumeMounts:
           - mountPath: /opt/app/policy/clamp/etc/mounted
             name: ac-pf-ppnt-config-processed
+          - name: logs
+            mountPath: /var/log/onap
+          - name: empty-dir
+            mountPath: /tmp
+            subPath: tmp-dir
+          - mountPath: /opt/app/policy/clamp/etc/logback.xml
+            subPath: logback.xml
+            name: ac-pf-ppnt-config-processed
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -101,4 +113,11 @@ spec:
         - name: ac-pf-ppnt-config-processed
           emptyDir:
             medium: Memory
+            sizeLimit: 64Mi
+        - name: empty-dir
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
+        - name: logs
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
