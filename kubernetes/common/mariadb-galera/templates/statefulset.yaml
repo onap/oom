@@ -55,7 +55,19 @@ spec:
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+              - CAP_NET_RAW
+              add:
+              - CHOWN
+              - SYS_CHROOT
+            runAsGroup: {{ .Values.securityContext.group_id }}
+            readOnlyRootFilesystem: false
             runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: previous-boot
               mountPath: /bootstrap
@@ -169,6 +181,7 @@ spec:
             successThreshold: {{ .Values.startupProbe.successThreshold }}
             failureThreshold: {{ .Values.startupProbe.failureThreshold }}
           {{- end }}
+          {{ include "common.securityContext" . | indent 10 | trim }}
           resources: {{ include "common.resources" . | nindent 12 }}
           volumeMounts:
             - name: previous-boot
@@ -218,7 +231,7 @@ spec:
             timeoutSeconds: {{ .Values.metrics.readinessProbe.timeoutSeconds }}
             successThreshold: {{ .Values.metrics.readinessProbe.successThreshold }}
             failureThreshold: {{ .Values.metrics.readinessProbe.failureThreshold }}
-          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          securityContext: {{- toYaml .Values.metrics.securityContext | nindent 12 }}
           resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
         {{- end }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

@@ -78,7 +78,16 @@ exit "$RCODE"
       fieldRef:
         apiVersion: v1
         fieldPath: metadata.namespace
-  {{ include "common.containerSecurityContext" . | indent 2 | trim }}
+  securityContext:
+    capabilities:
+      drop:
+        - ALL
+        - CAP_NET_RAW
+    privileged: false
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    runAsUser: 100
+    runAsGroup: 65533
   resources:
     limits:
       cpu: 100m
