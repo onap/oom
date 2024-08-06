@@ -60,12 +60,32 @@ global: # global defaults
           label: v12
 
 # application image
-image: onap/aai-schema-service:1.12.4
+image: onap/aai-schema-service:1.12.5
 pullPolicy: Always
 restartPolicy: Always
 flavorOverride: small
 # default number of instances
 replicaCount: 1
+
+# adds jvm args for remote debugging the application
+debug:
+  enabled: false
+  args: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
+# adds jvm args for remote profiling the application
+profiling:
+  enabled: false
+  args:
+    - "-Dcom.sun.management.jmxremote"
+    - "-Dcom.sun.management.jmxremote.ssl=false"
+    - "-Dcom.sun.management.jmxremote.authenticate=false"
+    - "-Dcom.sun.management.jmxremote.local.only=false"
+    - "-Dcom.sun.management.jmxremote.port=9999"
+    - "-Dcom.sun.management.jmxremote.rmi.port=9999"
+    - "-Djava.rmi.server.hostname=127.0.0.1"
+
+# number of ReplicaSets that should be retained for the Deployment
+revisionHistoryLimit: 3
 
 updateStrategy:
   type: RollingUpdate
@@ -90,10 +110,12 @@ readiness:
 
 service:
   type: ClusterIP
-  portName: http
-  internalPort: 8452
-  portName2: tcp-5005
-  internalPort2: 5005
+  appPortName: http
+  appPort: 8452
+  debugPortName: tcp-5005
+  debugPort: 5005
+  profilingPortName: jmx-9999
+  profilingPort: 9999
 
 ingress:
   enabled: false
