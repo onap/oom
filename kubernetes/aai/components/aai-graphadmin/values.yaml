@@ -32,6 +32,8 @@ global: # global defaults
     localCluster: false
     # flag to enable the DB creation via k8ssandra-operator
     useOperator: true
+    #Cassandra datacenter name
+    localDataCenter: dc1
   initContainers:
     enabled: true
   jobs:
@@ -44,25 +46,21 @@ global: # global defaults
     duplicates:
       enabled: false
   config:
-
     # Specifies that the cluster connected to a dynamic
     # cluster being spinned up by kubernetes deployment
     cluster:
       cassandra:
         dynamic: true
-
     # Specifies if the basic authorization is enabled
     basic:
       auth:
         enabled: true
         username: AAI
         passwd: AAI
-
     # Notification event specific properties
     notification:
       eventType: AAI-EVENT
       domain: dev
-
     # Schema specific properties that include supported versions of api
     schema:
       # Specifies if the connection should be one way ssl, two way ssl or no auth
@@ -100,13 +98,12 @@ global: # global defaults
         # Specifies from which version the edge label appeared in API
         edge:
           label: v12
-
     # Specifies which clients should always default to realtime graph connection
     realtime:
       clients: SDNC,-1|MSO,-1|SO,-1|robot-ete,-1
 
 # application image
-image: onap/aai-graphadmin:1.14.4
+image: onap/aai-graphadmin:1.14.5
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -128,14 +125,11 @@ updateStrategy:
 
 # Configuration for the graphadmin deployment
 config:
-  projectHome: /opt/app/aai-graphadmin
   # Specify the profiles for the graphadmin microservice
   profiles:
     active: kafka
-    kafkaBootstrap: strimzi-kafka-bootstrap
     jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}'
     someConfig: graphrandom
-    aaiTopic: AAI-EVENT
   # Specifies the timeout limit for the REST API requests
   timeout:
     enabled: true
@@ -144,17 +138,14 @@ config:
     # temporarily enable this to update the graph storage version
     # see: https://docs.janusgraph.org/changelog/#upgrade-instructions_9
     allowUpgrade: true
-
   # Default maximum records to fix for the data grooming and dupeTool
   maxFix:
     dataGrooming: 150
     dupeTool: 25
-
   # Default number of sleep minutes for dataGrooming and dupeTool
   sleepMinutes:
     dataGrooming: 7
     dupeTool: 7
-
   # Cron specific attributes to be triggered for the graphadmin spring cron tasks
   cron:
     # Specifies that the data grooming tool which runs duplicates should be enabled
@@ -164,10 +155,8 @@ config:
     dataSnapshot:
       enabled: true
       params: JUST_TAKE_SNAPSHOT
-
     # Data cleanup which zips snapshots older than x days and deletes older than y days
     dataCleanup:
-
       dataGrooming:
         enabled: true
         # Zips up the dataGrooming files older than 5 days
@@ -190,7 +179,6 @@ config:
   debug:
     enabled: false
     args: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-
   # adds jvm args for remote profiling the application
   profiling:
     enabled: false
@@ -230,7 +218,7 @@ service:
   profilingPort: 9999
   portName3: http-graphadmin
   internalPort3: 8448
-  terminationGracePeriodSeconds: 120
+  terminationGracePeriodSeconds: 45
 
 ingress:
   enabled: false
