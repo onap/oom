@@ -7,6 +7,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
         - command:
           - /app/ready.py
@@ -25,6 +26,7 @@ spec:
                 fieldPath: metadata.namespace
           image: {{ include "repositoryGenerator.image.readiness" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           name: {{ include "common.name" . }}-readiness
           resources:
             limits:
@@ -54,9 +56,11 @@ spec:
             name: apiconfig-processed
           image: {{ include "repositoryGenerator.image.envsubst" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/opt/app/policy/api/bin/policy-api.sh"]
@@ -85,6 +89,14 @@ spec:
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeout }}
           volumeMounts:
+          - name: logs
+            mountPath: /var/log/onap
+          - name: empty-dir
+            mountPath: /tmp
+            subPath: tmp-dir
+          - mountPath: /opt/app/policy/api/etc/logback.xml
+            subPath: logback.xml
+            name: apiconfig-processed
           - mountPath: /opt/app/policy/api/etc/mounted
             name: apiconfig-processed
           resources: {{ include "common.resources" . | nindent 12 }}
@@ -105,4 +117,11 @@ spec:
         - name: apiconfig-processed
           emptyDir:
             medium: Memory
+            sizeLimit: 64Mi
+        - name: empty-dir
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
+        - name: logs
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

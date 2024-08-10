@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2020, 2022 AT&T Intellectual Property
+# Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +26,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       - command:
         - /app/ready.py
@@ -39,6 +41,7 @@ spec:
               fieldPath: metadata.namespace
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         name: {{ include "common.name" . }}-db-readiness
         resources:
           limits:
@@ -69,6 +72,7 @@ spec:
           value: {{ .Values.config.app.listener.policyPdpPapTopic }}
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         name: {{ include "common.name" . }}-readiness
         resources:
           limits:
@@ -80,6 +84,7 @@ spec:
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["sh","-c"]
@@ -107,6 +112,14 @@ spec:
           - name: SQL_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           volumeMounts:
+          - name: logs
+            mountPath: /var/log/onap
+          - name: empty-dir
+            mountPath: /tmp
+            subPath: tmp-dir
+          - mountPath: /opt/app/policy/etc/profile.d/base.conf
+            subPath: base.conf
+            name: drools-config
           {{- range $path, $bytes := .Files.Glob "resources/secrets/*" }}
           - mountPath: /tmp/policy-install/config/{{ base $path }}
             name: drools-secret
@@ -128,6 +141,12 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: empty-dir
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
+        - name: logs
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
         - name: drools-config
           configMap:
             name: {{ include "common.fullname" . }}-configmap
