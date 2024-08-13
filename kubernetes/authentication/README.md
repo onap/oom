@@ -279,15 +279,15 @@ The access role is assigned to a realm client (e.g. oauth2_proxy)
 
 ```yaml
     smtpServer:
-      password: "EYcQE44+AEYcQE44A!"
+      password: "<password>"
       starttls: "true"
       auth: "true"
       port: "587"
-      host: "mailauth.telekom.de"
-      from: "dl_t-nap_support@telekom.de"
-      fromDisplayName: "tnapsupport"
+      host: "<mailserver>"
+      from: "<mail-address>"
+      fromDisplayName: "onapsupport"
       ssl: "false"
-      user: "tnapsupport"
+      user: "onapsupport"
 ```
 
 ## Ingress Authentication settings
