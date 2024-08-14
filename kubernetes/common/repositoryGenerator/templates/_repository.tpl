@@ -148,6 +148,10 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "postgresImage") .) }}
 {{- end -}}
 
+{{- define "repositoryGenerator.image.timescaledb" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "timescaledbImage") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image.readiness" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "readinessImage") .) }}
 {{- end -}}

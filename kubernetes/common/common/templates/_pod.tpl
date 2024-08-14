@@ -53,25 +53,60 @@
 
 {{/*
    Generate securityContext for pod
+   required variables: user_id, group_id
+   optional variables: fsgroup_id, runAsNonRoot, seccompProfileType
+   Example in values.yaml
+   securityContext:
+     user_id: 70
+     group_id: 70
+     # fsgroup_id: 70
+     # runAsNonRoot: true
+     # seccompProfileType: "RuntimeDefault"
 */}}
 {{- define "common.podSecurityContext" -}}
 securityContext:
   runAsUser: {{ .Values.securityContext.user_id }}
   runAsGroup: {{ .Values.securityContext.group_id }}
-  fsGroup: {{ .Values.securityContext.group_id }}
-  runAsNonRoot: true
+  fsGroup: {{ default .Values.securityContext.group_id .Values.securityContext.fsgroup_id }}
+  runAsNonRoot: {{ default true .Values.securityContext.runAsNonRoot }}
   seccompProfile:
-    type: RuntimeDefault
+    type: {{ default "RuntimeDefault" .Values.securityContext.seccompProfileType }}
 {{- end }}
 
 {{/*
-   Generate securityContext for container
+   Generate securityContext for container (optional)
+   predefined variables: capabilities.drop
+   optional variables: readOnlyRootFilesystem, privileged, allowPrivilegeEscalation
+   Example in values.yaml
+   containerSecurityContext:
+     capabilities:
+       privileged: false
+       runAsUser: 1337
+       runAsGroup: 1337
+       runAsNonRoot: true
+       readOnlyRootFilesystem: true
+       allowPrivilegeEscalation: false
 */}}
 {{- define "common.containerSecurityContext" -}}
 securityContext:
+{{- if not .Values.containerSecurityContext }}
   readOnlyRootFilesystem: true
   privileged: false
   allowPrivilegeEscalation: false
+{{- else }}
+  readOnlyRootFilesystem: {{ default true .Values.containerSecurityContext.readOnlyRootFilesystem }}
+  privileged: {{ default false .Values.containerSecurityContext.privileged }}
+  allowPrivilegeEscalation: {{ default false .Values.containerSecurityContext.allowPrivilegeEscalation }}
+{{-   if .Values.containerSecurityContext.runAsUser }}
+  runAsUser: {{ .Values.containerSecurityContext.runAsUser }}
+{{-   end }}
+{{-   if .Values.containerSecurityContext.runAsGroup }}
+  runAsGroup: {{ .Values.containerSecurityContext.runAsGroup }}
+{{    end }}
+{{-   if .Values.containerSecurityContext.runAsNonRoot }}
+  runAsGroup: {{ .Values.containerSecurityContext.runAsNonRoot }}
+{{-   end }}
+{{- end }}
   capabilities:
     drop:
       - ALL
