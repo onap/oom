@@ -11,7 +11,7 @@ html_theme = "sphinx_rtd_theme"
 html_theme_options = {
   "style_nav_header_background": "white",
   "sticky_navigation": "False" }
-html_logo = "_static/logo_onap_2017.png"
+html_logo = "_static/logo_onap_2024.png"
 html_favicon = "_static/favicon.ico"
 html_static_path = ["_static"]
 html_show_sphinx = False
