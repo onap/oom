@@ -148,7 +148,7 @@
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "postgresImage") .) }}
 {{- end -}}
 
-{{- define "repositoryGenerator.image.readiness" -}}
+{{{- define "repositoryGenerator.image.readiness" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "readinessImage") .) }}
 {{- end -}}
 
