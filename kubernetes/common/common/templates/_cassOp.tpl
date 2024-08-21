@@ -133,6 +133,10 @@ spec:
       - metadata:
           name: {{ $datacenter.name }}
         size: {{ $datacenter.size }}
+        {{ if $datacenter.resources -}}
+        resources:
+          {{ toYaml $datacenter.resources | nindent 10 }}
+        {{- end }}
       {{- end }}
     initContainers:
       - name: server-config-init-base
