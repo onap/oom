@@ -313,6 +313,8 @@ spec:
           name: {{ ternary "app-config-input" "app-config" (not $drNeedProvisioning) }}
         - mountPath: /app-config-input
           name: app-config-input
+        - mountPath: /tmp
+          name: tmp-volume
         {{- if $logDir }}
         - mountPath: {{ $logDir}}
           name: logs
@@ -385,6 +387,9 @@ spec:
       - emptyDir:
           medium: Memory
         name: app-config
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 128Mi
       {{- if $logDir }}
       - emptyDir: {}
         name: logs
