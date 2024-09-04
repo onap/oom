@@ -1,6 +1,7 @@
 # Copyright (C) 2021 Pantheon.tech, Orange, Bell Canada.
 # Modifications Copyright (C) 2022 Bell Canada
 # Modifications Copyright © 2022-2023 Nordix Foundation
+# Modifications Copyright © 2024 TechMahindra Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -183,7 +184,6 @@ config:
 
   additional:
     notification.enabled: true
-    notification.data-updated.topic: &dataUpdatedTopic cps.data-updated-events
     notification.data-updated.filters.enabled-dataspaces: ""
     notification.async.enabled: false
     notification.async.executor.core-pool-size: 2
@@ -191,10 +191,14 @@ config:
     notification.async.executor.queue-capacity: 500
     notification.async.executor.wait-for-tasks-to-complete-on-shutdown: true
     notification.async.executor.thread-name-prefix: Async-
+    app.cps.data-updated.change-event-notifications-enabled: true
 
 # Strimzi KafkaUser and Topic config
 kafkaTopic:
   - name: &dmiCmEventsTopic dmi-cm-events
+    retentionMs: 7200000
+    segmentBytes: 1073741824
+  - name: &dataUpdatedTopic cps-data-updated-events
     retentionMs: 7200000
     segmentBytes: 1073741824
 
@@ -216,16 +220,61 @@ kafkaUser:
     - name: &cmAvcSubscriptionTopic cm-avc-subscription
       type: topic
       operations: [Read]
+    - name: &ncmpCmSubscriptionIn subscription
+      type: topic
+      operations: [Read]
+    - name: &ncmpCmSubscriptionDmiIn ncmp-dmi-cm-avc-subscription
+      type: topic
+      operations: [Read]
+    - name: &ncmpCmSubscriptionDmiOut dmi-ncmp-cm-avc-subscription
+      type: topic
+      operations: [Read]
+    - name: &ncmpCmSubscriptionOut subscription-response
+      type: topic
+      operations: [Read]
+    - name: &ncmpCmEventsTopic cm-events
+      type: topic
+      operations: [Read]
+    - name: &dmiDeviceHeartbeatTopic dmi-device-heartbeat
+      type: topic
+      operations: [Read]
+    - name: &lcmEventsTopic ncmp-events
+      type: topic
+      operations: [Read]
 
 topics:
   config:
     app.ncmp.async-m2m.topic: *ncmpAsyncM2MTopic
-    app.ncmp.avc.subscription-topic: *cmAvcSubscriptionTopic
+    app.ncmp.avc.cm-subscription-ncmp-in: *ncmpCmSubscriptionIn
+    app.ncmp.avc.cm-subscription-dmi-in:  *ncmpCmSubscriptionDmiIn
+    app.ncmp.avc.cm-subscription-dmi-out: *ncmpCmSubscriptionDmiOut
+    app.ncmp.avc.cm-subscription-ncmp-out: *ncmpCmSubscriptionOut
+    app.ncmp.avc.cm-events-topic: *ncmpCmEventsTopic
+    app.lcm.events.topic: *lcmEventsTopic
     app.dmi.cm-events.topic: *dmiCmEventsTopic
+    app.dmi.device-heartbeat.topic: *dmiDeviceHeartbeatTopic
+    app.cps.data-updated.topic: *dataUpdatedTopic
 
 logging:
   level: INFO
   path: /tmp
+
+management:
+  tracing:
+    propagation:
+      produce: [W3C]
+
+tracing:
+  cps:
+    tracing:
+      sampler:
+        jaeger_remote:
+          endpoint: http://onap-otel-collector:14250
+      exporter:
+        endpoint: http://onap-otel-collector:4317
+        protocol: grpc
+      enabled: false
+      excluded-observation-names: tasks.scheduled.execution
 
 #################################################################
 # Postgres overriding defaults in the postgres
@@ -283,5 +332,11 @@ hazelcast:
   config:
     kubernetesDiscovery: true
     kubernetesServiceName: cps-core-headless
+    clusterName: cps-and-ncmp-common-cache-cluster
 
+otel:
+  config:
+    otlp:
+      traces:
+        protocol: grpc
 

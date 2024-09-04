@@ -3,6 +3,7 @@
 #  Modifications Copyright (C) 2020 Bell Canada.
 #  Modifications Copyright (C) 2021-2023 Nordix Foundation.
 #  Modifications Copyright (C) 2021 Orange
+#  Modifications Copyright (C) 2024 TechMahindra Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +44,12 @@ security:
     username: ${CPS_USERNAME}
     password: ${CPS_PASSWORD}
 
+# Actuator
+management:
+  tracing:
+    propagation:
+      produce: {{ .Values.management.tracing.propagation.produce }}
+
 logging:
   level:
     org:
@@ -71,12 +78,24 @@ spring.kafka.properties.sasl.jaas.config: ${SASL_JAAS_CONFIG}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
 
+# cps tracing
+{{- if .Values.tracing }}
+  {{ toYaml .Values.tracing | nindent 2 }}
+{{- end }}
+
 # Custom Hazelcast config.
 hazelcast:
+  cluster-name: {{ .Values.hazelcast.config.clusterName }}
   mode:
     kubernetes:
       enabled: {{ .Values.hazelcast.config.kubernetesDiscovery }}
       service-name: {{ .Values.hazelcast.config.kubernetesServiceName }}
+
+otel:
+  exporter:
+    otlp:
+      traces:
+        protocol: {{ .Values.otel.config.otlp.traces.protocol }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
 
