@@ -103,11 +103,11 @@ global: # global defaults
       clients: SDNC,-1|MSO,-1|SO,-1|robot-ete,-1
 
 # application image
-image: onap/aai-graphadmin:1.14.6
+image: onap/aai-graphadmin:1.14.7
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
-flavorOverride: small
+
 # default number of instances
 replicaCount: 1
 
@@ -141,7 +141,8 @@ config:
     # config override for the cassandra driver
     # see: https://docs.janusgraph.org/master/configs/configuration-reference/#storagecqlinternal
     cassandraDriver:
-      configuration: advanced.metadata.schema.debouncer.window = 1 second  # Default maximum records to fix for the data grooming and dupeTool
+      configuration: advanced.metadata.schema.debouncer.window = 1 second
+  # Default maximum records to fix for the data grooming and dupeTool
   maxFix:
     dataGrooming: 150
     dupeTool: 25
@@ -200,15 +201,27 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 60
-  periodSeconds: 60
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: false
+  enabled: true
+  path: /actuator/health/liveness
+  periodSeconds: 10
 
 readiness:
-  initialDelaySeconds: 60
+  path: /actuator/health/readiness
   periodSeconds: 10
+
+startup:
+  path: /actuator/health/liveness
+  failureThreshold: 60
+  periodSeconds: 5
+
+readinessCheck:
+  waitForWithCreateSchemaEnabled:
+    jobs:
+      - '{{ include "common.release" . }}-aai-graphadmin-create-db-schema'
+  waitForWithCreateSchemaDisabled:
+    services:
+      - '{{ .Values.global.cassandra.serviceName }}'
+      - aai-schema-service
 
 service:
   type: ClusterIP
@@ -219,8 +232,8 @@ service:
   debugPort: 5005
   profilingPortName: jxm-9999
   profilingPort: 9999
-  portName3: http-graphadmin
-  internalPort3: 8448
+  actuatorPortName: http-graphadmin
+  actuatorPort: 8448
   terminationGracePeriodSeconds: 45
 
 ingress:
@@ -279,12 +292,19 @@ resources:
       memory: "8Gi"
     requests:
       cpu: "1"
-      memory: "3.2Gi"
+      memory: "4Gi"
   unlimited: {}
+
+# define the heap size for the JVM
+# according to the resource flavor
+small:
+  maxHeapSize: "1g"
+large:
+  maxHeapSize: "5g"
 
 metrics:
   serviceMonitor:
-    enabled: false
+    enabled: true
     targetPort: 8448
     path: /actuator/prometheus
     basicAuth:
@@ -302,8 +322,8 @@ metrics:
 
 # Not fully used for now
 securityContext:
-  user_id: 1000
-  group_id: 1000
+  user_id: 65534
+  group_id: 65534
 
 #Pods Service Account
 serviceAccount:
@@ -314,8 +334,8 @@ serviceAccount:
 log:
   path: /var/log/onap
   level:
-    root: DEBUG
-    base: DEBUG
+    root: INFO
+    base: INFO
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
 #DupeTool cronjob parameters

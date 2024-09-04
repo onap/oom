@@ -89,20 +89,12 @@ spec:
         - -c
         - |
            sh docker-entrypoint.sh dataRestoreFromSnapshot.sh `ls -t /opt/app/aai-graphadmin/logs/data/dataSnapshots|head -1|awk -F".P" '{ print $1 }'`
-        env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
           subPath: janusgraph-realtime.properties
         - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
           name: snapshots
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: properties
           subPath: aaiconfig.properties
@@ -133,18 +125,10 @@ spec:
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            sh docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges ;
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
-        env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: properties
           subPath: aaiconfig.properties
@@ -207,7 +191,7 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
+      {{- if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
       - command:
         - /bin/bash
         - -c
@@ -242,11 +226,6 @@ spec:
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            sh docker-entrypoint.sh dataSnapshot.sh
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
-        env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
           name: snapshots

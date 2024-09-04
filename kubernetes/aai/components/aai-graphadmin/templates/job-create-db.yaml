@@ -55,33 +55,13 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - {{ .Values.global.cassandra.serviceName }}
-        - --service-name
-        - aai-schema-service
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithCreateSchemaDisabled) | indent 6 | trim }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         command:
         - sh
         args:
@@ -92,17 +72,19 @@ spec:
            sh docker-entrypoint.sh createDBSchema.sh;
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
         env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
+        {{- if .Values.config.debug.enabled }}
+        - name: JVM_OPTS
+          value: {{ .Values.config.debug.args | quote }}
+        {{- end }}
+        ports:
+        {{- if .Values.config.debug.enabled }}
+        - containerPort: {{ .Values.service.debugPort }}
+          name: {{ .Values.service.debugPortName }}
+        {{- end }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: properties
           subPath: aaiconfig.properties
@@ -128,7 +110,8 @@ spec:
       volumes:
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: 64Mi
       - name: config
         configMap:
           name: {{ include "common.fullname" . }}
