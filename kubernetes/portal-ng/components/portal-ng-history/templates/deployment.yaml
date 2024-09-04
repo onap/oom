@@ -24,10 +24,12 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image.imageName }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-configmap
@@ -46,3 +48,4 @@ spec:
               port: {{ .Values.service.port }}
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          resources: {{ include "common.resources" . | nindent 12 }}

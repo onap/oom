@@ -49,7 +49,7 @@ service:
   internalPort: 8080
   ports:
     - name: http
-      port: 80
+      port: 8080
       port_protocol: http
 
 ingress:
@@ -57,11 +57,26 @@ ingress:
   service:
     - baseaddr: "portal-ng-ui"
       name: "portal-ng-ui"
-      port: 80
+      port: 8080
   config:
     ssl: "redirect"
 
-resources: {}
+resources:
+  small:
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+  large:
+    limits:
+      cpu: "4"
+      memory: "2Gi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+  unlimited: {}
 
 autoscaling:
   enabled: false
@@ -89,7 +104,7 @@ env:
   KEYCLOAK_REALM: ONAP
   KEYCLOAK_INTERNAL_URL: http://keycloakx-http.keycloak.svc.cluster.local
   KEYCLOAK_HOSTNAME: https://keycloak-ui.simpledemo.onap.org
-  CLUSTER_NAMESERVER_IP: 1.2.3.4
+  DNS_HOSTNAME: kube-dns.kube-system
 
 #Pods Service Account
 serviceAccount:
@@ -110,3 +125,25 @@ tiles:
   AAI_URL: "aai-sparkybe-api"
   SDNCDG_URL: "sdnc-dgbuilder-ui"
   SDNCODL_URL: "sdnc-web-ui"
+
+acl:
+  portal_admin:
+    - users.administration.list
+    - users.administration.detail
+    - users.administration.create
+    - users.administration.edit
+    - users.administration.delete
+    - dashboard.tile.ALARM_COUNT_TILE
+    - dashboard.tile.KPI_GRAPH_TILE
+    - dashboard.tile.USER_LAST_ACTION_TILE
+  portal_operator:
+    - dashboard.tile.ALARM_COUNT_TILE
+    - dashboard.tile.KPI_GRAPH_TILE
+    - dashboard.tile.USER_LAST_ACTION_TILE
+  portal_designer:
+    - dashboard.tile.KPI_GRAPH_TILE
+    - dashboard.tile.USER_LAST_ACTION_TILE
+
+securityContext:
+  user_id: 101
+  group_id: 101
