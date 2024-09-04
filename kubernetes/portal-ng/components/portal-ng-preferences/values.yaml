@@ -1,5 +1,13 @@
-global: {}
-
+global:
+  mongodb:
+    #This flag allows NBI to instantiate its own mongo cluster
+    #When changing it to "true", also set "globalCluster: false"
+    #as the dependency check will not work otherwise (Chart.yaml)
+    localCluster: true
+    globalCluster: false
+    nameOverride: mongodb
+     # flag to enable the DB creation via mongodb-operator
+    useOperator: true
 # Default values for preferences.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -27,6 +35,23 @@ service:
     - name: http
       port: 9001
 
+resources:
+  small:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+  large:
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+  unlimited: {}
+
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -35,11 +60,11 @@ autoscaling:
 
 probes:
   readiness:
-    initialDelaySeconds: 20
-    failureThreshold: 4
+    initialDelaySeconds: 30
+    failureThreshold: 5
   liveness:
-    initialDelaySeconds: 20
-    failureThreshold: 4
+    initialDelaySeconds: 30
+    failureThreshold: 5
 
 secretEnv:
   MONGO_USERNAME: dbuser
@@ -75,8 +100,20 @@ mongodb:
       cpu: "250m"
       memory: "500Mi"
 
+mongodb-init:
+  config:
+    mgUserExternalSecret: ng-pref-mg-secret
+    mgDatabase: Preferences
+  nameOverride: ng-pref-mongodb-config
+  serviceAccount:
+    nameOverride: ng-pref-mongodb-config
+
 #Pods Service Account
 serviceAccount:
   nameOverride: portal-ng-preferences
   roles:
     - read
+
+securityContext:
+  user_id: 65534
+  group_id: 65534
