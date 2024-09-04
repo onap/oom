@@ -25,7 +25,7 @@ global: {}
 #################################################################
 
 # application image
-image: onap/babel:1.13.2
+image: onap/babel:1.13.3
 
 flavor: small
 flavorOverride: small
@@ -97,6 +97,41 @@ resources:
       cpu: "2"
       memory: "2Gi"
   unlimited: {}
+
+tracing:
+  collector:
+    baseUrl: http://jaeger-collector.istio-system:9411
+  sampling:
+    probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
+
+# adds jvm args for remote debugging the application
+debug:
+  enabled: false
+  args: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+  port: 5005
+  portName: debug
+
+# adds jvm args for remote profiling the application
+profiling:
+  enabled: false
+  args:
+    - "-Dcom.sun.management.jmxremote"
+    - "-Dcom.sun.management.jmxremote.ssl=false"
+    - "-Dcom.sun.management.jmxremote.authenticate=false"
+    - "-Dcom.sun.management.jmxremote.local.only=false"
+    - "-Dcom.sun.management.jmxremote.port=9999"
+    - "-Dcom.sun.management.jmxremote.rmi.port=9999"
+    - "-Djava.rmi.server.hostname=127.0.0.1"
+  port: 9999
+  portName: jmx
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    targetPort: 9516
+    path: /services/babel-service/actuator/prometheus
+    basicAuth:
+      enabled: false
 
 #Pods Service Account
 serviceAccount:

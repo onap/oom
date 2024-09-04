@@ -60,7 +60,7 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers:
-      {{ if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
+      {{- if eq .Values.global.jobs.migration.remoteCassandra.enabled false }}
       - command:
         - /bin/bash
         - -c
@@ -93,13 +93,8 @@ spec:
         - |
            {{- if include "common.onServiceMesh" . }}
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
-           sh docker-entrypoint.sh dataSnapshot.sh;
+           bash docker-entrypoint.sh dataSnapshot.sh;
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
-        env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/logs/data/dataSnapshots
           name: snapshots
