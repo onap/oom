@@ -34,7 +34,11 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+  {{- if .Values.debug.enabled }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -77,6 +81,25 @@ spec:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
+        {{- if .Values.profiling.enabled }}
+        - name: JVM_ARGS
+          value: '{{ join " " .Values.profiling.args }}'
+        {{- end }}
+        {{- if .Values.debug.enabled }}
+        - name: JVM_ARGS
+          value: {{ .Values.debug.args | quote }}
+        {{- end }}
+        ports:
+        - containerPort: 9500
+          name: http
+        {{- if .Values.debug.enabled }}
+        - containerPort: {{ .Values.debug.port }}
+          name: {{ .Values.debug.portName }}
+        {{- end }}
+        {{- if .Values.profiling.enabled }}
+        - containerPort: {{ .Values.profiling.port }}
+          name: {{ .Values.profiling.portName }}
+        {{- end }}
         volumeMounts:
         - mountPath: /opt/app/model-loader/config/model-loader.properties
           subPath: model-loader.properties
