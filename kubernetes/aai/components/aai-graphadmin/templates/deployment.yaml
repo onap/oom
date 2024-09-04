@@ -38,7 +38,11 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+  {{- if .Values.config.debug.enabled }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   strategy:
@@ -66,59 +70,36 @@ spec:
     spec:
       hostname: aai-graphadmin
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
-    {{ if .Values.global.initContainers.enabled }}
+      {{- if .Values.global.initContainers.enabled }}
       initContainers:
-      - command:
-      {{ if .Values.global.jobs.migration.enabled }}
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-aai-graphadmin-migration
-      {{  else if .Values.global.jobs.createSchema.enabled  }}
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-aai-graphadmin-create-db-schema
-      {{  else }}
-        - /app/ready.py
-        args:
-        - --service-name
-        - {{ .Values.global.cassandra.serviceName }}
-        - --service-name
-        - aai-schema-service
-      {{  end  }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
-      {{  end  }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithCreateSchemaDisabled ) | indent 6 | trim}}
+      {{- end }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
+        {{- if .Values.config.env }}
+        {{- range $key,$value := .Values.config.env }}
+        - name: {{ $key | upper | quote}}
+          value: {{ $value | quote}}
+        {{- end }}
+        {{- end }}
+        {{- if eq .Values.flavor "small" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.small.maxHeapSize | quote }}
+        {{- else if eq .Values.flavor "large" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.large.maxHeapSize | quote }}
+        {{- end }}
         - name: INTERNAL_PORT_1
           value: {{ .Values.service.appPort | quote }}
         - name: INTERNAL_PORT_2
           value: {{ .Values.service.debugPort | quote }}
         - name: INTERNAL_PORT_3
-          value: {{ .Values.service.internalPort3 | quote }}
+          value: {{ .Values.service.actuatorPort | quote }}
         - name: BOOTSTRAP_SERVERS
           value: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
         - name: JAAS_CONFIG
@@ -138,14 +119,13 @@ spec:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-cached.properties
-          name: config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
           name: properties
           subPath: aaiconfig.properties
         - mountPath: /opt/aai/logroot/AAI-RES
           name: logs
+        - mountPath: /opt/app/aai-graphadmin/logs
+          name: script-logs
         - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
           name: config
           subPath: logback.xml
@@ -158,6 +138,8 @@ spec:
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: properties
           subPath: application.properties
+        - mountPath: /tmp
+          name: tmp-volume
         ports:
         - containerPort: {{ .Values.service.appPort }}
           name: {{ .Values.service.appPortName }}
@@ -169,8 +151,8 @@ spec:
         - containerPort: {{ .Values.service.profilingPort }}
           name: {{ .Values.service.profilingPortName }}
         {{- end }}
-        - containerPort: {{ .Values.service.internalPort3 }}
-          name: {{ .Values.service.portName3 }}
+        - containerPort: {{ .Values.service.actuatorPort }}
+          name: {{ .Values.service.actuatorPortName }}
         lifecycle:
           # wait for active requests (long-running tasks) to be finished
           # Before the SIGTERM is invoked, Kubernetes exposes a preStop hook in the Pod.
@@ -188,16 +170,28 @@ spec:
         # debugging.enabled=true or profiling.enabled=true
         {{- if and .Values.liveness.enabled (not (or .Values.config.debug.enabled .Values.config.profiling.enabled)) }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.service.appPort }}
+          httpGet:
+            port: {{ .Values.service.actuatorPort }}
+            path: {{ .Values.liveness.path }}
+          {{- if .Values.liveness.initialDelaySeconds }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          {{- end }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end }}
+        {{- end }}
         readinessProbe:
-          tcpSocket:
-            port: {{ .Values.service.appPort }}
+          httpGet:
+            port: {{ .Values.service.actuatorPort }}
+            path: {{ .Values.readiness.path }}
+          {{- if .Values.readiness.initialDelaySeconds }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          {{- end }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+        startupProbe:
+          httpGet:
+            port: {{ .Values.service.actuatorPort }}
+            path: {{ .Values.startup.path }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -212,7 +206,11 @@ spec:
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+      - name: tmp-volume
+        emptyDir: {}
       - name: logs
+        emptyDir: {}
+      - name: script-logs
         emptyDir: {}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: config

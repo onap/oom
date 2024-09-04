@@ -1,7 +1,5 @@
-# Copyright © 2018 Amdocs, AT&T
-# Modifications Copyright © 2018 Bell Canada
-# Modifications Copyright © 2021 Orange
-# Modifications Copyright © 2021-2023 Nordix Foundation
+{{/*
+# Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +12,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
-apiVersion: v2
-description: Babel microservice
-name: aai-babel
-version: 14.0.2
-
-dependencies:
-  - name: common
-    version: ~13.x-0
-    repository: '@local'
-  - name: repositoryGenerator
-    version: ~13.x-0
-    repository: '@local'
-  - name: serviceAccount
-    version: ~13.x-0
-    repository: '@local'
+{{- if .Values.metrics.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "common.name" . }}
+  podMetricsEndpoints:
+    - port: {{ .Values.metrics.podMonitor.port }}
+      path: {{ .Values.metrics.podMonitor.path }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}

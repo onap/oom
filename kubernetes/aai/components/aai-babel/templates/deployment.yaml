@@ -22,7 +22,11 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if .Values.debug.enabled }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -38,10 +42,19 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports: {{ include "common.containerPorts" . | nindent 12  }}
-          # disable liveness probe when breakpoints set in debugger
-          # so K8s doesn't restart unresponsive container
-          {{ if .Values.liveness.enabled }}
+          ports:
+            {{- if .Values.debug.enabled }}
+            - containerPort: {{ .Values.debug.port }}
+              name: {{ .Values.debug.portName }}
+            {{- end }}
+            {{- if .Values.profiling.enabled }}
+            - containerPort: {{ .Values.profiling.port }}
+              name: {{ .Values.profiling.portName }}
+            {{- end }}
+            {{ include "common.containerPorts" . | nindent 12  }}
+          # disable liveness probe when
+          # debugging.enabled=true or profiling.enabled=true
+          {{- if and .Values.liveness.enabled (not (or .Values.debug.enabled .Values.profiling.enabled)) }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -58,6 +71,14 @@ spec:
               value: NotUsed
             - name: CONFIG_HOME
               value: /opt/app/babel/config
+            {{- if .Values.profiling.enabled }}
+            - name: JVM_OPTS
+              value: '{{ join " " .Values.profiling.args }}'
+            {{- end }}
+            {{- if .Values.debug.enabled }}
+            - name: JVM_OPTS
+              value: {{ .Values.debug.args | quote }}
+            {{- end }}
           volumeMounts:
           - mountPath: /opt/app/babel/config/application.properties
             name: config
