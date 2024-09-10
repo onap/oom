@@ -1,6 +1,7 @@
 # Copyright © 2017 Amdocs
 # Copyright © 2017, 2021 Bell Canada
 # Modifications Copyright © 2018-2022 AT&T Intellectual Property
+# Modifications Copyright (C) 2024 Nordix Foundation.
 # Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +21,10 @@
 #################################################################
 global:
   nodePortPrefix: 302
-
+  postgres:
+    useInPolicy: false
+  mariadbGalera:
+    useInPolicy: true
 #################################################################
 # Secrets metaconfig
 #################################################################
@@ -42,7 +46,9 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
+# The newest images have been tested with SASL and Postgres. The images released next will have the relevant fixes
 image: onap/policy-pdpd-cl:2.1.3
+
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -87,7 +93,7 @@ serviceMesh:
       - serviceAccount: strimzi-kafka-read
 
 server:
-  jvmOpts: -server -XshowSettings:vm
+  jvmOpts: "-server -XshowSettings:vm"
 
 telemetry:
   user: demo@people.osaaf.org
@@ -101,7 +107,10 @@ nexus:
   offline: true
 
 db:
-  name: policy-mariadb
+  mariadbName: policy-mariadb
+  pgName: policy-pg-primary
+  mariadbPort: 3306
+  pgPort: 5432
   user: policy-user
   password: policy_user
 
@@ -226,6 +235,50 @@ kafkaUser:
       type: group
       operations: [ Create, Describe, Read, Write ]
     - name: policy-pdp-pap
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: a1-p-rsp
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: a1-p
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: appc-cl
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: appc-lcm-read
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: appc-lcm-write
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: dcae_cl_rsp
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: unauthenticated.dcae_cl_output
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: dcae_topic
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: policy-cl-mgt
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: sdnr-cl-rsp
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+    - name: sdnr-cl
       type: topic
       patternType: prefix
       operations: [ Create, Describe, Read, Write ]

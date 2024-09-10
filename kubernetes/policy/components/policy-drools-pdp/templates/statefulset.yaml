@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2020, 2022 AT&T Intellectual Property
+# Modifications Copyright (C) 2024 Nordix Foundation.
 # Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +33,11 @@ spec:
         - /app/ready.py
         args:
         - --job-name
-        - {{ include "common.release" . }}-policy-galera-config
+{{ if .Values.global.mariadbGalera.useInPolicy }}
+        - {{ include "common.release" . }}-policy-galera-migrator-config
+{{ else }}
+        - {{ include "common.release" . }}-policy-pg-migrator-config
+{{ end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -82,13 +87,43 @@ spec:
             cpu: "3m"
             memory: "20Mi"
 {{- end }}
+      - command:
+          - sh
+        args:
+          - -c
+          - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`; cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
+        env:
+        - name: KAFKA_URL
+          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
+        - name: SASL
+          value: {{ .Values.kafkaUser.authenticationType | upper }}
+        - name: GROUP_ID
+          value: {{ .Values.config.kafka.consumer.groupId }}
+      {{- if .Values.global.useStrimziKafka }}
+        - name: JAASLOGIN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.name" . }}-ku
+              key: sasl.jaas.config
+      {{- end }}
+        volumeMounts:
+          - mountPath: /config-input
+            name: drools-config
+          - mountPath: /config
+            name: drools-config-processed
+        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["sh","-c"]
-          args: ["/opt/app/policy/bin/pdpd-cl-entrypoint.sh boot"]
+          args:
+            - ls /tmp/policy-install;
+              /opt/app/policy/bin/pdpd-cl-entrypoint.sh boot
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -112,6 +147,9 @@ spec:
           - name: SQL_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           volumeMounts:
+          - mountPath: /etc/localtime
+            name: localtime
+            readOnly: true
           - name: logs
             mountPath: /var/log/onap
           - name: empty-dir
@@ -119,28 +157,42 @@ spec:
             subPath: tmp-dir
           - mountPath: /opt/app/policy/etc/profile.d/base.conf
             subPath: base.conf
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/etc/profile.d/credentials.conf
+            subPath: credentials.conf
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/etc/profile.d/feature-pooling-messages.conf
+            subPath: feature-pooling-messages.conf
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/config/feature-lifecycle.properties
+            subPath: feature-lifecycle.properties
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/config/engine-system.properties
+            subPath: engine-system.properties
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/config/feature-distributed-locking.properties
+            subPath: feature-distributed-locking.properties
+            name: drools-config-processed
+          - mountPath: /opt/app/policy/config/logback.xml
+            subPath: logback.xml
             name: drools-config
-          {{- range $path, $bytes := .Files.Glob "resources/secrets/*" }}
-          - mountPath: /tmp/policy-install/config/{{ base $path }}
-            name: drools-secret
-            subPath: {{ base $path }}
-          {{- end }}
-          {{- range $path, $bytes := .Files.Glob "resources/configmaps/*" }}
-          - mountPath: /tmp/policy-install/config/{{ base $path }}
-            name: drools-config
-            subPath: {{ base $path }}
-          {{- end }}
+          - mountPath: /opt/app/policy/config/settings.xml
+            subPath: settings.xml
+            name: drools-config-processed
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
-        nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 10 }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
         {{- end -}}
         {{- if .Values.affinity }}
-        affinity:
-{{ toYaml .Values.affinity | indent 10 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
         - name: empty-dir
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
@@ -156,6 +208,10 @@ spec:
               path: {{ base $path }}
               mode: 0755
             {{- end }}
+        - name: drools-config-processed
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
         - name: drools-secret
           secret:
             secretName: {{ include "common.fullname" . }}-secret
