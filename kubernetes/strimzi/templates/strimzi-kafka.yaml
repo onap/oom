@@ -20,6 +20,13 @@ spec:
   kafka:
     version: {{ .Values.config.kafkaVersion }}
     replicas: {{ .Values.replicaCount }}
+    resources:
+      limits:
+        cpu: {{ .Values.kafka.resources.limits.cpu }}
+        memory: {{ .Values.kafka.resources.limits.memory }}
+      requests:
+        cpu: {{ .Values.kafka.resources.requests.cpu }}
+        memory: {{ .Values.kafka.resources.requests.memory }}
     listeners:
       - name: plain
         port: {{ .Values.config.kafkaInternalPort }}
@@ -71,8 +78,7 @@ spec:
       pod:
         {{- include "common.imagePullSecrets" . | nindent 8 }}
         securityContext:
-          runAsUser: 0
-          fsGroup: 0
+          {{- toYaml .Values.kafka.template.pod.securityContext | nindent 10 }}
         {{- if .Values.affinity.podAntiAffinity.enabled }}
         affinity:
           podAntiAffinity:
@@ -85,6 +91,9 @@ spec:
                         - {{ include "common.fullname" . }}-kafka
                 topologyKey: "kubernetes.io/hostname"
         {{- end }}
+      kafkaContainer:
+        securityContext:
+          {{- toYaml .Values.kafka.template.kafkaContainer.securityContext | nindent 10 }}
     config:
       default.replication.factor: {{ .Values.replicaCount }}
       min.insync.replicas: {{ (eq 1.0 (.Values.replicaCount)) | ternary 1 (sub .Values.replicaCount 1) }}
@@ -116,8 +125,7 @@ spec:
       pod:
         {{- include "common.imagePullSecrets" . | nindent 8 }}
         securityContext:
-          runAsUser: 0
-          fsGroup: 0
+          {{- toYaml .Values.zookeeper.template.pod.securityContext | nindent 10 }}
         {{- if .Values.affinity.podAntiAffinity.enabled }}
         affinity:
           podAntiAffinity:
@@ -130,6 +138,9 @@ spec:
                         - {{ include "common.fullname" . }}-zookeeper
                 topologyKey: "kubernetes.io/hostname"
         {{- end }}
+      zookeeperContainer:
+        securityContext:
+          {{- toYaml .Values.zookeeper.template.zookeeperContainer.securityContext | nindent 10 }}
     replicas: {{ .Values.replicaCount }}
     config:
       ssl.hostnameVerification: false
@@ -149,30 +160,76 @@ spec:
         configMapKeyRef:
           name: {{ include "common.fullname" . }}
           key: zookeeper-metrics-config.yml
+    resources:
+      limits:
+        cpu: {{ .Values.zookeeper.resources.limits.cpu }}
+        memory: {{ .Values.zookeeper.resources.limits.memory }}
+      requests:
+        cpu: {{ .Values.zookeeper.resources.requests.cpu }}
+        memory: {{ .Values.zookeeper.resources.requests.memory }}
     {{- end }}
   entityOperator:
     template:
       pod:
         {{- include "common.imagePullSecrets" . | nindent 8 }}
-    topicOperator: {}
-    userOperator: {}
+        securityContext:
+          {{- toYaml .Values.entityOperator.template.pod.securityContext | nindent 10 }}
+      topicOperatorContainer:
+        securityContext:
+          {{- toYaml .Values.entityOperator.template.topicOperatorContainer.securityContext | nindent 10 }}
+      userOperatorContainer:
+        securityContext:
+          {{- toYaml .Values.entityOperator.template.userOperatorContainer.securityContext | nindent 10 }}
+    topicOperator:
+      resources:
+        limits:
+          cpu: {{ .Values.entityOperator.template.topicOperator.resources.limits.cpu }}
+          memory: {{ .Values.entityOperator.template.topicOperator.resources.limits.memory }}
+        requests:
+          cpu: {{ .Values.entityOperator.template.topicOperator.resources.requests.cpu }}
+          memory: {{ .Values.entityOperator.template.topicOperator.resources.requests.memory }}
+    userOperator:
+      resources:
+        limits:
+          cpu: {{ .Values.entityOperator.template.userOperator.resources.limits.cpu }}
+          memory: {{ .Values.entityOperator.template.userOperator.resources.limits.memory }}
+        requests:
+          cpu: {{ .Values.entityOperator.template.userOperator.resources.requests.cpu }}
+          memory: {{ .Values.entityOperator.template.userOperator.resources.requests.memory }}
   {{- if .Values.cruiseControl.enabled }}
   cruiseControl:
     template:
       pod:
         {{- include "common.imagePullSecrets" . | nindent 8 }}
+        securityContext:
+          {{- toYaml .Values.cruiseControl.template.pod.securityContext | nindent 10 }}
+      cruiseControlContainer:
+        securityContext:
+          {{- toYaml .Values.cruiseControl.template.cruiseControlContainer.securityContext | nindent 10 }}
     metricsConfig:
       type: {{ .Values.cruiseControl.metricsConfig.type }}
       valueFrom:
         configMapKeyRef:
           name: {{ include "common.fullname" . }}
           key: cruisecontrol-metrics-config.yml
+    resources:
+      limits:
+        cpu: {{ .Values.cruiseControl.template.resources.limits.cpu }}
+        memory: {{ .Values.cruiseControl.template.resources.limits.memory }}
+      requests:
+        cpu: {{ .Values.cruiseControl.template.resources.requests.cpu }}
+        memory: {{ .Values.cruiseControl.template.resources.requests.memory }}
   {{- end }}
   {{- if .Values.metrics.kafkaExporter.enabled }}
   kafkaExporter:
     template:
       pod:
         {{- include "common.imagePullSecrets" . | nindent 8 }}
+        securityContext:
+          {{- toYaml .Values.cruiseControl.template.pod.securityContext | nindent 10 }}
+      container:
+        securityContext:
+          {{- toYaml .Values.kafkaExporter.template.container.securityContext | nindent 10 }}
     topicRegex: {{ .Values.metrics.kafkaExporter.topicRegex }}
     groupRegex: {{ .Values.metrics.kafkaExporter.groupRegex }}
     resources:

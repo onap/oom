@@ -33,7 +33,7 @@ affinity:
   podAntiAffinity:
     enabled: true
 config:
-  kafkaVersion: 3.7.0
+  kafkaVersion: 3.8.0
   authType: simple
   saslMechanism: &saslMech scram-sha-512
   kafkaInternalPort: &plainPort 9092
@@ -141,6 +141,29 @@ cruiseControl:
   # ref. https://strimzi.io/blog/2020/06/15/cruise-control/
   kafkaRebalance:
     enabled: false
+  template:
+    pod:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    cruiseControlContainer:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+    resources:
+      limits:
+        cpu: '2'
+        memory: 2Gi
+      requests:
+        cpu: 100m
+        memory: 1Gi
 
 ######################
 #  Component overrides
@@ -151,3 +174,122 @@ strimzi-kafka-bridge:
     saslMechanism: *saslMech
     kafkaInternalPort: *plainPort
     strimziKafkaAdminUser: *adminUser
+
+kafka:
+  template:
+    pod:
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+    kafkaContainer:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        #runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+  resources:
+    limits:
+      cpu: '2'
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+
+zookeeper:
+  template:
+    pod:
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+    zookeeperContainer:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        #runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+  resources:
+    limits:
+      cpu: '2'
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+
+entityOperator:
+  template:
+    pod:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    topicOperatorContainer:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+    userOperatorContainer:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
+    topicOperator:
+      resources:
+        limits:
+          cpu: '2'
+          memory: 2Gi
+        requests:
+          cpu: 100m
+          memory: 1Gi
+    userOperator:
+      resources:
+        limits:
+          cpu: '2'
+          memory: 2Gi
+        requests:
+          cpu: 100m
+          memory: 1Gi
+
+kafkaExporter:
+  template:
+    pod:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    container:
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        capabilities:
+          drop:
+            - ALL
+            - CAP_NET_RAW
