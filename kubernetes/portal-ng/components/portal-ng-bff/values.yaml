@@ -1,59 +1,104 @@
-global: {}
+global:
+  env:
+    KEYCLOAK_URL: http://keycloak-keycloakx-http.keycloak
+    KEYCLOAK_REALM: ONAP
+    COLLECTOR_HOST: jaeger-collector.istio-system
+    COLLECTOR_PORT: 9411
 
-# Default values for bff.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+## Default values for portal-ng-bff.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
+
+##
+## Specifies the details of the Docker image to be used for deployment.
+##
 image:
+  ## The name of the Docker image.
   imageName: onap/portal-ng/bff
+  ## The policy that indicates when the image should be pulled.
+  ## "Always" means the image will be pulled on every deployment.
   pullPolicy: Always
-  # Overrides the image tag whose default value is the chart appVersion.
+  ## Overrides the image tag. The default is the chart appVersion.
+  ## An empty value means the default tag will be used.
   # tag: 0.1.0
 
+## Number of Pods to deploy
 replicaCount: 2
 
-# Specifies how many old replicas will be retained in a deployment
+## Specifies how many old replicas will be retained in a deployment
 revisionHistoryLimit: 2
 
-# Custom selector label (for bigger namespaces with other components)
+## Custom selector label (for bigger namespaces with other components)
 partOf: portal
 
+##
+## Service
+##
 service:
+  ## Use ClusterIP as the service type to expose the service on an internal IP
   type: ClusterIP
   port: 9080
+  ## The port on which the service is exposed
   ports:
     - name: http
       port: 9080
 
+##
+## Autoscaling
+##
 autoscaling:
+  ## Autoscaling is disabled. When set to true, the Horizontal Pod Autoscaler is enabled.
   enabled: false
+  ## Minimum number of replicas to maintain.
   minReplicas: 1
-  maxReplicas: 100
+  ## Maximum number of replicas to maintain.
+  maxReplicas: 2
+  ## Target CPU utilization percentage at which the Horizontal Pod Autoscaler adds or removes replicas.
   targetCPUUtilizationPercentage: 80
 
+resources:
+  small:
+    limits:
+      cpu: "4"
+      memory: "1Gi"
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+  large:
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+  unlimited: {}
+
+##
+## Readiness and liveness probes
+##
 probes:
+  # Configuration of the readiness probe to check if the container is ready.
   readiness:
+    ## Wait before performing the first probe
     initialDelaySeconds: 20
+    ## Number of consecutive failures allowed before marking probe as failed.
     failureThreshold: 4
+  # Configuration of the liveness probe to check if the container is alive.
   liveness:
+    ## Wait before performing the first probe
     initialDelaySeconds: 20
+    ## Number of consecutive failures allowed before marking probe as failed.
     failureThreshold: 4
 
 env:
-  KEYCLOAK_URL: http://keycloakx-http.keycloak/auth
-  KEYCLOAK_REALM: ONAP
   HISTORY_URL: http://portal-ng-history:9002
   PREFERENCES_URL: http://portal-ng-preferences:9001
   TRACING_ENABLED: true
-  COLLECTOR_HOST: jaeger-collector.istio-system
-  COLLECTOR_PORT: 9411
 
 secretEnv:
   KEYCLOAK_CLIENT_ID: portal-bff
   KEYCLOAK_CLIENT_SECRET: pKOuVH1bwRZoNzp5P5t4GV8CqcCJYVtr
 
-#Pods Service Account
-serviceAccount:
-  nameOverride: portal-ng-bff
-  roles:
-    - read
-
+securityContext:
+  user_id: 65534
+  group_id: 65534

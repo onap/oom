@@ -1,4 +1,9 @@
-global: {}
+global:
+  env:
+    KEYCLOAK_URL: http://keycloak-keycloakx-http.keycloak
+    KEYCLOAK_REALM: ONAP
+    COLLECTOR_HOST: jaeger-collector.istio-system
+    COLLECTOR_PORT: 9411
 
 # Default values for preferences.
 # This is a YAML-formatted file.
@@ -27,6 +32,23 @@ service:
     - name: http
       port: 9001
 
+resources:
+  small:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+  large:
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+  unlimited: {}
+
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -35,11 +57,11 @@ autoscaling:
 
 probes:
   readiness:
-    initialDelaySeconds: 20
-    failureThreshold: 4
+    initialDelaySeconds: 30
+    failureThreshold: 5
   liveness:
-    initialDelaySeconds: 20
-    failureThreshold: 4
+    initialDelaySeconds: 30
+    failureThreshold: 5
 
 secretEnv:
   MONGO_USERNAME: dbuser
@@ -47,13 +69,9 @@ secretEnv:
   MONGO_DATABASE: Preferences
 
 env:
-  KEYCLOAK_URL: http://keycloakx-http.keycloak
-  KEYCLOAK_REALM: ONAP
   MONGO_HOST: preferences-mongodb
   MONGO_PORT: 27017
   TRACING_ENABLED: true
-  COLLECTOR_HOST: jaeger-collector.istio-system
-  COLLECTOR_PORT: 9411
 
 mongodb:
   nameOverride: preferences-mongodb
@@ -80,3 +98,7 @@ serviceAccount:
   nameOverride: portal-ng-preferences
   roles:
     - read
+
+securityContext:
+  user_id: 65534
+  group_id: 65534

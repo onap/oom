@@ -22,13 +22,18 @@ spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   template:
-    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- include "common.templateMetadata" . | indent 6 }}
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image.imageName }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           envFrom:
           - configMapRef:
               name: {{ include "common.fullname" . }}-configmap
@@ -57,11 +62,15 @@ spec:
             mountPath: /etc/nginx/conf.d/default.conf
             subPath: default.conf
             readOnly: true
-          - name: env-js
+          - name: assets
             mountPath: /usr/share/nginx/html/assets/env.js
             subPath: env.js
             readOnly: true
-          - name: version-json
+          - name: assets
+            mountPath: /usr/share/nginx/html/assets/acl.json
+            subPath: acl.json
+            readOnly: true
+          - name: assets
             mountPath: /usr/share/nginx/html/assets/version.json
             subPath: version.json
             readOnly: true
@@ -95,12 +104,16 @@ spec:
         - name: nginx-config
           configMap:
             name: {{ include "common.fullname" . }}-nginx-config
-        - name: env-js
+        - name: assets
           configMap:
-            name: {{ include "common.fullname" . }}-env-js
-        - name: version-json
-          configMap:
-            name: {{ include "common.fullname" . }}-version-json
+            name: {{ include "common.fullname" . }}-assets
+            items:
+              - key: env_js
+                path: env.js
+              - key: acl_json
+                path: acl.json
+              - key: version_json
+                path: version.json
         - name: tmp-volume
           emptyDir:
             sizeLimit: 64Mi
