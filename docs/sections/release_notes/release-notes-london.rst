@@ -66,14 +66,14 @@ New features
 * Update of Helmcharts to use common templates and practices
 * Optional support for Cassandra 4.x using k8ssandra-operator
 
-* `REQ-1349 <https://jira.onap.org/browse/REQ-1349>`_ Removal of AAF.
+* `REQ-1349 <https://lf-onap.atlassian.net/browse/REQ-1349>`_ Removal of AAF.
   Internal communication encryption and authorization is offered by ServiceMesh
 
-* `REQ-1350 <https://jira.onap.org/browse/REQ-1350>`_ All component must be
+* `REQ-1350 <https://lf-onap.atlassian.net/browse/REQ-1350>`_ All component must be
   able to run without MSB. Component helm charts modified to use MSB optionally
   and test the components during Daily and Gating with and without MSB
 
-* `REQ-1351 <https://jira.onap.org/browse/REQ-1351>`_ External secure
+* `REQ-1351 <https://lf-onap.atlassian.net/browse/REQ-1351>`_ External secure
   communication only via Ingress.
   Ingress resources created by templates and Ingress installation is described
   in the OOM documents
@@ -81,7 +81,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11500
+https://lf-onap.atlassian.net/projects/OOM/versions/11500
 
 **Known Issues**
 
@@ -116,7 +116,7 @@ Known Vulnerabilities
 ---------------------
 
 * Cassandra version needs to be updated to support new Python version
-  see `OOM-2900 <https://jira.onap.org/browse/OOM-2900>`_
+  see `OOM-2900 <https://lf-onap.atlassian.net/browse/OOM-2900>`_
   In London supported as option (using k8ssandra-operator), see :ref:`oom_base_optional_addons`
 
 Workarounds

@@ -71,8 +71,8 @@ Quick Links:
    Kubernetes version (1.12)
 
    - `K8S Bug Report <https://github.com/kubernetes/kubernetes/issues/67659>`_
-   - `OOM-1532 <https://jira.onap.org/browse/OOM-1532>`_
-   - `OOM-1516 <https://jira.onap.org/browse/OOM-1516>`_
-   - `OOM-1520 <https://jira.onap.org/browse/OOM-1520>`_
+   - `OOM-1532 <https://lf-onap.atlassian.net/browse/OOM-1532>`_
+   - `OOM-1516 <https://lf-onap.atlassian.net/browse/OOM-1516>`_
+   - `OOM-1520 <https://lf-onap.atlassian.net/browse/OOM-1520>`_
 
 End of Release Notes

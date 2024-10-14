@@ -11,7 +11,7 @@
 .. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/kubernetes/
 .. _Cert-Manager kubectl plugin documentation: https://cert-manager.io/docs/usage/kubectl-plugin/
 .. _Strimzi Apache Kafka Operator helm Installation documentation: https://strimzi.io/docs/operators/in-development/deploying.html#deploying-cluster-operator-helm-chart-str
-.. _ONAP Next Generation Security & Logging Structure: https://wiki.onap.org/pages/viewpage.action?pageId=103417456
+.. _ONAP Next Generation Security & Logging Architecture: https://lf-onap.atlassian.net/wiki/x/bVn7
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Gateway-API: https://gateway-api.sigs.k8s.io/
 .. _Istio-Gateway: https://istio.io/latest/docs/reference/config/networking/gateway/
@@ -213,7 +213,7 @@ Istio Service Mesh
 
 .. note::
     The ONAP deployment supports the
-    `ONAP Next Generation Security & Logging Structure`_
+    `ONAP Next Generation Security & Logging Architecture`_
 
 ONAP is currenty supporting Istio as default ServiceMesh platform.
 Therefor the following instructions describe the setup of Istio and required tools.
