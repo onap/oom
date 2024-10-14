@@ -57,7 +57,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11498
+https://lf-onap.atlassian.net/projects/OOM/versions/11498
 
 
 **Known Issues**
@@ -84,7 +84,7 @@ Known Vulnerabilities
 Workarounds
 -----------
 
-- `OOM-2754 <https://jira.onap.org/browse/OOM-2754>`_
+- `OOM-2754 <https://lf-onap.atlassian.net/browse/OOM-2754>`_
   Because of *updateEndpoint* property added to *cmpv2issuer* CRD
   it is impossible to upgrade platform component from Istanbul to Jakarta
   release without manual steps. Actions that should be performed:

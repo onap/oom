@@ -67,7 +67,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11073
+https://lf-onap.atlassian.net/projects/OOM/versions/11073
 
 major issues solved:
 
@@ -77,29 +77,29 @@ major issues solved:
 
 **Known Issues**
 
-- `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
-- `OOM-2435 <https://jira.onap.org/browse/OOM-2435>`_ SDNC karaf shell:
+- `OOM-2554 <https://lf-onap.atlassian.net/browse/OOM-2554>`_ Common pods have java 8
+- `OOM-2435 <https://lf-onap.atlassian.net/browse/OOM-2435>`_ SDNC karaf shell:
   log:list: Error executing command: Unrecognized configuration
-- `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
+- `OOM-2629 <https://lf-onap.atlassian.net/browse/OOM-2629>`_ NetBox demo entry setup
   not complete
-- `OOM-2706 <https://jira.onap.org/browse/OOM-2706>`_ CDS Blueprint Processor
+- `OOM-2706 <https://lf-onap.atlassian.net/browse/OOM-2706>`_ CDS Blueprint Processor
   does not work with local DB
-- `OOM-2713 <https://jira.onap.org/browse/OOM-2713>`_ Problem on onboarding
+- `OOM-2713 <https://lf-onap.atlassian.net/browse/OOM-2713>`_ Problem on onboarding
   custom cert to SDNC ONAP during deployment
-- `OOM-2698 <https://jira.onap.org/browse/OOM-2698>`_ SO helm override fails in
+- `OOM-2698 <https://lf-onap.atlassian.net/browse/OOM-2698>`_ SO helm override fails in
   for value with multi-level replacement
-- `OOM-2697 <https://jira.onap.org/browse/OOM-2697>`_ SO with local MariaDB
+- `OOM-2697 <https://lf-onap.atlassian.net/browse/OOM-2697>`_ SO with local MariaDB
   deployment fails
-- `OOM-2538 <https://jira.onap.org/browse/OOM-2538>`_ strange error with
+- `OOM-2538 <https://lf-onap.atlassian.net/browse/OOM-2538>`_ strange error with
   CertInitializer template
-- `OOM-2547 <https://jira.onap.org/browse/OOM-2547>`_ Health Check failures
+- `OOM-2547 <https://lf-onap.atlassian.net/browse/OOM-2547>`_ Health Check failures
   seen after bringing down/up control plane & worker node VM instances on which
   ONAP hosted
-- `OOM-2699 <https://jira.onap.org/browse/OOM-2699>`_ SO so-mariadb
+- `OOM-2699 <https://lf-onap.atlassian.net/browse/OOM-2699>`_ SO so-mariadb
   readinessCheck fails for local MariaDB instance
-- `OOM-2705 <https://jira.onap.org/browse/OOM-2705>`_ SDNC DB installation fails
+- `OOM-2705 <https://lf-onap.atlassian.net/browse/OOM-2705>`_ SDNC DB installation fails
   on local MariaDB instance
-- `OOM-2603 <https://jira.onap.org/browse/OOM-2603>`_ [SDNC] allign password for
+- `OOM-2603 <https://lf-onap.atlassian.net/browse/OOM-2603>`_ [SDNC] allign password for
   scaleoutUser/restconfUser/odlUser
 
 Deliverables
@@ -122,7 +122,7 @@ Known Vulnerabilities
 ---------------------
 
 - Hard coded password used for all OOM deployments
-  [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
+  [`OJSI-188 <https://lf-onap.atlassian.net/browse/OJSI-188>`_]
 - `Hard coded certificates <../oom_hardcoded_certificates>` in Helm packages
 
 Workarounds

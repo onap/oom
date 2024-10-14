@@ -62,9 +62,9 @@ Summary
 
 *Known Security Issues*
 
-* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://jira.onap.org/browse/OJSI-134>`_]
-* Hard coded password used for all oom deployments [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
-* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://jira.onap.org/browse/OJSI-202>`_]
+* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://lf-onap.atlassian.net/browse/OJSI-134>`_]
+* Hard coded password used for all oom deployments [`OJSI-188 <https://lf-onap.atlassian.net/browse/OJSI-188>`_]
+* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://lf-onap.atlassian.net/browse/OJSI-202>`_]
 
 *Known Vulnerabilities in Used Modules*
 

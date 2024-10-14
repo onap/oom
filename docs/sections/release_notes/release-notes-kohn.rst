@@ -66,7 +66,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11499
+https://lf-onap.atlassian.net/projects/OOM/versions/11499
 
 
 **Known Issues**
@@ -97,7 +97,7 @@ Known Vulnerabilities
 ---------------------
 
 * Cassandra version needs to be updated to support new Python version
-  see `OOM-2900 <https://jira.onap.org/browse/OOM-2900>`_
+  see `OOM-2900 <https://lf-onap.atlassian.net/browse/OOM-2900>`_
 
 Workarounds
 -----------

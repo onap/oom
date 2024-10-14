@@ -76,7 +76,7 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/11502
+https://lf-onap.atlassian.net/projects/OOM/versions/11502
 
 **Known Issues**
 

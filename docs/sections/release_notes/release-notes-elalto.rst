@@ -28,7 +28,7 @@ Summary
 
 The focus of this release was on maintenance and as such no new features were
 delivered.
-A list of issues resolved in this release can be found here: https://jira.onap.org/projects/OOM/versions/10726
+A list of issues resolved in this release can be found here: https://lf-onap.atlassian.net/projects/OOM/versions/10726
 
 **New Features**
 
@@ -40,14 +40,14 @@ A list of issues resolved in this release can be found here: https://jira.onap.o
 
 The following known issues will be addressed in a future release:
 
-* [`OOM-1480 <https://jira.onap.org/browse/OOM-1480>`_] - postgres chart does not set root password when installing on an existing database instances
-* [`OOM-1966 <https://jira.onap.org/browse/OOM-1966>`_] - ONAP on HA Kubernetes Cluster - Documentation update
-* [`OOM-1995 <https://jira.onap.org/browse/OOM-1995>`_] - Mariadb Galera cluster pods keep failing
-* [`OOM-2061 <https://jira.onap.org/browse/OOM-2061>`_] - Details Missing for installing the kubectl section
-* [`OOM-2075 <https://jira.onap.org/browse/OOM-2075>`_] - Invalid MTU for Canal CNI interfaces
-* [`OOM-2080 <https://jira.onap.org/browse/OOM-2080>`_] - Need for "ReadWriteMany" access on storage when deploying on Kubernetes?
-* [`OOM-2091 <https://jira.onap.org/browse/OOM-2091>`_] - incorrect release deployed
-* [`OOM-2132 <https://jira.onap.org/browse/OOM-2132>`_] - Common Galera server.cnf does not contain Camunda required settings
+* [`OOM-1480 <https://lf-onap.atlassian.net/browse/OOM-1480>`_] - postgres chart does not set root password when installing on an existing database instances
+* [`OOM-1966 <https://lf-onap.atlassian.net/browse/OOM-1966>`_] - ONAP on HA Kubernetes Cluster - Documentation update
+* [`OOM-1995 <https://lf-onap.atlassian.net/browse/OOM-1995>`_] - Mariadb Galera cluster pods keep failing
+* [`OOM-2061 <https://lf-onap.atlassian.net/browse/OOM-2061>`_] - Details Missing for installing the kubectl section
+* [`OOM-2075 <https://lf-onap.atlassian.net/browse/OOM-2075>`_] - Invalid MTU for Canal CNI interfaces
+* [`OOM-2080 <https://lf-onap.atlassian.net/browse/OOM-2080>`_] - Need for "ReadWriteMany" access on storage when deploying on Kubernetes?
+* [`OOM-2091 <https://lf-onap.atlassian.net/browse/OOM-2091>`_] - incorrect release deployed
+* [`OOM-2132 <https://lf-onap.atlassian.net/browse/OOM-2132>`_] - Common Galera server.cnf does not contain Camunda required settings
 
 **Security Notes**
 
@@ -55,9 +55,9 @@ The following known issues will be addressed in a future release:
 
 *Known Security Issues*
 
-* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://jira.onap.org/browse/OJSI-134>`_]
-* Hard coded password used for all oom deployments [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
-* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://jira.onap.org/browse/OJSI-202>`_]
+* In default deployment OOM (consul-server-ui) exposes HTTP port 30270 outside of cluster. [`OJSI-134 <https://lf-onap.atlassian.net/browse/OJSI-134>`_]
+* Hard coded password used for all oom deployments [`OJSI-188 <https://lf-onap.atlassian.net/browse/OJSI-188>`_]
+* CVE-2019-12127 - OOM exposes unprotected API/UI on port 30270 [`OJSI-202 <https://lf-onap.atlassian.net/browse/OJSI-202>`_]
 
 *Known Vulnerabilities in Used Modules*
 

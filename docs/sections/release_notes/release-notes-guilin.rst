@@ -57,30 +57,30 @@ New features
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://jira.onap.org/projects/OOM/versions/10826
+https://lf-onap.atlassian.net/projects/OOM/versions/10826
 
 **Known Issues**
 
-- `OOM-1237 <https://jira.onap.org/browse/OOM-1237>`_ Source Helm Charts from
+- `OOM-1237 <https://lf-onap.atlassian.net/browse/OOM-1237>`_ Source Helm Charts from
   ONAP Repo. Having helm charts repo is not possible for Frankfurt release.
-- `OOM-1720 <https://jira.onap.org/browse/OOM-1237>`_ galera container is
+- `OOM-1720 <https://lf-onap.atlassian.net/browse/OOM-1237>`_ galera container is
   outdated. containers used for mariadb are outdated and not supported anymore.
-- `OOM-1817 <https://jira.onap.org/browse/OOM-1817>`_ Use of global.repository
+- `OOM-1817 <https://lf-onap.atlassian.net/browse/OOM-1817>`_ Use of global.repository
   inconsistent across Helm Charts. it's then may be hard to retrieve some
   containers when deploying in constrained environment.
-- `OOM-2227 <https://jira.onap.org/browse/OOM-2227>`_ Cassandra Backup Mechanism
+- `OOM-2227 <https://lf-onap.atlassian.net/browse/OOM-2227>`_ Cassandra Backup Mechanism
   works only on "static PV" mode.
-- `OOM-2285 <https://jira.onap.org/browse/OOM-2285>`_ deploy.sh does not work
+- `OOM-2285 <https://lf-onap.atlassian.net/browse/OOM-2285>`_ deploy.sh does not work
   for mariadb-galera. deploy script doesn't behave well with "-" in the
   component name.
-- `OOM-2421 <https://jira.onap.org/browse/OOM-2421>`_ OOM nbi chart deployment
+- `OOM-2421 <https://lf-onap.atlassian.net/browse/OOM-2421>`_ OOM nbi chart deployment
   error
-- `OOM-2534 <https://jira.onap.org/browse/OOM-2534>`_ Cert-Service leverages
+- `OOM-2534 <https://lf-onap.atlassian.net/browse/OOM-2534>`_ Cert-Service leverages
   runtime external dependency
-- `OOM-2554 <https://jira.onap.org/browse/OOM-2554>`_ Common pods have java 8
-- `OOM-2588 <https://jira.onap.org/browse/OOM-2588>`_ Various subcharts not
+- `OOM-2554 <https://lf-onap.atlassian.net/browse/OOM-2554>`_ Common pods have java 8
+- `OOM-2588 <https://lf-onap.atlassian.net/browse/OOM-2588>`_ Various subcharts not
   installing due to helm size issues
-- `OOM-2629 <https://jira.onap.org/browse/OOM-2629>`_ NetBox demo entry setup
+- `OOM-2629 <https://lf-onap.atlassian.net/browse/OOM-2629>`_ NetBox demo entry setup
   not complete
 
 
@@ -104,20 +104,20 @@ Known Vulnerabilities
 ---------------------
 
 - Hard coded password used for all OOM deployments
-  [`OJSI-188 <https://jira.onap.org/browse/OJSI-188>`_]
+  [`OJSI-188 <https://lf-onap.atlassian.net/browse/OJSI-188>`_]
 
 Workarounds
 -----------
 
-- `OOM-1237 <https://jira.onap.org/browse/OOM-1237>`_ Workaround is to generate
+- `OOM-1237 <https://lf-onap.atlassian.net/browse/OOM-1237>`_ Workaround is to generate
   them as explained in documentation.
-- `OOM-1817 <https://jira.onap.org/browse/OOM-1817>`_ Workaround is to use
+- `OOM-1817 <https://lf-onap.atlassian.net/browse/OOM-1817>`_ Workaround is to use
   offline installer if needed.
-- `OOM-2227 <https://jira.onap.org/browse/OOM-2227>`_ Workaround is to stick to
+- `OOM-2227 <https://lf-onap.atlassian.net/browse/OOM-2227>`_ Workaround is to stick to
   "static PV" (so, not using storage class) if backup is needed.
-- `OOM-2285 <https://jira.onap.org/browse/OOM-2285>`_ Workaround is to use
+- `OOM-2285 <https://lf-onap.atlassian.net/browse/OOM-2285>`_ Workaround is to use
   directly helm upgrade if needed.
-- `OOM-2534 <https://jira.onap.org/browse/OOM-2534>`_ Workaround is to download
+- `OOM-2534 <https://lf-onap.atlassian.net/browse/OOM-2534>`_ Workaround is to download
   in advance docker.io/openjdk:11-jre-slim where you will generate the charts
 
 Security Notes
