@@ -85,6 +85,12 @@ readiness:
   path: /healthcheck
   scheme: HTTP
   port: 8080
+liveness:
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  path: /healthcheck
+  scheme: HTTP
+  port: 8080
 
 # service configuration
 service:
@@ -288,3 +294,45 @@ serviceAccount:
   nameOverride: dcae-ves-collector
   roles:
     - read
+
+# Pod Security context
+podSecurityContext:
+  runAsGroup: 1000
+  runAsUser: 100
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security context
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+      - CAP_NET_RAW
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+# Flag which can be used to put VES-COLLECTOR specific properties in template
+ves: true
+
+# VES-COLLECTOR volumes
+externalVolumes:
+  - name: ves-collector-etc
+    type: emptyDir
+    sizeLimit: 50Mi
+    mountPath: /opt/app/VESCollector/etc
+
+# VES-COLLECTOR pod annotations
+podAnnotations:
+  sidecar.istio.io/rewriteAppHTTPProbers: "false"
+
+# Resources for init container copy-etc
+copyEtc:
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 30m
+      memory: 32Mi
