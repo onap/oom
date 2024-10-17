@@ -55,7 +55,7 @@ Critical vulnerability was found.
 
 Quick Links:
 
-  - `OOM project page <https://wiki.onap.org/display/DW/ONAP+Operations+Manager+Project>`_
+  - `OOM project page <hhttps://lf-onap.atlassian.net/wiki/spaces/DW/pages/16230609/ONAP+Operations+Manager+Project>`_
 
   - `Passing Badge information for OOM <https://bestpractices.coreinfrastructure.org/en/projects/1631>`_
 

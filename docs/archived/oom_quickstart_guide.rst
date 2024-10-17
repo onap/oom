@@ -282,4 +282,4 @@ for use::
   > helm undeploy dev
 
 More examples of using the deploy and undeploy plugins can be found here:
-https://wiki.onap.org/display/DW/OOM+Helm+%28un%29Deploy+plugins
+https://lf-onap.atlassian.net/wiki/spaces/DW/pages/16315791/OOM+Helm+un+Deploy+plugins

@@ -5,7 +5,7 @@
 
 .. Links
 .. _Prometheus stack README: https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md
-.. _ONAP Next Generation Security & Logging Structure: https://wiki.onap.org/pages/viewpage.action?pageId=103417456
+.. _ONAP Next Generation Security & Logging Architecture: https://lf-onap.atlassian.net/wiki/x/bVn7
 .. _Istio setup guide: https://istio.io/latest/docs/setup/install/helm/
 .. _Kiali setup guide: https://kiali.io/docs/installation/installation-guide/example-install/
 .. _Kserve setup guide: https://kserve.github.io/website/0.10/admin/kubernetes_deployment/

@@ -7,9 +7,8 @@
 .. _HELM Best Practices Guide: https://docs.helm.sh/chart_best_practices/#requirements
 .. _kubectl Cheat Sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 .. _Kubernetes documentation for emptyDir: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-.. _Docker DevOps: https://wiki.onap.org/display/DW/Docker+DevOps#DockerDevOps-DockerBuild
+.. _Docker DevOps: https://lf-onap.atlassian.net/wiki/spaces/DW/pages/16239251/Docker+DevOps#Docker-Build
 .. _http://cd.onap.info:30223/mso/logging/debug: http://cd.onap.info:30223/mso/logging/debug
-.. _Onboarding and Distributing a Vendor Software Product: https://wiki.onap.org/pages/viewpage.action?pageId=1018474
 .. _README.md: https://gerrit.onap.org/r/gitweb?p=oom.git;a=blob;f=kubernetes/README.md
 
 .. figure:: images/oom_logo/oomLogoV2-medium.png

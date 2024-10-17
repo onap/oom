@@ -125,7 +125,7 @@ For more information on the ONAP Istanbul release, please see:
 
 
 .. _`ONAP Home Page`: https://www.onap.org
-.. _`ONAP Wiki Page`: https://wiki.onap.org
+.. _`ONAP Wiki Page`: https://lf-onap.atlassian.net/wiki
 .. _`ONAP Documentation`: https://docs.onap.org
 .. _`ONAP Release Downloads`: https://git.onap.org
 .. _`Gateway-API`: https://istio.io/latest/docs/tasks/traffic-management/ingress/gateway-api/

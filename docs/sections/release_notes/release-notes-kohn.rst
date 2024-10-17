@@ -109,7 +109,7 @@ Security Notes
 **Fixed Security Issues**
 
 * Fixed vulnerabilities for oom-platform-cert-service
-  see `Fixes <https://wiki.onap.org/pages/viewpage.action?spaceKey=SV&title=Kohn+OOM>`_
+  see `Fixes <https://lf-onap.atlassian.net/wiki/spaces/SV/pages/16093810/Kohn+OOM>`_
 
 References
 ==========
@@ -123,6 +123,6 @@ For more information on the ONAP Istanbul release, please see:
 
 
 .. _`ONAP Home Page`: https://www.onap.org
-.. _`ONAP Wiki Page`: https://wiki.onap.org
+.. _`ONAP Wiki Page`: https://lf-onap.atlassian.net/wiki
 .. _`ONAP Documentation`: https://docs.onap.org
 .. _`ONAP Release Downloads`: https://git.onap.org

@@ -4,7 +4,7 @@
 .. Copyright (C) 2022 Nordix Foundation
 
 .. Links
-.. _ONAP Release Long Term Roadmap: https://wiki.onap.org/display/DW/Long+Term+Roadmap
+.. _ONAP Release Long Term Roadmap: https://lf-onap.atlassian.net/wiki/spaces/DW/pages/16220234/Long+Term+Release+Roadmap
 
 .. _oom_deploy_guide:
 
