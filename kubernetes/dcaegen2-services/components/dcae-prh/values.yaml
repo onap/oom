@@ -55,7 +55,14 @@ secrets:
 
 # probe configuration
 readiness:
-  initialDelaySeconds: 5
+  initialDelaySeconds: 25
+  periodSeconds: 15
+  path: /heartbeat
+  scheme: HTTP
+  port: 8100
+  timeoutSeconds: 30
+liveness:
+  initialDelaySeconds: 25
   periodSeconds: 15
   path: /heartbeat
   scheme: HTTP
@@ -197,3 +204,32 @@ serviceAccount:
   nameOverride: dcae-prh
   roles:
     - read
+
+# Pod Security context
+podSecurityContext:
+  runAsGroup: 1414
+  runAsUser: 1414
+  fsGroup: 1414
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security context
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+      - CAP_NET_RAW
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+# PRH volumes
+externalVolumes:
+  - name: prh-logs
+    mountPath: /var/log/ONAP/prh/prh-app-server/
+    type: emptyDir
+    sizeLimit: 64Mi
+
+# PRH pod annotations
+podAnnotations:
+  sidecar.istio.io/rewriteAppHTTPProbers: "false"

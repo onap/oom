@@ -85,7 +85,7 @@ This template generates a list of volumes associated with the pod,
 based on information provided in .Values.externalVolumes.  This
 template works in conjunction with dcaegen2-services-common._externalVolumeMounts
 to give the microservice access to data in volumes created else.
-This initial implementation supports ConfigMaps only, as this is the only
+This implementation supports ConfigMaps & EmptyDirs only, as this is the only
 external volume mounting required by current microservices.
 
 .Values.externalVolumes is a list of objects.  Each object has 3 required fields and 2 optional fields:
@@ -94,7 +94,7 @@ external volume mounting required by current microservices.
      names of resources are sometimes set at deployment time (for instance, to prefix the Helm
      release to the name), the string can be a Helm template fragment that will be expanded at
      deployment time.
-   - type: the type of the resource (in the current implementation, only "ConfigMap" is supported).
+   - type: the type of the resource (in the current implementation, only "ConfigMap" & "emptyDir" is supported).
      The value is a case-INsensitive string.
    - mountPoint: the path to the mount point for the volume in the container file system.  The
      value is a case-sensitive string.
@@ -113,7 +113,7 @@ externalVolumes:
     type: configmap
     mountPath: /opt/app/config
   - name: '{{ include "common.release" . }}-another-example'
-    type: configmap
+    type: emptyDir
     mountPath: /opt/app/otherconfig
     optional: false
 */}}
@@ -121,14 +121,18 @@ externalVolumes:
   {{- $global := . -}}
   {{- if .Values.externalVolumes }}
     {{- range $vol := .Values.externalVolumes }}
+      {{- $vname := (tpl $vol.name $global) -}}
       {{- if eq (lower $vol.type) "configmap" }}
-        {{- $vname := (tpl $vol.name $global) -}}
         {{- $opt := hasKey $vol "optional" | ternary $vol.optional true }}
 - configMap:
     defaultMode: 420
     name: {{ $vname }}
     optional: {{ $opt }}
   name: {{ $vname }}
+      {{- else if eq (lower $vol.type) "emptydir" }}
+- name: {{ $vname }}
+  emptyDir:
+    sizeLimit: {{ $vol.sizeLimit }}
       {{- end }}
     {{- end }}
   {{- end }}
@@ -141,7 +145,7 @@ This template generates a list of volume mounts for the microservice container,
 based on information provided in .Values.externalVolumes.  This
 template works in conjunction with dcaegen2-services-common._externalVolumes
 to give the microservice access to data in volumes created else.
-This initial implementation supports ConfigMaps only, as this is the only
+This initial implementation supports ConfigMaps & EmptyDirs, as this is the only
 external volume mounting required by current microservices.
 
 See the documentation for dcaegen2-services-common._externalVolumes for
@@ -152,16 +156,20 @@ the microservice.
   {{- $global := . -}}
   {{- if .Values.externalVolumes }}
     {{- range $vol := .Values.externalVolumes }}
+      {{- $vname := (tpl $vol.name $global) -}}
       {{- if eq (lower $vol.type) "configmap" }}
-        {{- $vname := (tpl $vol.name $global) -}}
         {{- $readOnly := $vol.readOnly | default false }}
 - mountPath: {{ $vol.mountPath }}
   name: {{ $vname }}
   readOnly: {{ $readOnly }}
+      {{- else if eq (lower $vol.type) "emptydir" }}
+- mountPath: {{ $vol.mountPath }}
+  name: {{ $vname }}
       {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
+
 {{/*
 dcaegen2-services-common.microserviceDeployment:
 This template produces a Kubernetes Deployment for a DCAE microservice.
@@ -236,6 +244,7 @@ post-processing.
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $log := default dict .Values.log -}}
 {{- $logDir :=  default "" $log.path -}}
+{{- $ves := default false .Values.ves -}}
 {{- $certDir := (eq "true" (include "common.needTLS" .)) | ternary (default "" .Values.certDirectory . ) "" -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
 {{- $policy := default dict .Values.policies -}}
@@ -253,9 +262,15 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
+
+      {{- if $ves }}
+        {{- include "dcaegen2-ves-collector.vesCollectorCopyEtc" . | nindent 6 }}
+      {{- end }}
       {{- if .Values.readinessCheck }}
-      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
+        {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       {{- end }}
       {{- include "common.dmaap.provisioning.initContainer" . | nindent 6 }}
       {{ include "dcaegen2-services-common._certPostProcessor" .  | nindent 4 }}
@@ -263,6 +278,8 @@ spec:
       - image: {{ default ( include "repositoryGenerator.repository" . ) .Values.imageRepositoryOverride }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
+        securityContext:
+          {{- toYaml .Values.containerSecurityContext | nindent 10 }}
         env:
         {{- range $cred := .Values.credentials }}
         - name: {{ $cred.name }}
@@ -307,6 +324,26 @@ spec:
             {{- end }}
           {{- end }}
         {{- end }}
+        {{- if .Values.liveness }}
+        livenessProbe:
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.liveness.periodSeconds | default 15 }}
+            timeoutSeconds: {{ .Values.liveness.timeoutSeconds | default 1 }}
+            {{- $probeType := .Values.liveness.type | default "httpGet" -}}
+            {{- if eq $probeType "httpGet" }}
+            httpGet:
+             scheme: {{ .Values.liveness.scheme }}
+             path: {{ .Values.liveness.path }}
+             port: {{ .Values.liveness.port }}
+            {{- end }}
+            {{- if eq $probeType "exec" }}
+            exec:
+                command:
+                {{- range $cmd := .Values.liveness.command }}
+                - {{ $cmd }}
+                {{- end }}
+            {{- end }}
+        {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /app-config
@@ -314,7 +351,7 @@ spec:
         - mountPath: /app-config-input
           name: app-config-input
         - mountPath: /tmp
-          name: tmp-volume
+          name: tmp
         {{- if $logDir }}
         - mountPath: {{ $logDir}}
           name: logs
@@ -387,12 +424,13 @@ spec:
       - emptyDir:
           medium: Memory
         name: app-config
-      - name: tmp-volume
+      - name: tmp
         emptyDir:
           sizeLimit: 128Mi
       {{- if $logDir }}
-      - emptyDir: {}
-        name: logs
+      - name: logs
+        emptyDir:
+          sizeLimit: 128Mi
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix . )) | nindent 6 }}
       {{- end }}
       {{- if $certDir }}
