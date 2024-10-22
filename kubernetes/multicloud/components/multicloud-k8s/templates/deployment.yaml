@@ -1,5 +1,6 @@
 {{/*
 # Copyright 2019 Intel Corporation, Inc
+# Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -30,6 +32,7 @@ spec:
         command: ["/opt/multicloud/k8splugin/k8plugin"]
         workingDir: /opt/multicloud/k8splugin
         ports: {{ include "common.containerPorts" . | nindent 10  }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
@@ -60,10 +63,26 @@ spec:
         name: framework-artifactbroker
         command: ["/opt/app/distribution/bin/artifact-dist.sh"]
         args: ["/opt/app/distribution/etc/mounted/config.json"]
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         ports:
         - containerPort: {{ .Values.artifactbroker.internalPort }}
           protocol: TCP
+        {{- if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.artifactbroker.internalPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+        {{ end -}}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.artifactbroker.internalPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+        - mountPath: "{{ .Values.log.path }}"
+          name: framework-log
         - mountPath: /opt/app/distribution/etc/mounted/config.json
           name: {{ include "common.name" .}}
           subPath: config.json
@@ -77,9 +96,13 @@ spec:
               key: sasl.jaas.config
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+      - name: framework-log
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
       - name : {{ include "common.name" . }}
         configMap:
           name: {{ include "common.fullname" . }}
       - name: artifact-data
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.artifactDataSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
