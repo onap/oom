@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T
+# Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,23 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      initContainers:
+      - name: {{ include "common.name" . }}-copy-pub
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["cp", "-R", "/opt/multivimbroker/multivimbroker/pub/.", "/opt/multivimbroker/multivimbroker/pub_rw/"]
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+        volumeMounts:
+        - mountPath: /opt/multivimbroker/multivimbroker/pub_rw
+          name: framework-pub
       containers:
       - env:
         - name: MSB_PROTO
@@ -50,9 +68,12 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
         volumeMounts:
         - mountPath: "{{ .Values.log.path }}"
           name: framework-log
+        - mountPath: /opt/multivimbroker/multivimbroker/pub
+          name: framework-pub
         - mountPath: /opt/multivimbroker/multivimbroker/pub/config/log.yml
           name: framework-logconfig
           subPath: log.yml
@@ -62,25 +83,34 @@ spec:
         ports: {{ include "common.containerPorts" . | nindent 10  }}
         # disable liveness probe when breakpoints set in debugger
         # so K8s doesn't restart unresponsive container
-        {{- if eq .Values.liveness.enabled true }}
+        {{ if .Values.liveness.enabled }}
         livenessProbe:
           httpGet:
-            path: /api/multicloud/v0/swagger.json
             port: {{ .Values.service.internalPort }}
-            scheme: "HTTP"
+            path: {{ .Values.liveness.path }}
+            scheme: HTTP
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
-          successThreshold: {{ .Values.liveness.successThreshold }}
-          failureThreshold: {{ .Values.liveness.failureThreshold }}
-        {{ end -}}
-
+        {{ end }}
+        {{ if .Values.readiness.enabled }}
+        readinessProbe:
+          httpGet:
+            port: {{ .Values.service.internalPort }}
+            path: {{ .Values.readiness.path }}
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+        {{ end }}
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: framework-log
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
+      - name: framework-pub
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.pubSizeLimit }}
       - name: provider-plugin
         configMap:
           name: {{ include "common.fullname" . }}-provider-plugin-configmap
