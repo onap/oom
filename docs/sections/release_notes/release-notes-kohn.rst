@@ -56,7 +56,8 @@ New features
 
 * Kubernetes support for version up to 1.23.8
 * Helm support for version up to Helm: 3.8.2
-* Kubespray version used for automated deployment 2.19 (used for automated deployment)
+* Kubespray version used for automated deployment 2.19 (used for automated
+  deployment)
 * Initial Setup for "ONAP on ServiceMesh" deployment
 
   * using Istio 1.14.1 as SM platform
@@ -83,12 +84,16 @@ OOM provides `Helm charts <https://nexus3.onap.org/service/rest/repository/brows
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`Project Description <oom_project_description>` - a guide for developers of OOM
+- :ref:`Project Description <oom_project_description>` - a guide for developers
+  of OOM
 - :ref:`oom_dev_guide` - a guide for developers of OOM
-- :ref:`oom_infra_guide` - a guide for those setting up the environments that OOM will use
-- :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing cloud
+- :ref:`oom_infra_guide` - a guide for those setting up the environments that
+  OOM will use
+- :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing
+  cloud
 - :ref:`oom_user_guide` - a guide for operators of an OOM instance
-- :ref:`oom_access_info_guide` - a guide for operators who require access to OOM applications
+- :ref:`oom_access_info_guide` - a guide for operators who require access to
+   OOM applications
 
 Known Limitations, Issues and Workarounds
 =========================================

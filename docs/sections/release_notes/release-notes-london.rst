@@ -58,9 +58,12 @@ New features
 * Introduction of "Production" ONAP setup, including:
 
   * Istio Service Mesh based deployment
-  * Ingress (Istio-Gateway) deployment and usage as standard external access method
-  * Internal Security provided by ServiceMesh and Component2Component AuthorizationPolicies
-  * External Security by introducing AuthN/Z using Keycloak and OAuth2Proxy for Ingress Access
+  * Ingress (Istio-Gateway) deployment and usage as standard external access
+    method
+  * Internal Security provided by ServiceMesh and Component2Component
+    AuthorizationPolicies
+  * External Security by introducing AuthN/Z using Keycloak and OAuth2Proxy for
+    Ingress Access
 
 * Removal of unsupported components (AAF, Portal, Contrib,...)
 * Update of Helmcharts to use common templates and practices
@@ -102,12 +105,16 @@ OOM provides `Helm charts <https://nexus3.onap.org/service/rest/repository/brows
 Documentation Deliverables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`Project Description <oom_project_description>` - a guide for developers of OOM
+- :ref:`Project Description <oom_project_description>` - a guide for developers
+  of OOM
 - :ref:`oom_dev_guide` - a guide for developers of OOM
-- :ref:`oom_infra_guide` - a guide for those setting up the environments that OOM will use
-- :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing cloud
+- :ref:`oom_infra_guide` - a guide for those setting up the environments that
+  OOM will use
+- :ref:`oom_deploy_guide` - a guide for those deploying OOM on an existing
+  cloud
 - :ref:`oom_user_guide` - a guide for operators of an OOM instance
-- :ref:`oom_access_info_guide` - a guide for operators who require access to OOM applications
+- :ref:`oom_access_info_guide` - a guide for operators who require access to
+  OOM applications
 
 Known Limitations, Issues and Workarounds
 =========================================
