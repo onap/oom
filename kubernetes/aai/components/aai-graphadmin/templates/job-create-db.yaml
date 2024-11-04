@@ -76,6 +76,17 @@ spec:
         - name: JVM_OPTS
           value: {{ .Values.config.debug.args | quote }}
         {{- end }}
+        {{- if .Values.config.env }}
+        {{- range $key,$value := .Values.config.env }}
+        - name: {{ $key | upper | quote}}
+          value: {{ $value | quote}}
+        {{- end }}
+        {{- end }}
+        - name: JAAS_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}
+              key: sasl.jaas.config
         ports:
         {{- if .Values.config.debug.enabled }}
         - containerPort: {{ .Values.service.debugPort }}
