@@ -14,7 +14,8 @@ OOM Deployment Guide
 .. figure:: ../../resources/images/oom_logo/oomLogoV2-medium.png
    :align: right
 
-ONAP OOM supports several options for the deployment of ONAP using it's helm charts.
+ONAP OOM supports several options for the deployment of ONAP using it's helm
+charts.
 
     * :ref:`oom_helm_release_repo_deploy`
     * :ref:`oom_helm_testing_repo_deploy`
@@ -27,7 +28,8 @@ ONAP OOM supports several options for the deployment of ONAP using it's helm cha
         | :ref:`Set up your base platform<oom_base_setup_guide>`
 
 
-Each deployment method can be customized to deploy a subset of ONAP component applications.
+Each deployment method can be customized to deploy a subset of ONAP component
+applications.
 See the :ref:`oom_customize_overrides` section for more details.
 
 
