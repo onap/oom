@@ -55,8 +55,8 @@ ONAP with a few simple commands.
 
 Pre-requisites
 --------------
-Your environment must have the Kubernetes `kubectl` with Strimzi Apache Kafka, Cert-Manager
-and Helm setup as a one time activity.
+Your environment must have the Kubernetes `kubectl` with Strimzi Apache Kafka,
+Cert-Manager and Helm setup as a one time activity.
 
 Install Kubectl
 ~~~~~~~~~~~~~~~
@@ -275,7 +275,7 @@ precedence of all.
 The top level onap/values.yaml file contains the values required to be set
 before deploying ONAP.  Here is the contents of this file:
 
-.. include:: ../kubernetes/onap/values.yaml
+.. include:: ../../kubernetes/onap/values.yaml
    :code: yaml
 
 One may wish to create a value file that is specific to a given deployment such

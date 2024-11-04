@@ -22,9 +22,9 @@ in a hierarchy as found in the `aai`_ ONAP component.
 
 Charts are created as files laid out in a particular directory tree, then they
 can be packaged into versioned archives to be deployed. There is a public
-archive of `Helm Charts`_ on ArtifactHUB that includes many technologies applicable
-to ONAP. Some of these charts have been used in ONAP and all of the ONAP charts
-have been created following the guidelines provided.
+archive of `Helm Charts`_ on ArtifactHUB that includes many technologies
+applicable to ONAP. Some of these charts have been used in ONAP and all of the
+ONAP charts have been created following the guidelines provided.
 
 An example structure of the OOM common helm charts is shown below:
 

@@ -2,7 +2,9 @@
    International License.
 .. http://creativecommons.org/licenses/by/4.0
 .. (c) ONAP Project and its contributors
-.. _release_notes:
+.. _release_notes_newdelhi:
+
+:orphan:
 
 *************************************
 ONAP Operations Manager Release Notes
@@ -11,7 +13,6 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
-- :ref:`New Delhi <release_notes_newdelhi>`
 - :ref:`Montreal <release_notes_montreal>`
 - :ref:`London <release_notes_london>`
 - :ref:`Kohn <release_notes_kohn>`
@@ -29,7 +30,7 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Oslo release.
+This document provides the release notes for the New Delhi release.
 
 Summary
 =======
@@ -46,74 +47,38 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Oslo                                 |
+| **Release designation**              | New Delhi                            |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2025/01/09                           |
+| **Release date**                     | 2024/06/13                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
-* Support the latest Database Operators:
+* authentication (14.0.0) - add configurable Keycloak Realm and enable Ingress
+  Interface Authentication and Authorization
+* Update the helm common templates (13.2.0) to:
 
-  * MariaDB-Operator (0.36.0)
-  * K8ssandra-Operator (v0.20.2)
-  * Postgres-Operator (CrunchyData) (5.7.2)
-  * MongoDB-Operator (Percona) (1.18.0)
+  * Support the latest Database Operators:
 
-* authentication (15.0.0)
+    * MariaDB-Operator (0.28.1)
+    * K8ssandra-Operator (v0.16.0)
+    * Postgres-Operator (CrunchyData) (5.5.0)
 
-  * support for REALM Client AuthorizationSettings
-  * update oauth2-proxy and keycloak-config-cli versions
-  * add support for latest keycloak version 26.x
-
-* Update the helm common templates (13.2.10) to:
-
-  * add SecurityContext settings for Production readiness
-
-* cassandra (13.1.1)
-
-  * support for new cassandra version (4.1.6)
-  * add SecurityContext settings for Production readiness
-
-* mariadb-galera (13.2.3)
-
-  * add SecurityContext settings for Production readiness
-
-* mariadb-init (13.0.2)
-
-  * add SecurityContext settings for Production readiness
-
-* mongodb (14.12.4)
-
-  * add SecurityContext settings for Production readiness
-
-* mongodb-init (13.0.2)
-
-  * new chart to support external mongodb initialization
-
-* postgres (13.1.0)
-
-  * add SecurityContext settings for Production readiness
-
-* postgres-init (13.0.3)
-
-  * add SecurityContext settings for Production readiness
-
-* readinessCheck (13.1.1)
-
-  * add SecurityContext settings for Production readiness
-
-* serviceAccount (13.0.2)
-
-  * adjust default role mapping
+* cassandra (13.1.0) - support for new K8ssandra-Operator
+* mariadb-galera (13.1.0) - support for new MariaDB-Operator
+* mongodb (14.12.3) - update to latest bitnami chart version
+* postgres (13.1.0) - support for new Postgres-Operator
+* postgres-init (13.0.1) - support for new Postgres-Operator
+* readinessCheck (13.1.0) - added check for "Service" readiness
+* serviceAccount (13.0.1) - add default role creation
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://lf-onap.atlassian.net/projects/OOM/versions/10783
+https://lf-onap.atlassian.net/projects/OOM/versions/11502
 
 **Known Issues**
 

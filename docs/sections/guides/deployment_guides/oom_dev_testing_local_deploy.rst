@@ -10,8 +10,8 @@
 OOM Developer Testing Deployment
 ================================
 
-Developing and testing changes to the existing OOM project can be done locally by setting up some additional
-tools to host the updated helm charts.
+Developing and testing changes to the existing OOM project can be done locally
+by setting up some additional tools to host the updated helm charts.
 
 **Step 1.** Clone the OOM repository from ONAP gerrit::
 
@@ -31,7 +31,8 @@ tools to host the updated helm charts.
 
 **Step 3.** Install Chartmuseum
 
-Chart museum is required to host the helm charts locally when deploying in a development environment::
+Chart museum is required to host the helm charts locally when deploying in a
+development environment::
 
   > curl https://raw.githubusercontent.com/helm/chartmuseum/main/scripts/get-chartmuseum | bash
 
@@ -41,7 +42,8 @@ Chart museum is required to host the helm charts locally when deploying in a dev
 
   > chartmuseum --storage local --storage-local-rootdir ~/helm3-storage -port 8879 &
 
-Note the port number that is listed and use it in the Helm repo add as follows::
+Note the port number that is listed and use it in the Helm repo add as
+follows::
 
   > helm repo add local http://127.0.0.1:8879
 
