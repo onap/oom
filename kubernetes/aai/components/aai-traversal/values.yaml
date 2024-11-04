@@ -111,11 +111,10 @@ global: # global defaults
     someConfig: random
 
 # application image
-image: onap/aai-traversal:1.14.7
+image: onap/aai-traversal:1.15.1
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
-flavorOverride: small
 # the minimum number of seconds that a newly created Pod should be ready
 minReadySeconds: 30
 updateStrategy:
@@ -197,7 +196,6 @@ config:
   # environment variables added to the launch of the image in deployment
   env:
     MIN_HEAP_SIZE: "512m"
-    MAX_HEAP_SIZE: "2g"
     MAX_METASPACE_SIZE: "512m"
     # POST_JVM_ARGS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 
@@ -259,13 +257,19 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
+  path: /actuator/health/liveness
   initialDelaySeconds: 60
   periodSeconds: 60
   enabled: true
 
 readiness:
+  path: /actuator/health/readiness
   initialDelaySeconds: 10
   periodSeconds: 10
+
+actuator:
+  echo:
+    enabled: true
 
 service:
   type: ClusterIP
@@ -321,6 +325,19 @@ resources:
       memory: "4Gi"
   unlimited: {}
 
+# define the heap size for the JVM
+# according to the resource flavor
+small:
+  maxHeapSize: "2500m"
+large:
+  maxHeapSize: "3g"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
 tracing:
   collector:
     baseUrl: http://jaeger-collector.istio-system:9411
@@ -338,7 +355,7 @@ endpoints:
 
 metrics:
   serviceMonitor:
-    enabled: false
+    enabled: true
     targetPort: 8448
     path: /actuator/prometheus
     basicAuth:
@@ -398,8 +415,8 @@ serviceAccount:
 log:
   path: /var/log/onap
   level:
-    root: DEBUG
-    base: DEBUG # base package (org.onap.aai)
+    root: INFO
+    base: INFO # base package (org.onap.aai)
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 #################################################################
 # Secrets metaconfig
