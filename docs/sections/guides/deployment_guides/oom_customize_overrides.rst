@@ -11,12 +11,15 @@
 OOM Custom Overrides
 ####################
 
-The OOM `helm deploy`_ plugin requires deployment configuration as input, usually in the form of override yaml files.
-These input files determine what ONAP components get deployed, and the configuration of the OOM deployment.
+The OOM `helm deploy`_ plugin requires deployment configuration as input,
+usually in the form of override yaml files.
+These input files determine what ONAP components get deployed, and the
+configuration of the OOM deployment.
 
 Other helm config options like `--set log.enabled=true|false` are available.
 
-See the `helm deploy`_ plugin usage section for more detail, or it the plugin has already been installed, execute the following::
+See the `helm deploy`_ plugin usage section for more detail, or it the plugin
+has already been installed, execute the following::
 
     > helm deploy --help
 
@@ -121,31 +124,46 @@ Global settings relevant for ServiceMesh and Ingress:
 
 ServiceMesh settings:
 
-- enabled: true → enables ServiceMesh functionality in the ONAP Namespace (Istio: enables Sidecar deployment)
+- enabled: true → enables ServiceMesh functionality in the ONAP Namespace
+  (Istio: enables Sidecar deployment)
 - tls: true → enables mTLS encryption in Sidecar communication
 - engine: istio → sets the SM engine (currently only Istio is supported)
 - aafEnabled: false → disables AAF usage for TLS interfaces
 - tlsEnabled: false → disables creation of TLS in component services
 - cmpv2Enabled: false → disable cmpv2 feature
-- msbEnabled: false → MSB is not used in Istio setup (Open, if all components are MSB independend)
+- msbEnabled: false → MSB is not used in Istio setup (Open, if all components
+  are MSB independend)
 
 Ingress settings:
 
-- enabled: true → enables Ingress using: Nginx (when SM disabled), Istio IngressGateway (when SM enabled)
+- enabled: true → enables Ingress using: Nginx (when SM disabled), Istio
+  IngressGateway (when SM enabled)
 - enable_all: true → enables Ingress configuration in each component
 - provider: "..." → sets the Ingress provider (ingress, istio, gw-api)
-- ingressClass: "" → Ingress class (only for provider "ingress"): e.g. nginx, traefik
-- ingressSelector: "" → Selector (only for provider "istio") to match with the ingress pod label "istio=ingress"
-- commonGateway: "" → optional: common used Gateway (for Istio, GW-API) and http(s) listener names
-- virtualhost.baseurl: "simpledemo.onap.org" → sets globally the URL for all Interfaces set by the components,
-    resulting in e.g. "aai-api.simpledemo.onap.org", can be overwritten in the component via: ingress.baseurlOverride
-- virtualhost.preaddr: "pre-" → sets globally a prefix for the Application name for all Interfaces set by the components,
-    resulting in e.g. "pre-aai-api.simpledemo.onap.org", can be overwritten in the component via: ingress.preaddrOverride
-- virtualhost.postaddr: "-post" → sets globally a postfix for the Application name for all Interfaces set by the components,
-    resulting in e.g. "aai-api-post.simpledemo.onap.org", can be overwritten in the component via: ingress.postaddrOverride
-- config.ssl: redirect → sets in the Ingress globally the redirection of all Interfaces from http (port 80) to https (port 443)
-- config.tls.secret: "..." → (optional) overrides the default selfsigned SSL certificate with a certificate stored in the specified secret
-- namespace: istio-ingress → (optional) overrides the namespace of the ingress gateway which is used for the created SSL certificate
+- ingressClass: "" → Ingress class (only for provider "ingress"): e.g. nginx,
+  traefik
+- ingressSelector: "" → Selector (only for provider "istio") to match with the
+  ingress pod label "istio=ingress"
+- commonGateway: "" → optional: common used Gateway (for Istio, GW-API) and
+  http(s) listener names
+- virtualhost.baseurl: "simpledemo.onap.org" → sets globally the URL for all
+  Interfaces set by the components, resulting in e.g.
+  "aai-api.simpledemo.onap.org", can be overwritten in the component via:
+  ingress.baseurlOverride
+- virtualhost.preaddr: "pre-" → sets globally a prefix for the Application name
+  for all Interfaces set by the components, resulting in e.g.
+  "pre-aai-api.simpledemo.onap.org", can be overwritten in the component via:
+  ingress.preaddrOverride
+- virtualhost.postaddr: "-post" → sets globally a postfix for the Application
+  name for all Interfaces set by the components, resulting in e.g.
+  "aai-api-post.simpledemo.onap.org", can be overwritten in the component via:
+  ingress.postaddrOverride
+- config.ssl: redirect → sets in the Ingress globally the redirection of all
+  Interfaces from http (port 80) to https (port 443)
+- config.tls.secret: "..." → (optional) overrides the default selfsigned SSL
+  certificate with a certificate stored in the specified secret
+- namespace: istio-ingress → (optional) overrides the namespace of the ingress
+  gateway which is used for the created SSL certificate
 
 .. note::
   For the Ingress setup example override files (`onap-all-ingress-istio.yaml`, `onap-all-ingress-gatewayapi.yaml`)
