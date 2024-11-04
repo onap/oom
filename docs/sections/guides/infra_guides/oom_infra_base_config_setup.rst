@@ -31,18 +31,21 @@ the following mandatory installation and configuration steps must be completed.
    :local:
 ..
 
-For additional platform add-ons, see the :ref:`oom_base_optional_addons` section.
+For additional platform add-ons, see the :ref:`oom_base_optional_addons`
+section.
 
 Install & configure kubectl
 ---------------------------
 
-The Kubernetes command line interface used to manage a Kubernetes cluster needs to be installed
-and configured to run as non root.
+The Kubernetes command line interface used to manage a Kubernetes cluster needs
+to be installed and configured to run as non root.
 
-For additional information regarding kubectl installation and configuration see the `kubectl installation guide`_
+For additional information regarding kubectl installation and configuration see
+the `kubectl installation guide`_
 
-To install kubectl, execute the following, replacing the <recommended-kubectl-version> with the version defined
-in the :ref:`versions_table` table::
+To install kubectl, execute the following, replacing the 
+<recommended-kubectl-version> with the version defined in the
+:ref:`versions_table` table::
 
     > curl -LO https://dl.k8s.io/release/v<recommended-kubectl-version>/bin/linux/amd64/kubectl
 
@@ -78,11 +81,12 @@ Validate the installation::
 Install & configure helm
 ------------------------
 
-Helm is used for package and configuration management of the relevant helm charts.
-For additional information, see the `helm installation guide`_
+Helm is used for package and configuration management of the relevant helm
+charts. For additional information, see the `helm installation guide`_
 
-To install helm, execute the following, replacing the <recommended-helm-version> with the version defined
-in the :ref:`versions_table` table::
+To install helm, execute the following, replacing the
+<recommended-helm-version> with the version defined in the
+:ref:`versions_table` table::
 
     > wget https://get.helm.sh/helm-v<recommended-helm-version>-linux-amd64.tar.gz
 
@@ -94,8 +98,8 @@ Verify the helm version with::
 
     > helm version
 
-Helm's default CNCF provided `Curated applications for Kubernetes`_ repository called
-*stable* can be removed to avoid confusion::
+Helm's default CNCF provided `Curated applications for Kubernetes`_ repository
+called *stable* can be removed to avoid confusion::
 
     > helm repo remove stable
 
@@ -120,10 +124,12 @@ Verify the plugins are installed::
 Set the default StorageClass
 ----------------------------
 
-In some ONAP components it is important to have a default storageClass defined (e.g. cassandra),
-if you don't want to explicitly set it during the deployment via helm overrides.
+In some ONAP components it is important to have a default storageClass defined
+(e.g. cassandra), if you don't want to explicitly set it during the deployment
+via helm overrides.
 
-Therefor you should set the default storageClass (if not done during the K8S cluster setup) via the command::
+Therefor you should set the default storageClass (if not done during the K8S
+cluster setup) via the command::
 
     > kubectl patch storageclass <storageclass> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
@@ -132,9 +138,10 @@ see `DefaultStorageClass`_
 Install the Strimzi Kafka Operator
 ----------------------------------
 
-Strimzi Apache Kafka provides a way to run an Apache Kafka cluster on Kubernetes
-in various deployment configurations by using kubernetes operators.
-Operators are a method of packaging, deploying, and managing Kubernetes applications.
+Strimzi Apache Kafka provides a way to run an Apache Kafka cluster on
+Kubernetes in various deployment configurations by using kubernetes operators.
+Operators are a method of packaging, deploying, and managing Kubernetes
+applications.
 
 Strimzi Operators extend the Kubernetes functionality, automating common
 and complex tasks related to a Kafka deployment. By implementing
@@ -153,8 +160,9 @@ To add the required helm repository, execute the following::
 
     > helm repo add strimzi https://strimzi.io/charts/
 
-To install the strimzi kafka operator, execute the following, replacing the <recommended-strimzi-version> with the version defined
-in the :ref:`versions_table` table::
+To install the strimzi kafka operator, execute the following, replacing the
+<recommended-strimzi-version> with the version defined in the
+:ref:`versions_table` table::
 
     > helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator --namespace strimzi-system --version <recommended-strimzi-version> --set watchAnyNamespace=true --create-namespace
 
@@ -192,8 +200,9 @@ to manage cert-manager resources inside your cluster. For installation
 steps, please refer to `Cert-Manager kubectl plugin documentation`_.
 
 
-To install cert-manager, execute the following, replacing the <recommended-cm-version> with the version defined
-in the :ref:`versions_table` table::
+To install cert-manager, execute the following, replacing the
+<recommended-cm-version> with the version defined in the
+:ref:`versions_table` table::
 
     > kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v<recommended-cm-version>/cert-manager.yaml
 
@@ -216,8 +225,8 @@ Istio Service Mesh
     `ONAP Next Generation Security & Logging Architecture`_
 
 ONAP is currenty supporting Istio as default ServiceMesh platform.
-Therefor the following instructions describe the setup of Istio and required tools.
-Used `Istio setup guide`_
+Therefor the following instructions describe the setup of Istio and required
+tools. Used `Istio setup guide`_
 
 .. _oom_base_optional_addons_istio_installation:
 
@@ -247,11 +256,11 @@ Install Istio Basic Platform
 
     > helm upgrade -i istio-base istio/base -n istio-system --version <recommended-istio-version>
 
-- Create an override for istiod (e.g. istiod.yaml) to add the oauth2-proxy as external
-  authentication provider and apply some specific config settings
-  Be aware, that from Istio version 1.21.0 the format of the values.yaml changes.
-  Additionally a new feature (Native Sidecars) can be enabled, if it is enabled in
-  Kubernetes (version > 1.28)
+- Create an override for istiod (e.g. istiod.yaml) to add the oauth2-proxy as
+  external authentication provider and apply some specific config settings
+  Be aware, that from Istio version 1.21.0 the format of the values.yaml
+  changes. Additionally a new feature (Native Sidecars) can be enabled, if it
+  is enabled in Kubernetes (version > 1.28)
 
     .. collapse:: istiod.yaml (version => 1.21)
 
@@ -263,8 +272,9 @@ Install Istio Basic Platform
       .. include:: ../../resources/yaml/istiod.yaml
          :code: yaml
 
-- Install the Istio Base Istio Discovery chart which deploys the istiod service, replacing the
-  <recommended-istio-version> with the version defined in the :ref:`versions_table` table::
+- Install the Istio Base Istio Discovery chart which deploys the istiod
+  service, replacing the <recommended-istio-version> with the version
+  defined in the :ref:`versions_table` table::
 
     > helm upgrade -i istiod istio/istiod -n istio-system --version <recommended-istio-version>
     --wait -f ./istiod.yaml
@@ -303,7 +313,8 @@ In the production setup 2 different Ingress setups are supported.
 - Istio Gateway `Istio-Gateway`_ (alternative, but in the future deprecated)
 
 Depending on the solution, the ONAP helm values.yaml has to be configured.
-See the :ref:`OOM customized deployment<oom_customize_overrides>` section for more details.
+See the :ref:`OOM customized deployment<oom_customize_overrides>` section for
+more details.
 
 Gateway-API (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -336,8 +347,8 @@ Istio Gateway (alternative)
 
     > kubectl label namespace istio-ingress istio-injection=enabled
 
-- To expose additional ports besides HTTP/S (e.g. for external Kafka access, SDNC-callhome)
-  create an override file (e.g. istio-ingress.yaml)
+- To expose additional ports besides HTTP/S (e.g. for external Kafka access,
+  SDNC-callhome) create an override file (e.g. istio-ingress.yaml)
 
     .. collapse:: istio-ingress.yaml
 

@@ -44,7 +44,8 @@ The following sections describe the life-cycle operations:
 - Monitor_ - real-time health monitoring feeding to a Consul UI and Kubernetes
 - Heal_- failed ONAP containers are recreated automatically
 - Scale_ - cluster ONAP services to enable seamless scaling
-- Upgrade_ - change-out containers or configuration with little or no service impact
+- Upgrade_ - change-out containers or configuration with little or no service
+  impact
 - Delete_ - cleanup individual containers or entire deployments
 
 .. figure:: ../../resources/images/oom_logo/oomLogoV2-Deploy.png
@@ -59,7 +60,8 @@ describe the composition of each of the ONAP components and the relationship
 within and between components. Using this model Helm is able to deploy all of
 ONAP with a few simple commands.
 
-Please refer to the :ref:`oom_deploy_guide` for deployment pre-requisites and options
+Please refer to the :ref:`oom_deploy_guide` for deployment pre-requisites and
+options
 
 .. note::
   Refer to the :ref:`oom_customize_overrides` section on how to update overrides.yaml and values.yaml

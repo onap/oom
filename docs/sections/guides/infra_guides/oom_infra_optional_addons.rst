@@ -12,6 +12,7 @@
 .. _K8ssandra setup guide: https://docs.k8ssandra.io/install/
 .. _Mariadb-Operator setup guide: https://github.com/mariadb-operator/mariadb-operator
 .. _Postgres-Operator setup guide: https://github.com/CrunchyData/postgres-operator
+.. _MongoDB-Operator setup guide: https://docs.percona.com/percona-operator-for-mongodb/helm.html
 
 .. _oom_base_optional_addons:
 
@@ -44,7 +45,9 @@ To install the prometheus stack, execute the following:
 
     > helm repo update
 
-- To install prometheus, execute the following, replacing the <recommended-pm-version> with the version defined in the :ref:`versions_table` table::
+- To install prometheus, execute the following, replacing the 
+  <recommended-pm-version> with the version defined in the
+  :ref:`versions_table` table::
 
     > helm install prometheus prometheus-community/kube-prometheus-stack --namespace=prometheus --create-namespace --version=<recommended-pm-version>
 
@@ -93,7 +96,6 @@ For setup the kiali operator is used, see `Kiali setup guide`_
 
     > kubectl -n istio-system apply -f kiali-ingress.yaml
 
-
 Jaeger Installation
 -------------------
 
@@ -113,7 +115,8 @@ For setup the K8ssandra operator is used, see `K8ssandra setup guide`_
 
     > kubectl label namespace k8ssandra-operator istio-injection=enabled
 
-- Install the k8ssandra-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::
+- Install the k8ssandra-operator replacing the <recommended-version> with the
+  version defined in the :ref:`versions_table` table::
 
     > helm repo add k8ssandra https://helm.k8ssandra.io/stable
 
@@ -137,11 +140,14 @@ For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
 
     > kubectl label namespace mariadb-operator istio-injection=enabled
 
-- Install the mariadb-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::::
+- Install the mariadb-operator replacing the <recommended-version> with the
+  version defined in the :ref:`versions_table` table::::
 
-    > helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator
+    > helm repo add mariadb-operator https://helm.mariadb.com/mariadb-operator
 
     > helm repo update mariadb-operator
+
+    > helm install mariadb-operator-crds --namespace mariadb-operator --version=<recommended-version>
 
     > helm install mariadb-operator --namespace mariadb-operator
       mariadb-operator/mariadb-operator --set ha.enabled=true
@@ -156,6 +162,30 @@ Postgres DB clusters, including monitoring and backup
 
 For setup the Postgres-Operator is used, see `Postgres-Operator setup guide`_
 
+MongoDB-Operator Installation
+------------------------------
+
+MongoDB-Operator is used to ease the installation and lifecycle management of
+MongoDB DB instances, including monitoring and backup
+
+For setup the MongoDB-Operator is used, see `MongoDB-Operator setup guide`_
+
+- Install mongodb-operator namespace::
+
+    > kubectl create namespace mongodb-operator
+
+    > kubectl label namespace mongodb-operator istio-injection=enabled
+
+- Install the mongodb-operator replacing the <recommended-version> with the
+  version defined in the :ref:`versions_table` table::
+
+    > helm repo add percona https://percona.github.io/percona-helm-charts
+
+    > helm repo update percona
+
+    > helm install mongodb-operator --namespace mongodb-operator
+      percona/psmdb-operator --version=<recommended-version>
+
 Kserve Installation
 -------------------
 
@@ -169,16 +199,19 @@ This installation is necessary for the ML models to be deployed as inference
 service. Once deployed, the inference services can be queried for the
 prediction.
 
-**Kserve participant component in Policy ACM requires this installation. Kserve participant deploy/undeploy inference services in Kserve.**
+**Kserve participant component in Policy ACM requires this installation.**
+**Kserve participant deploy/undeploy inference services in Kserve.**
 
 Dependent component version compatibility details and installation instructions
 can be found at `Kserve setup guide`_
 
 Kserve installation requires the following components:
 
--  Istio. Its installation instructions can be found at :ref:`oom_base_optional_addons_istio_installation`
+-  Istio. Its installation instructions can be found at
+   :ref:`oom_base_optional_addons_istio_installation`
 
--  Cert-Manager. Its installation instructions can be found at :ref:`oom_base_setup_cert_manager`
+-  Cert-Manager. Its installation instructions can be found at
+   :ref:`oom_base_setup_cert_manager`
 
 Installation instructions as follows,
 
