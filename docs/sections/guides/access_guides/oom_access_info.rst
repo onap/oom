@@ -30,14 +30,15 @@ In the ServiceMesh deployment the Istio IngressGateway is the only access point
 for ONAP component interfaces.
 Usually the Ingress is accessed via a LoadBalancer IP (<ingress-IP>),
 which is used as central address.
-All APIs/UIs are provided via separate URLs which are routed to the component service.
+All APIs/UIs are provided via separate URLs which are routed to the component
+service.
 To use these URLs they need to be resolvable via DNS or via /etc/hosts.
 
-The domain name is usually defined in the `global` section of the ONAP helm-charts,
-`virtualhost.baseurl` (here "simpledemo.onap.org") whereas the hostname of
-the service (e.g. "sdc-fe-ui") is defined in the component's chart.
+The domain name is usually defined in the `global` section of the ONAP
+helm-charts, `virtualhost.baseurl` (here "simpledemo.onap.org") whereas the
+hostname of the service (e.g. "sdc-fe-ui") is defined in the component's chart.
 
-.. code-block:: none
+.. code-block:: plaintext
 
   <ingress-IP> kiali.simpledemo.onap.org
   <ingress-IP> cds-ui.simpledemo.onap.org
@@ -54,9 +55,9 @@ Access via NodePort/Loadbalancer (development)
 In the development setop OOM operates in a private IP network that isn't
 publicly accessible (i.e. OpenStack VMs with private internal network) which
 blocks access to the ONAP User Interfaces.
-To enable direct access to a service from a user's own environment (a laptop etc.)
-the application's internal port is exposed through a `Kubernetes NodePort`_ or
-`Kubernetes LoadBalancer`_ object.
+To enable direct access to a service from a user's own environment (a laptop
+etc.) the application's internal port is exposed through a
+`Kubernetes NodePort`_ or `Kubernetes LoadBalancer`_ object.
 
 Typically, to be able to access the Kubernetes nodes publicly a public address
 is assigned. In OpenStack this is a floating IP address.
@@ -64,15 +65,16 @@ is assigned. In OpenStack this is a floating IP address.
 Most ONAP applications use the `NodePort` as predefined `service:type`,
 which opens allows access to the service through the the IP address of each
 Kubernetes node.
-When using  the `Loadbalancer` as `service:type` `Kubernetes LoadBalancer`_ object
-which gets a separate IP address.
+When using  the `Loadbalancer` as `service:type` `Kubernetes LoadBalancer`_
+object which gets a separate IP address.
 
 When e.g. the `sdc-fe` chart is deployed a Kubernetes service is created that
 instantiates a load balancer.  The LB chooses the private interface of one of
-the nodes as in the example below (10.0.0.4 is private to the K8s cluster only).
+the nodes as in the example below (10.0.0.4 is private to the K8s cluster 
+only).
 Then to be able to access the portal on port 8989 from outside the K8s &
-OpenStack environment, the user needs to assign/get the floating IP address that
-corresponds to the private IP as follows::
+OpenStack environment, the user needs to assign/get the floating IP address
+that corresponds to the private IP as follows::
 
   > kubectl -n onap get services|grep "sdc-fe"
   sdc-fe  LoadBalancer   10.43.142.201   10.0.0.4   8181:30207/TCP
@@ -100,8 +102,8 @@ the portal and then simply access now the new ssl-encrypted URL:
    | Alternatives Considered:
 
    -  Kubernetes port forwarding was considered but discarded as it would
-      require the end user to run a script that opens up port forwarding tunnels
-      to each of the pods that provides a portal application widget.
+      require the end user to run a script that opens up port forwarding
+      tunnels to each of the pods that provides a portal application widget.
 
    -  Reverting to a VNC server similar to what was deployed in the Amsterdam
       release was also considered but there were many issues with resolution,
@@ -111,9 +113,9 @@ the portal and then simply access now the new ssl-encrypted URL:
    Observations:
 
    -  If you are not using floating IPs in your Kubernetes deployment and
-      directly attaching a public IP address (i.e. by using your public provider
-      network) to your K8S Node VMs' network interface, then the output of
-      'kubectl -n onap get services | grep "portal-app"'
+      directly attaching a public IP address (i.e. by using your public
+      provider network) to your K8S Node VMs' network interface, then the
+      output of 'kubectl -n onap get services | grep "portal-app"'
       will show your public IP instead of the private network's IP. Therefore,
       you can grab this public IP directly (as compared to trying to find the
       floating IP first) and map this IP in /etc/hosts.
