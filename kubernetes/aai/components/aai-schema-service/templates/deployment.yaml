@@ -34,7 +34,11 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+  {{- if .Values.debug.enabled }}
+  replicas: 1
+  {{- else }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   strategy:
     type: {{ .Values.updateStrategy.type }}
@@ -66,10 +70,6 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.securityContext.user_id | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.securityContext.group_id | quote }}
         {{- if .Values.profiling.enabled }}
         - name: PRE_JVM_ARGS
           value: '{{ join " " .Values.profiling.args }}'

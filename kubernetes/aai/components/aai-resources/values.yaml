@@ -134,11 +134,10 @@ aai_enpoints:
     url: external-system
 
 # application image
-image: onap/aai-resources:1.14.7
+image: onap/aai-resources:1.15.1
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
-flavorOverride: small
 # default number of instances
 replicaCount: 1
 
@@ -178,7 +177,7 @@ config:
       enabled: true
       # Documentation: https://docs.janusgraph.org/operations/cache/#database-level-caching
       dbCacheTime: 180000 # in milliseconds
-      dbCacheSize: 0.1 # percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running
+      dbCacheSize: 0.5 # percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running
       dbCacheCleanWait: 20 # in milliseconds
     # temporarily enable this to update the graph storage version
     # see: https://docs.janusgraph.org/changelog/#upgrade-instructions_9
@@ -209,7 +208,6 @@ config:
   # environment variables added to the launch of the image in deployment
   env:
     MIN_HEAP_SIZE: "512m"
-    MAX_HEAP_SIZE: "2g"
     MAX_METASPACE_SIZE: "512m"
 
   # adds jvm args for remote debugging the application
@@ -239,13 +237,22 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 60
-  periodSeconds: 60
   enabled: true
+  path: /actuator/health/liveness
+  periodSeconds: 10
 
 readiness:
-  initialDelaySeconds: 60
+  path: /actuator/health/readiness
   periodSeconds: 10
+
+startup:
+  path: /actuator/health/liveness
+  failureThreshold: 60
+  periodSeconds: 5
+
+actuator:
+  echo:
+    enabled: true
 
 service:
   type: ClusterIP
@@ -290,7 +297,7 @@ resources:
   large:
     limits:
       cpu: "8"
-      memory: "12Gi"
+      memory: "8Gi"
     requests:
       cpu: "4"
       memory: "6Gi"
@@ -311,9 +318,15 @@ endpoints:
   info:
     enabled: true
 
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
 metrics:
   serviceMonitor:
-    enabled: false
+    enabled: true
     targetPort: 8448
     path: /actuator/prometheus
     basicAuth:
@@ -373,8 +386,10 @@ serviceAccount:
 log:
   path: /var/log/onap
   level:
-    root: DEBUG
-    base: DEBUG # base package (org.onap.aai)
+    root: INFO
+    base: INFO # base package (org.onap.aai)
+    audit: WARN
+    dbMetric: WARN
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
 # To make logback capping values configurable
