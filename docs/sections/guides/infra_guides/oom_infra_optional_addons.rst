@@ -12,6 +12,7 @@
 .. _K8ssandra setup guide: https://docs.k8ssandra.io/install/
 .. _Mariadb-Operator setup guide: https://github.com/mariadb-operator/mariadb-operator
 .. _Postgres-Operator setup guide: https://github.com/CrunchyData/postgres-operator
+.. _MongoDB-Operator setup guide: https://docs.percona.com/percona-operator-for-mongodb/helm.html
 
 .. _oom_base_optional_addons:
 
@@ -93,7 +94,6 @@ For setup the kiali operator is used, see `Kiali setup guide`_
 
     > kubectl -n istio-system apply -f kiali-ingress.yaml
 
-
 Jaeger Installation
 -------------------
 
@@ -139,9 +139,11 @@ For setup the Mariadb-Operator is used, see `Mariadb-Operator setup guide`_
 
 - Install the mariadb-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::::
 
-    > helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator
+    > helm repo add mariadb-operator https://helm.mariadb.com/mariadb-operator
 
     > helm repo update mariadb-operator
+
+    > helm install mariadb-operator-crds --namespace mariadb-operator --version=<recommended-version>
 
     > helm install mariadb-operator --namespace mariadb-operator
       mariadb-operator/mariadb-operator --set ha.enabled=true
@@ -155,6 +157,29 @@ Postgres-Operator is used to ease the installation and lifecycle management of
 Postgres DB clusters, including monitoring and backup
 
 For setup the Postgres-Operator is used, see `Postgres-Operator setup guide`_
+
+MongoDB-Operator Installation
+------------------------------
+
+MongoDB-Operator is used to ease the installation and lifecycle management of
+MongoDB DB instances, including monitoring and backup
+
+For setup the MongoDB-Operator is used, see `MongoDB-Operator setup guide`_
+
+- Install mongodb-operator namespace::
+
+    > kubectl create namespace mongodb-operator
+
+    > kubectl label namespace mongodb-operator istio-injection=enabled
+
+- Install the mongodb-operator replacing the <recommended-version> with the version defined in the :ref:`versions_table` table::
+
+    > helm repo add percona https://percona.github.io/percona-helm-charts
+
+    > helm repo update percona
+
+    > helm install mongodb-operator --namespace mongodb-operator
+      percona/psmdb-operator --version=<recommended-version>
 
 Kserve Installation
 -------------------
