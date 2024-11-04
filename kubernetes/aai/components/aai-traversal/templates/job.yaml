@@ -72,6 +72,8 @@ spec:
         - sh
         - "-c"
         - |
+           set -x;
+
            until nc -w10 -z -v aai.{{.Release.Namespace}} 80; do
             echo "Retrying to reach aai on port 80";
             sleep 1;
@@ -99,20 +101,11 @@ spec:
            sh -x /opt/app/aai-traversal/bin/install/updateQueryData.sh ;
 
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
-
-        env:
-        - name: LOCAL_USER_ID
-          value: {{ .Values.global.config.userId | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.global.config.groupId | quote }}
         resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
           name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
           name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties

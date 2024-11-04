@@ -35,7 +35,13 @@ metadata:
     release: {{ include "common.release" . }}
     heritage: {{ .Release.Service }}
 spec:
+  {{- if or .Values.config.debug.enabled .Values.config.profiling.enabled }}
+  replicas: 1
+  {{- else }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   strategy:
@@ -157,6 +163,13 @@ spec:
           value: {{ $value | quote}}
         {{- end }}
         {{- end }}
+        {{- if eq .Values.flavor "small" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.small.maxHeapSize | quote }}
+        {{- else if eq .Values.flavor "large" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.large.maxHeapSize | quote }}
+        {{- end }}
         {{- if .Values.config.profiling.enabled }}
         - name: PRE_JVM_ARGS
           value: '{{ join " " .Values.config.profiling.args }}'
@@ -167,10 +180,6 @@ spec:
         {{- end }}
         - name: DISABLE_UPDATE_QUERY
           value: {{ .Values.config.disableUpdateQuery | quote }}
-        - name: LOCAL_USER_ID
-          value: {{ .Values.global.config.userId | quote }}
-        - name: LOCAL_GROUP_ID
-          value: {{ .Values.global.config.groupId | quote }}
         - name: INTERNAL_PORT_1
           value: {{ .Values.service.traversalPort | quote }}
         - name: INTERNAL_PORT_2
@@ -188,9 +197,6 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
           name: {{ include "common.fullname" . }}-config
           subPath: janusgraph-realtime.properties
-        - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-cached.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: janusgraph-cached.properties
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/aaiconfig.properties
           name: {{ include "common.fullname" . }}-config
           subPath: aaiconfig.properties
@@ -243,41 +249,27 @@ spec:
         {{- if and .Values.liveness.enabled (not (or .Values.config.debug.enabled .Values.config.profiling.enabled)) }}
         livenessProbe:
           httpGet:
-            path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.traversalPort }}
-            scheme: HTTP
-            httpHeaders:
-            - name: X-FromAppId
-              value: LivenessCheck
-            - name: X-TransactionId
-              value: LiveCheck_TID
-            - name: Accept
-              value: application/json
+            port: {{ .Values.service.metricsPort }}
+            path: {{ .Values.liveness.path }}
+          {{- if .Values.liveness.initialDelaySeconds }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          {{- end }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-        {{ end }}
+        {{- end }}
         readinessProbe:
           httpGet:
-            path: /aai/util/echo?action=checkDB
-            port: {{ .Values.service.traversalPort }}
-            scheme: HTTP
-            httpHeaders:
-            - name: X-FromAppId
-              value: ReadinessCheck
-            - name: X-TransactionId
-              value: ReadinessCheck_TID
-            - name: Accept
-              value: application/json
+            port: {{ .Values.service.metricsPort }}
+            path: {{ .Values.readiness.path }}
+          {{- if .Values.readiness.initialDelaySeconds }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          {{- end }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | indent 8 }}
       {{- end }}
       {{- if .Values.affinity }}
-      affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      affinity: {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
 
       # side car containers
