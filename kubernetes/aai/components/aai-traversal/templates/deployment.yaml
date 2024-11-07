@@ -20,20 +20,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    app.kubernetes.io/name: {{ include "common.name" . }}
-    {{- if .Chart.AppVersion }}
-    version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-    {{- else }}
-    version: "{{ .Chart.Version | replace "+" "_" }}"
-    {{- end }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   {{- if or .Values.config.debug.enabled .Values.config.profiling.enabled }}
   replicas: 1
@@ -53,19 +40,7 @@ spec:
     matchLabels:
       app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-        app.kubernetes.io/name: {{ include "common.name" . }}
-        {{- if .Chart.AppVersion }}
-        version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-        {{- else }}
-        version: "{{ .Chart.Version | replace "+" "_" }}"
-        {{- end }}
-      name: {{ include "common.name" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
       {{- if .Values.global.msbEnabled }}
         {{ $values := .Values }}
         msb.onap.org/service-info: '[
@@ -119,43 +94,19 @@ spec:
       hostname: aai-traversal
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
       {{- if .Values.global.jobs.migration.enabled }}
-        - --job-name
-        - {{ include "common.release" . }}-aai-graphadmin-migration
-      {{- else  }}
-        {{- if .Values.global.jobs.createSchema.enabled  }}
-        - --job-name
-        - {{ include "common.release" . }}-aai-graphadmin-create-db-schema
-        {{- else }}
-        - --service-name
-        - {{ .Values.global.cassandra.serviceName }}
-        - --service-name
-        - aai-schema-service
-        {{- end }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_migration) | nindent 8 }}
+      {{- else if .Values.global.jobs.createSchema.enabled  }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_createSchema) | nindent 8 }}
+      {{- else }}
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_cassandra) | nindent 8 }}
       {{- end }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         env:
         {{- if .Values.config.env }}
         {{- range $key,$value := .Values.config.env }}
@@ -219,6 +170,8 @@ spec:
         - mountPath: /opt/app/aai-traversal/resources/application-keycloak.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application-keycloak.properties
+        - mountPath: /tmp
+          name: tmp
         ports:
         - containerPort: {{ .Values.service.traversalPort }}
           name: {{ .Values.service.traversalPortName }}
@@ -277,9 +230,14 @@ spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
+      - name: tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
       - name: {{ include "common.fullname" . }}-logs-misc
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logmiscSizeLimit }}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: {{ include "common.fullname" . }}-config
         configMap:

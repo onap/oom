@@ -38,10 +38,12 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           ports:
             {{- if .Values.debug.enabled }}
             - containerPort: {{ .Values.debug.port }}
@@ -99,6 +101,10 @@ spec:
           - mountPath: /opt/app/babel/config/logback.xml
             name: config
             subPath: logback.xml
+          - mountPath: /opt/app/babel/logs
+            name: babel-logs
+          - mountPath: /tmp
+            name: tmp
           resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -120,7 +126,14 @@ spec:
           secret:
             secretName: {{ include "common.fullname" . }}-babel-secrets
         - name: logs
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.artifactDataSizeLimit }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+        - name: babel-logs
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.babelLogsSizeLimit }}
         {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 8 }}
 
       {{- include "common.imagePullSecrets" . | nindent 6 }}

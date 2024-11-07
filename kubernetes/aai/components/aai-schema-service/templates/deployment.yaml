@@ -19,20 +19,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    app.kubernetes.io/name: {{ include "common.name" . }}
-    {{- if .Chart.AppVersion }}
-    version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-    {{- else }}
-    version: "{{ .Chart.Version | replace "+" "_" }}"
-    {{- end }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" (dict "dot" . "suffix" "" "labels" .Values.labels "annotations" .Values.annotations ) | nindent 2 }}
 spec:
   {{- if .Values.debug.enabled }}
   replicas: 1
@@ -51,24 +38,30 @@ spec:
     matchLabels:
       app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-        app.kubernetes.io/name: {{ include "common.name" . }}
-        {{- if .Chart.AppVersion }}
-        version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-        {{- else }}
-        version: "{{ .Chart.Version | replace "+" "_" }}"
-        {{- end }}
-      name: {{ include "common.name" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      initContainers:
+      - command: ["cp", "-R", "/opt/app/aai-schema-service/.", "/opt/app/aai-schema-service_rw/"]
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        name: copy-base-folder
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 3m
+            memory: 20Mi
+        volumeMounts:
+        - mountPath: /opt/app/aai-schema-service_rw
+          name: aai-schema-service
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         env:
         {{- if .Values.profiling.enabled }}
         - name: PRE_JVM_ARGS
@@ -79,6 +72,8 @@ spec:
           value: {{ .Values.debug.args | quote }}
         {{- end }}
         volumeMounts:
+        - mountPath: /opt/app/aai-schema-service
+          name: aai-schema-service
         - mountPath: /opt/app/aai-schema-service/resources/etc/appprops/aaiconfig.properties
           name: aaiconfig-conf
           subPath: aaiconfig.properties
@@ -138,8 +133,12 @@ spec:
       - name: aai-common-aai-auth-mount
         secret:
           secretName: aai-common-aai-auth
+      - name: aai-schema-service
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.aaiSizeLimit }}
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: log-conf
         configMap:

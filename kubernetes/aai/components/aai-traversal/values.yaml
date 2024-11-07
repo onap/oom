@@ -111,7 +111,7 @@ global: # global defaults
     someConfig: random
 
 # application image
-image: onap/aai-traversal:1.15.1
+image: onap/aai-traversal:1.15.2
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -353,6 +353,9 @@ endpoints:
   info:
     enabled: true
 
+podAnnotations:
+  checksum/config: '{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}'
+
 metrics:
   serviceMonitor:
     enabled: true
@@ -383,9 +386,9 @@ metrics:
     ##
     selector:
       app: '{{ include "common.name" . }}'
-      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-      release: '{{ include "common.release" . }}'
-      heritage: '{{ .Release.Service }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
 
     ## RelabelConfigs to apply to samples before scraping
     ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
@@ -418,6 +421,30 @@ log:
     root: INFO
     base: INFO # base package (org.onap.aai)
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+
+volumes:
+  logSizeLimit: 50Mi
+  logmiscSizeLimit: 50Mi
+  tmpSizeLimit: 100Mi
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+readinessCheck:
+  wait_for_migration:
+    jobs:
+      - '{{ include "common.release" . }}-aai-graphadmin-migration'
+  wait_for_createSchema:
+    jobs:
+      - '{{ include "common.release" . }}-aai-graphadmin-create-db-schema'
+  wait_for_cassandra:
+    services:
+      - '{{ .Values.global.cassandra.serviceName }}'
+      - aai-schema-service
+  wait_for_service:
+    services:
+      - aai
 #################################################################
 # Secrets metaconfig
 #################################################################

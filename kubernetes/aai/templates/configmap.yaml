@@ -22,12 +22,9 @@ kind: ConfigMap
 metadata:
   name: aai-deployment-configmap
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 data:
+{{ tpl (.Files.Glob "resources/config/haproxy/resolvers.conf").AsConfig . | indent 2 }}
 {{ if .Values.global.installSidecarSecurity }}
 {{ tpl (.Files.Glob "resources/config/haproxy/haproxy-pluggable-security.cfg").AsConfig . | indent 2 }}
 {{ else }}
@@ -40,6 +37,7 @@ kind: Secret
 metadata:
   name: aai-fproxy-auth-certs
   namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
 {{ tpl (.Files.Glob "resources/config/fproxy/auth/*").AsSecrets . | indent 2 }}
@@ -49,6 +47,7 @@ kind: Secret
 metadata:
   name: aai-rproxy-auth-certs
   namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
 {{ tpl (.Files.Glob "resources/config/rproxy/auth/*").AsSecrets . | indent 2 }}
@@ -58,6 +57,7 @@ kind: Secret
 metadata:
   name: aai-rproxy-security-config
   namespace: {{ include "common.namespace" . }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 type: Opaque
 data:
 {{ tpl (.Files.Glob "resources/config/rproxy/security/*").AsSecrets . | indent 2 }}

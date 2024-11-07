@@ -19,20 +19,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    app.kubernetes.io/name: {{ include "common.name" . }}
-    {{- if .Chart.AppVersion }}
-    version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-    {{- else }}
-    version: "{{ .Chart.Version | replace "+" "_" }}"
-    {{- end }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   {{- if .Values.debug.enabled }}
   replicas: 1
@@ -51,17 +38,7 @@ spec:
     matchLabels:
       app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-        app.kubernetes.io/name: {{ include "common.name" . }}
-        {{- if .Chart.AppVersion }}
-        version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-        {{- else }}
-        version: "{{ .Chart.Version | replace "+" "_" }}"
-        {{- end }}
-      name: {{ include "common.name" . }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
@@ -69,10 +46,12 @@ spec:
       {{- if .Values.affinity }}
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
       {{- end }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         env:
         - name: CONFIG_HOME
           value: /opt/app/model-loader/config/
@@ -90,8 +69,8 @@ spec:
           value: {{ .Values.debug.args | quote }}
         {{- end }}
         ports:
-        - containerPort: 9500
-          name: http
+        - containerPort: {{ .Values.service.appPort }}
+          name: {{ .Values.service.appPortName }}
         {{- if .Values.debug.enabled }}
         - containerPort: {{ .Values.debug.port }}
           name: {{ .Values.debug.portName }}
@@ -109,6 +88,8 @@ spec:
           name: prop-config
         - mountPath: {{ .Values.log.path }}
           name: logs
+        - mountPath: /tmp
+          name: tmp
         - mountPath: /opt/app/model-loader/logback.xml
           name: log-config
           subPath: logback.xml
@@ -121,7 +102,11 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-prop
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
+      - name: tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: log-config
         configMap:

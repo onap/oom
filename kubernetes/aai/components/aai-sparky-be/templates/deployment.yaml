@@ -38,32 +38,14 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - aai
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" . | nindent 8 }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         command:
         - sh
         args:
@@ -158,9 +140,11 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
         {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: modeldir
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.modeldirSizeLimit }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
