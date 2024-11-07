@@ -41,11 +41,7 @@ kind: Job
 metadata:
   name: {{ include "common.fullname" . }}-migration
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}-job
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "job") | nindent 4 }}
   annotations:
     "helm.sh/hook": post-upgrade,post-rollback,post-install
     "helm.sh/hook-weight": "1"
@@ -54,35 +50,12 @@ spec:
   backoffLimit: 20
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}-job
-        release: {{ include "common.release" . }}
+      labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "job") | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - {{ .Values.global.cassandra.serviceName }}
-        - --service-name
-        - aai-schema-service
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithSchemaService) | indent 6 | trim }}
       - command:
         - sh
         args:
@@ -125,6 +98,7 @@ spec:
            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
            sh docker-entrypoint.sh run_Migrations.sh -e UpdateAaiUriIndexMigration --commit --skipPreMigrationSnapShot --runDisabled RebuildAllEdges ;
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         volumeMounts:
         - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
           name: config
@@ -172,11 +146,7 @@ kind: Job
 metadata:
   name: {{ include "common.fullname" . }}-db-backup-job
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}-db-backup-job
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+  labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "db-backup-job") | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-upgrade,pre-install
     "helm.sh/hook-weight": "2"
@@ -185,9 +155,7 @@ spec:
   backoffLimit: 20
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}-db-backup-job
-        release: {{ include "common.release" . }}
+      labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "db-backup-job") | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
       initContainers:
