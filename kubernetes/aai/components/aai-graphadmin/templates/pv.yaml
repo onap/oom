@@ -16,16 +16,13 @@
 
 {{- if .Values.global.jobs.migration.enabled -}}
 {{- if eq "True" (include "common.needPV" .) -}}
+{{- if not .Values.persistence.storageClass -}}
 kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: {{ include "common.fullname" . }}
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: "{{ include "common.release" . }}"
-    heritage: "{{ .Release.Service }}"
+  labels: {{- include "common.labels" . | nindent 4 }}
     name: {{ include "common.fullname" . }}
   annotations:
     "helm.sh/hook": pre-upgrade,pre-install
@@ -40,5 +37,6 @@ spec:
   storageClassName: "{{ include "common.fullname" . }}-data"
   hostPath:
     path: {{ .Values.global.persistence.mountPath | default .Values.persistence.mountPath }}/{{ include "common.release" . }}/{{ .Values.persistence.mountSubPath1 }}
+{{- end -}}
 {{- end -}}
 {{- end -}}

@@ -354,9 +354,9 @@ metrics:
     ##
     selector:
       app: '{{ include "common.name" . }}'
-      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-      release: '{{ include "common.release" . }}'
-      heritage: '{{ .Release.Service }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
 
     ## RelabelConfigs to apply to samples before scraping
     ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
@@ -421,3 +421,26 @@ kafkaUser:
     - name: AAI-EVENT
       type: topic
       operations: [Read, Write]
+
+volumes:
+  logSizeLimit: 50Mi
+  tmpSizeLimit: 100Mi
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+readinessCheck:
+  wait_for_migration:
+    jobs:
+      - '{{ include "common.release" . }}-aai-graphadmin-migration'
+  wait_for_createSchema:
+    jobs:
+      - '{{ include "common.release" . }}-aai-graphadmin-create-db-schema'
+  wait_for_cassandra:
+    services:
+      - '{{ .Values.global.cassandra.serviceName }}'
+      - aai-schema-service
+
+podAnnotations:
+  checksum/config: '{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}'

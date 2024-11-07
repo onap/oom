@@ -229,6 +229,23 @@ readinessCheck:
     services:
       - '{{ .Values.global.cassandra.serviceName }}'
       - aai-schema-service
+  waitForCassandra:
+    containers:
+      - aai-schema-service
+    apps:
+      - cassandra
+  waitForLocalCassandra:
+    containers:
+      - aai-schema-service
+    apps:
+      - aai-cassandra
+  waitForCassandraService:
+    services:
+      - '{{ .Values.global.cassandra.serviceName }}'
+  waitForWithSchemaService:
+    services:
+      - '{{ .Values.global.cassandra.serviceName }}'
+      - aai-schema-service
 
 service:
   type: ClusterIP
@@ -291,8 +308,8 @@ resources:
       cpu: "1"
       memory: "4Gi"
     requests:
-      cpu: "0.5"
-      memory: "1.6Gi"
+      cpu: "500m"
+      memory: "1600Mi"
   large:
     limits:
       cpu: "2"
@@ -319,9 +336,9 @@ metrics:
 
     selector:
       app: '{{ include "common.name" . }}'
-      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-      release: '{{ include "common.release" . }}'
-      heritage: '{{ .Release.Service }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
 
     relabelings: []
 
@@ -369,3 +386,11 @@ kafkaUser:
     - name: AAI-EVENT
       type: topic
       operations: [Read, Write]
+
+volumes:
+  logSizeLimit: 64Mi
+  scriptlogSizeLimit: 300Mi
+  tmpSizeLimit: 500Mi
+
+podAnnotations:
+  checksum/config: '{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}'

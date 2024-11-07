@@ -74,17 +74,22 @@ nodeSelector: {}
 
 affinity: {}
 
+service:
+  # REST API port for the graphadmin microservice
+  appPortName: http
+  appPort: 9500
+
 # probe configuration parameters
 liveness:
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
   enabled: true
+  path: /healthz
+  periodSeconds: 10
+  initialDelaySeconds: 10
 
 readiness:
-  initialDelaySeconds: 10
+  path: /healthz
   periodSeconds: 10
+  initialDelaySeconds: 10
 
 resources:
   small:
@@ -92,7 +97,7 @@ resources:
       cpu: "1"
       memory: "4Gi"
     requests:
-      cpu: "0.5"
+      cpu: "500m"
       memory: "1Gi"
   large:
     limits:
@@ -135,3 +140,7 @@ log:
   level:
     root: INFO
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+
+volumes:
+  logSizeLimit: 64Mi
+  tmpSizeLimit: 100Mi

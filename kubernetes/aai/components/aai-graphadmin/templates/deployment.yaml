@@ -23,20 +23,7 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    app.kubernetes.io/name: {{ include "common.name" . }}
-    {{- if .Chart.AppVersion }}
-    version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-    {{- else }}
-    version: "{{ .Chart.Version | replace "+" "_" }}"
-    {{- end }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   {{- if .Values.config.debug.enabled }}
   replicas: 1
@@ -54,19 +41,7 @@ spec:
     matchLabels:
       app: {{ include "common.name" . }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-        app.kubernetes.io/name: {{ include "common.name" . }}
-        {{- if .Chart.AppVersion }}
-        version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-        {{- else }}
-        version: "{{ .Chart.Version | replace "+" "_" }}"
-        {{- end }}
-      name: {{ include "common.name" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       hostname: aai-graphadmin
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
@@ -207,11 +182,14 @@ spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: tmp-volume
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
       - name: logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
       - name: script-logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.scriptlogSizeLimit }}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: config
         configMap:

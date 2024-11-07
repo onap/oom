@@ -24,11 +24,7 @@ kind: Job
 metadata:
   name: {{ include "common.fullname" . }}-update-query-data
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 {{ if .Values.global.jobs.migration.enabled }}
   annotations:
     "helm.sh/hook": post-upgrade,post-rollback,post-install
@@ -38,33 +34,12 @@ metadata:
 spec:
   template:
     metadata:
-      labels:
-        app: {{ include "common.name" . }}-job
-        release: {{ include "common.release" . }}
+      labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "job") | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - name: {{ include "common.name" . }}-readiness
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - aai
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_service) | nindent 6 }}
       - name: {{ include "common.name" . }}-wait-for-aai-haproxy
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -85,6 +60,16 @@ spec:
           requests:
             cpu: "3m"
             memory: "20Mi"
+        securityContext:
+          runAsUser: 100
+          runAsGroup: 65533
+          readOnlyRootFilesystem: true
+          privileged: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+              - CAP_NET_RAW
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -101,6 +86,7 @@ spec:
            sh -x /opt/app/aai-traversal/bin/install/updateQueryData.sh ;
 
            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:
         - mountPath: /opt/app/aai-traversal/resources/etc/appprops/janusgraph-realtime.properties
@@ -127,9 +113,11 @@ spec:
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: {{ include "common.fullname" . }}-logs
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
       - name: {{ include "common.fullname" . }}-logs-misc
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logmiscSizeLimit }}
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: {{ include "common.fullname" . }}-config
         configMap:
