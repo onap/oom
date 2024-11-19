@@ -71,6 +71,9 @@ server:
     enabled: false
 
 runtime:
+  topics:
+    operationTopic: {{ .Values.global.kafkaTopics.acRuntimeOperationTopic.name }}
+    syncTopic: {{ .Values.global.kafkaTopics.acRuntimeSyncTopic.name }}
   participantParameters:
     heartBeatMs: 120000
     maxMessageAgeMs: 600000
@@ -83,7 +86,7 @@ runtime:
       -
         useHttps: false
         fetchTimeout: 15000
-        topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+        topic: {{ .Values.global.kafkaTopics.acRuntimeOperationTopic.name }}
         topicCommInfrastructure: kafka
         servers:
           - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
@@ -97,7 +100,19 @@ runtime:
       -
         useHttps: false
         fetchTimeout: 15000
-        topic: {{ .Values.global.kafkaTopics.acRuntimeTopic.name }}
+        topic: {{ .Values.global.kafkaTopics.acRuntimeOperationTopic.name }}
+        topicCommInfrastructure: kafka
+        servers:
+          - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
+        additionalProps:
+          client.id: {{ (first .Values.kafkaUser.acls).name }}-client-id
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+          sasl.jaas.config: ${SASL_JAAS_CONFIG}
+      -
+        useHttps: false
+        fetchTimeout: 15000
+        topic: {{ .Values.global.kafkaTopics.acRuntimeSyncTopic.name }}
         topicCommInfrastructure: kafka
         servers:
           - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
