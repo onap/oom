@@ -21,7 +21,7 @@
 global:
   mariadbGalera:
     # flag to enable the DB creation via mariadb-operator
-    useOperator: true
+    useOperator: false
     # if useOperator set to "true", set "enableServiceAccount to "false"
     # as the SA is created by the Operator
     enableServiceAccount: false
@@ -35,23 +35,25 @@ global:
     nameOverride: *mariadbService
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
-    useInPolicy: true
+    useInPolicy: false
   prometheusEnabled: false
   postgres:
-    localCluster: false
+    localCluster: true
     service:
       name: pgset
       name2: tcp-pgset-primary
       name3: tcp-pgset-replica
     container:
       name: postgres
-    useInPolicy: false
+    useInPolicy: true
   kafkaBootstrap: strimzi-kafka-bootstrap:9092
   policyKafkaUser: policy-kafka-user
   useStrimziKafka: true
   kafkaTopics:
-    acRuntimeTopic:
-      name: policy.clamp-runtime-acm
+    acRuntimeOperationTopic:
+      name: policy-acruntime-participant
+    acRuntimeSyncTopic:
+      name: acm-ppnt-sync
 #################################################################
 # Secrets metaconfig
 #################################################################
@@ -132,7 +134,7 @@ policy-apex-pdp:
   config:
     jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 policy-drools-pdp:
-  enabled: false
+  enabled: true
   db: *dbSecretsHook
   config:
     jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
@@ -168,7 +170,7 @@ policy-nexus:
 
 dbmigrator:
   # New released image will allow full SASL and Postgres (drools included). Tested with snapshot. Release to come later.
-  image: onap/policy-db-migrator:3.1.3
+  image: onap/policy-db-migrator:4.0.1
   # These schemas will be required with the new version of db-migrator
   # schemas: "policyadmin clampacm pooling operationshistory"
   schemas: "policyadmin"
