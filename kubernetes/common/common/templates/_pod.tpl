@@ -98,12 +98,12 @@ securityContext:
   privileged: {{ hasKey .Values.containerSecurityContext "privileged" | ternary .Values.containerSecurityContext.privileged false }}
   allowPrivilegeEscalation: {{ hasKey .Values.containerSecurityContext "allowPrivilegeEscalation" | ternary .Values.containerSecurityContext.allowPrivilegeEscalation false }}
   runAsNonRoot: {{ hasKey .Values.containerSecurityContext "runAsNonRoot" | ternary .Values.containerSecurityContext.runAsNonRoot true }}
-{{-   if .Values.containerSecurityContext.runAsUser }}
+{{-   if hasKey .Values.containerSecurityContext "runAsUser" }}
   runAsUser: {{ .Values.containerSecurityContext.runAsUser }}
 {{-   end }}
-{{-   if .Values.containerSecurityContext.runAsGroup }}
+{{-   if hasKey .Values.containerSecurityContext "runAsGroup" }}
   runAsGroup: {{ .Values.containerSecurityContext.runAsGroup }}
-{{    end }}
+{{-    end }}
 {{- end }}
   capabilities:
     drop:

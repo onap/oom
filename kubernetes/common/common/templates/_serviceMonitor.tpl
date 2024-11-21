@@ -52,11 +52,7 @@
       ## ServiceMonitor selector labels
       ## ref: https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#prometheus-configuration
       ##
-      selector:
-        app: '{{ include "common.name" . }}'
-        chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-        release: '{{ include "common.release" . }}'
-        heritage: '{{ .Release.Service }}'
+      selector: {{- include "common.matchLabels" . | nindent 4 }}
 
       ## RelabelConfigs to apply to samples before scraping
       ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig

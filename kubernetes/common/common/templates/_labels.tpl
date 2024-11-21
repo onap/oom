@@ -22,11 +22,13 @@ Common labels
 The function takes several arguments (inside a dictionary):
      - .dot : environment (.)
      - .labels : labels to add (dict)
+     - .suffix : name suffix
 */}}
 {{- define "common.labels" -}}
 {{- $dot := default . .dot -}}
-app.kubernetes.io/name: {{ include "common.name" $dot }}
-app: {{ include "common.name" $dot }}
+{{- $suffix := .suffix -}}
+app.kubernetes.io/name: {{ include "common.name" (dict "dot" $dot "suffix" $suffix) }}
+app: {{ include "common.name" (dict "dot" $dot "suffix" $suffix) }}
 {{- if $dot.Chart.AppVersion }}
 version: "{{ $dot.Chart.AppVersion | replace "+" "_" }}"
 {{- else }}
