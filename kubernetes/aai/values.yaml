@@ -72,7 +72,6 @@ global: # global defaults
     # See storage.cql.partitioner-name in https://docs.janusgraph.org/v0.6/configs/configuration-reference/#storagecql
     partitionerName: org.apache.cassandra.dht.Murmur3Partitioner
 
-
   aai:
     serviceName: aai
   babel:
@@ -314,7 +313,6 @@ image: onap/aai-haproxy:1.11.0
 pullPolicy: Always
 
 flavor: small
-flavorOverride: small
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -327,9 +325,12 @@ config:
 # default number of instances
 replicaCount: 1
 
+# number of ReplicaSets that should be retained for the Deployment
+revisionHistoryLimit: 2
+
 updateStrategy:
   type: RollingUpdate
-  maxUnavailable: 0
+  maxUnavailable: 33%
   maxSurge: 1
 
 nodeSelector: {}
@@ -346,8 +347,11 @@ haproxy:
     enabled: false
     customConfigs: []
   replicas:
-    aaiResources: 1
-    aaiTraversal: 1
+    aaiResources: 3
+    aaiTraversal: 3
+  # stickiness based on path.
+  # For multiple replicas, requests will not be distributed evenly
+  stickOnPath: true
 
 # probe configuration parameters
 liveness:
@@ -396,7 +400,7 @@ metricsService:
 
 metrics:
   serviceMonitor:
-    enabled: false
+    enabled: true
     targetPort: 8448
     path: /metrics
     basicAuth:
