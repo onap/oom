@@ -46,9 +46,11 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
-          - mountPath: /opt/multicloud/k8splugin/k8sconfig.json
-            name: {{ include "common.name" .}}
-            subPath: k8sconfig.json
+        - mountPath: /tmp
+          name: tmp-dir-k8s
+        - mountPath: /opt/multicloud/k8splugin/k8sconfig.json
+          name: {{ include "common.name" .}}
+          subPath: k8sconfig.json
         resources: {{ include "common.resources" . | nindent 10 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -81,6 +83,8 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp-dir-broker
         - mountPath: "{{ .Values.log.path }}"
           name: framework-log
         - mountPath: /opt/app/distribution/etc/mounted/config.json
@@ -96,6 +100,12 @@ spec:
               key: sasl.jaas.config
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+      - name: tmp-dir-k8s
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpK8SSizeLimit }}
+      - name: tmp-dir-broker
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpBrokerSizeLimit }}
       - name: framework-log
         emptyDir:
           sizeLimit: {{ .Values.volumes.logSizeLimit }}
