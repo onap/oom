@@ -19,7 +19,7 @@
 
   Generates a secret header with given name and desired labels.
 
-  The template takes two arguments:
+  The template takes three arguments:
     - .global: environment (.)
     - .name: name of the secret
     - .annotations: annotations which should be used
@@ -29,17 +29,14 @@
 */}}
 {{- define "common.secret._header" -}}
 {{- $global := .global }}
+
 {{- $name := .name }}
 apiVersion: v1
 kind: Secret
 metadata:
   name: {{ $name }}
   namespace: {{ include "common.namespace" $global }}
-  labels:
-    app: {{ include "common.name" $global }}
-    chart: {{ $global.Chart.Name }}-{{ $global.Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" $global }}
-    heritage: {{ $global.Release.Service }}
+  labels: {{- include "common.labels" $global | nindent 4 }}
 {{- if .annotations }}
   annotations: {{- include "common.tplValue" (dict "value" .annotations "context" $global) | nindent 4 }}
 {{- end }}

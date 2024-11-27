@@ -744,11 +744,7 @@ metadata:
   name: {{ include "common.fullname" $dot }}-ingress
   annotations:
     {{ include "ingress.config.annotations" $dot }}
-  labels:
-    app: {{ $dot.Chart.Name }}
-    chart: {{ $dot.Chart.Name }}-{{ $dot.Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" $dot }}
-    heritage: {{ $dot.Release.Service }}
+  labels: {{- include "common.labels" $dot | nindent 4 }}
 spec:
   rules:
   {{ include "ingress.config.port" $dot | trim }}

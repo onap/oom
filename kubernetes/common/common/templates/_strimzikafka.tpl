@@ -56,6 +56,7 @@ kind: KafkaUser
 metadata:
   name: {{ include "common.name" . }}-ku
   labels:
+    {{- include "common.labels" . | nindent 4 }}
     strimzi.io/cluster: {{ include "common.release" . }}-strimzi
 spec:
   authentication:
@@ -118,6 +119,7 @@ metadata:
   name: {{ ($topic.name) | lower }}-kt
   {{- end }}
   labels:
+    {{- include "common.labels" $ | nindent 4 }}
     strimzi.io/cluster: {{ include "common.release" $ }}-strimzi
 spec:
   {{- if (hasKey $topic "partitions") }}
