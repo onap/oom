@@ -27,20 +27,24 @@ This sections sets the realm general attributes shown in Keycloak
 realmSettings:
   - name: <Realm ID>                - unique ID for a realm (e.g. "ONAP")
     displayName: <Display Name>     - (optional) Keycloak Display Name (e.g. "ONAP Realm")
+    accessTokenLifespan:            - (optional) Access Tolek Lifespan (default: 1900)
+    registrationAllowed:            - (optional) Enable/disable the registration page (default: false)
+    resetPasswordAllowed:           - (optional) Show a link on login page for user to click when they have forgotten their credentials (default: true)
+    sslRequired:                    - (optional) Is HTTPS required? ('None'|'External'|'All requests' (default: "external")
     themes:                         - (optional) Keycloak Theme settings
       login: <login theme>          - (optional) Keycloak Theme for Login UI (e.g. "base")
       admin: <admin theme>          - (optional) Keycloak Theme for Admin UI (e.g. "base")
       account: <account theme>      - (optional) Keycloak Theme for Account UI (e.g. "base")
       email: <email theme>          - (optional) Keycloak Theme for Email UI (e.g. "base")
-    attributes:
-      frontendUrl: "<Keycloak URL>" - External Url for Keycloak access (e.g. "https://keycloak-$PARAM_BASE_URL/")
+    attributes:                     - (optional)
+      frontendUrl: "<Keycloak URL>" - (optional) External Url for Keycloak access (e.g. "https://keycloak-$PARAM_BASE_URL/")
 ```
 
 ### CLIENT definitions
 
 In this section each realm authentication client is defined e.g. portal-bff, oauth2-proxy, grafana
 
-possible "attribute" settings (maybe more):
+- possible "attributes" settings (maybe more):
   - id.token.as.detached.signature: "false"
   - exclude.session.state.from.auth.response: "false"
   - tls.client.certificate.bound.access.tokens: "false"
@@ -89,6 +93,7 @@ possible "attribute" settings (maybe more):
         serviceAccountsEnabled: "<false|true>"    - (optional) serviceAccountsEnabled (default: false)
         frontchannelLogout: "<false|true>"        - (optional) frontend channel logout (default: true)
         surrogateAuthRequired: "<false|true>"     - (optional) surrogate Auth Required (default: false)
+        authorizationServicesEnabled: "<false|true>" - (optional) enable Authorization Services (RBAC) (default: false)
         publicClient: "<false|true>"              - (optional) public Client (default: false)
         attributes:                               - (optional) attributes settings (see code)
           post.logout.redirect.uris: '<url>'      - example
@@ -117,32 +122,79 @@ possible "attribute" settings (maybe more):
           - "http://localhost/*"
         webOrigins:
           - "https://argocd-$PARAM_BASE_URL"
-        defaultClientScopes:
-          - "web-origins"
+        defaultClientScopes:                      - (optional) definition of default client scopes
+          - "web-origins"                         -            if used, has to contain the full scope list
           - "profile"
           - "acr"
           - "email"
           - "roles"
           - "groups"
+        optionalClientScopes:                      - (optional) definition of optional client scopes
+          - ...                                    -            if used, has to contain the full scope list
+```
+
+#### Authorization settings within Client section (optional)
+
+Information about the Keycloak Authorization Services can be found under: <https://www.keycloak.org/docs/latest/authorization_services/index.html>
+
+To enable Authorization the setting shown above needs to be:
+  - authorizationServicesEnabled: true
+
+```yaml
+        authorizationSettings:
+          allowRemoteResourceManagement: "<false|true>"           - (optional) managed remotely by the resource server? (default: true)
+          policyEnforcementMode: "<ENFORCING|PERMISSIVE|DISABLED>"- (optional) dictates how policies are enforced (default: ENFORCING)
+          decisionStrategy: "<UNANIMOUS|AFFIRMATIVE>"             - (optional) dictates how permissions are evaluated (default: UNANIMOUS)
+          resources:                                              - resources definitions
+            - name: "<resource name>"                             - unique name for this resource
+              displayName: "<display name>"                       - (optional) user-friendly name for the resource
+              type: "<type>"                                      - Type can be used to group different resource instances with the same type
+              ownerManagedAccess: <true|false>                    - (optional) access can be managed by the resource owner? (default: false)
+              attributes: {}                                      - (optional) The attributes associated wth the resource
+              uris:                                               - Set of URIs which are protected by resource
+                - "/*"
+                - ...
+              scopes:                                             - The scopes associated with this resource
+                - name: "<scope name1>"
+                - ...
+              icon_uri: "<uri>"                                   - (optional) A URI pointing to an icon.
+            - ...
+          policies:                                               - policy definitions
+            - name: "<policy name>"                               - unique name for this policy
+              description: "<description>"                        - (optional) A description for this policy
+              type: "<role|client|...>"                           - Choose the policy type
+              logic: "<POSITIVE|NEGATIVE>"                        - dictates how the policy decision should be made
+              roles:                                              - Specifies the client roles allowed by this policy
+                - id: "<role name>"                               - points to an existing role
+                  required: <true|false>                          - decide, whether role is required
+                ...
+            - ...
+          permissions:                                            - policy definitions
+            - name: "<permission name>"                           - unique name for this permission
+              description: "<description>"                        - (optional) A description for this permission
+              type: "<scope|resource>"                            - Choose the permission type
+              decisionStrategy: "<UNANIMOUS|AFFIRMATIVE|CONSENSUS>" - dictates how the policies associated with a given permission are evaluated
+              resources:                                          - Specifies that this permission must be applied to a specific resource instance
+                - "<resource name>"                               - points to an existing resource
+                - ...
+              scopes:                                             - Specifies that this permission must be applied to one or more scopes
+                - "<scope name>"                                  - points to an existing scope
+                - ...
+              applyPolicies:                                      - Specifies all the policies that must be applied to the scopes defined by this permission
+                - "<policy-name>"                                 - points to an existing policy
+                - ...
+            - ...
+          scopes:                                                 - scope definitions
+            - name: "<scope name>"                                - unique name for this scope
+              iconUri: "<uri>"                                    - (optional) A URI pointing to an icon.
+              displayName: "<display name>"                       - (optional) user-friendly name for the resource
+            - ...
 ```
 
 ### CLIENT SCOPE definitions
 
-Here additional scopes besides the default scopes can be defined and set as default client scope
-
-default scopes:
-
-  - roles
-  - groups
-  - acr
-  - profile
-  - address
-  - web-origin
-  - phone
-  - email
-  - offline_access
-  - role_list
-  - microprofile-jwt
+Here additional scopes besides the default scopes can be defined and set as defaul client scope
+default scopes: roles, groups, acr, profile, address, web-origin, phone, email, offline_access, role_list, microprofile-jwt
 
 ```yaml
     defaultClientScopes:
@@ -176,13 +228,7 @@ default scopes:
 ### Access control definitions
 
 In this section additional roles (assignableRoles) besides the default roles can be set.
-
-default roles:
-  - user
-  - admin
-  - offline_access
-  - uma_authorization
-  - default-roles-<realm>
+default roles: user, admin, offline_access, uma_authorization, default-roles-<realm>
 
 (optional) accessRoles can be defined.
 These access roles are used in the Ingress "Auhorization Policy" to restrict the access to certain services
@@ -223,6 +269,8 @@ The access role is assigned to a realm client (e.g. oauth2_proxy)
           - type: password          - (optional) initial password (<pwd>: encrypted password, <salt>: used salt)
             secretData: "{\"value\":\"<pwd>\",\"salt\":\"<salt>\"}"
             credentialData: "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+        requiredActions:            - (optional) action, the user has to execute
+          - <action>                - e.g. "UPDATE_PASSWORD", "UPDATE_PROFILE",...
         attributes:                 - (optional) additional attributes
           sdc_user:                 - example attribute
             - "cs0008"
@@ -290,16 +338,9 @@ The access role is assigned to a realm client (e.g. oauth2_proxy)
       user: "onapsupport"
 ```
 
-## Ingress Authentication settings
+## Requirements
 
-Activating the Ingress Authentication (enabled: true) will create AuthorizationPolicy resources for each defined "accessControl.accessRoles" in a REALM definition.
+authentication needs the following ONAP projects to work:
 
-```
-ingressAuthentication:
-  enabled: false
-  exceptions:
-    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "keycloak-ui") }}'
-    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "portal-ui") }}'
-    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "minio-console") }}'
-    - '{{ include "ingress.config.host" (dict "dot" . "baseaddr" "uui-server") }}'
-```
+- common
+- serviceAccount
