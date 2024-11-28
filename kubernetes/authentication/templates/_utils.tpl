@@ -25,9 +25,10 @@ Usage:
 realm: {{ $realm.name }}
 {{ if $realm.displayName }}displayName: {{ $realm.displayName }}{{ end }}
 id: {{ $realm.name }}
-accessTokenLifespan: 1900
-registrationAllowed: false
-resetPasswordAllowed: true
+accessTokenLifespan: {{ default "1900" $realm.accessTokenLifespan }}
+registrationAllowed: {{ default false $realm.registrationAllowed }}
+resetPasswordAllowed: {{ default true $realm.resetPasswordAllowed }}
+sslRequired: {{ default "external" $realm.sslRequired }}
 enabled: true
 {{ if $realm.themes }}
 {{   if $realm.themes.login }}loginTheme: {{ $realm.themes.login }}{{ end }}
@@ -159,6 +160,7 @@ clients:
     baseUrl: {{ tpl $client.baseUrl $dot }}
     {{- end }}
     surrogateAuthRequired: {{ default false $client.surrogateAuthRequired }}
+    authorizationServicesEnabled: {{ default false $client.authorizationServicesEnabled }}
     enabled: true
     alwaysDisplayInConsole: false
     clientAuthenticatorType: {{ default "client-secret" $client.clientAuthenticatorType }}
@@ -211,33 +213,136 @@ clients:
           {{ toYaml $mapper.config | nindent 10 }}
       {{- end }}
       {{- end }}
+    {{- if $client.defaultClientScopes }}
     defaultClientScopes:
-      {{- if $client.defaultClientScopes }}
-      {{-   range $index2, $scope := $client.defaultClientScopes }}
+      {{- range $index2, $scope := $client.defaultClientScopes }}
       - {{ $scope }}
-      {{-   end }}
-      {{- else }}
-      - web-origins
-      - profile
-      - acr
-      - email
       {{- end }}
+    {{- end }}
+    {{- if $client.optionalClientScopes }}
     optionalClientScopes:
-      {{- if $client.optionalClientScopes }}
-      {{-   range $index2, $scope := $client.optionalClientScopes }}
+      {{- range $index2, $scope := $client.optionalClientScopes }}
       - {{ $scope }}
-      {{-   end }}
-      {{- else }}
-      - address
-      - phone
-      - offline_access
-      - microprofile-jwt
       {{- end }}
+    {{- end }}
+    {{- if $client.authorizationSettings }}
+    authorizationSettings: {{ include "auth._authorizationSettings" (dict "dot" $client.authorizationSettings ) | nindent 6 }}
+    {{- end }}
   {{- end }}
 {{- end }}
 
 {{/*
-Renders the defaulDefaultClientScopes section in a realm.
+Renders the authorizationSettings in the client section in a realm.
+Usage:
+{{ include "auth._authorizationSettings" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._authorizationSettings" -}}
+{{- $dot := default . .dot -}}
+allowRemoteResourceManagement: "{{ default true $dot.allowRemoteResourceManagement }}"
+policyEnforcementMode: "{{ default "ENFORCING" $dot.policyEnforcementMode }}"
+decisionStrategy: "{{ default "UNANIMOUS" $dot.decisionStrategy }}"
+resources:
+  {{- range $index, $resource := $dot.resources }}
+  - name: {{ $resource.name }}
+    type: {{ (default "" $resource.type) | quote }}
+    displayName: {{ (default "" $resource.displayName) | quote }}
+    ownerManagedAccess: {{ default false $resource.ownerManagedAccess }}
+    {{- if $resource.attributes }}
+    attributes:
+      {{-   range $key,$value := $resource.attributes }}
+      {{ $key }}: {{ $value }}
+      {{-   end }}
+    {{- end }}
+    {{- if $resource.uris }}
+    uris:
+      {{- range $index2, $url := $resource.uris }}
+      - {{ $url }}
+      {{- end }}
+    {{- end }}
+    {{- if $resource.scopes }}
+    scopes:
+      {{- range $index3, $scope := $resource.scopes }}
+      - {{ $scope | toYaml }}
+      {{- end }}
+    {{- end }}
+    icon_uri: {{ (default "" $resource.icon_uri) | quote }}
+  {{- end }}
+policies:
+  {{- range $index4, $policy := $dot.policies }}
+  - name: {{ $policy.name }}
+    type: {{ (default "" $policy.type) | quote }}
+    description: {{ (default "" $policy.description) | quote }}
+    logic: {{ default "POSITIVE" $policy.logic }}
+    decisionStrategy: {{ default "UNANIMOUS" $dot.decisionStrategy }}
+    config:
+      roles: {{ include "auth._policyRoles" (dict "dot" $policy.roles) | toJson }}
+  {{- end }}
+  {{- range $index6, $permission := $dot.permissions }}
+  - name: {{ $permission.name }}
+    type: {{ (default "" $permission.type) | quote }}
+    description: {{ (default "" $permission.description) | quote }}
+    logic: {{ default "POSITIVE" $permission.logic }}
+    decisionStrategy: {{ default "UNANIMOUS" $permission.decisionStrategy }}
+    config:
+      {{- if $permission.resources }}
+      resources: {{ include "auth._permissionResources" (dict "dot" $permission.resources) | toJson }}
+      {{- end }}
+      {{- if $permission.scopes }}
+      scopes: {{ include "auth._permissionScopes" (dict "dot" $permission.scopes) | toJson }}
+      {{- end }}
+      {{- if $permission.applyPolicies }}
+      applyPolicies: {{ include "auth._permissionApplyPolicies" (dict "dot" $permission.applyPolicies) | toJson }}
+      {{- end }}
+  {{- end }}
+scopes:
+  {{- range $index, $scope := $dot.scopes }}
+  - name: {{ $scope.name }}
+    iconUri: {{ (default "" $scope.icon_uri) | quote }}
+    displayName: {{ (default "" $scope.displayName) | quote }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Renders the roles in a policy.
+Usage:
+{{ include "auth._policyRoles" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._policyRoles" -}}
+{{- $dot := default . .dot -}}
+[{{- range $index,$role := $dot }}{"id":"{{ $role.id }}","required":{{ $role.required }}}{{ if ne $index (sub (len $dot) 1)}},{{ end }}{{- end }}]
+{{- end }}
+
+{{/*
+Renders the resources in a permission.
+Usage:
+{{ include "auth._permissionResources" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._permissionResources" -}}
+{{- $dot := default . .dot -}}
+[{{- range $index,$resource := $dot }}"{{ $resource }}"{{ if ne $index (sub (len $dot) 1)}},{{ end }}{{- end }}]
+{{- end }}
+
+{{/*
+Renders the scopes in a permission.
+Usage:
+{{ include "auth._permissionScopes" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._permissionScopes" -}}
+{{- $dot := default . .dot -}}
+[{{- range $index,$scope := $dot }}"{{ $scope }}"{{ if ne $index (sub (len $dot) 1)}},{{ end }}{{- end }}]
+{{- end }}
+
+{{/*
+Renders the applyPolicies in a permission.
+Usage:
+{{ include "auth._permissionApplyPolicies" ( dict "dot" .Values) }}
+*/}}
+{{- define "auth._permissionApplyPolicies" -}}
+{{- $dot := default . .dot -}}
+[{{- range $index,$policy := $dot }}"{{ $policy }}"{{ if ne $index (sub (len $dot) 1)}},{{ end }}{{- end }}]
+{{- end }}
+{{/*
+Renders the defaultDefaultClientScopes section in a realm.
 Usage:
 {{ include "auth._defaultClientScopes" ( dict "dot" .Values) }}
 */}}
@@ -262,15 +367,15 @@ clientScopes:
 {{- if $dot.additionalClientScopes }}
 {{-   range $index, $scope := $dot.additionalClientScopes }}
 - name: {{ $scope.name }}
-  description: "{{ default "" $scope.description }}"
+  description: {{ (default "" $scope.description) | quote }}
   protocol: openid-connect
   attributes:
     include.in.token.scope: 'false'
     display.on.consent.screen: 'true'
     gui.order: ''
     consent.screen.text: "${rolesScopeConsentText}"
+  {{- if $scope.protocolMappers }}
   protocolMappers:
-    {{- if $scope.protocolMappers }}
     {{- range $index2, $mapper := $scope.protocolMappers }}
     - name: {{ $mapper.name }}
       protocol: "openid-connect"
@@ -279,8 +384,7 @@ clientScopes:
       config:
         {{ toYaml $mapper.config | nindent 8 }}
     {{- end }}
-    {{- end }}
-
+  {{- end }}
 {{-   end }}
 {{- end }}
 - name: roles
@@ -719,7 +823,14 @@ users:
       {{ toYaml $user.credentials | nindent 6 }}
     {{- end }}
     disableableCredentialTypes: []
+    {{- if $user.requiredActions }}
+    requiredActions:
+      {{- range $index2, $action := $user.requiredActions }}
+      - "{{ $action }}"
+      {{- end }}
+    {{- else }}
     requiredActions: []
+    {{- end }}
     {{- if $user.realmRoles }}
     realmRoles:
       {{- range $index2, $realmRole := $user.realmRoles }}
@@ -805,7 +916,11 @@ Usage:
 {{- define "auth._attributes" -}}
 {{- $dot := default . .dot -}}
 {{- $realm := (required "'realm' param, set to the specific service, is required." .realm) -}}
+{{- if $realm.attributes }}
 attributes:
+{{-   if $realm.attributes.frontendUrl }}
   frontendUrl: {{ tpl $realm.attributes.frontendUrl $dot }}
+{{-   end }}
   acr.loa.map: "{\"ABC\":\"5\"}"
+{{- end }}
 {{- end }}
