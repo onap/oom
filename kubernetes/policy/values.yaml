@@ -20,12 +20,13 @@
 #################################################################
 global:
   mariadbGalera:
+    useInPolicy: true
+    localCluster: true
     # flag to enable the DB creation via mariadb-operator
     useOperator: false
     # if useOperator set to "true", set "enableServiceAccount to "false"
     # as the SA is created by the Operator
     enableServiceAccount: false
-    localCluster: true
     # '&mariadbConfig' means we "store" the values for  later use in the file
     # with '*mariadbConfig' pointer.
     config: &mariadbConfig
@@ -35,17 +36,21 @@ global:
     nameOverride: *mariadbService
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
-    useInPolicy: false
   prometheusEnabled: false
   postgres:
-    localCluster: true
+    useInPolicy: false
+    localCluster: false
+    # flag to enable the DB creation via pgo-operator
+    useOperator: false
     service:
       name: pgset
       name2: tcp-pgset-primary
       name3: tcp-pgset-replica
     container:
       name: postgres
-    useInPolicy: true
+    nameOverride: "policy-postgres"
+    # (optional) if localCluster=false and an external secret is used set this variable
+    #userRootSecret: <secretName>
   kafkaBootstrap: strimzi-kafka-bootstrap:9092
   policyKafkaUser: policy-kafka-user
   useStrimziKafka: true
@@ -61,27 +66,57 @@ secrets:
   - uid: db-root-password
     name: &dbRootPassSecretName '{{ include "common.release" . }}-policy-db-root-password'
     type: password
-    externalSecret: '{{ or .Values.global.postgres.useInPolicy .Values.global.mariadbGalera.useInPolicy | ternary (
-               ( hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret")) |
-               ternary
-                  ""
-                  (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
-               )
-               ( (not (empty (default "" .Values.global.mariadbGalera.userRootSecret))) |
-                 ternary
+    externalSecret: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
+               ( .Values.global.mariadbGalera.localCluster | ternary
+                 ( hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret") | ternary
+                   ""
+                   (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
+                 )
+                 ( not (empty (default "" .Values.global.mariadbGalera.userRootSecret)) | ternary
                    .Values.global.mariadbGalera.userRootSecret
                    (include "common.mariadb.secret.rootPassSecretName"
                      (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
                    )
+                 )
+               )
+               ( .Values.global.postgres.localCluster | ternary
+                 ( hasSuffix "policy-db-root-password" (index .Values "postgres" "config" "pgRootPasswordExternalSecret") | ternary
+                   ""
+                   (tpl (default "" (index .Values "postgres" "config" "pgRootPasswordExternalSecret")) .)
+                 )
+                 ( not (empty (default "" .Values.global.postgres.userRootSecret)) | ternary
+                   .Values.global.postgres.userRootSecret
+                   (include "common.postgres.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.postgres.nameOverride)
+                   )
+                 )
                ) }}'
-    password: '{{ (index .Values "mariadb-galera" "rootUser" "password") }}'
+    password: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
+                  (index .Values "mariadb-galera" "rootUser" "password")
+                  (index .Values "postgres" "config" "pgRootPassword")
+               }}'
     policy: generate
   - uid: db-secret
     name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
-    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
+    externalSecret: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
+                        ( hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret") | ternary
+                          ""
+                          (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .)
+                        )
+                        ( hasSuffix "policy-db-secret" (index .Values "postgres" "config" "pgUserExternalSecret") | ternary
+                          ""
+                          (tpl (default "" (index .Values "postgres" "config" "pgUserExternalSecret")) .)
+                        )
+                     }}'
+    login: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
+               (index .Values "mariadb-galera" "db" "user")
+               (index .Values "postgres" "config" "pgUserName")
+            }}'
+    password: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
+                  (index .Values "mariadb-galera" "db" "password")
+                  (index .Values "postgres" "config" "pgUserPassword")
+               }}'
     passwordPolicy: generate
   - uid: policy-app-user-creds
     name: &policyAppCredsSecret '{{ include "common.release" . }}-policy-app-user-creds'
@@ -247,6 +282,7 @@ mariadb-galera:
   persistence:
     enabled: true
     mountSubPath: policy/maria/data
+    size: 3Gi
   serviceAccount:
     nameOverride: *mariadbService
 
@@ -265,6 +301,7 @@ postgres:
   persistence:
     mountSubPath: policy/postgres/data
     mountInitPath: policy
+    size: 3Gi
   config:
     pgUserName: policy-user
     pgDatabase: policyadmin
