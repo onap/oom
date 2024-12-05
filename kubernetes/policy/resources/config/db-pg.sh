@@ -18,12 +18,17 @@
 
 #psql() { /usr/bin/psql  -h ${PG_HOST} -p ${PG_PORT} "$@"; };
 
-export PGPASSWORD=${PG_ADMIN_PASSWORD};
+    export PGPASSWORD=${PG_ADMIN_PASSWORD};
 
-psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE USER \"${PG_USER}\" WITH PASSWORD '${PG_USER_PASSWORD}'"
+    echo "Create user ${PG_USER} is created in Host ${PG_HOST}"
+    psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE USER \"${PG_USER}\" WITH PASSWORD '${PG_USER_PASSWORD}'"
 
-for db in migration pooling policyadmin policyclamp operationshistory clampacm
-do
-    psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE DATABASE ${db};"
-    psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "GRANT ALL PRIVILEGES ON DATABASE ${db} TO \"${PG_USER}\";"
-done
+    for db in migration pooling policyadmin policyclamp operationshistory clampacm
+    do
+        echo "Create DB ${db}"
+        psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "CREATE DATABASE ${db};"
+        echo "Grant privileges to DB ${db} for user ${PG_USER}"
+        psql -h ${PG_HOST} -p ${PG_PORT} -U postgres --command "GRANT ALL PRIVILEGES ON DATABASE ${db} TO \"${PG_USER}\";"
+        echo "Grant privileges to SCHEMA public for user ${PG_USER}"
+        psql -h ${PG_HOST} -p ${PG_PORT} -d ${db} -U postgres --command "GRANT ALL ON SCHEMA public TO \"${PG_USER}\";"
+    done
