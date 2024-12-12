@@ -18,20 +18,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    app.kubernetes.io/name: {{ include "common.name" . }}
-    {{- if .Chart.AppVersion }}
-    version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-    {{- else }}
-    version: "{{ .Chart.Version | replace "+" "_" }}"
-    {{- end }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector:
     matchLabels:
@@ -46,59 +33,48 @@ spec:
       maxSurge: {{ .Values.updateStrategy.maxSurge }}
     {{- end }}
   template:
-    metadata:
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
-        app.kubernetes.io/name: {{ include "common.name" . }}
-        {{- if .Chart.AppVersion }}
-        version: "{{ .Chart.AppVersion | replace "+" "_" }}"
-        {{- else }}
-        version: "{{ .Chart.Version | replace "+" "_" }}"
-        {{- end }}
-      name: {{ include "common.release" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - aai-resources
-        - --service-name
-        - aai-traversal
-        - --service-name
-        - aai-graphadmin
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
+      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim}}
+      - command: ["/bin/sh","-c"]
+        args: ['cp -R /usr/local/etc/haproxy /usr/local/etc/haproxy_rw/']
+        image: '{{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}'
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
+        name: copy-haproxy-config
         resources:
-          requests:
-            memory: {{ .Values.haproxy.initContainers.resources.memory }}
-            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
           limits:
-            memory: {{ .Values.haproxy.initContainers.resources.memory }}
-            cpu: {{ .Values.haproxy.initContainers.resources.cpu }}
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 2m
+            memory: 100Mi
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/local/etc/haproxy_rw
+          name: haproxy-etc
       containers:
       - name: {{ include "common.name" . }}
-        image: "{{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}"
+        image: '{{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}'
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
+        - mountPath: /usr/local/etc/haproxy
+          name: haproxy-etc
+        - mountPath: /usr/local/etc/haproxy/resolvers.conf
+          name: haproxy-config
+          subPath: resolvers.conf
+          readOnly: true
         - mountPath: /usr/local/etc/haproxy/haproxy.cfg
         {{ if .Values.global.installSidecarSecurity }}
           subPath: haproxy-pluggable-security.cfg
         {{ else }}
           subPath: haproxy.cfg
         {{ end }}
-          name: haproxy-cfg
+          name: haproxy-config
         ports:
         - containerPort: {{ .Values.service.internalPort }}
           name: {{ .Values.service.portName }}
@@ -113,7 +89,11 @@ spec:
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources: {{ include "common.resources" . | nindent 10 }}
         readinessProbe:
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
           httpGet:
             path: /aai/util/echo
             port: {{ .Values.service.internalPort }}
@@ -129,9 +109,6 @@ spec:
               value: OOM_ReadinessCheck_TID
             - name: Accept
               value: application/json
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.readiness.periodSeconds }}
-        resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
@@ -142,7 +119,10 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
-        - name: haproxy-cfg
-          configMap:
-            name: aai-deployment-configmap
+      - name: haproxy-config
+        configMap:
+          name: aai-deployment-configmap
+      - name: haproxy-etc
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.haProxySizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
