@@ -312,6 +312,7 @@ spec:
         authDelegatorRoleName: {{ $dbinst }}-auth
       gracefulShutdownTimeout: 5s
       securityContext:
+        readOnlyFileSystem: true
         allowPrivilegeEscalation: false
         capabilities:
           drop:
@@ -320,11 +321,8 @@ spec:
         privileged: false
         runAsNonRoot: true
         runAsUser: 10001
-        seccompProfile:
-          type: RuntimeDefault
     primary:
       automaticFailover: true
-      podIndex: 0
     recovery:
       enabled: true
       clusterHealthyTimeout: 30s
@@ -344,8 +342,6 @@ spec:
         privileged: false
         runAsNonRoot: true
         runAsUser: 10001
-        seccompProfile:
-          type: RuntimeDefault
     config:
       reuseStorageVolume: false
       volumeClaimTemplate:
