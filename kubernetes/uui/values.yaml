@@ -30,8 +30,8 @@ pullPolicy: Always
 
 # application configuration
 
-msbaddr: msb-iag.{{include "common.namespace" .}}:80
-mraddr: message-router.{{include "common.namespace" .}}:3904
+msbaddr: aai:80
+mraddr: aai:80
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -80,11 +80,11 @@ service:
       ]{{ end }}
 
 ingress:
-  enabled: false
+  enabled: true
   service:
-    - baseaddr: "uui-ui"
-      name: "uui"
-      port: 8080
+    - baseaddr: uui
+      name: uui-proxy
+      port: 80
   config:
     ssl: "redirect"
 
@@ -114,3 +114,34 @@ resources:
       cpu: "500m"
       memory: "1Gi"
   unlimited: {}
+
+nginx:
+  fullnameOverride: uui-proxy
+  serverBlock: |-
+    server {
+      listen 8080;
+      listen [::]:8080;
+
+      # Redirect root path to /usecase-ui
+      location = / {
+          return 301 /usecase-ui;
+      }
+
+      # frontend
+      location /usecase-ui {
+          proxy_pass http://uui:8080;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+
+      # backend
+      location /api {
+          proxy_pass http://uui-server:8082;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+    }
