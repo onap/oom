@@ -104,13 +104,38 @@ spec:
           - name: SDC_CERT_DIR
             value: ""
           volumeMounts:
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/environments/
           - name: logs
             mountPath: /var/log/onap
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: onboarding-conf
+            mountPath: /app/jetty/config/onboarding-be/config-vnfrepo.yaml
+            subPath: config-vnfrepo.yaml
+          - name: onboarding-conf
+            mountPath: /app/jetty/config/onboarding-be/onboarding_configuration.yaml
+            subPath: onboarding_configuration.yaml
+          - name: onboarding-conf
+            mountPath: /app/jetty/config/onboarding-be/config-helmvalidator.yaml
+            subPath: config-helmvalidator.yaml
+          - name: onboarding-conf
+            mountPath: /app/jetty/config/onboarding-be/externaltesting-configuration.yaml
+            subPath: externaltesting-configuration.yaml
+          - name: onboarding-conf
+            mountPath: /app/jetty/config/onboarding-be/features.properties
+            subPath: features.properties
+          - name: http-config
+            mountPath: /app/jetty/start.d/http.ini
+            subPath: http.ini
+          - name: https-config
+            mountPath: /app/jetty/start.d/https.ini
+            subPath: https.ini
+          - name: ssl-config
+            mountPath: /app/jetty/start.d/ssl.ini
+            subPath: ssl.ini
+          - name: ready-probe-config
+            mountPath: /app/jetty/ready-probe.sh
+            subPath: ready-probe.sh
           lifecycle:
             postStart:
               exec:
@@ -123,10 +148,27 @@ spec:
       - name: logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
-      - name: sdc-environments
+      - name: onboarding-conf
         configMap:
-          name: {{ include "common.release" . }}-sdc-environments-configmap
+          name: {{ include "common.release" . }}-sdc-onboarding-be-configmap
+          defaultMode: 0755
+      - name: http-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-http-04-configmap
+          defaultMode: 0755
+      - name: https-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-https-04-configmap
+          defaultMode: 0755
+      - name: ssl-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-ssl-04-configmap
+          defaultMode: 0755
+      - name: ready-probe-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-ready-probe-configmap
           defaultMode: 0755
       - name:  logs
         emptyDir: {}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
+

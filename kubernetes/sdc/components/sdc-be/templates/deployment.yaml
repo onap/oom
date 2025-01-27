@@ -107,12 +107,26 @@ spec:
             failureThreshold: {{ .Values.startup.failureThreshold }}
           resources: {{ include "common.resources" . | nindent 12 }}
           env:
-          - name: ENVNAME
-            value: {{ .Values.env.name }}
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
           - name: cassandra_ssl_enabled
             value: {{ .Values.config.cassandraSslEnabled | quote }}
+          - name: TLS_CERT
+            value: {{ .Values.be.tlsCert }}
+          - name: TLS_KEY
+            value: {{ .Values.be.tlsKey }}
+          - name: TLS_PASSWORD
+            value: {{ .Values.be.tlsPassword }}
+          - name: KEYSTORE_PATH
+            value: {{ .Values.be.keystorePath }}
+          - name: KEYSTORE_PASSWORD
+            value: {{ .Values.be.keystorePassword }}
+          - name: CA_CERT
+            value: {{ .Values.be.caCert }}
+          - name: TRUSTSTORE_PATH
+            value: {{ .Values.be.truststorePath }}
+          - name: TRUSTSTORE_PASSWORD
+            value: {{ .Values.be.truststorePassword }}
           - name: HOST_IP
             valueFrom:
               fieldRef:
@@ -127,17 +141,43 @@ spec:
             value: {{ .Values.global.kafka.useKafka | quote }}
           {{- end }}
           volumeMounts:
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/environments/
           - name: logs
             mountPath: /var/log/onap
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: http-config
+            mountPath: /app/jetty/start.d/http.ini
+            subPath: http.ini
+          - name: https-config
+            mountPath: /app/jetty/start.d/https.ini
+            subPath: https.ini
+          - name: ssl-config
+            mountPath: /app/jetty/start.d/ssl.ini
+            subPath: ssl.ini
+          - name: catalog-be-config
+            mountPath: /app/jetty/config/catalog-be/janusgraph.properties
+            subPath: janusgraph.properties
+          - name: catalog-be-config
+            mountPath: /app/jetty/config/catalog-be/distribution-engine-configuration.yaml
+            subPath: distribution-engine-configuration.yaml
+          - name: catalog-be-config
+            mountPath: /app/jetty/config/catalog-be/configuration.yaml
+            subPath: configuration.yaml
+          - name: catalog-be-resource-config
+            mountPath: /app/jetty/resources/key.properties
+            subPath: key.properties
+          - name: catalog-be-resource-config
+            mountPath: /app/jetty/resources/portal.properties
+            subPath: portal.properties
+          - name: ready-probe-config
+            mountPath: /app/jetty/ready-probe.sh
+            subPath: ready-probe.sh
+
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/app/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+                command: ["/bin/sh", "-c", "export SRC=/tmp/logback.xml; export DST=/app/jetty/config/catalog-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...'; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done copying logback.xml' ; echo 'Running BE_3_setup_key_and_trust_store.sh...' ; /app/jetty/BE_3_setup_key_and_trust_store.sh ; echo 'BE_3_setup_key_and_trust_store.sh completed' "]
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
@@ -146,10 +186,31 @@ spec:
       - name: logback
         configMap:
           name : {{ include "common.fullname" . }}-logging-configmap
-      - name: sdc-environments
-        configMap:
-          name: {{ include "common.release" . }}-sdc-environments-configmap
-          defaultMode: 0755
       - name: logs
         emptyDir: {}
+      - name: http-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-http-be-configmap
+          defaultMode: 0755
+      - name: https-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-https-be-configmap
+          defaultMode: 0755
+      - name: ssl-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-ssl-be-configmap
+          defaultMode: 0755
+      - name: catalog-be-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-catalog-be-configmap
+          defaultMode: 0755
+      - name: catalog-be-resource-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-catalog-be-resource-configmap
+          defaultMode: 0755
+      - name: ready-probe-config
+        configMap:
+          name: {{ include "common.release" . }}-sdc-be-ready-probe-configmap
+          defaultMode: 0755
       {{- include "common.imagePullSecrets" . | nindent 6 }}
+
