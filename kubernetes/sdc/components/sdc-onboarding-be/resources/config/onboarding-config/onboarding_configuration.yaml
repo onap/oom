@@ -1,0 +1,72 @@
+catalogNotificationsConfig:
+  # catalog backend protocol
+  catalogBeProtocol: {{ if .Values.global.disableHttp }}https{{- else }}http{{- end }}
+  catalogBeHttpPort: {{ (.Values.global.BE).http_port }}
+  catalogBeSslPort: {{ (.Values.global.BE).https_port }}
+  catalogBeFqdn: sdc-be.{{ include "common.namespace" . }}
+  # do not remove the "" from catalog_notification_url. it is escaping % characters coming from AUTO.json
+  catalogNotificationUrl: {{ .Values.ONBOARDING_BE.catalog_notification_url | quote }}
+
+notifications:
+  pollingIntervalMsec: 2000
+  selectionSize: 100
+  beHost: sdc-onboarding-be.{{ include "common.namespace" . }}
+  beHttpPort: {{ .Values.ONBOARDING_BE.http_port }}
+
+cassandraConfig:
+  cassandraHosts: [ {{ .Values.global.sdc_cassandra.serviceName }}.{{ include "common.namespace" . }} ]
+  cassandraPort: {{ .Values.cassandra.cassandra_port }}
+  localDataCenter: {{ .Values.global.sdc_cassandra.dataCenter }}
+  reconnectTimeout: 30000
+  socketReadTimeout: {{ .Values.cassandra.socket_read_timeout }}
+  socketConnectTimeout: {{ .Values.cassandra.socket_connect_timeout }}
+  authenticate: true
+  username: {{ .Values.cassandra.cassandra_user }}
+  password: {{ .Values.cassandra.cassandra_password }}
+  ssl: {{ .Values.config.cassandraSslEnabled }}
+  truststorePath: {{ .Values.JETTY_BASE }}/etc/truststore
+  truststorePassword: {{ .Values.cassandra.truststore_password }}
+
+authCookie:
+  securityKey: MlB1WHFpSHNVTWdJZU1PcQ==
+  maxSessionTimeOut: 86400000
+  sessionIdleTimeOut: 3600000
+  cookieName: "AuthenticationCookie"
+  path: /
+  domain: ""
+  isHttpOnly: true
+  # redirect variable name from portal.properties file
+  redirectURL: "redirect_url"
+  excludedUrls: [ '/.*' ]
+  onboardingExcludedUrls: [ '/.*' ]
+
+basicAuth:
+  enabled: {{ .Values.basic_auth.enabled }}
+  userName: {{ .Values.basic_auth.user_name }}
+  userPass: {{ .Values.basic_auth.user_pass }}
+  excludedUrls: "/v1.0/healthcheck"
+
+zipValidation:
+  ignoreManifest: false
+
+externalCsarStore:
+  storageType: NONE # NONE, MINIO
+  endpoint:
+    host: 127.0.0.1
+    port: 9000
+    secure: false
+  credentials:
+    accessKey: "login"
+    secretKey: "password"
+  foldersToStrip:
+    - Files/images
+  sizeLimit: 10000000
+  thresholdEntries: 10000
+  tempPath: "/home/onap/temp/"
+  uploadPartSize: 200000000
+
+#Space separated list of permitted ancestors
+permittedAncestors: {{ .Values.permittedAncestors | join " " }}
+
+# Comma separated list of excluded URLs by the DataValidatorFilter
+dataValidatorFilterExcludedUrls: "/healthCheck,/followed,/authorize"

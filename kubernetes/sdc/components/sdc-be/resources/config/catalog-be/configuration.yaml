@@ -1,0 +1,1253 @@
+identificationHeaderFields:
+  - HTTP_IV_USER
+  - HTTP_CSP_FIRSTNAME
+  - HTTP_CSP_LASTNAME
+  - HTTP_IV_REMOTE_ADDRESS
+  - HTTP_CSP_WSTYPE
+
+
+# catalog backend hostname
+beFqdn: {{ .Values.beFqdn }}
+
+# catalog backend http port
+beHttpPort: {{ .Values.beHttpPort }}
+
+# catalog backend http context
+beContext: /sdc/rest/config/get
+
+# catalog backend protocol
+beProtocol: http
+
+tlsCert: {{ .Values.tlsCert }}
+tlsKey: {{ .Values.tlsKey }}
+caCert: {{ .Values.caCert }}
+
+# catalog backend ssl port
+beSslPort: {{ .Values.beSslPort }}
+version: 1.1.0
+released: 2012-11-30
+toscaConformanceLevel: 11.0
+minToscaConformanceLevel: 3.0
+
+janusGraphCfgFile: {{ .Values.janusGraphCfgFile }}
+janusGraphInMemoryGraph: false
+janusGraphLockTimeout: 1800
+#startup:                   connect to JanusGraph DB when it is down during ASDC--More-- (2% of 27930 bytes)
+janusGraphReconnectIntervalInSeconds: 3
+
+# The read timeout towards JanusGraph DB when health check is invoked:
+janusGraphHealthCheckReadTimeout: 1
+
+  #startup:                   connect to Elasticsearch when it is down during ASDC--More-- (3% of 27930 bytes)
+
+uebHealthCheckReconnectIntervalInSeconds: 15
+uebHealthCheckReadTimeout: 4
+
+# Protocols
+protocols:
+  - http
+  - https
+
+# Default imports
+defaultImports:
+  - nodes:
+      file: nodes.yml
+  - datatypes:
+      file: data.yml
+  - capabilities:
+      file: capabilities.yml
+  - relationships:
+      file: relationships.yml
+  - groups:
+      file: groups.yml
+  - policies:
+      file: policies.yml
+  - annotations:
+      file: annotations.yml
+
+# Global CSAR Import Files
+globalCsarImports:
+  - annotations.yml
+  - artifacts.yml
+  - capabilities.yml
+  - data.yml
+  - groups.yml
+  - interfaces.yml
+  - nodes.yml
+  - policies.yml
+  - relationships.yml
+
+# Users
+users:
+  tom: passwd
+  bob: passwd
+
+basicAuth:
+  enabled: {{ .Values.basicAuthConfig.enabled }}
+  userName: {{ .Values.basicAuth.userName }}
+  userPass: {{ .Values.basicAuth.userPass }}
+  excludedUrls: "/sdc2/rest/healthCheck"
+
+
+cassandraConfig:
+  cassandraHosts: [{{ .Values.cassandra.hostname }}]
+  cassandraPort: {{ .Values.cassandra.port }}
+  localDataCenter: {{ .Values.cassandra.datacenterName }}
+  reconnectTimeout : 30000
+  socketReadTimeout: {{ .Values.cassandraConfig.socketReadTimeout }}
+  socketConnectTimeout: {{ .Values.cassandraConfig.socketConnectTimeout }}
+  authenticate: true
+  username: {{ .Values.cassandra.cassandraUsername }}
+  password: {{ .Values.cassandra.cassandraPassword }}
+  ssl: {{ .Values.cassandraConfig.ssl }}
+  keystorePath: {{ .Values.cassandraConfig.keystorePath }}
+  keystorePassword: {{ .Values.cassandraConfig.keystorePassword }}
+  truststorePath: {{ .Values.cassandraConfig.truststorePath }}
+  truststorePassword: {{ .Values.cassandraConfig.truststorePassword }}
+  keySpaces:
+    - { name: dox,           replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+    - { name: sdcaudit,      replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+    - { name: sdcartifact,   replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+    - { name: sdccomponent,  replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+    - { name: sdcrepository, replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+licenseTypes:
+  - User
+  - Installation
+  - CPU
+
+#Deployment artifacts placeHolder
+resourceTypes: &allResourceTypes
+  - VFC
+  - CP
+  - VL
+  - VF
+  - CR
+  - VFCMT
+  - Abstract
+  - CVFC
+  - Configuration
+  - ServiceProxy
+  - PNF
+
+componentAllowedInstanceTypes:
+  Resource:
+    VF:
+      - VFC
+      - VF
+      - CR
+      - CP
+      - PNF
+      - CVFC
+      - VL
+      - Configuration
+      - ServiceProxy
+      - Abstract
+    CVFC:
+      - VFC
+      - VF
+      - CR
+      - CP
+      - PNF
+      - CVFC
+      - VL
+      - ServiceProxy
+      - Abstract
+    PNF:
+      - VF
+      - CR
+      - CP
+      - PNF
+      - CVFC
+      - VL
+      - Configuration
+      - ServiceProxy
+      - Abstract
+    CR:
+      - VF
+      - CR
+      - CP
+      - PNF
+      - CVFC
+      - VL
+      - Configuration
+      - ServiceProxy
+      - Abstract
+    VL:
+      - VL
+  Service:
+    "*":
+      - VF
+      - VFC
+      - CR
+      - CP
+      - PNF
+      - CVFC
+      - VL
+      - Configuration
+      - ServiceProxy
+      - Abstract
+
+artifacts:
+  - type: CONTROLLER_BLUEPRINT_ARCHIVE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - zip
+  - type: HELM
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - tgz
+  - type: YANG_XML
+    categories:
+      - DEPLOYMENT
+      - INFORMATIONAL
+    componentTypes:
+      - SERVICE
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: VNF_CATALOG
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  - type: MODEL_INVENTORY_PROFILE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  - type: MODEL_QUERY_SPEC
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  - type: UCPE_LAYER_2_CONFIGURATION
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  #AAI Artifacts
+  - type: AAI_SERVICE_MODEL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  - type: AAI_VF_MODULE_MODEL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  - type: AAI_VF_INSTANCE_MODEL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes:
+    acceptedTypes:
+      - xml
+  #Plan
+  - type: PLAN
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes:
+      - VF
+      - VFC
+    acceptedTypes:
+      - xml
+  - type: WORKFLOW
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+      - RESOURCE
+    resourceTypes:
+      - VFC
+      - CP
+      - VL
+      - VF
+      - CR
+      - VFCMT
+      - Abstract
+      - CVFC
+      - PNF
+    acceptedTypes:
+  - type: HEAT
+    categories:
+      - DEPLOYMENT
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: HEAT_VOL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: HEAT_NET
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: HEAT_NESTED
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: HEAT_ARTIFACT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: CLOUD_TECHNOLOGY_SPECIFIC_ARTIFACT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - zip
+      - tgz
+      - csar
+  - type: VNF_CATALOG
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: VF_LICENSE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: VENDOR_LICENSE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: MODEL_INVENTORY_PROFILE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: MODEL_QUERY_SPEC
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - xml
+  - type: LIFECYCLE_OPERATIONS
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFC
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: VES_EVENTS
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes:
+      - VFC
+      - CP
+      - VL
+      - VF
+      - CR
+      - VFCMT
+      - Abstract
+      - CVFC
+      - PNF
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: PERFORMANCE_COUNTER
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - csv
+  - type: APPC_CONFIG
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+    acceptedTypes:
+  - type: DCAE_TOSCA
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFCMT
+    acceptedTypes:
+      - yml
+      - yaml
+  - type: DCAE_JSON
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFCMT
+    acceptedTypes:
+      - json
+  - type: DCAE_POLICY
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFCMT
+    acceptedTypes:
+      - emf
+  - type: DCAE_DOC
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFCMT
+    acceptedTypes:
+  - type: DCAE_EVENT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFCMT
+    acceptedTypes:
+  - type: AAI_VF_MODEL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+    acceptedTypes:
+      - xml
+  - type: AAI_VF_MODULE_MODEL
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+    acceptedTypes:
+      - xml
+  - type: OTHER
+    categories:
+      - DEPLOYMENT
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VFC
+      - CVFC
+      - CP
+      - VL
+      - VF
+      - VFCMT
+      - Abstract
+      - PNF
+    acceptedTypes:
+  - type: SNMP_POLL
+    categories:
+      - DEPLOYMENT
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: SNMP_TRAP
+    categories:
+      - DEPLOYMENT
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: PM_DICTIONARY
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: YANG_MODULE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - yang
+  - type: ANSIBLE_PLAYBOOK
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: ONBOARDED_PACKAGE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - csar
+      - zip
+  - type: ETSI_PACKAGE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - csar
+      - zip
+  - type: ASD_PACKAGE
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - PNF
+    acceptedTypes:
+      - csar
+      - zip
+  - type: HEAT_ENV
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+      - env
+  - type: VF_MODULES_METADATA
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+      - json
+  - type: DCAE_INVENTORY_TOSCA
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+      - yml
+      - yaml
+  - type: DCAE_INVENTORY_JSON
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+      - json
+  - type: DCAE_INVENTORY_POLICY
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+      - emf
+  - type: DCAE_INVENTORY_DOC
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+  - type: DCAE_INVENTORY_BLUEPRINT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+  - type: DCAE_INVENTORY_EVENT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - RESOURCE_INSTANCE
+    resourceTypes:
+    acceptedTypes:
+  - type: CHEF
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: PUPPET
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: SHELL
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: YANG
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: BPEL
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: DG_XML
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: MURANO_PKG
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: PNF_SW_INFORMATION
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - PNF
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: GUIDE
+    categories:
+      - INFORMATIONAL
+    componentTypes:
+      - RESOURCE
+    resourceTypes:
+      - VF
+      - VFC
+      - CVFC
+      - PNF
+    acceptedTypes:
+      - yaml
+      - yml
+  - type: FLOW
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+  - type: SHELL_SCRIPT
+    categories:
+      - DEPLOYMENT
+    componentTypes:
+      - SERVICE
+      - SERVICE_INSTANCE
+      - RESOURCE
+      - RESOURCE_INSTANCE
+    resourceTypes: *allResourceTypes
+    acceptedTypes:
+      - sh
+  - type: TOSCA_CSAR
+    categories:
+      - TOSCA
+    componentTypes:
+    resourceTypes:
+    acceptedTypes:
+      - csar
+  - type: TOSCA_TEMPLATE
+    categories:
+      - TOSCA
+    componentTypes:
+    resourceTypes:
+    acceptedTypes:
+      - yml
+      - yaml
+  - type: NETWORK_CALL_FLOW
+    categories:
+    componentTypes:
+    resourceTypes:
+    acceptedTypes:
+  - type: ICON
+    categories:
+    componentTypes:
+    resourceTypes:
+    acceptedTypes:
+
+deploymentResourceArtifacts:
+
+deploymentResourceInstanceArtifacts:
+  heatEnv:
+    displayName: "HEAT ENV"
+    type: HEAT_ENV
+    description: "Auto-generated HEAT Environment deployment artifact"
+    fileExtension: "env"
+  VfHeatEnv:
+    displayName: "VF HEAT ENV"
+    type: HEAT_ENV
+    description: "VF Auto-generated HEAT Environment deployment artifact"
+    fileExtension: "env"
+
+#tosca artifacts placeholders
+toscaArtifacts:
+  assetToscaTemplate:
+    artifactName: -template.yml
+    displayName: Tosca Template
+    type: TOSCA_TEMPLATE
+    description: TOSCA representation of the asset
+  assetToscaCsar:
+    artifactName: -csar.csar
+    displayName: Tosca Model
+    type: TOSCA_CSAR
+    description: TOSCA definition package of the asset
+
+#Informational artifacts placeHolder
+excludeResourceCategory:
+  - Generic
+excludeResourceType:
+  - PNF
+  - CR
+informationalResourceArtifacts:
+  features:
+    displayName: Features
+    type: OTHER
+  capacity:
+    displayName: Capacity
+    type: OTHER
+  vendorTestResult:
+    displayName: Vendor Test Result
+    type: OTHER
+  testScripts:
+    displayName: Test Scripts
+    type: OTHER
+  CloudQuestionnaire:
+    displayName: Cloud Questionnaire (completed)
+    type: OTHER
+  HEATTemplateFromVendor:
+    displayName: HEAT Template from Vendor
+    type: HEAT
+  resourceSecurityTemplate:
+    displayName: Resource Security Template
+    type: OTHER
+
+excludeServiceCategory:
+
+informationalServiceArtifacts:
+  serviceArtifactPlan:
+    displayName: Service Artifact Plan
+    type: OTHER
+  summaryOfImpactsToECOMPElements:
+    displayName: Summary of impacts to ECOMP elements,OSSs, BSSs
+    type: OTHER
+  automationCompositionFunctions:
+    displayName: Automation Composition Functions
+    type: OTHER
+  dimensioningInfo:
+    displayName: Dimensioning Info
+    type: OTHER
+  affinityRules:
+    displayName: Affinity Rules
+    type: OTHER
+  operationalPolicies:
+    displayName: Operational Policies
+    type: OTHER
+  serviceSpecificPolicies:
+    displayName: Service-specific Policies
+    type: OTHER
+  engineeringRules:
+    displayName: Engineering Rules (ERD)
+    type: OTHER
+  distributionInstructions:
+    displayName: Distribution Instructions
+    type: OTHER
+  certificationTestResults:
+    displayName: TD Certification Test Results
+    type: OTHER
+  deploymentVotingRecord:
+    displayName: Deployment Voting Record
+    type: OTHER
+  serviceQuestionnaire:
+    displayName: Service Questionnaire
+    type: OTHER
+  serviceSecurityTemplate:
+    displayName: Service Security Template
+    type: OTHER
+
+serviceApiArtifacts:
+  configuration:
+    displayName: Configuration
+    type: OTHER
+  instantiation:
+    displayName: Instantiation
+    type: OTHER
+  monitoring:
+    displayName: Monitoring
+    type: OTHER
+  reporting:
+    displayName: Reporting
+    type: OTHER
+  logging:
+    displayName: Logging
+    type: OTHER
+  testing:
+    displayName: Testing
+    type: OTHER
+
+additionalInformationMaxNumberOfKeys: 50
+
+systemMonitoring:
+  enabled: false
+  isProxy: false
+  probeIntervalInSeconds: 15
+heatArtifactDeploymentTimeout:
+  defaultMinutes: 30
+  minMinutes: 1
+  maxMinutes: 120
+
+unLoggedUrls:
+  - /sdc2/rest/monitoring
+  - /sdc2/rest/healthCheck
+
+cleanComponentsConfiguration:
+  cleanIntervalInMinutes: 1440
+  componentsToClean:
+    - Resource
+    - Service
+
+artifactsIndex: resources
+
+heatEnvArtifactHeader: ""
+heatEnvArtifactFooter: ""
+
+onboarding:
+  host: {{ .Values.ONBOARDING_BE.host }}
+  protocol: {{ if .Values.disableHttp }}https{{ else }}http{{ end }}
+  port: {{ if .Values.disableHttp }}{{ .Values.ONBOARDING_BE.httpsPort }}{{ else }}{{ .Values.ONBOARDING_BE.httpPort }}{{ end }}
+  getVspPackageUri: "/onboarding-api/v1.0/vendor-software-products/packages/%s?versionId=%s" # /onboarding-api/v1.0/vendor-software-products/packages/:vspId?versionId=:vspVersionId
+  getLatestVspPackageUri: "/onboarding-api/v1.0/vendor-software-products/packages/%s" # /onboarding-api/v1.0/vendor-software-products/packages/:vspId
+  getVspUri: "/onboarding-api/v1.0/vendor-software-products/%s/versions/%s" # /onboarding-api/v1.0/vendor-software-products/:vspId/versions/:vspVersionId
+  getLatestVspUri: "/onboarding-api/v1.0/vendor-software-products/%s" # /onboarding-api/v1.0/vendor-software-products/:vspId
+  healthCheckUri: "/onboarding-api/v1.0/healthcheck"
+
+# #GSS IDNS
+switchoverDetector:
+  gBeFqdn:
+  gFeFqdn:
+  beVip: 1.2.3.4
+  feVip: 1.2.3.4
+  beResolveAttempts: 3
+  feResolveAttempts: 3
+  enabled: false
+  interval: 60
+  changePriorityUser: ecompasdc
+  changePriorityPassword: ecompasdc123
+  publishNetworkUrl:
+  publishNetworkBody: '{"note":"comment"}'
+  groups:
+    beSet: { changePriorityUrl: "", changePriorityBody: '{"name":"","uri":"","no_ad_redirection":false,"v4groups":{"failover_groups":["","","failover_policy":["FAILALL"]},"comment":"","intended_app_proto":"DNS"}'}
+    feSet: { changePriorityUrl: "", changePriorityBody: '{"name":"","uri":"","no_ad_redirection":false,"v4groups":{"failover_groups":["",""],"failover_policy":["FAILALL"]},"comment":"","intended_app_proto":"DNS"}'}
+applicationL1Cache:
+  datatypes:
+    enabled: true
+    firstRunDelay: 10
+    pollIntervalInSec: 60
+
+applicationL2Cache:
+  enabled: false
+  catalogL1Cache:
+    enabled: false
+    resourcesSizeInCache: 300
+    servicesSizeInCache: 200
+    productsSizeInCache: 100
+  queue:
+    syncIntervalInSecondes: 43200
+    waitOnShutDownInMinutes: 10
+    numberOfCacheWorkers: 4
+
+toscaValidators:
+  stringMaxLength: 2500
+
+disableAudit: false
+
+vfModuleProperties:
+  min_vf_module_instances:
+    forBaseModule: 1
+    forNonBaseModule: 0
+  max_vf_module_instances:
+    forBaseModule: 1
+    forNonBaseModule:
+  initial_count:
+    forBaseModule: 1
+    forNonBaseModule: 0
+  vf_module_type:
+    forBaseModule: Base
+    forNonBaseModule: Expansion
+
+genericAssetNodeTypes:
+  VFC: org.openecomp.resource.abstract.nodes.VFC
+  CVFC: org.openecomp.resource.abstract.nodes.VFC
+  VF : org.openecomp.resource.abstract.nodes.VF
+  CR : org.openecomp.resource.abstract.nodes.CR
+  PNF: org.openecomp.resource.abstract.nodes.PNF
+  Service: org.openecomp.resource.abstract.nodes.service
+  ETSI NFV Network Service: tosca.nodes.nfv.NS
+
+# Defines the base types for Services
+# <category name>:
+#   required: <boolean> //if the base type is mandatory or not
+#   baseTypes: <list of TOSCA types> //the base types. Required if the base type is required.
+#                                      If not provided, the category will have no base type.
+serviceBaseNodeTypes:
+  ETSI NFV Network Service:
+    required: true
+    baseTypes:
+      - tosca.nodes.nfv.NS
+  AutomationComposition:
+    required: false
+
+workloadContext: Production
+
+environmentContext:
+  defaultValue: General_Revenue-Bearing
+  validValues:
+    - Critical_Revenue-Bearing
+    - Vital_Revenue-Bearing
+    - Essential_Revenue-Bearing
+    - Important_Revenue-Bearing
+    - Needed_Revenue-Bearing
+    - Useful_Revenue-Bearing
+    - General_Revenue-Bearing
+    - Critical_Non-Revenue
+    - Vital_Non-Revenue
+    - Essential_Non-Revenue
+    - Important_Non-Revenue
+    - Needed_Non-Revenue
+    - Useful_Non-Revenue
+    - General_Non-Revenue
+
+gabConfig:
+  - artifactType: 'VES_EVENTS'
+    pathsAndNamesDefinitions:
+      -
+        friendlyName: "Action"
+        path: "event.action[2]"
+        searchable: true
+      -
+        friendlyName: "Comment"
+        path: "event.comment"
+        searchable: true
+      -
+        friendlyName: "Alarm Additional Information"
+        path: "event.structure.faultFields.structure.alarmAdditionalInformation.comment"
+        searchable: true
+  - artifactType: 'PM_DICTIONARY'
+    pathsAndNamesDefinitions:
+      -
+        friendlyName: "measType"
+        path: "pmMetaData.pmFields.measType"
+        searchable: true
+      -
+        friendlyName: "measDescription"
+        path: "pmMetaData.pmFields.measDescription"
+        searchable: true
+      -
+        friendlyName: "measCondition"
+        path: "pmMetaData.pmFields.measCondition"
+        searchable: false
+      -
+        friendlyName: "measResultUnits"
+        path: "pmMetaData.pmFields.measResultUnits"
+        searchable: false
+      -
+        friendlyName: "measResultRange"
+        path: "pmMetaData.pmFields.measResultRange"
+        searchable: false
+      -
+        friendlyName: "measObjClass"
+        path: "pmMetaData.pmFields.measObjClass"
+        searchable: true
+      -
+        friendlyName: "measCollectionMethod"
+        path: "pmMetaData.pmFields.measCollectionMethod"
+        searchable: false
+      -
+        friendlyName: "measInfoId"
+        path: "pmMetaData.pmFields.measInfoId"
+        searchable: true
+      -
+        friendlyName: "iMeasInfoId"
+        path: "pmMetaData.pmFields.iMeasInfoId"
+        searchable: false
+dmaapConsumerConfiguration:
+  active: {{ .Values.dmaapConsumerConfiguration.active }}
+  hosts: localhost:3905
+  consumerGroup: sdc
+  consumerId: mama
+  timeoutMs: 15000
+  limit: 1
+  pollingInterval: 2
+  topic: topic
+  latitude: 32.109333
+  longitude: 34.855499
+  version: 1.0
+  serviceName: localhost/events
+  environment: TEST
+  partner: BOT_R
+  routeOffer: MR1
+  protocol: https
+  contenttype: application/json
+  dme2TraceOn: true
+  aftEnvironment: AFTUAT
+  aftDme2ConnectionTimeoutMs: 15000
+  aftDme2RoundtripTimeoutMs: 240000
+  aftDme2ReadTimeoutMs: 50000
+  dme2preferredRouterFilePath: DME2preferredRouter.txt
+  timeLimitForNotificationHandleMs: 120000
+  credential:
+    username: user
+    password:
+  aftDme2SslEnable: true
+  aftDme2ClientSslCertAlias: certman
+
+dmaapProducerConfiguration:
+  active: true
+  hosts: {{ .Values.dmaapProducerConfiguration.hosts }}
+  consumerGroup: sdc-{{ .Values.chefEnvironment }}-1730226683
+  consumerId: sdc-{{ .Values.chefEnvironment }}1-1730226683
+  timeoutMs: 15000
+  limit: 1
+  pollingInterval: 2
+  topic: {{ .Values.dmaapProducerConfiguration.topic }}
+  latitude: 32.109333
+  longitude: 34.855499
+  version: 1.0
+  serviceName: {{ .Values.dmaapProducerConfiguration.serviceName }}
+  environment: {{ .Values.dmaapProducerConfiguration.environment }}
+  partner: BOT_R
+  routeOffer: MR1
+  protocol: {{ .Values.dmaapProducerConfiguration.protocol }}
+  contenttype: application/json
+  dme2TraceOn: true
+  aftEnvironment: {{ .Values.dmaapProducerConfiguration.aftEnvironment }}
+  aftDme2ConnectionTimeoutMs: 15000
+  aftDme2RoundtripTimeoutMs: 240000
+  aftDme2ReadTimeoutMs: 50000
+  dme2preferredRouterFilePath: {{ .Values.dmaapProducerConfiguration.dme2preferredRouterFilePath }}
+  timeLimitForNotificationHandleMs: 120000
+  credential:
+    username: {{ .Values.dmaapProducerConfiguration.username }}
+    password: {{ .Values.dmaapProducerConfiguration.password }}
+  aftDme2SslEnable: true
+  aftDme2ClientSslCertAlias: certman
+
+# ToDo: AF - had to remove due to configuration laod class failure
+#dmeConfiguration:
+#    lookupUriFormat: "http://DME2RESOLVE/service=%s/version=1.0.0/envContext=%s/routeOffer=DEFAULT"
+#    dme2Search: DME2SEARCH
+#    dme2Resolve: DME2RESOLVE
+
+excludedPolicyTypesMapping:
+# VF:
+#  - a.b.c
+#  - c.d.e
+#CR:
+#  - x.y.z
+
+excludedGroupTypesMapping:
+  CR:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - org.openecomp.groups.Group
+    - tosca.groups.Root
+  PNF:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - org.openecomp.groups.Group
+    - tosca.groups.Root
+  VF:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - org.openecomp.groups.Group
+    - tosca.groups.Root
+  Service:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - org.openecomp.groups.Group
+    - tosca.groups.Root
+
+healthStatusExclude:
+  - DE
+  - DMAAP
+  - DMAAP_PRODUCER
+  - ON_BOARDING
+  - DCAE
+  - PORTAL
+  - External API
+
+#Auto Healing
+enableAutoHealing: false
+appVersion: {{ .Values.appVersion }}
+
+artifactGeneratorConfig: Artifact-Generator.properties
+resourcesForUpgrade:
+  8.0:
+    - org.openecomp.resource.cp.extCP
+    - tosca.nodes.network.Network
+    - tosca.nodes.network.Port
+    - org.openecomp.resource.cp.nodes.network.SubInterface
+skipUpgradeFailedVfs: true
+skipUpgradeVSPs: true
+autoHealingOwner: jh0003
+supportAllottedResourcesAndProxy: true
+deleteLockTimeoutInSeconds: 60
+maxDeleteComponents: 10
+
+# This configuration entry lists all node type names prefix that shall be allowed on SDC.
+definedResourceNamespace:
+  - org.openecomp.resource.
+  - org.onap.policy.clamp.acm.
+  - tosca.nodes.
+
+# This configuration entry lists all Directives values that shall be allowed on SDC.
+directives:
+  - select
+  - selectable
+  - substitute
+  - substitutable
+
+externalCsarStore:
+  storageType: NONE # NONE, MINIO
+  endpoint:
+    host: 127.0.0.1
+    port: 9000
+    secure: false
+  credentials:
+    accessKey: "login"
+    secretKey: "password"
+  tempPath: "/home/onap/temp/"
+  uploadPartSize: 200000000
+
+#This configuration specifies the delimiter used to differentiate instance name and count
+componentInstanceCounterDelimiter: " "
+
+# Comma separated list of excluded URLs by the DataValidatorFilter
+dataValidatorFilterExcludedUrls: "/healthCheck,/followed,/authorize"
+
+#Space separated list of permitted ancestors
+permittedAncestors: {{ .Values.permittedAncestors }}
