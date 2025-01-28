@@ -57,6 +57,13 @@ spec:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.backendInitImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          /home/onap/create_consumer_and_user.sh
+          /home/onap/check_backend.sh
+          /home/onap/import_normatives.sh
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /home/onap/chef-solo/environments/
@@ -69,6 +76,28 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: BE_IP
+          value: {{ .Values.beInit.beIp }}
+        - name: DISABLE_HTTP
+          value: {{ .Values.disableHttp | quote }}
+        - name: BE_HTTPS_PORT
+          value: {{ .Values.beSslPort | quote }}
+        - name: BE_HTTP_PORT
+          value: {{ .Values.beHttpPort | quote }}
+        - name: TLS_CERT
+          value: {{ .Values.beInit.tlsCert }}
+        - name: TLS_KEY
+          value: {{ .Values.beInit.tlsKey }}
+        - name: TLS_KEY_PW
+          value: {{ .Values.beInit.tlsKeyPw }}
+        - name: CA_CERT
+          value: {{ .Values.beInit.caCert }}
+        - name: BASIC_AUTH_ENABLED
+          value: {{ .Values.basicAuth.enabled | quote }}
+        - name: BASIC_AUTH_USER
+          value: {{ .Values.basicAuth.userName }}
+        - name: BASIC_AUTH_PASS
+          value: {{ .Values.basicAuth.userPass }}
         resources:
           limits:
             cpu: "800m"
