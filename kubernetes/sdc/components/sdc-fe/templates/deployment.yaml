@@ -56,8 +56,10 @@ spec:
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+                - /bin/sh
+                - /opt/scripts/combined-liveness.sh
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -65,8 +67,10 @@ spec:
             failureThreshold: {{ .Values.liveness.failureThreshold }}
           {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+                - /bin/sh
+                - /opt/scripts/combined-liveness.sh
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -101,6 +105,9 @@ spec:
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
+          - name: {{ include "common.fullname" . }}-readiness-liveness-probe
+            mountPath: /opt/scripts/combined-liveness.sh
+            subPath: combined-liveness.sh
           lifecycle:
             postStart:
               exec:
@@ -117,6 +124,10 @@ spec:
         - name: logback
           configMap:
             name : {{ include "common.fullname" . }}-logging-configmap
+        - name: {{ include "common.fullname" . }}-readiness-liveness-probe
+          configMap:
+            name: {{ include "common.fullname" . }}-readiness-liveness-probe
+            defaultMode: 0755
         - name: sdc-environments
         {{- if .Values.global.aafEnabled }}
           emptyDir: { medium: "Memory" }

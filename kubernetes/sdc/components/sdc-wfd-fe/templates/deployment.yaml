@@ -19,7 +19,16 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  minReadySeconds: {{ .Values.minReadySeconds }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
