@@ -18,7 +18,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" (dict "annotations" .Values.annotations "dot" .) | nindent 2 }}
 spec:
   selector:
     matchLabels:
@@ -38,7 +38,6 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim}}
       - command: ["/bin/sh","-c"]
         args: ['cp -R /usr/local/etc/haproxy /usr/local/etc/haproxy_rw/']
         image: '{{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}'
@@ -94,21 +93,8 @@ spec:
         readinessProbe:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-          httpGet:
-            path: /aai/util/echo
+          tcpSocket:
             port: {{ .Values.service.internalPort }}
-            scheme: HTTP
-            httpHeaders:
-            - name: X-FromAppId
-              value: OOM_ReadinessCheck
-      {{ if .Values.global.installSidecarSecurity }}
-            - name: Authorization
-              value: Basic YWFpQGFhaS5vbmFwLm9yZzpkZW1vMTIzNDU2IQ==
-      {{ end }}
-            - name: X-TransactionId
-              value: OOM_ReadinessCheck_TID
-            - name: Accept
-              value: application/json
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
