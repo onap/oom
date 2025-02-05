@@ -34,6 +34,8 @@
 # then it is your job to ensure that there are no connections to the database
 */}}
 
+{{/* the new default is schema creation via graphadmin init container. This will be removed in the future. */}}
+{{- if .Values.createDbSchemaViaJob.enabled }}
 {{- if and ( not .Values.global.jobs.migration.enabled ) ( .Values.global.jobs.createSchema.enabled ) }}
 apiVersion: batch/v1
 kind: Job
@@ -51,8 +53,6 @@ spec:
       labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "job") | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
-      initContainers:
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithCreateSchemaDisabled) | indent 6 | trim }}
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}-job
@@ -128,4 +128,5 @@ spec:
           name: {{ include "common.fullname" . }}-properties
       restartPolicy: Never
       {{- include "common.imagePullSecrets" . | nindent 6 }}
+{{- end }}
 {{- end }}
