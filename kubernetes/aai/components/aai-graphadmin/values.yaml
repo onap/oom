@@ -55,8 +55,11 @@ global: # global defaults
     basic:
       auth:
         enabled: true
-        username: AAI
-        passwd: AAI
+        users:
+          - username: aai@aai.onap.org
+            password: demo123456!
+          - username: AAI
+            password: AAI
     # Notification event specific properties
     notification:
       eventType: AAI-EVENT
@@ -81,11 +84,11 @@ global: # global defaults
       version:
         # Current version of the REST API
         api:
-          default: v29
+          default: v30
         # Specifies which version the depth parameter is configurable
         depth: v11
         # List of all the supported versions of the API
-        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29
+        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30
         # Specifies from which version related link should appear
         related:
           link: v11
@@ -103,7 +106,7 @@ global: # global defaults
       clients: SDNC,-1|MSO,-1|SO,-1|robot-ete,-1
 
 # application image
-image: onap/aai-graphadmin:1.15.4
+image: onap/aai-graphadmin:1.15-STAGING-20250223T160710Z
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -141,7 +144,7 @@ config:
     # config override for the cassandra driver
     # see: https://docs.janusgraph.org/master/configs/configuration-reference/#storagecqlinternal
     cassandraDriver:
-      configuration: advanced.metadata.schema.debouncer.window = 1 second
+      configuration: advanced.metadata.schema.debouncer.window = 2 second
   # Default maximum records to fix for the data grooming and dupeTool
   maxFix:
     dataGrooming: 150
@@ -198,6 +201,7 @@ config:
     BOOTSTRAP_SERVERS: onap-strimzi-kafka-bootstrap:9092
     DATA_SNAPSHOT_TASKS_ENABLED: false
     DATA_SNAPSHOT_CLEANUP_ENABLED: false
+    HISTORY_TRUNCATE_TASK_ENABLED: false
 
 nodeSelector: {}
 
@@ -222,19 +226,14 @@ actuator:
   echo:
     enabled: true
 
+## Can be used to restore the old behaviour of having a separate job for schema creation
+createDbSchemaViaJob:
+  enabled: false
+
 readinessCheck:
-  waitForWithCreateSchemaEnabled:
+  waitForSchemaCreationJob:
     jobs:
       - '{{ include "common.release" . }}-aai-graphadmin-create-db-schema'
-  waitForWithCreateSchemaDisabled:
-    services:
-      - '{{ .Values.global.cassandra.serviceName }}'
-      - aai-schema-service
-  waitForCassandra:
-    containers:
-      - aai-schema-service
-    apps:
-      - cassandra
   waitForLocalCassandra:
     containers:
       - aai-schema-service
