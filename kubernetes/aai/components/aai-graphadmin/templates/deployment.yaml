@@ -47,7 +47,64 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       {{- if .Values.global.initContainers.enabled }}
       initContainers:
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithCreateSchemaDisabled ) | indent 6 | trim }}
+        {{- if not .Values.createDbSchemaViaJob.enabled }}
+        {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWithCreateSchemaDisabled ) | indent 8 | trim }}
+        - name: {{ include "common.name" . }}-create-db-schema
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | nindent 10 | trim }}
+          command:
+          - sh
+          args:
+          - -c
+          - |
+            {{- if include "common.onServiceMesh" . }}
+            echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
+            sh docker-entrypoint.sh createDBSchema.sh;
+            {{ include "common.serviceMesh.killSidecar" . | indent 11 | trim }}
+          env:
+          {{- if .Values.config.debug.enabled }}
+          - name: JVM_OPTS
+            value: {{ .Values.config.debug.args | quote }}
+          {{- end }}
+          {{- if .Values.config.env }}
+          {{- range $key,$value := .Values.config.env }}
+          - name: {{ $key | upper | quote}}
+            value: {{ $value | quote}}
+          {{- end }}
+          {{- end }}
+          - name: BOOTSTRAP_SERVERS
+            value: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+          - name: JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}
+                key: sasl.jaas.config
+          {{- if .Values.config.debug.enabled }}
+          ports:
+          - containerPort: {{ .Values.service.debugPort }}
+            name: {{ .Values.service.debugPortName }}
+          {{- end }}
+          volumeMounts:
+          - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/janusgraph-realtime.properties
+            name: config
+            subPath: janusgraph-realtime.properties
+          - mountPath: /opt/app/aai-graphadmin/resources/etc/appprops/aaiconfig.properties
+            name: properties
+            subPath: aaiconfig.properties
+          - mountPath: /opt/aai/logroot/AAI-GA
+            name: logs
+          - mountPath: /opt/app/aai-graphadmin/resources/logback.xml
+            name: config
+            subPath: logback.xml
+          - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
+            name: config
+            subPath: localhost-access-logback.xml
+          - mountPath: /opt/app/aai-graphadmin/resources/application.properties
+            name: properties
+            subPath: application.properties
+          resources: {{ include "common.resources" . | nindent 12 }}
+        {{- end }}
       {{- end }}
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:

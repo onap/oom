@@ -41,11 +41,11 @@ global: # global defaults
       version:
       # Current version of the REST API
         api:
-          default: v29
+          default: v30
         # Specifies which version the depth parameter is configurable
         depth: v11
         # List of all the supported versions of the API
-        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29
+        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30
         # Specifies from which version related link should appear
         related:
           link: v11
@@ -60,7 +60,7 @@ global: # global defaults
           label: v12
 
 # application image
-image: onap/aai-schema-service:1.12.5
+image: onap/aai-schema-service:1.12.8
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -85,7 +85,7 @@ profiling:
     - "-Djava.rmi.server.hostname=127.0.0.1"
 
 # number of ReplicaSets that should be retained for the Deployment
-revisionHistoryLimit: 2
+revisionHistoryLimit: 1
 
 updateStrategy:
   type: RollingUpdate
@@ -98,11 +98,9 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
+  enabled: true
   initialDelaySeconds: 60
   periodSeconds: 60
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
-  enabled: false
 
 readiness:
   initialDelaySeconds: 60
@@ -177,6 +175,7 @@ log:
   path: /var/log/onap
   level:
     root: INFO
+    base: INFO # base package (org.onap.aai)
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
 volumes:
@@ -185,3 +184,10 @@ volumes:
 
 podAnnotations:
   checksum/config: '{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}'
+
+tracing:
+  enabled: false
+  collector:
+    baseUrl: http://jaeger-collector.istio-system:9411
+  sampling:
+    probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
