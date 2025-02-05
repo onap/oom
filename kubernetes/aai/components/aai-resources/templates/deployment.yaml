@@ -41,36 +41,6 @@ spec:
       app: {{ include "common.name" . }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
-      {{- if .Values.global.msbEnabled }}
-        {{ $values := .Values }}
-        msb.onap.org/service-info: '[
-        {{- range $api_endpoint := $values.aai_enpoints -}}
-          {{- range $api_version := $values.api_list }}
-          {
-              "serviceName": "_{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8447",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1",
-              "path": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}"
-          },
-          {
-              "serviceName": "{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8447",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1"
-          },
-          {{- end }}
-        {{- end }}
-          ]'
-      {{- end }}
     spec:
       hostname: aai-resources
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
@@ -79,9 +49,7 @@ spec:
       {{- if .Values.global.jobs.migration.enabled }}
       {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_migration) | nindent 8 }}
       {{- else if .Values.global.jobs.createSchema.enabled  }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_createSchema) | nindent 8 }}
-      {{- else }}
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_cassandra) | nindent 8 }}
+      {{ include "aai.waitForSchemaCreation" . | nindent 6 }}
       {{- end }}
       containers:
       - name: {{ include "common.name" . }}
@@ -94,6 +62,13 @@ spec:
         - name: {{ $key | upper | quote}}
           value: {{ $value | quote}}
         {{- end }}
+        {{- end }}
+        {{- if eq .Values.flavor "small" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.small.maxHeapSize | quote }}
+        {{- else if eq .Values.flavor "large" }}
+        - name: MAX_HEAP_SIZE
+          value: {{ .Values.large.maxHeapSize | quote }}
         {{- end }}
         {{- if .Values.config.profiling.enabled }}
         - name: PRE_JVM_ARGS
@@ -128,18 +103,9 @@ spec:
         - mountPath: /opt/app/aai-resources/resources/logback.xml
           name: {{ include "common.fullname" . }}-config
           subPath: logback.xml
-        - mountPath: /opt/app/aai-resources/resources/localhost-access-logback.xml
-          name: {{ include "common.fullname" . }}-config
-          subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-resources/resources/etc/auth/realm.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: realm.properties
         - mountPath: /opt/app/aai-resources/resources/application.properties
           name: {{ include "common.fullname" . }}-config
           subPath: application.properties
-        - mountPath: /opt/app/aai-resources/resources/application-keycloak.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: application-keycloak.properties
         - mountPath: /tmp
           name: tmp
         ports:
@@ -178,6 +144,7 @@ spec:
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           {{- end }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
         {{- end }}
         readinessProbe:
           httpGet:
@@ -187,12 +154,14 @@ spec:
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           {{- end }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
         startupProbe:
           httpGet:
             port: {{ .Values.service.metricsPort }}
             path: {{ .Values.startup.path }}
           failureThreshold: {{ .Values.startup.failureThreshold }}
           periodSeconds: {{ .Values.startup.periodSeconds }}
+          timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}

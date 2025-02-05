@@ -77,11 +77,11 @@ global: # global defaults
       version:
         # Current version of the REST API
         api:
-          default: v29
+          default: v30
         # Specifies which version the depth parameter is configurable
         depth: v11
         # List of all the supported versions of the API
-        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29
+        list: v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30
         # Specifies from which version related link should appear
         related:
           link: v11
@@ -134,7 +134,7 @@ aai_enpoints:
     url: external-system
 
 # application image
-image: onap/aai-resources:1.15.2
+image: onap/aai-resources:1.15.5
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -142,7 +142,7 @@ flavor: small
 replicaCount: 1
 
 # number of ReplicaSets that should be retained for the Deployment
-revisionHistoryLimit: 2
+revisionHistoryLimit: 1
 
 # the minimum number of seconds that a newly created Pod should be ready
 minReadySeconds: 30
@@ -155,19 +155,6 @@ updateStrategy:
 
 # Configuration for the resources deployment
 config:
-  # configure keycloak according to your environment.
-  # don't forget to add keycloak in active profiles above (global.config.profiles)
-  keycloak:
-    host: keycloak.your.domain
-    port: 8180
-    # Specifies a set of users, credentials, roles, and groups
-    realm: aai-resources
-    # Used by any client application for enabling fine-grained authorization for their protected resources
-    resource: aai-resources-app
-    # If set to true, additional criteria will be added that match the data-owner property with the given role
-    # to the user in keycloak
-    multiTenancy:
-      enabled: true
   janusgraph:
     caching:
       # enable when running read-heavy workloads
@@ -238,17 +225,20 @@ affinity: {}
 # probe configuration parameters
 liveness:
   enabled: true
-  path: /actuator/health/liveness
+  path: /actuator/health
   periodSeconds: 10
+  timeoutSeconds: 3
 
 readiness:
   path: /actuator/health/readiness
   periodSeconds: 10
+  timeoutSeconds: 3
 
 startup:
   path: /actuator/health/liveness
   failureThreshold: 60
   periodSeconds: 5
+  timeoutSeconds: 3
 
 actuator:
   echo:
@@ -319,7 +309,7 @@ endpoints:
     enabled: true
 
 autoscaling:
-  enabled: false
+  enabled: true
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
@@ -392,18 +382,6 @@ log:
     dbMetric: WARN
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
-# To make logback capping values configurable
-logback:
-  logToFileEnabled: false
-  maxHistory: 7
-  totalSizeCap: 1GB
-  queueSize: 1000
-
-accessLogback:
-  livenessAccessLogEnabled: false # false: do not log kubernetes liveness probes
-  logToFileEnabled: false
-  maxHistory: 7
-  totalSizeCap: 1GB
 #################################################################
 # Secrets metaconfig
 #################################################################
