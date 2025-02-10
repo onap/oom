@@ -71,9 +71,9 @@ podAnnotations: {}
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 ##
 securityContext:
-  enabled: true
-  fsGroup: 1001
-  runAsUser: 1001
+  user_id: 1001
+  group_id: 1001
+
 ## Affinity for pod assignment.
 ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 ##
@@ -93,12 +93,24 @@ resources:
   ## We usually recommend not to specify default resources and to leave this as a conscious
   ## choice for the user. This also increases chances charts run on environments with little
   ## resources, such as Minikube.
-  limits: {}
-  #   cpu: "100m"
-  #   memory: "100Mi"
+  limits:
+    cpu: "500m"
+    memory: 4Gi
   requests:
     cpu: "25m"
     memory: "200Mi"
+
+volumes:
+  dataSizeLimit: 200Mi
+  logSizeLimit: 300Mi
+  tmpSizeLimit: 100Mi
+  bitnamiLogsSizeLimit: 200Mi
+  bitnamiTmpSizeLimit: 100Mi
+  bitnamiConfigSizeLimit: 50Mi
+  nginxLogsSizeLimit: 200Mi
+  nginxTmpSizeLimit: 100Mi
+  nginxConfigSizeLimit: 50Mi
+
 ## Elasticsearch coordinating-only container's liveness and readiness probes
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
 ##
@@ -144,6 +156,13 @@ sysctlImage:
 # nginx image
 nginx:
   pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "400Mi"
+    requests:
+      cpu: "25m"
+      memory: "50Mi"
   service:
     name: nginx
     ports:
@@ -258,6 +277,13 @@ service:
   # loadBalancerIP:
   ## Provide functionality to use RBAC
   ##
+
+#################################################################
+# system ctl configuration
+#################################################################
+sysctl_conf: |-
+  vm.max_map_count=262144
+  fs.file-max=65536
 
 #################################################################
 # subcharts configuration defaults.

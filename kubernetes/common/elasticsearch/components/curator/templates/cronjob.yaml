@@ -51,7 +51,8 @@ spec:
           {{- if .Values.priorityClassName }}
           priorityClassName: {{ .Values.priorityClassName | quote }}
           {{- end }}
-{{- include "elasticsearch.imagePullSecrets" . | indent 10 }}
+          {{- include "elasticsearch.imagePullSecrets" . | indent 10 }}
+          {{ include "common.podSecurityContext" . | indent 10 | trim }}
           {{- if .Values.extraInitContainers }}
           initContainers:
             {{- range $key, $value := .Values.extraInitContainers }}
@@ -71,13 +72,11 @@ spec:
           {{- if .Values.tolerations }}
           tolerations: {{- include "common.tplValue" (dict "value" .Values.tolerations "context" $) | nindent 12 }}
           {{- end }}
-          {{- if .Values.securityContext }}
-          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
-          {{- end }}
           containers:
             - name: {{ template "common.fullname" . }}-curator
               image: {{printf "%s/%s" (include "repositoryGenerator.repository" .)  .Values.image }}
               imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+              {{ include "common.containerSecurityContext" . | indent 14 | trim }}
               volumeMounts:
                 - name: config-volume
                   mountPath: /etc/es-curator
