@@ -41,17 +41,22 @@ spec:
       tolerations: {{- include "common.tplValue" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ template "elasticsearch.serviceAccountName" . }}
-      {{- if .Values.securityContext.enabled }}
-      securityContext:
-        fsGroup: {{ .Values.securityContext.fsGroup }}
-      {{- end }}
-
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
       initContainers:
-      {{- if .Values.sysctlImage.enabled }}
+       {{- if .Values.sysctlImage.enabled }}
+        ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources:
+            limits:
+              cpu: 20m
+              memory: 50Mi
+            requests:
+              cpu: 5m
+              memory: 20Mi
           command:
             - /bin/sh
             - -c
@@ -59,11 +64,52 @@ spec:
               set -o errexit
               set -o pipefail
               set -o nounset
-              sysctl -w vm.max_map_count=262144 && sysctl -w fs.file-max=65536
-          securityContext:
-            privileged: true
-      {{- end }}
-
+          volumeMounts:
+            - mountPath: /etc/sysctl.conf
+              name: config
+              subPath: sysctl.conf
+        {{- end }}
+        - name: {{ include "common.name" . }}-config-copy
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources:
+            limits:
+              cpu: 20m
+              memory: 50Mi
+            requests:
+              cpu: 5m
+              memory: 20Mi
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp -R /opt/bitnami/elasticsearch/config/. /opt/bitnami/elasticsearch/config_rw
+          volumeMounts:
+            - mountPath: /opt/bitnami/elasticsearch/config_rw
+              name: bitnami-config
+        - name: {{ include "common.name" . }}-nginx-config-copy
+          image: {{ include "repositoryGenerator.image.nginx" . }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.nginx.pullPolicy | quote }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources:
+            limits:
+              cpu: 20m
+              memory: 50Mi
+            requests:
+              cpu: 5m
+              memory: 20Mi
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp -R /opt/bitnami/nginx/conf/. /opt/bitnami/nginx/conf_rw;
+              cp -R /opt/bitnami/nginx/logs/. /opt/bitnami/nginx/logs_rw
+          volumeMounts:
+            - mountPath: /opt/bitnami/nginx/conf_rw
+              name: nginx-config
+            - mountPath: /opt/bitnami/nginx/logs_rw
+              name: nginx-logs
       containers:
         - name: {{ include "common.name" . }}-nginx
           image: {{ include "repositoryGenerator.image.nginx" . }}
@@ -78,7 +124,14 @@ spec:
           {{- if .Values.nginx.resources }}
           resources: {{- toYaml .Values.nginx.resources | nindent 12 }}
           {{- end }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           volumeMounts:
+          - mountPath: /opt/bitnami/nginx/conf
+            name: nginx-config
+          - mountPath: /opt/bitnami/nginx/tmp
+            name: nginx-tmp
+          - mountPath: /opt/bitnami/nginx/logs
+            name: nginx-logs
           {{- if .Values.nginx.serverBlock }}
           - name: nginx-server-block
             mountPath: /opt/bitnami/nginx/conf/server_blocks
@@ -86,11 +139,8 @@ spec:
 
         - name: {{ include "common.name" . }}-elasticsearch
           image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
-          {{- if .Values.securityContext.enabled }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-          {{- end }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           env:
             - name: BITNAMI_DEBUG
               value: {{ ternary "true" "false" .Values.debug | quote }}
@@ -143,6 +193,14 @@ spec:
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end}}
           volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /opt/bitnami/elasticsearch/logs
+              name: bitnami-logs
+            - mountPath: /opt/bitnami/elasticsearch/tmp
+              name: bitnami-tmp
+            - mountPath: /opt/bitnami/elasticsearch/config
+              name: bitnami-config
             {{- if .Values.config }}
             - mountPath: /opt/bitnami/elasticsearch/config/elasticsearch.yml
               name: config
@@ -154,13 +212,33 @@ spec:
             {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
             {{- end }}
       volumes:
-        {{- if .Values.config }}
         - name: config
           configMap:
             name: {{ include "common.fullname" . }}
-        {{- end }}
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+          name: tmp
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiLogsSizeLimit }}
+          name: bitnami-logs
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiTmpSizeLimit }}
+          name: bitnami-tmp
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiConfigSizeLimit }}
+          name: bitnami-config
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.nginxLogsSizeLimit }}
+          name: nginx-logs
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.nginxTmpSizeLimit }}
+          name: nginx-tmp
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.nginxConfigSizeLimit }}
+          name: nginx-config
         - name: data
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.dataSizeLimit }}
         {{- if .Values.extraVolumes }}
         {{- toYaml .Values.extraVolumes | nindent 8 }}
         {{- end }}

@@ -20,11 +20,10 @@ kind: Job
 metadata:
   name: {{ include "common.fullname" . }}-config-job
   namespace: {{ include "common.namespace" . }}
-  labels:
-    app: {{ include "common.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ include "common.release" . }}
-    heritage: {{ .Release.Service }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+  {{- if .Values.jobAnnotations }}
+  annotations:  {{- include "common.tplValue" (dict "value" .Values.jobAnnotations "context" $) | nindent 4 }}
+  {{- end }}
 spec:
   backoffLimit: 20
   template:
@@ -35,9 +34,7 @@ spec:
         # Istio CNI plugin, see:
         # (https://istio.io/latest/docs/setup/additional-setup/cni/#compatibility-with-application-init-containers)
         traffic.sidecar.istio.io/excludeOutboundPorts: "443"
-      labels:
-        app: {{ include "common.name" . }}
-        release: {{ include "common.release" . }}
+      labels: {{- include "common.labels" . | nindent 8 }}
       name: {{ include "common.name" . }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
