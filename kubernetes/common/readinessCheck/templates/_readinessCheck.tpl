@@ -85,10 +85,12 @@
 {{-   $wait_for := default $initRoot.wait_for .wait_for -}}
 {{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
 {{-   $services := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "services" -}}
+{{-   $serviceMeshes := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "serviceMeshes" -}}
 {{-   $pods := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "pods" -}}
 {{-   $apps := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "apps" -}}
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
 {{-   $jobs := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "jobs" -}}
+{{-   $timeout := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "timeout" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: {{ include "repositoryGenerator.image.readiness" $subchartDot }}
   imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
@@ -117,6 +119,10 @@
   - --service-name
   - {{ tpl $service $dot }}
   {{- end }}
+  {{- range $serviceMesh := default (list) $serviceMeshes }}
+  - --service-mesh-check
+  - {{ tpl $serviceMesh $dot }}
+  {{- end }}
   {{- range $app := default (list) $apps }}
   - --app-name
   - {{ tpl $app $dot }}
@@ -124,6 +130,10 @@
   {{- range $job := $jobs }}
   - --job-name
   - {{ tpl $job $dot }}
+  {{- end }}
+  {{- if hasKey $wait_for "timeout" }}
+  - -t
+  - {{ $timeout | int }}
   {{- end }}
   env:
   - name: NAMESPACE

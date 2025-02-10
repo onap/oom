@@ -44,17 +44,21 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- include "common.tplValue" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.securityContext.enabled }}
-      securityContext:
-        fsGroup: {{ .Values.securityContext.fsGroup }}
-      {{- end }}
-      {{- if or .Values.sysctlImage.enabled (and .Values.volumePermissions.enabled .Values.persistence.enabled) }}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
         {{- if .Values.sysctlImage.enabled }}
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
           image: {{ include "repositoryGenerator.image.busybox" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources:
+            limits:
+              cpu: 20m
+              memory: 50Mi
+            requests:
+              cpu: 5m
+              memory: 20Mi
           command:
             - /bin/sh
             - -c
@@ -62,37 +66,35 @@ spec:
               set -o errexit
               set -o pipefail
               set -o nounset
-              sysctl -w vm.max_map_count=262144 && sysctl -w fs.file-max=65536
-          securityContext:
-            privileged: true
+          volumeMounts:
+            - mountPath: /etc/sysctl.conf
+              name: config
+              subPath: sysctl.conf
         {{- end }}
-        {{- if and .Values.volumePermissions.enabled .Values.persistence.enabled }}
-        - name: volume-permissions
-          image: {{ include "repositoryGenerator.image.busybox" . }}
+        - name: {{ include "common.name" . }}-config-copy
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          resources:
+            limits:
+              cpu: 20m
+              memory: 50Mi
+            requests:
+              cpu: 5m
+              memory: 20Mi
           command:
             - /bin/sh
             - -c
             - |
-              chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.fsGroup }} //bitnami/elasticsearch/data
-          securityContext:
-            runAsUser: 0
-          {{- if .Values.volumePermissions.resource }}
-          resources: {{- toYaml .Values.volumePermissions.resources | nindent 12 }}
-          {{- end }}
+              cp -R /opt/bitnami/elasticsearch/config/. /opt/bitnami/elasticsearch/config_rw
           volumeMounts:
-            - name: data
-              mountPath: "/bitnami/elasticsearch/data"
-        {{- end }}
-      {{- end }}
+            - mountPath: /opt/bitnami/elasticsearch/config_rw
+              name: bitnami-config
       containers:
         - name: {{ include "common.name" . }}-data
-          image: {{ printf "%s/%s" (include "repositoryGenerator.dockerHubRepository" .)  .Values.image }}
+          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          {{- if .Values.securityContext.enabled }}
-          securityContext:
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-          {{- end }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           env:
             - name: BITNAMI_DEBUG
               value: {{ ternary "true" "false" .Values.debug | quote }}
@@ -143,10 +145,23 @@ spec:
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
           volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /opt/bitnami/elasticsearch/logs
+              name: bitnami-logs
+            - mountPath: /opt/bitnami/elasticsearch/tmp
+              name: bitnami-tmp
+            - mountPath: /opt/bitnami/elasticsearch/config
+              name: bitnami-config
             {{- if .Values.config }}
             - mountPath: /opt/bitnami/elasticsearch/config/elasticsearch.yml
               name: "config"
               subPath: elasticsearch.yml
+            {{- end }}
+            {{- if .Values.sysctlImage.enabled }}
+            - mountPath: /etc/sysctl.conf
+              name: config
+              subPath: sysctl.conf
             {{- end }}
             - name: "data"
               mountPath: "/bitnami/elasticsearch/data"
@@ -154,17 +169,28 @@ spec:
             {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
             {{- end }}
       volumes:
-        {{- if .Values.config }}
         - name: "config"
           configMap:
             name: {{ template "common.fullname" . }}
-        {{- end }}
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+          name: tmp
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiLogsSizeLimit }}
+          name: bitnami-logs
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiTmpSizeLimit }}
+          name: bitnami-tmp
+        - emptyDir:
+            sizeLimit: {{ .Values.volumes.bitnamiConfigSizeLimit }}
+          name: bitnami-config
         {{- if .Values.extraVolumes }}
         {{- toYaml .Values.extraVolumes | nindent 8 }}
         {{- end }}
 {{- if not .Values.persistence.enabled }}
         - name: "data"
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.dataSizeLimit }}
 {{- else }}
   volumeClaimTemplates:
     - metadata:
