@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2020 Orange
+# Modification Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +24,7 @@
   - name: filebeat-conf
     mountPath: /usr/share/filebeat/filebeat.yml
     subPath: filebeat.yml
-  - name: logs
+  - name: sidecar-logs
     mountPath: {{ .Values.log.path }}
   - name: filebeat-data
     mountPath: /usr/share/filebeat/data
@@ -45,7 +46,11 @@
   configMap:
     name: {{ $configMapName }}
 - name: filebeat-data
-  emptyDir: {}
+  emptyDir:
+    sizeLimit: {{ $dot.Values.log.dataSizeLimit }}
+- name: sidecar-logs
+  emptyDir:
+    sizeLimit: {{ $dot.Values.log.sizeLimit }}
 {{- end -}}
 {{- end -}}
 

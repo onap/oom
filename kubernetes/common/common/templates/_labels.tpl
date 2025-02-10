@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2019 Orange
-# Modifications Copyright (C) 2022 Bell Canada
+# Modifications Copyright © 2022 Bell Canada
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +24,14 @@ The function takes several arguments (inside a dictionary):
      - .dot : environment (.)
      - .labels : labels to add (dict)
      - .suffix : name suffix
+     - .prefix : name prefix
 */}}
 {{- define "common.labels" -}}
 {{- $dot := default . .dot -}}
-{{- $suffix := .suffix -}}
-app.kubernetes.io/name: {{ include "common.name" (dict "dot" $dot "suffix" $suffix) }}
-app: {{ include "common.name" (dict "dot" $dot "suffix" $suffix) }}
+{{- $suffix := default "" .suffix -}}
+{{- $prefix := default "" .prefix -}}
+app.kubernetes.io/name: {{ include "common.name" (dict "dot" $dot "suffix" $suffix "prefix" $prefix) }}
+app: {{ include "common.name" (dict "dot" $dot "suffix" $suffix "prefix" $prefix) }}
 {{- if $dot.Chart.AppVersion }}
 version: "{{ $dot.Chart.AppVersion | replace "+" "_" }}"
 {{- else }}
@@ -101,12 +104,14 @@ matchLabels: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "
     The function takes several arguments (inside a dictionary)
      - .dot : environment (.)
      - .labels: labels to add (dict)
+     - .annotations: annotation to add (dict)
 */}}
 {{- define "common.templateMetadata" -}}
 {{- $dot := default . .dot -}}
 {{- $labels := default (dict) .labels -}}
-{{- if $dot.Values.podAnnotations }}
-annotations: {{- include "common.tplValue" (dict "value" $dot.Values.podAnnotations "context" $dot) | nindent 2 }}
+{{- $annotations := default $dot.Values.podAnnotations .annotations -}}
+{{- if $annotations}}
+annotations: {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2 }}
 {{- end }}
 labels: {{- include "common.labels" (dict "labels" $labels "ignoreHelmChart" .ignoreHelmChart "dot" $dot) | nindent 2 }}
 name: {{ include "common.name" $dot }}
