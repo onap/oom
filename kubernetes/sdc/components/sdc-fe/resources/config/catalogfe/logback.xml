@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+        <property scope="system" name="ECOMP-component-name" value="SDC" />
+        <property scope="system" name="ECOMP-subcomponent-name" value="SDC-FE" />
+        <property file="${config.home}/catalog-fe/configuration.yaml" />
+        <property scope="context" name="enable-all-log" value="false" />
+
+        <!-- value used by pattern field list (| - is inter-field separator, || - unavailable or not applicable field value) (m - mandatory, o- optional)-->
+        <!--timestamp(m)| requestID(m)| serviceInstanceID(o)| threadID(m)| physicalServerName(o)| serviceName(m)| userID(m)| logLevel(m)| severity(o)| serverIpAddress(m)| serverName(m)| clientIpAddress(o)| className(m)| timer(o)| detailedMessage(o)-->
+        <property name="default-log-pattern"
+                value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%X{uuid}|%X{serviceInstanceID}|%thread||${ECOMP-subcomponent-name}|%X{userId}|%level|%X{alarmSeverity}|%X{localAddr}|${feFqdn}|%X{remoteAddr}|%logger{35}|%X{timer}|ActivityType=&lt;%M&gt;, Desc=&lt;%msg&gt;%n" />
+
+        <!-- All log -->
+        <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
+                <then>
+                        <appender name="ALL_ROLLING"
+                                class="ch.qos.logback.core.rolling.RollingFileAppender">
+                                <file>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/all.log
+                                </file>
+
+                                <rollingPolicy
+                                        class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+                                        <fileNamePattern>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/all.log.%i
+                                        </fileNamePattern>
+                                        <minIndex>1</minIndex>
+                                        <maxIndex>10</maxIndex>
+                                </rollingPolicy>
+
+                                <triggeringPolicy
+                                        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                                        <maxFileSize>20MB</maxFileSize>
+                                </triggeringPolicy>
+                                <encoder>
+                                        <pattern>${default-log-pattern}</pattern>
+                                </encoder>
+                        </appender>
+
+                        <appender name="ASYNC_ALL" class="ch.qos.logback.classic.AsyncAppender">
+                                <appender-ref ref="ALL_ROLLING" />
+                        </appender>
+                </then>
+        </if>
+
+        <!-- Error log -->
+        <appender name="ERROR_ROLLING"
+                class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/error.log
+                </file>
+
+                <!-- Audit messages filter - deny audit messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>AUDIT_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- Transaction messages filter - deny Transaction messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>TRANSACTION_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- deny all events with a level below INFO, that is TRACE and DEBUG -->
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                        <level>INFO</level>
+                </filter>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+                        <fileNamePattern>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/error.log.%i
+                        </fileNamePattern>
+                        <minIndex>1</minIndex>
+                        <maxIndex>10</maxIndex>
+                </rollingPolicy>
+
+                <triggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                        <maxFileSize>20MB</maxFileSize>
+                </triggeringPolicy>
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <appender name="ERROR_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+                <!-- Audit messages filter - deny audit messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>AUDIT_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- Transaction messages filter - deny Transaction messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>TRANSACTION_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- deny all events with a level below INFO, that is TRACE and DEBUG -->
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                        <level>INFO</level>
+                </filter>
+
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <!-- Debug log -->
+        <appender name="DEBUG_ROLLING"
+                class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/debug.log
+                </file>
+
+                <!-- No need to deny audit messages - they are INFO only, will be denied
+                        anyway -->
+                <!-- Transaction messages filter - deny Transaction messages, there are
+                        some DEBUG level messages among them -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>TRANSACTION_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- accept DEBUG and TRACE level -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator> <!-- defaults to type ch.qos.logback.classic.boolex.JaninoEventEvaluator -->
+                                <expression>return level &lt;= DEBUG;</expression>
+                        </evaluator>
+                        <OnMismatch>DENY</OnMismatch>
+                        <OnMatch>NEUTRAL</OnMatch>
+                </filter>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+                        <fileNamePattern>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/debug.log.%i
+                        </fileNamePattern>
+                        <minIndex>1</minIndex>
+                        <maxIndex>10</maxIndex>
+                </rollingPolicy>
+
+                <triggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                        <maxFileSize>20MB</maxFileSize>
+                </triggeringPolicy>
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <appender name="DEBUG_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+                <!-- No need to deny audit messages - they are INFO only, will be denied
+                        anyway -->
+                <!-- Transaction messages filter - deny Transaction messages, there are
+                        some DEBUG level messages among them -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>TRANSACTION_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>NEUTRAL</onMismatch>
+                        <onMatch>DENY</onMatch>
+                </filter>
+
+                <!-- accept DEBUG and TRACE level -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator> <!-- defaults to type ch.qos.logback.classic.boolex.JaninoEventEvaluator -->
+                                <expression>return level &lt;= DEBUG;</expression>
+                        </evaluator>
+                        <OnMismatch>DENY</OnMismatch>
+                        <OnMatch>NEUTRAL</OnMatch>
+                </filter>
+
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <!-- Audit log -->
+        <appender name="AUDIT_ROLLING"
+                class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+                <file>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/audit.log
+                </file>
+
+                <!-- Audit messages filter - accept audit messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>AUDIT_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>DENY</onMismatch>
+                        <onMatch>ACCEPT</onMatch>
+                </filter>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+                        <fileNamePattern>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/audit.log.%i
+                        </fileNamePattern>
+                        <minIndex>1</minIndex>
+                        <maxIndex>10</maxIndex>
+                </rollingPolicy>
+
+                <triggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                        <maxFileSize>20MB</maxFileSize>
+                </triggeringPolicy>
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <!-- SdncTransaction log -->
+        <appender name="TRANSACTION_ROLLING"
+                class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+                <file>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/transaction.log
+                </file>
+
+                <!-- Transaction messages filter - accept audit messages -->
+                <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+                        <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                                <marker>TRANSACTION_MARKER</marker>
+                        </evaluator>
+                        <onMismatch>DENY</onMismatch>
+                        <onMatch>ACCEPT</onMatch>
+                </filter>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+                        <fileNamePattern>${log.home}/${ECOMP-component-name}/${ECOMP-subcomponent-name}/transaction.log.%i
+                        </fileNamePattern>
+                        <minIndex>1</minIndex>
+                        <maxIndex>10</maxIndex>
+                </rollingPolicy>
+
+                <triggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+                        <maxFileSize>20MB</maxFileSize>
+                </triggeringPolicy>
+                <encoder>
+                        <pattern>${default-log-pattern}</pattern>
+                </encoder>
+        </appender>
+
+        <!-- Asynchronicity Configurations -->
+        <appender name="ASYNC_DEBUG" class="ch.qos.logback.classic.AsyncAppender">
+              <appender-ref ref="DEBUG_ROLLING" />
+        </appender>
+
+        <appender name="ASYNC_TRANSACTION" class="ch.qos.logback.classic.AsyncAppender">
+              <appender-ref ref="TRANSACTION_ROLLING" />
+        </appender>
+
+        <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+              <appender-ref ref="ERROR_ROLLING" />
+        </appender>
+
+
+        <root level="INFO">
+                <appender-ref ref="ASYNC_ERROR" />
+                <appender-ref ref="ASYNC_DEBUG" />
+                <appender-ref ref="AUDIT_ROLLING" />
+                <appender-ref ref="ASYNC_TRANSACTION" />
+                <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
+                        <then>
+                                <appender-ref ref="ALL_ROLLING" />
+                        </then>
+                </if>
+        </root>
+
+        <logger name="org.openecomp.sdc" level="INFO" />
+</configuration>
