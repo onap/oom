@@ -41,6 +41,9 @@ metadata:
   name: {{ include "common.fullname" . }}-create-db-schema
   namespace: {{ include "common.namespace" . }}
   labels: {{- include "common.labels" (dict "labels" .Values.labels "ignoreHelmChart" .Values.ignoreHelmChart "dot" . "suffix" "job") | nindent 4 }}
+  {{- if .Values.jobAnnotations.createDBSchema }}
+  annotations:  {{- include "common.tplValue" (dict "value" .Values.jobAnnotations.createDBSchema "context" $) | nindent 4 }}
+  {{- end }}
 spec:
   backoffLimit: 20
   template:
@@ -55,7 +58,7 @@ spec:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        {{ include "common.containerSecurityContext" . | nindent 8 | trim }}
         command:
         - sh
         args:
@@ -81,8 +84,8 @@ spec:
             secretKeyRef:
               name: {{ include "common.release" . }}-{{ .Values.global.aaiGraphKafkaUser }}
               key: sasl.jaas.config
-        ports:
         {{- if .Values.config.debug.enabled }}
+        ports:
         - containerPort: {{ .Values.service.debugPort }}
           name: {{ .Values.service.debugPortName }}
         {{- end }}
@@ -125,4 +128,4 @@ spec:
           name: {{ include "common.fullname" . }}-properties
       restartPolicy: Never
       {{- include "common.imagePullSecrets" . | nindent 6 }}
-{{ end }}
+{{- end }}
