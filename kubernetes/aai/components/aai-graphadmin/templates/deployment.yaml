@@ -23,7 +23,7 @@
 */}}
 apiVersion: apps/v1
 kind: Deployment
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" (dict "annotations" .Values.annotations "dot" .) | nindent 2 }}
 spec:
   {{- if .Values.config.debug.enabled }}
   replicas: 1
@@ -61,13 +61,6 @@ spec:
         - name: {{ $key | upper | quote}}
           value: {{ $value | quote}}
         {{- end }}
-        {{- end }}
-        {{- if eq .Values.flavor "small" }}
-        - name: MAX_HEAP_SIZE
-          value: {{ .Values.small.maxHeapSize | quote }}
-        {{- else if eq .Values.flavor "large" }}
-        - name: MAX_HEAP_SIZE
-          value: {{ .Values.large.maxHeapSize | quote }}
         {{- end }}
         - name: INTERNAL_PORT_1
           value: {{ .Values.service.appPort | quote }}
@@ -170,13 +163,12 @@ spec:
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{ toYaml .Values.nodeSelector | indent 8 }}
       {{- end -}}
       {{- if .Values.affinity }}
       affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+      {{ toYaml .Values.affinity | indent 8 }}
       {{- end }}
-
       # side car containers
       {{ include "common.log.sidecar" . | nindent 6 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}

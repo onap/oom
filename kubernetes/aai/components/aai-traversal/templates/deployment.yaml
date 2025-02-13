@@ -20,7 +20,7 @@
 
 apiVersion: apps/v1
 kind: Deployment
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata: {{- include "common.resourceMetadata" (dict "annotations" .Values.annotations "dot" .) | nindent 2 }}
 spec:
   {{- if or .Values.config.debug.enabled .Values.config.profiling.enabled }}
   replicas: 1
@@ -41,55 +41,6 @@ spec:
       app: {{ include "common.name" . }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
-      {{- if .Values.global.msbEnabled }}
-        {{ $values := .Values }}
-        msb.onap.org/service-info: '[
-        {{- range $api_endpoint := $values.aai_enpoints -}}
-          {{- range $api_version := $values.api_list }}
-          {
-              "serviceName": "_{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1",
-              "path": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}"
-          },
-          {
-              "serviceName": "{{ $api_endpoint.name }}",
-              "version": "v{{ $api_version }}",
-              "url": "/aai/v{{ $api_version }}/{{ $api_endpoint.url }}",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1"
-          },
-          {{- end }}
-        {{- end }}
-          {
-              "serviceName": "_aai-named-query",
-              "url": "/aai/search",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1",
-              "path": "/aai/search"
-          },
-          {
-              "serviceName": "aai-named-query",
-              "url": "/aai/search",
-              "protocol": "REST",
-              "port": "8446",
-              "enable_ssl": true,
-              "lb_policy":"ip_hash",
-              "visualRange": "1"
-          }
-          ]'
-      {{- end }}
     spec:
       hostname: aai-traversal
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
@@ -195,7 +146,7 @@ spec:
                 - -c
                 - |
                   while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1)
-                  do sleep 10
+                  do sleep 3
                   done
         # disable liveness probe when
         # debugging.enable=true or profiling.enabled=true
