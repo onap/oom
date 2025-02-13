@@ -103,7 +103,7 @@ global: # global defaults
       clients: SDNC,-1|MSO,-1|SO,-1|robot-ete,-1
 
 # application image
-image: onap/aai-graphadmin:1.15.2
+image: onap/aai-graphadmin:1.15.4
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -112,7 +112,7 @@ flavor: small
 replicaCount: 1
 
 # number of ReplicaSets that should be retained for the Deployment
-revisionHistoryLimit: 2
+revisionHistoryLimit: 1
 
 # the minimum number of seconds that a newly created Pod should be ready
 minReadySeconds: 30
@@ -196,7 +196,8 @@ config:
       - "-Djava.rmi.server.hostname=127.0.0.1"
   env:
     BOOTSTRAP_SERVERS: onap-strimzi-kafka-bootstrap:9092
-
+    DATA_SNAPSHOT_TASKS_ENABLED: false
+    DATA_SNAPSHOT_CLEANUP_ENABLED: false
 
 nodeSelector: {}
 
@@ -205,7 +206,7 @@ affinity: {}
 # probe configuration parameters
 liveness:
   enabled: true
-  path: /actuator/health/liveness
+  path: /actuator/health
   periodSeconds: 10
 
 readiness:
@@ -319,13 +320,6 @@ resources:
       memory: "4Gi"
   unlimited: {}
 
-# define the heap size for the JVM
-# according to the resource flavor
-small:
-  maxHeapSize: "1g"
-large:
-  maxHeapSize: "5g"
-
 metrics:
   serviceMonitor:
     enabled: true
@@ -394,3 +388,13 @@ volumes:
 
 podAnnotations:
   checksum/config: '{{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}'
+
+jobAnnotations:
+  backup:
+    "helm.sh/hook": pre-upgrade,pre-rollback,post-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+  migration:
+    "helm.sh/hook": pre-upgrade,pre-rollback,post-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation

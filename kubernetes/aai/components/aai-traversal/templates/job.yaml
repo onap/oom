@@ -26,10 +26,9 @@ metadata:
   namespace: {{ include "common.namespace" . }}
   labels: {{- include "common.labels" . | nindent 4 }}
 {{ if .Values.global.jobs.migration.enabled }}
-  annotations:
-    "helm.sh/hook": post-upgrade,post-rollback,post-install
-    "helm.sh/hook-weight": "2"
-    "helm.sh/hook-delete-policy": before-hook-creation
+  {{- if .Values.jobAnnotations }}
+  annotations:  {{- include "common.tplValue" (dict "value" .Values.jobAnnotations "context" $) | nindent 4 }}
+  {{- end }}
 {{ end }}
 spec:
   template:
@@ -43,6 +42,16 @@ spec:
       - name: {{ include "common.name" . }}-wait-for-aai-haproxy
         image: {{ include "repositoryGenerator.image.readiness" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        securityContext:
+          runAsUser: 100
+          runAsGroup: 65533
+          readOnlyRootFilesystem: true
+          privileged: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+              - CAP_NET_RAW
         command:
         - sh
         - "-c"
@@ -60,16 +69,6 @@ spec:
           requests:
             cpu: "3m"
             memory: "20Mi"
-        securityContext:
-          runAsUser: 100
-          runAsGroup: 65533
-          readOnlyRootFilesystem: true
-          privileged: false
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-              - CAP_NET_RAW
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
