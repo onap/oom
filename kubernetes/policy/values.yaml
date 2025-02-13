@@ -1,6 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2020 AT&T Intellectual Property
-# Modifications Copyright (C) 2021-2024 Nordix Foundation.
+# Modifications Copyright (C) 2021-2025 Nordix Foundation.
 # Modifications Copyright © 2024 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,21 +21,7 @@
 global:
   mariadbGalera:
     useInPolicy: false
-    localCluster: true
-    # flag to enable the DB creation via mariadb-operator
-    useOperator: false
-    # if useOperator set to "true", set "enableServiceAccount to "false"
-    # as the SA is created by the Operator
-    enableServiceAccount: true
-    # '&mariadbConfig' means we "store" the values for  later use in the file
-    # with '*mariadbConfig' pointer.
-    config: &mariadbConfig
-      mysqlDatabase: policyadmin
-    service: &mariadbService policy-mariadb
-    internalPort: 3306
-    nameOverride: *mariadbService
-    # (optional) if localCluster=false and an external secret is used set this variable
-    #userRootSecret: <secretName>
+    localCluster: false
   prometheusEnabled: false
   postgres:
     useInPolicy: true
@@ -66,19 +52,7 @@ secrets:
   - uid: db-root-password
     name: &dbRootPassSecretName '{{ include "common.release" . }}-policy-db-root-password'
     type: password
-    externalSecret: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
-               ( .Values.global.mariadbGalera.localCluster | ternary
-                 ( hasSuffix "policy-db-root-password" (index .Values "mariadb-galera" "rootUser" "externalSecret") | ternary
-                   ""
-                   (tpl (default "" (index .Values "mariadb-galera" "rootUser" "externalSecret")) .)
-                 )
-                 ( not (empty (default "" .Values.global.mariadbGalera.userRootSecret)) | ternary
-                   .Values.global.mariadbGalera.userRootSecret
-                   (include "common.mariadb.secret.rootPassSecretName"
-                     (dict "dot" . "chartName" .Values.global.mariadbGalera.nameOverride)
-                   )
-                 )
-               )
+    externalSecret: '{{ .Values.global.postgres.useInPolicy | ternary
                ( .Values.global.postgres.localCluster | ternary
                  ( hasSuffix "policy-db-root-password" (index .Values "postgres" "config" "pgRootPasswordExternalSecret") | ternary
                    ""
@@ -90,33 +64,23 @@ secrets:
                      (dict "dot" . "chartName" .Values.global.postgres.nameOverride)
                    )
                  )
-               ) }}'
-    password: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
-                  (index .Values "mariadb-galera" "rootUser" "password")
-                  (index .Values "postgres" "config" "pgRootPassword")
+               )
+               ""
                }}'
+    password: '{{ (index .Values "postgres" "config" "pgRootPassword") }}'
     policy: generate
   - uid: db-secret
     name: &dbSecretName '{{ include "common.release" . }}-policy-db-secret'
     type: basicAuth
-    externalSecret: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
-                        ( hasSuffix "policy-db-secret" (index .Values "mariadb-galera" "db" "externalSecret") | ternary
-                          ""
-                          (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .)
-                        )
+    externalSecret: '{{ .Values.global.postgres.useInPolicy | ternary
                         ( hasSuffix "policy-db-secret" (index .Values "postgres" "config" "pgUserExternalSecret") | ternary
                           ""
                           (tpl (default "" (index .Values "postgres" "config" "pgUserExternalSecret")) .)
                         )
+                        ""
                      }}'
-    login: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
-               (index .Values "mariadb-galera" "db" "user")
-               (index .Values "postgres" "config" "pgUserName")
-            }}'
-    password: '{{ .Values.global.mariadbGalera.useInPolicy | ternary
-                  (index .Values "mariadb-galera" "db" "password")
-                  (index .Values "postgres" "config" "pgUserPassword")
-               }}'
+    login: '{{ (index .Values "postgres" "config" "pgUserName") }}'
+    password: '{{ (index .Values "postgres" "config" "pgUserPassword") }}'
     passwordPolicy: generate
   - uid: policy-app-user-creds
     name: &policyAppCredsSecret '{{ include "common.release" . }}-policy-app-user-creds'
@@ -208,11 +172,8 @@ policy-nexus:
 #################################################################
 
 dbmigrator:
-  # New released image will allow full SASL and Postgres (drools included). Tested with snapshot. Release to come later.
-  image: onap/policy-db-migrator:4.0.1
-  # These schemas will be required with the new version of db-migrator
-  # schemas: "policyadmin clampacm pooling operationshistory"
-  schemas: "policyadmin"
+  image: onap/policy-db-migrator:4.1.0
+  schemas: "policyadmin clampacm pooling operationshistory"
   policy_home: "/opt/app/policy"
 
 subChartsOnly:
@@ -224,9 +185,9 @@ debugEnabled: false
 # default number of instances
 replicaCount: 1
 
-nodeSelector: {}
+nodeSelector: { }
 
-affinity: {}
+affinity: { }
 
 # probe configuration parameters
 liveness:
@@ -239,7 +200,6 @@ liveness:
 readiness:
   initialDelaySeconds: 10
   periodSeconds: 10
-
 
 config:
   policyAppUserName: runtimeUser
@@ -265,30 +225,6 @@ config:
     consumer:
       groupId: policy-group
   someConfig: blah
-
-mariadb-galera:
-  # mariadb-galera.config and global.mariadbGalera.config must be equals
-  db:
-    user: policy-user
-    # password:
-    externalSecret: *dbSecretName
-    name: &mysqlDbName policyadmin
-  rootUser:
-    externalSecret: *dbRootPassSecretName
-  nameOverride: *mariadbService
-  # mariadb-galera.service and global.mariadbGalera.service must be equals
-  service:
-    name: *mariadbService
-  replicaCount: 1
-  mariadbOperator:
-    galera:
-      enabled: false
-  persistence:
-    enabled: true
-    mountSubPath: policy/maria/data
-    size: 3Gi
-  serviceAccount:
-    nameOverride: *mariadbService
 
 postgresImage: library/postgres:17.2
 # application configuration override for postgres
@@ -317,9 +253,6 @@ readinessCheck:
   wait_for_postgres:
     services:
       - '{{ .Values.global.postgres.service.name2 }}'
-  wait_for_mariadb:
-    services:
-      - '{{ include "common.mariadbService" . }}'
 
 restServer:
   policyPapUserName: policyadmin
@@ -345,7 +278,7 @@ resources:
     requests:
       cpu: "200m"
       memory: "2Gi"
-  unlimited: {}
+  unlimited: { }
 
 securityContext:
   user_id: 100
