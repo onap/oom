@@ -24,10 +24,10 @@ Usage:
 {{- $realm := (required "'realm' param, set to the specific service, is required." .realm) -}}
 realm: {{ $realm.name }}
 {{ if $realm.displayName }}displayName: {{ $realm.displayName }}{{ end }}
-id: {{ $realm.name }}
 accessTokenLifespan: {{ default "1900" $realm.accessTokenLifespan }}
 registrationAllowed: {{ default false $realm.registrationAllowed }}
 resetPasswordAllowed: {{ default true $realm.resetPasswordAllowed }}
+{{ if $realm.passwordPolicy }}passwordPolicy: {{ $realm.passwordPolicy }}{{ end }}
 sslRequired: {{ default "external" $realm.sslRequired }}
 enabled: true
 {{ if $realm.themes }}
