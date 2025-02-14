@@ -24,10 +24,10 @@ Usage:
 {{- $realm := (required "'realm' param, set to the specific service, is required." .realm) -}}
 realm: {{ $realm.name }}
 {{ if $realm.displayName }}displayName: {{ $realm.displayName }}{{ end }}
-id: {{ $realm.name }}
 accessTokenLifespan: {{ default "1900" $realm.accessTokenLifespan }}
 registrationAllowed: {{ default false $realm.registrationAllowed }}
 resetPasswordAllowed: {{ default true $realm.resetPasswordAllowed }}
+{{ if $realm.passwordPolicy }}passwordPolicy: {{ $realm.passwordPolicy }}{{ end }}
 sslRequired: {{ default "external" $realm.sslRequired }}
 enabled: true
 {{ if $realm.themes }}
@@ -367,15 +367,15 @@ clientScopes:
 {{- if $dot.additionalClientScopes }}
 {{-   range $index, $scope := $dot.additionalClientScopes }}
 - name: {{ $scope.name }}
-  description: {{ (default "" $scope.description) | quote }}
+  description: "{{ (default "" $scope.description) | quote }}"
   protocol: openid-connect
   attributes:
     include.in.token.scope: 'false'
     display.on.consent.screen: 'true'
     gui.order: ''
     consent.screen.text: "${rolesScopeConsentText}"
-  {{- if $scope.protocolMappers }}
   protocolMappers:
+    {{- if $scope.protocolMappers }}
     {{- range $index2, $mapper := $scope.protocolMappers }}
     - name: {{ $mapper.name }}
       protocol: "openid-connect"
@@ -384,7 +384,8 @@ clientScopes:
       config:
         {{ toYaml $mapper.config | nindent 8 }}
     {{- end }}
-  {{- end }}
+    {{- end }}
+
 {{-   end }}
 {{- end }}
 - name: roles

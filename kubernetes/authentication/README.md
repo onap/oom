@@ -30,6 +30,9 @@ realmSettings:
     accessTokenLifespan:            - (optional) Access Tolek Lifespan (default: 1900)
     registrationAllowed:            - (optional) Enable/disable the registration page (default: false)
     resetPasswordAllowed:           - (optional) Show a link on login page for user to click when they have forgotten their credentials (default: true)
+    passwordPolicy:                 - (optional) Set Password policies, e.g.
+                                      "length(8) and specialChars(1) and upperCase(1) and lowerCase(1) and digits(1) and notUsername(undefined)
+                                       and notEmail(undefined) and notContainsUsername(undefined) and passwordHistory(3)"
     sslRequired:                    - (optional) Is HTTPS required? ('None'|'External'|'All requests' (default: "external")
     themes:                         - (optional) Keycloak Theme settings
       login: <login theme>          - (optional) Keycloak Theme for Login UI (e.g. "base")
