@@ -312,7 +312,7 @@ spec:
         authDelegatorRoleName: {{ $dbinst }}-auth
       gracefulShutdownTimeout: 5s
       securityContext:
-        readOnlyFileSystem: true
+        readOnlyRootFileSystem: true
         allowPrivilegeEscalation: false
         capabilities:
           drop:
