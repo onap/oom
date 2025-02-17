@@ -18,6 +18,10 @@
 # Declare variables to be passed into your templates.
 global:
   nodePortPrefix: 302
+  tracing:
+    enabled: false
+    collectorHost: jaeger-collector.istio-system
+    collectorPort: 9411
 
 subChartsOnly:
   enabled: true
@@ -25,7 +29,7 @@ subChartsOnly:
 flavor: small
 
 # application image
-image: onap/usecase-ui:15.0.0
+image: onap/usecase-ui:15.0.1
 pullPolicy: Always
 
 # application configuration
@@ -136,9 +140,25 @@ nginx:
           proxy_set_header X-Forwarded-Proto $scheme;
       }
 
-      # backend
-      location /api {
+      # uui-server
+      location /api/usecaseui-server {
           proxy_pass http://uui-server:8082;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+      # intent-service
+      location /api/usecaseui-intent-analysis {
+          proxy_pass http://uui-intent-analysis:8083;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+      # llm-service
+      location /api/usecaseui-llm-adaptation {
+          proxy_pass http://uui-nlp:33011;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
