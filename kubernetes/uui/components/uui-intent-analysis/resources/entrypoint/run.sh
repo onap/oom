@@ -20,7 +20,7 @@ main_path="/home/uui"
 echo @main_path@ $main_path
 
 JAVA_PATH="$JAVA_HOME/bin/java"
-JAVA_OPTS="-Xms50m -Xmx128m"
+JAVA_OPTS="-XX:MaxRAMPercentage=${MAX_RAM_PERCENTAGE:-70}"
 echo @JAVA_PATH@ $JAVA_PATH
 echo @JAVA_OPTS@ $JAVA_OPTS
 
