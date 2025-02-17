@@ -20,7 +20,11 @@
 # Global configuration defaults.
 #################################################################
 global:
-  nodePortPrefix: 302
+  tracing:
+    collector:
+      baseUrl: http://jaeger-collector.istio-system:9411
+    sampling:
+      probability: 1.0
 
 secrets:
   - uid: pg-root-pass
@@ -48,8 +52,9 @@ flavor: small
 
 # application image
 repository: nexus3.onap.org:10001
-image: onap/usecase-ui-server:15.0.0
+image: onap/usecase-ui-server:15.0.2
 pullPolicy: Always
+revisionHistoryLimit: 1
 
 # application configuration
 
@@ -102,28 +107,11 @@ readiness:
   periodSeconds: 10
 
 service:
-  type: NodePort
+  type: ClusterIP
   name: uui-server
-  internalPort: 8082
-  nodePortPrefixOverride: 303
   ports:
     - name: http
       port: 8082
-      nodePort: '99'
-  annotations:
-    msb.onap.org/service-info: |
-      {{ if .Values.global.msbEnabled -}}[
-        {
-          "serviceName": "usecaseui-server",
-          "version": "v1",
-          "url": "/api/usecase-server/v1",
-          "path":"/iui/usecaseui",
-          "protocol": "REST",
-          "visualRange":"1",
-          "port": "{{ include "common.getPort" (dict "global" . "name" "http" "getPlain" true) }}",
-          "enable_ssl": false
-        }
-      ]{{ end }}
 
 ingress:
   enabled: false
@@ -131,6 +119,16 @@ ingress:
     - baseaddr: "uui-server-api"
       name: "uui-server"
       port: 8082
+
+##
+## Use this to override the global defaults
+tracing:
+# enabled: false
+  collector: {}
+#   baseUrl: http://jaeger-collector.istio-system:9411
+  sampling: {}
+#   probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
+
 
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -148,7 +146,7 @@ resources:
       cpu: "1.5"
       memory: "2Gi"
     requests:
-      cpu: "1"
+      cpu: "300m"
       memory: "1Gi"
   large:
     limits:
@@ -186,3 +184,28 @@ wait_for_job_container:
 #   "helm.sh/hook": "pre-upgrade,pre-rollback,post-install"
 #   "helm.sh/hook-delete-policy": "before-hook-creation"
 #   "helm.sh/hook-weight": "1"
+
+uuiServer:
+  client:
+    aai:
+      baseUrl: http://aai.onap
+      username: AAI
+      password: AAI
+    so:
+      baseUrl: http://so.onap:8080
+      username: InfraPortalClient
+      password: password1
+    sdc:
+      baseUrl: http://sdc-be:8080
+      username: aai
+      password: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  slicing:
+    serviceInvariantUuid: defaultServiceInvariantUuid
+    serviceUuid: defaultServiceUuid
+    globalSubscriberId: defaultGlobalSubscriberId
+    serviceType: defaultServiceType
+  ccvpn:
+    globalCustomerId: defaultGlobalCustomerId
+    serviceType: defaultServiceType
+    subscriberName: defaultSubscriberName
+    subscriberType: defaultSubscriberType
