@@ -18,6 +18,10 @@
 # Declare variables to be passed into your templates.
 global:
   nodePortPrefix: 302
+  tracing:
+    enabled: false
+    collector-host: jaeger-collector.istio-system
+    collector-port: 9411
 
 subChartsOnly:
   enabled: true
@@ -25,13 +29,39 @@ subChartsOnly:
 flavor: small
 
 # application image
-image: onap/usecase-ui:15.0.0
+image: onap/usecase-ui:15.0.1
 pullPolicy: Always
 
 # application configuration
 
 msbaddr: msb-iag.{{include "common.namespace" .}}:80
 mraddr: message-router.{{include "common.namespace" .}}:3904
+
+uui-server:
+  client:
+    aai:
+      base-url: http://aai.onap
+      username: AAI
+      password: AAI
+    so:
+      base-url: http://so.onap:8080
+      username: InfraPortalClient
+      password: password1
+    sdc:
+      base-url: http://sdc-be:8080
+      username: aai
+      password: Kp8bJ4SXszM0WXlhak3eHlcse2gAw84vaoGGmJvUy2U
+  slicing:
+    service-invariant-uuid: defaultServiceInvariantUuid
+    service-uuid: defaultServiceUuid
+    global-subscriber-id: defaultGlobalSubscriberId
+    service-type: defaultServiceType
+  ccvpn:
+    global-customer-id: defaultGlobalCustomerId
+    service-type: defaultServiceType
+    subscriber-name: defaultSubscriberName
+    subscriber-type: defaultSubscriberType
+
 
 # flag to enable debugging - application support required
 debugEnabled: false
@@ -136,9 +166,25 @@ nginx:
           proxy_set_header X-Forwarded-Proto $scheme;
       }
 
-      # backend
-      location /api {
+      # uui-server
+      location /api/usecaseui-server {
           proxy_pass http://uui-server:8082;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+      # intent-service
+      location /api/usecaseui-intent-analysis {
+          proxy_pass http://uui-intent-analysis:8083;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+      # llm-service
+      location /api/usecaseui-llm-adaptation {
+          proxy_pass http://uui-nlp:33011;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
