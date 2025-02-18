@@ -244,6 +244,8 @@ post-processing.
 {{- define "dcaegen2-services-common.microserviceDeployment" -}}
 {{- $log := default dict .Values.log -}}
 {{- $logDir :=  default "" $log.path -}}
+{{- $tmp := default dict .Values.tmpDir -}}
+{{- $tmpDir :=  default false $tmp.enabled -}}
 {{- $ves := default false .Values.ves -}}
 {{- $certDir := (eq "true" (include "common.needTLS" .)) | ternary (default "" .Values.certDirectory . ) "" -}}
 {{- $commonRelease :=  print (include "common.release" .) -}}
@@ -350,8 +352,10 @@ spec:
           name: {{ ternary "app-config-input" "app-config" (not $drNeedProvisioning) }}
         - mountPath: /app-config-input
           name: app-config-input
+        {{- if $tmpDir }}
         - mountPath: /tmp
           name: tmp
+        {{- end }}
         {{- if $logDir }}
         - mountPath: {{ $logDir}}
           name: logs
@@ -424,9 +428,11 @@ spec:
       - emptyDir:
           medium: Memory
         name: app-config
+      {{- if $tmpDir }}
       - name: tmp
         emptyDir:
           sizeLimit: 128Mi
+      {{- end }}
       {{- if $logDir }}
       - name: logs
         emptyDir:
