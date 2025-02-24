@@ -56,7 +56,7 @@ kind: KafkaUser
 metadata:
   name: {{ include "common.name" . }}-ku
   labels:
-    {{- include "common.labels" . | nindent 4 }}
+    {{- include "common.labels"  $ | nindent 4 }}
     strimzi.io/cluster: {{ include "common.release" . }}-strimzi
 spec:
   authentication:

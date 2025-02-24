@@ -23,7 +23,8 @@
 {{- define "common.name" -}}
   {{- $dot := default . .dot -}}
   {{- $suffix := .suffix -}}
-  {{- default $dot.Chart.Name $dot.Values.nameOverride | trunc 63 | trimSuffix "-" -}}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
+  {{- $prefix := .prefix -}}
+  {{ if $prefix }}{{ print $prefix "-" }}{{ end }}{{- default $dot.Chart.Name $dot.Values.nameOverride | trunc 63 | trimSuffix "-" -}}{{ if $suffix }}{{ print "-" $suffix }}{{ end }}
 {{- end -}}
 
 {{/*
@@ -34,7 +35,8 @@
   {{- $dot := .dot }}
   {{- $name := .chartName }}
   {{- $suffix := default "" .suffix -}}
-  {{- printf "%s-%s-%s" (include "common.release" $dot) $name $suffix | trunc 63 | trimSuffix "-" | trimSuffix "-" -}}
+  {{- $prefix := default "" .prefix -}}
+  {{- printf "%s-%s-%s-%s" $prefix (include "common.release" $dot) $name $suffix | trunc 63 | trimSuffix "-" | trimSuffix "-" | trimPrefix "-" -}}
 {{- end -}}
 
 {{/*
@@ -42,21 +44,23 @@
   Truncated at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
   Usage:
       include "common.fullname" .
-      include "common.fullname" (dict "suffix" "mySuffix" "dot" .)
+      include "common.fullname" (dict "suffix" "mySuffix" "prefix" "myPrefix" "dot" .)
   The function takes from one to two arguments:
      - .dot : environment (.)
      - .suffix : add a suffix to the fullname
+     - .prefix : add a prefix to the fullname
 */}}
 {{- define "common.fullname" -}}
 {{- $dot := default . .dot -}}
 {{- $suffix := default "" .suffix -}}
+{{- $prefix := default "" .prefix -}}
   {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
   {{/* when linted, the name must be lower cased. When used from a component,
        name should be overriden in order to avoid collision so no need to do it */}}
   {{- if eq (printf "%s/templates" $name) $dot.Template.BasePath -}}
   {{- $name = lower $name -}}
   {{- end -}}
-  {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name "suffix" $suffix) }}
+  {{- include "common.fullnameExplicit" (dict "dot" $dot "chartName" $name "suffix" $suffix "prefix" $prefix) }}
 {{- end -}}
 
 {{/*
