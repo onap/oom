@@ -20,6 +20,7 @@ metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ index .Values.minReadySeconds }}
   strategy:
     type: {{ index .Values.updateStrategy.type }}
@@ -65,7 +66,8 @@ spec:
           readOnly: true
         - name: {{ include "common.fullname" . }}-logs
           mountPath: {{ .Values.log.path }}
-{{ include "so.helpers.livenessProbe" .| indent 8 }}
+        {{- include "so.helpers.startupProbe" .| indent 8 }}
+        {{- include "so.helpers.livenessProbe" .| indent 8 }}
         ports: {{ include "common.containerPorts" . | nindent 10  }}
       # Filebeat sidecar container
       {{ include "common.log.sidecar" . | nindent 6 }}
