@@ -43,7 +43,8 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-opa-pdp:1.0.0
+image: onap/policy-opa-pdp:1.0.2-SNAPSHOT
+
 pullPolicy: Always
 
 componentName: &componentName policy-opa-pdp
@@ -79,20 +80,19 @@ config:
       policyPdpPapTopic: policy-pdp-pap
 
 securityContext:
-  user_id: 0
-  group_id : 0
-  runAsNonRoot: false
+  fsGroup: 1000
+  user_id: 1000
+  group_id : 1000
+  runAsNonRoot: true
+  runAsUser: 1000
 
 
 containerSecurityContext:
-  enabled: true
-  privileged: false
-  allowPrivilegeEscalation: true
+  runAsGroup: 1000
+  runAsUser: 1000
+  runAsNonRoot: true
   readOnlyRootFilesystem: false
-  runAsNonRoot: false
-  runAsUser: 0
-  runAsGroup: 0
-
+  allowPrivilegeEscalation: true
 
 kafka:
   groupid: "policy-opa-pdp"
@@ -132,6 +132,11 @@ liveness:
 readiness:
   initialDelaySeconds: 20
   periodSeconds: 10
+
+readinessCheck:
+  wait_for:
+    services:
+      - 'policy-pap'
 
 service:
   type: ClusterIP
@@ -198,6 +203,7 @@ dirSizes:
   bundleDir:
     sizeLimit: 5Gi
 
+groupIdPrefix: opa-pdp
 
 #Pods Service Account
 serviceAccount:
@@ -244,8 +250,9 @@ config:
 kafkaUser:
   authenticationType: scram-sha-512
   acls:
-    - name: policy-opa-pdp
+    - name: opa-pdp
       type: group
+      patternType: prefix
       operations: [ Create, Describe, Read, Write ]
     - name: policy-pdp-pap
       type: topic
