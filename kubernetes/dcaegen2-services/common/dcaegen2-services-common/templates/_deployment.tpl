@@ -254,6 +254,7 @@ post-processing.
 {{- $drNeedProvisioning := or .Values.drFeedConfig .Values.drSubConfig -}}
 {{- $dcaeName := print (include "common.fullname" .) }}
 {{- $dcaeLabel := (dict "dcaeMicroserviceName" $dcaeName) -}}
+{{- $podLabels := default .Values.podLabels .labels -}}
 {{- $dot := . -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -262,7 +263,11 @@ spec:
   replicas: 1
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
+    {{- if $podLabels}}
+    metadata: {{- include "common.templateMetadata" (dict "dot" . "labels" $podLabels) | nindent 6 }}
+    {{- else }}
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    {{- end }}
     spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
