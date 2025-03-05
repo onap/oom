@@ -254,6 +254,7 @@ kind: MariaDB
 metadata:
   name: {{ $dbinst }}
 spec:
+  resources: {{ include "common.resources" . | nindent 4 }}
   podSecurityContext:
     runAsUser: 10001
     runAsGroup: 10001
@@ -305,7 +306,7 @@ spec:
     sst: mariabackup
     replicaThreads: 1
     agent:
-      image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.agentImage }}:{{ $dot.Values.mariadbOperator.galera.agentVersion }}
+      image: {{ include "repositoryGenerator.mariadbContainerRegistry" . }}/{{ .Values.mariadbOperator.galera.agentImage }}:{{ $dot.Values.mariadbOperator.galera.agentVersion }}
       imagePullPolicy: IfNotPresent
       port: 5555
       kubernetesAuth:
@@ -322,6 +323,13 @@ spec:
         privileged: false
         runAsNonRoot: true
         runAsUser: 10001
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
     primary:
       automaticFailover: true
     recovery:
@@ -332,7 +340,7 @@ spec:
       podRecoveryTimeout: 3m0s
       podSyncTimeout: 3m0s
     initContainer:
-      image: {{ include "repositoryGenerator.githubContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}:{{ $dot.Values.mariadbOperator.galera.initVersion }}
+      image: {{ include "repositoryGenerator.mariadbContainerRegistry" . }}/{{ $dot.Values.mariadbOperator.galera.initImage }}:{{ $dot.Values.mariadbOperator.galera.initVersion }}
       imagePullPolicy: IfNotPresent
       securityContext:
         allowPrivilegeEscalation: false
@@ -343,6 +351,13 @@ spec:
         privileged: false
         runAsNonRoot: true
         runAsUser: 10001
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
     config:
       reuseStorageVolume: false
       volumeClaimTemplate:

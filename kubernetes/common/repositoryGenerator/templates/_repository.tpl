@@ -88,6 +88,16 @@
   {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "githubContainerRegistry") .) }}
 {{- end -}}
 
+{{/*
+  Resolve the name of the mariadbRepository image repository.
+
+  - .Values.global.mariadbContainerRegistry  : default image mariadbContainerRegistry for all images used by mariadb.operator
+  - .Values.mariadbContainerRegistryOverride : override global mariadbContainerRegistry repository on a per chart basis
+*/}}
+{{- define "repositoryGenerator.mariadbContainerRegistry" -}}
+  {{- include "repositoryGenerator._repositoryHelper" (merge (dict "repoName" "mariadbContainerRegistry") .) }}
+{{- end -}}
+
 {{- define "repositoryGenerator.image._helper" -}}
   {{- $dot := default . .dot -}}
   {{- $initRoot := default $dot.Values.repositoryGenerator .initRoot -}}
@@ -232,6 +242,18 @@
   {{-     $repoCreds = $ghcrRepoCreds }}
   {{-   else }}
   {{-     $repoCreds = printf "%s, %s" $repoCreds $ghcrRepoCreds }}
+  {{-   end }}
+  {{- end }}
+  {{- if $subchartDot.Values.global.mariadbContainerRegistryCred }}
+  {{-   $mariadbRepo := $subchartDot.Values.global.mariadbContainerRegistry }}
+  {{-   $mariadbCred := $subchartDot.Values.global.mariadbContainerRegistryCred }}
+  {{-   $mariadbMail := default "@" $mariadbCred.mail }}
+  {{-   $mariadbAuth := printf "%s:%s" $mariadbCred.user $mariadbCred.password | b64enc }}
+  {{-   $mariadbRepoCreds := printf "\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}" $mariadbRepo $mariadbCred.user $mariadbCred.password $mariadbMail $mariadbAuth }}
+  {{-   if eq "" $repoCreds }}
+  {{-     $repoCreds = $mariadbRepoCreds }}
+  {{-   else }}
+  {{-     $repoCreds = printf "%s, %s" $repoCreds $mariadbRepoCreds }}
   {{-   end }}
   {{- end }}
   {{- printf "{%s}" $repoCreds | b64enc -}}
