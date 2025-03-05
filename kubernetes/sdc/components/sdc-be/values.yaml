@@ -29,7 +29,8 @@ global:
     #to match with its own cluster replica
     replicaCount: 3
     clusterName: cassandra
-    dataCenter: Pod
+    #datacenter name (use "dc1" in case of k8ssandra-operator, otherwise "Pod")
+    dataCenter: dc1
   # Global Strimzi kafka config overridden
   # from parent values.yaml
   kafka:
@@ -39,8 +40,8 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/sdc-backend-all-plugins:1.13.9
-backendInitImage: onap/sdc-backend-init:1.13.9
+image: onap/sdc-backend-all-plugins:1.14.1
+backendInitImage: onap/sdc-backend-init:1.14.1
 
 pullPolicy: Always
 
@@ -155,14 +156,14 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: "1"
+      cpu: "2"
       memory: "3Gi"
     requests:
-      cpu: "0.5"
+      cpu: "1"
       memory: "3Gi"
   large:
     limits:
-      cpu: "2"
+      cpu: "3"
       memory: "6Gi"
     requests:
       cpu: "1"
@@ -212,9 +213,6 @@ cassandra:
   readConsistencyLevel: ONE
   writeConsistencyLevel: ALL
   #replication_strategy_options: dc1,3
-  datacenterName: dc1
-  replicationFactor: 3
-  db_cache: true
 
 cassandraConfig:
   cassandraHosts: [cassandra-dc1-service.onap]
@@ -229,13 +227,35 @@ cassandraConfig:
   keystorePassword: false
   truststorePath: ""
   truststorePassword: ""
+
+janusgraph:
+  keyspace: sdctitan
+  cfgFile: /app/jetty/config/catalog-be/janusgraph.properties
+  dbCache:
+    enabled: false
+    cleanWait: 20
+    time: 18000
+    size: 0.5
+  txCache:
+    size: 1000000
+  storage:
+    lockRetries: 5
+    lockWaitTime: 500
+    backend: cql
+    connectionTimeout: 5000
+  graph:
+    replaceInstance: true
+    inMemory: false
+    lockTimeout: 1800
+  reconnectInterval: 3
+  healthCheckReadTimeout: 8
+
 dmaapConsumerConfiguration:
   active: false
 permittedAncestors: ""
 tlsCert: ""
 tlsKey: ""
 caCert: ""
-janusGraphCfgFile: /app/jetty/config/catalog-be/janusgraph.properties
 ONBOARDING_BE:
   host: sdc-onboarding-be.onap
   httpPort: 8081
@@ -259,6 +279,9 @@ uebSecretKey: Ehq3WyT4bkif4zwgEbvshGal
 #distributionStatusTopicName: SDC-DISTR-STATUS-TOPIC
 kafkaBootStrapServers: onap-strimzi-kafka-bootstrap:9092
 chefEnvironment: AUTO
+
+logback:
+  rootLogLevel: INFO
 
 jetty:
   httpPort: 8080
@@ -285,7 +308,6 @@ beInit:
   tlsKey: ""
   tlsKeyPw: ""
   caCert: ""
-
 
 be:
   tlsCert: ""
@@ -329,5 +351,4 @@ updateStrategy:
 #   "helm.sh/hook": "pre-upgrade,pre-rollback,post-install"
 #   "helm.sh/hook-delete-policy": "before-hook-creation"
 #   "helm.sh/hook-weight": "1"
-
 #END

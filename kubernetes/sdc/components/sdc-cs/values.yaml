@@ -25,7 +25,9 @@ global:
     #This flag allows SDC to instantiate its own cluster, serviceName
     #should be sdc-cs if this flag is enabled
     localCluster: false
-
+    #Cassandra login details
+    username: cassandra
+    password: cassandra
     # in case of a local cassandra cluster
     # flag to enable the DB creation via k8ssandra-operator
     useOperator: true
@@ -71,10 +73,48 @@ cassandra:
     config:
       clusterName: sdc-cs
 
+cassandraConfiguration:
+  cassandraPort: 9042
+  cql_version: 3.4.6
+  catalogPort: 8080
+  disableHttp: true
+  sslPort: 8443
+  ssl: false
+  socketConnectTimeout: 40000
+  socketReadTimeout: 40000
+  truststorePath: /tmp/writable-config/sdctool/config/tmp.trust
+  truststorePassword: Aa123456
+  cassandra_user: asdc_user
+  cassandra_password: Aa1234%^!
+  readConsistencyLevel: LOCAL_QUORUM
+  writeConsistencyLevel: LOCAL_QUORUM
+
+janusgraph:
+  keyspace: sdctitan
+  cfgFile: /tmp/writable-config/sdctool/config/janusgraph.properties
+  dbCache:
+    enabled: false
+    cleanWait: 20
+    time: 18000
+    size: 0.5
+  txCache:
+    size: 1000000
+  storage:
+    lockRetries: 5
+    lockWaitTime: 500
+    backend: cql
+    connectionTimeout: 5000
+  graph:
+    replaceInstance: true
+    inMemory: false
+    lockTimeout: 1800
+  reconnectInterval: 3
+  healthCheckReadTimeout: 8
+
 # application image
 repository: nexus3.onap.org:10001
-image: onap/sdc-cassandra:1.13.9
-cassandraInitImage: onap/sdc-cassandra-init:1.13.9
+image: onap/sdc-cassandra:1.14.1
+cassandraInitImage: onap/sdc-cassandra-init:1.14.1
 pullPolicy: Always
 
 config:
@@ -163,3 +203,8 @@ serviceAccount:
 wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
+
+volumes:
+  importConfTmpSizeLimit: 100Mi
+  writableScriptsSizeLimit: 1.2Gi
+  cassandraConfigSizeLimit: 100Mi
