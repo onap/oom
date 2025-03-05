@@ -21,7 +21,16 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  minReadySeconds: {{ .Values.minReadySeconds }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
@@ -53,11 +62,21 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command:
+          - /bin/sh
+          - -c
+          - |
+            JAVA_OPTIONS="$JAVA_OPTIONS -Dconfig.home=$JETTY_BASE/config -Dlog.home=$JETTY_BASE/logs -Dlogback.configurationFile=$JETTY_BASE/config/catalog-fe/logback.xml -Dconfiguration.yaml=$JETTY_BASE/config/catalog-fe/configuration.yaml -Donboarding_configuration.yaml=$JETTY_BASE/config/onboarding-fe/onboarding_configuration.yaml -Djavax.net.ssl.trustStore=$JETTY_BASE/etc/org.onap.sdc.trust.jks -Djavax.net.ssl.trustStorePassword=z+KEj;t+,KN^iimSiS89e#p0"
+            cd /app/jetty
+            sh -x /app/jetty/ready-probe.sh
+            java $JAVA_OPTIONS -jar "${JETTY_HOME}/start.jar"
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+                - /bin/sh
+                - /opt/scripts/combined-liveness.sh
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
@@ -65,8 +84,10 @@ spec:
             failureThreshold: {{ .Values.liveness.failureThreshold }}
           {{ end }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
+            exec:
+              command:
+                - /bin/sh
+                - /opt/scripts/combined-liveness.sh
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
@@ -91,16 +112,47 @@ spec:
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
           volumeMounts:
-          - name: sdc-environments
-            mountPath: /app/jetty/chef-solo/environments/
           - name: logs
             mountPath: /var/log/onap
           - name: configs
             mountPath: /app/jetty/config/catalog-fe/plugins-configuration.yaml
             subPath: plugins-configuration.yaml
-          - name: logback
-            mountPath: /tmp/logback.xml
+          - name: {{ include "common.fullname" . }}-ready-probe-script
+            mountPath: /app/jetty/ready-probe.sh
+            subPath: ready-probe.sh
+          - name: {{ include "common.fullname" . }}-fe-etc-config
+            mountPath: /app/jetty/etc/rewrite-root-to-sdc1.xml
+            subPath: rewrite-root-to-sdc1.xml
+          - name: {{ include "common.fullname" . }}-startd-config
+            mountPath: /app/jetty/start.d/http.ini
+            subPath: http.ini
+          - name: {{ include "common.fullname" . }}-startd-config
+            mountPath: /app/jetty/start.d/https.ini
+            subPath: https.ini
+          - name: {{ include "common.fullname" . }}-startd-config
+            mountPath: /app/jetty/start.d/ssl.ini
+            subPath: ssl.ini
+          - name: {{ include "common.fullname" . }}-onboarding-fe-config
+            mountPath: /app/jetty/config/onboarding-fe/onboarding_configuration.yaml
+            subPath: onboarding_configuration.yaml
+          - name: {{ include "common.fullname" . }}-catalog-fe-config
+            mountPath: /app/jetty/config/catalog-fe/configuration.yaml
+            subPath: configuration.yaml
+          - name: {{ include "common.fullname" . }}-catalog-fe-config
+            mountPath: /app/jetty/config/catalog-fe/workspace-configuration.yaml
+            subPath: workspace-configuration.yaml
+          - name: {{ include "common.fullname" . }}-catalog-fe-config
+            mountPath: /app/jetty/config/catalog-fe/ecomp-error-configuration.yaml
+            subPath: ecomp-error-configuration.yaml
+          - name: {{ include "common.fullname" . }}-catalog-fe-config
+            mountPath: /app/jetty/config/catalog-fe/logback.xml
             subPath: logback.xml
+          - name: {{ include "common.fullname" . }}-catalog-fe-config
+            mountPath: /app/jetty/config/catalog-fe/rest-configuration-info.yaml
+            subPath: rest-configuration-info.yaml
+          - name: {{ include "common.fullname" . }}-readiness-liveness-probe
+            mountPath: /opt/scripts/combined-liveness.sh
+            subPath: combined-liveness.sh
           lifecycle:
             postStart:
               exec:
@@ -114,9 +166,6 @@ spec:
           configMap:
             name : {{ include "common.fullname" . }}-plugins-configmap
             defaultMode: 0777
-        - name: logback
-          configMap:
-            name : {{ include "common.fullname" . }}-logging-configmap
         - name: sdc-environments
         {{- if .Values.global.aafEnabled }}
           emptyDir: { medium: "Memory" }
@@ -127,4 +176,28 @@ spec:
             defaultMode: 0755
         - name: logs
           emptyDir: {}
+        - name: {{ include "common.fullname" . }}-ready-probe-script
+          configMap:
+            name: {{ include "common.release" . }}-ready-probe-script
+            defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-fe-etc-config
+          configMap:
+            name: {{ include "common.release" . }}-fe-etc-config
+            defaultMode: 0644
+        - name: {{ include "common.fullname" . }}-startd-config
+          configMap:
+            name: {{ include "common.release" . }}-startd-config
+            defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-onboarding-fe-config
+          configMap:
+            name: {{ include "common.release" . }}-onboarding-fe-config
+            defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-catalog-fe-config
+          configMap:
+            name: {{ include "common.release" . }}-catalog-fe-config
+            defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-readiness-liveness-probe
+          configMap:
+            name: {{ include "common.fullname" . }}-readiness-liveness-probe
+            defaultMode: 0755
       {{- include "common.imagePullSecrets" . | nindent 6 }}
