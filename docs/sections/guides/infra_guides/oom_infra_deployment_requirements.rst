@@ -50,9 +50,9 @@ The versions of software that are supported and tested by OOM are as follows:
   ==============     ===========  =======  ========  ========  =============  ========
   Release            Kubernetes   Helm     kubectl   Docker    Cert-Manager   Strimzi
   ==============     ===========  =======  ========  ========  =============  ========
-  Montreal           1.27.5       3.12.3   1.27.x    20.10.x   1.13.2         0.36.1
   New Delhi          1.28.6       3.13.1   1.28.x    20.10.x   1.14.4         0.41.0
   Oslo               1.28.6       3.13.1   1.30.x    23.0.x    1.16.2         0.44.0
+  Paris              1.28.6       3.13.1   1.30.x    23.0.x    1.16.2         0.44.0
   ==============     ===========  =======  ========  ========  =============  ========
 
 .. table:: OOM Software Requirements (production)
@@ -60,9 +60,9 @@ The versions of software that are supported and tested by OOM are as follows:
   ==============     ======  ============ ==============
   Release            Istio   Gateway-API  Keycloak
   ==============     ======  ============ ==============
-  Montreal           1.19.3  v1.0.0       19.0.3-legacy
   New Delhi          1.21.0  v1.0.0       22.0.4
   Oslo               1.24.1  v1.2.1       26.0.6
+  Paris              1.24.1  v1.2.1       26.0.6
   ==============     ======  ============ ==============
 
 .. table:: OOM Software Requirements (optional)
@@ -70,7 +70,7 @@ The versions of software that are supported and tested by OOM are as follows:
   ==============     =========== ========== =========== ============ ===========
   Release            Prometheus  K8ssandra  MariaDB-Op  Postgres-Op  MongoDB-Op
   ==============     =========== ========== =========== ============ ===========
-  Montreal           45.x        1.10.2     0.23.1      -            -
   New Delhi          45.x        1.16.0     0.28.1      -            -
   Oslo               45.x        1.20.2     0.36.0      5.7.2        1.18.0
+  Paris              45.x        1.20.2     0.37.1      5.7.2        1.18.0
   ==============     =========== ========== =========== ============ ===========
