@@ -1,0 +1,126 @@
+# Needed for logging purposes. To be populated by DevOps - currently dummy
+feFqdn: sdc-fe.{{ include "common.namespace" . }}.svc.cluster.local
+
+# catalog backend hostname
+beHost: sdc-be.{{ include "common.namespace" . }}.svc.cluster.local
+
+# catalog backend http port
+beHttpPort: {{ .Values.be_http_port }}
+
+# catalog backend http context
+beContext: /sdc2/rest/v1/catalog/upload/resources
+
+# catalog backend protocol
+{{- if .Values.disableHttp }}
+beProtocol: https
+{{- else }}
+beProtocol: http
+{{- end }}
+
+# catalog backend ssl port
+beSslPort: {{ .Values.fe_conf.https_port }}
+
+# threadpool size for handling requests
+threadpoolSize: 50
+
+# request processing timeout (seconds)
+requestTimeout: 1200
+
+# catalog ms (the host-port values need to be changed once it is deployed)
+catalogFacadeMs:
+  protocol: http
+  host: {{ .Values.facade_vip }}
+  port: {{ .Values.facade_port }}
+  healthCheckUri: "/healthCheck"
+  path: "/uicache"
+
+# Determines the health check read timeout when invoking health check towards the LB (or BE whatever is configured):
+healthCheckSocketTimeoutInMs: 5000
+
+healthCheckIntervalInSeconds: 5
+
+basicAuth:
+  enabled: {{ .Values.fe_conf.basic_auth }}
+  userName: {{ .Values.fe_conf.user_name }}
+  userPass: {{ .Values.fe_conf.user_pass }}
+
+onboarding:
+    hostFe: sdc-fe.{{ include "common.namespace" . }}.svc.cluster.local
+    {{- if .Values.disableHttp }}
+    protocolFe: https
+    portFe: {{ .Values.fe_conf.https_port }}
+    {{- else }}
+    protocolFe: http
+    portFe: {{ .Values.fe_conf.http_port }}
+    {{- end }}
+    healthCheckUriFe: "/onboarding/v1.0/healthcheck"
+    hostBe: sdc-onboarding-be.{{ include "common.namespace" . }}.svc.cluster.local
+    {{- if .Values.disableHttp }}
+    protocolBe: https
+    portBe: {{ .Values.onboarding_be.https_port }}
+    {{- else }}
+    protocolBe: http
+    portBe: {{ .Values.onboarding_be.http_port }}
+    {{- end }}
+
+identificationHeaderFields:
+   -
+        - &HTTP_IV_USER HTTP_IV_USER
+        - &iv-user iv-user
+   -
+        - &USER_ID USER_ID
+        - &user-id user-id
+   -
+        - &HTTP_CSP_ATTUID HTTP_CSP_ATTUID
+        - &csp-attuid csp-attuid
+
+optionalHeaderFields:
+   -
+        - &HTTP_CSP_FIRSTNAME HTTP_CSP_FIRSTNAME
+        - &csp-firstname csp-firstname
+   -
+        - &HTTP_CSP_LASTNAME HTTP_CSP_LASTNAME
+        - &csp-lastname csp-lastname
+   -
+        - &HTTP_IV_REMOTE_ADDRESS HTTP_IV_REMOTE_ADDRESS
+        - &iv-remote-address iv-remote-address
+   -
+        - &HTTP_CSP_EMAIL HTTP_CSP_EMAIL
+        - &csp-email csp-email
+
+version: 1.0
+released: 2012-11-30
+
+# access restriction
+authCookie:
+  cookieName: "AuthenticationCookie"
+  path: /
+  domain: ""
+  securityKey: {{ .Values.access_restriction_key }}
+
+# Connection parameters
+connection:
+    url: jdbc:mysql://localhost:3306/db
+    poolSize: 17
+
+# Protocols
+protocols:
+   - http
+   - https
+
+systemMonitoring:
+    enabled: false
+    isProxy: true
+    probeIntervalInSeconds: 15
+
+healthStatusExclude:
+   - DE
+   - DMAAP
+   - DCAE
+   - DMAAP_PRODUCER
+   - PORTAL
+   - CATALOG_FACADE_MS
+   - External API
+
+# Space separated list of permitted ancestors
+permittedAncestors: {{ .Values.permittedAncestors }}
