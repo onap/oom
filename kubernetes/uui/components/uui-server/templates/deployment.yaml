@@ -83,19 +83,28 @@ spec:
           ports: {{ include "common.containerPorts" . | nindent 10  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
+          {{- if eq .Values.startup.enabled true }}
+          startupProbe:
+            httpGet:
+              port: {{ index .Values.service.ports 0 "port" }}
+              path: {{ .Values.uuiServer.basePath }}{{ .Values.startup.path }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+          {{- end }}
           {{- if eq .Values.liveness.enabled true }}
           livenessProbe:
-            tcpSocket:
+            httpGet:
               port: {{ index .Values.service.ports 0 "port" }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+              path: {{ .Values.uuiServer.basePath }}{{ .Values.liveness.path }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.liveness.failureThreshold }}
           {{- end }}
-          resources: {{ include "common.resources" . | nindent 12 }}
           readinessProbe:
-            tcpSocket:
+            httpGet:
               port: {{ index .Values.service.ports 0 "port" }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+              path: {{ .Values.uuiServer.basePath }}{{ .Values.readiness.path }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          resources: {{ include "common.resources" . | nindent 12 }}
           env:
           - name: MSB_ADDR
             value: {{tpl .Values.msbaddr .}}
