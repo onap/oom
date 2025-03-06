@@ -95,15 +95,20 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
-liveness:
-  initialDelaySeconds: 120
-  periodSeconds: 10
-  # necessary to disable liveness probe when setting breakpoints
-  # in debugger so K8s doesn't restart unresponsive container
+startup:
   enabled: true
+  path: /actuator/health
+  periodSeconds: 1
+  failureThreshold: 60
+
+liveness:
+  # disable this for remote debugging
+  enabled: true
+  path: /actuator/health
+  periodSeconds: 10
 
 readiness:
-  initialDelaySeconds: 60
+  path: /actuator/health/readiness
   periodSeconds: 10
 
 service:
@@ -186,11 +191,13 @@ wait_for_job_container:
 #   "helm.sh/hook-weight": "1"
 
 uuiServer:
+  basePath: /api/usecaseui-server/v1
   client:
     aai:
       baseUrl: http://aai.onap
       username: AAI
       password: AAI
+      apiVersion: v30
     so:
       baseUrl: http://so.onap:8080
       username: InfraPortalClient
