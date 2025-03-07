@@ -35,27 +35,23 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - name: {{ include "common.name" . }}-job-completion
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-sdc-onboarding-be
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+       {{ include "common.readinessCheck.waitFor" . | nindent 8 }}
+        - name: {{ include "common.name" . }}-copy-jetty
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/bin/sh","-c"]
+          args: ['cp -a /app/jetty/ /app/jetty_rw/; mkdir /app/jetty_rw/jetty/ruby_temp']
+          resources:
+            limits:
+              cpu: 400m
+              memory: 400Mi
+            requests:
+              cpu: 30m
+              memory: 200Mi
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          volumeMounts:
+            - name: {{ include "common.fullname" . }}-jetty
+              mountPath: /app/jetty_rw
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -64,7 +60,7 @@ spec:
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
             httpGet:
-              path: /onboarding-api/v1.0/healthcheck
+              path: {{ .Values.liveness.path }}
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
@@ -74,7 +70,7 @@ spec:
           {{ end }}
           readinessProbe:
             httpGet:
-              path: /onboarding-api/v1.0/healthcheck
+              path: {{ .Values.readiness.path }}
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
@@ -83,15 +79,18 @@ spec:
             failureThreshold: {{ .Values.readiness.failureThreshold }}
           startupProbe:
             httpGet:
-              path: /onboarding-api/v1.0/healthcheck
+              path: {{ .Values.startup.path }}
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
             successThreshold: {{ .Values.startup.successThreshold }}
             failureThreshold: {{ .Values.startup.failureThreshold }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           resources: {{ include "common.resources" . | nindent 12 }}
           env:
+          - name: TMPDIR
+            value: '/app/jetty/ruby_temp'
           - name: ENVNAME
             value: {{ .Values.env.name }}
           - name: JAVA_OPTIONS
@@ -113,8 +112,13 @@ spec:
           - name: SDC_CERT_DIR
             value: ""
           volumeMounts:
-          - name: logs
+          - name: {{ include "common.fullname" . }}-jetty
+            mountPath: /app/jetty
+            subPath: jetty          
+          - name: {{ include "common.fullname" . }}-logs
             mountPath: /var/log/onap
+          - name: {{ include "common.fullname" . }}-tmp
+            mountPath: /tmp
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
@@ -148,10 +152,11 @@ spec:
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/sh", "-c", "export LOG=wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/app/jetty/config/onboarding-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
+                command: ["/bin/sh", "-c", "export LOG=/tmp/wait_logback.log; touch $LOG; export SRC=/tmp/logback.xml; export DST=/app/jetty/config/onboarding-be/; while [ ! -e $DST ]; do echo 'Waiting for $DST...' >> $LOG; sleep 5; done; sleep 2; /bin/cp -f $SRC $DST; echo 'Done' >> $LOG"]
         # side car containers
         {{ include "common.log.sidecar" . | nindent 8 }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       volumes:
       {{ include "common.log.volumes" (dict "dot" . "configMapNamePrefix" (tpl .Values.logConfigMapNamePrefix .)) | nindent 6 }}
       - name: logback
@@ -177,7 +182,14 @@ spec:
         configMap:
           name: {{ include "common.release" . }}-sdc-ready-probe-configmap
           defaultMode: 0755
-      - name:  logs
-        emptyDir: {}
+      - name: {{ include "common.fullname" . }}-logs
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.logSizeLimit }}
+      - name: {{ include "common.fullname" . }}-tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+      - name: {{ include "common.fullname" . }}-jetty
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.jettySizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
 
