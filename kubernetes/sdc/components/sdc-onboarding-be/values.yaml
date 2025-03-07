@@ -59,6 +59,7 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
+  path: /onboarding-api/v1.0/healthcheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 15
@@ -69,6 +70,7 @@ liveness:
   enabled: true
 
 readiness:
+  path: /onboarding-api/v1.0/healthcheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 15
@@ -76,6 +78,7 @@ readiness:
   failureThreshold: 3
 
 startup:
+  path: /onboarding-api/v1.0/healthcheck
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 15
@@ -86,6 +89,7 @@ service:
   type: ClusterIP
   name: sdc-onboarding-be
   internalPort: 8081
+  jobPort: 8080
   ports:
     - name: http
       port: 8081
@@ -117,10 +121,6 @@ persistence:
   size: 2Gi
   mountPath: /dockerdata-nfs
   mountSubPath: /sdc/sdc-cs/CS
-
-securityContext:
-  fsGroup: 35953
-  runAsUser: 352070
 
 ingress:
   enabled: false
@@ -155,10 +155,43 @@ wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
 
+readinessCheck:
+  wait_for:
+    jobs:
+      - '{{ include "common.release" . }}-sdc-onboarding-be'
+  job_wait_for:
+    jobs:
+      - '{{ include "common.release" . }}-sdc-cs'
+
 #Log configuration
 log:
   path: /var/log/onap
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+
+securityContext:
+  user_id: 1000
+  group_id: 101
+
+volumes:
+  logSizeLimit: 300Mi
+  jettySizeLimit: 400Mi
+  tmpSizeLimit: 500Mi
+
+resources_initContainer:
+  limits:
+    cpu: "100m"
+    memory: "500Mi"
+  requests:
+    cpu: "3m"
+    memory: "20Mi"
+
+jobPodSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 #################################################################
 # Settings from Default.rb

@@ -126,6 +126,7 @@ service:
   portName: sdc-cs
   externalPort: 9042
   internalPort: 9042
+  jobPort: 8080
 
 
 ## Persist data to a persitent volume
@@ -163,3 +164,50 @@ serviceAccount:
 wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
+
+# Resource Limit flavor -By Default using small
+flavor: small
+# Segregation for Different environment (Small and Large)
+resources:
+  small:
+    limits:
+      cpu: 1200m
+      memory: 2Gi
+    requests:
+      cpu: 300m
+      memory: 500Mi
+  large:
+    limits:
+      cpu: 1600m
+      memory: "2Gi"
+    requests:
+      cpu: 400m
+      memory: 600Mi
+  unlimited: {}
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+volumes:
+  chefCacheSizeLimit: 200Mi
+  tmpSizeLimit: 500Mi
+  asdctoolSizeLimit: 50Mi
+  nodesSizeLimit: 100Mi
+  backupSizeLimit: 100Mi
+  rubyTmpSizeLimit: 400Mi
+  chefSoloSizeLimit: 500Mi
+  chefSizeLimit: 100Mi
+
+resources_initContainer:
+  limits:
+    cpu: "100m"
+    memory: "500Mi"
+  requests:
+    cpu: "3m"
+    memory: "20Mi"
+
+readinessCheck:
+  wait_for:
+    services:
+      - '{{ .Values.global.sdc_cassandra.serviceName }}'
