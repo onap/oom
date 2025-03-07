@@ -35,42 +35,48 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       restartPolicy: Never
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - name: {{ include "common.name" . }}-init-readiness
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - {{ .Values.global.sdc_cassandra.serviceName }}
-        - "-t"
-        - "15"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        {{ include "common.readinessCheck.waitFor" . | nindent 8 }}
+        - command: ["/bin/sh","-c"]
+          args: ['mkdir /home/ruby/ruby_temp', 'cp -R /home/sdc/chef-solo/. /home/sdc/chef-solo-rw']
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.cassandraInitImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          name: create-ruby-temp-folder
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          volumeMounts:
+          - mountPath:  /home/ruby
+            name: {{ include "common.fullname" . }}-ruby-tmp
+          - mountPath: /home/sdc/chef-solo-rw
+            name: {{ include "common.fullname" . }}-chef-solo
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.cassandraInitImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         volumeMounts:
+        - name: {{ include "common.fullname" . }}-chef-solo
+          mountPath: /home/sdc/chef-solo
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /home/sdc/chef-solo/environments/
         - name: {{ include "common.fullname" . }}-chef-cache
           mountPath: /home/sdc/chef-solo/cache
         - name: {{ include "common.fullname" . }}-cqlshrc
           mountPath: /home/sdc/.cassandra
+        - name: {{ include "common.fullname" . }}-tmp
+          mountPath: /tmp
+        - mountPath: /home/sdc/chef-solo/nodes
+          name: {{ include "common.fullname" . }}-nodes
+        - mountPath: /home/sdc/chef-solo/backup
+          name: {{ include "common.fullname" . }}-backup
+        - mountPath: /home/sdc/asdctool
+          name: {{ include "common.fullname" . }}-asdctool
+        - mountPath:  /home/ruby
+          name: {{ include "common.fullname" . }}-ruby-tmp
+        - mountPath: /home/sdc/.chef
+          name: {{ include "common.fullname" . }}-chef
         env:
+        - name: TMPDIR
+          value: '/home/ruby/ruby_temp'
         - name: ENVNAME
           value: {{ .Values.env.name }}
         - name: RELEASE
@@ -88,13 +94,28 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        resources:
-          limits:
-            cpu: "800m"
-            memory: "1Gi"
-          requests:
-            cpu: "200m"
-            memory: "300Mi"
+        {{ if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path:  /healthz
+            port: {{ .Values.service.jobPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
+        {{ end }}
+        readinessProbe:
+          httpGet:
+            path:  /healthz
+            port: {{ .Values.service.jobPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.readiness.successThreshold }}
+          failureThreshold: {{ .Values.readiness.failureThreshold }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+        resources: {{ include "common.resources" . | nindent 12 }}
       {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -103,7 +124,29 @@ spec:
           name: {{ include "common.release" . }}-sdc-environments-configmap
           defaultMode: 0755
       - name: {{ include "common.fullname" . }}-chef-cache
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.chefCacheSizeLimit }}
+      - name: {{ include "common.fullname" . }}-nodes
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.nodesSizeLimit }}
+      - name: {{ include "common.fullname" . }}-backup
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.backupSizeLimit }}
+      - name: {{ include "common.fullname" . }}-asdctool
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.asdctoolSizeLimit }}
+      - name: {{ include "common.fullname" . }}-tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+      - name: {{ include "common.fullname" . }}-ruby-tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.rubyTmpSizeLimit }}
+      - emptyDir:
+          sizeLimit: {{ .Values.volumes.chefSoloSizeLimit }}
+        name: {{ include "common.fullname" . }}-chef-solo
+      - emptyDir:
+          sizeLimit: {{ .Values.volumes.chefSizeLimit }}
+        name: {{ include "common.fullname" . }}-chef
       - name: {{ include "common.fullname" . }}-cqlshrc
         configMap:
           name: {{ include "common.release" . }}-sdc-cqlshrc
