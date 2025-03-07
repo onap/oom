@@ -79,6 +79,7 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 180
@@ -89,6 +90,7 @@ liveness:
   enabled: true
 
 readiness:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 180
@@ -96,6 +98,7 @@ readiness:
   failureThreshold: 3
 
 startup:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 180
@@ -183,6 +186,24 @@ serviceAccount:
   roles:
     - read
 
+readinessCheck:
+  wait_for_job:
+    name: "jobs"
+    jobs:
+      - '{{ include "common.release" . }}-sdc-onboarding-be'
+  wait_for_service_without_kafka:
+    name: "services"
+    services:
+      - sdc-onboarding-be
+      - message-router
+  wait_for_service:
+    name: "services"
+    services:
+      - sdc-onboarding-be
+  job_wait_for:
+    services:
+      - sdc-be
+
 wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
@@ -191,6 +212,33 @@ wait_for_job_container:
 log:
   path: /var/log/onap
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+
+securityContext:
+  user_id: 1000
+  group_id: 101
+
+jobPodSecurityContext:
+  fsGroup: 101
+  runAsGroup: 101
+  runAsNonRoot: true
+  runAsUser: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+volumes:
+  logSizeLimit: 300Mi
+  chefSoloSizeLimit: 100Mi
+  jettySizeLimit: 400Mi
+  tmpSizeLimit: 500Mi
+  varTmpSizeLimit: 100Mi
+
+resources_initContainer:
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+  requests:
+    cpu: "1000m"
+    memory: "600Mi"
 
 #######
 #######
