@@ -127,7 +127,7 @@ service:
     port: 6969
   - name: debug-port
     port: 5005
-    protocol: TCP
+    protocol: tcp
 
 ingress:
   enabled: false
@@ -142,17 +142,17 @@ flavor: small
 resources:
   small:
     limits:
-      cpu: "2"
+      cpu: "3"
       memory: "1Gi"
     requests:
       cpu: "1"
       memory: "1Gi"
   large:
     limits:
-      cpu: "3"
+      cpu: "4"
       memory: "2Gi"
     requests:
-      cpu: "1"
+      cpu: "2"
       memory: "2Gi"
   unlimited: {}
 
@@ -177,9 +177,15 @@ metrics:
     # Override the labels based on the Prometheus config parameter: serviceMonitorSelector.
     # The default operator for prometheus enforces the below label.
     labels:
+      app: '{{ include "common.name" . }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+      version: '{{ .Chart.Version | replace "+" "_" }}'
       release: prometheus
     enabled: true
     port: http-api
+    path: /policy/pap/v1/metrics
     interval: 60s
     isHttps: false
     basicAuth:

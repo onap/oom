@@ -25,7 +25,14 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{ end }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
@@ -78,10 +85,14 @@ spec:
               key: sasl.jaas.config
         - name: KAFKA_URL
           value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
         - name: SASL
           value: {{ .Values.kafkaUser.authenticationType | upper }}
         - name: GROUP_ID
-          value: {{ .Values.config.kafka.consumer.groupId }}
+          value: {{ .Values.groupIdPrefix }}-$(POD_UID)
         - name: PAP_TOPIC
           value: {{ .Values.config.app.listener.policyPdpPapTopic }}
         volumeMounts:
