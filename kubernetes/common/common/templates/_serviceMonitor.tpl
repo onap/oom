@@ -178,6 +178,6 @@ spec:
     {{- if $dot.Values.metrics.serviceMonitor.selector }}
     matchLabels: {{- include "common.tplValue" ( dict "value" $dot.Values.metrics.serviceMonitor.selector "context" $dot) | nindent 6 }}
     {{- else }}
-    matchLabels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent 6 }}
+    matchLabels: {{- include "common.matchLabels" (dict "labels" $labels "dot" $dot) | nindent 6 }}
     {{- end }}
 {{- end -}}
