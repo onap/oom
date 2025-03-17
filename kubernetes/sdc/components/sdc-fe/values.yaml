@@ -1,5 +1,6 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T, ZTE
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,18 +87,6 @@ service:
     - name: http
       port: 8181
       nodePort: '07'
-  annotations:
-    msb.onap.org/service-info: |
-      {{ if .Values.global.msbEnabled -}}[
-        {
-          "serviceName": "sdc-ui",
-          "version": "v1",
-          "url": "/sdc1",
-          "protocol": "UI",
-          "visualRange":"0|1",
-          "port": "{{ .Values.service.internalPort }}",
-        }
-      ]{{ end }}
 
 ingress:
   enabled: false
@@ -111,8 +100,6 @@ ingress:
 serviceMesh:
   authorizationPolicy:
     authorizedPrincipals:
-      - serviceAccount: consul-read
-      - serviceAccount: consul-server-read
       - serviceAccount: istio-ingress
         namespace: istio-ingress
 
@@ -142,10 +129,24 @@ serviceAccount:
   roles:
     - read
 
+readinessCheck:
+  wait_for:
+    jobs:
+      - '{{ include "common.release" . }}-sdc-be'
+
 #Log configuration
 log:
   path: /var/log/onap
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
+
+securityContext:
+  user_id: 1000
+  group_id: 101
+
+volumes:
+  logSizeLimit: 64Mi
+  jettySizeLimit: 400Mi
+  tmpSizeLimit: 500Mi
 
 autoscaling:
   enabled: true

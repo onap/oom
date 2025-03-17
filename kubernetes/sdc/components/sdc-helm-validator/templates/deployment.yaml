@@ -1,6 +1,7 @@
 {{/*
 # ===========LICENSE_START========================================================
 # Copyright (c) 2021 Nokia. All rights reserved.
+# Modifications Copyright © 2025 Deutsche Telekom
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +26,14 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           resources: {{ include "common.resources" . | nindent 12 }}
           ports: {{ include "common.containerPorts" . | nindent 12 }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           env:
             - name: LOG_LEVEL
               value: {{ .Values.config.loggingLevel }}
@@ -42,6 +45,14 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             successThreshold: {{ .Values.liveness.successThreshold }}
             failureThreshold: {{ .Values.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readiness.path }}
+              port: {{ .Values.readiness.port }}
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
+            successThreshold: {{ .Values.readiness.successThreshold }}
+            failureThreshold: {{ .Values.readiness.failureThreshold }}
           startupProbe:
             httpGet:
               path: {{ .Values.startup.path }}
@@ -50,4 +61,11 @@ spec:
             periodSeconds: {{ .Values.startup.periodSeconds }}
             successThreshold: {{ .Values.startup.successThreshold }}
             failureThreshold: {{ .Values.startup.failureThreshold }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

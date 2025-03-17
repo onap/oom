@@ -1,7 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, AT&T, Bell Canada
 # Modifications Copyright © 2018  ZTE
-# Modifications Copyright © 2023 Deutsche Telekom
+# Modifications Copyright © 2023,2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,27 +36,7 @@ spec:
     spec:
       initContainers:
       {{- if .Values.initJob.enabled }}
-      - name: {{ include "common.name" . }}-job-completion
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.fullname" . }}
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        {{ include "common.readinessCheck.waitFor" . | nindent 8 }}
       {{ end }}
       containers:
         - name: {{ include "common.name" . }}

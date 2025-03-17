@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, AT&T, Bell Canada
 # Modifications Copyright © 2018 ZTE
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,34 +38,15 @@ spec:
         app.kubernetes.io/managed-by: {{ .Release.Service }}
     spec:
       restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.jobPodSecurityContext | nindent 8 }}
       initContainers:
-      - name: {{ include "common.name" . }}-init-readiness
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - sdc-be
-        - "-t"
-        - "35"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.job_wait_for) | nindent 8 }}
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.backendInitImage }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
         command:
         - /bin/sh
         - -c
@@ -75,9 +57,15 @@ spec:
         volumeMounts:
         - name: {{ include "common.fullname" . }}-environments
           mountPath: /home/onap/chef-solo/environments/
-        - name: sdc-logs
+        - name: {{ include "common.fullname" . }}-logs
           mountPath: /home/onap/logs
+        - name: {{ include "common.fullname" . }}-tmp
+          mountPath: /tmp
+        - name: {{ include "common.fullname" . }}-var-tmp
+          mountPath: /var/tmp
         env:
+        - name: TMPDIR
+          value: '/home/onap/chef-solo/ruby_temp'
         - name: ENVNAME
           value: {{ .Values.env.name }}
         - name: HOST_IP
@@ -107,12 +95,7 @@ spec:
         - name: BASIC_AUTH_PASS
           value: {{ .Values.basicAuth.userPass }}
         resources:
-          limits:
-            cpu: "800m"
-            memory: "1Gi"
-          requests:
-            cpu: "200m"
-            memory: "200Mi"
+          {{- toYaml .Values.resources_initContainer | nindent 12 }}
       {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
@@ -120,6 +103,13 @@ spec:
           configMap:
             name: {{ include "common.release" . }}-sdc-environments-configmap
             defaultMode: 0755
-        - name: sdc-logs
-          emptyDir: {}
+        - name: {{ include "common.fullname" . }}-logs
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.logSizeLimit }}
+        - name: {{ include "common.fullname" . }}-tmp
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+        - name: {{ include "common.fullname" . }}-var-tmp
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.varTmpSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

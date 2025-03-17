@@ -1,6 +1,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018 AT&T, ZTE
 # Modifications Copyright © 2022 Nordix Foundation
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,6 +81,7 @@ affinity: {}
 
 # probe configuration parameters
 liveness:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 180
@@ -90,6 +92,7 @@ liveness:
   enabled: true
 
 readiness:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 1
   periodSeconds: 10
   timeoutSeconds: 180
@@ -97,6 +100,7 @@ readiness:
   failureThreshold: 3
 
 startup:
+  path: /sdc2/rest/healthCheck
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 180
@@ -112,19 +116,6 @@ service:
       port: 8080
       port_protocol: http
       nodePort: '04'
-  annotations:
-    msb.onap.org/service-info: |
-      {{ if .Values.global.msbEnabled -}}[
-        {
-          "serviceName": "sdc-be",
-          "version": "v1",
-          "url": "/sdc/v1",
-          "path":"/sdc/v1",
-          "protocol": "REST",
-          "visualRange":"1",
-          "port": "{{ .Values.service.internalPort }}",
-        }
-      ]{{ end }}
 
 ingress:
   enabled: false
@@ -138,12 +129,7 @@ ingress:
 serviceMesh:
   authorizationPolicy:
     authorizedPrincipals:
-      - serviceAccount: consul-read
-      - serviceAccount: consul-server-read
-      - serviceAccount: modeling-etsicatalog-read
       - serviceAccount: nbi-read
-      - serviceAccount: oof-has-read
-      - serviceAccount: portal-db-read
       - serviceAccount: so-cnfm-lcm-read
       - serviceAccount: so-etsi-sol003-adapter-read
       - serviceAccount: so-read
@@ -184,6 +170,15 @@ serviceAccount:
   roles:
     - read
 
+readinessCheck:
+  wait_for_service:
+    name: "services"
+    services:
+      - sdc-onboarding-be
+  job_wait_for:
+    services:
+      - sdc-be
+
 wait_for_job_container:
   containers:
     - '{{ include "common.name" . }}-job'
@@ -193,10 +188,35 @@ log:
   path: /var/log/onap
 logConfigMapNamePrefix: '{{ include "common.fullname" . }}'
 
+securityContext:
+  user_id: 1000
+  group_id: 101
+
+jobPodSecurityContext:
+  fsGroup: 101
+  runAsGroup: 101
+  runAsNonRoot: true
+  runAsUser: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+volumes:
+  logSizeLimit: 300Mi
+  jettySizeLimit: 400Mi
+  tmpSizeLimit: 500Mi
+  varTmpSizeLimit: 100Mi
+
+resources_initContainer:
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+  requests:
+    cpu: "1000m"
+    memory: "600Mi"
+
 #######
 #######
 pairEnvName: ""
-
 
 cassandra:
   hostname: cassandra-dc1-service.onap

@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2017 Amdocs, AT&T, Bell Canada
 # Modifications Copyright © 2018  ZTE
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,30 +36,10 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.jobPodSecurityContext | nindent 8 }}
       initContainers:
-      - name: {{ include "common.name" . }}-job-completion
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: "{{ .Values.global.pullPolicy | default .Values.pullPolicy }}"
-        command:
-        - /app/ready.py
-        args:
-        - --job-name
-        - {{ include "common.release" . }}-sdc-cs
-        - "-t"
-        - "20"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+        {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.job_wait_for) | nindent 8 }}
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.onboardingInitImage }}
@@ -100,6 +81,27 @@ spec:
           requests:
             cpu: "200m"
             memory: "200Mi"
+        {{ if eq .Values.liveness.enabled true }}
+        livenessProbe:
+          httpGet:
+            path:  /healthz
+            port: {{ .Values.service.jobPort }}
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.liveness.successThreshold }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
+        {{ end }}
+        readinessProbe:
+          httpGet:
+            path:  /healthz
+            port: {{ .Values.service.jobPort }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.readiness.successThreshold }}
+          failureThreshold: {{ .Values.readiness.failureThreshold }}
+        {{ include "common.containerSecurityContext" . | indent 10 | trim }}
       {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
