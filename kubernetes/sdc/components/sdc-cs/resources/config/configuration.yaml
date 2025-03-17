@@ -1,0 +1,399 @@
+identificationHeaderFields:
+  - HTTP_IV_USER
+  - HTTP_CSP_FIRSTNAME
+  - HTTP_CSP_LASTNAME
+  - HTTP_IV_REMOTE_ADDRESS
+  - HTTP_CSP_WSTYPE
+
+# catalog backend hostname
+beFqdn: sdc-be.{{ include "common.namespace" . }}.svc.cluster.local
+
+# catalog backend http port
+beHttpPort: {{ .Values.cassandraConfiguration.catalogPort }}
+
+# catalog backend http context
+beContext: /sdc/rest/config/get
+
+# catalog backend protocol
+{{- if .Values.cassandraConfiguration.disableHttp }}
+beProtocol: https
+{{- else }}
+beProtocol: http
+{{- end }}
+
+# catalog backend ssl port
+beSslPort: {{ .Values.cassandraConfiguration.sslPort }}
+
+version: 1.0
+released: 2012-11-30
+toscaConformanceLevel: 11.0
+minToscaConformanceLevel: 3.0
+
+janusGraphCfgFile: {{ .Values.janusgraph.cfgFile }}
+janusGraphInMemoryGraph: false
+janusGraphLockTimeout: 1800
+# The interval to try and reconnect to JanusGraph DB when it is down during ASDC startup:
+janusGraphReconnectIntervalInSeconds: 3
+
+# The read timeout towards JanusGraph DB when health check is invoked:
+janusGraphHealthCheckReadTimeout: 8
+
+# The interval to try and reconnect to Elasticsearch when it is down during ASDC startup:
+uebHealthCheckReconnectIntervalInSeconds: 15
+uebHealthCheckReadTimeout: 4
+
+# Protocols
+protocols:
+  - http
+  - https
+
+# Default imports
+defaultImports:
+  - nodes:
+      file: nodes.yml
+  - datatypes:
+      file: data.yml
+  - capabilities:
+      file: capabilities.yml
+  - relationships:
+      file: relationships.yml
+  - groups:
+      file: groups.yml
+  - policies:
+      file: policies.yml
+
+# Users
+users:
+  tom: passwd
+  bob: passwd
+
+cassandraConfig:
+  cassandraHosts: [{{ .Values.global.sdc_cassandra.serviceName }}.{{ include "common.namespace" . }}.svc.cluster.local]
+  cassandraPort: 9042
+  localDataCenter: {{ .Values.global.sdc_cassandra.dataCenter }}
+  reconnectTimeout: 30000
+  socketReadTimeout: {{ .Values.cassandraConfiguration.socketReadTimeout }}
+  socketConnectTimeout: {{ .Values.cassandraConfiguration.socketConnectTimeout }}
+  authenticate: true
+  username: {{ .Values.cassandraConfiguration.cassandra_user }}
+  password: {{ .Values.cassandraConfiguration.cassandra_password }}
+  ssl: {{ .Values.cassandraConfiguration.ssl }}
+  truststorePath: {{ .Values.cassandraConfiguration.truststorePath }}
+  truststorePassword: {{ .Values.cassandraConfiguration.truststorePassword }}
+  maxWaitSeconds: 120
+  keySpaces:
+    - { name: dox, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcaudit, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcartifact, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdccomponent, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcrepository, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+
+licenseTypes:
+  - User
+  - Installation
+  - CPU
+
+# Deployment artifacts placeholder
+resourceTypes: &allResourceTypes
+  - VFC
+  - CP
+  - VL
+  - VF
+  - VFCMT
+  - Abstract
+  - CVFC
+
+deploymentResourceArtifacts:
+  deploymentResourceInstanceArtifacts:
+    heatEnv:
+      displayName: "HEAT ENV"
+      type: HEAT_ENV
+      description: "Auto-generated HEAT Environment deployment artifact"
+      fileExtension: "env"
+    VfHeatEnv:
+      displayName: "VF HEAT ENV"
+      type: HEAT_ENV
+      description: "VF Auto-generated HEAT Environment deployment artifact"
+      fileExtension: "env"
+
+# Tosca artifacts placeholders
+toscaArtifacts:
+  assetToscaTemplate:
+    artifactName: -template.yml
+    displayName: Tosca Template
+    type: TOSCA_TEMPLATE
+    description: TOSCA representation of the asset
+  assetToscaCsar:
+    artifactName: -csar.csar
+    displayName: Tosca Model
+    type: TOSCA_CSAR
+    description: TOSCA definition package of the asset
+
+# Informational artifacts placeholder
+excludeResourceCategory:
+  - Generic
+excludeResourceType:
+  - PNF
+informationalResourceArtifacts:
+  features:
+    displayName: Features
+    type: OTHER
+  capacity:
+    displayName: Capacity
+    type: OTHER
+  vendorTestResult:
+    displayName: Vendor Test Result
+    type: OTHER
+  testScripts:
+    displayName: Test Scripts
+    type: OTHER
+  CloudQuestionnaire:
+    displayName: Cloud Questionnaire (completed)
+    type: OTHER
+  HEATTemplateFromVendor:
+    displayName: HEAT Template from Vendor
+    type: HEAT
+  resourceSecurityTemplate:
+    displayName: Resource Security Template
+    type: OTHER
+
+excludeServiceCategory:
+
+informationalServiceArtifacts:
+  serviceArtifactPlan:
+    displayName: Service Artifact Plan
+    type: OTHER
+  summaryOfImpactsToECOMPElements:
+    displayName: Summary of impacts to ECOMP elements,OSSs, BSSs
+    type: OTHER
+  automationCompositionFunctions:
+    displayName: Automation Composition Functions
+    type: OTHER
+  dimensioningInfo:
+    displayName: Dimensioning Info
+    type: OTHER
+  affinityRules:
+    displayName: Affinity Rules
+    type: OTHER
+  operationalPolicies:
+    displayName: Operational Policies
+    type: OTHER
+  serviceSpecificPolicies:
+    displayName: Service-specific Policies
+    type: OTHER
+  engineeringRules:
+    displayName: Engineering Rules (ERD)
+    type: OTHER
+  distributionInstructions:
+    displayName: Distribution Instructions
+    type: OTHER
+  certificationTestResults:
+    displayName: TD Certification Test Results
+    type: OTHER
+  deploymentVotingRecord:
+    displayName: Deployment Voting Record
+    type: OTHER
+  serviceQuestionnaire:
+    displayName: Service Questionnaire
+    type: OTHER
+  serviceSecurityTemplate:
+    displayName: Service Security Template
+    type: OTHER
+
+serviceApiArtifacts:
+  configuration:
+    displayName: Configuration
+    type: OTHER
+  instantiation:
+    displayName: Instantiation
+    type: OTHER
+  monitoring:
+    displayName: Monitoring
+    type: OTHER
+  reporting:
+    displayName: Reporting
+    type: OTHER
+  logging:
+    displayName: Logging
+    type: OTHER
+  testing:
+    displayName: Testing
+    type: OTHER
+
+additionalInformationMaxNumberOfKeys: 50
+
+systemMonitoring:
+  enabled: false
+  isProxy: false
+  probeIntervalInSeconds: 15
+
+heatArtifactDeploymentTimeout:
+  defaultMinutes: 30
+  minMinutes: 1
+  maxMinutes: 120
+
+unLoggedUrls:
+  - /sdc2/rest/healthCheck
+
+cleanComponentsConfiguration:
+  cleanIntervalInMinutes: 1440
+  componentsToClean:
+    - Resource
+    - Service
+
+artifactsIndex: resources
+
+heatEnvArtifactHeader: ""
+heatEnvArtifactFooter: ""
+
+# GSS IDNS
+switchoverDetector:
+  gBeFqdn:
+  gFeFqdn:
+  beVip: 1.2.3.4
+  feVip: 1.2.3.4
+  beResolveAttempts: 3
+  feResolveAttempts: 3
+  enabled: false
+  interval: 60
+  changePriorityUser: ecompasdc
+  changePriorityPassword: ecompasdc123
+  publishNetworkUrl:
+  publishNetworkBody: '{"note":"comment"}'
+  groups:
+    beSet:
+      changePriorityUrl: ""
+      changePriorityBody: '{"name":"","uri":"","no_ad_redirection":false,"v4groups":{"failover_groups":["","","failover_policy":["FAILALL"]},"comment":"","intended_app_proto":"DNS"}'
+    feSet:
+      changePriorityUrl: ""
+      changePriorityBody: '{"name":"","uri":"","no_ad_redirection":false,"v4groups":{"failover_groups":["",""],"failover_policy":["FAILALL"]},"comment":"","intended_app_proto":"DNS"}'
+
+applicationL1Cache:
+  datatypes:
+    enabled: true
+    firstRunDelay: 10
+    pollIntervalInSec: 60
+
+applicationL2Cache:
+  enabled: false
+  catalogL1Cache:
+    enabled: false
+    resourcesSizeInCache: 300
+    servicesSizeInCache: 200
+    productsSizeInCache: 100
+  queue:
+    syncIntervalInSecondes: 43200
+    waitOnShutDownInMinutes: 10
+    numberOfCacheWorkers: 4
+
+toscaValidators:
+  stringMaxLength: 2500
+
+disableAudit: false
+vfModuleProperties:
+  min_vf_module_instances:
+    forBaseModule: 1
+    forNonBaseModule: 0
+  max_vf_module_instances:
+    forBaseModule: 1
+    forNonBaseModule:
+  initial_count:
+    forBaseModule: 1
+    forNonBaseModule: 0
+  vf_module_type:
+    forBaseModule: Base
+    forNonBaseModule: Expansion
+
+genericAssetNodeTypes:
+  VFC: org.openecomp.resource.abstract.nodes.VFC
+  CVFC: org.openecomp.resource.abstract.nodes.VFC
+  VF: org.openecomp.resource.abstract.nodes.VF
+  PNF: org.openecomp.resource.abstract.nodes.PNF
+  Service: org.openecomp.resource.abstract.nodes.service
+
+workloadContext: Production
+
+environmentContext:
+  defaultValue: General_Revenue-Bearing
+  validValues:
+    - Critical_Revenue-Bearing
+    - Vital_Revenue-Bearing
+    - Essential_Revenue-Bearing
+    - Important_Revenue-Bearing
+    - Needed_Revenue-Bearing
+    - Useful_Revenue-Bearing
+    - General_Revenue-Bearing
+    - Critical_Non-Revenue
+    - Vital_Non-Revenue
+    - Essential_Non-Revenue
+    - Important_Non-Revenue
+    - Needed_Non-Revenue
+    - Useful_Non-Revenue
+    - General_Non-Revenue
+
+gabConfig:
+  - artifactType: 'VES_EVENTS'
+    pathsAndNamesDefinitions:
+      - friendlyName: "Action"
+        path: "event.action[2]"
+        searchable: "true"
+      - friendlyName: "Comment"
+        path: "event.comment"
+        searchable: "true"
+      - friendlyName: "Alarm Additional Information"
+        path: "event.structure.faultFields.structure.alarmAdditionalInformation.comment"
+        searchable: "true"
+
+dmaapConsumerConfiguration:
+  hosts: localhost:3905
+  consumerGroup: sdc
+  consumerId: mama
+  timeoutMs: 15000
+  limit: 1
+  pollingInterval: 2
+  topic: topic
+  latitude: 32.109333
+  longitude: 34.855499
+  version: 1.0
+  serviceName: localhost/events
+  environment: TEST
+  partner: BOT_R
+  routeOffer: MR1
+  protocol: https
+  contenttype: application/json
+  dme2TraceOn: true
+  aftEnvironment: AFTUAT
+  aftDme2ConnectionTimeoutMs: 15000
+  aftDme2RoundtripTimeoutMs: 240000
+  aftDme2ReadTimeoutMs: 50000
+  dme2preferredRouterFilePath: DME2preferredRouter.txt
+  timeLimitForNotificationHandleMs: 120000
+  credential:
+    username: user
+    password:
+
+excludedPolicyTypesMapping:
+  # VF:
+  #  - a.b.c
+  #  - c.d.e
+  # CR:
+  #  - x.y.z
+
+excludedGroupTypesMapping:
+  CR:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - tosca.groups.Root
+  VF:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - tosca.groups.Root
+  Service:
+    - org.openecomp.groups.VfModule
+    - org.openecomp.groups.heat.HeatStack
+    - tosca.groups.Root
+
+healthStatusExclude:
+  - DE
+  - DMAPP
+  - DCAE

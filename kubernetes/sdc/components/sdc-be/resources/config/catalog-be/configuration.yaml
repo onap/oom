@@ -29,14 +29,14 @@ released: 2012-11-30
 toscaConformanceLevel: 11.0
 minToscaConformanceLevel: 3.0
 
-janusGraphCfgFile: {{ .Values.janusGraphCfgFile }}
-janusGraphInMemoryGraph: false
-janusGraphLockTimeout: 1800
+janusGraphCfgFile: {{ .Values.janusgraph.cfgFile }}
+janusGraphInMemoryGraph: {{ .Values.janusgraph.graph.inMemory }}
+janusGraphLockTimeout: {{ .Values.janusgraph.graph.lockTimeout }}
 #startup:                   connect to JanusGraph DB when it is down during ASDC--More-- (2% of 27930 bytes)
-janusGraphReconnectIntervalInSeconds: 3
+janusGraphReconnectIntervalInSeconds: {{ .Values.janusgraph.reconnectInterval }}
 
 # The read timeout towards JanusGraph DB when health check is invoked:
-janusGraphHealthCheckReadTimeout: 1
+janusGraphHealthCheckReadTimeout: {{ .Values.janusgraph.healthCheckReadTimeout }}
 
   #startup:                   connect to Elasticsearch when it is down during ASDC--More-- (3% of 27930 bytes)
 
@@ -90,9 +90,9 @@ basicAuth:
 
 
 cassandraConfig:
-  cassandraHosts: [{{ .Values.cassandra.hostname }}]
+  cassandraHosts: [{{ .Values.global.sdc_cassandra.serviceName }}.{{ include "common.namespace" . }}.svc.cluster.local]
   cassandraPort: {{ .Values.cassandra.port }}
-  localDataCenter: {{ .Values.cassandra.datacenterName }}
+  localDataCenter: {{ .Values.global.sdc_cassandra.dataCenter }}
   reconnectTimeout : 30000
   socketReadTimeout: {{ .Values.cassandraConfig.socketReadTimeout }}
   socketConnectTimeout: {{ .Values.cassandraConfig.socketConnectTimeout }}
@@ -105,11 +105,11 @@ cassandraConfig:
   truststorePath: {{ .Values.cassandraConfig.truststorePath }}
   truststorePassword: {{ .Values.cassandraConfig.truststorePassword }}
   keySpaces:
-    - { name: dox,           replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
-    - { name: sdcaudit,      replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
-    - { name: sdcartifact,   replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
-    - { name: sdccomponent,  replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
-    - { name: sdcrepository, replicationStrategy: NetworkTopologyStrategy, replicationInfo: [{{ if .Values.pairEnvName }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}','{{ .Values.cassandra.clusterName }}{{ .Values.pairEnvName }}','{{ .Values.cassandra.replicationFactor }}'{{ else }}'{{ .Values.cassandra.datacenterName }}','{{ .Values.cassandra.replicationFactor }}'{{ end }}]}
+    - { name: dox, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcaudit, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcartifact, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdccomponent, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
+    - { name: sdcrepository, replicationStrategy: NetworkTopologyStrategy, replicationInfo: ['{{ .Values.global.sdc_cassandra.dataCenter }}','{{ .Values.global.sdc_cassandra.replicaCount }}']}
 licenseTypes:
   - User
   - Installation
