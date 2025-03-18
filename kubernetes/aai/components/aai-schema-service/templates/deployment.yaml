@@ -57,6 +57,8 @@ spec:
         volumeMounts:
         - mountPath: /opt/app/aai-schema-service_rw
           name: aai-schema-service
+        - mountPath: /tmp
+          name: tmp-volume
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -85,12 +87,11 @@ spec:
         - mountPath: /opt/app/aai-schema-service/resources/localhost-access-logback.xml
           name: localhost-access-log-conf
           subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-schema-service/resources/etc/auth/realm.properties
-          name: realm-conf
-          subPath: realm.properties
         - mountPath: /opt/app/aai-schema-service/resources/application.properties
           name: springapp-conf
           subPath: application.properties
+        - mountPath: /tmp
+          name: tmp-volume
         ports:
         - containerPort: {{ .Values.service.appPort }}
           name: {{ .Values.service.appPortName }}
@@ -133,6 +134,9 @@ spec:
       - name: aai-schema-service
         emptyDir:
           sizeLimit: {{ .Values.volumes.aaiSizeLimit }}
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.aaiSizeLimit }}
       - name: logs
         emptyDir:
           sizeLimit: {{ .Values.volumes.logSizeLimit }}
@@ -149,8 +153,5 @@ spec:
       - name: aaiconfig-conf
         configMap:
           name: {{ include "common.fullname" . }}-aaiconfig
-      - name: realm-conf
-        configMap:
-          name: {{ include "common.fullname" . }}-realm
       restartPolicy: {{ .Values.restartPolicy }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
