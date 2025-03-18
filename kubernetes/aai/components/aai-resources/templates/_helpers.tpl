@@ -6,7 +6,7 @@
   args:
     - |
       URL="{{ required "URL is required" (.Values.schemaInitCheckURL | default "http://aai-graphadmin:8449/isSchemaInitialized") }}"
-      AUTH="{{ printf "%s:%s" (index .Values.global.config.basic.auth.users 0).username (index .Values.global.config.basic.auth.users 0).password }}"
+      AUTH="{{ printf "%s:%s" (index .Values.global.config.basicAuth.users 0).username (index .Values.global.config.basicAuth.users 0).password }}"
       while true; do
         RESPONSE=$(curl -u $AUTH -s $URL)
         if [ "$RESPONSE" = "true" ]; then
