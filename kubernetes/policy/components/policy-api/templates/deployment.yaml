@@ -1,6 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2021-2025 Nordix Foundation.
+#   Modification (C) 2025 Deutsche Telekom. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -28,29 +29,78 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
-        - command:
-          - /app/ready.py
-          args:
-          - --job-name
-          - {{ include "common.release" . }}-policy-pg-migrator-config
-          env:
-          - name: NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-          image: {{ include "repositoryGenerator.image.readiness" . }}
+        {{ include "common.readinessCheck.waitFor" . | indent 8 | trim }}
+        - name: {{ include "common.name" . }}-pg-config
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.postgresImage }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
-          name: {{ include "common.name" . }}-readiness
+          command:
+            - /bin/sh
+            - -cx
+            - |
+              /docker-entrypoint-initdb.d/db-pg.sh
+          env:
+          - name: PG_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                {{- if eq .Values.global.postgres.localCluster true }}
+                name: '{{ include "common.release" . }}-policy-db-root-password'
+                {{- else }}
+                name: '{{ .Values.global.postgres.userRootSecret }}'
+                {{- end }}
+                key: password
+          - name: PG_HOST
+            value: "{{ .Values.global.postgres.service.name2 }}"
+          - name: PG_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: PG_USER_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: PG_PORT
+            value: "{{ .Values.global.postgres.service.port }}"
           resources:
-            limits:
-              cpu: "100m"
-              memory: "500Mi"
             requests:
-              cpu: "3m"
-              memory: "20Mi"
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 300m
+              memory: 128Mi
+          volumeMounts:
+          - mountPath: /docker-entrypoint-initdb.d/db-pg.sh
+            name: {{ include "common.fullname" . }}-config
+            subPath: db-pg.sh
+        - name: {{ include "common.name" . }}-pg-db-migrator
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dbmigrator.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          volumeMounts:
+            - mountPath: /dbcmd-config/db_migrator_pg_policy_init.sh
+              name: {{ include "common.fullname" . }}-config
+              subPath: db_migrator_pg_policy_init.sh
+            - mountPath: /opt/app/policy/etc/db/
+              name: {{ include "common.fullname" . }}-migration-writable
+          command:
+            - /bin/sh
+            - -cx
+            - |
+              /dbcmd-config/db_migrator_pg_policy_init.sh
+          env:
+          - name: SQL_HOST
+            value: "{{ .Values.global.postgres.service.name2 }}"
+          - name: SQL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SQL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SQL_DB
+            value: {{ .Values.dbmigrator.schemas }}
+          - name: POLICY_HOME
+            value: {{ .Values.dbmigrator.policy_home }}
+          - name: SCRIPT_DIRECTORY
+            value: "postgres"
+          - name: PGPASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          resources: {{ include "common.resources" . | nindent 12 }}
         - command:
           - sh
           args:
@@ -58,9 +108,9 @@ spec:
           - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
           env:
           - name: SQL_USER
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "login") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
           - name: SQL_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-creds" "key" "password") | indent 12 }}
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           - name: RESTSERVER_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 12 }}
           - name: RESTSERVER_PASSWORD
@@ -70,10 +120,17 @@ spec:
             name: apiconfig
           - mountPath: /config
             name: apiconfig-processed
+          name: {{ include "common.name" . }}-update-config
           image: {{ include "repositoryGenerator.image.envsubst" . }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
-          name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
@@ -90,7 +147,7 @@ spec:
               port: {{ .Values.service.internalPort }}
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
-          {{ end -}}
+          {{- end }}
           readinessProbe:
             httpGet:
               path: {{ .Values.readiness.api }}
@@ -140,4 +197,15 @@ spec:
         - name: logs
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
-      {{- include "common.imagePullSecrets" . | nindent 6 }}
+        - name: {{ include "common.fullname" . }}-migration-writable
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.migration.sizeLimit }}
+        - name: {{ include "common.fullname" . }}-config
+          configMap:
+            name: {{ include "common.fullname" . }}-db-configmap
+            defaultMode: 0755
+            items:
+              - key: db-pg.sh
+                path: db-pg.sh
+              - key: db_migrator_pg_policy_init.sh
+                path: db_migrator_pg_policy_init.sh
