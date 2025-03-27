@@ -1,7 +1,7 @@
 {{/*
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2021-2025 Nordix Foundation.
-#   Modifications Copyright © 2024 Deutsche Telekom
+#   Modifications Copyright © 2024-2025 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -30,28 +30,7 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - command:
-          - /app/ready.py
-        args:
-          - --job-name
-          - {{ include "common.release" . }}-policy-pg-migrator-config
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        name: {{ include "common.name" . }}-db-config-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       - command:
         - sh
         args:

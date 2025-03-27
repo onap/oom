@@ -1,7 +1,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Modifications Copyright © 2018-2020 AT&T Intellectual Property
 # Modifications Copyright (C) 2021-2025 Nordix Foundation.
-# Modifications Copyright © 2024 Deutsche Telekom
+# Modifications Copyright © 2024-2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +25,11 @@ global:
     # flag to enable the DB creation via pgo-operator
     useOperator: false
     service:
-      name: pgset
-      name2: tcp-pgset-primary
-      name3: tcp-pgset-replica
-    container:
-      name: postgres
-    nameOverride: "policy-postgres"
+      name: &postgresName policy-postgres
+      name2: &postgresName2 policy-pg-primary
+      name3: &postgresName3 policy-pg-replica
+      port: &postgresPort 5432
+    nameOverride: *postgresName
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
   kafkaBootstrap: strimzi-kafka-bootstrap:9092
@@ -157,15 +156,6 @@ policy-nexus:
   config:
     jaasConfExternalSecret: '{{ include "common.release" . }}-{{ .Values.global.policyKafkaUser }}'
 
-#################################################################
-# DB configuration defaults.
-#################################################################
-
-dbmigrator:
-  image: onap/policy-db-migrator:4.1.0
-  schemas: "policyadmin clampacm pooling operationshistory"
-  policy_home: "/opt/app/policy"
-
 subChartsOnly:
   enabled: true
 
@@ -216,19 +206,18 @@ config:
       groupId: policy-group
   someConfig: blah
 
-postgresImage: library/postgres:17.2
 # application configuration override for postgres
 postgres:
   nameOverride: &postgresName policy-postgres
   service:
     name: *postgresName
-    name2: policy-pg-primary
-    name3: policy-pg-replica
-    internalPort: 5432
+    name2: *postgresName2
+    name3: *postgresName3
+    internalPort: *postgresPort
   container:
     name:
-      primary: policy-pg-primary
-      replica: policy-pg-replica
+      primary: *postgresName2
+      replica: *postgresName3
   persistence:
     mountSubPath: policy/postgres/data
     mountInitPath: policy
@@ -238,11 +227,6 @@ postgres:
     pgDatabase: policyadmin
     pgUserExternalSecret: *dbSecretName
     pgRootPasswordExternalSecret: *dbRootPassSecretName
-
-readinessCheck:
-  wait_for_postgres:
-    services:
-      - '{{ .Values.global.postgres.service.name2 }}'
 
 restServer:
   policyPapUserName: policyadmin
@@ -279,18 +263,3 @@ serviceAccount:
   nameOverride: policy
   roles:
     - read
-
-# Annotations to control the execution and deletion of the job
-# Can be used to delete a job before an Upgrade
-#
-# jobAnnotations:
-#   # In case of an ArgoCD deployment this Hook deletes the job before syncing
-#   argocd.argoproj.io/hook: Sync
-#   argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-#
-#   # In case of an Helm/Flux deployment this Hook deletes the job
-#   # This is what defines this resource as a hook. Without this line, the
-#   # job is considered part of the release.
-#   "helm.sh/hook": "pre-upgrade,pre-rollback,post-install"
-#   "helm.sh/hook-delete-policy": "before-hook-creation"
-#   "helm.sh/hook-weight": "1"
