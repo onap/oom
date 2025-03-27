@@ -1,7 +1,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2019-2021 AT&T Intellectual Property. All rights reserved.
 #   Modifications Copyright (C) 2022 Bell Canada. All rights reserved.
-#   Modification (C) 2023-2024 Deutsche Telekom. All rights reserved.
+#   Modification (C) 2023-2025 Deutsche Telekom. All rights reserved.
 #   Modifications Copyright © 2024-2025 Nordix Foundation.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,12 +25,18 @@
 global:
   nodePortPrefix: 304
   persistence: {}
+  postgres:
+    service:
+      name: policy-postgres
+      name2: policy-pg-primary
+      name3: policy-pg-replica
+      port: 5432
 
 #################################################################
 # Secrets metaconfig
 #################################################################
 secrets:
-  - uid: db-creds
+  - uid: db-secret
     type: basicAuth
     externalSecret: '{{ tpl (default "" .Values.db.credsExternalSecret) . }}'
     login: '{{ .Values.db.user }}'
@@ -42,6 +48,17 @@ secrets:
     login: '{{ .Values.restServer.user }}'
     password: '{{ .Values.restServer.password }}'
     passwordPolicy: required
+
+#################################################################
+# DB configuration defaults.
+#################################################################
+
+dbmigrator:
+  image: onap/policy-db-migrator:4.1.0
+  schemas: "policyadmin clampacm pooling operationshistory"
+  policy_home: "/opt/app/policy"
+
+postgresImage: library/postgres:17.2
 
 #################################################################
 # Application configuration defaults.
@@ -57,9 +74,11 @@ debugEnabled: false
 db:
   user: policy-user
   password: policy_user
-  service:
-    pgName: policy-pg-primary
-    internalPgPort: 5432
+
+readinessCheck:
+  wait_for:
+    services:
+      - '{{ .Values.global.postgres.service.name2 }}'
 
 restServer:
   user: policyadmin
@@ -131,6 +150,9 @@ dirSizes:
     sizeLimit: 1Gi
   logDir:
     sizeLimit: 500Mi
+
+dbReadiness:
+  retryCount: 3
 
 #Pods Service Account
 serviceAccount:
