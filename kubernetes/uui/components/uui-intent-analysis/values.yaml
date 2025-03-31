@@ -18,6 +18,8 @@
 
 global:
   passwordStrength: long
+  tracing:
+    enabled: false
 
 #Pods Service Account
 serviceAccount:
@@ -40,7 +42,7 @@ secrets:
     password: '{{ .Values.postgres.config.pgUserPassword }}'
     passwordPolicy: generate
 
-image: onap/usecase-ui-intent-analysis:15.0.0
+image: onap/usecase-ui-intent-analysis:15.0.1
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -58,14 +60,19 @@ service:
   - name: http-rest
     port: &svc_port 8083
 
+startup:
+  enabled: true
+  path: /api/usecaseui-intent-analysis/v1/actuator/health
+  port: *svc_port
+  periodSeconds: 1
+  failureThreshold: 90
+
 liveness:
-  initialDelaySeconds: 120
+  enabled: true
   port: *svc_port
   periodSeconds: 10
-  enabled: true
 
 readiness:
-  initialDelaySeconds: 60
   port: *svc_port
   periodSeconds: 10
 
@@ -124,6 +131,11 @@ resources:
       cpu: "2"
       memory: "1Gi"
   unlimited: {}
+
+tracing:
+  collector:
+    host: jaeger-collector.istio-config
+    port: 9411
 
 # Annotations to control the execution and deletion of the job
 # Can be used to delete a job before an Upgrade
