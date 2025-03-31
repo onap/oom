@@ -43,25 +43,37 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}
         - name: POSTGRES_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 10 }}
-{{- if eq .Values.liveness.enabled true }}
+        - name: TRACING_ENABLED
+          value: {{ .Values.global.tracing.enabled | quote }}
+        - name: COLLECTOR_HOST
+          value: {{ .Values.tracing.collector.host }}
+        - name: COLLECTOR_PORT
+          value: {{ .Values.tracing.collector.port | quote }}
+        {{- if eq .Values.startup.enabled true }}
+        startupProbe:
+          httpGet:
+            port: {{ .Values.startup.port }}
+            path: {{ .Values.startup.path }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
+        {{- end }}
+        {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.liveness.port }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
-{{- end }}
+        {{- end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.readiness.port }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
-{{- if .Values.nodeSelector }}
+        {{- if .Values.nodeSelector }}
         nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
-{{- end }}
-{{- if .Values.affinity }}
+        {{- end }}
+        {{- if .Values.affinity }}
         affinity: {{ toYaml .Values.affinity | nindent 10 }}
-{{- end }}
+        {{- end }}
         volumeMounts:
         - mountPath: /uui/run.sh
           name: entrypoint
