@@ -71,7 +71,7 @@ create table ACT_GE_SCHEMA_LOG (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
 insert into ACT_GE_SCHEMA_LOG
-values ('0', CURRENT_TIMESTAMP, '7.14.0');
+values ('0', CURRENT_TIMESTAMP, '7.21.0');
 
 create table ACT_RE_DEPLOYMENT (
     ID_ varchar(64),
@@ -114,6 +114,7 @@ create table ACT_RU_JOB (
     LOCK_OWNER_ varchar(255),
     EXCLUSIVE_ boolean,
     EXECUTION_ID_ varchar(64),
+    ROOT_PROC_INST_ID_ varchar(64),
     PROCESS_INSTANCE_ID_ varchar(64),
     PROCESS_DEF_ID_ varchar(64),
     PROCESS_DEF_KEY_ varchar(255),
@@ -133,6 +134,7 @@ create table ACT_RU_JOB (
     SEQUENCE_COUNTER_ bigint,
     TENANT_ID_ varchar(64),
     CREATE_TIME_ datetime(3),
+    LAST_FAILURE_LOG_ID_ varchar(64),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -170,6 +172,17 @@ create table ACT_RE_PROCDEF (
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
+create table ACT_RE_CAMFORMDEF (
+    ID_ varchar(64) not null,
+    REV_ integer,
+    KEY_ varchar(255) not null,
+    VERSION_ integer not null,
+    DEPLOYMENT_ID_ varchar(64),
+    RESOURCE_NAME_ varchar(4000),
+    TENANT_ID_ varchar(64),
+    primary key (ID_)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
 create table ACT_RU_TASK (
     ID_ varchar(64),
     REV_ integer,
@@ -188,6 +201,7 @@ create table ACT_RU_TASK (
     DELEGATION_ varchar(64),
     PRIORITY_ integer,
     CREATE_TIME_ datetime(3),
+    LAST_UPDATED_ datetime(3),
     DUE_DATE_ datetime(3),
     FOLLOW_UP_DATE_ datetime(3),
     SUSPENSION_STATE_ integer,
@@ -222,8 +236,8 @@ create table ACT_RU_VARIABLE (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     VAR_SCOPE_ varchar(64) not null,
     SEQUENCE_COUNTER_ bigint,
     IS_CONCURRENT_LOCAL_ TINYINT,
@@ -261,6 +275,7 @@ create table ACT_RU_INCIDENT (
   CONFIGURATION_ varchar(255),
   TENANT_ID_ varchar(64),
   JOB_DEF_ID_ varchar(64),
+  ANNOTATION_ varchar(4000),
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -299,6 +314,13 @@ create table ACT_RU_METER_LOG (
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
+create table ACT_RU_TASK_METER_LOG (
+  ID_ varchar(64) not null,
+  ASSIGNEE_HASH_ bigint,
+  TIMESTAMP_ datetime(3),
+  primary key (ID_)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
+
 create table ACT_RU_EXT_TASK (
   ID_ varchar(64) not null,
   REV_ integer not null,
@@ -308,6 +330,7 @@ create table ACT_RU_EXT_TASK (
   ERROR_MSG_ varchar(4000),
   ERROR_DETAILS_ID_ varchar(64),
   LOCK_EXP_TIME_ datetime(3) NULL,
+  CREATE_TIME_ datetime(3) NULL,
   SUSPENSION_STATE_ integer,
   EXECUTION_ID_ varchar(64),
   PROC_INST_ID_ varchar(64),
@@ -317,6 +340,7 @@ create table ACT_RU_EXT_TASK (
   ACT_INST_ID_ varchar(64),
   TENANT_ID_ varchar(64),
   PRIORITY_ bigint NOT NULL DEFAULT 0,
+  LAST_FAILURE_LOG_ID_ varchar(64),
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -335,6 +359,8 @@ create table ACT_RU_BATCH (
   CONFIGURATION_ varchar(255),
   TENANT_ID_ varchar(64),
   CREATE_USER_ID_ varchar(255),
+  START_TIME_ datetime(3),
+  EXEC_START_TIME_ datetime(3),
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -342,6 +368,7 @@ create index ACT_IDX_EXEC_ROOT_PI on ACT_RU_EXECUTION(ROOT_PROC_INST_ID_);
 create index ACT_IDX_EXEC_BUSKEY on ACT_RU_EXECUTION(BUSINESS_KEY_);
 create index ACT_IDX_EXEC_TENANT_ID on ACT_RU_EXECUTION(TENANT_ID_);
 create index ACT_IDX_TASK_CREATE on ACT_RU_TASK(CREATE_TIME_);
+create index ACT_IDX_TASK_LAST_UPDATED on ACT_RU_TASK(LAST_UPDATED_);
 create index ACT_IDX_TASK_ASSIGNEE on ACT_RU_TASK(ASSIGNEE_);
 create index ACT_IDX_TASK_OWNER on ACT_RU_TASK(OWNER_);
 create index ACT_IDX_TASK_TENANT_ID on ACT_RU_TASK(TENANT_ID_);
@@ -362,6 +389,7 @@ create index ACT_IDX_JOB_EXECUTION_ID on ACT_RU_JOB(EXECUTION_ID_);
 -- this index needs to be limited in mariadb see CAM-6938
 create index ACT_IDX_JOB_HANDLER on ACT_RU_JOB(HANDLER_TYPE_(100),HANDLER_CFG_(155));
 create index ACT_IDX_JOB_PROCINST on ACT_RU_JOB(PROCESS_INSTANCE_ID_);
+create index ACT_IDX_JOB_ROOT_PROCINST on ACT_RU_JOB(ROOT_PROC_INST_ID_);
 create index ACT_IDX_JOB_TENANT_ID on ACT_RU_JOB(TENANT_ID_);
 create index ACT_IDX_JOBDEF_TENANT_ID on ACT_RU_JOBDEF(TENANT_ID_);
 
@@ -373,6 +401,9 @@ CREATE INDEX ACT_IDX_METER_LOG_REPORT ON ACT_RU_METER_LOG(NAME_, REPORTER_, MILL
 -- old metric timestamp column
 CREATE INDEX ACT_IDX_METER_LOG_TIME ON ACT_RU_METER_LOG(TIMESTAMP_);
 CREATE INDEX ACT_IDX_METER_LOG ON ACT_RU_METER_LOG(NAME_, TIMESTAMP_);
+
+-- task metric timestamp column
+CREATE INDEX ACT_IDX_TASK_METER_LOG_TIME ON ACT_RU_TASK_METER_LOG(TIMESTAMP_);
 
 create index ACT_IDX_EXT_TASK_TOPIC on ACT_RU_EXT_TASK(TOPIC_NAME_);
 create index ACT_IDX_EXT_TASK_TENANT_ID on ACT_RU_EXT_TASK(TENANT_ID_);
@@ -862,8 +893,8 @@ create table ACT_HI_VARINST (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     STATE_ varchar(20),
     REMOVAL_TIME_ datetime(3),
@@ -892,8 +923,8 @@ create table ACT_HI_DETAIL (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     SEQUENCE_COUNTER_ bigint,
     TENANT_ID_ varchar(64),
     OPERATION_ID_ varchar(64),
@@ -1004,6 +1035,7 @@ create table ACT_HI_INCIDENT (
   INCIDENT_STATE_ integer,
   TENANT_ID_ varchar(64),
   JOB_DEF_ID_ varchar(64),
+  ANNOTATION_ varchar(4000),
   REMOVAL_TIME_ datetime(3),
   primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
@@ -1050,6 +1082,7 @@ create table ACT_HI_BATCH (
     START_TIME_ datetime(3) not null,
     END_TIME_ datetime(3),
     REMOVAL_TIME_ datetime(3),
+    EXEC_START_TIME_ datetime(3),
     primary key (ID_)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_bin;
 
@@ -1138,6 +1171,8 @@ create index ACT_IDX_HI_VAR_INST_PROC_DEF_KEY on ACT_HI_VARINST(PROC_DEF_KEY_);
 create index ACT_IDX_HI_VARINST_BYTEAR on ACT_HI_VARINST(BYTEARRAY_ID_);
 create index ACT_IDX_HI_VARINST_RM_TIME on ACT_HI_VARINST(REMOVAL_TIME_);
 create index ACT_IDX_HI_VAR_PI_NAME_TYPE on ACT_HI_VARINST(PROC_INST_ID_, NAME_, VAR_TYPE_);
+create index ACT_IDX_HI_VARINST_NAME on ACT_HI_VARINST(NAME_);
+create index ACT_IDX_HI_VARINST_ACT_INST_ID on ACT_HI_VARINST(ACT_INST_ID_);
 
 create index ACT_IDX_HI_INCIDENT_TENANT_ID on ACT_HI_INCIDENT(TENANT_ID_);
 create index ACT_IDX_HI_INCIDENT_PROC_DEF_KEY on ACT_HI_INCIDENT(PROC_DEF_KEY_);
@@ -1302,8 +1337,8 @@ create table ACT_HI_DEC_IN (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     CREATE_TIME_ datetime(3),
     ROOT_PROC_INST_ID_ varchar(64),
@@ -1324,8 +1359,8 @@ create table ACT_HI_DEC_OUT (
     BYTEARRAY_ID_ varchar(64),
     DOUBLE_ double,
     LONG_ bigint,
-    TEXT_ LONGBLOB,
-    TEXT2_ LONGBLOB,
+    TEXT_ varchar(4000),
+    TEXT2_ varchar(4000),
     TENANT_ID_ varchar(64),
     CREATE_TIME_ datetime(3),
     ROOT_PROC_INST_ID_ varchar(64),
