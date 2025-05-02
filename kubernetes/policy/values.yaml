@@ -19,17 +19,18 @@
 # Global configuration defaults.
 #################################################################
 global:
-  prometheusEnabled: false
+  prometheusEnabled: true
   postgres:
     localCluster: true
     # flag to enable the DB creation via pgo-operator
     useOperator: false
     service:
-      name: &postgresName policy-postgres
-      name2: &postgresName2 policy-pg-primary
-      name3: &postgresName3 policy-pg-replica
-      port: &postgresPort 5432
-    nameOverride: *postgresName
+      name: pgset
+      name2: tcp-pgset-primary
+      name3: tcp-pgset-replica
+    container:
+      name: postgres
+    nameOverride: "policy-postgres"
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
   kafkaBootstrap: strimzi-kafka-bootstrap:9092
@@ -204,6 +205,11 @@ config:
     segmentBytes: 1073741824
     consumer:
       groupId: policy-group
+  opaPdpDataTopic:
+    name: opa-pdp-data
+    partitions: 10
+    retentionMs: 7200000
+    segmentBytes: 1073741824
   someConfig: blah
 
 # application configuration override for postgres
@@ -211,13 +217,13 @@ postgres:
   nameOverride: &postgresName policy-postgres
   service:
     name: *postgresName
-    name2: *postgresName2
-    name3: *postgresName3
-    internalPort: *postgresPort
+    name2: policy-pg-primary
+    name3: policy-pg-replica
+    internalPort: 5432
   container:
     name:
-      primary: *postgresName2
-      replica: *postgresName3
+      primary: policy-pg-primary
+      replica: policy-pg-replica
   persistence:
     mountSubPath: policy/postgres/data
     mountInitPath: policy
