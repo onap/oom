@@ -23,7 +23,14 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{ end }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
@@ -49,10 +56,16 @@ spec:
               fieldPath: metadata.uid
         - name: GROUPID
           value: "{{ .Values.groupIdPrefix }}-$(POD_UID)"
+        - name: PATCH_GROUPID
+          value: "{{ .Values.patchGroupIdPrefix }}-$(POD_UID)"
         - name: LOG_LEVEL
           value: "{{ .Values.log.loglevel }}"
         - name: PAP_TOPIC
           value: "{{ .Values.kafka.topic }}"
+        - name: PATCH_TOPIC
+          value: "{{ .Values.kafka.patchtopic }}"
+        - name: USE_KAFKA_FOR_PATCH
+          value: "{{ .Values.useKafkaForPatch }}"
         - name: API_USER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "login") | indent 10 }}
         - name: API_PASSWORD
@@ -85,6 +98,10 @@ spec:
           mountPath: /app/bundles
         - name: logs
           mountPath: /var/logs
+        - mountPath: /opt/policies/
+          name: opt-policies
+        - mountPath: /opt/data/
+          name: opt-data
         resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -106,4 +123,10 @@ spec:
       - name: logs
         emptyDir:
           sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
+      - name: opt-policies
+        emptyDir:
+          sizeLimit: {{ .Values.dirSizes.optPolicies.sizeLimit }}
+      - name: opt-data
+        emptyDir:
+          sizeLimit: {{ .Values.dirSizes.optData.sizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
