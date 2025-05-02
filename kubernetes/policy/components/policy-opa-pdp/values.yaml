@@ -43,7 +43,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/policy-opa-pdp:1.0.4
+image: onap/policy-opa-pdp:1.0.5-SNAPSHOT
 
 pullPolicy: Always
 
@@ -70,14 +70,12 @@ apiServer:
   user: policyadmin
   password: zb!XztG34
 
-config:
-  # Event consumption (kafka) properties
-  kafka:
-    consumer:
-      groupId: policy-opa-pdp
-  app:
-    listener:
-      policyPdpPapTopic: policy-pdp-pap
+updateStrategy:
+  type: RollingUpdate
+  # The number of pods that can be unavailable during the update process
+  maxUnavailable: 0
+  # The number of pods that can be created above the desired amount of pods during an update
+  maxSurge: 1
 
 securityContext:
   user_id: 1000
@@ -86,8 +84,11 @@ securityContext:
 kafka:
   groupid: "policy-opa-pdp"
   topic: "policy-pdp-pap"
+  patchtopic: "opa-pdp-data"
   useSASL: "true"
   brokers: "onap-strimzi-kafka-bootstrap.onap:9092"
+
+useKafkaForPatch: false
 
 persistence:
   enabled: true
@@ -124,6 +125,18 @@ readinessCheck:
   wait_for:
     services:
       - 'policy-pap'
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  stabilizationWindowSeconds: 60
+  podScaleDownCount: 1
+  periodSecondsPods: 60
+  podScaleDownPercent: 10
+  periodSecondsPercent: 60
+  selectPolicy: "Min"
 
 service:
   type: ClusterIP
@@ -188,8 +201,13 @@ dirSizes:
     sizeLimit: 100Mi
   bundleDir:
     sizeLimit: 5Gi
+  optPolicies:
+    sizeLimit: 500Mi
+  optData:
+    sizeLimit: 500Mi
 
 groupIdPrefix: opa-pdp
+patchGroupIdPrefix: opa-pdp-data
 
 #Pods Service Account
 serviceAccount:
@@ -209,25 +227,22 @@ metrics:
       version: '{{ .Chart.Version | replace "+" "_" }}'
       release: prometheus
     enabled: true
-    port: policy-opa-pdp
+    port: http
     interval: 60s
+    path: /metrics
     isHttps: false
     basicAuth:
       enabled: true
-      externalSecretNameSuffix: policy-opa-pdp-restserver-creds
+      externalSecretNameSuffix: policy-opa-pdp-api-creds
       externalSecretUserKey: login
       externalSecretPasswordKey: password
     selector:
       app: '{{ include "common.name" . }}'
-      chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-      release: '{{ include "common.release" . }}'
-      heritage: '{{ .Release.Service }}'
+      helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+      app.kubernetes.io/instance: '{{ include "common.release" . }}'
+      app.kubernetes.io/managed-by: '{{ .Release.Service }}'
 
 config:
-  # Event consumption (kafka) properties
-  kafka:
-    consumer:
-      groupId: policy-opa-pdp
   app:
     listener:
       policyPdpPapTopic: policy-pdp-pap
@@ -244,3 +259,8 @@ kafkaUser:
       type: topic
       patternType: prefix
       operations: [ Create, Describe, Read, Write ]
+    - name: opa-pdp-data
+      type: topic
+      patternType: prefix
+      operations: [ Create, Describe, Read, Write ]
+
