@@ -23,7 +23,14 @@ kind: Deployment
 metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
 spec:
   selector: {{- include "common.selectors" . | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{ end }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.maxSurge }}
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
@@ -85,6 +92,10 @@ spec:
           mountPath: /app/bundles
         - name: logs
           mountPath: /var/logs
+        - mountPath: /opt/policies/
+          name: opt-policies
+        - mountPath: /opt/data/
+          name: opt-data
         resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -106,4 +117,10 @@ spec:
       - name: logs
         emptyDir:
           sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
+      - name: opt-policies
+        emptyDir:
+          sizeLimit: {{ .Values.dirSizes.optPolicies.sizeLimit }}
+      - name: opt-data
+        emptyDir:
+          sizeLimit: {{ .Values.dirSizes.optData.sizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
