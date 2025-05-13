@@ -21,6 +21,8 @@ server:
   {{- end }}
   port: {{ index .Values.containerPort }}
 spring:
+  application:
+    name: so-sdc-controller
   datasource:
     hikari:
       jdbcUrl: jdbc:mariadb://${DB_HOST}:${DB_PORT}/catalogdb
@@ -39,6 +41,19 @@ spring:
       username: mso_admin
       password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
       role: ACTUATOR
+  sleuth:
+    enabled: {{ .Values.global.tracing.enabled }}
+    messaging:
+      jms:
+        enabled: false
+    trace-id128: true
+    sampler:
+      probability: {{ .Values.global.tracing.sampling.probability }}
+    supports-join: false
+    web:
+      skip-pattern: /actuator/health/*
+  zipkin:
+    base-url: {{ .Values.global.tracing.collector.baseUrl }}
 request:
   datasource:
     hikari:
