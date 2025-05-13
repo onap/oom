@@ -20,6 +20,7 @@
 */}}
 -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
     <property name="AJSC_HOME" value="${AJSC_HOME:-.}" />
     <property name="maxHistory" value='{{.Values.accessLogback.maxHistory}}' />
     <property name="totalSizeCap" value='{{.Values.accessLogback.totalSizeCap}}' />
@@ -44,8 +45,37 @@
     </if>
 
     <appender name="STDOUTACCESS" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="org.onap.aai.logging.CustomLogPatternLayoutEncoder">
-            <Pattern>%a %u %z [%t] "%m %U%q" %s %b %y %i{X-TransactionId} %i{X-FromAppId} %i{X-Forwarded-For} %i{X-AAI-SSL-Client-CN} %i{X-AAI-SSL-Client-OU} %i{X-AAI-SSL-Client-O} %i{X-AAI-SSL-Client-L} %i{X-AAI-SSL-Client-ST} %i{X-AAI-SSL-Client-C} %i{X-AAI-SSL-Client-NotBefore} %i{X-AAI-SSL-Client-NotAfter} %i{X-AAI-SSL-Client-DN} %D - "logType": "access"</Pattern>
+        <encoder class="net.logstash.logback.encoder.AccessEventCompositeJsonEncoder">
+            <providers>
+                <pattern>
+                    <pattern>
+                        {
+                            "remoteIp": "%a",
+                            "remoteUser": "%u",
+                            "timestamp": "%t",
+                            "requestMethod": "%m",
+                            "requestUrl": "%U",
+                            "queryString": "%q",
+                            "httpStatusCode": "%s",
+                            "bytesSent": "%b",
+                            "transactionId": "%i{X-TransactionId}",
+                            "fromAppId": "%i{X-FromAppId}",
+                            "forwardedFor": "%i{X-Forwarded-For}",
+                            "aaiSslClientCn": "%i{X-AAI-SSL-Client-CN}",
+                            "aaiSslClientOu": "%i{X-AAI-SSL-Client-OU}",
+                            "aaiSslClientO": "%i{X-AAI-SSL-Client-O}",
+                            "aaiSslClientL": "%i{X-AAI-SSL-Client-L}",
+                            "aaiSslClientSt": "%i{X-AAI-SSL-Client-ST}",
+                            "aaiSslClientC": "%i{X-AAI-SSL-Client-C}",
+                            "aaiSslClientNotBefore": "%i{X-AAI-SSL-Client-NotBefore}",
+                            "aaiSslClientNotAfter": "%i{X-AAI-SSL-Client-NotAfter}",
+                            "aaiSslClientDn": "%i{X-AAI-SSL-Client-DN}",
+                            "durationMs": "%D",
+                            "logType": "access"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
         </encoder>
     </appender>
     <appender-ref ref="STDOUTACCESS" />

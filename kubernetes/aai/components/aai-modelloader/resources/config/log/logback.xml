@@ -17,7 +17,6 @@
 -->
 */}}
 <configuration scan="true" scanPeriod="3 seconds" debug="false">
-  <include resource="org/springframework/boot/logging/logback/base.xml" />
   <property name="logDir" value="/var/log/onap" />
   <property name="componentName" value="AAI-ML"></property>
 
@@ -32,10 +31,34 @@
 
   <property name="logDirectory" value="${logDir}/${componentName}" />
 
-  <!-- Example evaluator filter applied against console appender -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>${errorLogPattern}</pattern>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp><fieldName>timestamp</fieldName></timestamp>
+        <message/>
+        <mdc>
+          <fieldName>context</fieldName>
+          <includeMdcKeyName>RequestId</includeMdcKeyName>
+          <includeMdcKeyName>PartnerName</includeMdcKeyName>
+        </mdc>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+          <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+            <exclude>^sun\.reflect\..*\.invoke</exclude>
+            <exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+            <rootCauseFirst>true</rootCauseFirst>
+          </throwableConverter>
+        </stackTrace>
+        <threadName><fieldName>thread</fieldName></threadName>
+        <loggerName>
+          <fieldName>logger</fieldName>
+          <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+        </loggerName>
+        <logLevel/>
+        <pattern>
+          <pattern>{"logType":"app", "app":"ModelLoader"}</pattern>
+        </pattern>
+      </providers>
     </encoder>
   </appender>
   <appender name="AsyncSysOut" class="ch.qos.logback.classic.AsyncAppender">
