@@ -57,15 +57,37 @@
   <property name="CONSOLE_LOG_PATTERN"
   value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} [%X{traceId},%X{spanId}] [%thread] %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />
 
-  <!-- Appender to log to console -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <!-- Minimum logging level to be presented in the console logs-->
-      <level>DEBUG</level>
-    </filter>
-    <encoder>
-      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
-      <charset>utf8</charset>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp><fieldName>timestamp</fieldName></timestamp>
+        <message/>
+        <mdc>
+          <fieldName>context</fieldName>
+          <excludeMdcKeyName>ServerIPAddress</excludeMdcKeyName>
+          <excludeMdcKeyName>EntryTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>InvokeTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorCode</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorDesc</excludeMdcKeyName>
+        </mdc>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+          <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+            <exclude>^sun\.reflect\..*\.invoke</exclude>
+            <exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+            <rootCauseFirst>true</rootCauseFirst>
+          </throwableConverter>
+        </stackTrace>
+        <threadName><fieldName>thread</fieldName></threadName>
+        <loggerName>
+          <fieldName>logger</fieldName>
+          <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+        </loggerName>
+        <logLevel/>
+        <pattern>
+          <pattern>{"logType":"app"}</pattern>
+        </pattern>
+      </providers>
     </encoder>
   </appender>
 
