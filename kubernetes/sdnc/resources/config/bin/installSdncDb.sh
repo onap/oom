@@ -34,7 +34,7 @@ SDNC_DB_DATABASE=${SDNC_DB_DATABASE}
 
 
 # Create tablespace and user account
-mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} mysql <<-END
+mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} mariadb <<-END
 CREATE DATABASE IF NOT EXISTS ${SDNC_DB_DATABASE};
 CREATE USER IF NOT EXISTS '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
 CREATE USER IF NOT EXISTS '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
@@ -47,12 +47,12 @@ END
 # load schema
 if [ -f ${ETC_DIR}/sdnctl.dump ]
 then
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < ${ETC_DIR}/sdnctl.dump
+  mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < ${ETC_DIR}/sdnctl.dump
 fi
 
 for datafile in ${ETC_DIR}/*.data.dump
 do
-  mysql -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < $datafile
+  mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_DATABASE} < $datafile
 done
 
 # Create VNIs 100-199
