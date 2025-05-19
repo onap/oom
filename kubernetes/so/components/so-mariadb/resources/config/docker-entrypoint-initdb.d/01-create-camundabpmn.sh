@@ -26,7 +26,7 @@
 
 echo "Creating camundabpmn database . . ." 1>/tmp/mariadb-camundabpmn.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+maysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP DATABASE IF EXISTS camundabpmn;
 CREATE DATABASE camundabpmn;
 DROP USER IF EXISTS '${CAMUNDA_DB_USER}';

@@ -36,9 +36,9 @@ while read DB ; do
 
     echo "Creating database ${DB} and user ${USER}..."
 
-    mysql $MYSQL_OPTS -e "CREATE OR REPLACE USER '${USER}'@'%' IDENTIFIED BY '${PASS}'"
-    mysql $MYSQL_OPTS -e "CREATE DATABASE IF NOT EXISTS ${DB}"
-    mysql $MYSQL_OPTS -e "GRANT ALL PRIVILEGES ON ${DB}.* TO '${USER}'@'%'"
+    mariadb $MYSQL_OPTS -e "CREATE OR REPLACE USER '${USER}'@'%' IDENTIFIED BY '${PASS}'"
+    mariadb $MYSQL_OPTS -e "CREATE DATABASE IF NOT EXISTS ${DB}"
+    mariadb $MYSQL_OPTS -e "GRANT ALL PRIVILEGES ON ${DB}.* TO '${USER}'@'%'"
 
     echo "Created database ${DB} and user ${USER}."
 done <<EOF
