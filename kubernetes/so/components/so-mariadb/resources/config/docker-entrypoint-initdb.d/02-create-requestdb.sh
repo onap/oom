@@ -25,7 +25,7 @@
 
 echo "Creating requestdb database . . ." 1>/tmp/mariadb-requestdb.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP DATABASE IF EXISTS requestdb;
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ requestdb /*!40100 DEFAULT CHARACTER SET latin1 */;
 DROP USER IF EXISTS '${REQUEST_DB_USER}';
