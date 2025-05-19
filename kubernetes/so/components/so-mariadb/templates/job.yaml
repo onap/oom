@@ -95,20 +95,20 @@ spec:
       initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}-config
-        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        image: {{ include "repositoryGenerator.image.mariadb" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         command:
-        - /bin/bash
-        - -c
+        - /bin/sh
+        - -cx
         - >
           {{- if include "common.onServiceMesh" . }}
           echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
-          mysql() { /usr/bin/mysql  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
-          export -f mysql;
-          mysql --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
-          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; "${mysql[@]}" < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${mysql[@]}"; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
+          mysqlcmd() { mariadb  -h ${DB_HOST} -P ${DB_PORT} "$@"; };
+          export -f mysqlcmd;
+          mysqlcmd --user=root --password=${MYSQL_ROOT_PASSWORD} requestdb -e exit > /dev/null 2>&1 {{ if not .Values.global.migration.enabled }} && echo "Database already initialized!!!" && exit 0 {{ end }};
+          for f in /docker-entrypoint-initdb.d/*; do case "$f" in  *.sh) echo "$0: running $f"; . "$f" ;;  *.sql) echo "$0: running $f"; "${mysqlcmd[@]}" < "$f"; echo ;; *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${mysqlcmd[@]}"; echo ;;  *) echo "$0: ignoring $f" ;;  esac; echo; done;
           {{- if .Values.global.migration.enabled }}
-          mysql -vv --user=root --password=${MYSQL_ROOT_PASSWORD} < `ls -tr /var/data/mariadb/* | tail -1`;
+          mysqlcmd -vv --user=root --password=${MYSQL_ROOT_PASSWORD} < `ls -tr /var/data/mariadb/* | tail -1`;
           {{- end }}
         env:
         - name: DB_HOST
