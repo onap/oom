@@ -28,7 +28,7 @@ prepare_password()
 
 CNFM_DB_PASSWORD=`prepare_password $CNFM_DB_PASSWORD`
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mariadb -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ cnfm /*!40100 DEFAULT CHARACTER SET latin1 */;
 DROP USER IF EXISTS '${CNFM_DB_USER}';
 CREATE USER '${CNFM_DB_USER}';
