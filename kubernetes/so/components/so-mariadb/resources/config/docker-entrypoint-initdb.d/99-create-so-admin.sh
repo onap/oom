@@ -33,7 +33,7 @@ prepare_password()
 
 DB_ADMIN_PASSWORD=`prepare_password $DB_ADMIN_PASSWORD`
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mariadbcmd -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP USER IF EXISTS '${DB_ADMIN}';
 CREATE USER '${DB_ADMIN}';
 GRANT USAGE ON *.* TO '${DB_ADMIN}'@'%' IDENTIFIED BY '${DB_ADMIN_PASSWORD}';
