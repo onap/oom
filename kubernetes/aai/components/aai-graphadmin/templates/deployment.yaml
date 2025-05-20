@@ -47,8 +47,9 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.service.terminationGracePeriodSeconds }}
       {{- if .Values.global.initContainers.enabled }}
       initContainers:
-        {{- if not .Values.createDbSchemaViaJob.enabled }}
         {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForCassandraService ) | indent 8 | trim }}
+        {{- if not .Values.createDbSchemaViaJob.enabled }}
+        {{- include "aai.waitForSchemaService" . | nindent 8 }}
         - name: {{ include "common.name" . }}-create-db-schema
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -157,9 +158,6 @@ spec:
         - mountPath: /opt/app/aai-graphadmin/resources/localhost-access-logback.xml
           name: config
           subPath: localhost-access-logback.xml
-        - mountPath: /opt/app/aai-graphadmin/resources/etc/auth/realm.properties
-          name: config
-          subPath: realm.properties
         - mountPath: /opt/app/aai-graphadmin/resources/application.properties
           name: properties
           subPath: application.properties
