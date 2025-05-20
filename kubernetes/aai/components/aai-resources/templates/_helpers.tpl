@@ -1,4 +1,4 @@
-{{- define "aai.waitForSchemaCreation" -}}
+{{- define "aairesources.waitForSchemaCreation" -}}
 - name: wait-for-schema-creation
   image: "{{ include "repositoryGenerator.image.curl" . }}"
   imagePullPolicy: IfNotPresent
