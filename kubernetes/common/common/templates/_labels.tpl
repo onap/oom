@@ -79,7 +79,12 @@ app.kubernetes.io/instance: {{ include "common.release" $dot }}
 {{- $suffix := default "" .suffix -}}
 {{- $labels := default (dict) .labels -}}
 {{- $annotations := default (dict) .annotations -}}
+{{- $includeFullname := default "true" .includeFullname -}}
+{{- if eq ($includeFullname | lower) "true" -}}
 name: {{ include "common.fullname" (dict "suffix" $suffix "dot" $dot )}}
+{{- else -}}
+name: {{ include "common.name" (dict "suffix" $suffix "dot" $dot )}}
+{{- end }}
 namespace: {{ include "common.namespace" $dot }}
 labels: {{- include "common.labels" (dict "labels" $labels "ignoreHelmChart" .ignoreHelmChart "dot" $dot ) | nindent 2 }}
 {{- if $annotations }}
@@ -109,10 +114,11 @@ matchLabels: {{- include "common.matchLabels" (dict "matchLabels" $matchLabels "
 {{- define "common.templateMetadata" -}}
 {{- $dot := default . .dot -}}
 {{- $labels := default (dict) .labels -}}
+{{- $suffix := default "" .suffix -}}
 {{- $annotations := default $dot.Values.podAnnotations .annotations -}}
 {{- if $annotations}}
 annotations: {{- include "common.tplValue" (dict "value" $annotations "context" $dot) | nindent 2 }}
 {{- end }}
 labels: {{- include "common.labels" (dict "labels" $labels "ignoreHelmChart" .ignoreHelmChart "dot" $dot) | nindent 2 }}
-name: {{ include "common.name" $dot }}
+name: {{ include "common.name" (dict "suffix" $suffix "dot" $dot )}}
 {{- end -}}
