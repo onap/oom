@@ -51,9 +51,9 @@
      - .prefix : add a prefix to the fullname
 */}}
 {{- define "common.fullname" -}}
-{{- $dot := default . .dot -}}
-{{- $suffix := default "" .suffix -}}
-{{- $prefix := default "" .prefix -}}
+  {{- $dot := default . .dot -}}
+  {{- $suffix := default "" .suffix -}}
+  {{- $prefix := default "" .prefix -}}
   {{- $name := default $dot.Chart.Name $dot.Values.nameOverride -}}
   {{/* when linted, the name must be lower cased. When used from a component,
        name should be overriden in order to avoid collision so no need to do it */}}

@@ -29,6 +29,7 @@ spec:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
     containerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
+      tag: {{ .Values.k8ssandraOperator.reaper.tag }}
     autoScheduling:
       enabled: true
     metadata:
