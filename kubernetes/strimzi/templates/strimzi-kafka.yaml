@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2022 Nordix Foundation
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +15,110 @@
 # limitations under the License.
 */}}
 apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: {{ include "common.fullname" . }}-controller
+  labels:
+    strimzi.io/cluster: {{ include "common.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  roles:
+    - controller
+  resources:
+    limits:
+      cpu: {{ .Values.controller.resources.limits.cpu }}
+      memory: {{ .Values.controller.resources.limits.memory }}
+    requests:
+      cpu: {{ .Values.controller.resources.requests.cpu }}
+      memory: {{ .Values.controller.resources.requests.memory }}
+  template:
+    pod:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.controller.template.pod.securityContext | nindent 8 }}
+      {{- if .Values.affinity.podAntiAffinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: strimzi.io/name
+                    operator: In
+                    values:
+                      - {{ include "common.fullname" . }}-controller
+              topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+    kafkaContainer:
+      securityContext:
+        {{- toYaml .Values.controller.template.kafkaContainer.securityContext | nindent 10 }}
+  storage:
+    type: jbod
+    volumes:
+    - id: 0
+      type: persistent-claim
+      size: {{ .Values.persistence.controller.size }}
+      kraftMetadata: shared
+      deleteClaim: true
+      class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: {{ include "common.fullname" . }}-broker
+  labels:
+    strimzi.io/cluster: {{ include "common.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  roles:
+    - broker
+  resources:
+    limits:
+      cpu: {{ .Values.broker.resources.limits.cpu }}
+      memory: {{ .Values.broker.resources.limits.memory }}
+    requests:
+      cpu: {{ .Values.broker.resources.requests.cpu }}
+      memory: {{ .Values.broker.resources.requests.memory }}
+  template:
+    pod:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.broker.template.pod.securityContext | nindent 8 }}
+      {{- if .Values.affinity.podAntiAffinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: strimzi.io/name
+                    operator: In
+                    values:
+                      - {{ include "common.fullname" . }}-broker
+              topologyKey: "kubernetes.io/hostname"
+      {{- end }}
+    kafkaContainer:
+      securityContext:
+        {{- toYaml .Values.broker.template.kafkaContainer.securityContext | nindent 8 }}
+  storage:
+    type: jbod
+    volumes:
+    - id: 0
+      type: persistent-claim
+      size: {{ .Values.persistence.broker.size }}
+      kraftMetadata: shared
+      deleteClaim: true
+      class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
+---
+apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
-metadata: {{- include "common.resourceMetadata" . | nindent 2 }}
+metadata:
+  name: {{ include "common.fullname" . }}
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
 spec:
   kafka:
     version: {{ .Values.config.kafkaVersion }}
-    replicas: {{ .Values.replicaCount }}
-    resources:
-      limits:
-        cpu: {{ .Values.kafka.resources.limits.cpu }}
-        memory: {{ .Values.kafka.resources.limits.memory }}
-      requests:
-        cpu: {{ .Values.kafka.resources.requests.cpu }}
-        memory: {{ .Values.kafka.resources.requests.memory }}
+    metadataVersion: {{ .Values.config.kafkaMetadataVersion }}
     listeners:
       - name: plain
         port: {{ .Values.config.kafkaInternalPort }}
@@ -74,26 +166,6 @@ spec:
       type: {{ .Values.config.authType }}
       superUsers:
         - {{ .Values.config.strimziKafkaAdminUser }}
-    template:
-      pod:
-        {{- include "common.imagePullSecrets" . | nindent 8 }}
-        securityContext:
-          {{- toYaml .Values.kafka.template.pod.securityContext | nindent 10 }}
-        {{- if .Values.affinity.podAntiAffinity.enabled }}
-        affinity:
-          podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              - labelSelector:
-                  matchExpressions:
-                    - key: strimzi.io/name
-                      operator: In
-                      values:
-                        - {{ include "common.fullname" . }}-kafka
-                topologyKey: "kubernetes.io/hostname"
-        {{- end }}
-      kafkaContainer:
-        securityContext:
-          {{- toYaml .Values.kafka.template.kafkaContainer.securityContext | nindent 10 }}
     config:
       default.replication.factor: {{ .Values.replicaCount }}
       min.insync.replicas: {{ (eq 1.0 (.Values.replicaCount)) | ternary 1 (sub .Values.replicaCount 1) }}
@@ -104,14 +176,6 @@ spec:
       log.message.format.version: {{ .Values.config.kafkaVersion }}
       inter.broker.protocol.version: {{ .Values.config.kafkaVersion }}
       auto.create.topics.enable: {{ .Values.config.autoCreateTopics }}
-    storage:
-      type: jbod
-      volumes:
-      - id: 0
-        type: persistent-claim
-        size: {{ .Values.persistence.kafka.size }}
-        deleteClaim: true
-        class: {{ include "common.storageClass" (dict "dot" . "suffix" "kafka" "persistenceInfos" .Values.persistence.kafka) }}
     {{- if .Values.metrics.kafkaExporter.enabled }}
     metricsConfig:
       type: {{ .Values.metrics.kafkaExporter.metricsConfig.type }}
@@ -119,54 +183,6 @@ spec:
         configMapKeyRef:
           name: {{ include "common.fullname" . }}
           key: kafka-metrics-config.yml
-    {{- end }}
-  zookeeper:
-    template:
-      pod:
-        {{- include "common.imagePullSecrets" . | nindent 8 }}
-        securityContext:
-          {{- toYaml .Values.zookeeper.template.pod.securityContext | nindent 10 }}
-        {{- if .Values.affinity.podAntiAffinity.enabled }}
-        affinity:
-          podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              - labelSelector:
-                  matchExpressions:
-                    - key: strimzi.io/name
-                      operator: In
-                      values:
-                        - {{ include "common.fullname" . }}-zookeeper
-                topologyKey: "kubernetes.io/hostname"
-        {{- end }}
-      zookeeperContainer:
-        securityContext:
-          {{- toYaml .Values.zookeeper.template.zookeeperContainer.securityContext | nindent 10 }}
-    replicas: {{ .Values.replicaCount }}
-    config:
-      ssl.hostnameVerification: false
-      ssl.quorum.hostnameVerification: false
-      {{- if (include "common.onServiceMesh" .) }}
-      sslQuorum: false
-      {{- end }}
-    storage:
-      type: persistent-claim
-      size: {{ .Values.persistence.zookeeper.size }}
-      deleteClaim: true
-      class: {{ include "common.storageClass" (dict "dot" . "suffix" "zk" "persistenceInfos" .Values.persistence.zookeeper) }}
-    {{- if .Values.metrics.kafkaExporter.enabled }}
-    metricsConfig:
-      type: {{ .Values.metrics.kafkaExporter.metricsConfig.type }}
-      valueFrom:
-        configMapKeyRef:
-          name: {{ include "common.fullname" . }}
-          key: zookeeper-metrics-config.yml
-    resources:
-      limits:
-        cpu: {{ .Values.zookeeper.resources.limits.cpu }}
-        memory: {{ .Values.zookeeper.resources.limits.memory }}
-      requests:
-        cpu: {{ .Values.zookeeper.resources.requests.cpu }}
-        memory: {{ .Values.zookeeper.resources.requests.memory }}
     {{- end }}
   entityOperator:
     template:
