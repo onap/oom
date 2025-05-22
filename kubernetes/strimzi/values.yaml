@@ -1,4 +1,5 @@
 # Copyright © 2022 Nordix Foundation
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +34,8 @@ affinity:
   podAntiAffinity:
     enabled: true
 config:
-  kafkaVersion: 3.8.0
+  kafkaVersion: 4.0.0
+  kafkaMetadataVersion: 4.0-IV3
   authType: simple
   saslMechanism: &saslMech scram-sha-512
   kafkaInternalPort: &plainPort 9092
@@ -47,7 +49,7 @@ config:
 persistence:
   enabled: &pvenabled true
   mountPath: /dockerdata-nfs
-  kafka:
+  broker:
     enabled: *pvenabled
     # default values of 2Gi for dev env.
     # Production values should be dimensioned according to requirements. ie >= 10Gi
@@ -55,14 +57,14 @@ persistence:
     volumeReclaimPolicy: Retain
     accessMode: ReadWriteOnce
     mountPath: /dockerdata-nfs
-    mountSubPath: strimzi-kafka/kafka
-  zookeeper:
+    mountSubPath: strimzi-kafka/broker
+  controller:
     enabled: *pvenabled
     size: 1Gi
     volumeReclaimPolicy: Retain
     accessMode: ReadWriteOnce
     mountPath: /dockerdata-nfs
-    mountSubPath: strimzi-kafka/zk
+    mountSubPath: strimzi-kafka/controller
 
 #Pods Service Account
 serviceAccount:
@@ -175,7 +177,7 @@ strimzi-kafka-bridge:
     kafkaInternalPort: *plainPort
     strimziKafkaAdminUser: *adminUser
 
-kafka:
+broker:
   template:
     pod:
       securityContext:
@@ -203,7 +205,7 @@ kafka:
       cpu: 100m
       memory: 1Gi
 
-zookeeper:
+controller:
   template:
     pod:
       securityContext:
@@ -212,7 +214,7 @@ zookeeper:
         fsGroup: 1001
         seccompProfile:
           type: RuntimeDefault
-    zookeeperContainer:
+    kafkaContainer:
       securityContext:
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
