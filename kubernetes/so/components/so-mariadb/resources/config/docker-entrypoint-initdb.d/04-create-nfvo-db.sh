@@ -28,7 +28,7 @@ prepare_password()
 
 NFVO_DB_PASSWORD=`prepare_password $NFVO_DB_PASSWORD`
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ nfvo /*!40100 DEFAULT CHARACTER SET latin1 */;
 DROP USER IF EXISTS '${NFVO_DB_USER}';
 CREATE USER '${NFVO_DB_USER}';

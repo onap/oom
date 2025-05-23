@@ -26,7 +26,7 @@
 
 echo "Creating camundabpmn database . . ." 1>/tmp/mariadb-camundabpmn.log 2>&1
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP DATABASE IF EXISTS camundabpmn;
 CREATE DATABASE camundabpmn;
 DROP USER IF EXISTS '${CAMUNDA_DB_USER}';
@@ -37,7 +37,7 @@ EOF
 
 cd /docker-entrypoint-initdb.d/db-sql-scripts
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.14.0.sql || exit 1
-mysql -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.14.0.sql || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.14.0.sql || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.14.0.sql || exit 1
 
 echo "Created camundabpmn database . . ." 1>>/tmp/mariadb-camundabpmn.log 2>&1

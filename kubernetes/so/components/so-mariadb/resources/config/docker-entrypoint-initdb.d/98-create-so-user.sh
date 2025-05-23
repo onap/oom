@@ -33,7 +33,7 @@ prepare_password()
 
 DB_PASSWORD=`prepare_password $DB_PASSWORD`
 
-mysql -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
+mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD << EOF || exit 1
 DROP USER IF EXISTS '${DB_USER}';
 CREATE USER '${DB_USER}';
 GRANT USAGE ON *.* TO '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
