@@ -133,7 +133,7 @@
   {{- end }}
   {{- if hasKey $wait_for "timeout" }}
   - -t
-  - {{ $timeout | int }}
+  - {{ $timeout | quote }}
   {{- end }}
   env:
   - name: NAMESPACE
