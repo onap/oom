@@ -46,13 +46,6 @@ spec:
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          echo "*** actual launch of AAI Sparky BE"
-          /opt/app/sparky/bin/start.sh
         volumeMounts:
         - mountPath: {{ .Values.log.path }}
           name: logs
@@ -83,6 +76,8 @@ spec:
         - mountPath:  /opt/app/sparky/config/logging/logback.xml
           name: config
           subPath: logback.xml
+        - mountPath: /tmp
+          name: tmp-volume
         ports:
           {{- if .Values.debug.enabled }}
           - containerPort: {{ .Values.debug.port }}
@@ -101,7 +96,7 @@ spec:
         {{- end }}
         {{- end }}
         {{- if .Values.profiling.enabled }}
-        - name: JVM_ARGS
+        - name: PRE_JVM_ARGS
           value: '{{ join " " .Values.profiling.args }}'
         {{- end }}
         {{- if .Values.debug.enabled }}
@@ -122,6 +117,11 @@ spec:
             port: {{ .Values.service.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
+        startupProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -146,5 +146,8 @@ spec:
       - name: modeldir
         emptyDir:
           sizeLimit: {{ .Values.volumes.modeldirSizeLimit }}
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
       restartPolicy: {{ .Values.global.restartPolicy | default .Values.restartPolicy }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
