@@ -1,5 +1,5 @@
 {{/*
-# Copyright (c) 2023 Deutsche Telekom
+# Copyright (c) 2023-2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,14 @@ metadata:
     ##
     # labels:
     #   prometheus: kube-prometheus
-  labels: {{- toYaml $.Values.metrics.podMonitor.labels | nindent 4 }}
+  labels:
+    app: '{{- default $.Chart.Name $.Values.nameOverride | trunc 63 | trimSuffix "-" -}}'
+    {{- if $.Chart.AppVersion }}
+    version: '{{ $.Chart.AppVersion | replace "+" "_" }}'
+    {{- else }}
+    version: '{{ $.Chart.Version | replace "+" "_" }}'
+    {{- end }}
+    {{- toYaml $.Values.metrics.podMonitor.labels | nindent 4 }}
 spec:
   selector:
     matchLabels:
