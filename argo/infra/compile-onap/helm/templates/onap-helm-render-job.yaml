@@ -1,0 +1,59 @@
+# ============LICENSE_START=======================================================
+#  Copyright (c) 2025 Deutsche Telekom
+# ================================================================================
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+# ============LICENSE_END=========================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: onap-helm-render
+  namespace: gating
+  #annotations:
+  #  "helm.sh/hook": pre-upgrade,pre-rollback,pre-install
+  #  "helm.sh/hook-weight": "2"
+  #  "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    spec:
+      containers:
+      - name: onap-helm-rendering
+        image: artifactory.devops.telekom.de/onap-repo/onap/k8s-toolbox:1.1.0
+        #image: nexus3.onap.org:10003/onap/k8s-toolbox:1.1.0
+        args:
+        - /bin/bash
+        - -c
+        - |
+          set -x
+          helm repo add --force-update "local" {{ .Values.repository_url }}
+          #helm repo add --force-update "onap" {{ .Values.repository_url }}
+          helm repo update
+          helm repo list
+          helm search repo local
+          #helm search repo onap
+          helm plugin install --version v0.10.4 https://github.com/chartmuseum/helm-push.git
+          git clone {{ .Values.onap_repo }} -b {{ .Values.onap_repo_branch }}
+          cd oom
+          {{- if not (eq .Values.gerrit_review "") }}
+          {{- $review_end := trunc -2 .Values.gerrit_review }}
+          {{- $review_end_url := printf "%s/%s/%s" $review_end .Values.gerrit_review .Values.gerrit_patchset }}
+          git fetch {{ .Values.onap_repo }} refs/changes/{{ $review_end_url }} && git checkout FETCH_HEAD
+          {{- end }}
+          helm plugin install kubernetes/helm/plugins/deploy
+          helm plugin install kubernetes/helm/plugins/undeploy
+          cd kubernetes
+          make SKIP_LINT=TRUE all
+          #make SKIP_LINT=TRUE onap
+      restartPolicy: Never
