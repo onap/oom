@@ -1,0 +1,37 @@
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: kiali-route
+  namespace: istio-system
+spec:
+  parentRefs:
+    - name: common-gateway
+      sectionName: https
+      namespace: istio-ingress
+  hostnames:
+    - kiali{{ .Values.post_addr }}.{{ .Values.dns_zone }}
+  rules:
+    - backendRefs:
+        - name: kiali
+          port: 20001
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: kiali-redirect-route
+  namespace: istio-system
+spec:
+  parentRefs:
+    - name: common-gateway
+      sectionName: http
+      namespace: istio-ingress
+  hostnames:
+    - kiali{{ .Values.post_addr }}.{{ .Values.dns_zone }}
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+            port: 443
