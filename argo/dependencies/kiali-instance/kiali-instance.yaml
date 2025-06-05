@@ -1,0 +1,65 @@
+---
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali-instance
+  namespace: istio-system
+spec:
+  # changing the app_label_name, as long as not all applications using "app" label
+  # istio_labels:
+  #   app_label_name: "app.kubernetes.io/name"
+  api:
+    namespaces:
+      include:
+        - "keycloak"
+        - "kiali-operator"
+        - "onap"
+        - "postgres-operator"
+        - "kiali-operator"
+        - "k8ssandra-operator"
+        - "mariadb-operator"
+        - "mongodb-operator"
+        - "postgres-operator"
+        - "psmdb-operator"
+        - "nonrtric-rapp"
+        - "strimzi-system"
+        - "istio-ingress"
+        - "istio-system"
+  auth:
+    strategy: anonymous
+  istio_component_namespaces:
+    prometheus: cluster-observability
+  external_services:
+    grafana:
+      internal_url: "http://prometheus-grafana.prometheus"
+      url: "https://grafana<POSTADDR>.<BASEURL>"
+      auth:
+        username: "admin"
+        password: "prom-operator"
+      enabled: true
+    prometheus:
+      url: "http://prometheus-kube-prometheus-prometheus.prometheus:9090"
+      # health_check_url: "http://victoria-metrics-cluster-$PARAM_UC-vmselect:8481/-/healthy"
+    tracing:
+      enabled: false
+      external_url: https://jaeger<POSTADDR>.<BASEURL>
+      internal_url: http://jaeger-query.istio-system:16685
+      use_grpc: true
+    istio:
+      egress_gateway_namespace: istio-ingress
+      ingress_gateway_namespace: istio-ingress
+  deployment:
+    view_only_mode: false
+    security_context:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["CAP_NET_RAW", "ALL"]
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+  server:
+    web_root: "/kiali"
