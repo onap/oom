@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://git.onap.org/oom'
+    targetRevision: master
+    ref: defaultValues
+  - repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    # targetRevision: 67.4.0
+    targetRevision: 71.1.1
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/dependencies/values/prometheus.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prometheus
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,40 @@
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: argocd-http-route
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: common-gateway
+      namespace: istio-ingress
+  hostnames:
+    - argocd{{ .Values.post_addr }}.{{ .Values.dns_zone }}
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: argocd-redirect-route
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: common-gateway
+      sectionName: https
+      namespace: istio-ingress
+  hostnames:
+    - argocd{{ .Values.post_addr }}.{{ .Values.dns_zone }}
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            #statusCode: 301
+            port: 443

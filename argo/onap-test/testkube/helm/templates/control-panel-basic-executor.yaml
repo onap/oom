@@ -1,0 +1,19 @@
+apiVersion: executor.testkube.io/v1
+kind: Executor
+metadata:
+  name: {{ .Values.tests.smokeTests.executor.controlPanelSdk.name }}
+spec:
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  image: nexus3.onap.org:10001/onap/control-panel-ui-smoke-tests/controlpanel-smoke-tests:{{ .Values.tests.smokeTests.executor.controlPanelSdk.imageVersion }}
+  command:
+    - "/bin/bash"
+    - "-c"
+    - "./gradlew --offline -p controlpanel-smoke-tests test \"-Dcucumber.filter.tags=${CUCUMBER_FILTER_TAGS}\" "
+  executor_type: container
+  types:
+  - {{ .Values.tests.smokeTests.executor.controlPanelSdk.type }}
+  features:
+  - artifacts

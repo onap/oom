@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trivy-dojo-report-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://git.onap.org/oom'
+    targetRevision: master
+    ref: defaultValues
+  - repoURL: https://telekom-mms.github.io/trivy-dojo-report-operator
+    chart: trivy-dojo-report-operator
+    targetRevision: 0.8.8
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap-test/values/trivy-dojo-report-operator.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trividojo
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: disabled
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

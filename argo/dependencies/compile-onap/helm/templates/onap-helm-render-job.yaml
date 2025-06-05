@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: onap-helm-render
+  namespace: gating
+spec:
+  template:
+    spec:
+      containers:
+      - name: onap-helm-rendering
+        image: nexus3.onap.org:10003/onap/k8s-toolbox:1.1.0
+        args:
+        - /bin/bash
+        - -c
+        - |
+          set -x
+          helm repo add --force-update "local" {{ .Values.repository_url }}
+          #helm repo add --force-update "onap" {{ .Values.repository_url }}
+          helm repo update
+          helm repo list
+          helm search repo local
+          #helm search repo onap
+          helm plugin install --version v0.10.4 https://github.com/chartmuseum/helm-push.git
+          git clone {{ .Values.onap_repo }} -b {{ .Values.onap_repo_branch }}
+          cd oom
+          {{- if not (eq .Values.gerrit_review "") }}
+          {{- $review_end := trunc -2 .Values.gerrit_review }}
+          {{- $review_end_url := printf "%s/%s/%s" $review_end .Values.gerrit_review .Values.gerrit_patchset }}
+          git fetch {{ .Values.onap_repo }} refs/changes/{{ $review_end_url }} && git checkout FETCH_HEAD
+          {{- end }}
+          helm plugin install kubernetes/helm/plugins/deploy
+          helm plugin install kubernetes/helm/plugins/undeploy
+          cd kubernetes
+          make SKIP_LINT=TRUE all
+          #make SKIP_LINT=TRUE onap
+      restartPolicy: Never

@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mongodb-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://git.onap.org/oom'
+    targetRevision: master
+    ref: defaultValues
+  - repoURL: https://percona.github.io/percona-helm-charts
+    chart: psmdb-operator
+    targetRevision: 1.19.1
+    helm:
+      helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/dependencies/values/mongodb-operator.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mongodb-operator
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: enabled
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true
