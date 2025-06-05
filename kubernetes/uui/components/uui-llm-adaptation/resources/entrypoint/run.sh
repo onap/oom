@@ -1,3 +1,4 @@
+#!/bin/sh
 {{/*
 #
 # Copyright (C) 2022 Huawei Technologies Co., Ltd. All rights reserved.
