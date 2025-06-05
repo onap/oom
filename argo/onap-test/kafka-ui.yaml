@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka-ui
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git'
+    targetRevision: onap-00
+    ref: defaultValues
+  - repoURL: https://kafbat.github.io/helm-charts
+    chart: kafka-ui
+    targetRevision: 1.5.0
+    helm:
+      helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap-test/values/kafka-ui.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: onap
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

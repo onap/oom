@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trivy-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git'
+    targetRevision: onap-00
+    ref: defaultValues
+  - repoURL: https://aquasecurity.github.io/helm-charts
+    chart: trivy-operator
+    targetRevision: 0.27.0
+    helm:
+      helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap-test/values/trivy-operator.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trivy-system
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: disabled
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

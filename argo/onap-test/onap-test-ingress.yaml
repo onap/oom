@@ -1,0 +1,43 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onap-test-ingress
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    name: onap-test-ingress
+spec:
+  project: argo-management
+  sources:
+  - repoURL: 'https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git'
+    targetRevision: onap-00
+    ref: defaultValues
+  - repoURL: https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git
+    targetRevision: onap-00
+    path: ./argo/onap-test/ingress-routes/helm
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap-test/values/onap-test-ingress.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - Validate=true
+    - CreateNamespace=true
+    #- PrunePropagationPolicy=foreground
+    #- PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10

@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gating
+  labels:
+    name: gating
+    istio-injection: enabled
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: compile-onap
+  namespace: argocd
+  labels:
+    name: compile-onap
+spec:
+  project: argo-management
+  sources:
+  - repoURL: 'https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git'
+    targetRevision: onap-00
+    ref: defaultValues
+  - repoURL: https://gitlab.devops.telekom.de/tnap/development/playground/onap-argo.git
+    targetRevision: onap-00
+    path: ./argo/dependencies/compile-onap/helm
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap/values/compile-onap.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gating
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - Validate=true
+    - CreateNamespace=true
+    #- PrunePropagationPolicy=foreground
+    #- PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10

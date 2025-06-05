@@ -1,0 +1,183 @@
+################################
+# General configuration of ONAP
+# ORIGINAL FILE:
+# https://gitlab.devops.telekom.de/tnap/operations/clusters/tnap-integration/-/blob/master/deployment/values/onap.yaml
+#
+# Using value files in argo:
+# https://github.com/argoproj/argo-cd/issues/2789#issuecomment-879043660
+################################
+global:
+
+  # override default resource limit flavor for all charts
+  flavor: small
+
+  nodePortPrefix: 302
+  nodePortPrefixExt: 304
+  masterPassword: gatingPassword
+  addTestingComponents: &testing false
+  repository: artifactory.devops.telekom.de/onap-repo
+  #repository: artifactory.devops.telekom.de/onap-repo
+  dockerHubRepository: &dockerHubRepository dockerhub.devops.telekom.de
+  #elasticRepository: &elasticRepository artifactory.devops.telekom.de/docker.elastic.co
+  #googleK8sRepository: artifactory.devops.telekom.de/k8s.gcr.io
+  #githubContainerRegistry: artifactory.devops.telekom.de/ghcr.io.docker
+  #quayRegistry: artifactory.devops.telekom.de/quay.io
+  elasticRepository: &elasticRepository docker.elastic.co
+  quayRepository: quay.io
+  googleK8sRepository: k8s.gcr.io
+  githubContainerRegistry: ghcr.io
+  loggingRepository: *elasticRepository
+  busyboxRepository: *dockerHubRepository
+  repositoryCred:
+    user: docker
+    password: docker
+  busyboxImage: busybox:1.34.1
+  curlImage: curlimages/curl:7.80.0
+  envsubstImage: dibi/envsubst:latest
+  htpasswdImage: xmartlabs/htpasswd:latest
+  kubectlImage: bitnami/kubectl:1.22.4
+  loggingImage: beats/filebeat:5.5.0
+  mongodbImage: percona/percona-server-mongodb:7.0.16-10
+  mariadbImage: mariadb:11.7.2
+  nginxImage: bitnami/nginx:1.21.4
+  postgresImage: crunchydata/crunchy-postgres:centos8-13.2-4.6.1
+  readinessImage: onap/oom/readiness:6.2.0
+  # Default definition of the secret containing the docker image repository
+  # credentials. In the default ONAP deployment the secret is created by the
+  # repository-wrapper component, which uses the secrets defined above.
+  # If this is not wanted or other secrets are created, alternative secret
+  # names can be used
+  # Overrides for specific images can be done, if the "image" entry is used as
+  # a map and the "pullSecrets" is used, e.g.
+  # image:
+  #   ...
+  #   pullSecrets:
+  #     - myRegistryKeySecretName
+  #
+  imagePullSecrets:
+    - name: artifactory-docker-secret
+
+  pullPolicy: Always
+  jreImage: onap/integration-java11:10.0.0
+  clusterName: cluster.local
+
+  # enable this if you have deployed Jaeger alongside ONAP
+  tracing:
+    enabled: true
+    collector:
+      baseUrl: http://jaeger-collector.istio-system:9411
+    sampling:
+      probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
+
+  persistence:
+    mountPath: /dockerdata-nfs
+    enableDefaultStorageclass: false
+    parameters: {}
+    storageclassProvisioner: <STORAGECLASS>
+    volumeReclaimPolicy: Retain
+    storageClass: "<STORAGECLASS>"
+  debugEnabled: false
+  passwordStrength: long
+  
+  ingress:
+    enabled: true
+    # enable all component's Ingress interfaces
+    enable_all: true
+
+    # Provider: ingress, istio, gw-api
+    provider: gw-api
+    # Ingress class (only for provider "ingress"): e.g. nginx, traefik
+    ingressClass:
+    # Ingress Selector (only for provider "istio") to match with the
+    # ingress pod label "istio=ingress"
+    ingressSelector: ingress-$PARAM_UC
+    # optional: common used Gateway (for Istio, GW-API)
+    commonGateway:
+      name: common-gateway
+      httpListener: http
+      httpsListener: https
+
+    # default Ingress base URL and preAddr- and postAddr settings
+    # Ingress URLs result:
+    # <preaddr><component.ingress.service.baseaddr><POSTADDR>.<baseurl>
+    virtualhost:
+      # Default Ingress base URL
+      # can be overwritten in component by setting ingress.baseurlOverride
+      baseurl: "<BASEURL>"
+      # prefix for baseaddr
+      # can be overwritten in component by setting ingress.preaddrOverride
+      preaddr: ""
+      # POSTADDR for baseaddr
+      # can be overwritten in component by setting ingress.postaddrOverride
+      postaddr: "<POSTADDR>"
+    config:
+      # All http (port 80) requests via ingress will be redirected
+      # to port 443 on Ingress controller
+      # only valid for Istio Gateway (ServiceMesh enabled)
+      ssl: "redirect"
+      tls:
+        secret: 'ingress-tls-secret'
+    # optional: Namespace of the Istio IngressGateway
+    # only valid for Istio Gateway (ServiceMesh enabled)
+    namespace: istio-ingress
+  serviceMesh:
+    enabled: true
+    tls: true
+    engine: "istio"
+    nativeSidecars: true
+  # Global Istio Authorization Policy configuration
+  authorizationPolicies:
+    enabled: false
+  metrics:
+    enabled: true
+    custom_resources: false
+  aafEnabled: false
+  aafAgentImage: onap/aaf/aaf_agent:2.1.20
+  msbEnabled: false
+  certificate:
+    default:
+      renewBefore: 720h0m0s  # 30 days
+      duration: 8760h0m0s  # 365 days
+      subject:
+        organization: "Linux-Foundation"
+        country: "US"
+        locality: "San-Francisco"
+        province: "California"
+        organizationalUnit: "ONAP"
+      issuer:
+        group: certmanager.onap.org
+        kind: CMPv2Issuer
+        name: cmpv2-issuer-onap
+  cmpv2Enabled: false
+  platform:
+    certificates:
+      clientSecretName: oom-cert-service-client-tls-secret
+      keystoreKeyRef: keystore.jks
+      truststoreKeyRef: truststore.jks
+      keystorePasswordSecretName: oom-cert-service-certificates-password
+      keystorePasswordSecretKey: password
+      truststorePasswordSecretName: oom-cert-service-certificates-password
+      truststorePasswordSecretKey: password
+  offlineDeploymentBuild: false
+  centralizedLoggingEnabled: &centralizedLogging false
+  tlsEnabled: false
+
+  # Global flag to enable the creation of default roles instead of using
+  # common roles-wrapper
+  createDefaultRoles: true
+
+  # temporarily useOperator is set to false for migration to "Montreal"
+  mariadbGalera:
+    # flag to enable the DB creation via mariadb-operator
+    useOperator: true
+    # if useOperator set to "true", set "enableServiceAccount to "false"
+    # as the SA is created by the Operator
+    enableServiceAccount: false
+
+  # not used in TNAP, as cassandra cluster is not created via ONAP chart
+  cassandra:
+    # flag to enable the DB creation via k8ssandra-operator
+    useOperator: true
+    # if useOperator set to "true", set "enableServiceAccount to "false"
+    # as the SA is created by the Operator
+    enableServiceAccount: false
