@@ -52,7 +52,7 @@ The versions of software that are supported and tested by OOM are as follows:
   ==============     ===========  =======  ========  ========  =============  ========
   New Delhi          1.28.6       3.13.1   1.28.x    20.10.x   1.14.4         0.41.0
   Oslo               1.28.6       3.13.1   1.30.x    23.0.x    1.16.2         0.44.0
-  Paris              1.30.4       3.16.4   1.30.x    23.0.x    1.17.2         0.45.0
+  Paris              1.32.5       3.16.4   1.32.x    23.0.x    1.17.2         0.46.0
   ==============     ===========  =======  ========  ========  =============  ========
 
 .. table:: OOM Software Requirements (production)
