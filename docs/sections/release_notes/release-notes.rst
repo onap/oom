@@ -11,6 +11,7 @@ ONAP Operations Manager Release Notes
 Previous Release Notes
 ======================
 
+- :ref:`Oslo <release_notes_oslo>`
 - :ref:`New Delhi <release_notes_newdelhi>`
 - :ref:`Montreal <release_notes_montreal>`
 - :ref:`London <release_notes_london>`
@@ -29,12 +30,10 @@ Previous Release Notes
 Abstract
 ========
 
-This document provides the release notes for the Oslo release.
+This document provides the release notes for the Paris release.
 
 Summary
 =======
-
-
 
 Release Data
 ============
@@ -46,74 +45,82 @@ Release Data
 | **Docker images**                    | N/A                                  |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release designation**              | Oslo                                 |
+| **Release designation**              | Paris                                |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
-| **Release date**                     | 2025/01/09                           |
+| **Release date**                     | 2025/06/26                           |
 |                                      |                                      |
 +--------------------------------------+--------------------------------------+
 
 New features
 ------------
 
+* Tested on the latest K8S Infrastructure
+
+  * Kubernetes (v1.32.5)
+  * CertManager (1.17.2)
+  * Istio (v1.26.1)
+  * Keycloak (26.0.6)
+  
 * Support the latest Database Operators:
 
-  * MariaDB-Operator (0.36.0)
-  * K8ssandra-Operator (v0.20.2)
-  * Postgres-Operator (CrunchyData) (5.7.2)
-  * MongoDB-Operator (Percona) (1.18.0)
+  * MariaDB-Operator (0.38.1)
+  * K8ssandra-Operator (v1.23.2)
+  * Postgres-Operator (CrunchyData) (5.8.1)
+  * MongoDB-Operator (Percona) (1.19.1)
+  * Strimzi Kafka Operator (0.46.0)
 
-* authentication (15.0.0)
+* Update the helm common templates (13.2.19) to:
 
-  * support for REALM Client AuthorizationSettings
-  * update oauth2-proxy and keycloak-config-cli versions
-  * add support for latest keycloak version 26.x
+  * Make Jobs GitOps ready
+  * Fix security vulnerabilities
 
-* Update the helm common templates (13.2.10) to:
+* cassandra (16.0.0)
 
-  * add SecurityContext settings for Production readiness
+  * Support for new cassandra version (4.1.8)
+  * Fix security vulnerabilities
 
-* cassandra (13.1.1)
+* mariadb-galera (16.0.0)
 
-  * support for new cassandra version (4.1.6)
-  * add SecurityContext settings for Production readiness
+  * Support for new mariadb version (11.7.2)
+  * Fix security vulnerabilities
 
-* mariadb-galera (13.2.3)
+* mariadb-init (16.0.0)
 
-  * add SecurityContext settings for Production readiness
+  * Use ‘mariadb’ client instead of ‘mysql’
+  * Add Job Annotations
 
-* mariadb-init (13.0.2)
+* mongodb (16.5.7)
 
-  * add SecurityContext settings for Production readiness
+  * Use the latest Bitnami charts
 
-* mongodb (14.12.4)
+* mongodb-init (13.0.6)
 
-  * add SecurityContext settings for Production readiness
+  * Add Job Annotations
+  * Harmonize resource labeling
 
-* mongodb-init (13.0.2)
+* nginx (18.3.5)
 
-  * new chart to support external mongodb initialization
+  * New (Bitnami) Chart used for UUI
 
-* postgres (13.1.0)
+* postgres-init (13.0.6)
 
-  * add SecurityContext settings for Production readiness
+  * Add Job Annotations
+  * Harmonize resource labeling
 
-* postgres-init (13.0.3)
+* readinessCheck (13.1.4)
 
-  * add SecurityContext settings for Production readiness
+  * Update to the latest image
+  * Harmonize resource labeling
 
-* readinessCheck (13.1.1)
+* timescaleDB (13.0.2)
 
-  * add SecurityContext settings for Production readiness
-
-* serviceAccount (13.0.2)
-
-  * adjust default role mapping
+  * Harmonize resource labeling
 
 **Bug fixes**
 
 A list of issues resolved in this release can be found here:
-https://lf-onap.atlassian.net/projects/OOM/versions/10783
+https://lf-onap.atlassian.net/projects/OOM/versions/10791
 
 **Known Issues**
 
