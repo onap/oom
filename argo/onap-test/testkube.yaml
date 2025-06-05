@@ -1,0 +1,37 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: testkube
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    name: testkube
+spec:
+  destination:
+    namespace: onap
+    server: https://kubernetes.default.svc
+  project: default
+  sources:
+  - repoURL: '<ONAP_ARGO_REPO_URL>'
+    targetRevision: <ONAP_ARGO_BRANCH>
+    ref: defaultValues
+  - repoURL: <ONAP_ARGO_REPO_URL>
+    targetRevision: <ONAP_ARGO_BRANCH>
+    path: ./argo/onap-test/testkube/helm
+    helm:
+      # Values file as block file. This takes precedence over values
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/onap/values/values-global.yaml
+      - $defaultValues/argo/onap-test/values/testkube.yaml
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: enabled
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

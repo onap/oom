@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k8ssandra-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: '<ONAP_ARGO_REPO_URL>'
+    targetRevision: <ONAP_ARGO_BRANCH>
+    ref: defaultValues
+  - repoURL: https://helm.k8ssandra.io/stable
+    chart: k8ssandra-operator
+    targetRevision: 1.23.1
+    helm:
+      helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/infra/values/k8ssandra-operator.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: k8ssandra-operator
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: enabled
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

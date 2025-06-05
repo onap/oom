@@ -1,0 +1,25 @@
+{{- if .Values.tests.tests.controlPanelSmokeTest.enabled }}
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: {{ .Values.tests.tests.controlPanelSmokeTest.testName }}
+spec:
+  type: {{ .Values.tests.smokeTests.executor.controlPanelSdk.type }}
+  executionRequest:
+    variables:
+      CUCUMBER_FILTER_TAGS:
+        name: CUCUMBER_FILTER_TAGS
+        type: basic
+      CONTROLPANEL_ENV:
+        name: CONTROLPANEL_ENV
+        value: {{ .Values.tests.testEnvName }}
+        type: basic
+    activeDeadlineSeconds: {{ .Values.tests.smokeTests.execution.activeDeadlineSeconds }}
+    artifactRequest:
+      storageClassName: {{ .Values.tests.smokeTests.artifacts.storageClassName }}
+      volumeMountPath: /app/test-artifacts
+{{- include "job.template" . | indent 4 }}
+{{- if .Values.global.serviceMesh.enabled }}
+{{- include "scraper.template" . | indent 4 }}
+{{- end }}
+{{- end }}

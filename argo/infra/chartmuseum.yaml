@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: chartmuseum
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: '<ONAP_ARGO_REPO_URL>'
+    targetRevision: <ONAP_ARGO_BRANCH>
+    ref: defaultValues
+  - repoURL: https://chartmuseum.github.io/charts
+    chart: chartmuseum
+    targetRevision: 3.10.3
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/infra/values/chartmuseum.yaml        
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: chartmuseum
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

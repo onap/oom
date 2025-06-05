@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nfs-server-provisioner
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: '<ONAP_ARGO_REPO_URL>'
+    targetRevision: <ONAP_ARGO_BRANCH>
+    ref: defaultValues
+  - repoURL: https://kvaps.github.io/charts
+    chart: nfs-server-provisioner
+    targetRevision: 1.8.0
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/infra/values/nfs-server-provisioner.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nfs-server
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

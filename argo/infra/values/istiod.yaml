@@ -1,0 +1,47 @@
+global:
+  # configValidation enables the validation webhook for Istio configuration.
+  # TNAP: had to set it to False, as otherwise a setting is required:
+  # .Values.base.validationCABundle
+  configValidation: false
+  hub: "dockerhub.devops.telekom.de/istio"
+  proxy:
+    holdApplicationUntilProxyStarts: true
+
+meshConfig:
+  enablePrometheusMerge: true
+  defaultConfig:
+    tracing:
+      zipkin:
+        address: jaeger-collector.istio-system:9411
+      sampling: 100
+  meshMTLS:
+    minProtocolVersion: TLSV1_3
+  #tlsDefaults:
+  #  Note: applicable only for non ISTIO_MUTUAL scenarios
+  #  ecdhCurves:
+  #    - P-256
+  #    - P-512
+  rootNamespace: istio-config
+  extensionProviders:
+  - name: oauth2-proxy
+    envoyExtAuthzHttp:
+      service: oauth2-proxy.default.svc.cluster.local
+      port: 80
+      timeout: 1.5s
+      includeHeadersInCheck: ["authorization", "cookie"]
+      headersToUpstreamOnAllow: ["x-forwarded-access-token", "authorization", "path", "x-auth-request-user", "x-auth-request-email", "x-auth-request-access-token"]
+      headersToDownstreamOnDeny: ["content-type", "set-cookie"]
+
+pilot:
+  env:
+    PILOT_ENABLE_ALPHA_GATEWAY_API: true
+    PILOT_HTTP10: true
+    ENABLE_NATIVE_SIDECARS: true
+  cni:
+    enabled: false
+
+istio_cni:
+  enabled: false
+
+base:
+  enableIstioConfigCRDs: false

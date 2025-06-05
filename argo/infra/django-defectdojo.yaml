@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: defectdojo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: '<ONAP_ARGO_REPO_URL>'
+    targetRevision: <ONAP_ARGO_BRANCH>
+    ref: defaultValues
+  - repoURL: https://raw.githubusercontent.com/DefectDojo/django-DefectDojo/helm-charts
+    chart: defectdojo
+    targetRevision: 1.6.190
+    helm:
+      ignoreMissingValueFiles: true
+      valueFiles:
+      - $defaultValues/argo/infra/values/django-defectdojo.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: defectdojo
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        istio-injection: disabled
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true
