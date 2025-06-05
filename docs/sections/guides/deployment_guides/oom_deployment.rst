@@ -20,6 +20,7 @@ charts.
     * :ref:`oom_helm_release_repo_deploy`
     * :ref:`oom_helm_testing_repo_deploy`
     * :ref:`oom_dev_testing_local_deploy`
+    * :ref:`oom_argo_release_deploy`
 
 .. warning::
     | **Pre-requisites**
@@ -40,5 +41,6 @@ See the :ref:`oom_customize_overrides` section for more details.
   oom_helm_release_repo_deploy.rst
   oom_helm_testing_repo_deploy.rst
   oom_dev_testing_local_deploy.rst
+  oom_argo_release_deploy.rst
 
 
