@@ -40,7 +40,7 @@ realmSettings:
       account: <account theme>      - (optional) Keycloak Theme for Account UI (e.g. "base")
       email: <email theme>          - (optional) Keycloak Theme for Email UI (e.g. "base")
     attributes:                     - (optional)
-      frontendUrl: "<Keycloak URL>" - (optional) External Url for Keycloak access (e.g. "https://keycloak-$PARAM_BASE_URL/")
+      frontendUrl: "<Keycloak URL>" - (optional) External Url for Keycloak access (e.g. "https://keycloak.simpledemo.onap.org")
 ```
 
 ### CLIENT definitions
@@ -121,10 +121,10 @@ In this section each realm authentication client is defined e.g. portal-bff, oau
         additionalDefaultScopes:
           - "onap_roles"
         redirectUris:
-          - "https://portal-$PARAM_BASE_URL/*"
+          - "https://portal.simpledemo.onap.org/*"
           - "http://localhost/*"
         webOrigins:
-          - "https://argocd-$PARAM_BASE_URL"
+          - "https://argocd.simpledemo.onap.org"
         defaultClientScopes:                      - (optional) definition of default client scopes
           - "web-origins"                         -            if used, has to contain the full scope list
           - "profile"
@@ -290,14 +290,14 @@ The access role is assigned to a realm client (e.g. oauth2_proxy)
       - name: "gitlab"
         displayName: "gitlab"
         config:
-          userInfoUrl: "https://gitlab.devops.telekom.de/oauth/userinfo"
+          userInfoUrl: "https://<gitlab-url>/oauth/userinfo"
           validateSignature: "true"
-          clientId: "ee4e0db734157e9cdad16733656ba285f2f813354aa7c590a8693e48ed156860"
-          tokenUrl: "https://gitlab.devops.telekom.de/oauth/token"
-          jwksUrl: "https://gitlab.devops.telekom.de/oauth/discovery/keys"
-          issuer: "https://gitlab.devops.telekom.de"
+          clientId: "<client ID>"
+          tokenUrl: "https://<gitlab-url>/oauth/token"
+          jwksUrl: "https://<gitlab-url>/oauth/discovery/keys"
+          issuer: "https://<gitlab-url>"
           useJwksUrl: "true"
-          authorizationUrl: "https://gitlab.devops.telekom.de/oauth/authorize"
+          authorizationUrl: "https://<gitlab-url>/oauth/authorize"
           clientAuthMethod: "client_secret_post"
           syncMode: "IMPORT"
           clientSecret: "gloas-35267790bf6fb7c4b507aea11db46d80174cb8ef4192e77424803b595eef735e"

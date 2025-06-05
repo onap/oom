@@ -1,0 +1,52 @@
+# apiVersion: testworkflows.testkube.io/v1
+# kind: TestWorkflow
+# metadata:
+#   name: integration-onap
+#   namespace: onap
+# spec:
+#   content:
+#     container:
+#       image: nexus3.onap.org:10001/onap/xtesting-healthcheck:latest
+#       imagePullPolicy: Always
+#       env:
+#         - name: INSTALLER_TYPE
+#           value: "{{ .Values.config.deployment_name }}"
+#         - name: DEPLOY_SCENARIO
+#           value: "{{ .Values.config.deploy_scenario }}"
+#         - name: NODE_NAME
+#           value: "{{ .Values.config.node_name }}"
+#         - name: TEST_DB_URL
+#           value: http://testresults.opnfv.org/onap/api/v1/results
+#         - name: BUILD_TAG
+#           value: "{{ .Values.config.build_tag }}"
+#         - name: TAG
+#           value: "{{ .Values.config.run_type }}"
+#       volumeMounts:
+#         - mountPath: /etc/localtime
+#           name: localtime
+#         - mountPath: /share/config
+#           name: robot-eteshare
+#         - mountPath: /var/lib/xtesting/results/
+#           name: robot-save-results
+
+#   volumes:
+#     - name: localtime
+#       hostPath:
+#         path: /etc/localtime
+#     - name: robot-eteshare
+#       configMap:
+#         name: onap-robot-eteshare-configmap
+#     - name: robot-save-results
+#       hostPath:
+#         path: "{{ .Values.config.res_local_path }}"
+
+#   steps:
+#     - name: run-robot-tests
+#       shell: |
+#         robot --outputdir /var/lib/xtesting/results/ /path/to/your/tests/
+
+#   artifacts:
+#     paths:
+#       - /var/lib/xtesting/results/*
+#     storageClassName: standard
+#     volumeSize: 1Gi
