@@ -17,118 +17,53 @@
 -->
 */}}
 <configuration scan="true" scanPeriod="3 seconds" debug="false">
-  <include resource="org/springframework/boot/logging/logback/base.xml" />
-  <property name="logDir" value="/var/log/onap" />
-  <property name="componentName" value="AAI-ML"></property>
 
-  <!-- default eelf log file names -->
-  <property name="generalLogName" value="error" />
-  <property name="metricsLogName" value="metrics" />
-  <property name="auditLogName" value="audit" />
-  <property name="debugLogName" value="debug" />
-
-  <property name="errorLogPattern" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}|%mdc{RequestId}|%thread|ModelLoader|%mdc{PartnerName}|%logger||%.-5level|%msg%n" />
-  <property name="auditMetricPattern" value="%m%n" />
-
-  <property name="logDirectory" value="${logDir}/${componentName}" />
-
-  <!-- Example evaluator filter applied against console appender -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>${errorLogPattern}</pattern>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp><fieldName>timestamp</fieldName></timestamp>
+        <message/>
+        <mdc>
+          <fieldName>context</fieldName>
+          <excludeMdcKeyName>ServerIPAddress</excludeMdcKeyName>
+          <excludeMdcKeyName>EntryTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>InvokeTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorCode</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorDesc</excludeMdcKeyName>
+        </mdc>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+          <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+            <exclude>^sun\.reflect\..*\.invoke</exclude>
+            <exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+            <rootCauseFirst>true</rootCauseFirst>
+          </throwableConverter>
+        </stackTrace>
+        <threadName><fieldName>thread</fieldName></threadName>
+        <loggerName>
+          <fieldName>logger</fieldName>
+          <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+        </loggerName>
+        <logLevel/>
+      </providers>
     </encoder>
   </appender>
+
   <appender name="AsyncSysOut" class="ch.qos.logback.classic.AsyncAppender">
     <appender-ref ref="STDOUT" />
-  </appender>
-
-  <!-- ============================================================================ -->
-  <!-- EELF Appenders -->
-  <!-- ============================================================================ -->
-
-  <!-- The EELFAppender is used to record events to the general application
-       log -->
-
-  <appender name="EELF" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${generalLogName}.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${logDirectory}/${generalLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-      <maxHistory>60</maxHistory>
-    </rollingPolicy>
-    <encoder>
-      <pattern>${errorLogPattern}</pattern>
-    </encoder>
-  </appender>
-  <appender name="asyncEELF" class="ch.qos.logback.classic.AsyncAppender">
-    <!-- deny all events with a level below INFO, that is TRACE and DEBUG -->
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>INFO</level>
-    </filter>
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELF" />
-  </appender>
-
-  <appender name="EELFAudit" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${auditLogName}.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${logDirectory}/${auditLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-      <maxHistory>60</maxHistory>
-    </rollingPolicy>
-    <encoder>
-      <pattern>${auditMetricPattern}</pattern>
-    </encoder>
-  </appender>
-  <appender name="asyncEELFAudit" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELFAudit" />
-  </appender>
-
-  <appender name="EELFMetrics" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${metricsLogName}.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${logDirectory}/${metricsLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-      <maxHistory>60</maxHistory>
-    </rollingPolicy>
-    <encoder>
-      <pattern>${auditMetricPattern}</pattern>
-    </encoder>
-  </appender>
-  <appender name="asyncEELFMetrics" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELFMetrics" />
-  </appender>
-
-  <appender name="EELFDebug" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${logDirectory}/${debugLogName}.log</file>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.log.zip</fileNamePattern>
-      <maxHistory>60</maxHistory>
-    </rollingPolicy>
-    <encoder>
-      <pattern>${errorLogPattern}</pattern>
-    </encoder>
-  </appender>
-  <appender name="asyncEELFDebug" class="ch.qos.logback.classic.AsyncAppender">
-    <queueSize>256</queueSize>
-    <appender-ref ref="EELFDebug" />
-    <includeCallerData>true</includeCallerData>
   </appender>
 
   <!-- ============================================================================ -->
   <!-- EELF loggers -->
   <!-- ============================================================================ -->
   <logger name="com.att.eelf" level="info" additivity="false">
-    <appender-ref ref="asyncEELF" />
-    <appender-ref ref="asyncEELFDebug" />
-    <appender-ref ref="AsyncSysOut" />
+    <appender-ref ref="STDOUT" />
   </logger>
   <logger name="com.att.eelf.audit" level="info" additivity="false">
-    <appender-ref ref="asyncEELFAudit" />
-    <appender-ref ref="AsyncSysOut" />
+    <appender-ref ref="STDOUT" />
   </logger>
   <logger name="com.att.eelf.metrics" level="info" additivity="false">
-    <appender-ref ref="asyncEELFMetrics" />
-    <appender-ref ref="AsyncSysOut" />
+    <appender-ref ref="STDOUT" />
   </logger>
 
   <!-- Spring related loggers -->
@@ -166,8 +101,7 @@
   <logger name="ch.qos.logback.core" level="WARN" />
 
   <root level={{ .Values.log.level.root | upper | quote }}>
-    <appender-ref ref="asyncEELF" />
-    <appender-ref ref="AsyncSysOut" />
+    <appender-ref ref="STDOUT" />
   </root>
 
 </configuration>

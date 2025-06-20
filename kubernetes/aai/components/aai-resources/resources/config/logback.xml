@@ -29,45 +29,38 @@
 
   <property resource="application.properties" />
 
-  <property name="namespace" value="aai-resources"/>
-
-  <property name="AJSC_HOME" value="${AJSC_HOME:-.}" />
-  <jmxConfigurator />
-  <property name="logDirectory" value="${AJSC_HOME}/logs" />
-
-  <property name="p_tim" value="%d{&quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;, UTC}"/>
-  <property name="p_lvl" value="%level"/>
-  <property name="p_log" value="%logger"/>
-  <property name="p_mdc" value="%replace(%replace(%replace(%mdc){'\t','\\\\t'}){'\n', '\\\\n'}){'\\|', '!'}"/>
-  <property name="p_msg" value="%replace(%replace(%msg){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-  <property name="p_exc" value="%replace(%replace(%rootException){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-  <property name="p_mak" value="%replace(%replace(%marker){'\t', '\\\\t'}){'\n','\\\\n'}"/>
-  <property name="p_thr" value="%thread"/>
-  <property name="pattern" value="%nopexception${p_tim}\t${p_thr}\t${p_lvl}\t${p_log}\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t%n"/>
-  <!-- Patterns from onap demo -->
-  <property name="errorPattern" value="%X{LogTimestamp}|%X{RequestID}|%thread|%replace(%X{ServiceName}){'\\|', '!'}|%X{PartnerName}|%X{TargetEntity}|%replace(%X{TargetServiceName}){'\\|', '!'}|%.-5level|%X{ErrorCode}|%X{ErrorDesc}|%msg%n" />
-  <property name="debugPattern" value="%X{LogTimestamp}|%X{RequestID}|%msg\t${p_mdc}\t${p_msg}\t${p_exc}\t${p_mak}\t|^%n" />
-  <property name="auditPattern" value="%X{EntryTimestamp}|%X{LogTimestamp}|%X{RequestID}|%X{ServiceInstanceID}|%thread||%replace(%X{ServiceName}){'\\|', '!'}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}||||${p_mak}|${p_mdc}|||%msg%n" />
-  <property name="metricPattern" value="%X{InvokeTimestamp}|%X{LogTimestamp}|%X{RequestID}|%X{ServiceInstanceID}|%thread||%replace(%X{ServiceName}){'\\|', '!'}|%X{PartnerName}|%X{TargetEntity}|%replace(%X{TargetServiceName}){'\\|', '!'}|%X{StatusCode}|%X{ResponseCode}|%X{ResponseDesc}|%X{InstanceUUID}|%.-5level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{RemoteHost}||||%X{TargetVirtualEntity}|${p_mak}|${p_mdc}|||%msg%n" />
-  <property name="transLogPattern" value="%X{LogTimestamp}|%date{yyyy-MM-dd'T'HH:mm:ss.SSSZ, UTC}|%X{RequestID}|%X{ServiceInstanceID}|%-10t|%X{ServerFQDN}|%X{ServiceName}|%X{PartnerName}|%X{StatusCode}|%X{ResponseCode}|%replace(%replace(%X{ResponseDesc}){'\\|', '!'}){'\r|\n', '^'}|%X{InstanceUUID}|%level|%X{AlertSeverity}|%X{ServerIPAddress}|%X{ElapsedTime}|%X{ServerFQDN}|%X{clientIpAddress}||%X{unused}|%X{processKey}|%X{customField1}|%X{customField2}|%X{customField3}|%X{customField4}|co=%X{PartnerName}:%m%n"/>
-  <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
-  <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
-  <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
-
-  <property name="CONSOLE_LOG_PATTERN"
-  value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} [%X{traceId},%X{spanId}] [%thread] %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />
-
-  <!-- Appender to log to console -->
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <!-- Minimum logging level to be presented in the console logs-->
-      <level>DEBUG</level>
-    </filter>
-    <encoder>
-      <pattern>${CONSOLE_LOG_PATTERN}</pattern>
-      <charset>utf8</charset>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp><fieldName>timestamp</fieldName></timestamp>
+        <message/>
+        <mdc>
+          <fieldName>context</fieldName>
+          <excludeMdcKeyName>ServerIPAddress</excludeMdcKeyName>
+          <excludeMdcKeyName>EntryTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>InvokeTimestamp</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorCode</excludeMdcKeyName>
+          <excludeMdcKeyName>ErrorDesc</excludeMdcKeyName>
+        </mdc>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+          <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+            <exclude>^sun\.reflect\..*\.invoke</exclude>
+            <exclude>^net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+            <rootCauseFirst>true</rootCauseFirst>
+          </throwableConverter>
+        </stackTrace>
+        <threadName><fieldName>thread</fieldName></threadName>
+        <loggerName>
+          <fieldName>logger</fieldName>
+          <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+        </loggerName>
+        <logLevel/>
+      </providers>
     </encoder>
   </appender>
+
+
 
   <!-- logback internals logging -->
   <logger name="ch.qos.logback.classic" level="WARN" />
