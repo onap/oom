@@ -61,7 +61,9 @@ spring:
       probability: {{ .Values.global.tracing.sampling.probability }}
     supports-join: false
     web:
-      skip-pattern: /actuator/health/*
+      skip-pattern: {{ join "," .Values.tracing.skipPatterns }}
+    scheduled:
+      skip-pattern: {{ join "," .Values.tracing.scheduled.skipPatterns }}
   zipkin:
     base-url: {{ .Values.global.tracing.collector.baseUrl }}
 #Actuator
@@ -117,3 +119,11 @@ cloud_config:
       clli: "{{ .Values.config.openStackRegion }}"
       aic_version: "2.5"
       identity_service_id: "DEFAULT_KEYSTONE"
+
+logging:
+  request-status:
+    exclusions: {{ join "," .Values.logging.requestStatus.excludedPatterns }}
+{{- if .Values.logging.security.enableDebugLogging }}
+  level:
+    org.springframework.security: DEBUG
+{{- end }}
