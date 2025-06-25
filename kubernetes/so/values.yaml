@@ -159,7 +159,7 @@ dbCreds:
   userName: so_user
   adminName: so_admin
 
-image: onap/so/api-handler-infra:1.15.4
+image: onap/so/api-handler-infra:1.15.5-20250701T0703
 
 server:
   aai:
@@ -193,6 +193,10 @@ updateStrategy:
   type: RollingUpdate
   maxUnavailable: 1
   maxSurge: 1
+
+logging:
+  security:
+    enableDebugLogging: true
 
 ################################################################
 # soHelpers part
@@ -435,9 +439,20 @@ serviceAccount:
 #Log configuration
 log:
   path: /var/log/onap
+  level:
+    root: DEBUG
 
 podAnnotations:
   # disable istio-based tracing
   proxy.istio.io/config: |
     tracing:
       sampling: 0
+
+tracing:
+  skipPatterns:
+    - /actuator/health/*
+    # these below classes contain @scheduled methods
+    # that are run every ~10 seconds and thus produce
+    # a lot of traces (with little information)
+    - org.onap.so.db.connections.ScheduledDnsLookup
+    - org.onap.so.utils.ExternalTaskServiceUtils
