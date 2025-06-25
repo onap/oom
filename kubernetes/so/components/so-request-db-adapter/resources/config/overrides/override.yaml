@@ -41,6 +41,7 @@ spring:
       pool-name: reqdb-pool
       registerMbeans: true
   security:
+    rbacEnabled: {{ .Values.global.so.auth.rbacEnabled }}
     usercredentials:
     -
       username: bpel
@@ -60,9 +61,15 @@ spring:
       probability: {{ .Values.global.tracing.sampling.probability }}
     supports-join: false
     web:
-      skip-pattern: /actuator/health/*
+      skip-pattern: {{ join "," .Values.tracing.skipPatterns }}
+    scheduled:
+      skip-pattern: {{ join "," .Values.tracing.scheduled.skipPatterns }}
   zipkin:
     base-url: {{ .Values.global.tracing.collector.baseUrl }}
 #Actuator
 management:
   context-path: /manage
+
+logging:
+  request-status:
+    exclusions: {{ join "," .Values.logging.requestStatus.excludedPatterns }}

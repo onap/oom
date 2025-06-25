@@ -85,6 +85,7 @@ spring:
   jersey:
     type: filter
   security:
+    rbacEnabled: {{ .Values.global.so.auth.rbacEnabled }}
     usercredentials:
     -
       username: sitecontrol
@@ -110,6 +111,21 @@ spring:
       username: mso_admin
       password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
       role: ACTUATOR
+  sleuth:
+    enabled: {{ .Values.global.tracing.enabled }}
+    messaging:
+      jms:
+        enabled: false
+    trace-id128: true
+    sampler:
+      probability: {{ .Values.global.tracing.sampling.probability }}
+    supports-join: false
+    web:
+      skip-pattern: {{ join "," .Values.tracing.skipPatterns }}
+    scheduled:
+      skip-pattern: {{ join "," .Values.tracing.scheduled.skipPatterns }}
+  zipkin:
+    base-url: {{ .Values.global.tracing.collector.baseUrl }}
 request:
   datasource:
     hikari:
@@ -126,3 +142,9 @@ org:
       adapters:
         network:
           encryptionKey: {{ .Values.mso.msoKey }}
+
+{{- if .Values.logging.security.enableDebugLogging }}
+logging:
+  level:
+    org.springframework.security: DEBUG
+{{- end }}
