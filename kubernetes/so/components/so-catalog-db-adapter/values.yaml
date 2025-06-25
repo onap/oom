@@ -30,6 +30,10 @@ global:
       baseUrl: http://jaeger-collector.istio-config:9411
     sampling:
       probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
+  so:
+    auth:
+      enabled: true
+      rbacEnabled: false
 
 readinessCheck:
   wait_for:
@@ -62,7 +66,7 @@ secrets:
 #################################################################
 # Application configuration defaults.
 #################################################################
-image: onap/so/catalog-db-adapter:1.15.4
+image: onap/so/catalog-db-adapter:1.15.5-20250702T0913
 pullPolicy: Always
 
 # Local mariadb galera instance default name
@@ -102,6 +106,11 @@ updateStrategy:
   type: RollingUpdate
   maxUnavailable: 1
   maxSurge: 1
+
+logging:
+  requestStatus:
+    excludedPatterns:
+      - /manage/**
 
 #################################################################
 # soHelpers part
@@ -172,3 +181,11 @@ podAnnotations:
   proxy.istio.io/config: |
     tracing:
       sampling: 0
+
+tracing:
+  skipPatterns:
+    - /actuator/health/*
+  scheduled:
+    skipClasses:
+      - ScheduledDnsLookup
+      - ExternalTaskServiceUtils
