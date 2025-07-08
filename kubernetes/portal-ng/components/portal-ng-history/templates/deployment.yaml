@@ -33,11 +33,20 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image.imageName }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          env:
+            - name: HISTORY_DB_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 14 }}
+            - name: HISTORY_DB_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 14 }}
+            - name: HISTORY_DB_HOST
+              value: {{ ternary .Values.postgres.service.name2 .Values.global.postgres.service.name2 .Values.global.postgres.localCluster }}
+            - name: HISTORY_DB_PORT
+              value: {{ ternary .Values.postgres.service.externalPort2 .Values.global.postgres.service.externalPort2 .Values.global.postgres.localCluster }}
+            - name: HISTORY_DB
+              value: {{ .Values.postgres.config.pgDatabase }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-configmap
-            - secretRef:
-                name: {{ include "common.fullname" . }}-secret
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           livenessProbe:
             httpGet:
