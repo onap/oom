@@ -1,5 +1,5 @@
 {{/*
-# Copyright © 2024 Deutsche Telekom AG.
+# Copyright © 2025 Deutsche Telekom AG.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,11 +33,20 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image.imageName }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          env:
+            - name: PREFERENCES_DB_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 14 }}
+            - name: PREFERENCES_DB_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 14 }}
+            - name: PREFERENCES_DB_HOST
+              value: {{ ternary .Values.postgres.service.name2 .Values.global.postgres.service.name2 .Values.global.postgres.localCluster }}
+            - name: PREFERENCES_DB_PORT
+              value: {{ ternary .Values.postgres.service.externalPort2 .Values.global.postgres.service.externalPort2 .Values.global.postgres.localCluster }}
+            - name: PREFERENCES_DB
+              value: {{ .Values.postgres.config.pgDatabase }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-configmap
-            - secretRef:
-                name: {{ include "common.fullname" . }}-secret
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           livenessProbe:
             httpGet:
