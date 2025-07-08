@@ -4,6 +4,33 @@ global:
     KEYCLOAK_REALM: onap
     COLLECTOR_HOST: jaeger-collector.istio-config
     COLLECTOR_PORT: 9411
+  #Service Names of the postgres db to connect to.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      externalPort: 5432
+      name2: tcp-pgset-primary
+      externalPort2: 5432
+      name3: tcp-pgset-replica
+      externalPort3: 5432
+    container:
+      name: postgres
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-portal-ng-preferences-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "portal-ng-preferences-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-portal-ng-preferences-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "portal-ng-preferences-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 # Default values for preferences.
 # This is a YAML-formatted file.
@@ -63,35 +90,47 @@ probes:
     initialDelaySeconds: 30
     failureThreshold: 5
 
-secretEnv:
-  MONGO_USERNAME: dbuser
-  MONGO_PASSWORD: dbpassword
-  MONGO_DATABASE: Preferences
-
 env:
-  MONGO_HOST: preferences-mongodb
-  MONGO_PORT: 27017
   TRACING_ENABLED: true
 
-mongodb:
-  nameOverride: preferences-mongodb
+#################################################################
+# Postgres overriding defaults in the postgres
+#################################################################
+postgres:
+  nameOverride: &postgresName portal-ng-preferences-postgres
   service:
-    portName: tcp-mongodb
-  auth:
-    rootPassword: TrWAweN9y9eW
-    usernames:
-    - dbuser
-    passwords:
-    - dbpassword
-    databases:
-    - Preferences
-  resources:
-    limits:
-      cpu: "2"
-      memory: "2Gi"
-    requests:
-      cpu: "250m"
-      memory: "500Mi"
+    name: *postgresName
+    externalPort: 5432
+    name2: portal-ng-preferences-pg-primary
+    externalPort2: 5432
+    name3: portal-ng-preferences-pg-replica
+    externalPort3: 5432
+  container:
+    name:
+      primary: portal-ng-preferences-pg-primary
+      replica: portal-ng-preferences-pg-replica
+  persistence:
+    mountSubPath: portal-ng-preferences/data
+    mountInitPath: portal-ng-preferences
+  config:
+    pgUserName: portalngpreferences
+    pgDatabase: preferences
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+
+postgres-init:
+  nameOverride: portal-ng-preferences-postgres-init
+  config:
+    pgUserName: portalngpreferences
+    pgDatabase: preferences
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+  serviceAccount:
+    nameOverride: portal-ng-preferences-postgres-init
+
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 
 #Pods Service Account
 serviceAccount:
