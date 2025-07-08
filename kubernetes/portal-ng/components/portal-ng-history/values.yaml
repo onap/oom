@@ -4,6 +4,33 @@ global:
     KEYCLOAK_REALM: onap
     COLLECTOR_HOST: jaeger-collector.istio-config
     COLLECTOR_PORT: 9411
+  #Service Names of the postgres db to connect to.
+  postgres:
+    localCluster: false
+    service:
+      name: pgset
+      externalPort: 5432
+      name2: tcp-pgset-primary
+      externalPort2: 5432
+      name3: tcp-pgset-replica
+      externalPort3: 5432
+    container:
+      name: postgres
+
+secrets:
+  - uid: pg-root-pass
+    name: &pgRootPassSecretName '{{ include "common.release" . }}-portal-ng-history-pg-root-pass'
+    type: password
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgRootPasswordExternalSecret) .) (hasSuffix "portal-ng-history-pg-root-pass" .Values.postgres.config.pgRootPasswordExternalSecret) }}'
+    password: '{{ .Values.postgres.config.pgRootpassword }}'
+    policy: generate
+  - uid: pg-user-creds
+    name: &pgUserCredsSecretName '{{ include "common.release" . }}-portal-ng-history-pg-user-creds'
+    type: basicAuth
+    externalSecret: '{{ ternary "" (tpl (default "" .Values.postgres.config.pgUserExternalSecret) .) (hasSuffix "portal-ng-history-pg-user-creds" .Values.postgres.config.pgUserExternalSecret) }}'
+    login: '{{ .Values.postgres.config.pgUserName }}'
+    password: '{{ .Values.postgres.config.pgUserPassword }}'
+    passwordPolicy: generate
 
 image:
   imageName: onap/portal-ng/history
@@ -62,35 +89,48 @@ probes:
     initialDelaySeconds: 30
     failureThreshold: 5
 
-secretEnv:
-  MONGO_USERNAME: dbuser
-  MONGO_PASSWORD: dbpassword
-  MONGO_DATABASE: history
-
 env:
-  MONGO_HOST: history-mongodb
-  MONGO_PORT: 27017
   TRACING_ENABLED: true
 
-mongodb:
-  nameOverride: history-mongodb
+#################################################################
+# Postgres overriding defaults in the postgres
+#################################################################
+postgres:
+  postgresInit: true
+  nameOverride: &postgresName portal-ng-history-postgres
   service:
-    portName: tcp-mongodb
-  auth:
-    rootPassword: TrWAweN9y9eW
-    usernames:
-    - dbuser
-    passwords:
-    - dbpassword
-    databases:
-    - history
-  resources:
-    limits:
-      cpu: "2"
-      memory: "2Gi"
-    requests:
-      cpu: "250m"
-      memory: "500Mi"
+    name: *postgresName
+    externalPort: 5432
+    name2: portal-ng-history-pg-primary
+    externalPort2: 5432
+    name3: portal-ng-history-pg-replica
+    externalPort3: 5432
+  container:
+    name:
+      primary: portal-ng-history-pg-primary
+      replica: portal-ng-history-pg-replica
+  persistence:
+    mountSubPath: portal-ng-history/data
+    mountInitPath: portal-ng-history
+  config:
+    pgUserName: portalnghistory
+    pgDatabase: history
+    pgUserExternalSecret: *pgUserCredsSecretName
+    pgRootPasswordExternalSecret: *pgRootPassSecretName
+
+postgres-init:
+  nameOverride: portal-ng-history-postgres-init
+  config:
+    pgUserName: portalnghistory
+    pgDatabase: history
+    pgDataPath: data
+    pgUserExternalSecret: *pgUserCredsSecretName
+  serviceAccount:
+    nameOverride: portal-ng-history-postgres-init
+
+    # pgPrimaryPassword: password
+    # pgUserPassword: password
+    # pgRootPassword: password
 
 #Pods Service Account
 serviceAccount:
