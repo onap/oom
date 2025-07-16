@@ -50,6 +50,22 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
         - name: A1CONTROLLER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
+        - name: LOGBACK_CONFIG_FILE
+          value: {{ .Values.app.logging.config | quote }}
+        - name: ONAP_PROPAGATOR_PRODUCE
+          value: "[{{ .Values.app.tracing.propagator.produce.type }}]"
+        - name: ONAP_OTEL_EXPORTER_ENDPOINT
+          value: {{ .Values.app.tracing.otel.exporter.otlp.traces.endpoint | quote }}
+        - name: ONAP_OTEL_EXPORTER_PROTOCOL
+          value: {{ .Values.app.tracing.otel.exporter.otlp.traces.protocol | quote }}
+        - name: ONAP_SDK_DISABLED
+          value: {{ .Values.app.tracing.otel.sdk.disabled | quote }}
+        - name: ONAP_TRACING_SOUTHBOUND
+          value: {{ .Values.app.tracing.otel.sdk.south | quote }}
+        - name: ONAP_TRACING_NORTHBOUND
+          value: {{ .Values.app.tracing.otel.instrumentation.springWebflux.enabled | quote }}
+        - name: ONAP_OTEL_SAMPLER_JAEGER_REMOTE_ENDPOINT
+          value: {{ .Values.app.tracing.otel.tracing.jaegerRemote.endpoint | quote }}
         volumeMounts:
         - mountPath: /config-input
           name: {{ include "common.fullname" . }}-policy-conf-input
@@ -72,6 +88,22 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
         - name: A1CONTROLLER_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
+        - name: LOGBACK_CONFIG_FILE
+          value: {{ .Values.app.logging.config | quote }}
+        - name: ONAP_PROPAGATOR_PRODUCE
+          value: "[{{ .Values.app.tracing.propagator.produce.type }}]"
+        - name: ONAP_OTEL_EXPORTER_ENDPOINT
+          value: {{ .Values.app.tracing.otel.exporter.otlp.traces.endpoint | quote }}
+        - name: ONAP_OTEL_EXPORTER_PROTOCOL
+          value: {{ .Values.app.tracing.otel.exporter.otlp.traces.protocol | quote }}
+        - name: ONAP_SDK_DISABLED
+          value: {{ .Values.app.tracing.otel.sdk.disabled | quote }}
+        - name: ONAP_TRACING_SOUTHBOUND
+          value: {{ .Values.app.tracing.otel.sdk.south | quote }}
+        - name: ONAP_TRACING_NORTHBOUND
+          value: {{ .Values.app.tracing.otel.instrumentation.springWebflux.enabled | quote }}
+        - name: ONAP_OTEL_SAMPLER_JAEGER_REMOTE_ENDPOINT
+          value: {{ .Values.app.tracing.otel.tracing.jaegerRemote.endpoint | quote }}
         volumeMounts:
         - mountPath: /tmp/scripts
           name: {{ include "common.fullname" . }}-envsubst-scripts
@@ -97,6 +129,9 @@ spec:
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         volumeMounts:
         - name: config
+          mountPath: /opt/app/policy-agent/logback-plain.xml
+          subPath: logback-plain.xml
+        - name: config
           mountPath: /opt/app/policy-agent/data/application_configuration.json
           subPath: application_configuration.json
         - name: config
@@ -105,6 +140,10 @@ spec:
         - name: {{ include "common.fullname" . }}
           mountPath: "/var/policy-management-service/database"
         resources: {{ include "common.resources" . | nindent 10 }}
+        securityContext:
+          runAsUser: {{ .Values.mainUserId }}
+          runAsGroup: {{ .Values.mainGroupId }}
+          runAsNonRoot: true
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
         - name: {{ include "common.fullname" . }}-policy-conf-input
