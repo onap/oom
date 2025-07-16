@@ -5,6 +5,7 @@
 # ================================================================================
 # Copyright (C) 2020 Nordix Foundation. All rights reserved.
 # Copyright (C) 2021 Orange. All rights reserved.
+# Copyright (C) 2025 OpenInfra Foundation Europe. All rights reserved.
 # ================================================================================
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,51 +23,142 @@
 # ============LICENSE_END=========================================================
 #
 */}}
-spring:
-  profiles:
-    active: prod
-  main:
-    allow-bean-definition-overriding: true
-  aop:
-    auto: false
+app:
+  # A file containing an authorization token, which shall be inserted in each HTTP header (authorization).
+  # If the file name is empty, no authorization token is sent.
+  auth-token-file:
+  # A URL to authorization provider such as OPA. Each time an A1 Policy is accessed, a call to this
+  # authorization provider is done for access control. If this is empty, no fine grained access control is done.
+  authorization-provider:
+  # the config-file-schema-path refers to a location in the jar file. If this property is empty or missing,
+  # no schema validation will be executed.
+  config-file-schema-path: /application_configuration_schema.json
+  # Postgres database usage is enabled using the below parameter.
+  # If this is enabled, the application will use postgres database for storage.
+  # This overrides the s3(s3.bucket) or file store(vardata-directory) configuration if enabled.
+  database-enabled: {{ .Values.app.databaseEnabled | default false }}
+  # Location of the component configuration file.
+  filepath: /opt/app/policy-agent/data/application_configuration.json
+  # S3 object store usage is enabled by defining the bucket to use. This will override the vardata-directory parameter.
+  s3:
+    endpointOverride: {{ .Values.app.s3.endpointOverride | default "http://minio-service:9000" }}
+    accessKeyId: {{ .Values.app.s3.accessKeyId | default "minio" }}
+    secretAccessKey: {{ .Values.app.s3.secretAccessKey | default "miniostorage" }}
+    bucket: {{ .Values.app.s3.bucket | default "" }}
+  webclient:
+    # Configuration of usage of HTTP Proxy for the southbound accesses.
+    # The HTTP proxy (if configured) will only be used for accessing NearRT RIC:s
+    # proxy-type can be either HTTP, SOCKS4 or SOCKS5
+    http.proxy-host:
+    http.proxy-port: 0
+    http.proxy-type: HTTP
+    # Configuration of the trust store used for the HTTP client (outgoing requests)
+    # The file location and the password for the truststore is only relevant if trust-store-used == true
+    # Note that the same keystore as for the server is used.
+    trust-store-used: false
+    trust-store-password: policy_agent
+    trust-store: /opt/app/policy-agent/etc/cert/truststore.jks
+  # path where the service can store data. This parameter is not relevant if S3 Object store is configured.
+  vardata-directory: {{ .Values.app.vardataDirectory | default "/var/policy-management-service" }}
+  # Options for schema validation of the policy and policy status. Options: NONE, INFO, WARN, FAIL
+  validate-policy-instance-schema: NONE
+lifecycle:
+  timeout-per-shutdown-phase: "20s"
+
+logging:
+  config: {{ .Values.app.logging.config }}
+  # Reactive logging filter
+  reactive-entry-exit-filter-enabled: {{ .Values.app.reactiveEntryExitFilterEnabled | default true }}
+  reactive-entry-exit-filter-exclude-paths: {{ .Values.app.reactiveEntryExitFilterExcludePaths | default "" }}
+  # Configuration of logging
+  file:
+    name: /var/log/policy-agent/application.log
+  level:
+    ROOT: ERROR
+    org.onap.ccsdk.oran.a1policymanagementservice: INFO
+    org.springframework: ERROR
+    org.springframework.data: ERROR
+    org.springframework.web.reactive.function.client.ExchangeFunctions: ERROR
+    org.springframework.web.servlet.DispatcherServlet: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%thread] %logger{20} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%thread] %logger{20} - %msg%n"
 management:
+  endpoint:
+    shutdown:
+      enabled: true
   endpoints:
     web:
       exposure:
         # Enabling of springboot actuator features. See springboot documentation.
-        include: "loggers,logfile,health,info,metrics,threaddump,heapdump"
-
-logging:
-  # Configuration of logging
-  level:
-    ROOT: ERROR
-    org.springframework: ERROR
-    org.springframework.data: ERROR
-    org.springframework.web.reactive.function.client.ExchangeFunctions: ERROR
-    org.onap.ccsdk.oran.a1policymanagementservice: INFO
-  file:
-    name: /var/log/policy-agent/application.log
+        include: "loggers,logfile,health,info,metrics,threaddump,heapdump,shutdown"
+  tracing:
+    enabled: {{ .Values.global.tracing.enabled | default true }}
+    propagation:
+      produce: [{{ .Values.global.tracing.propagator.produce.type }}]
+    sampling:
+      probability: {{ .Values.global.tracing.sampling.probability | default "1.0" }}
+otel:
+  exporter:
+    otlp:
+      traces:
+        endpoint: {{ .Values.global.tracing.collector.baseUrl | default "http://jaeger:4317" }}
+        protocol: {{ .Values.global.tracing.collector.protocol | default "grpc" }}
+  logs:
+    exporter: none
+  metrics:
+    exporter: none
+  sdk:
+  {{- if not .Values.global.tracing.enabled }}
+    disabled: true
+    south: false
+  instrumentation:
+    spring-webflux:
+      enabled: false
+  {{- else }}
+    disabled: {{ .Values.global.tracing.sdk.disabled | default false }}
+    south: {{ .Values.global.tracing.sdk.south | default true }}
+  instrumentation:
+    spring-webflux:
+      enabled: {{ .Values.global.tracing.north.enabled | default true }}
+  {{- end }}
+  tracing:
+    sampler:
+      jaeger_remote:
+        endpoint: {{ .Values.global.tracing.sampling.baseUrl | default "http://jaeger:14250" }}
 server:
   # Configuration of the HTTP/REST server. The parameters are defined and handeled by the springboot framework.
   # See springboot documentation.
-  #port: 8081
-  http-port: 8081
+  port : 8081
+  shutdown: "graceful"
   ssl:
     enabled: false
-    key-store-type: PKCS12
-    key-store-password: ""
-    key-store: ""
-    key-password: ""
-    key-alias: ""
-app:
-  # Location of the component configuration file. The file will only be used if the Consul database is not used;
-  # configuration from the Consul will override the file.
-  filepath: /opt/app/policy-agent/data/application_configuration.json
-  webclient:
-    trust-store-used: false
-    trust-store-password: ""
-    trust-store: ""
-    # Configuration of usage of HTTP Proxy for the southbound accesses.
-    # The HTTP proxy (if configured) will only be used for accessing NearRT RIC:s
-    http.proxy-host:
-    http.proxy-port: 0
+    # trust-store-password:
+    # trust-store:
+spring:
+  aop:
+    auto: false
+  application:
+    name: a1-pms
+  flyway:
+    # Configuration of the postgres database to be used for database migration.
+    # This is where the flyway maintains the information about the sql files loaded.
+    # These values can be passed via configmap/secret/env variable based on the installation.
+    # By default, Flyway uses location classpath:db/migration to load the sql files.
+    # This can be overridden using "flyway.locations" to have a different location.
+    baseline-on-migrate: true
+    url: "jdbc:postgresql://127.0.0.1:5432/a1pms"
+    user: a1pms
+    password: mypwd
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: prod
+  r2dbc:
+    # Configuration of the postgres database to be used by the application.
+    # These values can be passed via configmap/secret/env variable based on the installation.
+    url: {{ .Values.app.r2dbc.url | default "r2dbc:postgresql://postgres-service:5432/a1pms" }}
+    username: {{ .Values.app.r2dbc.username | default "a1pms" }}
+    password: {{ .Values.app.r2dbc.password | default "mypwd" }}
+springdoc:
+  show-actuator: true

@@ -21,6 +21,23 @@
 global:
   nodePortPrefix: 302
   persistence: {}
+  tracing:
+    enabled: false
+    propagator:
+      produce:
+        # This can have several options included in a comma separated list W3C,B3,B3_MULTI
+        type: W3C
+    collector:
+      baseUrl: "http://jaeger:4317"
+      protocol: "grpc"
+    sampling:
+      baseUrl: "http://jaeger:14250"
+      probability: "1.0"
+    sdk:
+      south: true
+      disabled: false
+    north:
+      enabled: true
 
 secrets:
   - uid: controller-secret
@@ -30,9 +47,12 @@ secrets:
     password: '{{ .Values.a1controller.password }}'
     passwordPolicy: required
 
-image: onap/ccsdk-oran-a1policymanagementservice:1.5.0
+image: onap/ccsdk-oran-a1policymanagementservice:2.1.0
 userID: 1000 #Should match with image-defined user ID
 groupID: 999 #Should match with image-defined group ID
+mainUserId: 1000 #Should match with image-defined user ID
+mainGroupId: 101 #Should match with image-defined group ID
+
 pullPolicy: IfNotPresent
 replicaCount: 1
 
@@ -134,3 +154,29 @@ serviceAccount:
   nameOverride: a1policymanagement
   roles:
     - read
+
+app:
+  # False here will result in local file storage
+  databaseEnabled: false
+
+  r2dbc:
+    # The R2DBC URL for the Postgres database.
+    # Example: r2dbc:postgresql://<host>:<port>/<database>
+    url: r2dbc:postgresql://postgres-service:5432/a1pms
+    username: a1pms
+    password: mypwd
+  # Leaving bucket blank will disable S3 object store usage.
+  s3:
+    endpointOverride: http://minio-service:9000
+    accessKeyId: minio
+    secretAccessKey: miniostorage
+    bucket:
+
+  vardataDirectory: /var/policy-management-service
+
+  logging:
+    config: logback-plain.xml
+    reactiveEntryExitFilterEnabled: true
+    reactiveEntryExitFilterExcludePaths: ""
+
+
