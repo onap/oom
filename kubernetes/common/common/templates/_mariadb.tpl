@@ -1,6 +1,7 @@
 {{/*
 # Copyright © 2019 Orange
 # Modifications Copyright © 2025 Deutsche Telekom
+# Modifications Copyright © 2025 OpenInfra Foundation Europe.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -376,18 +377,27 @@ spec:
         - bash
         - '-c'
         - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    timeoutSeconds: 5
+    initialDelaySeconds: {{ .Values.mariadbOperator.livenessProbe.initialDelaySeconds | default 20 }}
+    periodSeconds: {{ .Values.mariadbOperator.livenessProbe.periodSeconds | default 10 }}
+    timeoutSeconds: {{ .Values.mariadbOperator.livenessProbe.timeoutSeconds | default 5 }}
   readinessProbe:
     exec:
       command:
         - bash
         - '-c'
         - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    timeoutSeconds: 5
+    initialDelaySeconds: {{ .Values.mariadbOperator.readinessProbe.initialDelaySeconds | default 20 }}
+    periodSeconds: {{ .Values.mariadbOperator.readinessProbe.periodSeconds | default 10 }}
+    timeoutSeconds: {{ .Values.mariadbOperator.readinessProbe.timeoutSeconds | default 5 }}
+  startupProbe:
+    exec:
+      command:
+        - bash
+        - '-c'
+        - mariadb -u root -p"${MARIADB_ROOT_PASSWORD}" -e "SELECT 1;"
+    initialDelaySeconds: {{ .Values.mariadbOperator.startupProbe.initialDelaySeconds | default 20 }}
+    periodSeconds: {{ .Values.mariadbOperator.startupProbe.periodSeconds | default 10 }}
+    timeoutSeconds: {{ .Values.mariadbOperator.startupProbe.timeoutSeconds | default 5 }}
   {{- if default false $dot.Values.global.metrics.enabled }}
   metrics:
     enabled: true
