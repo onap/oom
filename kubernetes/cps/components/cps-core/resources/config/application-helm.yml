@@ -19,6 +19,8 @@
 */}}
 
 spring:
+  application:
+    name: cps-core
   datasource:
 {{- if .Values.global.postgres.localCluster }}
     url: jdbc:postgresql://{{ .Values.postgres.service.name2 }}:{{ .Values.postgres.service.externalPort2 }}/{{ .Values.postgres.config.pgDatabase }}
@@ -61,6 +63,8 @@ management:
   tracing:
     propagation:
       produce: {{ .Values.management.tracing.propagation.produce }}
+    sampling:
+      probability: {{ .Values.global.tracing.sampling.probability }}
 
 logging:
   level:
@@ -83,10 +87,16 @@ ncmp:
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
 
-# cps tracing
-{{- if .Values.tracing }}
-  {{ toYaml .Values.tracing | nindent 2 }}
-{{- end }}
+cps:
+  tracing:
+    enabled: {{ .Values.global.tracing.enabled }}
+    sampler:
+      jaeger_remote:
+        endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.grpc }}
+    exporter:
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+      protocol: {{ .Values.tracing.exporter.protocol }}
+    excluded-observation-names: {{ .Values.tracing.excludedObservationNames }}
 
 # Custom Hazelcast config.
 hazelcast:
@@ -100,6 +110,6 @@ otel:
   exporter:
     otlp:
       traces:
-        protocol: {{ .Values.otel.config.otlp.traces.protocol }}
+        protocol: {{ .Values.tracing.otlp.traces.protocol }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.

@@ -68,6 +68,15 @@ global:
       externalPort3: 5432
     container:
       name: postgres
+  tracing:
+    collector:
+      baseUrl: http://jaeger-collector.istio-config
+      port:
+        zipkin: 9411
+        otlpGrpc: 4317
+        grpc: 14250
+    sampling:
+      probability: 1.0
 
 image: onap/cps-and-ncmp:3.5.4
 
@@ -274,16 +283,12 @@ management:
       produce: [W3C]
 
 tracing:
-  cps:
-    tracing:
-      sampler:
-        jaeger_remote:
-          endpoint: http://onap-otel-collector:14250
-      exporter:
-        endpoint: http://onap-otel-collector:4317
-        protocol: grpc
-      enabled: false
-      excluded-observation-names: tasks.scheduled.execution
+  exporter:
+    protocol: grpc
+  excludedObservationNames: tasks.scheduled.execution
+  otlp:
+    traces:
+      protocol: grpc
 
 #################################################################
 # Postgres overriding defaults in the postgres
@@ -342,9 +347,3 @@ hazelcast:
     kubernetesDiscovery: true
     kubernetesServiceName: cps-core-headless
     clusterName: cps-and-ncmp-common-cache-cluster
-
-otel:
-  config:
-    otlp:
-      traces:
-        protocol: grpc
