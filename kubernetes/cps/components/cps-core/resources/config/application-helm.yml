@@ -19,6 +19,8 @@
 */}}
 
 spring:
+  application:
+    name: cps-core
   datasource:
 {{- if .Values.global.postgres.localCluster }}
     url: jdbc:postgresql://{{ .Values.postgres.service.name2 }}:{{ .Values.postgres.service.externalPort2 }}/{{ .Values.postgres.config.pgDatabase }}
@@ -36,6 +38,18 @@ spring:
   kafka:
     producer:
       client-id: cps-core
+{{- with (first .Values.kafkaUser.acls) }}
+    consumer:
+      group-id: {{ .name }}
+{{- end }}
+    bootstrap-servers: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl:
+        mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+        jaas:
+          config: ${SASL_JAAS_CONFIG}
 
 security:
 # comma-separated uri patterns which do not require authorization
@@ -49,6 +63,8 @@ management:
   tracing:
     propagation:
       produce: {{ .Values.management.tracing.propagation.produce }}
+    sampling:
+      probability: {{ .Values.global.tracing.sampling.probability }}
 
 logging:
   level:
@@ -61,13 +77,6 @@ ncmp:
       username: ${DMI_USERNAME}
       password: ${DMI_PASSWORD}
 
-{{- with (first .Values.kafkaUser.acls) }}
-spring.kafka.consumer.group-id: {{ .name }}
-{{- end }}
-spring.kafka.bootstrap-servers: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
-spring.kafka.security.protocol: SASL_PLAINTEXT
-spring.kafka.properties.sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
-spring.kafka.properties.sasl.jaas.config: ${SASL_JAAS_CONFIG}
 
 # Kafka Topics
 {{- if .Values.topics.config }}
@@ -78,10 +87,16 @@ spring.kafka.properties.sasl.jaas.config: ${SASL_JAAS_CONFIG}
 {{ toYaml .Values.config.additional | nindent 2 }}
 {{- end }}
 
-# cps tracing
-{{- if .Values.tracing }}
-  {{ toYaml .Values.tracing | nindent 2 }}
-{{- end }}
+cps:
+  tracing:
+    enabled: {{ .Values.global.tracing.enabled }}
+    sampler:
+      jaeger_remote:
+        endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.grpc }}
+    exporter:
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+      protocol: {{ .Values.tracing.exporter.protocol }}
+    excluded-observation-names: {{ .Values.tracing.excludedObservationNames }}
 
 # Custom Hazelcast config.
 hazelcast:
@@ -95,7 +110,6 @@ otel:
   exporter:
     otlp:
       traces:
-        protocol: {{ .Values.otel.config.otlp.traces.protocol }}
+        protocol: {{ .Values.tracing.otlp.traces.protocol }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
-
