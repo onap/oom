@@ -47,7 +47,7 @@ global:
     virtualhost:
       baseurl: "simpledemo.onap.org"
 
-image: onap/ncmp-dmi-plugin:1.5.0
+image: onap/ncmp-dmi-plugin:1.7.0
 containerPort: &svc_port 8080
 
 prometheus:
@@ -142,7 +142,7 @@ config:
   spring:
     profile: helm
 
-  dmiServiceUrl: http://*svc_name:*svc_port
+  dmiServiceUrl: http://ncmp-dmi-plugin:8080
   sdnc:
     url: http://sdnc:8181
     username: admin
@@ -177,15 +177,13 @@ updateStrategy:
 
 # Strimzi KafkaUser and Topic config
 kafkaTopic:
-  - name: &ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic ncmp-dmi-cm-avc-subscription-ncmp-dmi-plugin
-    retentionMs: 7200000
-    segmentBytes: 1073741824
-  - name: &dmiNcmpCmAvcSubscriptionTopic dmi-ncmp-cm-avc-subscription
-    retentionMs: 7200000
-    segmentBytes: 1073741824
   - name: &ncmpAsyncM2MTopic ncmp-async-m2m
-    retentionMs: 7200000
-    segmentBytes: 1073741824
+  - name: &lcmEventsTopic ncmp-events
+  - name: &ncmpSubscriptionDmiIn ncmp-dmi-cm-avc-subscription
+  - name: &ncmpSubscriptionDmiOut dmi-ncmp-cm-avc-subscription
+  - name: &dmiCmEventsTopic dmi-cm-events
+  - name: &vesPnfRegistrationTopic unauthenticated.VES_PNFREG_OUTPUT
+  - name: &vesPnfNotifyRegistrationTopic unauthenticated.VES_O1_NOTIFY_PNF_REGISTRATION_OUTPUT
 
 kafkaUser:
   authenticationType: scram-sha-512
@@ -193,18 +191,33 @@ kafkaUser:
     - name: ncmp-dmi-plugin-group
       type: group
       operations: [Read]
-    - name: *ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic
-      type: topic
-      operations: [Read]
-    - name: *dmiNcmpCmAvcSubscriptionTopic
-      type: topic
-      operations: [Write]
     - name: *ncmpAsyncM2MTopic
       type: topic
       operations: [Write]
+    - name: *lcmEventsTopic
+      type: topic
+      operations: [All]
+    - name: *ncmpSubscriptionDmiIn
+      type: topic
+      operations: [Read]
+    - name: *ncmpSubscriptionDmiOut
+      type: topic
+      operations: [Write]
+    - name: *dmiCmEventsTopic
+      type: topic
+      operations: [Write]
+    - name: *vesPnfRegistrationTopic
+      type: topic
+      operations: [All]
+    - name: *vesPnfNotifyRegistrationTopic
+      type: topic
+      operations: [All]
+
 
 topics:
   config:
     app.ncmp.async.topic: *ncmpAsyncM2MTopic
-    app.dmi.avc.subscription-topic: *ncmpDmiCmAvcSubscriptionNcmpDmiPluginTopic
-    app.dmi.avc.subscription-response-topic: *dmiNcmpCmAvcSubscriptionTopic
+    app.ncmp.lcm.topic: *lcmEventsTopic
+    app.dmi.avc.cm-subscription-dmi-in: *ncmpSubscriptionDmiIn
+    app.dmi.avc.cm-subscription-dmi-out: *ncmpSubscriptionDmiOut
+    app.dmi.avc.cm-avc-events-topic: *dmiCmEventsTopic

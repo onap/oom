@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2023 Deutsche Telekom AG
+# Copyright © 2025 OpenInfra Foundation Europe. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,4 +14,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
-{{ include "common.kafkatopic" . }}
+{{- define "common.kafkatopic" -}}
+{{- $global := .global }}
+{{- range $topic := .Values.kafkaTopic }}
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  {{- if (hasKey $topic "strimziTopicName") }}
+  name: {{ ($topic.strimziTopicName | replace "." "-" | replace "_" "-") }}-kt
+  {{- else }}
+  name: {{ ($topic.name | lower | replace "." "-" | replace "_" "-") }}-kt
+  {{- end }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+    strimzi.io/cluster: {{ include "common.release" $ }}-strimzi
+spec:
+  {{- if (hasKey $topic "partitions") }}
+  partitions: {{ $topic.partitions }}
+  {{- end }}
+  {{- if (hasKey $topic "replicas") }}
+  replicas: {{ $topic.replicas }}
+  {{- end }}
+  topicName: {{ ternary (printf "%s-%s" $topic.name $topic.suffix) $topic.name (hasKey $topic "suffix") }}
+  config:
+    retention.ms: {{ $topic.retentionMs | default "7200000" }}
+    segment.bytes: {{ $topic.segmentBytes | default "1073741824"}}
+---
+{{- end }}
+{{- end -}}
