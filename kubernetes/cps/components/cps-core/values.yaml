@@ -78,7 +78,7 @@ global:
     sampling:
       probability: 1.0
 
-image: onap/cps-and-ncmp:3.5.4
+image: onap/cps-and-ncmp:3.7.0
 
 service:
   type: ClusterIP
@@ -204,18 +204,14 @@ config:
 
 # Strimzi KafkaUser and Topic config
 kafkaTopic:
-  - name: &dmiCmEventsTopic dmi-cm-events
-    retentionMs: 7200000
-    segmentBytes: 1073741824
-  - name: &dataUpdatedTopic cps-data-updated-events
-    retentionMs: 7200000
-    segmentBytes: 1073741824
-  - name: &ncmpCmSubscriptionIn subscription
-    retentionMs: 7200000
-    segmentBytes: 1073741824
+  - name: &cmSubscriptionNcmpIn subscription
+  - name: &cmSubscriptionDmiIn ncmp-dmi-cm-avc-subscription
+  - name: &cmSubscriptionNcmpOut subscription-response
+  - name: &ncmpCmEventsTopic cm-events
+  - name: &ncmpInventoryEventsTopic ncmp-inventory-events
+  - name: &lcmEventsTopic ncmp-events
   - name: &dmiDeviceHeartbeatTopic dmi-device-heartbeat
-    retentionMs: 7200000
-    segmentBytes: 1073741824
+  - name: &dataUpdatedTopic cps-data-updated-events
 
 kafkaUser:
   authenticationType: scram-sha-512
@@ -226,48 +222,52 @@ kafkaUser:
     - name: ncmp-data-operation-event-group
       type: group
       operations: [Read]
-    - name: *dataUpdatedTopic
-      type: topic
-      operations: [Write]
-    - name: *dmiCmEventsTopic
-      type: topic
+    - name: ncmp-async-rest-request-event-group
+      type: group
       operations: [Read]
     - name: &ncmpAsyncM2MTopic ncmp-async-m2m
       type: topic
       operations: [Read]
-    - name: &cmAvcSubscriptionTopic cm-avc-subscription
+    - name: *cmSubscriptionNcmpIn
+      type: topic
+      operations: [All]
+    - name: *cmSubscriptionDmiIn
+      type: topic
+      operations: [Write]
+    - name: &cmSubscriptionDmiOut dmi-ncmp-cm-avc-subscription
       type: topic
       operations: [Read]
-    - name: *ncmpCmSubscriptionIn
+    - name: *cmSubscriptionNcmpOut
       type: topic
-      operations: [Read]
-    - name: &ncmpCmSubscriptionDmiIn ncmp-dmi-cm-avc-subscription
+      operations: [Write]
+    - name: *ncmpCmEventsTopic
       type: topic
-      operations: [Read]
-    - name: &ncmpCmSubscriptionDmiOut dmi-ncmp-cm-avc-subscription
+      operations: [Write]
+    - name: *ncmpInventoryEventsTopic
       type: topic
-      operations: [Read]
-    - name: &ncmpCmSubscriptionOut subscription-response
+      operations: [Write]
+    - name: *lcmEventsTopic
       type: topic
-      operations: [Read]
-    - name: &ncmpCmEventsTopic cm-events
+      operations: [Write]
+    - name: &dmiCmEventsTopic dmi-cm-events
       type: topic
       operations: [Read]
     - name: *dmiDeviceHeartbeatTopic
       type: topic
-      operations: [Read]
-    - name: &lcmEventsTopic ncmp-events
+      operations: [All]
+    - name: *dataUpdatedTopic
       type: topic
-      operations: [Read]
+      operations: [Write]
 
 topics:
   config:
     app.ncmp.async-m2m.topic: *ncmpAsyncM2MTopic
-    app.ncmp.avc.cm-subscription-ncmp-in: *ncmpCmSubscriptionIn
-    app.ncmp.avc.cm-subscription-dmi-in:  *ncmpCmSubscriptionDmiIn
-    app.ncmp.avc.cm-subscription-dmi-out: *ncmpCmSubscriptionDmiOut
-    app.ncmp.avc.cm-subscription-ncmp-out: *ncmpCmSubscriptionOut
+    app.ncmp.avc.cm-subscription-ncmp-in: *cmSubscriptionNcmpIn
+    app.ncmp.avc.cm-subscription-dmi-in:  *cmSubscriptionDmiIn
+    app.ncmp.avc.cm-subscription-dmi-out: *cmSubscriptionDmiOut
+    app.ncmp.avc.cm-subscription-ncmp-out: *cmSubscriptionNcmpOut
     app.ncmp.avc.cm-events-topic: *ncmpCmEventsTopic
+    app.ncmp.avc.inventory-events-topic: *ncmpInventoryEventsTopic
     app.lcm.events.topic: *lcmEventsTopic
     app.dmi.cm-events.topic: *dmiCmEventsTopic
     app.dmi.device-heartbeat.topic: *dmiDeviceHeartbeatTopic
