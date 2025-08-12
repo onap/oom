@@ -32,10 +32,22 @@ spring:
   liquibase:
     change-log: classpath:changelog/changelog-master.yaml
     label-filter: {{ .Values.config.liquibaseLabels }}
-
   kafka:
     producer:
       client-id: cps-core
+{{- with (first .Values.kafkaUser.acls) }}
+    consumer:
+      group-id: {{ .name }}
+{{- end }}
+    bootstrap-servers: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl:
+        mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+        jaas:
+          config: ${SASL_JAAS_CONFIG}
+
 
 security:
 # comma-separated uri patterns which do not require authorization
@@ -61,13 +73,6 @@ ncmp:
       username: ${DMI_USERNAME}
       password: ${DMI_PASSWORD}
 
-{{- with (first .Values.kafkaUser.acls) }}
-spring.kafka.consumer.group-id: {{ .name }}
-{{- end }}
-spring.kafka.bootstrap-servers: {{ include "common.release" . }}-strimzi-kafka-bootstrap:9092
-spring.kafka.security.protocol: SASL_PLAINTEXT
-spring.kafka.properties.sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
-spring.kafka.properties.sasl.jaas.config: ${SASL_JAAS_CONFIG}
 
 # Kafka Topics
 {{- if .Values.topics.config }}
@@ -98,4 +103,3 @@ otel:
         protocol: {{ .Values.otel.config.otlp.traces.protocol }}
 
 # Last empty line is required otherwise the last property will be missing from application.yml file in the pod.
-
