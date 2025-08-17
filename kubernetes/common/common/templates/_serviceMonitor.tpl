@@ -145,7 +145,7 @@ spec:
       insecureSkipVerify: true
     {{- end }}
     {{- end }}
-    {{- if $dot.Values.metrics.serviceMonitor.basicAuth.enabled }}
+    {{- if and $dot.Values.metrics.serviceMonitor.basicAuth $dot.Values.metrics.serviceMonitor.basicAuth.enabled }}
     basicAuth:
       username:
         key: {{ $dot.Values.metrics.serviceMonitor.basicAuth.externalSecretUserKey }}
