@@ -35,17 +35,47 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      {{- if .Values.initJob.enabled }}
-        {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.waitForWfdJob ) | indent 8 | trim }}
-      {{ end }}
+        - name: {{ include "common.name" . }}-job
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.configInitImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          {{- if include "common.onServiceMesh" . }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - echo "waiting 10s for istio side cars to be up"; sleep 10s; /start.sh
+          {{- end }}
+          volumeMounts:
+            - name: {{ include "common.fullname" . }}-cqlshrc
+              mountPath: /home/sdc/.cassandra
+          env:
+            - name: CS_HOST
+              value: "{{ .Values.global.sdc_cassandra.serviceName }}"
+            - name: CS_PORT
+              value: {{ .Values.config.cassandraClientPort | quote }}
+            - name: CS_AUTHENTICATE
+              value: {{ .Values.config.cassandraAuthenticationEnabled | quote }}
+            - name: CS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_user
+            - name: CS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_password
+          resources: {{- include "common.resources" . | nindent 12 }}
+          {{- include "common.waitForJobContainer" . | nindent 10 | trim }}
+
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          ports: {{ include "common.containerPorts" . | nindent 12  }}
+          ports: {{- include "common.containerPorts" . | nindent 12 }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
-          {{ if .Values.liveness.enabled }}
+          {{- if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -53,7 +83,7 @@ spec:
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             successThreshold: {{ .Values.liveness.successThreshold }}
             failureThreshold: {{ .Values.liveness.failureThreshold }}
-          {{ end }}
+          {{- end }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
@@ -69,48 +99,61 @@ spec:
             successThreshold: {{ .Values.startup.successThreshold }}
             failureThreshold: {{ .Values.startup.failureThreshold }}
           env:
-          - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
-          - name: CS_HOSTS
-            value: "{{ .Values.global.sdc_cassandra.serviceName }}"
-          - name: CS_PORT
-            value: "{{ .Values.config.cassandraClientPort }}"
-          - name: CS_AUTHENTICATE
-            value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
-          - name: CS_USER
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_user}
-          - name: CS_PASSWORD
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
-          - name: CS_DATACENTER
-            value: "{{ .Values.config.cassandraDataCenter }}"
-          - name: CS_SSL_ENABLED
-            value: "{{ .Values.config.cassandraSSLEnabled }}"
-          - name: CS_TRUST_STORE_PATH
-            value: "{{ .Values.config.cassandraTrustStorePath }}"
-          - name: CS_TRUST_STORE_PASSWORD
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: cs_truststore_password}
-          - name: SDC_PROTOCOL
-            value: "HTTP"
-          - name: SDC_ENDPOINT
-            value: "{{ .Values.config.sdcEndpoint.http }}"
-          - name: SDC_USER
-            value: "{{ .Values.config.sdcExternalUser }}"
-          - name: SDC_PASSWORD
-            valueFrom:
-              secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: wf_external_user_password}
-          - name: SERVER_SSL_ENABLED
-            value: "false"
-          - name: TRACING_ENABLED
-            value: "{{ .Values.global.tracing.enabled }}"
-          - name: TRACING_COLLECTOR_BASEURL
-            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}"
-          - name: TRACING_SAMPLING_PROBABILITY
-            value: "{{ .Values.config.tracing.samplingProbability }}"
-          - name: TRACING_SKIP_PATTERN
-            value: "{{ .Values.config.tracing.skipPattern }}"
-          resources: {{ include "common.resources" . | nindent 12 }}
+            - name: JAVA_OPTIONS
+              value: {{ .Values.config.javaOptions }}
+            - name: CS_HOSTS
+              value: "{{ .Values.global.sdc_cassandra.serviceName }}"
+            - name: CS_PORT
+              value: "{{ .Values.config.cassandraClientPort }}"
+            - name: CS_AUTHENTICATE
+              value: "{{ .Values.config.cassandraAuthenticationEnabled }}"
+            - name: CS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_user
+            - name: CS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: sdc_password
+            - name: CS_DATACENTER
+              value: "{{ .Values.config.cassandraDataCenter }}"
+            - name: CS_SSL_ENABLED
+              value: "{{ .Values.config.cassandraSSLEnabled }}"
+            - name: CS_TRUST_STORE_PATH
+              value: "{{ .Values.config.cassandraTrustStorePath }}"
+            - name: CS_TRUST_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: cs_truststore_password
+            - name: SDC_PROTOCOL
+              value: "HTTP"
+            - name: SDC_ENDPOINT
+              value: "{{ .Values.config.sdcEndpoint.http }}"
+            - name: SDC_USER
+              value: "{{ .Values.config.sdcExternalUser }}"
+            - name: SDC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.release" . }}-sdc-cs-secrets
+                  key: wf_external_user_password
+            - name: SERVER_SSL_ENABLED
+              value: "false"
+            - name: TRACING_ENABLED
+              value: "{{ .Values.global.tracing.enabled }}"
+            - name: TRACING_COLLECTOR_BASEURL
+              value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}"
+            - name: TRACING_SAMPLING_PROBABILITY
+              value: "{{ .Values.config.tracing.samplingProbability }}"
+            - name: TRACING_SKIP_PATTERN
+              value: "{{ .Values.config.tracing.skipPattern }}"
+          resources: {{- include "common.resources" . | nindent 12 }}
+
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+        - name: {{ include "common.fullname" . }}-cqlshrc
+          configMap:
+            name: {{ include "common.release" . }}-sdc-cqlshrc
       {{- include "common.imagePullSecrets" . | nindent 6 }}
