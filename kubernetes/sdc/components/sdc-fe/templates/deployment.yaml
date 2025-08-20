@@ -35,19 +35,46 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-        {{ include "common.readinessCheck.waitFor" . | nindent 8 }}
+        {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_service) | nindent 8 }}
+        - name: {{ include "common.name" . }}-readiness-job
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.backendInitImage }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          env:
+          - name: BE_IP
+            value: {{ .Values.beInit.beIp }}.{{ .Values.global.namespace }}
+          - name: DISABLE_HTTP
+            value: {{ .Values.disableHttp | quote }}
+          - name: BE_HTTPS_PORT
+            value: {{ .Values.beSslPort | quote }}
+          - name: BE_HTTP_PORT
+            value: {{ .Values.beHttpPort | quote }}
+          - name: BASIC_AUTH_ENABLED
+            value: {{ .Values.basicAuth.enabled | quote }}
+          - name: BASIC_AUTH_USER
+            value: {{ .Values.basicAuth.userName }}
+          - name: BASIC_AUTH_PASS
+            value: {{ .Values.basicAuth.userPass }}
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-logs
+            mountPath: /home/onap/logs
+          - name: {{ include "common.fullname" . }}-tmp
+            mountPath: /tmp
+          - name: {{ include "common.fullname" . }}-var-tmp
+            mountPath: /var/tmp
+          resources:
+            {{- toYaml .Values.resources_initContainer | nindent 12 }}
         - name: {{ include "common.name" . }}-copy-jetty
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/bin/sh","-c"]
           args: ['cp -a /app/jetty/ /app/jetty_rw/; mkdir /app/jetty_rw/jetty/ruby_temp']
           resources:
-            limits:
-              cpu: 400m
-              memory: 400Mi
-            requests:
-              cpu: 30m
-              memory: 200Mi
+            {{- toYaml .Values.resources_initContainer | nindent 12 }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           volumeMounts:
             - name: {{ include "common.fullname" . }}-jetty
@@ -210,4 +237,7 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-readiness-liveness-probe
             defaultMode: 0755
+        - name: {{ include "common.fullname" . }}-var-tmp
+          emptyDir:
+            sizeLimit: {{ .Values.volumes.varTmpSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
