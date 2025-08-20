@@ -24,7 +24,9 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
+
 image: onap/sdc-frontend:1.14.2
+backendInitImage: onap/sdc-backend-init:1.14.2
 pullPolicy: Always
 
 config:
@@ -129,10 +131,6 @@ serviceAccount:
   roles:
     - read
 
-readinessCheck:
-  wait_for:
-    jobs:
-      - '{{ include "common.release" . }}-sdc-be'
 
 #Log configuration
 log:
@@ -153,6 +151,16 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 75
+
+resources_initContainer:
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+    ephemeral-storage: "4Gi"
+  requests:
+    cpu: "1000m"
+    memory: "600Mi"
+    ephemeral-storage: "4Gi"
 
 # number of ReplicaSets that should be retained for the Deployment
 revisionHistoryLimit: 1
@@ -199,3 +207,20 @@ truststore_password:
 
 logback:
   rootLogLevel: INFO
+
+beInit:
+  beIp: sdc-be
+
+beFqdn: sdc-be
+beHttpPort: 8080
+beSslPort: 8443
+basicAuth:
+  enabled: true
+  userName: testName
+  userPass: testPass
+
+readinessCheck:
+  wait_for_service:
+    name: "services"
+    services:
+      - sdc-be
