@@ -114,9 +114,9 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
   {{- if (hasKey $topic "strimziTopicName") }}
-  name: {{ ($topic.strimziTopicName) }}-kt
+  name: {{ ($topic.strimziTopicName | replace "_" "-" | trimPrefix "-" | trimSuffix "-") }}-kt
   {{- else }}
-  name: {{ ($topic.name) | lower }}-kt
+  name: {{ ($topic.name | lower | replace "_" "-" | trimPrefix "-" | trimSuffix "-") }}-kt
   {{- end }}
   labels:
     {{- include "common.labels" $ | nindent 4 }}
