@@ -83,9 +83,7 @@
 {{/*  Our version of helm doesn't support deepCopy so we need this nasty trick */}}
 {{-   $subchartDot := fromJson (include "common.subChartDot" (dict "dot" $dot "initRoot" $initRoot)) }}
 {{-   $wait_for := default $initRoot.wait_for .wait_for -}}
-{{-   $containers := index (ternary (dict "containers" $wait_for) $wait_for (kindIs "slice" $wait_for)) "containers" -}}
 {{-   $services := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "services" -}}
-{{-   $serviceMeshes := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "serviceMeshes" -}}
 {{-   $pods := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "pods" -}}
 {{-   $apps := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "apps" -}}
 {{-   $namePart := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "name" -}}
@@ -93,7 +91,7 @@
 {{-   $timeout := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "timeout" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: {{ include "repositoryGenerator.image.readiness" $subchartDot }}
-  imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
+  imagePullPolicy: {{ $subchartDot.Values.global.readinessPullPolicy | default $subchartDot.Values.pullPolicy }}
   securityContext:
     runAsUser: {{ $subchartDot.Values.user }}
     runAsGroup: {{ $subchartDot.Values.group }}
@@ -104,36 +102,26 @@
       drop:
         - ALL
         - CAP_NET_RAW
-  command:
-  - /app/ready.py
   args:
-  {{- range $container := default (list) $containers }}
-  - --container-name
-  - {{ tpl $container $dot }}
-  {{- end }}
   {{- range $pod := default (list) $pods }}
-  - --pod-name
-  - {{ tpl $pod $dot }}
+  - "--pod-name"
+  - "{{ tpl $pod $dot }}"
   {{- end }}
   {{- range $service := default (list) $services }}
-  - --service-name
-  - {{ tpl $service $dot }}
-  {{- end }}
-  {{- range $serviceMesh := default (list) $serviceMeshes }}
-  - --service-mesh-check
-  - {{ tpl $serviceMesh $dot }}
+  - "--service-name"
+  - "{{ tpl $service $dot }}"
   {{- end }}
   {{- range $app := default (list) $apps }}
-  - --app-name
-  - {{ tpl $app $dot }}
+  - "--app-name"
+  - "{{ tpl $app $dot }}"
   {{- end }}
   {{- range $job := $jobs }}
-  - --job-name
-  - {{ tpl $job $dot }}
+  - "--job-name"
+  - "{{ tpl $job $dot }}"
   {{- end }}
   {{- if hasKey $wait_for "timeout" }}
-  - -t
-  - {{ $timeout | quote }}
+  - "--timeout"
+  - "{{ $timeout }}"
   {{- end }}
   env:
   - name: NAMESPACE
