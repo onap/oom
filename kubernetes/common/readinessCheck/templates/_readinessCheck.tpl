@@ -93,7 +93,7 @@
 {{-   $timeout := index (ternary (dict) $wait_for (kindIs "slice" $wait_for)) "timeout" -}}
 - name: {{ include "common.name" $dot }}{{ ternary "" (printf "-%s" $namePart) (empty $namePart) }}-readiness
   image: {{ include "repositoryGenerator.image.readiness" $subchartDot }}
-  imagePullPolicy: {{ $subchartDot.Values.global.pullPolicy | default $subchartDot.Values.pullPolicy }}
+  imagePullPolicy: {{ $subchartDot.Values.global.readinessPullPolicy | default $subchartDot.Values.pullPolicy }}
   securityContext:
     runAsUser: {{ $subchartDot.Values.user }}
     runAsGroup: {{ $subchartDot.Values.group }}
@@ -104,13 +104,7 @@
       drop:
         - ALL
         - CAP_NET_RAW
-  command:
-  - /app/ready.py
   args:
-  {{- range $container := default (list) $containers }}
-  - --container-name
-  - {{ tpl $container $dot }}
-  {{- end }}
   {{- range $pod := default (list) $pods }}
   - --pod-name
   - {{ tpl $pod $dot }}
@@ -132,8 +126,8 @@
   - {{ tpl $job $dot }}
   {{- end }}
   {{- if hasKey $wait_for "timeout" }}
-  - -t
-  - {{ $timeout | quote }}
+  - --timeout
+  - {{ $timeout | int }}
   {{- end }}
   env:
   - name: NAMESPACE
