@@ -24,29 +24,7 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - /app/ready.py
-        args:
-        - --service-name
-        - sdnc
-        - --service-name
-        - consul
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
