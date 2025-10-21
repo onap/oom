@@ -3,4 +3,4 @@ from global_tests_settings import *
 
 CHECK_POSTGRESQL = True
 
-DB_PRIMARY_HOST = "tcp-pgset-primary"
+DB_PRIMARY_HOST = "tcp-pgset-primary.onap.svc.cluster.local"
