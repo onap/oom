@@ -54,13 +54,10 @@ spec:
         - /bin/bash
         - -c
         - |
-          {{- if include "common.onServiceMesh" . }}
-          echo "waiting 15s for istio side cars to be up"; sleep 15s;{{- end }}
           mysqldump -vv --user=${DB_USER} --password=${DB_PASS} --host=${DB_HOST} --port=${DB_PORT} --databases --single-transaction --quick --lock-tables=false catalogdb requestdb nfvo cnfm > /var/data/mariadb/backup-`date +%s`.sql
         volumeMounts:
         - name: backup-storage
           mountPath: /var/data/mariadb
-      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: backup-storage
@@ -155,7 +152,6 @@ spec:
           mountPath: /var/data/mariadb
         {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
-      {{ include "common.waitForJobContainer" . | indent 6 | trim }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 10 }}
