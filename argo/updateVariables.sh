@@ -23,15 +23,15 @@ VARS["GITHUB_REPO"]="ghcr.io"
 replace_in_file() {
   local file="$1"
   local tmpfile="${file}.tmp"
-
+  
   cp "$file" "$tmpfile"
-
+  
   for var in "${!VARS[@]}"; do
     # Replace <VAR> with value
     # -i: inplace, but done with tmpfile, if Backup is required
     sed -i "s|<${var}>|${VARS[$var]}|g" "$tmpfile"
   done
-
+  
   mv "$tmpfile" "$file"
 }
 
