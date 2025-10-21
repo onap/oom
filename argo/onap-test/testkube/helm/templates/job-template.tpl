@@ -7,6 +7,8 @@ jobTemplate: |
     annotations:
       argocd.argoproj.io/compare-options: IgnoreExtraneous
       argocd.argoproj.io/sync-options: Prune=false
+    labels:
+      security-scan: off
   spec:
     template:
       spec:
