@@ -24,12 +24,6 @@ global:
       # postfix for baseaddr
       # can be overwritten in component by setting ingress.postaddrOverride
       postaddr: ""
-  imagePullSecrets:
-    - '{{ include "common.names.namespace" . }}-docker-registry-key'
-
-  # Workaround to avoid redis restarts with ArgoCD
-  redis:
-    password: "32ugd3783rhfjdhow"
   # *************************************************
 
 
@@ -94,8 +88,7 @@ onap-keycloak-config-cli:
 oauth2-proxy:
   # Addition for oauth2-proxy deployment
   imagePullSecrets:
-    - name: '{{ include "common.namespace" . }}-docker-registry-key'
-
+    - name: 'onap-docker-registry-key'
   securityContext:
     capabilities:
       drop:
@@ -147,24 +140,10 @@ oauth2-proxy:
     type: redis
     redis:
       # Name of the Kubernetes secret containing the redis & redis sentinel password values (see also `sessionStorage.redis.passwordKey`)
-      existingSecret: "onap-authentication-redis"
-      # Redis password value. Applicable for all Redis configurations. Taken from redis subchart secret if not set. `sessionStorage.redis.existingSecret` takes precedence
-      password: ""
-      # Key of the Kubernetes secret data containing the redis password value
-      passwordKey: "redis-password"
+      # existingSecret: "onap-authentication-redis-ha"
       # Can be one of standalone|cluster|sentinel
       clientType: "sentinel"
-      standalone:
-        # URL of redis standalone server for redis session storage (e.g. `redis://HOST[:PORT]`). Automatically generated if not set
-        connectionUrl: ""
-      cluster:
-        # List of Redis cluster connection URLs (e.g. `["redis://127.0.0.1:8000", "redis://127.0.0.1:8000"]`)
-        connectionUrls: []
       sentinel:
-        # Name of the Kubernetes secret containing the redis sentinel password value (see also `sessionStorage.redis.sentinel.passwordKey`). Default: `sessionStorage.redis.existingSecret`
-        existingSecret: ""
-        # Redis sentinel password. Used only for sentinel connection; any redis node passwords need to use `sessionStorage.redis.password`
-        password: ""
         # Key of the Kubernetes secret data containing the redis sentinel password value
         passwordKey: "redis-password"
         # Redis sentinel master name
@@ -176,6 +155,8 @@ oauth2-proxy:
   redis:
     # provision an instance of the redis sub-chart
     enabled: true
+    redis:
+      password: "32ugd3783rhfjdhow"
     master:
       containerSecurityContext:
         capabilities:
