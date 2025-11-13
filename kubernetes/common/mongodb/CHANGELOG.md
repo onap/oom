@@ -1,5 +1,9 @@
 # Changelog
 
+## 16.5.8 (2025-11-13)
+
+* [bitnami/mongodb] Switch to bitnamilegacy repo to resolve ImagePullBackoff issue
+
 ## 16.5.7 (2025-05-13)
 
 * [bitnami/mongodb] :zap: :arrow_up: Update dependency references ([#33636](https://github.com/bitnami/charts/pull/33636))
