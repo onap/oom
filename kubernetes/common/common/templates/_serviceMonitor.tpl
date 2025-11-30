@@ -119,6 +119,7 @@ labels: {{- include "common.labels" (dict "labels" $labels "dot" $dot) | nindent
 {{- define "common.serviceMonitor" -}}
 {{-   $dot := default . .dot -}}
 {{-   $labels := default (dict) .labels -}}
+{{- if .Values.global.metrics.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -180,4 +181,5 @@ spec:
     {{- else }}
     matchLabels: {{- include "common.matchLabels" (dict "labels" $labels "dot" $dot) | nindent 6 }}
     {{- end }}
+{{- end }}
 {{- end -}}
