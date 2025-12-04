@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2019 Samsung Electronics
+# Modifications Copyright © 2025 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,6 +80,10 @@ metadata:
   labels:
     app: {{ $dbinst }}
     version: "5.5"
+  {{- if .Values.postgresOperator.autoCreateUserSchema }}
+  annotations:
+    postgres-operator.crunchydata.com/autoCreateUserSchema: true
+  {{- end }}
 spec:
   metadata:
     labels:
@@ -117,6 +122,11 @@ spec:
                 matchLabels:
                   postgres-operator.crunchydata.com/cluster: {{ $dbinst }}
                   postgres-operator.crunchydata.com/instance-set: {{ default "instance1" .Values.postgresOperator.instanceName | quote }}
+  {{- if .Values.postgresOperator.databaseInitSQL }}
+  databaseInitSQL:
+    key: {{ .Values.postgresOperator.databaseInitSQL.key }}
+    name: {{ .Values.postgresOperator.databaseInitSQL.name }}
+  {{- end }}
   proxy:
     pgBouncer:
       metadata:
@@ -147,5 +157,63 @@ spec:
         {{- end }}
   {{- end }}
   users:
-    - name: postgres
+  {{/*
+  For backwards compatibility, a default postgres user is defined here
+  */}}
+  {{- $defaultUsers := (list (dict "name" "postgres")) }}
+  {{- range .Values.postgresOperator.users  | default $defaultUsers }}
+    - name: {{ .name }}
+      {{- if .databases }}
+      databases:
+        {{- range .databases }}
+        - {{ . }}
+        {{- end }}
+      {{- end }}
+      {{- if .options }}
+      options: {{ .options | upper | quote }}
+      {{- end }}
+  {{- end }}
+{{- end -}}
+
+
+{{/*
+  Get the name of the secret that contains the postgres user credentials
+
+  Usage:
+
+  ```yaml
+  env:
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ include "common.postgresOperator.userSecret" . }}
+          key: password
+  ```
+
+  This assumes that you have a
+
+  ```yaml
+  postgresOperator:
+    users:
+      - name: your-user
+        databases:
+          - your-db
+  ```
+  block in your values.yaml.
+*/}}
+{{- define "common.postgresOperator.userSecret" -}}
+{{- $dot := default . .dot -}}
+{{- $global := $dot.Values.global -}}
+{{- $dbinst := include "common.name" $dot -}}
+{{- $index := default 0 .index -}} {{/* Default to the first user in the list if not provided */}}
+
+{{- if $dot.Values.postgresOperator.users -}}
+  {{/* Get the user name from the specified index in the list */}}
+  {{- $user := (index $dot.Values.postgresOperator.users $index).name -}}
+
+  {{- printf "%s-pguser-%s" $dbinst $user -}}
+{{- else -}}
+  {{/* 'postgres' user is used by default if not defined */}}
+  {{- printf "%s-pguser-postgres" $dbinst -}}
+{{- end -}}
 {{- end -}}
