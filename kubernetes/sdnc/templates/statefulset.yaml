@@ -301,7 +301,7 @@ spec:
           {{- end }}
           - name: SDNRONLY
             value: "{{ .Values.config.sdnr.sdnronly | default "false" }}"
-          {{- if .Values.config.sdnr.mariadb.enabled }}
+          # {{- if .Values.config.sdnr.mariadb.enabled }}
           - name: SDNRCONTROLLERID
             value: {{ uuidv4 }}
           - name: SDNRDBTYPE
@@ -318,14 +318,14 @@ spec:
             value: {{ .Values.config.sdnr.mariadb.asyncHandling | default "false" | quote }}
           - name: SDNR_ASYNC_POOLSIZE
             value: {{ .Values.config.sdnr.mariadb.asyncPoolSize | default 200 | quote }}
-          {{- else }}
-          - name: SDNRDBURL
-            value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
-          {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
-          - name: SDNRDBTRUSTALLCERTS
-            value: "true"
-          {{- end }}
-          {{- end }}
+          # {{- else }}
+          # - name: SDNRDBURL
+          #   value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+          # {{- if .Values.config.sdnr.sdnrdbTrustAllCerts }}
+          # - name: SDNRDBTRUSTALLCERTS
+          #   value: "true"
+          # {{- end }}
+          # {{- end }}
           {{- if .Values.global.cmpv2Enabled }}
           - name: ODL_CERT_DIR
             value: {{ (mustFirst (.Values.certificates)).mountPath }}
@@ -367,6 +367,14 @@ spec:
             value: "{{ .Values.config.sdnr.kafka.saslMechanism | default "PLAIN" }}"
           - name: SDNR_KAFKA_SASL_JASS_CONFIG
             value: "{{ .Values.config.sdnr.kafka.saslJassConfig | default "PLAIN" }}"
+          - name: OTEL_ENABLED
+            value: {{ .Values.global.tracing.enabled | quote }}
+          - name: OTEL_SERVICE_NAME
+            value: "sdnc"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: "grpc"
           {{ end }}
 
 
