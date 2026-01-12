@@ -1,6 +1,6 @@
 {{/*
 #  ============LICENSE_START=======================================================
-#   Copyright (C) 2022-2023 Nordix Foundation.
+#   Copyright (C) 2022-2023,2026 OpenInfra Foundation Europe. All rights reserved.
 #   Modifications Copyright © 2024 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,16 +35,6 @@ spec:
         args:
         - -c
         - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: RESTSERVER_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "login") | indent 10 }}
-        - name: RESTSERVER_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "password") | indent 10 }}
-        - name: SASL_JAAS_CONFIG
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.name" . }}-ku
-              key: sasl.jaas.config
         volumeMounts:
         - mountPath: /config-input
           name: ac-a1pms-ppnt-config
@@ -60,7 +50,30 @@ spec:
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/opt/app/policy/clamp/bin/a1pms-participant.sh"]
-          args: ["/opt/app/policy/clamp/etc/mounted/A1pmsParticipantParameters.yaml"]
+          env:
+            - name: HTTP_USER
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "login") | indent 14 }}
+            - name: HTTP_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "password") | indent 14 }}
+            - name: SERVER_PORT
+              value: "8086"
+            - name: a1pmsBaseUrl
+              value: {{ .Values.a1pms.baseUrl }}
+            - name: topicCommInfrastructure
+              value: kafka
+            - name: kafkaServer
+              value: "{{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}"
+            - name: allowAutoCreateTopics
+              value: "false"
+            - name: kafkaSecurityProtocol
+              vale: SASL_PLAINTEXT
+            - name: kafkaSaslMechanism
+              value: {{ .Values.kafkaUser.authenticationType | upper }}
+            - name: kafkaSaslJaasConfig
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.name" . }}-ku
+                  key: sasl.jaas.config
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
