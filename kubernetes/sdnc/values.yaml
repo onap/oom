@@ -332,11 +332,9 @@ config:
     elasticsearch:
     ## for legacy eleasticsearch database
       enabled: &esdbenabled true
-      # enabled: &esdbenabled false
     mariadb:
-      ## for legacy eleasticsearch database
+      ## for mariadb database
       enabled: false
-      # enabled: true
       databaseName: sdnrdb
       user: sdnrdb
       externalSecret: *sdnrdbSecretName
@@ -526,19 +524,35 @@ dgbuilder:
 localElasticCluster: true
 elasticsearch:
   enabled: *esdbenabled
-  nameOverride: &elasticSearchName sdnrdb
-  name: sdnrdb-cluster
+  clusterName: "sdnrdb-cluster"
+  nodeGroup: "master"
+
+  # Replicas (was master.replicaCount)
+  replicas: 3
+  minimumMasterNodes: 2
+
+  # Roles - nodes handle both master and data functionality
+  roles:
+    master: "true"
+    data: "true"
+    ingest: "true"
+
+  # Service configuration
   service:
-    name: *elasticSearchName
-  master:
-    replicaCount: 3
-    # dedicatednode: "yes"
-    # working as master node only, in this case increase replicaCount for elasticsearch-data
-    # dedicatednode: "no"
-    # handles master and data node functionality
-    dedicatednode: "no"
-    nameOverride: *elasticSearchName
-    cluster_name: sdnrdb-cluster
+    type: ClusterIP
+
+  # Persistence
+  persistence:
+    enabled: true
+
+  # Resources
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
 
 # enable
 sdnc-web:
