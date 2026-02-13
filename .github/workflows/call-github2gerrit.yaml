@@ -1,0 +1,220 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 The Linux Foundation
+
+name: 'GitHub2Gerrit'
+
+# yamllint disable-line rule:truthy
+on:
+  # Submit new Github pull requests to Gerrit
+  # When pull request is modified, update Gerrit change
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize, closed]
+    branches:
+      - main
+      - master
+
+  # Pushes from Gerrit use gerrit_to_platform triggers
+  # These use the workflow_dispatch method/invocation
+  workflow_dispatch:
+    inputs:
+      GERRIT_BRANCH:
+        description: 'Branch that change is against'
+        required: false
+        type: string
+      GERRIT_CHANGE_ID:
+        description: 'The ID for the change'
+        required: false
+        type: string
+      GERRIT_CHANGE_NUMBER:
+        description: 'The Gerrit number'
+        required: false
+        type: string
+      GERRIT_CHANGE_URL:
+        description: 'URL to the change'
+        required: false
+        type: string
+      GERRIT_EVENT_TYPE:
+        description: 'Gerrit event type'
+        required: false
+        type: string
+      GERRIT_PATCHSET_NUMBER:
+        description: 'The patch number for the change'
+        required: false
+        type: string
+      GERRIT_PATCHSET_REVISION:
+        description: 'The revision sha'
+        required: false
+        type: string
+      GERRIT_PROJECT:
+        description: 'Project in Gerrit'
+        required: false
+        type: string
+      GERRIT_REFSPEC:
+        description: 'Gerrit refspec of change'
+        required: false
+        type: string
+      GERRIT_DISABLED:
+        description: "Run without Gerrit components"
+        required: false
+        default: false
+        type: boolean
+      allow_duplicates:
+        description: "Allow submitting duplicate changes without error"
+        required: false
+        default: true
+        type: boolean
+      preserve_github_prs:
+        description: "Do not close GitHub PRs after pushing to Gerrit"
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  # Separate concurrency groups for different event types to prevent interference:
+  # - PR events: Group by PR number, allow cancellation of older commits
+  # - Push events: Group by run_id (unique), never cancel
+  # - Workflow dispatch: Group by run_id (unique), never cancel
+  group: >-
+    ${{
+      github.event_name == 'pull_request_target' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) ||
+      format('{0}-{1}-{2}', github.workflow, github.event_name, github.run_id)
+    }}
+  # Only cancel in-progress runs for PR events (newer commit supersedes older)
+  # Never cancel push events (each Gerrit merge should process independently)
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+
+jobs:
+  repository-metadata:
+    name: "Repository Metadata"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    timeout-minutes: 5
+    steps:
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        with:
+          egress-policy: audit
+
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: "Gather repository metadata"
+        id: repo-metadata
+        # yamllint disable-line rule:line-length
+        uses: lfreleng-actions/repository-metadata-action@ceabcd987d13d7bfefd2372e01eebb0ddac45956  # v0.2.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_summary: 'true'
+          files_summary: 'true'
+          artifact_upload: 'true'
+          artifact_formats: 'json'
+
+  notify:
+    if: github.event_name == 'workflow_dispatch' && inputs.GERRIT_DISABLED != true
+    runs-on: ubuntu-latest
+    steps:
+      # Harden the runner used by this workflow
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        with:
+          egress-policy: audit
+
+      - name: Notify job start
+        # yamllint disable-line rule:line-length
+        uses: lfreleng-actions/gerrit-review-action@6d2e00dfd3173cd9a36d11350c8fba44731c7b4e # v0.10.0
+        with:
+          host: ${{ vars.GERRIT_SERVER }}
+          username: ${{ vars.GERRIT_SSH_USER }}
+          key: ${{ secrets.GERRIT_SSH_PRIVKEY }}
+          known_hosts: ${{ vars.GERRIT_KNOWN_HOSTS }}
+          gerrit-change-number: ${{ inputs.GERRIT_CHANGE_NUMBER }}
+          gerrit-patchset-number: ${{ inputs.GERRIT_PATCHSET_NUMBER }}
+          vote-type: clear
+      - name: Allow replication
+        run: sleep 10s
+
+  github2gerrit:
+    name: 'GitHub2Gerrit'
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [notify]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    timeout-minutes: 12
+    steps:
+      # Harden the runner used by this workflow
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        name: 'Harden runner'
+        with:
+          egress-policy: audit
+
+      - name: 'Checkout repository'
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 10
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: 'Run GitHub2Gerrit'
+        # yamllint disable-line rule:line-length
+        uses: lfreleng-actions/github2gerrit-action@7c1ba15a75dd86619139a81933f4432648d97af5  # v1.0.5
+        env:
+          # Pass GERRIT_* inputs as environment variables when dispatched from Gerrit
+          GERRIT_BRANCH: ${{ github.event.inputs.GERRIT_BRANCH || '' }}
+          GERRIT_CHANGE_ID: ${{ github.event.inputs.GERRIT_CHANGE_ID || '' }}
+          GERRIT_CHANGE_NUMBER: ${{ github.event.inputs.GERRIT_CHANGE_NUMBER || '' }}
+          GERRIT_CHANGE_URL: ${{ github.event.inputs.GERRIT_CHANGE_URL || '' }}
+          GERRIT_EVENT_TYPE: ${{ github.event.inputs.GERRIT_EVENT_TYPE || '' }}
+          GERRIT_PATCHSET_NUMBER: ${{ github.event.inputs.GERRIT_PATCHSET_NUMBER || '' }}
+          GERRIT_PATCHSET_REVISION: ${{ github.event.inputs.GERRIT_PATCHSET_REVISION || '' }}
+          GERRIT_PROJECT: ${{ github.event.inputs.GERRIT_PROJECT || '' }}
+          GERRIT_REFSPEC: ${{ github.event.inputs.GERRIT_REFSPEC || '' }}
+        with:
+          # Only for testing in LF Gerrit/sandbox; remove AUTOMATION_ONLY from production workflows
+          AUTOMATION_ONLY: "false"
+          USE_LOCAL_ACTION: true  # Use branch code for testing, not PyPI
+          USE_PR_AS_COMMIT: true
+          VERBOSE: false
+
+          # Workflow-specific inputs (only used for pull_request_target/workflow_dispatch)
+          ALLOW_DUPLICATES: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_duplicates || true }}
+          PRESERVE_GITHUB_PRS: ${{ github.event_name == 'workflow_dispatch' && inputs.preserve_github_prs || true }}
+          ISSUE_ID_LOOKUP_JSON: ${{ vars.ISSUE_ID_LOOKUP_JSON }}
+
+          # Authentication (required for all contexts)
+          GERRIT_SSH_PRIVKEY_G2G: ${{ secrets.GERRIT_SSH_PRIVKEY_G2G }}
+          GERRIT_KNOWN_HOSTS: ${{ vars.GERRIT_KNOWN_HOSTS }}
+
+  report-status:
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.GERRIT_DISABLED != true }}
+    needs: [notify, github2gerrit]
+    runs-on: ubuntu-latest
+    steps:
+      # Harden the runner used by this workflow
+      # yamllint disable-line rule:line-length
+      - uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        with:
+          egress-policy: audit
+
+      - name: Get workflow conclusion
+        uses: im-open/workflow-conclusion@e4f7c4980600fbe0818173e30931d3550801b992 # v2.2.3
+
+      - name: Report workflow conclusion
+        # yamllint disable-line rule:line-length
+        uses: lfreleng-actions/gerrit-review-action@6d2e00dfd3173cd9a36d11350c8fba44731c7b4e # v0.10.0
+        with:
+          host: ${{ vars.GERRIT_SERVER }}
+          username: ${{ vars.GERRIT_SSH_USER }}
+          key: ${{ secrets.GERRIT_SSH_PRIVKEY }}
+          known_hosts: ${{ vars.GERRIT_KNOWN_HOSTS }}
+          gerrit-change-number: ${{ inputs.GERRIT_CHANGE_NUMBER }}
+          gerrit-patchset-number: ${{ inputs.GERRIT_PATCHSET_NUMBER }}
+          vote-type: ${{ env.WORKFLOW_CONCLUSION }}
