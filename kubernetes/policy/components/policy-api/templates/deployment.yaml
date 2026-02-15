@@ -145,7 +145,6 @@ spec:
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{- end }}
           readinessProbe:
@@ -158,9 +157,19 @@ spec:
               scheme: HTTP
             successThreshold: {{ .Values.readiness.successThreshold }}
             failureThreshold: {{ .Values.readiness.failureThreshold }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeout }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.startup.api }}
+              port: {{ .Values.service.internalPort }}
+              httpHeaders:
+                - name: Authorization
+                  value: Basic {{ printf "%s:%s" .Values.restServer.user .Values.restServer.password | b64enc }}
+              scheme: HTTP
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.startup.timeout }}
           volumeMounts:
           - name: logs
             mountPath: /var/log/onap
