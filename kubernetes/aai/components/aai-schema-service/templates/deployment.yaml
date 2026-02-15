@@ -103,19 +103,22 @@ spec:
         - containerPort: {{ .Values.service.profilingPort }}
           name: {{ .Values.service.profilingPortName }}
         {{- end }}
+        startupProbe:
+          tcpSocket:
+            port: {{ .Values.service.appPort }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
         # disable liveness probe when
         # debugging.enabled=true or profiling.enabled=true
         {{- if and .Values.liveness.enabled (not (or .Values.debug.enabled .Values.profiling.enabled)) }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.appPort }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.appPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}

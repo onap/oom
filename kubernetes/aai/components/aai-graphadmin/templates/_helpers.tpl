@@ -16,5 +16,12 @@
           sleep 3
         fi
       done
+  resources:
+    limits:
+      cpu: 50m
+      memory: 50Mi
+    requests:
+      cpu: 3m
+      memory: 20Mi
   {{ include "common.containerSecurityContext" . | indent 2 | trim }}
 {{- end -}}
