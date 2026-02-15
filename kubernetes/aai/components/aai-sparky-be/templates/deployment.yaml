@@ -103,25 +103,23 @@ spec:
         - name: JVM_ARGS
           value: {{ .Values.debug.args | quote }}
         {{- end }}
+        startupProbe:
+          tcpSocket:
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
         # disable liveness probe when
         # debugging.enabled=true or profiling.enabled=true
         {{- if and .Values.liveness.enabled (not (or .Values.debug.enabled .Values.profiling.enabled)) }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{- end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.service.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
-        startupProbe:
-          tcpSocket:
-            port: {{ .Values.service.internalPort }}
-          failureThreshold: {{ .Values.startup.failureThreshold }}
-          periodSeconds: {{ .Values.startup.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
