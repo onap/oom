@@ -139,6 +139,12 @@ spec:
                   while (netstat -an | grep ESTABLISHED | grep -e $INTERNAL_PORT_1)
                   do sleep 3
                   done
+        startupProbe:
+          httpGet:
+            port: {{ .Values.service.metricsPort }}
+            path: {{ .Values.startup.path }}
+          periodSeconds: {{ .Values.startup.periodSeconds }}
+          failureThreshold: {{ .Values.startup.failureThreshold }}
         # disable liveness probe when
         # debugging.enable=true or profiling.enabled=true
         {{- if and .Values.liveness.enabled (not (or .Values.config.debug.enabled .Values.config.profiling.enabled)) }}
@@ -146,18 +152,12 @@ spec:
           httpGet:
             port: {{ .Values.service.metricsPort }}
             path: {{ .Values.liveness.path }}
-          {{- if .Values.liveness.initialDelaySeconds }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-          {{- end }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{- end }}
         readinessProbe:
           httpGet:
             port: {{ .Values.service.metricsPort }}
             path: {{ .Values.readiness.path }}
-          {{- if .Values.readiness.initialDelaySeconds }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-          {{- end }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
