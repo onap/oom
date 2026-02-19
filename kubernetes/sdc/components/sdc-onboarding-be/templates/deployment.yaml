@@ -111,6 +111,16 @@ spec:
               secretKeyRef: {name: {{ include "common.release" . }}-sdc-cs-secrets, key: sdc_password}
           - name: SDC_CERT_DIR
             value: ""
+          - name: OTEL_ENABLED
+            value: {{ .Values.global.tracing.enabled | quote }}
+          - name: OTEL_SERVICE_NAME
+            value: "sdc-onboarding-be"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
+          - name: OTEL_TRACES_SAMPLER
+            value: "parentbased_traceidratio"
+          - name: OTEL_TRACES_SAMPLER_ARG
+            value: {{ .Values.global.tracing.sampling.probability | quote }}
           volumeMounts:
           - name: {{ include "common.fullname" . }}-jetty
             mountPath: /app/jetty
@@ -192,4 +202,3 @@ spec:
         emptyDir:
           sizeLimit: {{ .Values.volumes.jettySizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
-
