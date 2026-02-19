@@ -4,7 +4,7 @@
 working_directory="/tmp"
 
 # Extract the cl_release version
-version="1.14.0"  # Example version string; replace with actual value
+version="1.14.5"  # Example version string; replace with actual value
 cl_release=$(echo $version | cut -d. -f1-3 | cut -d- -f1)
 printf "\033[33mcl_release=[$cl_release]\033[0m\n"
 
