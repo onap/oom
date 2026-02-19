@@ -36,6 +36,8 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["java", "-jar", "/app/app.jar"]
           env:
+            - name: SPRING_CONFIG_LOCATION
+              value: /opt/app/policy/clamp/etc/mounted/application.yaml
             - name: HTTP_USER
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-secret" "key" "login") | indent 14 }}
             - name: HTTP_PASSWORD
@@ -54,6 +56,8 @@ spec:
               value: kafka
             - name: kafkaServer
               value: "{{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}"
+            - name: KAFKA_GROUP_ID
+              value: {{ (first .Values.kafkaUser.acls).name }}
             - name: allowAutoCreateTopics
               value: "false"
             - name: kafkaSecurityProtocol
@@ -65,6 +69,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "common.name" . }}-ku
                   key: sasl.jaas.config
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
