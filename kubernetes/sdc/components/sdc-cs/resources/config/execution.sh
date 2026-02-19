@@ -24,4 +24,4 @@ sed -i 's/java \(.*\) -cp/java \1 -Djava.io.tmpdir=\/tmp\/writable-config\/tmp -
 sh -x /tmp/writable-config/create-alter-dox-db.sh
 sh -x /tmp/writable-config/sdctool/scripts/schemaCreation.sh /tmp/writable-config/sdctool/config || exit
 sh -x /tmp/writable-config/sdctool/scripts/janusGraphSchemaCreation.sh /tmp/writable-config/sdctool/config || exit
-sh -x /tmp/writable-config/importconformance.sh || exit
+sh -x /home/sdc/scripts/importconformance.sh /tmp/writable-config/sdctool || exit
