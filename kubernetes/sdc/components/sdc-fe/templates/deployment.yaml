@@ -108,6 +108,22 @@ spec:
                 fieldPath: status.podIP
           - name: JAVA_OPTIONS
             value: {{ .Values.config.javaOptions }}
+          - name: OTEL_ENABLED
+            value: {{ .Values.global.tracing.enabled | quote }}
+          - name: OTEL_SERVICE_NAME
+            value: "sdc-fe"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: "grpc"
+          - name: OTEL_TRACES_SAMPLER
+            value: "parentbased_traceidratio"
+          - name: OTEL_TRACES_SAMPLER_ARG
+            value: {{ .Values.global.tracing.sampling.probability | quote }}
+          - name: OTEL_LOGS_EXPORTER
+            value: "none"
+          - name: OTEL_METRICS_EXPORTER
+            value: "none"
           volumeMounts:
           - name: {{ include "common.fullname" . }}-jetty
             mountPath: /app/jetty
