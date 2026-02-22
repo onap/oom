@@ -24,6 +24,14 @@ global:
   nodePortPrefix: 302
   nodePortPrefixExt: 304
   centralizedLoggingEnabled: true
+  tracing:
+    collector:
+      baseUrl: http://jaeger-collector.istio-config
+      port:
+        otlpGrpc: 4317
+        otlpHttp: 4318
+    sampling:
+      probability: 1.0
 
 #################################################################
 # Filebeat configuration defaults.
@@ -36,7 +44,7 @@ filebeatConfig:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/org.onap.dcaegen2.services.prh.prh-app-server:1.10.1
+image: onap/org.onap.dcaegen2.services.prh.prh-app-server:1.11.0
 pullPolicy: Always
 
 # log directory where logging sidecar should look for log files
@@ -148,6 +156,12 @@ applicationEnv:
   CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
   AUTH_HDR: '{{ printf "Basic %s" (print .Values.aaiCreds.user ":" .Values.aaiCreds.password | b64enc) }}'
   BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
+  OTEL_SERVICE_NAME: 'dcae-prh'
+  OTEL_EXPORTER_OTLP_ENDPOINT: '{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}'
+  OTEL_EXPORTER_OTLP_PROTOCOL: 'http/protobuf'
+  OTEL_TRACES_EXPORTER: 'otlp'
+  OTEL_METRICS_EXPORTER: 'none'
+  OTEL_LOGS_EXPORTER: 'none'
   JAAS_CONFIG:
     externalSecret: true
     externalSecretUid: '{{ include "common.name" . }}-ku'
