@@ -38,37 +38,7 @@ spec:
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_traversal) | nindent 6 }}
-      - name: {{ include "common.name" . }}-wait-for-aai-haproxy
-        image: {{ include "repositoryGenerator.image.curl" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        securityContext:
-          runAsUser: 100
-          runAsGroup: 65533
-          readOnlyRootFilesystem: true
-          privileged: false
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-              - CAP_NET_RAW
-        command:
-        - sh
-        - "-c"
-        - |
-           set -x;
-
-           until nc -w10 -z -v aai.{{.Release.Namespace}} 80; do
-            echo "Retrying to reach aai on port 80";
-            sleep 1;
-           done;
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" (dict "dot" . "wait_for" .Values.readinessCheck.wait_for_update_query_data) | nindent 6 }}
       containers:
       - name: {{ include "common.name" . }}-job
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
