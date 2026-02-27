@@ -35,13 +35,17 @@ spec:
       initContainers:
       - name: {{ include "common.name" . }}-readiness
         args:
-        {{- if .Values.config.sdnr.mariadb.enabled }}
+        # At the moment only mariadb is supported here,
+        # updated config to always act as if mariadb is enabled
+        # {{- if .Values.config.sdnr.mariadb.enabled }}
         - --service-name
         - {{ include "common.mariadbService" . }}
-        {{- else }}
-        - --service-name
-        - {{ .Values.elasticsearch.service.name | default "sdnrdb" }}
-        {{- end }}
+        # {{- else }}
+        # - --service-name
+        # - {{.Values.elasticsearch.nameOverride}}
+        # - --service-name
+        # - {{.Values.elasticsearch.nameOverride}}-service
+        #{{- end }}
         env:
         - name: NAMESPACE
           valueFrom:
@@ -65,9 +69,9 @@ spec:
         args:
           - -c
           - |
-            {{- if .Values.config.sdnr.mariadb.enabled }}
+            # {{- if .Values.config.sdnr.mariadb.enabled }}
             "{{ .Values.config.binDir }}/createSdnrDb.sh";
-            {{- end }}
+            # {{- end }}
             sleep 90; "{{ .Values.config.binDir }}/startODL.sh"
         env:
           - name: SDNC_AAF_ENABLED
@@ -81,7 +85,7 @@ spec:
           ## start sdnrdb parameter
           - name: SDNRINIT
             value: "true"
-          {{- if .Values.config.sdnr.mariadb.enabled }}
+          # {{- if .Values.config.sdnr.mariadb.enabled }}
           - name: SDNRDBTYPE
             value: MARIADB
           - name: MYSQL_HOST
@@ -100,18 +104,18 @@ spec:
           - name: SDNC_DB_EXTRA_PARAMETERS
             value: "--skip-ssl-verify-server-cert"
           {{- end }}
-          {{- else }}
-          - name: SDNRDBURL
-            value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
-          - name: SDNRDBPARAMETER
-            value: "-k"
-          {{- end }}
-        {{- if .Values.config.sdnr.mariadb.enabled }}
+          # {{- else }}
+          # - name: SDNRDBURL
+          # value: "http://{{ .Values.elasticsearch.service.name | default "sdnrdb"}}.{{.Release.Namespace}}:{{.Values.elasticsearch.service.port | default "9200"}}"
+          # - name: SDNRDBPARAMETER
+          #  value: "-k"
+          # {{- end }}
+        # {{- if .Values.config.sdnr.mariadb.enabled }}
         volumeMounts:
           - mountPath: {{ .Values.config.binDir }}/createSdnrDb.sh
             name: bin
             subPath: createSdnrDb.sh
-        {{- end }}
+        # {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 10 }}
