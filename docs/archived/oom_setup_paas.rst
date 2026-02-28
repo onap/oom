@@ -4,7 +4,7 @@
 .. Copyright 2021 Nokia
 
 .. Links
-.. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/kubernetes/
+.. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/
 .. _Cert-Manager kubectl plugin documentation: https://cert-manager.io/docs/usage/kubectl-plugin/
 .. _Strimzi Apache Kafka Operator helm Installation documentation: https://strimzi.io/docs/operators/in-development/deploying.html#deploying-cluster-operator-helm-chart-str
 
