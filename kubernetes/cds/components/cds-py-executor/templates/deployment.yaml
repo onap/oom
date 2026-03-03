@@ -62,6 +62,22 @@ spec:
             value: {{ .Values.config.artifactManagerPort }}
           - name: ARTIFACT_MANAGER_SERVER_LOG_FILE
             value: {{ .Values.config.artifactManagerLogFile }}
+          - name: OTEL_ENABLED
+            value: {{ .Values.global.tracing.enabled | quote }}
+          - name: OTEL_SERVICE_NAME
+            value: "cds-py-executor"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}"
+          - name: OTEL_EXPORTER_OTLP_PROTOCOL
+            value: "http/protobuf"
+          - name: OTEL_TRACES_SAMPLER
+            value: "parentbased_traceidratio"
+          - name: OTEL_TRACES_SAMPLER_ARG
+            value: {{ .Values.global.tracing.sampling.probability | quote }}
+          - name: OTEL_LOGS_EXPORTER
+            value: "none"
+          - name: OTEL_METRICS_EXPORTER
+            value: "none"
           volumeMounts:
           - mountPath: {{ .Values.persistence.deployedBlueprint }}
             name: {{ include "common.fullname" . }}-blueprints
