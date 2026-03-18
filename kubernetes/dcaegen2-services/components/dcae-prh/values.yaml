@@ -62,8 +62,8 @@ tmpDir:
 secrets:
   - uid: &aaiCredsUID aaicreds
     type: basicAuth
-    login: '{{ .Values.aaiCreds.user }}'
-    password: '{{ .Values.aaiCreds.password }}'
+    login: '{{ (index .Values.global.auth.aai.users 0).username }}'
+    password: '{{ (index .Values.global.auth.aai.users 0).password }}'
     passwordPolicy: required
 
 # probe configuration
@@ -93,10 +93,6 @@ serviceMesh:
   authorizationPolicy:
     authorizedPrincipals:
       - serviceAccount: message-router-read
-
-aaiCreds:
-  user: AAI
-  password: AAI
 
 credentials:
 - name: AAI_USER
@@ -154,7 +150,7 @@ applicationConfig:
 
 applicationEnv:
   CBS_CLIENT_CONFIG_PATH: '/app-config-input/application_config.yaml'
-  AUTH_HDR: '{{ printf "Basic %s" (print .Values.aaiCreds.user ":" .Values.aaiCreds.password | b64enc) }}'
+  AUTH_HDR: '{{ printf "Basic %s" (printf "%s:%s" (index .Values.global.auth.aai.users 0).username (index .Values.global.auth.aai.users 0).password | b64enc) }}'
   BOOTSTRAP_SERVERS: '{{ include "common.release" . }}-strimzi-kafka-bootstrap:9092'
   OTEL_SERVICE_NAME: 'dcae-prh'
   OTEL_EXPORTER_OTLP_ENDPOINT: '{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}'
