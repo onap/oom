@@ -143,8 +143,8 @@ GLOBAL_AAF_AUTHENTICATION = [GLOBAL_AAF_USERNAME, GLOBAL_AAF_PASSWORD]
 # aai info - everything is from the private oam network (also called onap private network)
 GLOBAL_AAI_SERVER_PROTOCOL = '{{ include "common.scheme" . }}'
 GLOBAL_AAI_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "aai" "port" 80 ) }}'
-GLOBAL_AAI_USERNAME = '{{ .Values.aaiUsername }}'
-GLOBAL_AAI_PASSWORD = '{{ .Values.aaiPassword}}'
+GLOBAL_AAI_USERNAME = '{{ (index .Values.global.auth.aai.users 0).username }}'
+GLOBAL_AAI_PASSWORD = '{{ (index .Values.global.auth.aai.users 0).password }}'
 GLOBAL_AAI_AUTHENTICATION = [GLOBAL_AAI_USERNAME, GLOBAL_AAI_PASSWORD]
 # sdc info - everything is from the private oam network (also called onap private network)
 GLOBAL_SDC_SERVER_PROTOCOL = 'http'
