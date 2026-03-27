@@ -40,25 +40,25 @@ all: $(COMMON_CHARTS_DIR) $(PROCESSED_FIRST) $(HELM_CHARTS) $(PROCESSED_LAST)
 
 $(COMMON_CHARTS_DIR):
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(PROCESSED_FIRST): $(COMMON_CHARTS_DIR)
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(HELM_CHARTS): $(PROCESSED_FIRST)
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(PROCESSED_LAST): $(HELM_CHARTS)
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+	@if [ -f $*/Makefile ]; then $(MAKE) -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up --skip-refresh $*; fi
 
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
@@ -66,7 +66,7 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME local; fi
-	@sleep 3
+	@$(HELM_BIN) repo update local
 	#@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
