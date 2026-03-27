@@ -45,23 +45,23 @@ all: print_helm_bin $(COMMON_CHARTS_DIR) $(SUBMODS) $(HELM_CHARTS) $(PARENT_CHAR
 
 $(COMMON_CHARTS_DIR):
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(HELM_CHARTS): $(COMMON_CHARTS_DIR)
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(SUBMODS): $(COMMON_CHARTS_DIR)
 	@echo "\n[$@]"
-	@make submod-$@
-	@make package-$@
+	@$(MAKE) submod-$@
+	@$(MAKE) package-$@
 
 $(PARENT_CHART): $(HELM_CHARTS)
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 submod-%:
-	@make $*/Chart.yaml
+	@$(MAKE) $*/Chart.yaml
 
 %/Chart.yaml:
 	$(error Submodule $* needs to be retrieved from gerrit.  See https://wiki.onap.org/display/DW/OOM+-+Development+workflow+after+code+transfer+to+tech+teams ); fi
@@ -70,10 +70,10 @@ print_helm_bin:
 	$(info Using Helm binary ${HELM_BIN} which is helm version ${HELM_VER})
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+	@if [ -f $*/Makefile ]; then $(MAKE) -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up --skip-refresh $*; fi
 
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
@@ -81,7 +81,7 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME $(HELM_REPO); fi
-	@sleep 3
+	@$(HELM_BIN) repo update local
 
 clean:
 	@rm -f */Chart.lock

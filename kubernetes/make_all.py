@@ -84,7 +84,7 @@ pushed_packages = set()
 
 def check_helm_version(helm_bin: str) -> bool:
     """
-    Check if the Helm version starts with 3.7
+    Check if the Helm version is 3.x or 4.x
 
     Args:
         helm_bin: Path to the Helm binary
@@ -106,12 +106,12 @@ def check_helm_version(helm_bin: str) -> bool:
         # Extract just the version number (remove leading 'v' if present)
         version_clean = version_output.lstrip('v')
 
-        # Check if the version starts with "3.7"
-        if version_clean.startswith("3.7"):
-            logger.info(f"Helm version {version_output} is compatible (starts with 3.7)")
+        # Check if the version starts with "3." or "4."
+        if version_clean.startswith("3.") or version_clean.startswith("4."):
+            logger.info(f"Helm version {version_output} is compatible")
             return True
         else:
-            logger.error(f"Helm version {version_output} does not start with 3.7 as required")
+            logger.error(f"Helm version {version_output} is not supported (requires 3.x or 4.x)")
             return False
 
     except Exception as e:
@@ -135,7 +135,7 @@ def update_dependencies(chart_path: Union[str, Path], helm_bin: str) -> bool:
     chart_path_obj = Path(chart_path)
     if (chart_path_obj / "Chart.yaml").is_file():
         logger.info(f"Updating dependencies for chart in {chart_path_obj}")
-        dep_cmd = [helm_bin, "dependency", "update", str(chart_path_obj)]
+        dep_cmd = [helm_bin, "dependency", "update", "--skip-refresh", str(chart_path_obj)]
         dep_result = subprocess.run(dep_cmd, check=False, capture_output=True, text=True)
         if dep_result.returncode != 0:
             logger.error(f"Helm dependency update failed for {chart_path_obj}: {dep_result.stderr}")
@@ -284,6 +284,9 @@ def push_to_chartmuseum(chart_path: Union[str, Path], package_name: str, helm_bi
         return False
     else:
         logger.info(f"Successfully pushed {package_path_obj} to chart museum")
+        # Refresh local repo index so subsequent charts can resolve this as a dependency
+        repo_update_cmd = [helm_bin, "repo", "update", "local"]
+        subprocess.run(repo_update_cmd, check=False, capture_output=True, text=True)
         return True
 
 
@@ -710,8 +713,7 @@ Examples:
 
     # Check Helm version compatibility at startup
     if not check_helm_version(helm_bin):
-        print("ERROR: Helm version 3.7.x or compatible is required to build charts.")
-        print("Using an incompatible version will result in hardcoded size limits preventing successful builds.")
+        print("ERROR: Helm version 3.x or 4.x is required to build charts.")
         print(f"You can specify an alternative Helm binary using the --helm-bin parameter. Current binary: {helm_bin}")
         return sys.exit(1)
 
