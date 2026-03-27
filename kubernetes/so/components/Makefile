@@ -33,17 +33,17 @@ all: $(HELM_CHARTS)
 
 soHelpers:
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 $(HELM_CHARTS): soHelpers
 	@echo "\n[$@]"
-	@make package-$@
+	@$(MAKE) package-$@
 
 make-%:
-	@if [ -f $*/Makefile ]; then make -C $*; fi
+	@if [ -f $*/Makefile ]; then $(MAKE) -C $*; fi
 
 dep-%: make-%
-	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up $*; fi
+	@if [ -f $*/Chart.yaml ]; then $(HELM_BIN) dep up --skip-refresh $*; fi
 
 lint-%: dep-%
 	@if [ -f $*/Chart.yaml ]; then $(HELM_LINT_CMD) $*; fi
@@ -51,7 +51,7 @@ lint-%: dep-%
 package-%: lint-%
 	@mkdir -p $(PACKAGE_DIR)
 	@if [ -f $*/Chart.yaml ]; then PACKAGE_NAME=$$($(HELM_BIN) package -d $(PACKAGE_DIR) $* | cut -d":" -f2) && $(HELM_BIN) cm-push -f $$PACKAGE_NAME local; fi
-	@sleep 3
+	@$(HELM_BIN) repo update local
 	#@$(HELM_BIN) repo index $(PACKAGE_DIR)
 
 clean:
