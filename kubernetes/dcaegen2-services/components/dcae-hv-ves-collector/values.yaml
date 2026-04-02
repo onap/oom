@@ -42,7 +42,7 @@ certPostProcessorImage: onap/org.onap.oom.platform.cert-service.oom-certservice-
 #################################################################
 # application image
 image: onap/org.onap.dcaegen2.collectors.hv-ves.hv-collector-main:1.11.0
-pullPolicy: Always
+pullPolicy: IfNotPresent
 
 commonName: &commonName dcae-hv-ves-collector
 containerPort: &containerPort 6061
@@ -87,9 +87,23 @@ certificates:
 # probe configuration
 readiness:
   type: exec
-  initialDelaySeconds: 5
   periodSeconds: 15
   timeoutSeconds: 2
+  failureThreshold: 3
+  command:
+  - /opt/ves-hv-collector/healthcheck.sh
+liveness:
+  type: exec
+  periodSeconds: 15
+  timeoutSeconds: 2
+  failureThreshold: 3
+  command:
+  - /opt/ves-hv-collector/healthcheck.sh
+startup:
+  type: exec
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 24
   command:
   - /opt/ves-hv-collector/healthcheck.sh
 
