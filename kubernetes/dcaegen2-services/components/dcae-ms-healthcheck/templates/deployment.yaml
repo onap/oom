@@ -39,13 +39,18 @@ spec:
           livenessProbe:
             tcpSocket:
               port: {{ include "common.getPort" (dict "global" . "name" "http") }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end -}}
+          {{- if .Values.startup.enabled }}
+          startupProbe:
+            tcpSocket:
+              port: {{ include "common.getPort" (dict "global" . "name" "http") }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
+          {{- end }}
           readinessProbe:
             tcpSocket:
               port: {{ include "common.getPort" (dict "global" . "name" "http") }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
           volumeMounts:
             - mountPath: /opt/app/expected-components.json

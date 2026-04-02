@@ -313,7 +313,6 @@ spec:
         {{- end }}
         {{- if .Values.readiness }}
         readinessProbe:
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds | default 5 }}
           periodSeconds: {{ .Values.readiness.periodSeconds | default 15 }}
           timeoutSeconds: {{ .Values.readiness.timeoutSeconds | default 1 }}
           {{- $probeType := .Values.readiness.type | default "httpGet" -}}
@@ -333,7 +332,6 @@ spec:
         {{- end }}
         {{- if .Values.liveness }}
         livenessProbe:
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.liveness.periodSeconds | default 15 }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds | default 1 }}
             {{- $probeType := .Values.liveness.type | default "httpGet" -}}
@@ -350,6 +348,26 @@ spec:
                 - {{ $cmd }}
                 {{- end }}
             {{- end }}
+        {{- end }}
+        {{- if .Values.startup }}
+        startupProbe:
+          periodSeconds: {{ .Values.startup.periodSeconds | default 10 }}
+          timeoutSeconds: {{ .Values.startup.timeoutSeconds | default 2 }}
+          failureThreshold: {{ .Values.startup.failureThreshold | default 24 }}
+          {{- $probeType := .Values.startup.type | default "httpGet" -}}
+          {{- if eq $probeType "httpGet" }}
+          httpGet:
+            scheme: {{ .Values.startup.scheme }}
+            path: {{ .Values.startup.path }}
+            port: {{ .Values.startup.port }}
+          {{- end }}
+          {{- if eq $probeType "exec" }}
+          exec:
+            command:
+            {{- range $cmd := .Values.startup.command }}
+            - {{ $cmd }}
+            {{- end }}
+          {{- end }}
         {{- end }}
         resources: {{ include "common.resources" . | nindent 10 }}
         volumeMounts:

@@ -18,7 +18,7 @@
 
 # Global values
 global:
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 image: onap/org.onap.dcaegen2.platform.ves-openapi-manager:1.3.1
 containerPort: &svc_port 8080
 
@@ -36,18 +36,23 @@ schemaMap:
   directory: "/app/mappings"
 
 liveness:
-  initialDelaySeconds: 30
-  periodSeconds: 30
+  periodSeconds: 15
   path: /health
   port: *port
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
   # liveness not desirable for Cloudify Manager container
   enabled: true
+startup:
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 24
+  path: /health
+  port: 8080
+  enabled: true
 
 readinessCheck:
   wait_for:
-    timeout: 30
     services:
       - sdc-be
 
