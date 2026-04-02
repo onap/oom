@@ -197,11 +197,32 @@ spec:
           {{- if .Values.config.sdnr.netconfCallHome.enabled }}
           - containerPort: {{ .Values.service.callHomePort }}
           {{- end }}
-          readinessProbe:
-            tcpSocket:
+          startupProbe:
+            httpGet:
+              path: /rests/operations/SLI-API:healthcheck
               port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+              scheme: HTTP
+              httpHeaders:
+                - name: Authorization
+                  value: {{ printf "Basic %s" (printf "%s:%s" .Values.config.odlUser .Values.config.odlPassword | b64enc) }}
+                - name: Content-Type
+                  value: application/json
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.startup.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /rests/operations/SLI-API:healthcheck
+              port: {{ .Values.service.internalPort }}
+              scheme: HTTP
+              httpHeaders:
+                - name: Authorization
+                  value: {{ printf "Basic %s" (printf "%s:%s" .Values.config.odlUser .Values.config.odlPassword | b64enc) }}
+                - name: Content-Type
+                  value: application/json
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:
           {{ if and .Values.config.sdnr.enabled .Values.config.sdnr.sdnronly -}}
           - name: MYSQL_ROOT_PASSWORD

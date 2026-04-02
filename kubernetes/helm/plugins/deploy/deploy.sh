@@ -40,6 +40,8 @@ Flags:
   -f, --values valueFiles        specify values in a YAML file or a URL(can specify multiple) (default [])
       --verbose                  enables full helm install/upgrade output during deploy
       --set-last-applied         set the last-applied-configuration annotation on all objects.This annotation is required to restore services using Ark/Veloro backup restore.
+      --parallel                 deploy wave 2 subcharts in parallel instead of sequentially
+      --parallel-max int         max number of concurrent deploys in parallel mode (default: 5)
 EOF
 }
 
@@ -168,6 +170,18 @@ deploy() {
   if expr "$FLAGS" : ".*--delay.*" ; then
     FLAGS="$(echo $FLAGS| sed -n 's/--delay//p')"
     DELAY="true"
+  fi
+  # determine if parallel deployment is enabled
+  PARALLEL="false"
+  PARALLEL_MAX=5
+  if expr "$FLAGS" : ".*--parallel-max.*" ; then
+    PARALLEL_MAX="$(echo $FLAGS | sed -n 's/.*--parallel-max[= ] *\([0-9]*\).*/\1/p')"
+    FLAGS="$(echo $FLAGS | sed 's/--parallel-max[= ] *[0-9]*//')"
+    PARALLEL="true"
+  fi
+  if expr "$FLAGS" : ".*--parallel.*" ; then
+    FLAGS="$(echo $FLAGS| sed -n 's/--parallel//p')"
+    PARALLEL="true"
   fi
   # determine if set-last-applied flag is enabled
   SET_LAST_APPLIED="false"
@@ -298,31 +312,97 @@ deploy() {
     done
     # Disable delay
     DELAY="false"
-    for subchart in * ; do
-      SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
+    if [ "$PARALLEL" = "true" ]; then
+      # Parallel wave 2 deployment
+      echo "Parallel deployment enabled (max $PARALLEL_MAX concurrent)"
+      PARALLEL_PIDS=()
+      PARALLEL_CHARTS=()
+      PARALLEL_FAILED=()
+      for subchart in * ; do
+        SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
-      SUBCHART_ENABLED=0
-      if [ -f $SUBCHART_OVERRIDES ]; then
-        SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
-      fi
-      if [ "${subchart}" = "strimzi" ] || [ "${subchart}" = "cassandra" ] || [ "${subchart}" = "mariadb-galera" ] || [ "${subchart}" = "postgres" ]; then
         SUBCHART_ENABLED=0
-      fi
-      # Deploy the others
-      if [ $SUBCHART_ENABLED -eq 1 ]; then
-        deploy_subchart
+        if [ -f $SUBCHART_OVERRIDES ]; then
+          SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+        fi
+        if [ "${subchart}" = "strimzi" ] || [ "${subchart}" = "cassandra" ] || [ "${subchart}" = "mariadb-galera" ] || [ "${subchart}" = "postgres" ] || [ "${subchart}" = "roles-wrapper" ] || [ "${subchart}" = "repository-wrapper" ]; then
+          SUBCHART_ENABLED=0
+        fi
+        if [ $SUBCHART_ENABLED -eq 1 ]; then
+          # Wait if concurrency limit reached
+          while [ ${#PARALLEL_PIDS[@]} -ge $PARALLEL_MAX ]; do
+            NEW_PIDS=()
+            NEW_CHARTS=()
+            for i in "${!PARALLEL_PIDS[@]}"; do
+              if kill -0 ${PARALLEL_PIDS[$i]} 2>/dev/null; then
+                NEW_PIDS+=(${PARALLEL_PIDS[$i]})
+                NEW_CHARTS+=(${PARALLEL_CHARTS[$i]})
+              else
+                wait ${PARALLEL_PIDS[$i]} || PARALLEL_FAILED+=(${PARALLEL_CHARTS[$i]})
+              fi
+            done
+            PARALLEL_PIDS=("${NEW_PIDS[@]}")
+            PARALLEL_CHARTS=("${NEW_CHARTS[@]}")
+            if [ ${#PARALLEL_PIDS[@]} -ge $PARALLEL_MAX ]; then
+              sleep 2
+            fi
+          done
+          # Launch subchart deploy in background
+          (
+            deploy_subchart
+          ) &
+          PARALLEL_PIDS+=($!)
+          PARALLEL_CHARTS+=($subchart)
+          echo "started deploy of $subchart (pid $!) [${#PARALLEL_PIDS[@]}/$PARALLEL_MAX slots]"
+        else
+          reverse_list=
+          for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+          do
+            reverse_list="$item $reverse_list"
+          done
+          for item in $reverse_list
+          do
+            helm del $item
+          done
+        fi
+      done
+      # Wait for all remaining parallel deploys
+      for i in "${!PARALLEL_PIDS[@]}"; do
+        wait ${PARALLEL_PIDS[$i]} || PARALLEL_FAILED+=(${PARALLEL_CHARTS[$i]})
+      done
+      if [ ${#PARALLEL_FAILED[@]} -gt 0 ]; then
+        echo "WARNING: failed parallel deploys: ${PARALLEL_FAILED[*]}"
       else
-        reverse_list=
-        for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
-        do
-          reverse_list="$item $reverse_list"
-        done
-        for item in $reverse_list
-        do
-          helm del $item
-        done
+        echo "All parallel deploys completed successfully"
       fi
-    done
+    else
+      # Sequential wave 2 deployment (original behavior)
+      for subchart in * ; do
+        SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
+
+        SUBCHART_ENABLED=0
+        if [ -f $SUBCHART_OVERRIDES ]; then
+          SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+        fi
+        if [ "${subchart}" = "strimzi" ] || [ "${subchart}" = "cassandra" ] || [ "${subchart}" = "mariadb-galera" ] || [ "${subchart}" = "postgres" ]; then
+          SUBCHART_ENABLED=0
+        fi
+        # Deploy the others
+        if [ $SUBCHART_ENABLED -eq 1 ]; then
+          deploy_subchart
+        else
+          reverse_list=
+          for item in $(echo "$ALL_HELM_RELEASES" | grep "${RELEASE}-${subchart}")
+          do
+            reverse_list="$item $reverse_list"
+          done
+          for item in $reverse_list
+          do
+            helm del $item
+          done
+        fi
+      done
+    fi
 
   # report on success/failures of installs/upgrades
   helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
