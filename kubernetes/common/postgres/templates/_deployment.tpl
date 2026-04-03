@@ -169,6 +169,8 @@ spec:
         - mountPath: /backup
           name: {{ include "common.fullname" $dot }}-backup
           readOnly: true
+        - mountPath: /etc/podinfo
+          name: podinfo
         resources: {{ include "common.resources" $dot | nindent 10 }}
       {{- if (default false $dot.Values.metrics.enabled) }}
       - name: {{ include "common.name" $dot }}-metrics
@@ -237,4 +239,16 @@ spec:
       - name: pgconf
         emptyDir:
           medium: Memory
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "name"
+              fieldRef:
+                fieldPath: metadata.name
+            - path: "namespace"
+              fieldRef:
+                fieldPath: metadata.namespace
 {{- end -}}
