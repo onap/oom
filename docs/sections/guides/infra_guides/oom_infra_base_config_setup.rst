@@ -8,7 +8,7 @@
 .. _helm installation guide: https://helm.sh/docs/intro/install/
 .. _kubectl installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 .. _Curated applications for Kubernetes: https://github.com/kubernetes/charts
-.. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/kubernetes/
+.. _Cert-Manager Installation documentation: https://cert-manager.io/docs/installation/
 .. _Cert-Manager kubectl plugin documentation: https://cert-manager.io/docs/usage/kubectl-plugin/
 .. _Strimzi Apache Kafka Operator helm Installation documentation: https://strimzi.io/docs/operators/in-development/deploying.html#deploying-cluster-operator-helm-chart-str
 .. _ONAP Next Generation Security & Logging Architecture: https://lf-onap.atlassian.net/wiki/x/bVn7
@@ -425,4 +425,3 @@ component.
 - Add the Ingress entry for Keycloak::
 
     > kubectl -n keycloak apply -f keycloak-ingress.yaml
-
