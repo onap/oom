@@ -47,7 +47,7 @@ secrets:
 # Application Configuration Defaults.
 #################################################################
 # Application Image
-image: onap/org.onap.dcaegen2.services.datalakefeeder:1.1.3
+image: onap/org.onap.dcaegen2.services.datalakefeeder:1.2.0-20260405T153000Z
 pullPolicy: IfNotPresent
 
 # Log directory where logging sidecar should look for log files
@@ -120,6 +120,25 @@ applicationEnv:
     secretUid: *pgUserCredsSecretUid
     key: password
   PG_DB: datalake
+  KAFKA_SECURE: 'true'
+  KAFKA_SECURITY_PROTOCOL: 'SASL_PLAINTEXT'
+  KAFKA_SASL_MECHANISM: 'SCRAM-SHA-512'
+  JAAS_CONFIG:
+    externalSecret: true
+    externalSecretUid: '{{ include "common.name" . }}-ku'
+    key: sasl.jaas.config
+
+# Strimzi Kafka User config
+kafkaUser:
+  acls:
+    - name: dlgroup
+      type: group
+      patternType: literal
+      operations: [Read]
+    - name: "*"
+      type: topic
+      patternType: literal
+      operations: [Read, DescribeConfigs]
 
 # Resource Limit Flavor -By Default Using Small
 flavor: small
