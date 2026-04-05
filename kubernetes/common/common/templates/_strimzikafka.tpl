@@ -68,7 +68,7 @@ spec:
       - resource:
           type: {{ $acl.type }}
           patternType: {{ $acl.patternType | default "literal" }}
-          name: {{ ternary (printf "%s-%s" $acl.name $acl.suffix) $acl.name (hasKey $acl "suffix") }}
+          name: {{ ternary (printf "%s-%s" $acl.name $acl.suffix) $acl.name (hasKey $acl "suffix") | quote }}
         operations:
         {{- range $operation := $acl.operations }}
           - {{ . }}
