@@ -35,9 +35,7 @@ GRANT ALL on camundabpmn.* to '${CAMUNDA_DB_USER}' identified by '${CAMUNDA_DB_P
 FLUSH PRIVILEGES;
 EOF
 
-cd /docker-entrypoint-initdb.d/db-sql-scripts
-
-mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_engine_7.14.0.sql || exit 1
-mysqlcmd -uroot -p$MYSQL_ROOT_PASSWORD -f < mariadb_identity_7.14.0.sql || exit 1
+# Schema creation is now managed by Liquibase at application startup
+# (mso-infrastructure-bpmn). Only the empty database and user are created here.
 
 echo "Created camundabpmn database . . ." 1>>/tmp/mariadb-camundabpmn.log 2>&1
