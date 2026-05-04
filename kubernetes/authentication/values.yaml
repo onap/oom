@@ -198,6 +198,9 @@ realmSettings:
         roles: [ "platform-all-read" ]
     initialUsers:
       - username: "onap-admin"
+        email: "onap-admin@onap.org"
+        firstName: "Onap"
+        lastName: "Admin"
         credentials:
           - type: password
             secretData: "{\"value\":\"nD4K4x8HEgk6xlWIAgzZOE+EOjdbovJfEa7N3WXwIMCWCfdXpn7Riys7hZhI1NbKcc9QPI9j8LQB/JSuZVcXKA==\",\"salt\":\"T8X9A9tT2cyLvEjHFo+zuQ==\",\"additionalParameters\":{}}"
@@ -210,6 +213,9 @@ realmSettings:
           - portal_admin
         groups: []
       - username: "onap-designer"
+        email: "onap-designer@onap.org"
+        firstName: "Onap"
+        lastName: "Designer"
         credentials: []
         attributes:
           sdc_user:
@@ -219,6 +225,9 @@ realmSettings:
           - portal_designer
         groups: []
       - username: "onap-operator"
+        email: "onap-operator@onap.org"
+        firstName: "Onap"
+        lastName: "Operator"
         credentials: []
         attributes:
           sdc_user:
@@ -238,21 +247,29 @@ realmSettings:
       - username: adminek
         password: Adminek
         email: "onap-admin@amartus.com"
+        firstName: "Onap"
+        lastName: "Admin"
         groups:
           - admins
       - username: onapadmin
         password: ONAPAdmin
         email: "onap-admin1@amartus.com"
+        firstName: "Onap"
+        lastName: "Admin"
         groups:
           - admins
       - username: contributor
         password: Contributor
         email: "onap-contributor@amartus.com"
+        firstName: "Onap"
+        lastName: "Contributor"
         groups:
           - contributors
       - username: reader
         password: Reader
         email: "onap-reader@amartus.com"
+        firstName: "Onap"
+        lastName: "Reader"
         groups:
           - readers
     clients:
@@ -293,6 +310,9 @@ realmSettings:
         publicClient: "true"
         additionalAttributes:
           post.logout.redirect.uris: 'https://{{ include "ingress.config.host" (dict "dot" . "baseaddr" "portal-ng-ui") }}/*'
+        defaultClientScopes:
+          - "onap_roles"
+          - "roles"
         protocolMappers:
           - name: "User-Roles"
             protocolMapper: "oidc-usermodel-realm-role-mapper"
@@ -317,6 +337,7 @@ realmSettings:
         standardFlowEnabled: "false"
         directAccessGrantsEnabled: "false"
         serviceAccountsEnabled: "true"
+        authorizationServicesEnabled: "true"
         protocolMappers:
           - name: "Client Host"
             protocolMapper: "oidc-usersessionmodel-note-mapper"
@@ -334,6 +355,107 @@ realmSettings:
               access.token.claim: "true"
               claim.name: "clientAddress"
               jsonType.label: "String"
+        authorizationSettings:
+          allowRemoteResourceManagement: true
+          policyEnforcementMode: ENFORCING
+          decisionStrategy: AFFIRMATIVE
+          scopes:
+            - name: GET
+            - name: POST
+            - name: PUT
+            - name: DELETE
+          resources:
+            - name: users
+              uris:
+                - "/users/*"
+              scopes:
+                - name: GET
+                - name: POST
+                - name: PUT
+                - name: DELETE
+            - name: roles
+              uris:
+                - "/roles/*"
+              scopes:
+                - name: GET
+            - name: preferences
+              uris:
+                - "/preferences/*"
+              scopes:
+                - name: GET
+                - name: PUT
+                - name: POST
+            - name: actions
+              uris:
+                - "/actions/*"
+              scopes:
+                - name: GET
+                - name: POST
+          policies:
+            - name: admin-policy
+              type: role
+              logic: POSITIVE
+              roles:
+                - id: portal_admin
+                  required: false
+            - name: operator-policy
+              type: role
+              logic: POSITIVE
+              roles:
+                - id: portal_operator
+                  required: false
+            - name: designer-policy
+              type: role
+              logic: POSITIVE
+              roles:
+                - id: portal_designer
+                  required: false
+          permissions:
+            - name: users-admin-permission
+              type: scope
+              decisionStrategy: AFFIRMATIVE
+              resources:
+                - users
+              scopes:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+              applyPolicies:
+                - admin-policy
+            - name: roles-read-permission
+              type: scope
+              decisionStrategy: AFFIRMATIVE
+              resources:
+                - roles
+              scopes:
+                - GET
+              applyPolicies:
+                - admin-policy
+                - operator-policy
+            - name: preferences-permission
+              type: scope
+              decisionStrategy: AFFIRMATIVE
+              resources:
+                - preferences
+              scopes:
+                - GET
+                - PUT
+                - POST
+              applyPolicies:
+                - admin-policy
+                - operator-policy
+            - name: actions-permission
+              type: scope
+              decisionStrategy: AFFIRMATIVE
+              resources:
+                - actions
+              scopes:
+                - GET
+                - POST
+              applyPolicies:
+                - admin-policy
+                - operator-policy
     defaultClientScopes:
       - "onap_roles"
     additionalClientScopes:
