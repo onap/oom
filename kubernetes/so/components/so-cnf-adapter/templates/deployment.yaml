@@ -32,25 +32,6 @@ spec:
       labels: {{- include "common.labels" . | nindent 8 }}
     spec:
       initContainers:
-        - name: {{ include "common.name" . }}-encrypter
-          command:
-            - sh
-          args:
-            - -c
-            - |
-              java Crypto "${AAI_USERNAME}:${AAI_PASSWORD}" "${MSO_KEY}" > /output/.aai_creds
-          env:
-            - name: AAI_USERNAME
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "login") | indent 14 }}
-            - name: AAI_PASSWORD
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "password") | indent 14 }}
-            - name: MSO_KEY
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cnf-adapter-mso-key" "key" "password") | indent 14 }}
-          image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.global.soCryptoImage }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          volumeMounts:
-            - name: encoder
-              mountPath: /output
         {{ include "common.readinessCheck.waitFor" . | indent 8 | trim }}
       containers:
         - name: {{ include "common.name" . }}
@@ -60,7 +41,6 @@ spec:
           args:
             - -c
             - |
-              export AAI_AUTH=$(cat /input/.aai_creds)
               ./start-app.sh
           resources: {{ include "common.resources" . | nindent 12 }}
           ports: {{- include "common.containerPorts" . | nindent 12  }}
@@ -69,6 +49,10 @@ spec:
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "login") | indent 14 }}
             - name: ACTUATOR_PASSWORD
               {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "server-actuator-creds" "key" "password") | indent 14 }}
+            - name: AAI_USERNAME
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "login") | indent 14 }}
+            - name: AAI_PASSWORD
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "so-aai-creds" "key" "password") | indent 14 }}
           envFrom:
             - configMapRef:
                 name: {{ include "common.fullname" . }}-env
@@ -79,8 +63,6 @@ spec:
             - name: config
               mountPath: /app/config
               readOnly: true
-            - name: encoder
-              mountPath: /input
           {{- include "so.helpers.startupProbe" .| indent 10 }}
           livenessProbe:
             httpGet:
@@ -98,7 +80,4 @@ spec:
         - name: config
           configMap:
             name: {{ include "common.fullname" . }}
-        - name: encoder
-          emptyDir:
-            medium: Memory
       {{- include "common.imagePullSecrets" . | nindent 6 }}
