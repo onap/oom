@@ -44,6 +44,14 @@ camunda:
       wait-time-in-millis: 3000
       # decrease for faster response time increase under higher load
       max-wait: 30000
+      # lock lease for an acquired async job. Camunda default is 300000 (5 min):
+      # if a job-acquisition transaction rolls back (e.g. a DB deadlock), the job
+      # row stays locked and invisible for the full lease before another executor
+      # thread can re-acquire it, stalling the flow by ~5 min. 60s lets a lost job
+      # recover quickly. Safe because every async BB segment is short (AAI/catalog
+      # calls); long controller waits are parked receive-tasks that release the
+      # thread and are not held under this lock.
+      lock-time-in-millis: 60000
     generic-properties:
       properties:
         sunday-history-cleanup-batch-window-start-time: {{ quote .Values.camunda.sundayCleanupWindowStartTime }}
@@ -404,19 +412,18 @@ spring:
       username: mso_admin
       password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
       role: ACTUATOR
-  sleuth:
+management:
+  tracing:
     enabled: {{ .Values.global.tracing.enabled }}
-    messaging:
-      jms:
-        enabled: false
-    trace-id128: true
-    sampler:
+    sampling:
       probability: {{ .Values.global.tracing.sampling.probability }}
-    supports-join: false
-    web:
-      skip-pattern: /actuator/health/*
+    propagation:
+      type:
+        - w3c
+        - b3
   zipkin:
-    base-url: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}
+    tracing:
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
 so:
   vnfm:
     adapter:
