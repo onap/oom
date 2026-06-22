@@ -26,7 +26,14 @@ global:
     useOperator: true
     nameOverride: mariadb-galera
     servicePort: '3306'
-    service: mariadb-galera
+    # Pin SO's DB traffic to the single Galera primary. Camunda does not support
+    # multi-primary Galera: concurrent job-executor writes fanned across all nodes
+    # produce wsrep certification conflicts surfacing as
+    # SQLTransactionRollbackException (deadlock). A deadlocked async continuation
+    # job stays locked until its lock lease expires (see lock-time-in-millis in
+    # so-bpmn-infra override), stalling orchestration by minutes. Writing to a
+    # single primary is Camunda's supported topology and removes the conflict.
+    service: mariadb-galera-primary
     internalPort: '3306'
     # This flag allows SO to instantiate its own mariadb-galera cluster,
     # serviceName and nameOverride should be so-mariadb-galera if this flag is enabled
@@ -172,7 +179,7 @@ dbCreds:
   userName: so_user
   adminName: so_admin
 
-image: onap/so/api-handler-infra:1.19.1
+image: onap/so/api-handler-infra:1.20.0
 
 server:
   actuator:
@@ -464,7 +471,3 @@ podAnnotations:
 tracing:
   skipPatterns:
     - /actuator/health/*
-  scheduled:
-    skipClasses:
-      - ScheduledDnsLookup
-      - ExternalTaskServiceUtils
