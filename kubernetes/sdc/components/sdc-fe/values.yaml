@@ -39,7 +39,7 @@ global:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/sdc-frontend:1.16.3
+image: onap/sdc-frontend:1.17-20260817T071451Z
 pullPolicy: Always
 
 config:
@@ -51,8 +51,12 @@ config:
     dcae_dt_discovery_url:
       http: "http://sdc-dcae-dt:8186/dcae/#/dcae/home"
     dcae_dt_source_url: "https://sdc.dcae.plugin.simpledemo.onap.org:30266/dcae/#/dcae/home"
+    # No trailing slash: sdc-fe's FeProxyServlet appends the incoming "/wf/..."
+    # URI to this URL's path, so a trailing slash yields "/workflows//wf/..." and
+    # the workflow frontend answers 404. The plugin online check still passes
+    # because it follows the 302 that /workflows issues to /workflows/.
     workflow_discovery_url:
-      http: "http://sdc-wfd-fe:8080/workflows/"
+      http: "http://sdc-wfd-fe:8080/workflows"
     workflow_source_baseaddr: "sdc-wfd-fe-ui"
 
 #environment file
@@ -189,6 +193,12 @@ fe_conf:
   user_name: "testName"
   user_pass: "testPass"
   http_port_pro: 8181
+  # User the UI falls back to when a request carries no identity headers, needed because the ONAP
+  # Portal that used to supply them is no longer deployed. Set this to cs0008 to enable the fallback,
+  # but only once the image above contains SDC-4870: the frontend parses its configuration onto a
+  # JavaBean without skipMissingProperties, so on an older image the unknown key aborts startup.
+  # cs0008 is a DESIGNER, so use jh0003 or demo instead if the admin dashboard has to be reachable.
+  default_user_id: ""
 
 facade_vip:
 facade_port:
