@@ -101,7 +101,7 @@ check_for_dep() {
         echo "$1 not found. Retry $try/$retries"
         sleep 10
     done
-    echo "$1 found. Waiting for pod intialisation"
+    echo "$1 found. Waiting for pod initialisation"
     sleep 15
 }
 
@@ -234,7 +234,7 @@ deploy() {
     helm fetch $CHART_URL --untar --untardir $CACHE_DIR $VERSION
   fi
 
-  # create log driectory
+  # create log directory
   mkdir -p $LOG_DIR
 
   # move out subcharts to process separately
