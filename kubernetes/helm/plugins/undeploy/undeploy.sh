@@ -19,16 +19,16 @@ EOF
 
 undeploy() {
   RELEASE=$1
-  FLAGS=$2
+  shift
 
   reverse_list=
-  for item in $(helm ls -q --all | grep $RELEASE)
+  for item in $(helm ls -q --all | grep "$RELEASE")
   do
     reverse_list="$item $reverse_list"
   done
   for item in $reverse_list
   do
-    helm del $item $FLAGS
+    helm del "$item" "$@"
   done
 }
 
@@ -48,7 +48,9 @@ case "${1:-"help"}" in
     usage
     ;;
   *)
-    undeploy $1 $(echo ${@} | sed 's/^ *[^ ]* *//')
+    RELEASE=$1
+    shift
+    undeploy "$RELEASE" "$@"
     ;;
 esac
 
