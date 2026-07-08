@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# shellcheck disable=SC2086,SC2004,SC2207,SC2068,SC2034,SC2125,SC2001
 usage() {
 cat << EOF
 Install (or upgrade) an umbrella Helm Chart, and its subcharts, as separate Helm Releases
@@ -120,10 +120,10 @@ deploy_subchart() {
 
         helm upgrade -i "${RELEASE}-${subchart}" $CACHE_SUBCHART_DIR/$subchart \
          $DEPLOY_FLAGS -f $GLOBAL_OVERRIDES -f $SUBCHART_OVERRIDES \
-         > $LOG_FILE 2>&1
+         > "$LOG_FILE" 2>&1
 
         if [ "$VERBOSE" = "true" ]; then
-          cat $LOG_FILE
+          cat "$LOG_FILE"
         else
           echo "release \"${RELEASE}-${subchart}\" deployed"
         fi
@@ -131,7 +131,7 @@ deploy_subchart() {
         if [ "$SET_LAST_APPLIED" = "true" ]; then
           helm get manifest "${RELEASE}-${subchart}" \
           | kubectl apply set-last-applied --create-annotation -n $HELM_NAMESPACE -f - \
-          > $LOG_FILE.log 2>&1
+          > "$LOG_FILE".log 2>&1
         fi
       fi
       if [ "$DELAY" = "true" ]; then
@@ -228,59 +228,59 @@ deploy() {
     for subchart in $charts ; do
       tar xzf ${subchart} -C $CHART_DIR/charts/
     done
-    rm -rf $CHART_DIR/charts/*.tgz
+    rm -rf "$CHART_DIR"/charts/*.tgz
   else
     echo "fetching $CHART_URL"
-    helm fetch $CHART_URL --untar --untardir $CACHE_DIR $VERSION
+    helm fetch "$CHART_URL" --untar --untardir "$CACHE_DIR" "$VERSION"
   fi
 
   # create log directory
-  mkdir -p $LOG_DIR
+  mkdir -p "$LOG_DIR"
 
   # move out subcharts to process separately
-  mkdir -p $CACHE_SUBCHART_DIR
-  mv $CHART_DIR/charts/* $CACHE_SUBCHART_DIR/
-  # temp hack - parent chart needs common subchart
-  mv $CACHE_SUBCHART_DIR/common $CHART_DIR/charts/
+  mkdir -p "$CACHE_SUBCHART_DIR"
+  mv "$CHART_DIR"/charts/* "$CACHE_SUBCHART_DIR"/
+  # Move the common subchart back to the chart's charts directory
+  mv "$CACHE_SUBCHART_DIR"/common "$CHART_DIR"/charts/
 
  # disable dependencies
-  rm $CHART_DIR/Chart.lock
-  sed -n '1,/dependencies:/p;/description:/,$p' $CHART_DIR/Chart.yaml | grep -v dependencies > $CHART_DIR/deploy_Chart.yaml
-  mv $CHART_DIR/Chart.yaml $CHART_DIR/Chart.deploy
-  mv $CHART_DIR/deploy_Chart.yaml $CHART_DIR/Chart.yaml
+  rm "$CHART_DIR"/Chart.lock
+  sed -n '1,/dependencies:/p;/description:/,$p' "$CHART_DIR"/Chart.yaml | grep -v dependencies > "$CHART_DIR"/deploy_Chart.yaml
+  mv "$CHART_DIR"/Chart.yaml "$CHART_DIR"/Chart.deploy
+  mv "$CHART_DIR"/deploy_Chart.yaml "$CHART_DIR"/Chart.yaml
 
   # compute overrides for parent and all subcharts
   COMPUTED_OVERRIDES=$CACHE_DIR/$CHART_NAME/computed-overrides.yaml
-  helm upgrade -i $RELEASE $CHART_DIR $FLAGS --dry-run --debug \
-   | sed -n '/COMPUTED VALUES:/,/HOOKS:/p' | sed '1d;$d' > $COMPUTED_OVERRIDES
+  helm upgrade -i "$RELEASE" "$CHART_DIR" $FLAGS --dry-run --debug \
+   | sed -n '/COMPUTED VALUES:/,/HOOKS:/p' | sed '1d;$d' > "$COMPUTED_OVERRIDES"
 
   # extract global overrides to apply to parent and all subcharts
   GLOBAL_OVERRIDES=$CHART_DIR/global-overrides.yaml
-  generate_overrides $COMPUTED_OVERRIDES $GLOBAL_OVERRIDES
+  generate_overrides "$COMPUTED_OVERRIDES" "$GLOBAL_OVERRIDES"
 
   # upgrade/install parent chart first
   if [ -z "$SUBCHART_RELEASE" ]; then
     LOG_FILE=$LOG_DIR/${RELEASE}.log
-    :> $LOG_FILE
+    :> "$LOG_FILE"
 
-    helm upgrade -i $RELEASE $CHART_DIR $DEPLOY_FLAGS -f $COMPUTED_OVERRIDES \
-     > $LOG_FILE.log 2>&1
+    helm upgrade -i "$RELEASE" "$CHART_DIR" $DEPLOY_FLAGS -f "$COMPUTED_OVERRIDES" \
+     > "$LOG_FILE".log 2>&1
 
     if [ "$VERBOSE" = "true" ]; then
-      cat $LOG_FILE
+      cat "$LOG_FILE"
     else
       echo "release \"$RELEASE\" deployed"
     fi
     # Add annotation last-applied-configuration if set-last-applied flag is set
     if [ "$SET_LAST_APPLIED" = "true" ]; then
-      helm get manifest ${RELEASE} \
-      | kubectl apply set-last-applied --create-annotation -n $HELM_NAMESPACE -f - \
-      > $LOG_FILE.log 2>&1
+      helm get manifest "${RELEASE}" \
+      | kubectl apply set-last-applied --create-annotation -n "$HELM_NAMESPACE" -f - \
+      > "$LOG_FILE".log 2>&1
     fi
   fi
 
   # upgrade/install each "enabled" subchart
-  cd $CACHE_SUBCHART_DIR/
+  cd "$CACHE_SUBCHART_DIR"/ || exit
   #“helm ls” is an expensive command in that it can take a long time to execute.
   #So cache the results to prevent repeated execution.
   ALL_HELM_RELEASES=$(helm ls -q)
@@ -289,14 +289,14 @@ deploy() {
       SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
       SUBCHART_ENABLED=0
-      if [ -f $SUBCHART_OVERRIDES ]; then
-        SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+      if [ -f "$SUBCHART_OVERRIDES" ]; then
+        SUBCHART_ENABLED=$(grep -c "^enabled: true" "$SUBCHART_OVERRIDES")
       fi
-      if [ "${subchart}" = "strimzi" ] && [ $SUBCHART_ENABLED -eq 1 ]; then
+      if [ "${subchart}" = "strimzi" ] && [ "$SUBCHART_ENABLED" -eq 1 ]; then
         deploy_strimzi
       fi
       # Deploy them at first
-      if [ $SUBCHART_ENABLED -eq 1 ]; then
+      if [ "$SUBCHART_ENABLED" -eq 1 ]; then
         deploy_subchart
       else
         reverse_list=
@@ -306,7 +306,7 @@ deploy() {
         done
         for item in $reverse_list
         do
-          helm del $item
+          helm del "$item"
         done
       fi
     done
@@ -322,28 +322,28 @@ deploy() {
         SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
         SUBCHART_ENABLED=0
-        if [ -f $SUBCHART_OVERRIDES ]; then
-          SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+        if [ -f "$SUBCHART_OVERRIDES" ]; then
+          SUBCHART_ENABLED=$(grep -c "^enabled: true" "$SUBCHART_OVERRIDES")
         fi
         if [ "${subchart}" = "strimzi" ] || [ "${subchart}" = "cassandra" ] || [ "${subchart}" = "mariadb-galera" ] || [ "${subchart}" = "postgres" ] || [ "${subchart}" = "roles-wrapper" ] || [ "${subchart}" = "repository-wrapper" ]; then
           SUBCHART_ENABLED=0
         fi
-        if [ $SUBCHART_ENABLED -eq 1 ]; then
+        if [ "$SUBCHART_ENABLED" -eq 1 ]; then
           # Wait if concurrency limit reached
-          while [ ${#PARALLEL_PIDS[@]} -ge $PARALLEL_MAX ]; do
+          while [ ${#PARALLEL_PIDS[@]} -ge "$PARALLEL_MAX" ]; do
             NEW_PIDS=()
             NEW_CHARTS=()
             for i in "${!PARALLEL_PIDS[@]}"; do
-              if kill -0 ${PARALLEL_PIDS[$i]} 2>/dev/null; then
-                NEW_PIDS+=(${PARALLEL_PIDS[$i]})
-                NEW_CHARTS+=(${PARALLEL_CHARTS[$i]})
+              if kill -0 "${PARALLEL_PIDS[$i]}" 2>/dev/null; then
+                NEW_PIDS+=("${PARALLEL_PIDS[$i]}")
+                NEW_CHARTS+=("${PARALLEL_CHARTS[$i]}")
               else
-                wait ${PARALLEL_PIDS[$i]} || PARALLEL_FAILED+=(${PARALLEL_CHARTS[$i]})
+                wait "${PARALLEL_PIDS[$i]}" || PARALLEL_FAILED+=("${PARALLEL_CHARTS[$i]}")
               fi
             done
             PARALLEL_PIDS=("${NEW_PIDS[@]}")
             PARALLEL_CHARTS=("${NEW_CHARTS[@]}")
-            if [ ${#PARALLEL_PIDS[@]} -ge $PARALLEL_MAX ]; then
+            if [ ${#PARALLEL_PIDS[@]} -ge "$PARALLEL_MAX" ]; then
               sleep 2
             fi
           done
@@ -352,7 +352,7 @@ deploy() {
             deploy_subchart
           ) &
           PARALLEL_PIDS+=($!)
-          PARALLEL_CHARTS+=($subchart)
+          PARALLEL_CHARTS+=("$subchart")
           echo "started deploy of $subchart (pid $!) [${#PARALLEL_PIDS[@]}/$PARALLEL_MAX slots]"
         else
           reverse_list=
@@ -362,13 +362,13 @@ deploy() {
           done
           for item in $reverse_list
           do
-            helm del $item
+            helm del "$item"
           done
         fi
       done
       # Wait for all remaining parallel deploys
       for i in "${!PARALLEL_PIDS[@]}"; do
-        wait ${PARALLEL_PIDS[$i]} || PARALLEL_FAILED+=(${PARALLEL_CHARTS[$i]})
+        wait "${PARALLEL_PIDS[$i]}" || PARALLEL_FAILED+=("${PARALLEL_CHARTS[$i]}")
       done
       if [ ${#PARALLEL_FAILED[@]} -gt 0 ]; then
         echo "WARNING: failed parallel deploys: ${PARALLEL_FAILED[*]}"
@@ -381,14 +381,14 @@ deploy() {
         SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
         SUBCHART_ENABLED=0
-        if [ -f $SUBCHART_OVERRIDES ]; then
-          SUBCHART_ENABLED=$(cat $SUBCHART_OVERRIDES | grep -c "^enabled: true")
+        if [ -f "$SUBCHART_OVERRIDES" ]; then
+          SUBCHART_ENABLED=$(grep -c "^enabled: true" "$SUBCHART_OVERRIDES")
         fi
         if [ "${subchart}" = "strimzi" ] || [ "${subchart}" = "cassandra" ] || [ "${subchart}" = "mariadb-galera" ] || [ "${subchart}" = "postgres" ]; then
           SUBCHART_ENABLED=0
         fi
         # Deploy the others
-        if [ $SUBCHART_ENABLED -eq 1 ]; then
+        if [ "$SUBCHART_ENABLED" -eq 1 ]; then
           deploy_subchart
         else
           reverse_list=
@@ -398,17 +398,17 @@ deploy() {
           done
           for item in $reverse_list
           do
-            helm del $item
+            helm del "$item"
           done
         fi
       done
     fi
 
   # report on success/failures of installs/upgrades
-  helm ls --all-namespaces | grep -i FAILED | grep $RELEASE
+  helm ls --all-namespaces | grep -i FAILED | grep "$RELEASE"
 }
 HELM_VER=$(helm version --template "{{.Version}}")
-echo $HELM_VER
+echo "$HELM_VER"
 
 case "${1:-"help"}" in
   "help")
@@ -421,7 +421,7 @@ case "${1:-"help"}" in
     usage
     ;;
   *)
-    deploy $1 $2 $(echo ${@} | sed 's/^ *[^ ]* *[^ ]* *//')
+    deploy "$1" "$2" "${@:3}"
     ;;
 esac
 
