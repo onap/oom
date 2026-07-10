@@ -39,11 +39,31 @@ spring:
       ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-        implicit-strategy: org.onap.policy.common.spring.utils.CustomImplicitNamingStrategy
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  kafka:
+    bootstrap-servers: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
+    admin:
+      auto-create: false
+      fail-fast: false
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
+      sasl.jaas.config: ${SASL_JAAS_CONFIG}
+    listener:
+      auth-exception-retry-interval: 5s
+    consumer:
+      group-id: {{ (first .Values.kafkaUser.acls).name }}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.onap.policy.clamp.acm.runtime.supervision.comm.serialization.ParticipantMessageDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.onap.policy.clamp.acm.runtime.supervision.comm.serialization.ParticipantMessageSerializer
 
 metrics:
   security:
