@@ -17,6 +17,9 @@
 #  ============LICENSE_END=========================================================
 
 spring:
+  # sets the OpenTelemetry resource service.name; without it traces arrive as unknown_service
+  application:
+    name: acm-r
   security:
     user:
       name: ${RUNTIME_USER}
@@ -138,6 +141,19 @@ runtime:
     toscaCompositionName: {{ .Values.customNaming.toscaCompositionName }}
 
 management:
+  tracing:
+    export:
+      enabled: {{ .Values.global.tracing.enabled }}
+    propagation:
+      produce: W3C
+    sampling:
+      probability: {{ .Values.global.tracing.sampling.probability }}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+          transport: grpc
   endpoints:
     web:
       exposure:

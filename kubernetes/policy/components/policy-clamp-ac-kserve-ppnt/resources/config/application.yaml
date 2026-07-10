@@ -114,10 +114,18 @@ customresourcedefinition:
 
 management:
   tracing:
+    export:
+      enabled: {{ .Values.global.tracing.enabled }}
     propagation:
-      produce: ${jaegerProducerType:B3}
+      produce: W3C
     sampling:
-      probability: ${jaegerSamplingProbability:1.0}
+      probability: {{ .Values.global.tracing.sampling.probability }}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+          transport: grpc
   endpoints:
     web:
       base-path: /
@@ -137,12 +145,3 @@ server:
     context-path: /onap/policy/clamp/acm/kserveparticipant
   ssl:
     enabled: false
-
-tracing:
-  enabled: ${allowTracing:false}
-  exporter:
-    endpoint: ${tracingExporterEndpoint:http://jaeger:4318/v1/traces}
-    protocol: ${tracingExporterProtocol:http}
-  sampler:
-    jaeger-remote:
-      endpoint: ${tracingSamplerEndpoint:http://jaeger:14250}
