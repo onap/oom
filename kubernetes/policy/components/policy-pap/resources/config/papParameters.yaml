@@ -19,6 +19,9 @@
 #  ============LICENSE_END=========================================================
 
 spring:
+  # sets the OpenTelemetry resource service.name; without it traces arrive as unknown_service:java
+  application:
+    name: policy-pap
   security:
     user:
       name: "${RESTSERVER_USER}"
@@ -142,3 +145,14 @@ management:
       exposure:
         include: health, metrics, prometheus
       path-mapping.prometheus: metrics
+  tracing:
+    export:
+      enabled: {{ .Values.global.tracing.enabled | default false }}
+    sampling:
+      probability: {{ .Values.global.tracing.sampling.probability | default "1.0" }}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+          transport: grpc
