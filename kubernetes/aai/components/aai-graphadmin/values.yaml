@@ -104,7 +104,7 @@ global: # global defaults
       clients: SDNC,-1|MSO,-1|SO,-1|robot-ete,-1
 
 # application image
-image: onap/aai-graphadmin:1.17.0
+image: onap/aai-graphadmin:1.17-STAGING-20260713T093824Z
 pullPolicy: Always
 restartPolicy: Always
 flavor: small
@@ -136,6 +136,12 @@ config:
     enabled: true
     limit: 180000
   janusgraph:
+    storage:
+      # Number of times JanusGraph retries acquiring a storage-backend lock before failing
+      # the transaction commit with AAI_6134 ("Exhausted retry amount"). The JanusGraph
+      # default (3) is too low under the concurrent graph writes produced by parallel SO
+      # instantiations; raising it lets transient lock contention resolve internally.
+      lockRetries: 10
     # temporarily enable this to update the graph storage version
     # see: https://docs.janusgraph.org/changelog/#upgrade-instructions_9
     allowUpgrade: true
