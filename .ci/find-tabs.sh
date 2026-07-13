@@ -16,23 +16,13 @@
 
 set -e
 
-tabs_lines=""  # Lines containing tabs
+# Find lines containing tabs, excluding Makefiles
+tabs_lines=$(git grep -n -I "$(printf '\t')" | grep -v 'Makefile' | cut -f1,2 -d":" || true)
 
-for file in $(git grep --cached -Il '' | sed -e 's/^/.\//')
-do
-  lines=$(grep -ErnIH "\t" "$file" | grep -v Makefile | cut -f-2 -d ":")
-  if [ -n "$lines" ]; then
-    tabs_lines=$([ -z "$tabs_lines" ] && echo "$lines" || printf "%s\n%s" "$tabs_lines" "$lines")
-  fi
-done
-
-exit_code=0
-
-# If tabs_lines is not empty, change the exit code to 1 to fail the CI.
 if [ -n "$tabs_lines" ]; then
   printf "\n***** Lines containing tabs *****\n\n"
-  echo "${tabs_lines}"
-  exit_code=1
+  echo "$tabs_lines"
+  exit 1
 fi
 
-exit $exit_code
+exit 0
