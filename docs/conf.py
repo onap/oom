@@ -55,5 +55,10 @@ linkcheck_ignore = [
   "https://istio-release.storage.googleapis.com/charts",
   "https://charts.bitnami.com/bitnami",
   "https://codecentric.github.io/helm-charts",
-  r'http://localhost:\d+/'
+  r'http://localhost:\d+/',
+  r'https://gerrit\.onap\.org/r/.*',
+  r'https://jira\.onap\.org/.*',
+  r'https://lf-onap\.atlassian\.net/.*'
 ]
+
+linkcheck_timeout = 10
