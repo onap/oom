@@ -63,7 +63,7 @@ Typically, to be able to access the Kubernetes nodes publicly a public address
 is assigned. In OpenStack this is a floating IP address.
 
 Most ONAP applications use the `NodePort` as predefined `service:type`,
-which opens allows access to the service through the the IP address of each
+which opens allows access to the service through the IP address of each
 Kubernetes node.
 When using  the `Loadbalancer` as `service:type` `Kubernetes LoadBalancer`_
 object which gets a separate IP address.
