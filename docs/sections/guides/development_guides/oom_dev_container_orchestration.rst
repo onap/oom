@@ -301,7 +301,7 @@ Pod Affinity / Anti-Affinity
          image: gcr.io/google_containers/pause:2.0
 
 This example contains both podAffinity and podAntiAffinity rules, the first
-rule is is a must (requiredDuringSchedulingIgnoredDuringExecution) while the
+rule is a must (requiredDuringSchedulingIgnoredDuringExecution) while the
 second will be met pending other considerations
 (preferredDuringSchedulingIgnoredDuringExecution).  Preemption Another feature
 that may assist in achieving a repeatable deployment in the presence of faults

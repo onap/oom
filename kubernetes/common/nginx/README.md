@@ -186,8 +186,8 @@ For annotations, please see [this document](https://github.com/kubernetes/ingres
 | `commonLabels`           | Add labels to all the deployed resources                                                | `{}`            |
 | `commonAnnotations`      | Add annotations to all the deployed resources                                           | `{}`            |
 | `diagnosticMode.enabled` | Enable diagnostic mode (all probes will be disabled and the command will be overridden) | `false`         |
-| `diagnosticMode.command` | Command to override all containers in the the deployment(s)/statefulset(s)              | `["sleep"]`     |
-| `diagnosticMode.args`    | Args to override all containers in the the deployment(s)/statefulset(s)                 | `["infinity"]`  |
+| `diagnosticMode.command` | Command to override all containers in the deployment(s)/statefulset(s)              | `["sleep"]`     |
+| `diagnosticMode.args`    | Args to override all containers in the deployment(s)/statefulset(s)                 | `["infinity"]`  |
 
 ### NGINX parameters
 
