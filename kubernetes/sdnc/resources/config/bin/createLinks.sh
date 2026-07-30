@@ -21,37 +21,26 @@
 ###
 
 
-if [ "$MDSAL_PATH" = "" ]
-then
-    MDSAL_PATH=/opt/opendaylight/mdsal
-fi
+MDSAL_PATH=${MDSAL_PATH:-/opt/opendaylight/mdsal}
+JOURNAL_PATH=${JOURNAL_PATH:-/opt/opendaylight/journal}
+SNAPSHOTS_PATH=${SNAPSHOTS_PATH:-/opt/opendaylight/snapshots}
 
-if [ "$JOURNAL_PATH" = "" ]
+if [ ! -L "$JOURNAL_PATH" ]
 then
-    JOURNAL_PATH=/opt/opendaylight/journal
-fi
-
-if [ "$SNAPSHOTS_PATH" = "" ]
-then
-    SNAPSHOTS_PATH=/opt/opendaylight/snapshots
-fi
-
-if [ ! -L $JOURNAL_PATH ]
-then
-    if [ -d $JOURNAL_PATH ]
+    if [ -d "$JOURNAL_PATH" ]
     then
-        mv $JOURNAL_PATH/* $MDSAL_PATH/journal
-        rm -f $JOURNAL_PATH
+        mv "$JOURNAL_PATH"/* "$MDSAL_PATH"/journal
+        rm -rf "$JOURNAL_PATH"
     fi
-    ln -s $MDSAL_PATH/journal $JOURNAL_PATH
+    ln -s "$MDSAL_PATH"/journal "$JOURNAL_PATH"
 fi
 
-if [ ! -L $SNAPSHOTS_PATH ]
+if [ ! -L "$SNAPSHOTS_PATH" ]
 then
-    if [ -d $SNAPSHOTS_PATH ]
+    if [ -d "$SNAPSHOTS_PATH" ]
     then
-        mv $SNAPSHOTS_PATH/* $MDSAL_PATH/snapshots
-        rm -f $SNAPSHOTS_PATH
+        mv "$SNAPSHOTS_PATH"/* "$MDSAL_PATH"/snapshots
+        rm -rf "$SNAPSHOTS_PATH"
     fi
-    ln -s $MDSAL_PATH/snapshots $SNAPSHOTS_PATH
+    ln -s "$MDSAL_PATH"/snapshots "$SNAPSHOTS_PATH"
 fi
