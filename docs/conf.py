@@ -57,3 +57,6 @@ linkcheck_ignore = [
   "https://codecentric.github.io/helm-charts",
   r'http://localhost:\d+/'
 ]
+
+linkcheck_timeout = 10
+linkcheck_retries = 2
