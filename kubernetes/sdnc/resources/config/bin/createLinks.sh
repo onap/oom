@@ -21,20 +21,9 @@
 ###
 
 
-if [ "$MDSAL_PATH" = "" ]
-then
-    MDSAL_PATH=/opt/opendaylight/mdsal
-fi
-
-if [ "$JOURNAL_PATH" = "" ]
-then
-    JOURNAL_PATH=/opt/opendaylight/journal
-fi
-
-if [ "$SNAPSHOTS_PATH" = "" ]
-then
-    SNAPSHOTS_PATH=/opt/opendaylight/snapshots
-fi
+MDSAL_PATH=${MDSAL_PATH:-/opt/opendaylight/mdsal}
+JOURNAL_PATH=${JOURNAL_PATH:-/opt/opendaylight/journal}
+SNAPSHOTS_PATH=${SNAPSHOTS_PATH:-/opt/opendaylight/snapshots}
 
 if [ ! -L $JOURNAL_PATH ]
 then
