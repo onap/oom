@@ -36,22 +36,22 @@ then
     SNAPSHOTS_PATH=/opt/opendaylight/snapshots
 fi
 
-if [ ! -L $JOURNAL_PATH ]
+if [ ! -L "$JOURNAL_PATH" ]
 then
-    if [ -d $JOURNAL_PATH ]
+    if [ -d "$JOURNAL_PATH" ]
     then
-        mv $JOURNAL_PATH/* $MDSAL_PATH/journal
-        rm -f $JOURNAL_PATH
+        mv "$JOURNAL_PATH"/* "$MDSAL_PATH"/journal
+        rm -f "$JOURNAL_PATH"
     fi
-    ln -s $MDSAL_PATH/journal $JOURNAL_PATH
+    ln -s "$MDSAL_PATH"/journal "$JOURNAL_PATH"
 fi
 
-if [ ! -L $SNAPSHOTS_PATH ]
+if [ ! -L "$SNAPSHOTS_PATH" ]
 then
-    if [ -d $SNAPSHOTS_PATH ]
+    if [ -d "$SNAPSHOTS_PATH" ]
     then
-        mv $SNAPSHOTS_PATH/* $MDSAL_PATH/snapshots
-        rm -f $SNAPSHOTS_PATH
+        mv "$SNAPSHOTS_PATH"/* "$MDSAL_PATH"/snapshots
+        rm -f "$SNAPSHOTS_PATH"
     fi
-    ln -s $MDSAL_PATH/snapshots $SNAPSHOTS_PATH
+    ln -s "$MDSAL_PATH"/snapshots "$SNAPSHOTS_PATH"
 fi
