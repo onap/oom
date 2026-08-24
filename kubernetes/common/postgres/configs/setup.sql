@@ -4,6 +4,13 @@ SET application_name="container_setup";
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 CREATE EXTENSION IF NOT EXISTS pgaudit;
 
+--- Log slow statements only. The image hardcodes log_duration = on, which writes a line for
+--- every statement (~580 MB a day on a busy database) until the volume is full, and it offers
+--- no postgresql.conf hook to override it -- ALTER SYSTEM is the only way in. Slow statements
+--- are still logged, with their text, by log_min_duration_statement.
+ALTER SYSTEM SET log_duration = off;
+ALTER SYSTEM SET log_min_duration_statement = 1000;
+
 ALTER USER postgres PASSWORD '${PG_ROOT_PASSWORD}';
 
 CREATE USER ${PG_PRIMARY_USER} WITH REPLICATION;
