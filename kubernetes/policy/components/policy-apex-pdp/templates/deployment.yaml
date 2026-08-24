@@ -3,7 +3,7 @@
 #   Copyright (C) 2018 Ericsson. All rights reserved.
 #   Modifications Copyright (C) 2020 AT&T Intellectual Property.
 #   Modifications Copyright © 2022 Nordix Foundation
-#   Modification (C) 2023-2024 Deutsche Telekom. All rights reserved.
+#   Modification (C) 2023-2024, 2026 Deutsche Telekom. All rights reserved.
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -95,6 +95,11 @@ spec:
             name: policy-logs
           - mountPath: /home/policy/config
             name: apexconfig
+          # apex writes the policy model to a temp file before starting its engine,
+          # so java.io.tmpdir has to be writable despite the read-only root filesystem
+          - mountPath: /tmp
+            name: empty-dir
+            subPath: tmp-dir
           resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -106,6 +111,9 @@ spec:
         {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
+        - name: empty-dir
+          emptyDir:
+            sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}
         - name: policy-logs
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.logDir.sizeLimit }}
