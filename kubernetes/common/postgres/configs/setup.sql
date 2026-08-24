@@ -4,6 +4,14 @@ SET application_name="container_setup";
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 CREATE EXTENSION IF NOT EXISTS pgaudit;
 
+--- log_duration writes a line for every statement, whatever
+--- log_min_duration_statement is set to -- ~580 MB a day on a busy database, until
+--- the volume is full. The image hardcodes it to on and, unlike the other logging
+--- settings, gives it no token in its postgresql.conf template, so ALTER SYSTEM
+--- (postgresql.auto.conf) is the only way to override it. Slow statements are still
+--- logged, with their text, by log_min_duration_statement.
+ALTER SYSTEM SET log_duration = off;
+
 ALTER USER postgres PASSWORD '${PG_ROOT_PASSWORD}';
 
 CREATE USER ${PG_PRIMARY_USER} WITH REPLICATION;

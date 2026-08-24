@@ -3,6 +3,7 @@
 # Copyright © 2020 Samsung Electronics
 # Copyright © 2021 Orange
 # Modifications Copyright (C) 2021 Bell Canada.
+# Modifications Copyright (C) 2026 Deutsche Telekom. All rights reserved.
 # #
 # # Licensed under the Apache License, Version 2.0 (the "License");
 # # you may not use this file except in compliance with the License.
@@ -157,6 +158,8 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         - name: PGDATA_PATH_OVERRIDE
           value: "{{ $dot.Values.config.pgDataPath }}"
+        - name: LOG_MIN_DURATION_STATEMENT
+          value: "{{ $dot.Values.config.logMinDurationStatement }}"
         volumeMounts:
         - name: config
           mountPath: /pgconf/pool_hba.conf
