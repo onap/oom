@@ -1,6 +1,7 @@
 #  ============LICENSE_START=======================================================
 #   Copyright (C) 2022 Bell Canada. All rights reserved.
 #   Modifications Copyright © 2022-2025 Nordix Foundation
+#   Modifications Copyright © 2026 Deutsche Telekom
 #  ================================================================================
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -85,7 +86,12 @@ pap:
           - {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
         topicCommInfrastructure: kafka
         additionalProps:
-          group.id : {{ .Values.config.kafka.consumer.groupId }}
+          # Must differ from the group.id of the source above: this source
+          # consumes the same effective topic, and both of PAP's dispatchers
+          # need every message. Sharing a group makes Kafka split the
+          # partitions between them, so each message reaches only one of the
+          # two and PDP responses are dropped by the heartbeat dispatcher.
+          group.id : {{ .Values.config.kafka.consumer.heartbeatGroupId }}
           security.protocol: SASL_PLAINTEXT
           sasl.mechanism: {{ .Values.kafkaUser.authenticationType | upper }}
           sasl.jaas.config: ${JAASLOGIN}
