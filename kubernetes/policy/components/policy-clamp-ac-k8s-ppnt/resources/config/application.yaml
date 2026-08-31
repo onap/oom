@@ -109,10 +109,18 @@ participant:
 
 management:
   tracing:
+    export:
+      enabled: {{ .Values.global.tracing.enabled }}
     propagation:
-      produce: ${jaegerProducerType:B3}
+      produce: W3C
     sampling:
-      probability: ${jaegerSamplingProbability:1.0}
+      probability: {{ .Values.global.tracing.sampling.probability }}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+          transport: grpc
   endpoints:
     web:
       base-path: /
@@ -152,12 +160,3 @@ chart:
 helm:
   repos: [{"repoName": "kong", "address": "https://charts.konghq.com"},{"repoName": "bitnami", "address": "https://charts.bitnami.com/bitnami"}]
   protocols: http,https
-
-tracing:
-  enabled: ${allowTracing:false}
-  exporter:
-    endpoint: ${tracingExporterEndpoint:http://jaeger:4318/v1/traces}
-    protocol: ${tracingExporterProtocol:http}
-  sampler:
-    jaeger-remote:
-      endpoint: ${tracingSamplerEndpoint:http://jaeger:14250}
