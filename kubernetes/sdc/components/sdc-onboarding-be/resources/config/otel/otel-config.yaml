@@ -1,0 +1,38 @@
+# Read by the OpenTelemetry Java agent via OTEL_CONFIG_FILE. Naming this file
+# makes the agent ignore every other OTEL_* variable, so all of its
+# configuration has to live here.
+file_format: "1.0"
+# Declarative configuration, unlike the environment variables it replaces, does
+# not default to W3C propagation: without this the agent injects no traceparent
+# and every service starts its own trace.
+propagator:
+  composite_list: "tracecontext,baggage"
+resource:
+  attributes:
+    - name: service.name
+      value: sdc-onboarding-be
+tracer_provider:
+  processors:
+    - batch:
+        exporter:
+          otlp_grpc:
+            endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
+  sampler:
+    parent_based:
+      root:
+        # kubelet polls the health check on three probes; sdc-be polls it every
+        # 3 seconds. Dropping the span drops its children too, so the Cassandra
+        # reads behind the health check go with it.
+        rule_based_routing:
+          span_kind: SERVER
+          fallback_sampler:
+            trace_id_ratio_based:
+              ratio: "{{ .Values.global.tracing.sampling.probability }}"
+          rules:
+            - attribute: url.path
+              pattern: (?i)^/onboarding-api/v1\.0/healthcheck$
+              action: DROP
+meter_provider:
+  readers: []
+logger_provider:
+  processors: []
