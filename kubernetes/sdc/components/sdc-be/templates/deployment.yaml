@@ -122,20 +122,8 @@ spec:
           {{- end }}
           - name: OTEL_ENABLED
             value: {{ .Values.global.tracing.enabled | quote }}
-          - name: OTEL_SERVICE_NAME
-            value: "sdc-be"
-          - name: OTEL_EXPORTER_OTLP_ENDPOINT
-            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
-          - name: OTEL_EXPORTER_OTLP_PROTOCOL
-            value: "grpc"
-          - name: OTEL_TRACES_SAMPLER
-            value: "parentbased_traceidratio"
-          - name: OTEL_TRACES_SAMPLER_ARG
-            value: {{ .Values.global.tracing.sampling.probability | quote }}
-          - name: OTEL_LOGS_EXPORTER
-            value: "none"
-          - name: OTEL_METRICS_EXPORTER
-            value: "none"
+          - name: OTEL_CONFIG_FILE
+            value: /app/jetty/config/otel/otel-config.yaml
           volumeMounts:
           - name: {{ include "common.fullname" . }}-jetty
             mountPath: /app/jetty
@@ -174,6 +162,9 @@ spec:
           - name: ready-probe-config
             mountPath: /app/jetty/ready-probe.sh
             subPath: ready-probe.sh
+          - name: otel-config
+            mountPath: /app/jetty/config/otel/otel-config.yaml
+            subPath: otel-config.yaml
 
           lifecycle:
             postStart:
@@ -221,4 +212,8 @@ spec:
         configMap:
           name: {{ include "common.release" . }}-sdc-be-ready-probe-configmap
           defaultMode: 0755
+      - name: otel-config
+        configMap:
+          name: {{ include "common.fullname" . }}-otel-configmap
+          defaultMode: 0644
       {{- include "common.imagePullSecrets" . | nindent 6 }}
