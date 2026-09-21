@@ -18,30 +18,50 @@ tracer_provider:
           otlp_grpc:
             endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
   sampler:
-    # The rules only see root spans, which in sdc-be are all background work:
-    # queries made while serving a request have a parent and are never matched.
+    # A dropped span takes its children with it, so dropping the root of each
+    # health-check chain is enough: the two scheduled tasks below are roots of
+    # their own traces, and their outgoing calls then carry an unsampled
+    # traceparent, which sdc-onboarding-be honours.
     parent_based:
       root:
         rule_based_routing:
-          span_kind: INTERNAL
+          span_kind: SERVER
           fallback_sampler:
             rule_based_routing:
               span_kind: CLIENT
               fallback_sampler:
-                trace_id_ratio_based:
-                  ratio: "{{ .Values.global.tracing.sampling.probability }}"
-              # JanusGraph polling its log, and the operational environment
-              # poll of EnvironmentCleanThread.
+                rule_based_routing:
+                  span_kind: INTERNAL
+                  fallback_sampler:
+                    trace_id_ratio_based:
+                      ratio: "{{ .Values.global.tracing.sampling.probability }}"
+                  # Both tasks run every 3 seconds and are traced through
+                  # @WithSpan, which reports the declaring class as
+                  # code.namespace.
+                  rules:
+                    - attribute: code.namespace
+                      pattern: ^org\.openecomp\.sdc\.be\.(components\.health\.HealthCheckBusinessLogic|dao\.janusgraph\.JanusGraphClient)\$HealthCheckScheduledTask$
+                      action: DROP
+                    # The data type cache refresh. Dropping it also drops the
+                    # several hundred queries each run makes.
+                    - attribute: code.namespace
+                      pattern: ^org\.openecomp\.sdc\.be\.model\.cache\.ApplicationDataTypeCache$
+                      action: DROP
+              # Also matched directly, so that the call to sdc-onboarding-be
+              # stays unsampled even if the scheduled task above is renamed.
               rules:
+                - attribute: url.full
+                  pattern: (?i)^https?://.*/health-?check$
+                  action: DROP
+                # JanusGraph polling its log, and the operational environment
+                # poll of EnvironmentCleanThread. Queries made while serving a
+                # request have a parent and are never matched.
                 - attribute: db.cassandra.table
                   pattern: ^(sdctitan\.systemlog|sdcrepository\.operationalenvironment)$
                   action: DROP
-          # The data type cache refresh, traced through @WithSpan, which
-          # reports the declaring class as code.namespace. Dropping it also
-          # drops the several hundred queries each run makes.
           rules:
-            - attribute: code.namespace
-              pattern: ^org\.openecomp\.sdc\.be\.model\.cache\.ApplicationDataTypeCache$
+            - attribute: url.path
+              pattern: (?i)^/sdc2/rest/healthcheck$
               action: DROP
 meter_provider:
   readers: []
