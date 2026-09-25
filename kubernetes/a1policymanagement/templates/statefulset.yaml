@@ -52,22 +52,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
         - name: LOGBACK_CONFIG_FILE
           value: {{ .Values.app.logging.config | quote }}
-{{- if .Values.global.tracing.enabled }}
-        - name: ONAP_PROPAGATOR_PRODUCE
-          value: "[{{ .Values.tracing.propagator.produce.type }}]"
-        - name: ONAP_OTEL_EXPORTER_ENDPOINT
-          value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
-        - name: ONAP_OTEL_EXPORTER_PROTOCOL
-          value: {{ .Values.tracing.collector.protocol | quote }}
-        - name: ONAP_SDK_DISABLED
-          value: {{ .Values.tracing.sdk.disabled | quote }}
-        - name: ONAP_TRACING_SOUTHBOUND
-          value: {{ .Values.tracing.sdk.south | quote }}
-        - name: ONAP_TRACING_NORTHBOUND
-          value: {{ .Values.tracing.north.enabled | quote }}
-        - name: ONAP_OTEL_SAMPLER_JAEGER_REMOTE_ENDPOINT
-          value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.grpc }}"
-{{- end }}
         volumeMounts:
         - mountPath: /config-input
           name: {{ include "common.fullname" . }}-policy-conf-input
@@ -92,22 +76,6 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
         - name: LOGBACK_CONFIG_FILE
           value: {{ .Values.app.logging.config | quote }}
-{{- if .Values.global.tracing.enabled }}
-        - name: ONAP_PROPAGATOR_PRODUCE
-          value: "[{{ .Values.tracing.propagator.produce.type }}]"
-        - name: ONAP_OTEL_EXPORTER_ENDPOINT
-          value: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}
-        - name: ONAP_OTEL_EXPORTER_PROTOCOL
-          value: {{ .Values.tracing.collector.protocol | quote }}
-        - name: ONAP_SDK_DISABLED
-          value: {{ .Values.tracing.sdk.disabled | quote }}
-        - name: ONAP_TRACING_SOUTHBOUND
-          value: {{ .Values.tracing.sdk.south | quote }}
-        - name: ONAP_TRACING_NORTHBOUND
-          value: {{ .Values.tracing.north.enabled | quote }}
-        - name: ONAP_OTEL_SAMPLER_JAEGER_REMOTE_ENDPOINT
-          value: {{ .Values.global.tracing.sampling.baseUrl | quote }}
-{{- end }}
         volumeMounts:
         - mountPath: /tmp/scripts
           name: {{ include "common.fullname" . }}-envsubst-scripts
@@ -122,13 +90,11 @@ spec:
         readinessProbe:
           tcpSocket:
             port: {{ .Values.readiness.port }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
         livenessProbe:
-          httpGet:
-            path: /status
+          tcpSocket:
             port: {{ .Values.liveness.port }}
-            scheme: HTTP
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         volumeMounts:
