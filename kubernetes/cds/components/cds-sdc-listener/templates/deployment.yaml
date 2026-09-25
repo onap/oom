@@ -37,22 +37,10 @@ spec:
               secretKeyRef:
                 name: {{ include "common.name" . }}-ku
                 key: sasl.jaas.config
-          - name: OTEL_ENABLED
+          - name: OTEL_JAVAAGENT_ENABLED
             value: {{ .Values.global.tracing.enabled | quote }}
-          - name: OTEL_SERVICE_NAME
-            value: "cds-sdc-listener"
-          - name: OTEL_EXPORTER_OTLP_ENDPOINT
-            value: "{{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpGrpc }}"
-          - name: OTEL_EXPORTER_OTLP_PROTOCOL
-            value: "grpc"
-          - name: OTEL_TRACES_SAMPLER
-            value: "parentbased_traceidratio"
-          - name: OTEL_TRACES_SAMPLER_ARG
-            value: {{ .Values.global.tracing.sampling.probability | quote }}
-          - name: OTEL_LOGS_EXPORTER
-            value: "none"
-          - name: OTEL_METRICS_EXPORTER
-            value: "none"
+          - name: OTEL_EXPERIMENTAL_CONFIG_FILE
+            value: {{ .Values.config.appConfigDir }}/otel-config.yaml
           ports: {{- include "common.containerPorts" . | nindent 12 }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
@@ -79,6 +67,9 @@ spec:
           - mountPath: {{ .Values.config.appConfigDir }}/logback.xml
             name: {{ include "common.fullname" . }}-config
             subPath: logback.xml
+          - mountPath: {{ .Values.config.appConfigDir }}/otel-config.yaml
+            name: {{ include "common.fullname" . }}-config
+            subPath: otel-config.yaml
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -98,4 +89,6 @@ spec:
               path: application.yaml
             - key: logback.xml
               path: logback.xml
+            - key: otel-config.yaml
+              path: otel-config.yaml
       {{- include "common.imagePullSecrets" . | nindent 6 }}
