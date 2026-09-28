@@ -15,7 +15,12 @@
 # limitations under the License.
 */}}
 aai:
-  auth: {{.Values.aai.auth}}
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 server:
   {{- if include "common.onServiceMesh" . }}
   forward-headers-strategy: none
@@ -33,15 +38,7 @@ spring:
       pool-name: catdb-pool
       registerMbeans: false
   security:
-    usercredentials:
-    -
-      username: asdc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: Asdc-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    usercredentials: {{ include "so.helpers.userCredentials" . }}
 management:
   observations:
     enable:
@@ -57,9 +54,9 @@ management:
       type:
         - w3c
         - b3
-  zipkin:
+  otlp:
     tracing:
-      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
 request:
   datasource:
     hikari:
@@ -75,14 +72,11 @@ mso:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
-  db:
-    auth: {{ .Values.mso.requestDb.auth }}
   site-name: onapheat
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.requestDb.auth }}
   aai:
     endpoint: http://aai.{{ include "common.namespace" . }}:80
   asdc-connections:
