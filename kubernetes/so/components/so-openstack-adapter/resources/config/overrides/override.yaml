@@ -15,7 +15,8 @@
 # limitations under the License.
 */}}
 aai:
-  auth: {{ .Values.aai.auth }}
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
   endpoint: http://aai.{{ include "common.namespace" . }}:80
 server:
   {{- if include "common.onServiceMesh" . }}
@@ -36,30 +37,7 @@ spring:
       registerMbeans: false
   security:
     usercredentials:
-    -
-      username: sdnc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SDNC-Client
-    -
-      username: sitecontrol
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SiteControl-Client
-    -
-      username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: apih
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: MSO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    {{- include "so.helpers.userCredentials" . | trim | nindent 4 }}
 management:
   observations:
     enable:
@@ -75,9 +53,9 @@ management:
       type:
         - w3c
         - b3
-  zipkin:
+  otlp:
     tracing:
-      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
 org:
   onap:
     so:
@@ -89,7 +67,6 @@ org:
         {{- end }}
         default_keystone_reg_ex: "/[vV][0-9]"
         vnf:
-          bpelauth: {{ .Values.org.onap.so.adapters.bpelauth }}
           checkRequiredParameters: true
           addGetFilesOnVolumeReq: false
           sockettimeout: 30
@@ -100,7 +77,6 @@ org:
           valet_enabled: false
           fail_requests_on_valet_failure: false
         network:
-          bpelauth: {{ .Values.org.onap.so.adapters.bpelauth }}
           sockettimeout: 5
           connecttimeout: 5
           retrycount: 5
@@ -129,16 +105,16 @@ ecomp:
         retryCount: 3
         pollTimeout: 7500
         pollInterval: 15
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 multicloud:
   endpoint: http://multicloud-k8s.{{ include "common.namespace" . }}:9015
 mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.db.auth }}
-  auth:
-    user: {{ .Values.mso.auth.user }}
-    password: {{ .Values.mso.auth.password }}
   logPath: ./logs/openstack
   msb-ip: msb-iag
   msb-port: 80
@@ -149,8 +125,6 @@ mso:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
-  db:
-    auth: {{ .Values.mso.db.auth }}
   site-name: localDevEnv
   async:
     core-pool-size: 50

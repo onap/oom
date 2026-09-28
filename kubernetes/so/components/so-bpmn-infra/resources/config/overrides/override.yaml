@@ -15,7 +15,8 @@
 # limitations under the License.
 */}}
 aai:
-  auth: {{ .Values.aai.auth }}
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
   dme2:
     timeout: '30000'
   endpoint: http://aai.{{ include "common.namespace" . }}:80
@@ -84,15 +85,11 @@ mso:
   adapters:
     apihandler:
       endpoint: http://so.{{ include "common.namespace" . }}:8080
-      auth: Basic SW5mcmFQb3J0YWxDbGllbnQ6cGFzc3dvcmQxJA==
     completemsoprocess:
       endpoint: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/CompleteMsoProcess
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.adapters.requestDb.auth }}
     db:
-      auth: {{ .Values.mso.adapters.db.auth }}
-      password: {{ .Values.mso.adapters.db.password }}
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
       spring:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
@@ -103,8 +100,6 @@ mso:
     openecomp:
       db:
         endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/services/RequestsDbAdapter
-    po:
-      auth: {{ .Values.mso.adapters.po.auth }}
     sdnc:
       endpoint: http://so-sdnc-adapter.{{ include "common.namespace" . }}:8086/adapters/SDNCAdapter
       rest:
@@ -140,8 +135,6 @@ mso:
       endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082/ecomp/mso/catalog
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
-  db:
-    auth: {{ .Values.mso.adapters.requestDb.auth }}
   default:
     adapter:
       namespace: http://org.onap.mso
@@ -159,8 +152,6 @@ mso:
     db:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083/
   rollback: 'true'
-  sdnc:
-    password: {{ .Values.mso.sdnc.password }}
   service:
     agnostic:
       sniro:
@@ -168,7 +159,6 @@ mso:
         host: http://sniro-emulator:80
   site-name: CamundaEngine
   sniro:
-    auth: {{ .Values.mso.sniro.auth }}
     callback: http://so-openstack-adapter.{{ include "common.namespace" . }}:8087/adapters/rest/SDNCNotify
     endpoint: {{ .Values.mso.sniro.endpoint }}
     timeout: PT30M
@@ -384,34 +374,7 @@ spring:
   security:
     rbacEnabled: {{ .Values.global.so.auth.rbacEnabled }}
     usercredentials:
-    -
-      username: apihBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: so@so.onap.org
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: sdncaBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: poBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: wmaBpmn
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPMN-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    {{- include "so.helpers.userCredentials" . | trim | nindent 4 }}
 management:
   observations:
     enable:
@@ -427,14 +390,16 @@ management:
       type:
         - w3c
         - b3
-  zipkin:
+  otlp:
     tracing:
-      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
 so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
   vnfm:
     adapter:
       url: http://so-etsi-sol003-adapter.{{ include "common.namespace" . }}:9092/so/vnfm-adapter/v1
-      auth: {{ .Values.so.sol003.adapter.auth }}
 cnfm:
   endpoint:
     url: http://so-cnfm-lcm.{{ include "common.namespace" . }}:9888
