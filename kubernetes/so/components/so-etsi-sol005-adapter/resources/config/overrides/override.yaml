@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+aai:
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
 logging:
   path: logs
 spring:
@@ -27,13 +30,7 @@ spring:
        pool-name: reqdb-pool
        registerMbeans: true
   security:
-    usercredentials:
-    - username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    - username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    usercredentials: {{ include "so.helpers.userCredentials" . }}
 server:
     {{- if include "common.onServiceMesh" . }}
     forward-headers-strategy: none
@@ -49,7 +46,6 @@ mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.adapters.requestDb.auth }}
 #Actuator
 management:
   security:

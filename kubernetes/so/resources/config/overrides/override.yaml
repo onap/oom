@@ -1,6 +1,11 @@
 aai:
   endpoint: http://aai.{{ include "common.namespace" . }}:80
-  auth: {{ .Values.mso.aai.auth }}
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 server:
     port: {{ index .Values.containerPort }}
     tomcat:
@@ -12,13 +17,10 @@ mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.adapters.requestDb.auth }}
   catalog:
     db:
       spring:
         endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
-  db:
-    auth: {{ .Values.mso.adapters.requestDb.auth }}
   config:
     path: /src/main/resources/
   infra:
@@ -32,7 +34,6 @@ mso:
           default:
             testApi: GR_API
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/
-  camundaAuth: {{ .Values.mso.camundaAuth }}
   async:
     core-pool-size: 50
     max-pool-size: 50
@@ -50,7 +51,6 @@ mso:
         count: 3
   aai:
     endpoint: http://aai.{{ include "common.namespace" . }}:80
-    auth: {{ .Values.mso.aai.auth }}
 
   extApi:
     endpoint: http://nbi.onap:8080/nbi/api/v3
@@ -64,7 +64,6 @@ mso:
       publisher:
         topic: com.att.ecomp.mso.operationalEnvironmentEvent
   health:
-    auth: {{ .Values.mso.health.auth }}
     endpoints:
       - subsystem: apih
         uri: http://so-bpmn-infra:8081
@@ -85,31 +84,7 @@ spring:
     type: filter
   security:
     rbacEnabled: {{ .Values.global.so.auth.rbacEnabled }}
-    usercredentials:
-    -
-      username: sitecontrol
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SiteControl-Client
-    -
-      username: gui
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: GUI-Client
-    -
-      username: infraportal
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: InfraPortal-Client
-    -
-      username: InfraPortalClient
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: InfraPortal-Client
-    -
-      username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    usercredentials: {{ include "so.helpers.userCredentials" . }}
 management:
   observations:
     enable:
@@ -125,9 +100,9 @@ management:
       type:
         - w3c
         - b3
-  zipkin:
+  otlp:
     tracing:
-      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
 request:
   datasource:
     hikari:

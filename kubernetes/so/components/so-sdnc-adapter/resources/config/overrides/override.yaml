@@ -20,9 +20,6 @@ server:
     {{- end }}
     port: {{ index .Values.containerPort }}
 mso:
-    auth:
-        user: so@so.onap.org
-        password: ${MSO_AUTH}
     async:
         core-pool-size: 50
         max-pool-size: 50
@@ -32,8 +29,6 @@ mso:
         db:
           spring:
             endpoint: http://so-catalog-db-adapter.{{ include "common.namespace" . }}:8082
-    db:
-      auth: {{ .Values.mso.adapters.requestDb.auth }}
     site-name: onapheat
     #needs to be confirmed TODO
     workflow:
@@ -112,7 +107,6 @@ org:
                             changedelete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             delete: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
                             rollback: POST|270000|sdncurl6|sdnc-request-header|org:onap:sdnctl:vnf
-                    bpelauth: {{ .Values.org.onap.so.adapters.sdnc.bpelauth }}
                     bpelurl: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/SDNCAdapterCallbackService
                     opticalservice:
                         optical-service-create:
@@ -184,35 +178,15 @@ org:
                       upgrade-pre-check: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
                       upgrade-post-check: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
                       default: POST|180000|sdncurl20|common-header|org:onap:ccsdk:sli:northbound:lcm
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 spring:
   application:
     name: so-sdnc-adapter
   security:
-    usercredentials:
-    -
-      username: sdnc
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SDNC-Client
-    -
-      username: sitecontrol
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SiteControl-Client
-    -
-      username: bpel
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: BPEL-Client
-    -
-      username: sniro
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: SNIRO-Client
-    -
-      username: apih
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: MSO-Client
-    -
-      username: mso_admin
-      password: '$2a$10$Fh9ffgPw2vnmsghsRD3ZauBL1aKXebigbq3BB1RPWtE62UDILsjke'
-      role: ACTUATOR
+    usercredentials: {{ include "so.helpers.userCredentials" . }}
 management:
   observations:
     enable:
@@ -228,6 +202,6 @@ management:
       type:
         - w3c
         - b3
-  zipkin:
+  otlp:
     tracing:
-      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}/api/v2/spans
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
