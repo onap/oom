@@ -15,9 +15,14 @@
 */}}
 
 aai:
-  auth: ${AAI_USERNAME}:${AAI_PASSWORD}
+  username: ${AAI_USERNAME}
+  password: ${AAI_PASSWORD}
   endpoint: http://aai.{{ include "common.namespace" . }}:80
   enabled: {{ .Values.global.aai.enabled }}
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 logging:
   path: logs
 spring:
@@ -25,9 +30,7 @@ spring:
     name: so-cnf-adapter
   security:
     usercredentials:
-      - username: ${ACTUATOR_USERNAME}
-        password: ${ACTUATOR_PASSWORD}
-        role: ACTUATOR
+    {{- include "so.helpers.userCredentials" . | trim | nindent 4 }}
   sleuth:
     enabled: {{ .Values.global.tracing.enabled }}
     trace-id128: true

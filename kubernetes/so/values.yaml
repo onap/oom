@@ -56,7 +56,6 @@ global:
     # dbCredsExternalSecret: some secret
   app:
     siteName: onapheat
-    auth: 3EDC974C5CD7FE54C47C7490AF4D3B474CDD7D0FFA35A7ACDE3E209631E45F428976EAC0858874F17390A13149E63C90281DD8D20456
     defaultCloudOwner: onap
   tracing:
     enabled: false
@@ -65,6 +64,7 @@ global:
       port:
         zipkin: 9411
         otlpGrpc: 4317
+        otlpHttp: 4318
         grpc: 14250
     sampling:
       probability: 1.0 # percentage of requests that are sampled (between 0-1/0%-100%)
@@ -73,6 +73,12 @@ global:
       users:
       - username: aai@aai.onap.org
         password: demo123456!
+    so:
+      users:
+      - username: InfraPortalClient
+        password: password1$
+      - username: bpel
+        password: password1$
   so:
     auth:
       enabled: true
@@ -134,29 +140,11 @@ secrets:
     login: '{{ .Values.dbCreds.adminName }}'
     password: '{{ .Values.dbCreds.adminPassword }}'
     passwordPolicy: generate
-  - uid: 'mso-key'
-    name: &mso-key '{{ include "common.release" . }}-mso-key'
-    type: password
-    password: '{{ .Values.mso.msoKey }}'
   - uid: mso-oof-auth
     name: &mso-oof-auth '{{ include "common.release" . }}-mso-oof-auth'
     type: basicAuth
     login: '{{ .Values.mso.oof.login }}'
     password: '{{ .Values.mso.oof.password }}'
-    passwordPolicy: required
-  - uid: server-actuator-creds
-    name: &actuator-secrets '{{ include "common.release" . }}-so-server-actuator-creds'
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.server.actuatorCredsExternalSecret) . }}'
-    login: '{{ .Values.server.actuator.username }}'
-    password: '{{ .Values.server.actuator.password }}'
-    passwordPolicy: required
-  - uid: server-bpel-creds
-    name: &bpel-secrets '{{ include "common.release" . }}-so-server-bpel-creds'
-    type: basicAuth
-    externalSecret: '{{ tpl (default "" .Values.server.bpelCredsExternalSecret) . }}'
-    login: '{{ .Values.server.bpel.username }}'
-    password: '{{ .Values.server.bpel.password }}'
     passwordPolicy: required
   - uid: so-aai-creds
     name: &aai-secrets '{{ include "common.release" . }}-so-server-aai-creds'
@@ -179,17 +167,10 @@ dbCreds:
   userName: so_user
   adminName: so_admin
 
-image: onap/so/api-handler-infra:1.21.0
+image: onap/so/api-handler-infra:1.22.0-20261027T1544
 
-server:
-  actuator:
-    username: mso_admin
-    password: password1$
-  # actuatorCredsExternalSecret: some secret
-  bpel:
-    username: bpel
-    password: password1$
-  # bpelCredsExternalSecret: some secret
+server: {}
+  # aaiCredsExternalSecret: some secret
 
 pullPolicy: Always
 
@@ -299,16 +280,9 @@ serviceMesh:
         namespace: istio-ingress
 
 mso:
-  adapters:
-    requestDb:
-      auth: Basic YnBlbDpwYXNzd29yZDEk
-  camundaAuth: apihBpmn:password1$
-  msoKey: 07a7159d3bf51a0e53be7a8f89699be7
   sdc:
     client:
       auth: Basic Y2k6MTIzNDU2=
-  aai:
-    auth: aai@aai.onap.org:demo123456!
   oof:
     login: test
     password: testpwd
@@ -316,8 +290,6 @@ mso:
     operationalEnv:
       dmaap:
         auth: m32050@non-prod.mso.ecomp.att.com:Att32050Life!@
-  health:
-    auth: basic bXNvX2FkbWlufHBhc3N3b3JkMSQ=
 
 so-bpmn-infra:
   mariadb-galera:
@@ -341,9 +313,6 @@ so-cnf-adapter:
     <<: *dbSecrets
   server:
     aaiCredsExternalSecret: *aai-secrets
-    actuatorCredsExternalSecret: *actuator-secrets
-  mso:
-    msoKeySecret: *mso-key
 
 so-cnfm-lcm:
   enabled: true
@@ -387,9 +356,6 @@ so-admin-cockpit:
 
 so-nssmf-adapter:
   enabled: true
-  server:
-    actuatorCredsExternalSecret: *actuator-secrets
-    bpelCredsExternalSecret: *bpel-secrets
   mariadb-galera:
     <<: *mariadbGalera
   db:
@@ -402,8 +368,6 @@ so-oof-adapter:
   db:
     <<: *dbSecrets
   mso:
-    msoKeySecret: *mso-key
-    camundaAuth: AE2E9BE6EF9249085AF98689C4EE087736A5500629A72F35068FFB88813A023581DD6E765071F1C04075B36EA4213A
     oof:
       authSecret: *mso-oof-auth
   logConfigMapNamePrefix: '{{ include "common.release" . }}-so'

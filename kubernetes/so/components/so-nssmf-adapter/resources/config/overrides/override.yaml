@@ -14,8 +14,13 @@
 # limitations under the License.
 */}}
 aai:
-  auth: {{ .Values.aai.auth }}
+  username: {{ (index .Values.global.auth.aai.users 0).username }}
+  password: {{ (index .Values.global.auth.aai.users 0).password | quote }}
   endpoint: http://aai.{{ include "common.namespace" . }}:80
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 logging:
   path: logs
 spring:
@@ -35,12 +40,7 @@ spring:
       enable-lazy-load-no-trans: true
   security:
     usercredentials:
-      - username: ${BPEL_USERNAME}
-        password: ${BPEL_PASSWORD}
-        role: BPEL-Client
-      - username: ${ACTUATOR_USERNAME}
-        password: ${ACTUATOR_PASSWORD}
-        role: ACTUATOR
+    {{- include "so.helpers.userCredentials" . | trim | nindent 4 }}
 server:
   {{- if include "common.onServiceMesh" . }}
   forward-headers-strategy: none
@@ -57,7 +57,6 @@ mso:
   adapters:
     requestDb:
       endpoint: http://so-request-db-adapter.{{ include "common.namespace" . }}:8083
-      auth: {{ .Values.mso.adapters.requestDb.auth }}
 #Actuator
 management:
   endpoints:
