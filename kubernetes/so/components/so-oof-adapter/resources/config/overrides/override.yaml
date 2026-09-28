@@ -13,19 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 */}}
+so:
+  auth:
+    username: {{ (index .Values.global.auth.so.users 0).username }}
+    password: {{ (index .Values.global.auth.so.users 0).password | quote }}
 logging:
   path: logs
 spring:
   application:
     name: so-oof-adapter
   security:
-    usercredentials:
-      - username: ${BPEL_USERNAME}
-        password: ${BPEL_PASSWORD}
-        role: BPEL-Client
-      - username: ${ACTUATOR_USERNAME}
-        password: ${ACTUATOR_PASSWORD}
-        role: ACTUATOR
+    usercredentials: {{ include "so.helpers.userCredentials" . }}
 server:
   {{- if include "common.onServiceMesh" . }}
   forward-headers-strategy: none
@@ -39,9 +37,7 @@ mso:
   logPath: ./logs/oof-adapter
   msb-ip: msb-iag.{{ include "common.namespace" . }}
   msb-port: 80
-  msoKey: ${MSO_KEY}
   camundaURL: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081
-  camundaAuth: {{ .Values.mso.camundaAuth }}
   workflow:
     message:
       endpoint: http://so-bpmn-infra.{{ include "common.namespace" . }}:8081/mso/WorkflowMessage

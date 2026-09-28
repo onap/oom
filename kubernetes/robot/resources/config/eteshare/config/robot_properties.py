@@ -302,10 +302,10 @@ GLOBAL_SO_SDNC_SERVER_PORT =  '{{include "robot.ingress.port" (dict "root" . "ho
 GLOBAL_SO_VFC_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-etsi-sol005-adapter" "port" 8084) }}'
 GLOBAL_SO_VNFM_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-etsi-sol003-adapter" "port" 9092) }}'
 GLOBAL_SO_NSSMF_SERVER_PORT = '{{include "robot.ingress.port" (dict "root" . "hostname" "so-nssmf-adapter" "port" 8088) }}'
-GLOBAL_SO_USERNAME = '{{ .Values.soUsername }}'
-GLOBAL_SO_CATDB_USERNAME = '{{ .Values.soCatdbUsername }}'
+GLOBAL_SO_USERNAME = '{{ (index .Values.global.auth.so.users 0).username }}'
+GLOBAL_SO_CATDB_USERNAME = '{{ (index .Values.global.auth.so.users 0).username }}'
 # robot uses SO_PASSWORD for both SO and CATDB
-GLOBAL_SO_PASSWORD = '{{ .Values.soPassword }}'
+GLOBAL_SO_PASSWORD = '{{ (index .Values.global.auth.so.users 0).password }}'
 GLOBAL_SO_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_APIHAND_IP_ADDR + ':' + GLOBAL_SO_APIHAND_SERVER_PORT
 GLOBAL_SO_APIHAND_ENDPOINT = GLOBAL_SO_ENDPOINT
 GLOBAL_SO_SDCHAND_ENDPOINT = 'http://' + GLOBAL_INJECTED_SO_SDCHAND_IP_ADDR + ':' + GLOBAL_SO_SDCHAND_SERVER_PORT
