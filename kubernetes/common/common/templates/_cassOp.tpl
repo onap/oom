@@ -27,9 +27,17 @@ spec:
   reaper:
     initContainerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
+      {{- with .Values.global.imagePullSecrets }}
+      pullSecretRef:
+        name: {{ tpl (first .) $ }}
+      {{- end }}
     containerImage:
       registry: {{ include "repositoryGenerator.dockerHubRepository" . }}
       tag: {{ .Values.k8ssandraOperator.reaper.tag }}
+      {{- with .Values.global.imagePullSecrets }}
+      pullSecretRef:
+        name: {{ tpl (first .) $ }}
+      {{- end }}
     autoScheduling:
       enabled: true
     metadata:
