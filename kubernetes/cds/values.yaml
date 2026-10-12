@@ -23,17 +23,16 @@ global:
   nodePortPrefixExt: 304
   persistence:
     mountPath: /dockerdata-nfs
-  mariadbGalera: &mariadbGalera
-    # flag to enable the DB creation via mariadb-operator
-    useOperator: true
-    #This flag allows NBI to instantiate its own mariadb-galera cluster
-    #When changing it to "true", also set "globalCluster: false"
-    #as the dependency check will not work otherwise (Chart.yaml)
+  postgres:
     localCluster: true
-    globalCluster: false
-    service: mariadb-galera
-    internalPort: 3306
-    nameOverride: mariadb-galera
+    # flag to enable the DB creation via pgo-operator
+    useOperator: false
+    service:
+      name: &postgresName cds-postgres
+      name2: &postgresName2 cds-pg-primary
+      name3: &postgresName3 cds-pg-replica
+      port: &postgresPort 5432
+    nameOverride: *postgresName
     # (optional) if localCluster=false and an external secret is used set this variable
     #userRootSecret: <secretName>
   tracing:
@@ -53,12 +52,33 @@ global:
 # Secrets metaconfig
 #################################################################
 secrets:
+  - uid: db-root-password
+    name: &dbRootPassSecretName '{{ include "common.release" . }}-cds-db-root-password'
+    type: password
+    externalSecret: '{{ .Values.global.postgres.localCluster | ternary
+                 ( hasSuffix "cds-db-root-password" (index .Values "postgres" "config" "pgRootPasswordExternalSecret") | ternary
+                   ""
+                   (tpl (default "" (index .Values "postgres" "config" "pgRootPasswordExternalSecret")) .)
+                 )
+                 ( not (empty (default "" .Values.global.postgres.userRootSecret)) | ternary
+                   .Values.global.postgres.userRootSecret
+                   (include "common.postgres.secret.rootPassSecretName"
+                     (dict "dot" . "chartName" .Values.global.postgres.nameOverride)
+                   )
+                 )
+               }}'
+    password: '{{ (index .Values "postgres" "config" "pgRootPassword") }}'
+    policy: generate
   - name: &dbUserSecretName '{{ include "common.release" . }}-cds-db-secret'
     uid: 'cds-db-secret'
     type: basicAuth
-    externalSecret: '{{ ternary "" (tpl (default "" (index .Values "mariadb-galera" "db" "externalSecret")) .) (hasSuffix "cds-db-secret" (index .Values "mariadb-galera" "db" "externalSecret"))}}'
-    login: '{{ index .Values "mariadb-galera" "db" "user" }}'
-    password: '{{ index .Values "mariadb-galera" "db" "password" }}'
+    externalSecret: '{{ hasSuffix "cds-db-secret" (index .Values "postgres" "config" "pgUserExternalSecret") | ternary
+                        ""
+                        (tpl (default "" (index .Values "postgres" "config" "pgUserExternalSecret")) .)
+                     }}'
+    login: '{{ (index .Values "postgres" "config" "pgUserName") }}'
+    password: '{{ (index .Values "postgres" "config" "pgUserPassword") }}'
+    passwordPolicy: generate
 
 #################################################################
 # Application configuration defaults.
@@ -95,38 +115,32 @@ readiness:
 ingress:
   enabled: false
 
-mariadb-galera:
-  db:
-    user: sdnctl
-    # password:
-    externalSecret: *dbUserSecretName
-    name: &mysqlDbName sdnctl
-  nameOverride: &dbServer cds-db
-  replicaCount: 1
-  mariadbOperator:
-    galera:
-      enabled: false
-  resources:
-    small:
-      limits:
-        cpu: "500m"
-        memory: "2Gi"
-      requests:
-        cpu: "200m"
-        memory: "1Gi"
+postgres:
+  nameOverride: *postgresName
+  service:
+    name: *postgresName
+    name2: *postgresName2
+    name3: *postgresName3
+    internalPort: *postgresPort
+  container:
+    name:
+      primary: *postgresName2
+      replica: *postgresName3
   persistence:
-    enabled: true
-    mountSubPath: cds/data
-  serviceAccount:
-    nameOverride: *dbServer
+    mountSubPath: cds/postgres/data
+    mountInitPath: cds
+    size: 3Gi
+  config:
+    pgUserName: sdnctl
+    pgDatabase: &dbName sdnctl
+    pgUserExternalSecret: *dbUserSecretName
+    pgRootPasswordExternalSecret: *dbRootPassSecretName
 
 cds-blueprints-processor:
   enabled: true
   config:
     cdsDB:
-      dbServer: *dbServer
-      dbPort: 3306
-      dbName: *mysqlDbName
+      dbName: *dbName
       dbCredsExternalSecret: *dbUserSecretName
 
 cds-command-executor:
