@@ -18,17 +18,10 @@
 # Global configuration defaults.
 #################################################################
 global:
-  mariadbGalera: &mariadbGalera
-    # flag to enable the DB creation via mariadb-operator
-    useOperator: true
-    #This flag allows NBI to instantiate its own mariadb-galera cluster
-    #When changing it to "true", also set "globalCluster: false"
-    #as the dependency check will not work otherwise (Chart.yaml)
-    localCluster: true
-    globalCluster: false
-    service: mariadb-galera
-    internalPort: 3306
-    nameOverride: mariadb-galera
+  postgres:
+    service:
+      name2: cds-pg-primary
+      port: 5432
   # image pull policy
   pullPolicy: Always
   persistence:
@@ -99,7 +92,7 @@ secrets:
 # Application configuration defaults.
 #################################################################
 # application image
-image: onap/ccsdk-blueprintsprocessor:1.10.0
+image: onap/ccsdk-blueprintsprocessor:1.11.0-STAGING-20261017T093035Z
 pullPolicy: Always
 
 # flag to enable debugging - application support required
@@ -115,8 +108,6 @@ config:
     # dbRootPass: Custom root password
     dbRootPassExternalSecret: '{{ include "common.mariadb.secret.rootPassSecretName" ( dict "dot" . "chartName" .Values.config.sdncDB.dbService ) }}'
   cdsDB:
-    dbServer: cds-db
-    dbPort: 3306
     dbName: sdnctl
     dbUser: sdnctl
     dbPassword: sdnctl
@@ -255,7 +246,7 @@ resources:
 readinessCheck:
   wait_for:
     services:
-      - '{{ .Values.global.mariadbGalera.service }}'
+      - '{{ .Values.global.postgres.service.name2 }}'
 
 #Pods Service Account
 serviceAccount:
