@@ -88,6 +88,12 @@ secrets:
     login: '{{ .Values.config.cps.cpsUsername }}'
     password: '{{ .Values.config.cps.cpsPassword }}'
     passwordPolicy: required
+  # The account Prometheus scrapes /actuator/prometheus with. It has to match
+  # security.user.* in application.properties, which the chart does not template.
+  - uid: api-creds
+    type: basicAuth
+    login: ccsdkapps
+    password: ccsdkapps
 
 #################################################################
 # Application configuration defaults.
@@ -259,3 +265,15 @@ serviceAccount:
 workflow:
   storeEnabled: false
 
+metrics:
+  serviceMonitor:
+    port: http
+    path: /actuator/prometheus
+    basicAuth:
+      enabled: true
+      externalSecretNameSuffix: cds-blueprints-processor-api-creds
+      externalSecretUserKey: login
+      externalSecretPasswordKey: password
+    selector:
+      app: '{{ include "common.name" . }}'
+      release: '{{ include "common.release" . }}'
