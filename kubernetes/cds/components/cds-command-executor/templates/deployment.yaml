@@ -23,28 +23,12 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
-      - args:
-        - --service-name
-        - cds-blueprints-processor-http
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        image: {{ include "repositoryGenerator.image.readiness" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-readiness
-        resources:
-          limits:
-            cpu: "100m"
-            memory: "500Mi"
-          requests:
-            cpu: "3m"
-            memory: "20Mi"
+      {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
@@ -71,18 +55,21 @@ spec:
             value: {{ .Values.metrics.serviceMonitor.internalPort | quote }}
           {{- end }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.service.internalPort }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           volumeMounts:
@@ -102,6 +89,7 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "common.release" . }}-cds-blueprints
         {{- else }}
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: {{ .Values.persistence.emptyDirSizeLimit }}
         {{- end }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

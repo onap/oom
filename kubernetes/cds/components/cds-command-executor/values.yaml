@@ -47,10 +47,6 @@ global:
 image: onap/ccsdk-commandexecutor:1.10.0
 pullPolicy: Always
 
-# application configuration
-config:
-  basicAuth: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-
 # default number of instances
 replicaCount: 1
 
@@ -59,8 +55,11 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
+startup:
+  periodSeconds: 5
+  failureThreshold: 24
+
 liveness:
-  initialDelaySeconds: 20
   periodSeconds: 20
   timeoutSeconds: 20
   # necessary to disable liveness probe when setting breakpoints
@@ -68,7 +67,6 @@ liveness:
   enabled: true
 
 readiness:
-  initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 20
 
@@ -86,10 +84,10 @@ persistence:
   enabled: false
   mountSubPath: cds/blueprints/deploy
   deployedBlueprint: /opt/app/onap/blueprints/deploy
+  emptyDirSizeLimit: 2Gi
 
-ingress:
-  enabled: false
-
+#Resource Limit flavor -By Default using small
+flavor: small
 resources:
   small:
     limits:
@@ -106,6 +104,18 @@ resources:
       cpu: "1"
       memory: "400Mi"
   unlimited: {}
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
+
+containerSecurityContext:
+  readOnlyRootFilesystem: false
+
+readinessCheck:
+  wait_for:
+    services:
+      - cds-blueprints-processor-http
 
 #Pods Service Account
 serviceAccount:

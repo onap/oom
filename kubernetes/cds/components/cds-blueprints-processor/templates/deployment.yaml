@@ -34,8 +34,11 @@ spec:
       # ref : https://hazelcast.com/blog/rolling-upgrade-hazelcast-imdg-on-kubernetes/
       maxSurge: 1
   template:
-    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    metadata:
+      {{- $annotations := merge (dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum)) (default (dict) .Values.podAnnotations) }}
+      {{- include "common.templateMetadata" (dict "dot" . "annotations" $annotations) | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       - command:
         - sh
@@ -60,6 +63,8 @@ spec:
         image: {{ include "repositoryGenerator.image.envsubst" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        resources: {{ toYaml .Values.initContainerResources | nindent 10 }}
 
       - command:
         - chown
@@ -72,9 +77,23 @@ spec:
         - mountPath: {{ .Values.persistence.deployedBlueprint }}
           name: {{ include "common.fullname" . }}-blueprints
         name: fix-permission
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - CHOWN
+              - DAC_READ_SEARCH
+        resources: {{ toYaml .Values.initContainerResources | nindent 10 }}
 
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
@@ -114,7 +133,6 @@ spec:
               httpHeaders:
                 - name: Authorization
                   value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-            initialDelaySeconds: {{ .Values.startup.initialDelaySeconds }}
             failureThreshold: {{ .Values.startup.failureThreshold }}
             periodSeconds: {{ .Values.startup.periodSeconds }}
           # disable liveness probe when breakpoints set in debugger
@@ -127,7 +145,6 @@ spec:
               httpHeaders:
               - name: Authorization
                 value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end }}
@@ -138,7 +155,6 @@ spec:
               httpHeaders:
               - name: Authorization
                 value: Basic Y2NzZGthcHBzOmNjc2RrYXBwcw==
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           volumeMounts:
@@ -188,4 +204,5 @@ spec:
         - name: processed-config
           emptyDir:
             medium: Memory
+            sizeLimit: {{ .Values.processedConfigSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

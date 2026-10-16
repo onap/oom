@@ -23,8 +23,10 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           command:
             - bash
@@ -33,18 +35,21 @@ spec:
             - 'AUTH_TOKEN=`echo -n $API_USERNAME:$API_PASSWORD | base64` /opt/app/onap/python/start.sh'
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{- include "common.containerPorts" . | nindent 12 }}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.startup.port }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
           {{ if .Values.liveness.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.liveness.port }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
           {{ end }}
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.liveness.port }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+              port: {{ .Values.readiness.port }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           env:

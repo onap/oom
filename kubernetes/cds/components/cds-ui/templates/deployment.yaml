@@ -24,18 +24,26 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           ports: {{- include "common.containerPorts" . | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.startup.httpGet.path }}
+              port: {{ .Values.startup.httpGet.port }}
+            periodSeconds: {{ .Values.startup.periodSeconds }}
+            failureThreshold: {{ .Values.startup.failureThreshold }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
           {{ if .Values.liveness.enabled }}
           livenessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            httpGet:
+              path: {{ .Values.liveness.httpGet.path }}
+              port: {{ .Values.liveness.httpGet.port }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
           {{ end }}
           env:
@@ -48,22 +56,25 @@ spec:
             - name: API_BLUEPRINT_CONTROLLER_HTTP_BASE_URL
               value: {{ .Values.config.api.controller.http.baseUrl }}
             - name: API_BLUEPRINT_CONTROLLER_HTTP_AUTH_TOKEN
-              value: {{ .Values.config.api.controller.http.authToken }}
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-auth-tokens" "key" "controllerHttpAuthToken") | indent 14 }}
             - name: API_BLUEPRINT_PROCESSOR_HTTP_BASE_URL
               value: {{ .Values.config.api.processor.http.baseUrl }}
             - name: API_BLUEPRINT_PROCESSOR_HTTP_AUTH_TOKEN
-              value: {{ .Values.config.api.processor.http.authToken }}
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-auth-tokens" "key" "processorHttpAuthToken") | indent 14 }}
             - name: API_BLUEPRINT_PROCESSOR_GRPC_HOST
               value: {{ .Values.config.api.processor.grpc.host }}
             - name: API_BLUEPRINT_PROCESSOR_GRPC_PORT
               value: "{{ .Values.config.api.processor.grpc.port }}"
             - name: API_BLUEPRINT_PROCESSOR_GRPC_AUTH_TOKEN
-              value: {{ .Values.config.api.processor.grpc.authToken }}
+              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-auth-tokens" "key" "processorGrpcAuthToken") | indent 14 }}
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.service.internalPort }}
-            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            httpGet:
+              path: {{ .Values.readiness.httpGet.path }}
+              port: {{ .Values.readiness.httpGet.port }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
+          volumeMounts:
+          - mountPath: /tmp
+            name: tmp
           resources: {{ include "common.resources" . | nindent 12 }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{ toYaml .Values.nodeSelector | nindent 8 }}
@@ -72,4 +83,8 @@ spec:
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.tmpSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

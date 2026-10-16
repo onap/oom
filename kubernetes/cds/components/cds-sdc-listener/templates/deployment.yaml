@@ -21,12 +21,16 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector: {{- include "common.selectors" . | nindent 4 }}
   template:
-    metadata: {{- include "common.templateMetadata" . | nindent 6 }}
+    metadata:
+      {{- $annotations := merge (dict "checksum/config" (include (print $.Template.BasePath "/configmap.yaml") . | sha256sum)) (default (dict) .Values.podAnnotations) }}
+      {{- include "common.templateMetadata" (dict "dot" . "annotations" $annotations) | nindent 6 }}
     spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           env:
