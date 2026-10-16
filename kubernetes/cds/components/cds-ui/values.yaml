@@ -19,9 +19,6 @@
 global:
   nodePortPrefixExt: 304
 
-subChartsOnly:
-  enabled: true
-
 # application image
 image: onap/ccsdk-cds-ui-server:1.10.0
 pullPolicy: Always
@@ -56,11 +53,17 @@ nodeSelector: {}
 affinity: {}
 
 # probe configuration parameters
+startup:
+  httpGet:
+    path: /ping
+    port: 3000
+  periodSeconds: 5
+  failureThreshold: 24
+
 liveness:
   httpGet:
     path: /
     port: 3000
-  initialDelaySeconds: 30
   periodSeconds: 10
   # necessary to disable liveness probe when setting breakpoints
   # in debugger so K8s doesn't restart unresponsive container
@@ -70,7 +73,6 @@ readiness:
   httpGet:
     path: /ping
     port: 3000
-  initialDelaySeconds: 30
   periodSeconds: 10
 
 service:
@@ -111,6 +113,27 @@ resources:
       cpu: "1"
       memory: "200Mi"
   unlimited: {}
+
+secrets:
+  - uid: api-auth-tokens
+    type: genericKV
+    envs:
+      - name: controllerHttpAuthToken
+        value: '{{ .Values.config.api.controller.http.authToken }}'
+        policy: required
+      - name: processorHttpAuthToken
+        value: '{{ .Values.config.api.processor.http.authToken }}'
+        policy: required
+      - name: processorGrpcAuthToken
+        value: '{{ .Values.config.api.processor.grpc.authToken }}'
+        policy: required
+
+# uploaded CBAs are buffered in /tmp before they are passed to the blueprints-processor
+tmpSizeLimit: 500Mi
+
+securityContext:
+  user_id: 1000
+  group_id: 1000
 
 #Pods Service Account
 serviceAccount:

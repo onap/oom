@@ -102,9 +102,6 @@ secrets:
 image: onap/ccsdk-blueprintsprocessor:1.10.0
 pullPolicy: Always
 
-# flag to enable debugging - application support required
-debugEnabled: false
-
 # application configuration
 config:
   appConfigDir: /opt/app/onap/config
@@ -177,13 +174,11 @@ service:
 
 # probe configuration parameters
 startup:
-  initialDelaySeconds: 10
-  failureThreshold: 30
-  periodSeconds: 10
+  failureThreshold: 62
+  periodSeconds: 5
   port: *svc_http_port
 
 liveness:
-  initialDelaySeconds: 1
   periodSeconds: 20
   timeoutSeconds: 30
   # necessary to disable liveness probe when setting breakpoints
@@ -192,7 +187,6 @@ liveness:
   port: *svc_http_port
 
 readiness:
-  initialDelaySeconds: 120
   periodSeconds: 10
   timeoutSeconds: 20
   port: *svc_http_port
@@ -252,6 +246,24 @@ resources:
       memory: "3.6Gi"
   unlimited: {}
 
+initContainerResources:
+  limits:
+    cpu: "100m"
+    memory: "100Mi"
+  requests:
+    cpu: "3m"
+    memory: "20Mi"
+
+processedConfigSizeLimit: 10Mi
+
+securityContext:
+  user_id: 1000
+  group_id: 101
+  fsgroup_id: 1000
+
+containerSecurityContext:
+  readOnlyRootFilesystem: false
+
 readinessCheck:
   wait_for:
     services:
@@ -276,6 +288,3 @@ metrics:
       externalSecretNameSuffix: cds-blueprints-processor-api-creds
       externalSecretUserKey: login
       externalSecretPasswordKey: password
-    selector:
-      app: '{{ include "common.name" . }}'
-      release: '{{ include "common.release" . }}'
