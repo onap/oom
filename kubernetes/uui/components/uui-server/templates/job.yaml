@@ -1,5 +1,6 @@
 #
 # Copyright 2022 CMCC Corporation.
+# Modifications Copyright © 2026 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,12 +34,14 @@ spec:
         release: {{ include "common.release" . }}
     spec:
       restartPolicy: Never
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
       - name: {{ include "common.name" . }}-job
-        image: {{ include "repositoryGenerator.image.postgres" . }}
+        image: {{ include "repositoryGenerator.image.psql" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
         env:
         - name: PGUSER
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 10 }}

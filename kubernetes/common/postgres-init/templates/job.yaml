@@ -1,5 +1,6 @@
 {{/*
 # Copyright © 2021 Orange
+# Modifications Copyright © 2026 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,13 +42,7 @@ spec:
         args:
         - -c
         - |
-          function prepare_password {
-            echo -n $1 | sed -e "s/'/''/g"
-          }
-          export PG_PASSWORD=`prepare_password $PG_PASSWORD_INPUT`;
-          export PG_ROOT_PASSWORD=`prepare_password $PG_ROOT_PASSWORD_INPUT`;
-          cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done;
-          psql "postgresql://postgres:$PG_ROOT_PASSWORD@$PG_HOST" < /config/setup.sql
+          PGPASSWORD="$PG_ROOT_PASSWORD_INPUT" PG_PASSWORD="$PG_PASSWORD_INPUT" psql -h "$PG_HOST" -U postgres -f /config-input/setup.sql
         env:
         - name: PG_HOST
           value: "{{ .Values.global.postgres.service.name2 }}"
@@ -65,15 +60,13 @@ spec:
           value: "{{ .Values.config.pgDatabase }}"
         - name: PG_ROOT_PASSWORD_INPUT
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
-        image: {{ include "repositoryGenerator.image.postgres" . }}
+        image: {{ include "repositoryGenerator.image.psql" . }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: {{ include "common.name" . }}-update-config
         volumeMounts:
         - mountPath: /config-input/setup.sql
           name: config
           subPath: setup.sql
-        - mountPath: /config
-          name: pgconf
         resources: {{ include "common.resources" . | nindent 10 }}
         {{ include "common.containerSecurityContext" . | indent 8 | trim }}
       {{- if .Values.nodeSelector }}
@@ -89,9 +82,5 @@ spec:
       - name: config
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: pgconf
-        emptyDir:
-          sizeLimit: 64Mi
-          medium: Memory
       restartPolicy: Never
       {{- include "common.imagePullSecrets" . | nindent 6 }}

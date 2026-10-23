@@ -2,7 +2,7 @@
 # Copyright © 2017 Amdocs, Bell Canada
 # Copyright © 2021 AT&T
 # Modifications Copyright (C) 2021 Nordix Foundation.
-# Modifications Copyright © 2024 Deutsche Telekom
+# Modifications Copyright © 2024, 2026 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -156,6 +156,10 @@
 
 {{- define "repositoryGenerator.image.postgres" -}}
   {{- include "repositoryGenerator.image._helper" (merge (dict "image" "postgresImage") .) }}
+{{- end -}}
+
+{{- define "repositoryGenerator.image.psql" -}}
+  {{- include "repositoryGenerator.image._helper" (merge (dict "image" "psqlImage") .) }}
 {{- end -}}
 
 {{- define "repositoryGenerator.image.readiness" -}}
