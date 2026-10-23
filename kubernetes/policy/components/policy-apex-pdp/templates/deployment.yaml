@@ -31,39 +31,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
-      initContainers:
-      - command: ["/bin/sh", "-cx"]
-        args:
-          - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`;
-            cd /config-input && for PFILE in `ls -1`;
-            do envsubst <${PFILE} >/config/${PFILE}; done
-        env:
-        - name: RESTSERVER_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
-        - name: RESTSERVER_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
-        - name: JAASLOGIN
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.name" . }}-ku
-              key: sasl.jaas.config
-        - name: KAFKA_URL
-          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
-        - name: SASL
-          value: {{ .Values.kafkaUser.authenticationType | upper }}
-        - name: GROUP_ID
-          value: {{ .Values.config.kafka.consumer.groupId }}
-        - name: PAP_TOPIC
-          value: {{ .Values.config.app.listener.policyPdpPapTopic }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: apexconfig-input
-        - mountPath: /config
-          name: apexconfig
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
@@ -90,11 +57,18 @@ spec:
           env:
           - name: REPLICAS
             value: "{{ .Values.replicaCount }}"
+          - name: RESTSERVER_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 12 }}
+          - name: RESTSERVER_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 12 }}
           volumeMounts:
           - mountPath: /var/log/onap
             name: policy-logs
           - mountPath: /home/policy/config
-            name: apexconfig
+            name: apexconfig-input
+          - mountPath: /etc/kafka-user
+            name: kafka-user
+            readOnly: true
           # apex writes the policy model to a temp file before starting its engine,
           # so java.io.tmpdir has to be writable despite the read-only root filesystem
           - mountPath: /tmp
@@ -121,8 +95,10 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
-        - name: apexconfig
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
+        - name: kafka-user
+          secret:
+            secretName: {{ include "common.name" . }}-ku
+            items:
+            - key: sasl.jaas.config
+              path: sasl.jaas.config
       {{- include "common.imagePullSecrets" . | nindent 6 }}
