@@ -34,39 +34,6 @@ spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim}}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . ) }}
       initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-      - name: {{ include "common.name" . }}-update-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-            - sh
-        args:
-          - -c
-          - "cd /config-input && for PFILE in `find . -not -type d | grep -v -F ..`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-          - name: DB_USERNAME
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "login") | indent 12 }}
-          - name: DB_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "pg-user-creds" "key" "password") | indent 12 }}
-          - name: LIQUIBASE_LABELS
-            value: {{ .Values.config.liquibaseLabels }}
-          - name: CPS_USERNAME
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "login") | indent 12 }}
-          - name: CPS_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "app-user-creds" "key" "password") | indent 12 }}
-          - name: DMI_USERNAME
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "login") | indent 12 }}
-          - name: DMI_PASSWORD
-            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "dmi-plugin-user-creds" "key" "password") | indent 12 }}
-          - name: SASL_JAAS_CONFIG
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "common.name" . }}-ku
-                key: sasl.jaas.config
-        volumeMounts:
-          - mountPath: /config-input
-            name: init-data-input
-          - mountPath: /config
-            name: init-data
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -127,19 +94,16 @@ spec:
         volumeMounts:
           - mountPath: /app/resources/application-helm.yml
             subPath: application-helm.yml
-            name: init-data
+            name: init-data-input
           - mountPath: /app/resources/logback-spring.xml
             subPath: logback-spring.xml
-            name: init-data
+            name: init-data-input
           - mountPath: /tmp
             name: init-temp
       volumes:
         - name: init-data-input
           configMap:
             name: {{ include "common.fullname" . }}
-        - name: init-data
-          emptyDir:
-            medium: Memory
         - name: init-temp
           emptyDir: {}
       {{- include "common.imagePullSecrets" . | nindent 6 }}

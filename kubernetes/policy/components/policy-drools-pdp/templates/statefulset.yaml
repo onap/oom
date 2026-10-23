@@ -60,34 +60,6 @@ spec:
             cpu: "3m"
             memory: "20Mi"
 {{- end }}
-      - command:
-          - sh
-        args:
-          - -c
-          - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`; cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
-        env:
-        - name: KAFKA_URL
-          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
-        - name: SASL
-          value: {{ .Values.kafkaUser.authenticationType | upper }}
-        - name: GROUP_ID
-          value: {{ .Values.config.kafka.consumer.groupId }}
-      {{- if .Values.global.useStrimziKafka }}
-        - name: JAASLOGIN
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.name" . }}-ku
-              key: sasl.jaas.config
-      {{- end }}
-        volumeMounts:
-          - mountPath: /config-input
-            name: drools-config
-          - mountPath: /config
-            name: drools-config-processed
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
@@ -96,6 +68,7 @@ spec:
           command: ["sh","-c"]
           args:
             - ls /tmp/policy-install;
+              export JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`;
               /opt/app/policy/bin/pdpd-cl-entrypoint.sh boot
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{- if eq .Values.liveness.enabled true }}
@@ -119,6 +92,17 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
           - name: SQL_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: SASL
+            value: {{ .Values.kafkaUser.authenticationType | upper }}
+          - name: GROUP_ID
+            value: {{ .Values.config.kafka.consumer.groupId }}
+{{- if .Values.global.useStrimziKafka }}
+          - name: JAASLOGIN
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
+{{- end }}
           volumeMounts:
           - mountPath: /etc/localtime
             name: localtime
@@ -130,28 +114,28 @@ spec:
             subPath: tmp-dir
           - mountPath: /opt/app/policy/etc/profile.d/base.conf
             subPath: base.conf
-            name: drools-config-processed
+            name: drools-config
           - mountPath: /opt/app/policy/etc/profile.d/credentials.conf
             subPath: credentials.conf
-            name: drools-config-processed
+            name: drools-secret
           - mountPath: /opt/app/policy/etc/profile.d/feature-pooling-messages.conf
             subPath: feature-pooling-messages.conf
-            name: drools-config-processed
+            name: drools-config
           - mountPath: /opt/app/policy/config/feature-lifecycle.properties
             subPath: feature-lifecycle.properties
-            name: drools-config-processed
+            name: drools-config
           - mountPath: /opt/app/policy/config/engine-system.properties
             subPath: engine-system.properties
-            name: drools-config-processed
+            name: drools-config
           - mountPath: /opt/app/policy/config/feature-distributed-locking.properties
             subPath: feature-distributed-locking.properties
-            name: drools-config-processed
+            name: drools-config
           - mountPath: /opt/app/policy/config/logback.xml
             subPath: logback.xml
             name: drools-config
           - mountPath: /opt/app/policy/config/settings.xml
             subPath: settings.xml
-            name: drools-config-processed
+            name: drools-config
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -181,10 +165,6 @@ spec:
               path: {{ base $path }}
               mode: 0755
             {{- end }}
-        - name: drools-config-processed
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
         - name: drools-secret
           secret:
             secretName: {{ include "common.fullname" . }}-secret

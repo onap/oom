@@ -39,50 +39,6 @@ spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-      - command:
-        - sh
-        args:
-        - -c
-        - JAASLOGIN=`echo $JAASLOGIN | tr -d '"'`; cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done
-        env:
-        - name: RESTSERVER_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 10 }}
-        - name: RESTSERVER_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 10 }}
-        - name: API_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "login") | indent 10 }}
-        - name: API_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "api-creds" "key" "password") | indent 10 }}
-        - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: JAASLOGIN
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.name" . }}-ku
-              key: sasl.jaas.config
-        - name: KAFKA_URL
-          value: {{ include "common.release" . }}-{{ .Values.global.kafkaBootstrap }}
-        - name: POD_UID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.uid
-        - name: SASL
-          value: {{ .Values.kafkaUser.authenticationType | upper }}
-        - name: GROUP_ID
-          value: {{ .Values.groupIdPrefix }}-$(POD_UID)
-        - name: PAP_TOPIC
-          value: {{ .Values.config.app.listener.policyPdpPapTopic }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: pdpxconfig
-        - mountPath: /config
-          name: pdpxconfig-processed
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
@@ -90,6 +46,17 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["/opt/app/policy/pdpx/bin/policy-pdpx.sh"]
           args: ["/opt/app/policy/pdpx/etc/mounted/config.json"]
+          env:
+          - name: RESTSERVER_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 12 }}
+          - name: RESTSERVER_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 12 }}
+          - name: POD_UID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
+          - name: GROUP_ID
+            value: {{ .Values.groupIdPrefix }}-$(POD_UID)
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -108,32 +75,32 @@ spec:
           volumeMounts:
           - name: policy-guard
             mountPath: /opt/app/policy/pdpx/apps/guard
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/guard/xacml.properties
             subPath: xacml.properties
           - name: policy-match
             mountPath: /opt/app/policy/pdpx/apps/match
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/match/xacml.properties
             subPath: xacml.properties
           - name: policy-monitoring
             mountPath: /opt/app/policy/pdpx/apps/monitoring
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/monitoring/xacml.properties
             subPath: xacml.properties
           - name: policy-naming
             mountPath: /opt/app/policy/pdpx/apps/naming
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/naming/xacml.properties
             subPath: xacml.properties
           - name: policy-native
             mountPath: /opt/app/policy/pdpx/apps/native
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/native/xacml.properties
             subPath: xacml.properties
           - name: policy-optimization
             mountPath: /opt/app/policy/pdpx/apps/optimization
-          - name: pdpxconfig-processed
+          - name: xacml-properties
             mountPath: /opt/app/policy/pdpx/apps/optimization/xacml.properties
             subPath: xacml.properties
           - name: logs
@@ -143,9 +110,13 @@ spec:
             subPath: tmp-dir
           - mountPath: /opt/app/policy/pdpx/etc/logback.xml
             subPath: logback.xml
-            name: pdpxconfig-processed
-          - mountPath: /opt/app/policy/pdpx/etc/mounted
-            name: pdpxconfig-processed
+            name: pdpxconfig
+          - mountPath: /opt/app/policy/pdpx/etc/mounted/config.json
+            subPath: config.json
+            name: pdpx-secret
+          - mountPath: /etc/kafka-user
+            name: kafka-user
+            readOnly: true
           - mountPath: /etc/localtime
             name: localtime
             readOnly: true
@@ -191,8 +162,16 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
-        - name: pdpxconfig-processed
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
+        - name: pdpx-secret
+          secret:
+            secretName: {{ include "common.fullname" . }}-secret
+        - name: xacml-properties
+          secret:
+            secretName: {{ tpl .Values.xacmlPropertiesSecret . }}
+        - name: kafka-user
+          secret:
+            secretName: {{ include "common.name" . }}-ku
+            items:
+            - key: sasl.jaas.config
+              path: sasl.jaas.config
       {{- include "common.imagePullSecrets" . | nindent 6 }}

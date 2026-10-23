@@ -31,36 +31,6 @@ spec:
       {{ include "common.podSecurityContext" . | indent 6 | trim }}
       initContainers:
       {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-      - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: SQL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SQL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: RUNTIME_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "login") | indent 10 }}
-        - name: RUNTIME_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "password") | indent 10 }}
-{{- if .Values.global.useStrimziKafka }}
-        - name: SASL_JAAS_CONFIG
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "common.name" . }}-ku
-              key: sasl.jaas.config
-{{- end }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: ac-runtime-config
-        - mountPath: /config
-          name: ac-runtime-config-processed
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
-        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           {{ include "common.containerSecurityContext" . | indent 10 | trim }}
@@ -68,6 +38,22 @@ spec:
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
           command: ["java", "-jar", "/app/app.jar"]
           args: ["--spring.config.location=/opt/app/policy/clamp/etc/mounted/acRuntimeParameters.yaml"]
+          env:
+          - name: SQL_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
+          - name: SQL_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
+          - name: RUNTIME_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "login") | indent 12 }}
+          - name: RUNTIME_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "runtime-secret" "key" "password") | indent 12 }}
+{{- if .Values.global.useStrimziKafka }}
+          - name: SASL_JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.name" . }}-ku
+                key: sasl.jaas.config
+{{- end }}
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -94,9 +80,9 @@ spec:
               subPath: tmp-dir
             - mountPath: /opt/app/policy/clamp/etc/logback.xml
               subPath: logback.xml
-              name: ac-runtime-config-processed
+              name: ac-runtime-config
             - mountPath: /opt/app/policy/clamp/etc/mounted
-              name: ac-runtime-config-processed
+              name: ac-runtime-config
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
       nodeSelector:
@@ -121,8 +107,4 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
-        - name: ac-runtime-config-processed
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
       {{- include "common.imagePullSecrets" . | nindent 6 }}

@@ -35,18 +35,9 @@ spec:
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       volumes:
-{{- if .Values.global.addTestingComponents }}
-        - name: cmp-servers-template-volume
-          secret:
-            secretName: {{ .Values.cmpServers.secret.name }}
-        - name: {{ .Values.cmpServers.volume.name }}
-          emptyDir:
-            medium: Memory
-{{- else }}
         - name: {{ .Values.cmpServers.volume.name }}
           secret:
             secretName: {{ .Values.cmpServers.secret.name }}
-{{- end }}
         - name: {{ .Values.tls.server.volume.name }}
           secret:
             secretName: {{ .Values.tls.server.secret.name }}
@@ -71,26 +62,6 @@ spec:
             requests:
               cpu: "3m"
               memory: "20Mi"
-        - name: subsitute-envs
-          image: {{ include "repositoryGenerator.image.envsubst" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ['sh', '-c', "cd /config-input &&  envsubst < cmpServers.json > {{ .Values.cmpServers.volume.mountPath }}/cmpServers.json"]
-          volumeMounts:
-            - name: cmp-servers-template-volume
-              mountPath: /config-input
-              readOnly: true
-            - name: {{ .Values.cmpServers.volume.name }}
-              mountPath: {{ .Values.cmpServers.volume.mountPath }}
-              readOnly: false
-          env:
-            - name: CLIENT_IAK
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ejbca-server-client-iak" "key" "password") | indent 14 }}
-            - name: CLIENT_RV
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmp-config-client-rv" "key" "password") | indent 14 }}
-            - name: RA_IAK
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ejbca-server-ra-iak" "key" "password") | indent 14 }}
-            - name: RA_RV
-              {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cmp-config-ra-rv" "key" "password") | indent 14 }}
 {{- end }}
       containers:
         - name: {{ include "common.name" . }}

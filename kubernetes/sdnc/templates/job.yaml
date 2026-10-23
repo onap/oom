@@ -38,46 +38,6 @@ spec:
       name: {{ include "common.name" . }}
     spec:
       initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
-      - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: AAI_CLIENT_NAME
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aai-user-creds" "key" "login") | indent 10 }}
-        - name: AAI_CLIENT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "aai-user-creds" "key" "password") | indent 10 }}
-        - name: MODELSERVICE_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "modeling-user-creds" "key" "login") | indent 10 }}
-        - name: MODELSERVICE_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "modeling-user-creds" "key" "password") | indent 10 }}
-        - name: RESTCONF_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "login") | indent 10 }}
-        - name: RESTCONF_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "password") | indent 10 }}
-        - name: ANSIBLE_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ansible-creds" "key" "login") | indent 10 }}
-        - name: ANSIBLE_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ansible-creds" "key" "password") | indent 10 }}
-        - name: SCALEOUT_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "scaleout-creds" "key" "login") | indent 10 }}
-        - name: SCALEOUT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "scaleout-creds" "key" "password") | indent 10 }}
-        - name: NETBOX_APIKEY
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "netbox-apikey" "key" "password") | indent 10 }}
-        - name: SDNC_DB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SDNC_DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: config-input
-        - mountPath: /config
-          name: properties
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
       containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -108,13 +68,13 @@ spec:
             name: bin
             subPath: installSdncDb.sh
           - mountPath: {{ .Values.config.configDir }}/svclogic.properties
-            name: properties
+            name: config-input
             subPath: svclogic.properties
           - mountPath: /opt/onap/sdnc/svclogic/config/svclogic.properties
-            name: properties
+            name: config-input
             subPath: svclogic.properties
           - mountPath: {{ .Values.config.configDir }}/dblib.properties
-            name: properties
+            name: config-input
             subPath: dblib.properties
         command:
           - /bin/bash
@@ -141,9 +101,6 @@ spec:
         configMap:
           name: {{ include "common.fullname" . }}-properties
           defaultMode: 0644
-      - name: properties
-        emptyDir:
-          medium: Memory
       restartPolicy: Never
       {{- include "common.imagePullSecrets" . | nindent 6 }}
 {{- end -}}
