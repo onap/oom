@@ -23,25 +23,6 @@ spec:
   template:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
-      initContainers:
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          cd /config-input && for PFILE in `ls -1`
-          do
-            envsubst <${PFILE} >/config/${PFILE}
-          done
-          cat /config/server.xml
-        volumeMounts:
-        - mountPath: /config-input
-          name: config-input
-        - mountPath: /config
-          name: config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
       containers:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
@@ -75,10 +56,10 @@ spec:
             failureThreshold: {{ .Values.startup.failureThreshold }}
           volumeMounts:
           - mountPath: /home/uui/server.xml
-            name: config
+            name: config-input
             subPath: server.xml
           - mountPath: /home/uui/web.xml
-            name: config
+            name: config-input
             subPath: web.xml
           env:
           - name: MSB_ADDR
@@ -94,7 +75,4 @@ spec:
       - name: config-input
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: config
-        emptyDir:
-          medium: Memory
       {{- include "common.imagePullSecrets" . | nindent 6 }}

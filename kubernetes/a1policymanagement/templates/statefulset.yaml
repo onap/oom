@@ -27,62 +27,25 @@ spec:
   template:
     metadata:
       labels: {{- include "common.labels" . | nindent 8 }}
+      annotations:
+        checksum/policy-conf: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
       {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
       - name: {{ include "common.name" . }}-bootstrap-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        command:
-        - sh
-        args:
-        - -c
-        - |
-          cd /config-input
-          for PFILE in `ls -1`
-          do
-            envsubst <${PFILE} >/config/${PFILE}
-            chmod o+w /config/${PFILE}
-          done
-          cat /config/application.yaml
-        env:
-        - name: A1CONTROLLER_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
-        - name: A1CONTROLLER_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
-        - name: LOGBACK_CONFIG_FILE
-          value: {{ .Values.app.logging.config | quote }}
+        command: ["cp", "/config-input/application_configuration.json", "/config/application_configuration.json"]
         volumeMounts:
         - mountPath: /config-input
-          name: {{ include "common.fullname" . }}-policy-conf-input
+          name: {{ include "common.fullname" . }}-policy-conf-secret
         - mountPath: /config
           name: config
-      containers:
-      - name: {{ include "common.name" . }}-update-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         securityContext:
-          runAsGroup: {{ .Values.groupID }}
-          runAsUser: {{ .Values.userID }}
+          runAsUser: {{ .Values.mainUserId }}
+          runAsGroup: {{ .Values.mainGroupId }}
           runAsNonRoot: true
-        command:
-        - sh
-        args:
-        - /tmp/scripts/daemon.sh
-        env:
-        - name: A1CONTROLLER_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "login") | indent 10 }}
-        - name: A1CONTROLLER_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "controller-secret" "key" "password") | indent 10 }}
-        - name: LOGBACK_CONFIG_FILE
-          value: {{ .Values.app.logging.config | quote }}
-        volumeMounts:
-        - mountPath: /tmp/scripts
-          name: {{ include "common.fullname" . }}-envsubst-scripts
-        - mountPath: /config-input
-          name: {{ include "common.fullname" . }}-policy-conf-input
-        - mountPath: /config
-          name: config
+      containers:
       - name: {{ include "common.name" . }}
         image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
@@ -98,13 +61,13 @@ spec:
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         volumeMounts:
-        - name: config
+        - name: {{ include "common.fullname" . }}-policy-conf-input
           mountPath: /opt/app/policy-agent/logback-plain.xml
           subPath: logback-plain.xml
         - name: config
           mountPath: /opt/app/policy-agent/data/application_configuration.json
           subPath: application_configuration.json
-        - name: config
+        - name: {{ include "common.fullname" . }}-policy-conf-input
           mountPath: /opt/app/policy-agent/config/application.yaml
           subPath: application.yaml
         - name: {{ include "common.fullname" . }}
@@ -119,10 +82,9 @@ spec:
         - name: {{ include "common.fullname" . }}-policy-conf-input
           configMap:
             name: {{ include "common.fullname" . }}-policy-conf
-        - name: {{ include "common.fullname" . }}-envsubst-scripts
-          configMap:
-            name: {{ include "common.fullname" . }}-envsubst-scripts
-            defaultMode: 0555
+        - name: {{ include "common.fullname" . }}-policy-conf-secret
+          secret:
+            secretName: {{ include "common.fullname" . }}-policy-conf
         - name: config
           emptyDir:
             medium: Memory

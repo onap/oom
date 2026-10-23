@@ -108,6 +108,46 @@ type: Opaque
   {{- end }}
 {{- end -}}
 
+{{/*
+  Get the value of a key of a secret declared in .Values.secrets at render time,
+  e.g. to render it into a config file that the application cannot resolve from
+  the environment itself. The value is the one common.secretFast puts into the secret.
+
+  Rendering fails if the secret is configured as externalSecret, as its value
+  is not known to Helm then.
+
+  The template takes below arguments:
+    - .global: environment (.)
+    - .uid: string that uniquely identifies this secret within a helm chart
+    - .key: key within this secret: "login" or "password"
+
+  Example usage:
+    jdbc.password={{ include "common.secret.renderedValueFast" (dict "global" . "uid" "db-secret" "key" "password") }}
+*/}}
+{{- define "common.secret.renderedValueFast" -}}
+  {{- $global := .global }}
+  {{- include "common.secret.buildCache" $global }}
+  {{- $secret := index $global.Values._secretsCache .uid }}
+  {{- if not $secret }}
+    {{- fail (printf "Secret with uid %s is not defined" .uid) }}
+  {{- end }}
+  {{- if $secret.externalSecret }}
+    {{- fail (printf "Secret %s is rendered into a config file, so externalSecret %s cannot be used for it" .uid $secret.externalSecret) }}
+  {{- end }}
+  {{- $policy := "required" }}
+  {{- if eq .key "password" }}
+    {{- $policy = default "generate" (eq (default "generic" $secret.type) "basicAuth" | ternary $secret.passwordPolicy $secret.policy) }}
+  {{- end }}
+  {{- $value := index $secret .key }}
+  {{- if $value }}
+    {{- $value }}
+  {{- else if eq $policy "generate" }}
+    {{- include "common.createPassword" (dict "dot" $global "uid" $secret.realName) }}
+  {{- else }}
+    {{- fail (printf "Value for %s secret %s key not provided" $secret.realName .key) }}
+  {{- end }}
+{{- end -}}
+
 
 {{/*
   Generate a secret name based on provided name or UID.

@@ -24,40 +24,15 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: DB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "login") | indent 10 }}
-        - name: DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "password") | indent 10 }}
-        - name: HTTP_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "http-user-creds" "key" "login") | indent 10 }}
-        - name: HTTP_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "http-user-creds" "key" "password") | indent 10 }}
-        - name: HTTP_ADMIN_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "admin-creds" "key" "login") | indent 10 }}
-        - name: HTTP_ADMIN_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "admin-creds" "key" "password") | indent 10 }}
-        - name: HTTP_NODE_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "node-creds" "key" "login") | indent 10 }}
-        - name: HTTP_NODE_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "node-creds" "key" "password") | indent 10 }}
-        - name: REST_CONF_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "login") | indent 10 }}
-        - name: REST_CONF_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "password") | indent 10 }}
+      - name: {{ include "common.name" . }}-copy-settings
+        image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        command: ["cp", "/config-input/customSettings.js", "/config/customSettings.js"]
         volumeMounts:
         - mountPath: /config-input
           name: config-input
         - mountPath: /config
           name: config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
         - name: {{ include "common.name" . }}
@@ -74,14 +49,34 @@ spec:
           env:
           - name: SDNC_CONFIG_DIR
             value: /opt/onap/sdnc/data/properties
+          - name: DB_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "login") | indent 12 }}
+          - name: DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-user-creds" "key" "password") | indent 12 }}
+          - name: HTTP_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "http-user-creds" "key" "login") | indent 12 }}
+          - name: HTTP_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "http-user-creds" "key" "password") | indent 12 }}
+          - name: HTTP_ADMIN_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "admin-creds" "key" "login") | indent 12 }}
+          - name: HTTP_ADMIN_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "admin-creds" "key" "password") | indent 12 }}
+          - name: HTTP_NODE_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "node-creds" "key" "login") | indent 12 }}
+          - name: HTTP_NODE_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "node-creds" "key" "password") | indent 12 }}
+          - name: REST_CONF_USER
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "login") | indent 12 }}
+          - name: REST_CONF_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restconf-creds" "key" "password") | indent 12 }}
           volumeMounts:
           - name: config
             mountPath: /opt/app/application.properties
             subPath: application.properties
-          - name: config
+          - name: config-input
             mountPath: /opt/onap/ccsdk/dgbuilder/releases/sdnc1.0/conf/svclogic.properties
             subPath: svclogic.properties
-          - name: config
+          - name: config-input
             mountPath: /opt/onap/ccsdk/dgbuilder/svclogic/svclogic.properties
             subPath: svclogic.properties
           - name: config

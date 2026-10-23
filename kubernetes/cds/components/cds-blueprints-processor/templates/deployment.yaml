@@ -38,30 +38,6 @@ spec:
     spec:
       initContainers: {{ include "common.readinessCheck.waitFor" . | nindent 6 }}
       - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst '${CDS_DB_USERNAME},${CDS_DB_PASSWORD},${SDNC_DB_USERNAME},${SDNC_DB_PASSWORD}' <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: CDS_DB_USERNAME
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-db-user-creds" "key" "login") | indent 10}}
-        - name: CDS_DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-db-user-creds" "key" "password") | indent 10}}
-        - name: SDNC_DB_USERNAME
-          value: root
-        - name: SDNC_DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnc-db-root-pass" "key" "password") | indent 10}}
-        volumeMounts:
-        - mountPath: /config-input/application.properties
-          name: {{ include "common.fullname" . }}-config
-          subPath: application.properties
-        - mountPath: /config
-          name: processed-config
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
-
-      - command:
         - chown
         - -R
         - 1000:1000
@@ -103,6 +79,14 @@ spec:
             value: {{ .Values.global.tracing.enabled | quote }}
           - name: OTEL_CONFIG_FILE
             value: {{ .Values.config.appConfigDir }}/otel-config.yaml
+          - name: CDS_DB_USERNAME
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-db-user-creds" "key" "login") | indent 12 }}
+          - name: CDS_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "cds-db-user-creds" "key" "password") | indent 12 }}
+          - name: SDNC_DB_USERNAME
+            value: root
+          - name: SDNC_DB_PASSWORD
+            {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdnc-db-root-pass" "key" "password") | indent 12 }}
           ports:
           - containerPort: {{ .Values.service.http.internalPort }}
           - containerPort: {{ .Values.service.grpc.internalPort }}
@@ -143,7 +127,7 @@ spec:
             timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
           volumeMounts:
           - mountPath: {{ .Values.config.appConfigDir }}/application.properties
-            name: processed-config
+            name: {{ include "common.fullname" . }}-config
             subPath: application.properties
           - mountPath: {{ .Values.config.appConfigDir }}/error-messages_en.properties
             name: {{ include "common.fullname" . }}-config
@@ -185,7 +169,4 @@ spec:
         - name: {{ include "common.fullname" . }}-blueprints
           persistentVolumeClaim:
             claimName: {{ include "common.release" . }}-cds-blueprints
-        - name: processed-config
-          emptyDir:
-            medium: Memory
       {{- include "common.imagePullSecrets" . | nindent 6 }}

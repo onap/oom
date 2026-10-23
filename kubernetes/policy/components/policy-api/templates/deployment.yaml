@@ -101,11 +101,13 @@ spec:
           - name: PGPASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 12 }}
           resources: {{ include "common.resources" . | nindent 12 }}
-        - command:
-          - sh
-          args:
-          - -c
-          - "cd /config-input && for PFILE in `ls -1`; do envsubst <${PFILE} >/config/${PFILE}; done"
+      containers:
+        - name: {{ include "common.name" . }}
+          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
+          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
+          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+          command: ["/opt/app/policy/api/bin/policy-api.sh"]
+          args: ["/opt/app/policy/api/etc/mounted/apiParameters.yaml"]
           env:
           - name: SQL_USER
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 12 }}
@@ -115,29 +117,6 @@ spec:
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "login") | indent 12 }}
           - name: RESTSERVER_PASSWORD
             {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "restserver-creds" "key" "password") | indent 12 }}
-          volumeMounts:
-          - mountPath: /config-input
-            name: apiconfig
-          - mountPath: /config
-            name: apiconfig-processed
-          name: {{ include "common.name" . }}-update-config
-          image: {{ include "repositoryGenerator.image.envsubst" . }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
-          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
-      containers:
-        - name: {{ include "common.name" . }}
-          {{ include "common.containerSecurityContext" . | indent 10 | trim }}
-          image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
-          imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command: ["/opt/app/policy/api/bin/policy-api.sh"]
-          args: ["/opt/app/policy/api/etc/mounted/apiParameters.yaml"]
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           # disable liveness probe when breakpoints set in debugger
           # so K8s doesn't restart unresponsive container
@@ -178,9 +157,9 @@ spec:
             subPath: tmp-dir
           - mountPath: /opt/app/policy/api/etc/logback.xml
             subPath: logback.xml
-            name: apiconfig-processed
+            name: apiconfig
           - mountPath: /opt/app/policy/api/etc/mounted
-            name: apiconfig-processed
+            name: apiconfig
           resources: {{ include "common.resources" . | nindent 12 }}
         {{- if .Values.nodeSelector }}
         nodeSelector:
@@ -196,10 +175,6 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}-configmap
             defaultMode: 0755
-        - name: apiconfig-processed
-          emptyDir:
-            medium: Memory
-            sizeLimit: 64Mi
         - name: empty-dir
           emptyDir:
             sizeLimit: {{ .Values.dirSizes.emptyDir.sizeLimit }}

@@ -60,43 +60,6 @@ spec:
     spec:
       {{- include "common.imagePullSecrets" $dot | nindent 6 }}
       initContainers:
-      - command:
-        - sh
-        args:
-        - -c
-        - |
-          function prepare_password {
-            echo -n $1 | sed -e "s/'/''/g"
-          }
-          export PG_PRIMARY_PASSWORD=`prepare_password $PG_PRIMARY_PASSWORD_INPUT`;
-          export PG_PASSWORD=`prepare_password $PG_PASSWORD_INPUT`;
-          export PG_ROOT_PASSWORD=`prepare_password $PG_ROOT_PASSWORD_INPUT`;
-          cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done
-        env:
-        - name: PG_PRIMARY_USER
-          value: primaryuser
-        - name: MODE
-          value: postgres
-        - name: PG_PRIMARY_PASSWORD_INPUT
-          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
-        - name: PG_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "login") | indent 10 }}
-        - name: PG_PASSWORD_INPUT
-          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
-        - name: PG_DATABASE
-          value: "{{ $dot.Values.config.pgDatabase }}"
-        - name: PG_ROOT_PASSWORD_INPUT
-          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
-        volumeMounts:
-        - mountPath: /config-input/setup.sql
-          name: config
-          subPath: setup.sql
-        - mountPath: /config
-          name: pgconf
-        image: {{ include "repositoryGenerator.image.envsubst" $dot }}
-        imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
-        name: {{ include "common.name" $dot }}-update-config
-
       - name: init-sysctl
         command:
         - /bin/sh
@@ -164,7 +127,7 @@ spec:
         - name: config
           mountPath: /pgconf/pool_hba.conf
           subPath: pool_hba.conf
-        - name: pgconf
+        - name: config
           mountPath: /pgconf/setup.sql
           subPath: setup.sql
         - mountPath: /pgdata
@@ -239,9 +202,6 @@ spec:
       - name: config
         configMap:
           name: {{ include "common.fullname" $dot }}
-      - name: pgconf
-        emptyDir:
-          medium: Memory
       - name: podinfo
         downwardAPI:
           items:
