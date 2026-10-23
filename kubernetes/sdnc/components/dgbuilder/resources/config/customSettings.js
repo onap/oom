@@ -26,31 +26,31 @@ module.exports={
     "sharedDir": "releases/sdnc1.0/flows/shared",
     "userDir": "releases/sdnc1.0",
     "httpAuth": {
-        "user": "${HTTP_USER}",
-        "pass": "${HTTP_PASSWORD}"
+        "user": process.env.HTTP_USER,
+        "pass": process.env.HTTP_PASSWORD
     },
     "dbHost": "{{.Values.config.dbServiceName}}.{{ include "common.namespace" . }}",
     "dbPort": "3306",
     "dbName": "{{.Values.config.db.dbName}}",
-    "dbUser": "${DB_USER}",
-    "dbPassword": "${DB_PASSWORD}",
+    "dbUser": process.env.DB_USER,
+    "dbPassword": process.env.DB_PASSWORD,
     "gitLocalRepository": "",
     "restConfUrl": "http://localhost:8181/rests/operations/SLI-API:execute-graph",
-    "restConfUser": "${REST_CONF_USER}",
-    "restConfPassword": "${REST_CONF_PASSWORD}",
+    "restConfUser": process.env.REST_CONF_USER,
+    "restConfPassword": process.env.REST_CONF_PASSWORD,
     "formatXML": "Y",
     "formatJSON": "Y",
     "httpRoot": "/",
     "disableEditor": false,
     "httpAdminRoot": "/",
     "httpAdminAuth": {
-        "user": "${HTTP_ADMIN_USER}",
-        "pass": "${HTTP_ADMIN_PASSWORD}"
+        "user": process.env.HTTP_ADMIN_USER,
+        "pass": process.env.HTTP_ADMIN_PASSWORD
     },
     "httpNodeRoot": "/",
     "httpNodeAuth": {
-        "user": "${HTTP_NODE_USER}",
-        "pass": "${HTTP_NODE_PASSWORD}"
+        "user": process.env.HTTP_NODE_USER,
+        "pass": process.env.HTTP_NODE_PASSWORD
     },
     "uiHost": "0.0.0.0",
     "version": "0.9.1",

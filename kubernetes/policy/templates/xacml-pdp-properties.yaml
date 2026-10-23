@@ -1,6 +1,5 @@
 {{/*
-# Copyright © 2024 Deutsche Telekom
-#
+# Copyright © 2026 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +14,18 @@
 # limitations under the License.
 */}}
 
+{{- if (index .Values "policy-xacml-pdp" "enabled") }}
+{{/*
+  Rendered here and not in policy-xacml-pdp: xacml-pdp reads the JPA credentials
+  verbatim from xacml.properties, and only this chart knows the db-secret values.
+*/}}
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ include "common.release" . }}-policy-xacml-pdp-properties
   namespace: {{ include "common.namespace" . }}
   labels: {{- include "common.labels" . | nindent 4 }}
+type: Opaque
 data:
-{{ tpl (.Files.Glob "resources/config/*").AsConfig . | indent 2 }}
+  xacml.properties: {{ tpl (.Files.Get "resources/xacml-pdp/xacml.properties") . | b64enc | quote }}
+{{- end }}

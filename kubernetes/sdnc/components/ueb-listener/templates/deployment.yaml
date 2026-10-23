@@ -24,32 +24,6 @@ spec:
     metadata: {{- include "common.templateMetadata" . | nindent 6 }}
     spec:
       initContainers:
-      - command:
-        - sh
-        args:
-        - -c
-        - "cd /config-input && for PFILE in `ls -1 .`; do envsubst <${PFILE} >/config/${PFILE}; done"
-        env:
-        - name: SDNC_DB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
-        - name: SDNC_DB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
-        - name: UEB_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "login") | indent 10 }}
-        - name: UEB_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "password") | indent 10 }}
-        - name: ODL_USER
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
-        - name: ODL_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
-        volumeMounts:
-        - mountPath: /config-input
-          name: config-input
-        - mountPath: /config
-          name: properties
-        image: {{ include "repositoryGenerator.image.envsubst" . }}
-        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-        name: {{ include "common.name" . }}-update-config
       {{ include "common.readinessCheck.waitFor" . | indent 6 | trim }}
       containers:
       - command:
@@ -69,15 +43,27 @@ spec:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
+        - name: SDNC_DB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "login") | indent 10 }}
+        - name: SDNC_DB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "db-secret" "key" "password") | indent 10 }}
+        - name: UEB_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "login") | indent 10 }}
+        - name: UEB_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "ueb-creds" "key" "password") | indent 10 }}
+        - name: ODL_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "login") | indent 10 }}
+        - name: ODL_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "odl-creds" "key" "password") | indent 10 }}
         volumeMounts:
         - mountPath: {{ .Values.config.configDir }}/dblib.properties
-          name: properties
+          name: config-input
           subPath: dblib.properties
         - mountPath: {{ .Values.config.configDir }}/ueb-listener.properties
-          name: properties
+          name: config-input
           subPath: ueb-listener.properties
         - mountPath: {{ .Values.config.configDir }}/log4j2.xml
-          name: properties
+          name: config-input
           subPath: log4j2.xml
         resources: {{ include "common.resources" . | nindent 10 }}
         ports: {{ include "common.containerPorts" . | nindent 10  }}
@@ -93,7 +79,4 @@ spec:
           configMap:
             name: {{ include "common.fullname" . }}
             defaultMode: 0644
-        - name: properties
-          emptyDir:
-            medium: Memory
       {{- include "common.imagePullSecrets" . | nindent 6 }}
