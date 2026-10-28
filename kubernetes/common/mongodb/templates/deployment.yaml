@@ -1,0 +1,87 @@
+{{/*
+# Copyright © 2026 Deutsche Telekom
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{- include "common.resourceMetadata" (dict "dot" . "labels" (dict "app.kubernetes.io/component" "mongodb")) | nindent 2 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector: {{- include "common.selectors" (dict "dot" . "matchLabels" (dict "app.kubernetes.io/component" "mongodb")) | nindent 4 }}
+  template:
+    metadata: {{- include "common.templateMetadata" (dict "dot" . "labels" (dict "app.kubernetes.io/component" "mongodb")) | nindent 6 }}
+    spec:
+      {{ include "common.podSecurityContext" . | indent 6 | trim }}
+      automountServiceAccountToken: false
+      containers:
+      - name: {{ include "common.name" . }}
+        image: {{ include "repositoryGenerator.dockerHubRepository" . }}/{{ .Values.image }}
+        imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
+        {{ include "common.containerSecurityContext" . | indent 8 | trim }}
+        command:
+          - /bin/sh
+          - -c
+          # data/db is the layout of volumes created by the Bitnami-based chart (16.x)
+          - mkdir -p {{ .Values.persistence.mountPath }}/data/db &&
+            exec mongod --dbpath {{ .Values.persistence.mountPath }}/data/db --bind_ip_all --port {{ (first .Values.service.ports).port }}
+        env:
+        - name: HOME
+          value: /tmp
+        ports: {{ include "common.containerPorts" . | nindent 10 }}
+        {{- if .Values.liveness.enabled }}
+        livenessProbe:
+          exec:
+            command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.liveness.timeoutSeconds }}
+          failureThreshold: {{ .Values.liveness.failureThreshold }}
+        {{- end }}
+        readinessProbe:
+          exec:
+            command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.readiness.timeoutSeconds }}
+          failureThreshold: {{ .Values.readiness.failureThreshold }}
+        resources: {{ include "common.resources" . | nindent 10 }}
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: data
+          mountPath: {{ .Values.persistence.mountPath }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: {{ .Values.volumes.tmpSizeLimit }}
+      - name: data
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "common.fullname" . }}
+      {{- else }}
+        emptyDir:
+          sizeLimit: {{ .Values.persistence.size }}
+      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
