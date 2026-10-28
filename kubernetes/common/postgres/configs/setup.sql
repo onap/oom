@@ -1,48 +1,26 @@
 --- System Setup
-SET application_name="container_setup";
+\getenv pg_primary_user PG_PRIMARY_USER
+\getenv pg_primary_password PG_PRIMARY_PASSWORD
+\getenv pg_user PG_USER
+\getenv pg_password PG_PASSWORD
+\getenv pg_database PG_DATABASE
 
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-CREATE EXTENSION IF NOT EXISTS pgaudit;
 
---- log_duration writes a line for every statement, whatever
---- log_min_duration_statement is set to -- ~580 MB a day on a busy database, until
---- the volume is full. The image hardcodes it to on and, unlike the other logging
---- settings, gives it no token in its postgresql.conf template, so ALTER SYSTEM
---- (postgresql.auto.conf) is the only way to override it. Slow statements are still
---- logged, with their text, by log_min_duration_statement.
-ALTER SYSTEM SET log_duration = off;
+CREATE USER :"pg_primary_user" WITH REPLICATION;
+ALTER USER :"pg_primary_user" PASSWORD :'pg_primary_password';
 
-ALTER USER postgres PASSWORD 'PG_ROOT_PASSWORD';
+CREATE USER :"pg_user" LOGIN;
+ALTER USER :"pg_user" PASSWORD :'pg_password';
 
-CREATE USER PG_PRIMARY_USER WITH REPLICATION;
-ALTER USER PG_PRIMARY_USER PASSWORD 'PG_PRIMARY_PASSWORD';
-
-CREATE USER "PG_USER" LOGIN;
-ALTER USER "PG_USER" PASSWORD 'PG_PASSWORD';
-
-CREATE DATABASE PG_DATABASE;
-GRANT ALL PRIVILEGES ON DATABASE PG_DATABASE TO "PG_USER";
-
-CREATE TABLE IF NOT EXISTS primarytable (key varchar(20), value varchar(20));
-GRANT ALL ON primarytable TO PG_PRIMARY_USER;
+CREATE DATABASE :"pg_database";
+GRANT ALL PRIVILEGES ON DATABASE :"pg_database" TO :"pg_user";
 
 --- PG_DATABASE Setup
 
-\c PG_DATABASE
+\c :"pg_database"
 
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-CREATE EXTENSION IF NOT EXISTS pgaudit;
 
---- Verify permissions via PG_USER
-
-\c PG_DATABASE "PG_USER";
-
-CREATE SCHEMA IF NOT EXISTS "PG_USER";
-
-CREATE TABLE IF NOT EXISTS "PG_USER".testtable (
-    name varchar(30) PRIMARY KEY,
-    value varchar(50) NOT NULL,
-    updatedt timestamp NOT NULL
-);
-
-INSERT INTO "PG_USER".testtable (name, value, updatedt) VALUES ('CPU', '256', now());
+GRANT ALL ON SCHEMA public TO :"pg_user";
+CREATE SCHEMA IF NOT EXISTS :"pg_user" AUTHORIZATION :"pg_user";

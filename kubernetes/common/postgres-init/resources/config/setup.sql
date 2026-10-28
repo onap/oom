@@ -13,7 +13,6 @@ GRANT ALL PRIVILEGES ON DATABASE :"pg_database" TO :"pg_user";
 \c :"pg_database"
 
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-CREATE EXTENSION IF NOT EXISTS pgaudit;
 
 --- Create schema for PG_USER
 

@@ -65,7 +65,7 @@ spec:
         - /bin/sh
         - -c
         - |
-          chown 26:26 /podroot/;
+          chown 999:999 /podroot/;
           chmod 700 /podroot/;
         image: {{ include "repositoryGenerator.image.busybox" $dot }}
         imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
@@ -76,6 +76,24 @@ spec:
       - name: {{ include "common.name" $dot }}
         image: {{ include "repositoryGenerator.image.postgres" $dot }}
         imagePullPolicy: {{ $dot.Values.global.pullPolicy | default $dot.Values.pullPolicy }}
+        {{- if eq $pgMode "replica" }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          if [ ! -s "$PGDATA/PG_VERSION" ]; then
+            PGPASSWORD="$PG_PRIMARY_PASSWORD" pg_basebackup -h {{ $dot.Values.service.name2 }} -p {{ $dot.Values.service.externalPort2 }} -U "$PG_PRIMARY_USER" -D "$PGDATA" -R -X stream --checkpoint=fast || exit 1
+          fi
+          exec docker-entrypoint.sh postgres "$@"
+        - --
+        {{- end }}
+        args:
+        - -c
+        - hba_file=/etc/postgresql/pg_hba.conf
+        - -c
+        - shared_preload_libraries=pg_stat_statements
+        - -c
+        - log_min_duration_statement={{ $dot.Values.config.logMinDurationStatement }}
         ports:
         - containerPort: {{ $dot.Values.service.internalPort }}
           name: {{ $dot.Values.service.portName }}
@@ -95,20 +113,14 @@ spec:
           initialDelaySeconds: {{ $dot.Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ $dot.Values.readiness.periodSeconds }}
         env:
-        - name: PGHOST
-          value: /tmp
+        - name: PGDATA
+          value: /var/lib/postgresql/data/{{ $dot.Values.config.pgDataDir }}
+        - name: PGPORT
+          value: "{{ $dot.Values.service.internalPort }}"
+        - name: POSTGRES_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
         - name: PG_PRIMARY_USER
           value: primaryuser
-        - name: MODE
-          value: postgres
-        - name: PG_MODE
-          value: {{ $pgMode }}
-        - name: PG_PRIMARY_HOST
-          value: "{{ $dot.Values.service.name2 }}"
-        - name: PG_REPLICA_HOST
-          value: "{{ $dot.Values.service.name3 }}"
-        - name: PG_PRIMARY_PORT
-          value: "{{ $dot.Values.service.internalPort }}"
         - name: PG_PRIMARY_PASSWORD
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.primaryPasswordUID" .) "key" "password") | indent 10 }}
         - name: PG_USER
@@ -117,26 +129,20 @@ spec:
           {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.userCredentialsUID" .) "key" "password") | indent 10 }}
         - name: PG_DATABASE
           value: "{{ $dot.Values.config.pgDatabase }}"
-        - name: PG_ROOT_PASSWORD
-          {{- include "common.secret.envFromSecretFast" (dict "global" $dot "uid" (include "common.postgres.secret.rootPassUID" .) "key" "password") | indent 10 }}
-        - name: PGDATA_PATH_OVERRIDE
-          value: "{{ $dot.Values.config.pgDataPath }}"
-        - name: LOG_MIN_DURATION_STATEMENT
-          value: "{{ $dot.Values.config.logMinDurationStatement }}"
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
         volumeMounts:
         - name: config
-          mountPath: /pgconf/pool_hba.conf
-          subPath: pool_hba.conf
+          mountPath: /etc/postgresql/pg_hba.conf
+          subPath: pg_hba.conf
         - name: config
-          mountPath: /pgconf/setup.sql
+          mountPath: /docker-entrypoint-initdb.d/setup.sql
           subPath: setup.sql
-        - mountPath: /pgdata
+        - mountPath: /var/lib/postgresql/data
           name: {{ include "common.fullname" $dot }}-data
-        - mountPath: /backup
-          name: {{ include "common.fullname" $dot }}-backup
-          readOnly: true
-        - mountPath: /etc/podinfo
-          name: podinfo
         resources: {{ include "common.resources" $dot | nindent 10 }}
       {{- if (default false $dot.Values.metrics.enabled) }}
       - name: {{ include "common.name" $dot }}-metrics
@@ -190,8 +196,6 @@ spec:
 {{ toYaml $dot.Values.affinity | indent 10 }}
         {{- end }}
       volumes:
-      - name: {{ include "common.fullname" $dot }}-backup
-        emptyDir: {}
       - name: {{ include "common.fullname" $dot }}-data
 {{- if $dot.Values.persistence.enabled }}
         persistentVolumeClaim:
@@ -202,16 +206,4 @@ spec:
       - name: config
         configMap:
           name: {{ include "common.fullname" $dot }}
-      - name: podinfo
-        downwardAPI:
-          items:
-            - path: "labels"
-              fieldRef:
-                fieldPath: metadata.labels
-            - path: "name"
-              fieldRef:
-                fieldPath: metadata.name
-            - path: "namespace"
-              fieldRef:
-                fieldPath: metadata.namespace
 {{- end -}}
