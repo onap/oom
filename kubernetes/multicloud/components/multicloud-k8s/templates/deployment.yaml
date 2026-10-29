@@ -70,8 +70,6 @@ spec:
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.artifactbroker.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: framework-artifactbroker
-        command: ["/opt/app/distribution/bin/artifact-dist.sh"]
-        args: ["/opt/app/distribution/etc/mounted/config.json"]
         {{ include "common.containerSecurityContext" . | indent 10 | trim }}
         resources: {{ include "common.resources" . | nindent 10 }}
         ports:
@@ -79,24 +77,30 @@ spec:
           protocol: TCP
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /actuator/health/liveness
             port: {{ .Values.artifactbroker.internalPort }}
           initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
+        startupProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: {{ .Values.artifactbroker.internalPort }}
+          periodSeconds: {{ .Values.artifactbroker.startup.periodSeconds }}
+          failureThreshold: {{ .Values.artifactbroker.startup.failureThreshold }}
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /actuator/health/readiness
             port: {{ .Values.artifactbroker.internalPort }}
           initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
         - mountPath: /tmp
           name: tmp-dir-broker
-        - mountPath: /opt/app/distribution/etc/mounted/config.json
+        - mountPath: /opt/app/artifactbroker/config/application.yaml
           name: {{ include "common.name" .}}
-          subPath: config.json
-        - mountPath: /data
-          name: artifact-data
+          subPath: application.yaml
         env:
         - name: SASL_JAAS_CONFIG
           valueFrom:
@@ -114,7 +118,4 @@ spec:
       - name : {{ include "common.name" . }}
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: artifact-data
-        emptyDir:
-          sizeLimit: {{ .Values.volumes.artifactDataSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
