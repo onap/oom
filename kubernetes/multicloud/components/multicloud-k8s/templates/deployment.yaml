@@ -70,39 +70,53 @@ spec:
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.artifactbroker.image }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: framework-artifactbroker
-        command: ["/opt/app/distribution/bin/artifact-dist.sh"]
-        args: ["/opt/app/distribution/etc/mounted/config.json"]
         {{ include "common.containerSecurityContext" . | indent 10 | trim }}
-        resources: {{ include "common.resources" . | nindent 10 }}
+        resources: {{ toYaml (pluck (include "common.flavor" .) .Values.artifactbroker.resources | first) | nindent 10 }}
         ports:
         - containerPort: {{ .Values.artifactbroker.internalPort }}
           protocol: TCP
         {{- if eq .Values.liveness.enabled true }}
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /actuator/health/liveness
             port: {{ .Values.artifactbroker.internalPort }}
-          initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
           periodSeconds: {{ .Values.liveness.periodSeconds }}
         {{ end -}}
-        readinessProbe:
-          tcpSocket:
+        startupProbe:
+          httpGet:
+            path: /actuator/health/liveness
             port: {{ .Values.artifactbroker.internalPort }}
-          initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.artifactbroker.startup.periodSeconds }}
+          failureThreshold: {{ .Values.artifactbroker.startup.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: {{ .Values.artifactbroker.internalPort }}
           periodSeconds: {{ .Values.readiness.periodSeconds }}
         volumeMounts:
         - mountPath: /tmp
           name: tmp-dir-broker
-        - mountPath: /opt/app/distribution/etc/mounted/config.json
+        - mountPath: /opt/app/artifactbroker/config/application.yaml
           name: {{ include "common.name" .}}
-          subPath: config.json
-        - mountPath: /data
-          name: artifact-data
+          subPath: application.yaml
         env:
         - name: SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
               name: {{ include "common.name" . }}-ku
               key: sasl.jaas.config
+        - name: ARTIFACTBROKER_SDC_USER
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-creds" "key" "login") | indent 10 }}
+        - name: ARTIFACTBROKER_SDC_PASSWORD
+          {{- include "common.secret.envFromSecretFast" (dict "global" . "uid" "sdc-creds" "key" "password") | indent 10 }}
+        - name: TRACING_ENABLED
+          value: {{ .Values.global.tracing.enabled | quote }}
+        - name: TRACING_SAMPLING_PROBABILITY
+          value: {{ .Values.global.tracing.sampling.probability | quote }}
+        - name: COLLECTOR_HOST
+          value: {{ .Values.global.tracing.collector.baseUrl }}
+        - name: COLLECTOR_PORT
+          value: {{ .Values.global.tracing.collector.port.otlpGrpc | quote }}
       serviceAccountName: {{ include "common.fullname" (dict "suffix" "read" "dot" . )}}
       volumes:
       - name: tmp-dir-k8s
@@ -114,7 +128,4 @@ spec:
       - name : {{ include "common.name" . }}
         configMap:
           name: {{ include "common.fullname" . }}
-      - name: artifact-data
-        emptyDir:
-          sizeLimit: {{ .Values.volumes.artifactDataSizeLimit }}
       {{- include "common.imagePullSecrets" . | nindent 6 }}
