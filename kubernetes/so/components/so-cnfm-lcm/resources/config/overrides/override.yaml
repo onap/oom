@@ -1,4 +1,5 @@
 # Copyright © 2023 Nordix Foundation
+# Modifications Copyright © 2026 Deutsche Telekom
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,20 +37,24 @@ spring:
         driver-class-name: org.mariadb.jdbc.Driver
         pool-name: cnfm-pool
         registerMbeans: true
-  sleuth:
+management:
+  observations:
+    enable:
+      # Every request, the liveness probe included, gets four Spring Security spans that
+      # carry no URI, so they cannot be filtered by path like the HTTP server span
+      spring.security: false
+      tasks.scheduled.execution: false
+  tracing:
     enabled: {{ .Values.global.tracing.enabled }}
-    trace-id128: true
-    sampler:
+    sampling:
       probability: {{ .Values.global.tracing.sampling.probability }}
-    supports-join: false
     propagation:
       type:
-      - w3c
-      - b3
-    web:
-      skip-pattern: {{ join "," .Values.tracing.ignorePatterns }}
-  zipkin:
-    base-url: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.zipkin }}
+        - w3c
+        - b3
+  otlp:
+    tracing:
+      endpoint: {{ .Values.global.tracing.collector.baseUrl }}:{{ .Values.global.tracing.collector.port.otlpHttp }}/v1/traces
 server:
   port: {{ .Values.containerPort }}
   tomcat:
