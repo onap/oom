@@ -88,7 +88,15 @@ spec:
           - name: TMPDIR
             value: '/app/jetty/ruby_temp'
           - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
+            value: >-
+              {{ .Values.config.javaOptions }}
+              -Djetty.http.port={{ .Values.jetty.httpPort }}
+              -Djetty.ssl.port={{ .Values.jetty.httpsPort }}
+              {{- with .Values.jetty.keystorePath }} -Djetty.sslContext.keyStorePath={{ . }}{{ end }}
+              {{- with .Values.jetty.truststorePath }} -Djetty.sslContext.trustStorePath={{ . }}{{ end }}
+              {{- with .Values.jetty.keystorePassword }} -Djetty.sslContext.keyStorePassword={{ . }} -Djetty.sslContext.keyManagerPassword={{ . }}{{ end }}
+              {{- with .Values.jetty.truststorePassword }} -Djetty.sslContext.trustStorePassword={{ . }}{{ end }}
+              -Djetty.sslContext.needClientAuth={{ if .Values.jetty.truststorePassword }}true{{ else }}false{{ end }}
           - name: cassandra_ssl_enabled
             value: {{ .Values.config.cassandraSslEnabled | quote }}
           - name: TLS_CERT
@@ -135,15 +143,6 @@ spec:
           - name: logback
             mountPath: /tmp/logback.xml
             subPath: logback.xml
-          - name: http-config
-            mountPath: /app/jetty/start.d/http.ini
-            subPath: http.ini
-          - name: https-config
-            mountPath: /app/jetty/start.d/https.ini
-            subPath: https.ini
-          - name: ssl-config
-            mountPath: /app/jetty/start.d/ssl.ini
-            subPath: ssl.ini
           - name: catalog-be-config
             mountPath: /app/jetty/config/catalog-be/janusgraph.properties
             subPath: janusgraph.properties
@@ -188,18 +187,6 @@ spec:
       - name: {{ include "common.fullname" . }}-jetty
         emptyDir:
           sizeLimit: {{ .Values.volumes.jettySizeLimit }}
-      - name: http-config
-        configMap:
-          name: {{ include "common.release" . }}-sdc-http-be-configmap
-          defaultMode: 0755
-      - name: https-config
-        configMap:
-          name: {{ include "common.release" . }}-sdc-https-be-configmap
-          defaultMode: 0755
-      - name: ssl-config
-        configMap:
-          name: {{ include "common.release" . }}-sdc-ssl-be-configmap
-          defaultMode: 0755
       - name: catalog-be-config
         configMap:
           name: {{ include "common.release" . }}-sdc-catalog-be-configmap
