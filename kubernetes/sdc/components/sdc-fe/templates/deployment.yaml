@@ -56,21 +56,6 @@ spec:
         - name: {{ include "common.name" . }}
           image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.image }}
           imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
-          command:
-          - /bin/sh
-          - -c
-          - |
-            JAVA_OPTIONS="$JAVA_OPTIONS -Dconfig.home=$JETTY_BASE/config -Dlog.home=$JETTY_BASE/logs -Dlogback.configurationFile=$JETTY_BASE/config/catalog-fe/logback.xml -Dconfiguration.yaml=$JETTY_BASE/config/catalog-fe/configuration.yaml -Donboarding_configuration.yaml=$JETTY_BASE/config/onboarding-fe/onboarding_configuration.yaml -Djavax.net.ssl.trustStore=$JETTY_BASE/etc/org.onap.sdc.trust.jks -Djavax.net.ssl.trustStorePassword=z+KEj;t+,KN^iimSiS89e#p0"
-            # This command replaces the image's startup.sh, so the agent it would
-            # have attached has to be re-added here (see catalog-fe/sdc-frontend/startup.sh).
-            OTEL_AGENT_PATH="$JETTY_BASE/otel/opentelemetry-javaagent.jar"
-            if [ -f "$OTEL_AGENT_PATH" ] && [ "${OTEL_ENABLED:-false}" = "true" ]; then
-              OTEL_OPTS="-javaagent:$OTEL_AGENT_PATH"
-              echo "OpenTelemetry agent enabled"
-            fi
-            cd /app/jetty
-            sh -x /app/jetty/ready-probe.sh
-            java $OTEL_OPTS $JAVA_OPTIONS -jar "${JETTY_HOME}/start.jar"
           ports: {{ include "common.containerPorts" . | nindent 12  }}
           {{ if eq .Values.liveness.enabled true }}
           livenessProbe:
@@ -111,7 +96,15 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           - name: JAVA_OPTIONS
-            value: {{ .Values.config.javaOptions }}
+            value: >-
+              {{ .Values.config.javaOptions }}
+              -Djetty.http.port={{ .Values.fe_conf.http_port }}
+              -Djetty.ssl.port={{ .Values.fe_conf.https_port }}
+              {{- with .Values.keystore_path }} -Djetty.sslContext.keyStorePath={{ . }}{{ end }}
+              {{- with .Values.truststore_path }} -Djetty.sslContext.trustStorePath={{ . }}{{ end }}
+              {{- with .Values.keystore_password }} -Djetty.sslContext.keyStorePassword={{ . }} -Djetty.sslContext.keyManagerPassword={{ . }}{{ end }}
+              {{- with .Values.truststore_password }} -Djetty.sslContext.trustStorePassword={{ . }}{{ end }}
+              -Djetty.sslContext.needClientAuth={{ if .Values.truststore_password }}true{{ else }}false{{ end }}
           - name: OTEL_ENABLED
             value: {{ .Values.global.tracing.enabled | quote }}
           - name: OTEL_CONFIG_FILE
@@ -130,18 +123,6 @@ spec:
           - name: {{ include "common.fullname" . }}-ready-probe-script
             mountPath: /app/jetty/ready-probe.sh
             subPath: ready-probe.sh
-          - name: {{ include "common.fullname" . }}-fe-etc-config
-            mountPath: /app/jetty/etc/rewrite-root-to-sdc1.xml
-            subPath: rewrite-root-to-sdc1.xml
-          - name: {{ include "common.fullname" . }}-startd-config
-            mountPath: /app/jetty/start.d/http.ini
-            subPath: http.ini
-          - name: {{ include "common.fullname" . }}-startd-config
-            mountPath: /app/jetty/start.d/https.ini
-            subPath: https.ini
-          - name: {{ include "common.fullname" . }}-startd-config
-            mountPath: /app/jetty/start.d/ssl.ini
-            subPath: ssl.ini
           - name: {{ include "common.fullname" . }}-onboarding-fe-config
             mountPath: /app/jetty/config/onboarding-fe/onboarding_configuration.yaml
             subPath: onboarding_configuration.yaml
@@ -200,14 +181,6 @@ spec:
         - name: {{ include "common.fullname" . }}-ready-probe-script
           configMap:
             name: {{ include "common.release" . }}-ready-probe-script
-            defaultMode: 0755
-        - name: {{ include "common.fullname" . }}-fe-etc-config
-          configMap:
-            name: {{ include "common.release" . }}-fe-etc-config
-            defaultMode: 0644
-        - name: {{ include "common.fullname" . }}-startd-config
-          configMap:
-            name: {{ include "common.release" . }}-startd-config
             defaultMode: 0755
         - name: {{ include "common.fullname" . }}-onboarding-fe-config
           configMap:
