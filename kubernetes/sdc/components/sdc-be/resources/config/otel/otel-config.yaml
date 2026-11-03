@@ -42,8 +42,7 @@ tracer_provider:
                     - attribute: code.namespace
                       pattern: ^org\.openecomp\.sdc\.be\.(components\.health\.HealthCheckBusinessLogic|dao\.janusgraph\.JanusGraphClient)\$HealthCheckScheduledTask$
                       action: DROP
-                    # The data type cache refresh. Dropping it also drops the
-                    # several hundred queries each run makes.
+                    # The data type cache refresh.
                     - attribute: code.namespace
                       pattern: ^org\.openecomp\.sdc\.be\.model\.cache\.ApplicationDataTypeCache$
                       action: DROP
@@ -53,12 +52,6 @@ tracer_provider:
                 - attribute: url.full
                   pattern: (?i)^https?://.*/health-?check$
                   action: DROP
-                # JanusGraph polling its log, and the operational environment
-                # poll of EnvironmentCleanThread. Queries made while serving a
-                # request have a parent and are never matched.
-                - attribute: db.cassandra.table
-                  pattern: ^(sdctitan\.systemlog|sdcrepository\.operationalenvironment)$
-                  action: DROP
           rules:
             - attribute: url.path
               pattern: (?i)^/sdc2/rest/healthcheck$
@@ -67,3 +60,10 @@ meter_provider:
   readers: []
 logger_provider:
   processors: []
+distribution:
+  javaagent:
+    instrumentation:
+      # A sampler cannot drop request-path queries, and a single catalog
+      # listing makes several hundred of them.
+      disabled:
+        - cassandra
