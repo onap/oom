@@ -33,8 +33,11 @@ SDNC_DB_PASSWORD=${SDNC_DB_PASSWORD}
 SDNC_DB_DATABASE=${SDNC_DB_DATABASE}
 
 
-# Create tablespace and user account
-/usr/bin/mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_EXTRA_PARAMETERS} mysql <<-END
+# Create tablespace and user account, and load the schema in the same
+# session: MYSQL_HOST is a Service in front of all Galera nodes, and a new
+# connection can land on a node that has not applied CREATE DATABASE yet.
+{
+cat <<-END
 CREATE DATABASE IF NOT EXISTS ${SDNC_DB_DATABASE};
 CREATE USER IF NOT EXISTS '${SDNC_DB_USER}'@'localhost' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
 CREATE USER IF NOT EXISTS '${SDNC_DB_USER}'@'%' IDENTIFIED BY '${SDNC_DB_PASSWORD}';
@@ -42,14 +45,21 @@ GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'localhost' W
 GRANT ALL PRIVILEGES ON ${SDNC_DB_DATABASE}.* TO '${SDNC_DB_USER}'@'%' WITH GRANT OPTION;
 flush privileges;
 commit;
+USE ${SDNC_DB_DATABASE};
 END
-
-# load schema
 if [ -f ${ETC_DIR}/sdnctl.dump ]
 then
-  /usr/bin/mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_EXTRA_PARAMETERS} ${SDNC_DB_DATABASE} < ${ETC_DIR}/sdnctl.dump
+  cat ${ETC_DIR}/sdnctl.dump
+fi
+} | /usr/bin/mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_EXTRA_PARAMETERS} mysql
+if [ $? -ne 0 ]
+then
+  echo "Failed to create the ${SDNC_DB_DATABASE} database and schema"
+  exit 1
 fi
 
+# The seed data and the VNI inserts below report known errors on every run,
+# so only the schema load above fails the job.
 for datafile in ${ETC_DIR}/*.data.dump
 do
   /usr/bin/mariadb -h ${MYSQL_HOST} -u root -p${MYSQL_PASSWORD} ${SDNC_DB_EXTRA_PARAMETERS} ${SDNC_DB_DATABASE} < $datafile
