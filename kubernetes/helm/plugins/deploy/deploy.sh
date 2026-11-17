@@ -285,7 +285,9 @@ deploy() {
   #So cache the results to prevent repeated execution.
   ALL_HELM_RELEASES=$(helm ls -q)
 
-    for subchart in roles-wrapper repository-wrapper strimzi cassandra mariadb-galera postgres ; do
+    # strimzi goes last: the entity-operator wait in deploy_strimzi would
+    # otherwise delay the database charts, which do not depend on it.
+    for subchart in roles-wrapper repository-wrapper cassandra mariadb-galera postgres strimzi ; do
       SUBCHART_OVERRIDES=$CACHE_SUBCHART_DIR/$subchart/subchart-overrides.yaml
 
       SUBCHART_ENABLED=0
@@ -294,9 +296,7 @@ deploy() {
       fi
       if [ "${subchart}" = "strimzi" ] && [ $SUBCHART_ENABLED -eq 1 ]; then
         deploy_strimzi
-      fi
-      # Deploy them at first
-      if [ $SUBCHART_ENABLED -eq 1 ]; then
+      elif [ $SUBCHART_ENABLED -eq 1 ]; then
         deploy_subchart
       else
         reverse_list=
