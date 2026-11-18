@@ -212,9 +212,10 @@ list of policyID or filter. An optional policyRelease parameter can be specified
 to override the default policy helm release (used for retreiving the secret containing
 pdp username and password)
 
-Following is example policy config override
+The sidecar uses the default image from repositoryGenerator. Set
+dcaePolicySyncImage to override it for this microservice. An example policy
+configuration follows.
 
-dcaePolicySyncImage: onap/org.onap.dcaegen2.deployments.dcae-services-policy-sync:1.0.1
 policies:
   duration: 300
   policyRelease: "onap"
@@ -399,7 +400,11 @@ spec:
       {{ include "common.log.sidecar" . | nindent 6 }}
       {{- end }}
       {{- if $policy }}
+      {{- if .Values.dcaePolicySyncImage }}
       - image: {{ include "repositoryGenerator.repository" . }}/{{ .Values.dcaePolicySyncImage }}
+      {{- else }}
+      - image: {{ include "repositoryGenerator.image.dcaepolicysync" . }}
+      {{- end }}
         imagePullPolicy: {{ .Values.global.pullPolicy | default .Values.pullPolicy }}
         name: policy-sync
         env:
