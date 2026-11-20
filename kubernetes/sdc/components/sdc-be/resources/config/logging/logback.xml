@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 # Copyright © 2018 Amdocs, Bell Canada, AT&T, ZTE
+# Modifications Copyright (C) 2026 Deutsche Telekom AG
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +21,10 @@
     <property name="logDirectory" value="${logDir}/${componentName}/${subComponentName}"/>
     <property file="${config.home}/catalog-be/configuration.yaml"/>
     <property name="enable-all-log" scope="context" value="false"/>
+    <!-- all.log only receives events when enable-all-log is true, True or TRUE -->
+    <property name="all-log-level-true" value="TRACE"/>
+    <property name="all-log-level-True" value="TRACE"/>
+    <property name="all-log-level-TRUE" value="TRACE"/>
     <!--  log file names -->
     <property name="errorLogName" value="error"/>
     <property name="metricsLogName" value="metrics"/>
@@ -57,27 +62,23 @@
     </appender>
 
     <!-- All log -->
-    <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
-        <then>
-            <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ALL_ROLLING">
-                <file>${logDirectory}/${allLogName}.log</file>
-                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                    <fileNamePattern>${logDirectory}/${allLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-                    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                        <maxFileSize>${maxFileSize}</maxFileSize>
-                    </timeBasedFileNamingAndTriggeringPolicy>
-                    <maxHistory>${maxHistory}</maxHistory>
-                    <totalSizeCap>${totalSizeCap}</totalSizeCap>
-                </rollingPolicy>
-                <encoder>
-                    <pattern>${pattern}</pattern>
-                </encoder>
-            </appender>
-            <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_ALL">
-                <appender-ref ref="ALL_ROLLING"/>
-            </appender>
-        </then>
-    </if>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ALL_ROLLING">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${all-log-level-${enable-all-log}:-OFF}</level>
+        </filter>
+        <file>${logDirectory}/${allLogName}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logDirectory}/${allLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${totalSizeCap}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
     <!-- Error log -->
     <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="ERROR_ROLLING">
         <file>${logDirectory}/${errorLogName}.log</file>
@@ -126,12 +127,20 @@
             <onMatch>DENY</onMatch>
         </filter>
         <!-- accept DEBUG and TRACE level -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator> <!-- defaults to type ch.qos.logback.classic.boolex.JaninoEventEvaluator -->
-                <expression>return level &lt;= DEBUG;</expression>
-            </evaluator>
-            <OnMismatch>DENY</OnMismatch>
-            <OnMatch>NEUTRAL</OnMatch>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${logDirectory}/${debugLogName}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
@@ -213,11 +222,7 @@
         <appender-ref ref="ASYNC_DEBUG"/>
         <appender-ref ref="ASYNC_AUDIT"/>
         <<appender-ref ref="ASYNC_TRANSACTION"/>
-        <if condition='property("enable-all-log").equalsIgnoreCase("true")'>
-            <then>
-                <appender-ref ref="ALL_ROLLING"/>
-            </then>
-        </if>-->
+        <appender-ref ref="ALL_ROLLING"/>-->
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="STDERR"/>
     </root>
